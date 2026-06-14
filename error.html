@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astravox AI Core // 404 Synapse Disconnected</title>
+    
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/animations.css">
+    
+    <style>
+        .error-stage {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Scanline filter layer to increase cyber immersion */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+
+        .glitch-code {
+            font-size: 8rem;
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(180deg, #ff007f 0%, #9b51e0 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="cosmos-bg"></div>
+    <div class="scanlines"></div>
+    <div class="ambient-glow" style="background: radial-gradient(circle, rgba(255, 0, 127, 0.12) 0%, transparent 70%); top: 30%; left: 40%;"></div>
+
+    <main class="error-stage">
+        
+        <div class="card-3d-container" style="width: 100%; max-width: 580px; height: 460px;">
+            <div class="card-3d" style="height: 100%; padding: 4rem 3rem; display: flex; flex-direction: column; justify-content: space-between; text-align: center; border-color: rgba(255, 0, 127, 0.25);">
+                
+                <div class="layer-high">
+                    <div class="glitch-code animate-pulse-glow">404</div>
+                </div>
+
+                <div class="layer-mid" style="margin: 1.5rem 0;">
+                    <h2 data-glitch style="font-size: 1.6rem; font-weight: 700; letter-spacing: 1px; color: #fff; margin-bottom: 0.75rem;">
+                        CRITICAL_SYNAPSE_DISCONNECT
+                    </h2>
+                    <p style="color: #6c6c85; font-size: 0.95rem; font-family: monospace; max-width: 420px; margin: 0 auto; line-height: 1.6;">
+                        [ERROR]: Target node string addresses unallocated vector space memory. Real-time path compilation failure.
+                    </p>
+                </div>
+
+                <div class="layer-high" style="transform-style: preserve-3d;">
+                    <button class="btn-cyber-3d glitch-hover" 
+                            onclick="window.location.href='dashboard.html'" 
+                            style="background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple)); box-shadow: 0 8px 20px rgba(255, 0, 127, 0.2); width: 100%; max-width: 280px;">
+                        Re-Route to Command Core
+                    </button>
+                </div>
+
+                <div class="layer-base" style="font-family: monospace; font-size: 0.75rem; color: rgba(255,255,255,0.15); letter-spacing: 1px;">
+                    TRACE_ID: AX_ERR_INDEX_NULL_0x7FFA23
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <script src="../js/ui.js"></script>
+    <script src="../js/main.js"></script>
+    <script src="../js/notifications.js"></script>
+
+    <script>
+        // Automatic system warning override hook on load
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (window.Notifications) {
+                    window.Notifications.spawn("Memory space violation caught. Network isolation routing active.", "danger");
+                }
+            }, 600);
+        });
+    </script>
+</body>
+</html>

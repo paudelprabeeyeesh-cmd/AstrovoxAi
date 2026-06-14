@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRAVOX PRIME | Neural Identity</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0a0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .profile-container {
+            max-width: 500px;
+            width: 100%;
+            padding: 20px;
+        }
+        .profile-card {
+            background: rgba(10,10,20,0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0,242,255,0.2);
+            border-radius: 32px;
+            padding: 40px;
+            text-align: center;
+        }
+        .avatar {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #00F2FE, #9B51E0);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            margin: 0 auto 24px;
+        }
+        h2 { margin-bottom: 8px; }
+        .email { color: #888; margin-bottom: 24px; }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(0,242,255,0.1);
+        }
+        .logout-btn {
+            width: 100%;
+            margin-top: 24px;
+            background: rgba(255,68,102,0.2);
+            border: 1px solid #ff4466;
+            border-radius: 40px;
+            padding: 12px;
+            color: #ff4466;
+            cursor: pointer;
+        }
+        .back-btn {
+            width: 100%;
+            margin-top: 12px;
+            background: rgba(0,242,255,0.1);
+            border: 1px solid rgba(0,242,255,0.3);
+            border-radius: 40px;
+            padding: 12px;
+            color: #00F2FE;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="profile-container">
+        <div class="profile-card">
+            <div class="avatar">🧠</div>
+            <h2 id="profileName">ASTRAVOX User</h2>
+            <p class="email" id="profileEmail">user@astravox.ai</p>
+            
+            <div class="info-row">
+                <span>Member Since</span>
+                <span id="memberSince">2024</span>
+            </div>
+            <div class="info-row">
+                <span>Neural Version</span>
+                <span>v4.0</span>
+            </div>
+            <div class="info-row">
+                <span>AI Access</span>
+                <span>Full</span>
+            </div>
+            
+            <button class="logout-btn" onclick="logout()">Logout</button>
+            <button class="back-btn" onclick="window.location.href='dashboard.html'">Back to Dashboard</button>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+    <script>
+        const user = getCurrentUser();
+        if (user) {
+            document.getElementById('profileName').innerHTML = user.username;
+            document.getElementById('profileEmail').innerHTML = user.email;
+            document.getElementById('memberSince').innerHTML = user.memberSince || '2024';
+        }
+    </script>
+</body>
+</html>

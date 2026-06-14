@@ -1,0 +1,104 @@
+.sidebar {
+    position: fixed;
+    left: 20px;
+    top: 100px;
+    bottom: 20px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    transition: transform 0.3s ease;
+    z-index: 90;
+}
+.sidebar-header {
+    padding: 24px 20px;
+    border-bottom: 1px solid rgba(0,242,255,0.15);
+}
+.logo-core {
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle at 30% 30%, var(--neon-cyan), var(--neon-purple));
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+.logo-text {
+    font-size: 18px;
+    font-weight: 700;
+}
+.logo-version {
+    font-size: 10px;
+    color: rgba(0,242,255,0.7);
+}
+.sidebar-nav {
+    flex: 1;
+    padding: 20px 16px;
+}
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    margin: 6px 0;
+    border-radius: 14px;
+    color: rgba(255,255,255,0.6);
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.nav-item:hover {
+    background: rgba(0,242,255,0.1);
+    color: white;
+    transform: translateX(6px);
+}
+.nav-item.active {
+    background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(155,81,224,0.08));
+    border-left: 2px solid var(--neon-cyan);
+    color: var(--neon-cyan);
+}
+.nav-icon { font-size: 20px; width: 28px; }
+.nav-text { font-size: 14px; font-weight: 500; }
+.nav-badge {
+    margin-left: auto;
+    background: rgba(0,242,255,0.2);
+    padding: 2px 8px;
+    border-radius: 30px;
+    font-size: 10px;
+}
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(0,242,255,0.1);
+}
+.system-stats { margin-bottom: 16px; }
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    padding: 6px 0;
+    color: rgba(255,255,255,0.6);
+}
+.stat-value { color: var(--neon-cyan); font-family: monospace; font-weight: 600; }
+.ai-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0,242,255,0.1);
+}
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+}
+@media (max-width: 1024px) {
+    .sidebar {
+        transform: translateX(-100%);
+        left: 0;
+        top: 0;
+        bottom: 0;
+        border-radius: 0;
+        z-index: 200;
+    }
+    .sidebar.open { transform: translateX(0); }
+}

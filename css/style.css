@@ -1,0 +1,20 @@
+/* (Keep all CSS from previous answer, and add these few lines) */
+.dynamic-content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+}
+.chat-container, .files-container, .analytics-container, .config-container, .cognitive-container {
+    height: 100%;
+}
+.terminal-output {
+    background: #010a16;
+    font-family: monospace;
+    padding: 12px;
+    border-radius: 16px;
+    color: #0f0;
+}
+.config-slider {
+    width: 100%;
+    margin: 12px 0;
+}

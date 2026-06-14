@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRAVOX PRIME | Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0f, #05050A);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(10, 10, 20, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 28px;
+            padding: 48px 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            background: linear-gradient(135deg, #fff, #00F2FE, #9B51E0);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .logo p {
+            color: #00F2FE;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-top: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 24px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        .input-group input {
+            width: 100%;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid rgba(0,242,255,0.2);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            border-color: #00F2FE;
+            box-shadow: 0 0 15px rgba(0,242,255,0.2);
+        }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #00F2FE, #9B51E0);
+            border: none;
+            border-radius: 40px;
+            padding: 14px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px rgba(0,242,255,0.3);
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 13px;
+            color: #888;
+        }
+
+        .register-link a {
+            color: #00F2FE;
+            text-decoration: none;
+        }
+
+        .error-msg {
+            background: rgba(255,68,102,0.1);
+            border: 1px solid #ff4466;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #ff4466;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-msg {
+            background: rgba(0,255,136,0.1);
+            border: 1px solid #00ff88;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 20px;
+            color: #00ff88;
+            font-size: 12px;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>ASTRAVOX PRIME</h1>
+                <p>SOVEREIGN AI v4.0</p>
+            </div>
+
+            <div id="errorMsg" class="error-msg"></div>
+            <div id="successMsg" class="success-msg"></div>
+
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>📧 EMAIL</label>
+                    <input type="email" id="email" placeholder="your@email.com" required>
+                </div>
+                <div class="input-group">
+                    <label>🔒 PASSWORD</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn-login">⟳ LOGIN</button>
+            </form>
+
+            <div class="register-link">
+                Don't have an account? <a href="register.html">Create Account</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>

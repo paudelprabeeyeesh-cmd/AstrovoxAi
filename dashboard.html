@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRAVOX-AI | Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/glassmorphism.css">
+    <link rel="stylesheet" href="css/animations.css">
+    <link rel="stylesheet" href="css/themes.css">
+    <link rel="stylesheet" href="css/sidebar.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    
+    <div class="app-container">
+        <aside class="sidebar glass-sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🧠</div>
+                    <div class="logo-text">ASTRAVOX<span class="logo-accent">-AI</span></div>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="index.html" class="nav-item">⌂ Dashboard</a>
+                <a href="dashboard.html" class="nav-item active">📊 Analytics</a>
+            </nav>
+        </aside>
+        
+        <main class="main-content">
+            <div class="dashboard-header">
+                <h1 class="gradient-text">Control Center</h1>
+                <p>DeepSeek AI Performance Metrics</p>
+            </div>
+            
+            <div class="stats-grid">
+                <div class="stat-card glass-card">
+                    <div class="stat-value" id="dashMessages">0</div>
+                    <div class="stat-label">Total Messages</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-value" id="dashCalls">0</div>
+                    <div class="stat-label">DeepSeek API Calls</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-value" id="dashMemory">0</div>
+                    <div class="stat-label">Memory Usage</div>
+                </div>
+            </div>
+            
+            <div class="chat-container glass-card">
+                <h3>🧠 Neural Chat</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot">
+                        <div class="avatar">🧠</div>
+                        <div class="bubble">👋 Welcome to ASTRAVOX-AI! Ask me anything! 🚀</div>
+                    </div>
+                </div>
+                <div class="input-area">
+                    <input type="text" id="userInput" placeholder="Ask DeepSeek AI..." onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button onclick="sendMessage()">Send</button>
+                    <button class="voice-btn" onclick="startVoice()">🎤</button>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/deepseek-api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
