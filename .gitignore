@@ -1,19 +1,6 @@
-# Python
+node_modules/
 __pycache__/
 *.pyc
 *.db
-
-# Node
-node_modules/
-
-# Env
 .env
-
-# Windows
 desktop.ini
-
-# Logs
-logs/
-
-# Uploads
-uploads/
