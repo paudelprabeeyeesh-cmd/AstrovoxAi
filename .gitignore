@@ -1,6 +1,18 @@
-node_modules/
+# Python
 __pycache__/
 *.pyc
+*.pyo
 *.db
+
+# Environment
 .env
+
+# Node
+node_modules/
+
+# Windows
 desktop.ini
+Thumbs.db
+
+# Logs
+*.log
