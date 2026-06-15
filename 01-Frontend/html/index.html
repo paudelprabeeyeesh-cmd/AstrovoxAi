@@ -3,17 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AstrovoxAi Client Interface</title>
-    <link rel="stylesheet" href="css/main.css">
+    <title>ASTROVOX PRIME - Sovereign AI Operating System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .font-os { font-family: 'Orbitron', sans-serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(6, 182, 212, 0.3); border-radius: 4px; }
+        .glow-cyan { text-shadow: 0 0 12px rgba(34, 211, 238, 0.6); }
+    </style>
 </head>
-<body>
-    <div id="chat-container">
-        <div id="messages-view"></div>
-        <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Ask AstrovoxAi anything..." required>
-            <button type="submit">Send</button>
-        </form>
+<body class="bg-[#030712] text-slate-100 h-screen w-screen flex overflow-hidden selection:bg-cyan-500/30">
+
+    <div id="canvas-container" class="absolute inset-0 z-0 pointer-events-none"></div>
+
+    <aside class="w-80 h-full bg-[#050b18]/80 backdrop-blur-xl border-r border-slate-800/60 flex flex-col justify-between p-6 z-10">
+        <div>
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-fuchsia-600 shadow-lg shadow-cyan-500/20 flex items-center justify-center font-os font-bold text-lg text-slate-950">A</div>
+                <div>
+                    <h2 class="font-os font-black tracking-wider text-xl text-transparent bg-clip-text bg-gradient-to-r from-slate-100 to-slate-400">ASTROVOX<span class="text-xs font-bold text-cyan-400 tracking-tighter ml-1">PRIME</span></h2>
+                    <p class="text-[10px] text-slate-500 uppercase tracking-widest font-mono">SOVEREIGN AI v4.0</p>
+                </div>
+            </div>
+
+            <nav class="space-y-1.5">
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-950/40 to-transparent text-cyan-400 text-sm font-medium transition">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span> Neural Core
+                </button>
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-800 text-slate-400 hover:text-slate-200 text-sm font-medium transition">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> Consciousness Bridge
+                </button>
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-800 text-slate-400 hover:text-slate-200 text-sm font-medium transition">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> Cognitive Matrix
+                </button>
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-800 text-slate-400 hover:text-slate-200 text-sm font-medium transition">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> Neural Identity
+                </button>
+                <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-transparent hover:border-slate-800 text-slate-400 hover:text-slate-200 text-sm font-medium transition">
+                    <span class="w-2 h-2 rounded-full bg-slate-600"></span> System Config
+                </button>
+            </nav>
+        </div>
+
+        <div class="border-t border-slate-900 pt-5 space-y-3 font-mono text-xs">
+            <div class="flex justify-between text-slate-400">
+                <span>NEURAL ACTIVITY</span>
+                <span class="text-cyan-400 font-bold glow-cyan">87.5%</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+                <span>QUANTUM STATE</span>
+                <span class="text-emerald-400 font-bold">STABLE</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+                <span>LATENCY</span>
+                <span class="text-cyan-400 font-bold">14ms</span>
+            </div>
+            <div class="flex items-center gap-2 text-[11px] text-emerald-400/80 font-semibold pt-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                ASTROVOX CORE ACTIVE
+            </div>
+        </div>
+    </aside>
+
+    <div class="flex-1 h-full flex flex-col justify-between relative z-10">
+        
+        <header class="w-full p-6 flex justify-between items-center bg-gradient-to-b from-[#030712]/80 to-transparent backdrop-blur-xs">
+            <div class="flex items-baseline gap-4">
+                <div id="live-clock" class="font-os font-black text-3xl tracking-widest text-slate-100">12:37:11 PM</div>
+                <div id="live-date" class="text-xs text-slate-500 font-mono tracking-wider">Saturday, June 13, 2026</div>
+            </div>
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="text-slate-400 text-[10px]">NEURAL LINK ESTABLISHED</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 w-full px-8 grid grid-cols-12 gap-6 items-center">
+            
+            <div class="col-span-7 flex flex-col justify-center select-none pointer-events-none">
+                <h1 class="font-os font-black text-5xl tracking-[0.25em] bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-fuchsia-500 mb-2">
+                    ASTROVOX PRIME
+                </h1>
+                <p class="text-xs font-mono tracking-[0.4em] text-slate-500 uppercase">Sovereign Artificial Intelligence Operating System</p>
+                
+                <div class="mt-48 ml-40 font-os text-xs tracking-widest text-cyan-400/70 border-b border-cyan-500/20 pb-1 w-44">
+                    COGNITIVE ENGINE
+                </div>
+            </div>
+
+            <div class="col-span-5 h-[500px] bg-slate-950/40 border border-slate-800/50 backdrop-blur-lg rounded-2xl flex flex-col overflow-hidden shadow-2xl shadow-cyan-950/10">
+                <div class="px-4 py-3 border-b border-slate-800/40 bg-slate-900/30 flex justify-between items-center">
+                    <span class="text-xs font-mono font-semibold tracking-wider text-cyan-400">CONSCIOUSNESS LINK</span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-md shadow-cyan-400 animate-pulse"></span>
+                </div>
+
+                <main id="chat-window" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm">
+                    <div class="flex items-start">
+                        <div class="bg-cyan-950/30 border border-cyan-500/20 text-cyan-200 px-3 py-2 rounded-xl rounded-tl-none max-w-[85%] text-xs font-mono leading-relaxed">
+                            [CORE INIT] Secure quantum communications array operational. standing by for prompt sequence transmission.
+                        </div>
+                    </div>
+                </main>
+
+                <footer class="p-3 bg-slate-900/20 border-t border-slate-800/40">
+                    <form id="chat-form" class="flex gap-2">
+                        <input 
+                            type="text" 
+                            id="user-input" 
+                            placeholder="Type telemetry command..." 
+                            class="flex-1 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/80 transition font-mono"
+                            required
+                        >
+                        <button 
+                            type="submit" 
+                            class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-os font-black tracking-wide px-4 py-2 rounded-xl text-xs transition shadow-md shadow-cyan-500/10"
+                        >
+                            EXEC
+                        </button>
+                    </form>
+                </footer>
+            </div>
+        </div>
+
+        <footer class="p-4 bg-[#030712] border-t border-slate-900 text-[10px] text-slate-600 font-mono flex justify-between items-center px-8">
+            <div>SECURE CORE DEPLOYMENT // DATA LINK PORT: 8000</div>
+            <div>SYS STATUS: STABLE REGIME</div>
+        </footer>
     </div>
-    <script src="js/stream.js"></script>
+
+    <script>
+        const container = document.getElementById('canvas-container');
+        
+        const scene = new THREE.Scene();
+        // Move camera slightly right to make space for the left layout controls
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(-2, 0, 16);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Core Glowing Orb (Cognitive Engine Center)
+        const coreGeo = new THREE.SphereGeometry(2.2, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0x00f3ff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15
+        });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        // Position it right behind the "Cognitive Engine" text marker
+        core.position.set(-1, -1.2, 0);
+        scene.add(core);
+
+        // Generating Dense Holographic Particle Rings (Cyan & Fuchsia Mixture)
+        const count = 3500;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(count * 3);
+        const colors = new Float32Array(count * 3);
+
+        const colorCyan = new THREE.Color(0x06b6d4);
+        const colorFuchsia = new THREE.Color(0xd946ef);
+
+        for (let i = 0; i < count; i++) {
+            // Distribute points in layered orbital circles around the orb core
+            const angle = Math.random() * Math.PI * 2;
+            const radius = 3.5 + Math.random() * 4.5; 
+            
+            positions[i * 3]     = Math.cos(angle) * radius + (-1);
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 2.5 + (-1.2); 
+            positions[i * 3 + 2] = Math.sin(angle) * radius;
+
+            // Blend colors based on distance
+            const mixedColor = colorCyan.clone().lerp(colorFuchsia, Math.random());
+            colors[i * 3]     = mixedColor.r;
+            colors[i * 3 + 1] = mixedColor.g;
+            colors[i * 3 + 2] = mixedColor.b;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const mat = new THREE.PointsMaterial({
+            size: 0.05,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const particleCloud = new THREE.Points(geometry, mat);
+        scene.add(particleCloud);
+
+        // Render Frame Loop Animation
+        const animate = () => {
+            requestAnimationFrame(animate);
+            
+            core.rotation.y += 0.003;
+            core.rotation.x += 0.001;
+            
+            // Slow majestic orbital cloud spin
+            particleCloud.rotation.y += 0.0015;
+            particleCloud.rotation.z += 0.0004;
+
+            renderer.render(scene, camera);
+        };
+        animate();
+
+        // Responsive Resizing Engine
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+
+    <script>
+        // 1. Live Operating System Clock & Date Script
+        function updateClock() {
+            const now = new Date();
+            let hours = now.getHours();
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            
+            document.getElementById('live-clock').innerText = `${hours}:${minutes}:${seconds} ${ampm}`;
+            
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('live-date').innerText = now.toLocaleDateString('en-US', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 2. FastAPI Live Prompt Stream System Connection
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const chatWindow = document.getElementById('chat-window');
+
+        function appendMessage(text, isUser) {
+            const wrapper = document.createElement('div');
+            wrapper.className = isUser ? 'flex items-start justify-end' : 'flex items-start';
+            
+            const bubble = document.createElement('div');
+            bubble.className = isUser 
+                ? 'bg-slate-800 border border-slate-700 text-slate-100 px-3 py-2 rounded-xl rounded-tr-none text-xs font-mono max-w-[85%] shadow-md'
+                : 'bg-cyan-950/30 border border-cyan-500/20 text-cyan-200 px-3 py-2 rounded-xl rounded-tl-none text-xs font-mono max-w-[85%] shadow-md leading-relaxed';
+            
+            bubble.innerText = isUser ? `> ${text}` : `[ASTROVOX]: ${text}`;
+            wrapper.appendChild(bubble);
+            chatWindow.appendChild(wrapper);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            appendMessage(message, true);
+            userInput.value = '';
+
+            const thinking = document.createElement('div');
+            thinking.className = 'text-cyan-500/50 italic text-[11px] font-mono pl-2 animate-pulse';
+            thinking.innerText = ">> processing telemetry matrix stream...";
+            chatWindow.appendChild(thinking);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                thinking.remove();
+
+                if (data.response) {
+                    appendMessage(data.response, false);
+                } else {
+                    appendMessage("SYS CRIT: Corrupt telemetry structure pack payload.", false);
+                }
+            } catch (error) {
+                thinking.remove();
+                appendMessage("SYS LINK ERR: Unable to ping local core server on port 8000.", false);
+            }
+        });
+    </script>
 </body>
 </html>
