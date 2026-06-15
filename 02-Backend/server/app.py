@@ -48,8 +48,7 @@ def create_app():
 
     # Setup logging middleware
     setup_request_logging(app)
-    app_logger.info("🚀 Astravox AI Backend Initializing...")
-
+    app_logger.info("[READY] Astravox AI Backend Ready")
     CORS(app, origins="*", supports_credentials=True)
     app_logger.debug("CORS enabled")
 
