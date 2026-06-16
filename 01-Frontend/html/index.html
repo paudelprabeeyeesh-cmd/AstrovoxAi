@@ -11,6 +11,12 @@
         body { font-family: 'Inter', sans-serif; background-color: #02040a; }
         .font-os { font-family: 'Orbitron', sans-serif; }
         
+        /* Custom Scrollbar for Input Panel */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+
         /* Sci-Fi Loading Waveform Bars */
         .wave-bar { transition: height 0.15s ease-in-out; }
         .animating .wave-bar:nth-child(1) { animation: pulseWave 0.6s infinite alternate 0.1s; }
@@ -20,7 +26,7 @@
 
         @keyframes pulseWave {
             0% { height: 4px; }
-            100% { height: 28px; }
+            100% { height: 24px; }
         }
     </style>
 </head>
@@ -28,63 +34,83 @@
 
     <div id="canvas-container" class="absolute inset-0 z-0 pointer-events-none"></div>
 
-    <aside class="w-72 h-full bg-[#040814]/80 backdrop-blur-xl border-r border-slate-800/40 flex flex-col justify-between p-5 z-10">
-        <div class="space-y-6">
-            <div class="bg-[#070f24]/90 border border-slate-800/60 rounded-2xl p-4 flex flex-col items-start gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-500 to-fuchsia-500 shadow-lg shadow-cyan-500/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 4a2 2 0 114 0v1a2 2 0 002 2h3a2 2 0 012 2v3a2 2 0 01-2 2h-1a2 2 0 100 4h1a2 2 0 012 2v3a2 2 0 01-2 2h-3a2 2 0 01-2-2v-1a2 2 0 10-4 0v1a2 2 0 01-2 2H7a2 2 0 01-2-2v-3a2 2 0 012-2h1a2 2 0 100-4H7a2 2 0 01-2-2V9a2 2 0 012-2h3a2 2 0 002-2V4z"></path></svg>
+    <aside class="w-80 h-full bg-[#040814]/80 backdrop-blur-xl border-r border-slate-900 flex flex-col justify-between p-6 z-10">
+        <div class="space-y-7">
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-400 via-blue-500 to-fuchsia-500 shadow-lg shadow-cyan-500/10 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 21l8.944-8.944M18 10V4.243a1 1 0 00-.293-.707l-2.243-2.243a1 1 0 00-.707-.293H4.5A1.5 1.5 0 003 2.5v14A1.5 1.5 0 004.5 18h5.793M18 10h-4V6"></path></svg>
                 </div>
                 <div>
-                    <h2 class="font-os font-black tracking-wider text-base text-slate-100">ASTROVOX PRIME</h2>
-                    <p class="text-[10px] text-cyan-400/70 font-mono tracking-widest mt-0.5">TTS EDITION v5.0</p>
+                    <h2 class="font-os font-black tracking-wider text-sm text-slate-100 flex items-center gap-1.5">ASTROVOX <span class="text-xs font-normal text-fuchsia-400">PRIME</span></h2>
+                    <p class="text-[10px] text-slate-500 font-mono tracking-wider mt-0.5">SOVEREIGN AI v4.0</p>
                 </div>
             </div>
 
-            <nav class="space-y-1">
-                <button class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-950/30 to-transparent text-cyan-400 text-xs font-semibold tracking-wide transition">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
-                    Audio Core
+            <nav class="space-y-1.5">
+                <button class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl border border-cyan-500/20 bg-gradient-to-r from-cyan-950/40 to-transparent text-cyan-400 text-xs font-bold font-os tracking-wider transition">
+                    <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400"></span>
+                    Neural Core
+                </button>
+                <button class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-300 text-xs font-medium tracking-wide transition group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-slate-700"></span>
+                    Consciousness Bridge
+                </button>
+                <button class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-300 text-xs font-medium tracking-wide transition group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-slate-700"></span>
+                    Cognitive Matrix
+                </button>
+                <button class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-300 text-xs font-medium tracking-wide transition group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-slate-700"></span>
+                    Neural Identity
+                </button>
+                <button class="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-500 hover:text-slate-300 text-xs font-medium tracking-wide transition group">
+                    <span class="w-1.5 h-1.5 rounded-full bg-transparent group-hover:bg-slate-700"></span>
+                    System Config
                 </button>
             </nav>
         </div>
 
-        <div class="border-t border-slate-900 pt-4 space-y-2.5 font-mono text-[11px]">
+        <div class="border-t border-slate-900 pt-5 space-y-3 font-mono text-[11px]">
             <div class="flex justify-between text-slate-500"><span>NEURAL ACTIVITY</span><span id="telemetry-neural" class="text-cyan-400 font-bold">96.1%</span></div>
             <div class="flex justify-between text-slate-500"><span>QUANTUM STATE</span><span id="telemetry-state" class="text-cyan-400 font-bold">STABLE</span></div>
-            <div class="flex justify-between text-slate-500"><span>LATENCY</span><span id="telemetry-latency" class="text-cyan-400 font-bold">18ms</span></div>
+            <div class="flex justify-between text-slate-500"><span>LATENCY</span><span id="telemetry-latency" class="text-cyan-400 font-bold">14ms</span></div>
+            <div class="flex items-center gap-2 pt-2 border-t border-slate-900/40 text-[10px] text-emerald-400 font-bold tracking-wider">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                ASTROVOX CORE ACTIVE
+            </div>
         </div>
     </aside>
 
     <div class="flex-1 h-full flex flex-col justify-between p-6 relative z-10">
         
-        <header class="w-full flex justify-between items-start">
-            <div class="flex items-center gap-3 bg-[#040814]/60 border border-slate-800/40 px-4 py-2 rounded-xl backdrop-blur-md">
+        <header class="w-full flex justify-between items-center">
+            <div class="flex items-center gap-3 bg-[#040814]/60 border border-slate-900 px-4 py-2 rounded-xl backdrop-blur-md">
                 <span id="status-ping-dot" class="w-2 h-2 rounded-full bg-rose-500 shadow-md shadow-rose-500 animate-pulse"></span>
                 <span id="status-ping-text" class="font-os font-bold text-xs tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-fuchsia-500">ASTRAVOX // SYNCING</span>
             </div>
 
-            <div class="bg-[#040814]/60 border border-slate-800/40 px-5 py-2.5 rounded-xl backdrop-blur-md text-right min-w-[180px]">
+            <div class="bg-[#040814]/60 border border-slate-900 px-5 py-2.5 rounded-xl backdrop-blur-md text-right min-w-[190px]">
                 <div id="live-clock" class="font-os font-black text-xl tracking-wider text-cyan-400">00:00:00 AM</div>
-                <div id="live-date" class="text-[10px] text-slate-500 font-mono mt-0.5">Loading Orbit Metrics...</div>
+                <div id="live-date" class="text-[10px] text-slate-500 font-mono mt-0.5">Loading System Clock...</div>
             </div>
         </header>
 
         <div class="w-full grid grid-cols-12 gap-6 items-center flex-1 my-4">
-            <div class="col-span-6 flex flex-col justify-center pl-8 select-none pointer-events-none">
-                <h1 class="font-os font-black text-5xl tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300">
+            <div class="col-span-6 flex flex-col justify-center pl-6 select-none pointer-events-none">
+                <h1 class="font-os font-black text-5xl tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-300">
                     ASTRAVOX
                 </h1>
-                <p class="text-[10px] font-mono tracking-[0.45em] text-slate-500 uppercase mt-2">Sovereign Voice Synthesis Operating System</p>
+                <p class="text-[10px] font-mono tracking-[0.41em] text-slate-500 uppercase mt-2">Sovereign Voice Synthesis Operating System</p>
             </div>
 
-            <div class="col-span-6 h-[460px] bg-[#050a18]/70 border border-slate-800/60 backdrop-blur-xl rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl">
-                <div class="px-4 py-3 border-b border-slate-800/40 bg-slate-900/40 flex justify-between items-center">
+            <div class="col-span-6 h-[460px] bg-[#050a18]/70 border border-slate-900 backdrop-blur-xl rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl">
+                <div class="px-4 py-3 border-b border-slate-900 bg-slate-950/40 flex justify-between items-center">
                     <div class="flex items-center gap-2">
-                        <span class="text-xs">🛰️</span>
-                        <h3 class="text-xs font-mono font-bold text-slate-200 tracking-wider">Vocal Synthesis Core</h3>
+                        <span class="text-xs">🧠</span>
+                        <h3 class="text-xs font-mono font-bold text-slate-300 tracking-wider">AI Nexus // Vocal Core</h3>
                     </div>
                     
-                    <div id="waveform-monitor" class="flex items-end gap-0.5 h-6 px-2">
+                    <div id="waveform-monitor" class="flex items-end gap-0.5 h-5 px-2">
                         <span class="wave-bar w-0.5 bg-cyan-400 rounded-full h-1"></span>
                         <span class="wave-bar w-0.5 bg-cyan-400 rounded-full h-2"></span>
                         <span class="wave-bar w-0.5 bg-cyan-400 rounded-full h-1"></span>
@@ -94,24 +120,24 @@
 
                 <main class="flex-1 p-5 space-y-4 overflow-y-auto">
                     <div class="space-y-1.5">
-                        <label class="text-[10px] font-mono text-slate-500 tracking-widest block uppercase">Select Matrix Voice Identity</label>
-                        <select id="voice-matrix-select" class="w-full bg-slate-900/90 border border-slate-800 text-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-cyan-500 font-mono">
+                        <label class="text-[10px] font-mono text-slate-500 tracking-widest block uppercase">Voice Matrix Target Identity</label>
+                        <select id="voice-matrix-select" class="w-full bg-slate-950 border border-slate-800 text-slate-300 rounded-xl px-3 py-2.5 text-xs focus:outline-none focus:border-cyan-500 font-mono">
                             <option value="nova">Nova (Default Atmospheric Female)</option>
                         </select>
                     </div>
 
                     <div class="space-y-1.5 flex-1">
-                        <label class="text-[10px] font-mono text-slate-500 tracking-widest block uppercase">Transmission Input Payload</label>
+                        <label class="text-[10px] font-mono text-slate-500 tracking-widest block uppercase">Transmission Payload Parameters</label>
                         <textarea 
                             id="tts-input-payload" 
-                            placeholder="Type text vector parameters here to command Astrovox voice translation services..." 
-                            class="w-full h-44 bg-slate-900/60 border border-slate-800/80 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono resize-none leading-relaxed"
+                            placeholder="Type raw text parameters here to command Astrovox voice synthesis translation modules..." 
+                            class="w-full h-40 bg-slate-950/40 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono resize-none leading-relaxed"
                         ></textarea>
                     </div>
                 </main>
 
-                <footer class="p-3 bg-slate-950/50 border-t border-slate-900/60 flex items-center justify-between gap-4">
-                    <span id="console-readout" class="text-[10px] font-mono text-slate-600 truncate max-w-xs">>> Grid Link Standby Mode.</span>
+                <footer class="p-3 bg-slate-950/70 border-t border-slate-900 flex items-center justify-between gap-4">
+                    <span id="console-readout" class="text-[10px] font-mono text-slate-500 truncate max-w-[240px]">>> Console Grid Standby Mode.</span>
                     <button 
                         onclick="synthesizeTransmission()" 
                         id="transmission-btn"
@@ -125,10 +151,10 @@
 
         <audio id="core-audio-pipeline" class="hidden"></audio>
 
-        <footer class="w-full max-w-3xl flex gap-4 items-center justify-start mb-2 pl-4">
-            <div class="w-24 h-16 bg-[#040814]/50 border border-slate-800/40 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed"><span class="text-xl">🧠</span></div>
-            <div class="w-24 h-16 bg-[#040814]/50 border border-slate-800/40 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed"><span class="text-xl">💾</span></div>
-            <div class="w-24 h-16 bg-[#040814]/50 border border-slate-800/40 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed"><span class="text-xl text-yellow-500">⚡</span></div>
+        <footer class="w-full max-w-3xl flex gap-4 items-center justify-start mb-2 pl-2">
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base">🧠</div>
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base">💾</div>
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base text-yellow-500/80">⚡</div>
         </footer>
     </div>
 
@@ -142,19 +168,22 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        const coreGeo = new THREE.SphereGeometry(2.2, 64, 64);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.85 });
+        // Cognitive Core Engine Sphere
+        const coreGeo = new THREE.SphereGeometry(2.2, 48, 48);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         core.position.set(2.4, -1.8, 0);
         scene.add(core);
 
-        const orangeGeo = new THREE.SphereGeometry(1.1, 32, 32);
+        // Secondary Planet Unit
+        const orangeGeo = new THREE.SphereGeometry(1.1, 24, 24);
         const orangeMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
         const orangePlanet = new THREE.Mesh(orangeGeo, orangeMat);
         orangePlanet.position.set(-1.0, 0.5, -2);
         scene.add(orangePlanet);
 
-        const particleCount = 2000;
+        // RAM FIX: Reduced from 2000 down to 400 particles to eliminate system lag
+        const particleCount = 400; 
         const ringGeometry = new THREE.BufferGeometry();
         const ringPositions = new Float32Array(particleCount * 3);
         for (let i = 0; i < particleCount; i++) {
@@ -165,29 +194,38 @@
             ringPositions[i * 3 + 2] = Math.sin(angle) * radius * 0.9;
         }
         ringGeometry.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
-        const orbitRing = new THREE.Points(ringGeometry, new THREE.PointsMaterial({ color: 0xfacc15, size: 0.03, transparent: true, opacity: 0.5 }));
+        
+        // Scaled particle dimensions up slightly to keep density appearance looking rich
+        const orbitRing = new THREE.Points(ringGeometry, new THREE.PointsMaterial({ color: 0xfacc15, size: 0.05, transparent: true, opacity: 0.55 }));
         scene.add(orbitRing);
 
         const animate = () => {
             requestAnimationFrame(animate);
-            orbitRing.rotation.y += 0.001;
-            orangePlanet.position.x += Math.sin(Date.now() * 0.0005) * 0.002;
+            orbitRing.rotation.y += 0.0008;
+            orangePlanet.position.x += Math.sin(Date.now() * 0.0005) * 0.0015;
             renderer.render(scene, camera);
         };
         animate();
+
+        // Screen Window Auto-Resize Handler
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
     </script>
 
     <script>
         const BACKEND_URL = "http://127.0.0.1:5000";
 
-        // Render HUD Date/Clock Real-time Matrices
+        // Clock Matrix Operations
         setInterval(() => {
             const d = new Date();
             document.getElementById('live-clock').innerText = d.toLocaleTimeString('en-US', { hour12: true });
             document.getElementById('live-date').innerText = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
         }, 1000);
 
-        // Fetch Valid Backend Voices
+        // Fetch Valid Voices from Server Matrix
         async function initializeVoiceMatrix() {
             try {
                 const res = await fetch(`${BACKEND_URL}/health/readiness`);
@@ -216,7 +254,7 @@
         }
         initializeVoiceMatrix();
 
-        // Send Text Prompt to OpenAI Server & Play Audio Stream Result
+        // Process Neural Transmission Generation
         async function synthesizeTransmission() {
             const textInput = document.getElementById('tts-input-payload').value.trim();
             const chosenVoice = document.getElementById('voice-matrix-select').value;
@@ -232,7 +270,7 @@
 
             try {
                 btn.disabled = true;
-                readout.innerText = ">> Querying cloud matrix neural vocal synapses...";
+                readout.innerText = ">> Requesting neural audio synthesis pipeline...";
                 
                 const response = await fetch(`${BACKEND_URL}/api/tts/generate`, {
                     method: 'POST',
@@ -240,16 +278,14 @@
                     body: JSON.stringify({ text: textInput, voice: chosenVoice })
                 });
 
-                if(!response.ok) throw new Error("Server rejected transmission packaging.");
+                if(!response.ok) throw new Error("Server rejected voice parameters.");
 
-                // Convert server output to an actionable raw binary audio object link
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 
                 audioPlayer.src = audioUrl;
-                readout.innerText = ">> Synaptic lock secure. Streaming vocal telemetry...";
+                readout.innerText = ">> Channel locked. Streaming audio matrix...";
                 
-                // Active visual animations
                 monitor.classList.add('animating');
                 audioPlayer.play();
 
