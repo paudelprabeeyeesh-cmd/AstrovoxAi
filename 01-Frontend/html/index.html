@@ -11,13 +11,11 @@
         body { font-family: 'Inter', sans-serif; background-color: #02040a; }
         .font-os { font-family: 'Orbitron', sans-serif; }
         
-        /* Custom Scrollbar for Input Panel */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 99px; }
         ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
 
-        /* Sci-Fi Loading Waveform Bars */
         .wave-bar { transition: height 0.15s ease-in-out; }
         .animating .wave-bar:nth-child(1) { animation: pulseWave 0.6s infinite alternate 0.1s; }
         .animating .wave-bar:nth-child(2) { animation: pulseWave 0.4s infinite alternate 0.3s; }
@@ -34,6 +32,7 @@
 
     <div id="canvas-container" class="absolute inset-0 z-0 pointer-events-none"></div>
 
+    <!-- SIDEBAR OPERATIONS MATRIX -->
     <aside class="w-80 h-full bg-[#040814]/80 backdrop-blur-xl border-r border-slate-900 flex flex-col justify-between p-6 z-10">
         <div class="space-y-7">
             <div class="flex items-center gap-3.5">
@@ -71,9 +70,9 @@
         </div>
 
         <div class="border-t border-slate-900 pt-5 space-y-3 font-mono text-[11px]">
-            <div class="flex justify-between text-slate-500"><span>NEURAL ACTIVITY</span><span id="telemetry-neural" class="text-cyan-400 font-bold">96.1%</span></div>
-            <div class="flex justify-between text-slate-500"><span>QUANTUM STATE</span><span id="telemetry-state" class="text-cyan-400 font-bold">STABLE</span></div>
-            <div class="flex justify-between text-slate-500"><span>LATENCY</span><span id="telemetry-latency" class="text-cyan-400 font-bold">14ms</span></div>
+            <div class="flex justify-between text-slate-500"><span>NEURAL ACTIVITY</span><span class="text-cyan-400 font-bold">96.1%</span></div>
+            <div class="flex justify-between text-slate-500"><span>QUANTUM STATE</span><span class="text-cyan-400 font-bold">STABLE</span></div>
+            <div class="flex justify-between text-slate-500"><span>LATENCY</span><span class="text-cyan-400 font-bold">14ms</span></div>
             <div class="flex items-center gap-2 pt-2 border-t border-slate-900/40 text-[10px] text-emerald-400 font-bold tracking-wider">
                 <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 ASTROVOX CORE ACTIVE
@@ -81,8 +80,8 @@
         </div>
     </aside>
 
+    <!-- OPERATIONS SPACE -->
     <div class="flex-1 h-full flex flex-col justify-between p-6 relative z-10">
-        
         <header class="w-full flex justify-between items-center">
             <div class="flex items-center gap-3 bg-[#040814]/60 border border-slate-900 px-4 py-2 rounded-xl backdrop-blur-md">
                 <span id="status-ping-dot" class="w-2 h-2 rounded-full bg-rose-500 shadow-md shadow-rose-500 animate-pulse"></span>
@@ -91,7 +90,7 @@
 
             <div class="bg-[#040814]/60 border border-slate-900 px-5 py-2.5 rounded-xl backdrop-blur-md text-right min-w-[190px]">
                 <div id="live-clock" class="font-os font-black text-xl tracking-wider text-cyan-400">00:00:00 AM</div>
-                <div id="live-date" class="text-[10px] text-slate-500 font-mono mt-0.5">Loading System Clock...</div>
+                <div id="live-date" class="text-[10px] text-slate-500 font-mono mt-0.5">Syncing Coordinates...</div>
             </div>
         </header>
 
@@ -103,13 +102,13 @@
                 <p class="text-[10px] font-mono tracking-[0.41em] text-slate-500 uppercase mt-2">Sovereign Voice Synthesis Operating System</p>
             </div>
 
+            <!-- NEXUS CONTROL PANEL -->
             <div class="col-span-6 h-[460px] bg-[#050a18]/70 border border-slate-900 backdrop-blur-xl rounded-2xl flex flex-col justify-between overflow-hidden shadow-2xl">
                 <div class="px-4 py-3 border-b border-slate-900 bg-slate-950/40 flex justify-between items-center">
                     <div class="flex items-center gap-2">
                         <span class="text-xs">🧠</span>
                         <h3 class="text-xs font-mono font-bold text-slate-300 tracking-wider">AI Nexus // Vocal Core</h3>
                     </div>
-                    
                     <div id="waveform-monitor" class="flex items-end gap-0.5 h-5 px-2">
                         <span class="wave-bar w-0.5 bg-cyan-400 rounded-full h-1"></span>
                         <span class="wave-bar w-0.5 bg-cyan-400 rounded-full h-2"></span>
@@ -130,7 +129,7 @@
                         <label class="text-[10px] font-mono text-slate-500 tracking-widest block uppercase">Transmission Payload Parameters</label>
                         <textarea 
                             id="tts-input-payload" 
-                            placeholder="Type raw text parameters here to command Astrovox voice synthesis translation modules..." 
+                            placeholder="Enter text parameters here to request voice translation transmission vectors..." 
                             class="w-full h-40 bg-slate-950/40 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-500/50 font-mono resize-none leading-relaxed"
                         ></textarea>
                     </div>
@@ -152,12 +151,13 @@
         <audio id="core-audio-pipeline" class="hidden"></audio>
 
         <footer class="w-full max-w-3xl flex gap-4 items-center justify-start mb-2 pl-2">
-            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base">🧠</div>
-            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base">💾</div>
-            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md cursor-not-allowed text-base text-yellow-500/80">⚡</div>
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md text-base">🧠</div>
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md text-base">💾</div>
+            <div class="w-20 h-14 bg-[#040814]/40 border border-slate-900 rounded-xl flex items-center justify-center backdrop-blur-md text-base text-yellow-500/80">⚡</div>
         </footer>
     </div>
 
+    <!-- THREE.JS CRITICAL ENGINE (GRAPHICS DISENGAGED FOR RAM CONSERVATION) -->
     <script>
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
@@ -168,46 +168,13 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         container.appendChild(renderer.domElement);
 
-        // Cognitive Core Engine Sphere
-        const coreGeo = new THREE.SphereGeometry(2.2, 48, 48);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.8 });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        core.position.set(2.4, -1.8, 0);
-        scene.add(core);
+        // Graphics Loop has been intentionally deactivated to instantly eliminate CPU/RAM lag
+        // const animate = () => {
+        //     requestAnimationFrame(animate);
+        //     renderer.render(scene, camera);
+        // };
+        // animate();
 
-        // Secondary Planet Unit
-        const orangeGeo = new THREE.SphereGeometry(1.1, 24, 24);
-        const orangeMat = new THREE.MeshBasicMaterial({ color: 0xe11d48 });
-        const orangePlanet = new THREE.Mesh(orangeGeo, orangeMat);
-        orangePlanet.position.set(-1.0, 0.5, -2);
-        scene.add(orangePlanet);
-
-        // RAM FIX: Reduced from 2000 down to 400 particles to eliminate system lag
-        const particleCount = 400; 
-        const ringGeometry = new THREE.BufferGeometry();
-        const ringPositions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < particleCount; i++) {
-            const angle = (i / particleCount) * Math.PI * 2;
-            const radius = 6.0 + Math.random() * 1.5;
-            ringPositions[i * 3]     = Math.cos(angle) * radius * 0.95; 
-            ringPositions[i * 3 + 1] = (Math.random() - 0.5) * 0.25 + (Math.cos(angle) * radius * 0.15);      
-            ringPositions[i * 3 + 2] = Math.sin(angle) * radius * 0.9;
-        }
-        ringGeometry.setAttribute('position', new THREE.BufferAttribute(ringPositions, 3));
-        
-        // Scaled particle dimensions up slightly to keep density appearance looking rich
-        const orbitRing = new THREE.Points(ringGeometry, new THREE.PointsMaterial({ color: 0xfacc15, size: 0.05, transparent: true, opacity: 0.55 }));
-        scene.add(orbitRing);
-
-        const animate = () => {
-            requestAnimationFrame(animate);
-            orbitRing.rotation.y += 0.0008;
-            orangePlanet.position.x += Math.sin(Date.now() * 0.0005) * 0.0015;
-            renderer.render(scene, camera);
-        };
-        animate();
-
-        // Screen Window Auto-Resize Handler
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
@@ -215,17 +182,16 @@
         });
     </script>
 
+    <!-- DATA STREAM LINK BRIDGE -->
     <script>
         const BACKEND_URL = "http://127.0.0.1:5000";
 
-        // Clock Matrix Operations
         setInterval(() => {
             const d = new Date();
             document.getElementById('live-clock').innerText = d.toLocaleTimeString('en-US', { hour12: true });
             document.getElementById('live-date').innerText = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
         }, 1000);
 
-        // Fetch Valid Voices from Server Matrix
         async function initializeVoiceMatrix() {
             try {
                 const res = await fetch(`${BACKEND_URL}/health/readiness`);
@@ -254,7 +220,6 @@
         }
         initializeVoiceMatrix();
 
-        // Process Neural Transmission Generation
         async function synthesizeTransmission() {
             const textInput = document.getElementById('tts-input-payload').value.trim();
             const chosenVoice = document.getElementById('voice-matrix-select').value;
@@ -270,7 +235,7 @@
 
             try {
                 btn.disabled = true;
-                readout.innerText = ">> Requesting neural audio synthesis pipeline...";
+                readout.innerText = ">> Requesting neural voice synthesis loop...";
                 
                 const response = await fetch(`${BACKEND_URL}/api/tts/generate`, {
                     method: 'POST',
@@ -278,13 +243,13 @@
                     body: JSON.stringify({ text: textInput, voice: chosenVoice })
                 });
 
-                if(!response.ok) throw new Error("Server rejected voice parameters.");
+                if(!response.ok) throw new Error("Server communication fault.");
 
                 const audioBlob = await response.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
                 
                 audioPlayer.src = audioUrl;
-                readout.innerText = ">> Channel locked. Streaming audio matrix...";
+                readout.innerText = ">> Connection stable. Channeling audio matrix...";
                 
                 monitor.classList.add('animating');
                 audioPlayer.play();
