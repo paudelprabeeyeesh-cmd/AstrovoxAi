@@ -1,78 +1,80 @@
 import os
 import io
+from pathlib import Path
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load environmental configs
-load_dotenv()
+# Path Automation: Locates the .env file in the root directory
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+load_dotenv(dotenv_path=BASE_DIR / ".env")
 
 app = Flask(__name__)
-# Enable CORS so your local 01-Frontend files can stream audio safely
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+# Enable cross-origin streaming for the local frontend file
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 
-# Initialize OpenAI Client
+# Instantiate Cloud Intelligence Engine
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", "")
 client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
 
 @app.route("/health/readiness", methods=["GET"])
 def readiness():
-    """HUD Heartbeat check."""
+    """HUD Connectivity Heartbeat Check."""
     return jsonify({
         "status": "healthy",
-        "engine": "Flask TTS Core",
+        "engine": "Astrovox TTS Pipeline Core",
         "telemetry": {
             "neural_activity": "96.1%",
-            "latency": "14ms",
-            "quantum_state": "STABLE"
+            "quantum_state": "STABLE",
+            "latency": "14ms"
         }
     })
 
 @app.route("/api/tts/voices", methods=["GET"])
 def get_voices():
-    """Returns available high-fidelity vocal profiles."""
+    """Provides valid vocal profile matrices to the UI selector."""
     return jsonify([
-        {"name": "alloy", "gender": "neutral", "desc": "Balanced and versatile"},
-        {"name": "echo", "gender": "male", "desc": "Crisp and authoritative"},
-        {"name": "nova", "gender": "female", "desc": "Energetic and bright"},
-        {"name": "shimmer", "gender": "female", "desc": "Professional and clear"}
+        {"name": "alloy", "desc": "Neutral, balanced, and highly versatile"},
+        {"name": "echo", "desc": "Crisp, authoritative male voice matrix"},
+        {"name": "nova", "desc": "Bright, energetic female atmospheric profile"},
+        {"name": "shimmer", "desc": "Clear, professional female vocal array"}
     ])
 
 @app.route("/api/tts/generate", methods=["POST"])
 def generate_tts():
-    """Converts cockpit instructions into live audio telemetry streams."""
+    """Converts frontend text vectors into binary MP3 streaming audio payloads."""
     if not client:
-        return jsonify({"error": "OpenAI client offline. Please configure your OPENAI_API_KEY."}), 500
+        return jsonify({"error": "OpenAI Client Offline. Check your root .env configuration."}), 500
 
     data = request.get_json() or {}
     text = data.get("text", "").strip()
     voice = data.get("voice", "nova").lower()
 
     if not text:
-        return jsonify({"error": "Vocal transmission input buffer empty."}), 400
+        return jsonify({"error": "Empty input matrix reported by frontend."}), 400
 
     try:
-        # Request binary audio generation from OpenAI TTS Engine
+        # Request voice synthesis from cloud matrix
         response = client.audio.speech.create(
             model="tts-1",
             voice=voice,
             input=text
         )
         
-        # Read the raw byte data into memory
+        # Stream raw binary directly from memory buffer
         audio_buffer = io.BytesIO(response.content)
         audio_buffer.seek(0)
         
         return send_file(
             audio_buffer,
             mimetype="audio/mpeg",
-            as_attachment=False,
-            download_name="transmission.mp3"
+            as_attachment=False
         )
 
     except Exception as e:
-        return jsonify({"error": f"Vocal synthesis matrix failed: {str(e)}"}), 500
+        return jsonify({"error": f"Synthesis pipeline breakdown: {str(e)}"}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Debug deactivated to minimize baseline RAM usage
+    app.run(host="127.0.0.1", port=5000, debug=False)
