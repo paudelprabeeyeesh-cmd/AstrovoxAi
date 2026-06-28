@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import Auth from './auth'
-import Dashboard from './Dashboard'
 
-function App() {
+export default function ProtectedRoute({ children }) {
   const [session, setSession] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -57,10 +55,8 @@ function App() {
   }
 
   if (!session) {
-    return <Auth />
+    return null // Auth component will be shown by parent
   }
 
-  return <Dashboard session={session} />
+  return children
 }
-
-export default App
