@@ -1,4 +1,5 @@
 """Shared authentication helpers for FastAPI routers."""
+
 from fastapi import HTTPException, status
 
 from .supabase_client import get_supabase
