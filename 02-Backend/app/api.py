@@ -1,43 +1,16 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Header, HTTPException, status
-from database import get_user_profile, get_user_memory, get_conversations
-from datetime import datetime
+
+from .auth_utils import get_user_id_from_token
+from .database import (
+    get_user_profile,
+    get_user_memory,
+    get_conversations,
+    save_memory,
+)
 
 router = APIRouter(prefix="/api", tags=["api"])
-
-# Helper function to extract user ID from token
-def get_user_id_from_token(authorization: str) -> str:
-    """Extract user ID from authorization header"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    try:
-        from supabase import create_client
-        from dotenv import load_dotenv
-        import os
-        load_dotenv()
-        
-        SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
-        SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        
-        token = authorization.replace("Bearer ", "")
-        response = supabase.auth.get_user(token)
-        
-        if not response.user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token"
-            )
-        
-        return str(response.user.id)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
 
 @router.get("/status")
 async def api_status():
@@ -46,7 +19,7 @@ async def api_status():
         "status": "OK",
         "service": "astravox-ai-api",
         "version": "2.0.0",
-        "timestamp": datetime.utcnow().isoformat() + 'Z'
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @router.get("/me")
@@ -122,7 +95,6 @@ async def save_user_memory(content: str, importance: int = 1, authorization: str
     user_id = get_user_id_from_token(authorization)
     
     try:
-        from database import save_memory
         memory = await save_memory(user_id, content, importance)
         return {
             "status": "OK",

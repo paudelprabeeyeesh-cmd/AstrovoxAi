@@ -1,19 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel, EmailStr
-from supabase import create_client
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, EmailStr
 
-# Initialize Supabase client
-SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
-SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
+from .supabase_client import get_supabase
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("Supabase credentials not configured")
-
-supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+supabase = get_supabase()
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 

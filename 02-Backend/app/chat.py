@@ -1,7 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel
 from typing import Optional, List
-from database import (
+import os
+
+from openai import OpenAI
+
+from .auth_utils import get_user_id_from_token
+from .database import (
     create_conversation,
     get_conversations,
     get_conversation,
@@ -10,10 +15,9 @@ from database import (
     get_messages,
     get_recent_messages,
     get_user_memory,
-    save_memory
+    save_memory,
+    delete_conversation,
 )
-import os
-from openai import OpenAI
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -37,40 +41,6 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     created_at: str
-
-# Helper function to extract user ID from token
-def get_user_id_from_token(authorization: str) -> str:
-    """Extract user ID from authorization header"""
-    if not authorization:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header required"
-        )
-    
-    try:
-        from supabase import create_client
-        from dotenv import load_dotenv
-        load_dotenv()
-        
-        SUPABASE_URL = os.getenv("VITE_SUPABASE_URL")
-        SUPABASE_KEY = os.getenv("VITE_SUPABASE_ANON_KEY")
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        
-        token = authorization.replace("Bearer ", "")
-        response = supabase.auth.get_user(token)
-        
-        if not response.user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token"
-            )
-        
-        return str(response.user.id)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token"
-        )
 
 @router.post("/conversations")
 async def create_new_conversation(request: CreateConversationRequest, authorization: str = Header(None)):
@@ -290,7 +260,6 @@ async def delete_conversation_route(conversation_id: int, authorization: str = H
                 detail="Conversation not found"
             )
         
-        from database import delete_conversation
         await delete_conversation(conversation_id)
         
         return {

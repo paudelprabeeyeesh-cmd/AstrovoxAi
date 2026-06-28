@@ -1,11 +1,14 @@
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from auth import router as auth_router
-from chat import router as chat_router
-from api import router as api_router
-from memory import router as memory_router
 import os
 from dotenv import load_dotenv
+
+from .auth import router as auth_router
+from .chat import router as chat_router
+from .api import router as api_router
+from .memory import router as memory_router
 
 load_dotenv()
 
@@ -54,7 +57,7 @@ async def readiness_check():
     """Kubernetes readiness probe"""
     return {
         "status": "ready",
-        "timestamp": __import__('datetime').datetime.utcnow().isoformat() + 'Z'
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/health/liveness")
@@ -62,7 +65,7 @@ async def liveness_check():
     """Kubernetes liveness probe"""
     return {
         "status": "alive",
-        "timestamp": __import__('datetime').datetime.utcnow().isoformat() + 'Z'
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/")
