@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import os
 
@@ -28,14 +28,14 @@ client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Pydantic models
 class CreateConversationRequest(BaseModel):
-    title: Optional[str] = None
-    model: Optional[str] = "gpt-4"
+    title: Optional[str] = Field(default=None, max_length=200)
+    model: Optional[str] = Field(default="gpt-4", max_length=64)
 
 
 class SendMessageRequest(BaseModel):
     conversation_id: int
-    message: str
-    model: Optional[str] = "gpt-4"
+    message: str = Field(min_length=1, max_length=8000)
+    model: Optional[str] = Field(default="gpt-4", max_length=64)
 
 
 class MessageResponse(BaseModel):
@@ -156,20 +156,21 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
+        # Fetch prior history BEFORE persisting the new message so the current
+        # turn is not duplicated in the prompt (it is appended explicitly below).
+        history = await get_recent_messages(request.conversation_id, limit=10)
+
         # Save user message
         user_msg = await create_message(
             request.conversation_id, user_id, "user", request.message
         )
 
-        # Get conversation history
-        messages = await get_recent_messages(request.conversation_id, limit=10)
-
         # Get user memory for context
         memory = await get_user_memory(user_id, limit=5)
 
-        # Build context
+        # Build context from prior turns
         context_messages = [
-            {"role": msg["role"], "content": msg["content"]} for msg in messages
+            {"role": msg["role"], "content": msg["content"]} for msg in history
         ]
 
         # Add memory as system context

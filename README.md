@@ -24,15 +24,47 @@ ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelli
 
 ## Technology Stack
 
-- **Frontend**: React, Vite, TailwindCSS
-- **Backend**: FastAPI, Python
+- **Frontend**: React 18, Vite 5
+- **Backend**: FastAPI, Python 3.11+
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **AI Integration**: OpenAI API
+- **Rate limiting**: slowapi (per-client-IP)
 
 ## Getting Started
 
-To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.md) guide.
+### Prerequisites
+- Node.js 20+
+- Python 3.11+
+- A Supabase project and an OpenAI API key
+
+### Setup
+```bash
+# 1. Configure environment
+cp .env.example .env   # fill in Supabase + OpenAI values
+
+# 2. Frontend
+npm ci
+npm run dev            # Vite dev server on http://localhost:5173
+
+# 3. Backend (separate terminal)
+pip install -r 02-Backend/requirements.txt
+npm run backend        # uvicorn app.main:app on http://localhost:8000
+```
+
+### Database
+Apply the schema and migrations in your Supabase SQL editor (in order):
+1. `database/schemas/supabase_setup.sql`
+2. `database/migrations/0001_indexes_and_signup_trigger.sql` (idempotent — safe to re-run)
+
+### Quality checks
+```bash
+npm run build                                   # frontend production build
+(cd 02-Backend && python -m flake8 app tests)   # backend lint
+(cd 02-Backend && python -m pytest -q)          # backend tests
+```
+
+For deployment, see [DEPLOYMENT.md](DEPLOYMENT.md). For more detail, refer to [SETUP.md](SETUP.md).
 
 ## API Documentation
 
@@ -47,8 +79,9 @@ AstrovoxAi/
 │   ├── app/                # FastAPI application modules (auth, chat, api, memory, database)
 │   └── requirements.txt    # Python dependencies
 ├── database/               # Database schema and migration scripts
-│   └── schemas/
-├── .env                    # Environment variables (local configuration)
+│   ├── schemas/            # supabase_setup.sql (tables, RLS, policies)
+│   └── migrations/         # idempotent migrations (indexes, signup trigger)
+├── .github/workflows/      # CI: frontend build, backend lint/tests, secret scan
 ├── .env.example            # Example environment variables
 ├── package.json            # Frontend dependencies and scripts
 ├── vite.config.js          # Vite build configuration
@@ -58,6 +91,13 @@ AstrovoxAi/
 ├── API.md                  # API documentation
 └── ROADMAP.md              # Future development roadmap
 ```
+
+## Continuous Integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
+- **Frontend build** — `npm ci` + `npm run build`
+- **Backend lint & tests** — `flake8` + `pytest`
+- **Secret scan** — gitleaks
 
 ## Contributing
 

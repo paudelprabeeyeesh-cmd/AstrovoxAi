@@ -4,6 +4,62 @@ All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
+## [Unreleased] — Production hardening pass (builds on PR #3)
+
+### Added
+- **CI/CD** — `.github/workflows/ci.yml` runs on push/PR to `main`: frontend
+  build (`npm ci` + `npm run build`), backend lint + tests (`flake8` + `pytest`),
+  and a **gitleaks** secret scan.
+- **Rate limiting** — `slowapi` per-client-IP limiter on all endpoints, default
+  `120/minute`, configurable via `RATE_LIMIT`. Returns HTTP 429 when exceeded.
+- **Structured logging** — `app/logging_config.py` (`configure_logging`, level via
+  `LOG_LEVEL`). Replaced all 15 `print(...)` error statements in `database.py`
+  with a module `logger`.
+- **Input validation** — pydantic `Field` constraints: chat `message`
+  (1–8000 chars), `model`/`title` length caps, memory `content` (1–4000) and
+  `importance` (1–5). Invalid bodies now return 422 instead of failing deeper.
+- **Deployment** — `02-Backend/Dockerfile` (non-root user, healthcheck) +
+  `.dockerignore`; new `DEPLOYMENT.md` (env vars, DB, Docker, frontend, CI,
+  security checklist).
+- **Tests** — `tests/test_validation.py` (4 cases). Suite now **9 tests pass**.
+
+### Fixed
+- **Exception-swallowing bug** in `memory.auto_extract_memory`: a generic
+  `except Exception` re-wrapped the "OpenAI not configured" `HTTPException` as a
+  500. Added `except HTTPException: raise`.
+- **Rate limiting behind a proxy** (review): `key_func` now reads the first
+  `X-Forwarded-For` hop when `TRUST_PROXY=true`, so users aren't collapsed into
+  one bucket behind a load balancer. Defaults to the direct client IP.
+- **CORS missing DELETE** (review): `allow_methods` now includes `DELETE`; the
+  `DELETE /chat/conversations/{id}` endpoint previously failed browser preflight.
+- **`get_recent_messages` returned the *oldest* messages** (review): it ordered
+  ascending then took the first N. Now orders newest-first, limits, and reverses
+  to chronological order — fixing AI context quality and memory extraction.
+- **User message duplicated in the OpenAI prompt** (review): history is now
+  fetched *before* the new message is persisted, so the current turn isn't both
+  pulled from history and appended again.
+
+### Changed
+- `README.md` corrected (removed non-existent TailwindCSS; added setup, DB,
+  CI, deployment sections). `.env.example` dropped unused `USE_MOCK_AI` /
+  `SECRET_KEY` and documented `LOG_LEVEL` / `RATE_LIMIT`.
+
+### Deferred (documented, not safe to apply)
+- **esbuild dev-server advisory (GHSA-67mh-4wv8-2f99, moderate).** Only affects
+  the Vite dev server, never production builds. The npm-proposed fix upgrades
+  Vite 5 → 8 (rolldown), which **breaks `npm run build`** (verified — reverted).
+  Tracked for a deliberate framework-upgrade PR.
+
+### Verification (this pass)
+- `npm run build` → ✅ (81 modules, exit 0)
+- `python -m flake8 app tests` → ✅ clean
+- `python -m pytest -q` → ✅ 9 passed
+- backend boot + live `/health`, `/`, `/api/me` (401), `/docs` → ✅
+- `npm audit` → 2 advisories remain (Vite/esbuild dev-server only; see Deferred)
+- `docker build` of the new Dockerfile → **NOT VERIFIED** (no Docker in this environment)
+
+---
+
 ## [Unreleased] — Production-readiness pass
 
 ### Fixed
