@@ -15,6 +15,7 @@ Set these in your hosting platform (never commit real values). See `.env.example
 | `ALLOWED_ORIGINS` | backend | Comma-separated allowed CORS origins (your deployed frontend URL) |
 | `LOG_LEVEL` | backend | `DEBUG`/`INFO`/`WARNING`/`ERROR` (default `INFO`) |
 | `RATE_LIMIT` | backend | Per-IP limit, slowapi syntax (default `120/minute`) |
+| `TRUST_PROXY` | backend | `true` behind a trusted proxy so rate limiting keys off `X-Forwarded-For` instead of the shared proxy IP (default `false`) |
 
 > **Note:** `VITE_*` variables are baked into the frontend bundle at build time and are publicly visible. Only the Supabase anon key (protected by RLS) belongs there — never put service-role or OpenAI keys in `VITE_*`.
 
