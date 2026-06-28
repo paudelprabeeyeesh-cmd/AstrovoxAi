@@ -308,7 +308,7 @@ export default function Auth() {
               onClick={() => setIsForgotPassword(true)} 
               style={{ background: 'none', border: 'none', color: '#d946ef', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'monospace' }}
             >
-              >> Forgot security key?
+              {'>> Forgot security key?'}
             </button>
           )}
 
@@ -317,7 +317,7 @@ export default function Auth() {
               onClick={() => setIsForgotPassword(false)} 
               style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'monospace' }}
             >
-              >> Return to login
+              {'>> Return to login'}
             </button>
           )}
         </div>
