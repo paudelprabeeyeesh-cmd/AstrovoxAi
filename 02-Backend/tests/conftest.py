@@ -1,75 +1,19 @@
-"""
-Astravox Backend Testing Infrastructure
-Unit and integration tests for all backend components.
+"""Pytest configuration for the canonical FastAPI backend.
+
+Sets dummy Supabase credentials before the app is imported so the shared
+client can be constructed without real secrets, and exposes the backend
+package on sys.path.
 """
 
-import pytest
-import sys
 import os
+import sys
 from pathlib import Path
 
-# Setup paths
-BACKEND_ROOT = Path(__file__).parent.parent
-PROJECT_ROOT = BACKEND_ROOT.parent
+# Backend root (02-Backend) so `import app.main` resolves.
+BACKEND_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BACKEND_ROOT))
 
-# Test configuration
-@pytest.fixture
-def app():
-    """Create Flask test app."""
-    from server.app import create_app
-    app = create_app()
-    app.config['TESTING'] = True
-    return app
-
-
-@pytest.fixture
-def client(app):
-    """Create test client."""
-    return app.test_client()
-
-
-@pytest.fixture
-def runner(app):
-    """Create CLI runner."""
-    return app.test_cli_runner()
-
-
-# Session fixtures
-@pytest.fixture
-def session_data():
-    """Sample session data."""
-    return {
-        'user_id': 'test-user-123',
-        'username': 'testuser',
-        'subscription': 'free'
-    }
-
-
-@pytest.fixture
-def sample_message():
-    """Sample message data."""
-    return {
-        'message': 'Hello, how are you?',
-        'conversation_id': 'test-conv-123'
-    }
-
-
-# Database fixtures
-@pytest.fixture
-def temp_db(tmp_path):
-    """Create temporary database for testing."""
-    db_path = tmp_path / "test.db"
-    os.environ['Astravox_DB_PATH'] = str(db_path)
-    yield db_path
-
-
-@pytest.fixture(scope="session")
-def test_config():
-    """Global test configuration."""
-    return {
-        'DEMO_MODE': True,
-        'TESTING': True,
-        'PRESERVE_CONTEXT_ON_EXCEPTION': False,
-        'MAX_CONTENT_LENGTH': 16 * 1024 * 1024,
-    }
+# Dummy creds: the health/readiness/root routes never call Supabase, but the
+# shared client is created at import time and requires these to be set.
+os.environ.setdefault("VITE_SUPABASE_URL", "https://dummy.supabase.co")
+os.environ.setdefault("VITE_SUPABASE_ANON_KEY", "dummy-anon-key")
