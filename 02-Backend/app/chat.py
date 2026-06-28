@@ -156,20 +156,21 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
+        # Fetch prior history BEFORE persisting the new message so the current
+        # turn is not duplicated in the prompt (it is appended explicitly below).
+        history = await get_recent_messages(request.conversation_id, limit=10)
+
         # Save user message
         user_msg = await create_message(
             request.conversation_id, user_id, "user", request.message
         )
 
-        # Get conversation history
-        messages = await get_recent_messages(request.conversation_id, limit=10)
-
         # Get user memory for context
         memory = await get_user_memory(user_id, limit=5)
 
-        # Build context
+        # Build context from prior turns
         context_messages = [
-            {"role": msg["role"], "content": msg["content"]} for msg in messages
+            {"role": msg["role"], "content": msg["content"]} for msg in history
         ]
 
         # Add memory as system context

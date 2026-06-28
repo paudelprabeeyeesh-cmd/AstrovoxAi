@@ -27,6 +27,17 @@ purged ~360 junk files, and added the first DB migration.
 - **Exception-swallowing bug** in `memory.auto_extract_memory`: a generic
   `except Exception` re-wrapped the "OpenAI not configured" `HTTPException` as a
   500. Added `except HTTPException: raise`.
+- **Rate limiting behind a proxy** (review): `key_func` now reads the first
+  `X-Forwarded-For` hop when `TRUST_PROXY=true`, so users aren't collapsed into
+  one bucket behind a load balancer. Defaults to the direct client IP.
+- **CORS missing DELETE** (review): `allow_methods` now includes `DELETE`; the
+  `DELETE /chat/conversations/{id}` endpoint previously failed browser preflight.
+- **`get_recent_messages` returned the *oldest* messages** (review): it ordered
+  ascending then took the first N. Now orders newest-first, limits, and reverses
+  to chronological order — fixing AI context quality and memory extraction.
+- **User message duplicated in the OpenAI prompt** (review): history is now
+  fetched *before* the new message is persisted, so the current turn isn't both
+  pulled from history and appended again.
 
 ### Changed
 - `README.md` corrected (removed non-existent TailwindCSS; added setup, DB,

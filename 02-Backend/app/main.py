@@ -24,9 +24,25 @@ app = FastAPI(
     description="Production-grade asynchronous stateless backend for AI chat",
 )
 
+
+def _client_ip(request) -> str:
+    """Resolve the client IP for rate limiting.
+
+    Behind a reverse proxy/load balancer every request shares the proxy IP, so
+    when ``TRUST_PROXY=true`` we use the first hop in ``X-Forwarded-For``. Only
+    enable this when the proxy is trusted to set that header, otherwise clients
+    could spoof it to evade limits.
+    """
+    if os.getenv("TRUST_PROXY", "false").lower() == "true":
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
 # Rate limiting (per client IP). Tune via RATE_LIMIT env var.
 limiter = Limiter(
-    key_func=get_remote_address,
+    key_func=_client_ip,
     default_limits=[os.getenv("RATE_LIMIT", "120/minute")],
 )
 app.state.limiter = limiter
@@ -48,7 +64,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 

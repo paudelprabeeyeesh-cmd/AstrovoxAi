@@ -179,17 +179,19 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
 
 
 async def get_recent_messages(conversation_id: int, limit: int = 10):
-    """Get recent messages for context"""
+    """Get the most recent messages for context, in chronological order."""
     try:
         response = (
             supabase.table("messages")
             .select("*")
             .eq("conversation_id", conversation_id)
-            .order("created_at", desc=False)
+            .order("created_at", desc=True)
             .limit(limit)
             .execute()
         )
-        return response.data
+        # Query returns newest-first; reverse to chronological (oldest-first)
+        # so the prompt reads naturally.
+        return list(reversed(response.data)) if response.data else []
     except Exception as e:
         logger.error(f"Error fetching recent messages: {e}")
         return []
