@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import os
 
@@ -28,14 +28,14 @@ client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
 # Pydantic models
 class CreateConversationRequest(BaseModel):
-    title: Optional[str] = None
-    model: Optional[str] = "gpt-4"
+    title: Optional[str] = Field(default=None, max_length=200)
+    model: Optional[str] = Field(default="gpt-4", max_length=64)
 
 
 class SendMessageRequest(BaseModel):
     conversation_id: int
-    message: str
-    model: Optional[str] = "gpt-4"
+    message: str = Field(min_length=1, max_length=8000)
+    model: Optional[str] = Field(default="gpt-4", max_length=64)
 
 
 class MessageResponse(BaseModel):
