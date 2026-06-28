@@ -72,8 +72,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         throw new Error('No authentication token available')
       }
 
-      // Send to backend
-      const response = await fetch('http://localhost:8000/chat/message', {
+      // Send to backend (falls back to the Vite "/api" dev proxy when no API URL is set)
+      const apiBase = import.meta.env.VITE_API_URL || '/api'
+      const response = await fetch(`${apiBase}/chat/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
