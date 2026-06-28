@@ -3,6 +3,7 @@
 Provides a single, lazily-created Supabase client reused across the backend
 instead of constructing a new client on every request/module import.
 """
+
 import os
 from functools import lru_cache
 
