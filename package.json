@@ -1,14 +1,23 @@
 {
-  "name": "astravox-ai",
-  "version": "1.0.0",
-  "description": "ASTRAVOX-AI Cognitive Engine",
-  "main": "server.js",
+  "name": "astravox-prime",
+  "version": "2.0.0",
+  "description": "ASTRAVOX PRIME - Advanced AI Chat Platform",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "backend": "cd 02-Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "frontend": "vite",
+    "start": "vite"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "better-sqlite3": "^9.0.0",
-    "cors": "^2.8.5"
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0"
   }
 }

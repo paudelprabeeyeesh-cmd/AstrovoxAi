@@ -1,1 +1,0 @@
-@coderabbitai please review my project files, find out what features are missing to make my application work completely, and write out a step-by-step plan here.
