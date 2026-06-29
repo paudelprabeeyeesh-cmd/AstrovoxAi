@@ -20,7 +20,8 @@ const errorMiddleware = createMiddleware().server(async ({ next, request }) => {
     const response = await next();
     const duration = Date.now() - started;
     // Log slow or 5xx responses for visibility.
-    const status = (response as Response | undefined)?.status;
+    const maybeResponse = response as unknown as { status?: number } | undefined;
+    const status = maybeResponse?.status;
     if (status && status >= 500) {
       void persistLog({
         source: "server",
