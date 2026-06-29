@@ -12,7 +12,7 @@ const Body = z.object({
 });
 
 // Public client-error sink. Validates payload, clamps size, never returns data.
-export const Route = createFileRoute("/api/log")({
+export const Route = createFileRoute("/api/public/log")({
   server: {
     handlers: {
       POST: async ({ request }) => {

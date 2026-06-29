@@ -13,11 +13,11 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiLogRouteImport } from './routes/api/log'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
+import { Route as ApiPublicLogRouteImport } from './routes/api/public/log'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
 
 const AuthRoute = AuthRouteImport.update({
@@ -37,11 +37,6 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiLogRoute = ApiLogRouteImport.update({
-  id: '/api/log',
-  path: '/api/log',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -64,6 +59,11 @@ const AuthenticatedChatIndexRoute = AuthenticatedChatIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedChatRoute,
 } as any)
+const ApiPublicLogRoute = ApiPublicLogRouteImport.update({
+  id: '/api/public/log',
+  path: '/api/public/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedChatThreadIdRoute =
   AuthenticatedChatThreadIdRouteImport.update({
     id: '/$threadId',
@@ -78,8 +78,8 @@ export interface FileRoutesByFullPath {
   '/chat': typeof AuthenticatedChatRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
-  '/api/log': typeof ApiLogRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
+  '/api/public/log': typeof ApiPublicLogRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRoutesByTo {
@@ -88,8 +88,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
-  '/api/log': typeof ApiLogRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
+  '/api/public/log': typeof ApiPublicLogRoute
   '/chat': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRoutesById {
@@ -101,8 +101,8 @@ export interface FileRoutesById {
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/api/chat': typeof ApiChatRoute
-  '/api/log': typeof ApiLogRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
+  '/api/public/log': typeof ApiPublicLogRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
 }
 export interface FileRouteTypes {
@@ -114,8 +114,8 @@ export interface FileRouteTypes {
     | '/chat'
     | '/settings'
     | '/api/chat'
-    | '/api/log'
     | '/chat/$threadId'
+    | '/api/public/log'
     | '/chat/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -124,8 +124,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/settings'
     | '/api/chat'
-    | '/api/log'
     | '/chat/$threadId'
+    | '/api/public/log'
     | '/chat'
   id:
     | '__root__'
@@ -136,8 +136,8 @@ export interface FileRouteTypes {
     | '/_authenticated/chat'
     | '/_authenticated/settings'
     | '/api/chat'
-    | '/api/log'
     | '/_authenticated/chat/$threadId'
+    | '/api/public/log'
     | '/_authenticated/chat/'
   fileRoutesById: FileRoutesById
 }
@@ -147,7 +147,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
   ApiChatRoute: typeof ApiChatRoute
-  ApiLogRoute: typeof ApiLogRoute
+  ApiPublicLogRoute: typeof ApiPublicLogRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -180,13 +180,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/log': {
-      id: '/api/log'
-      path: '/api/log'
-      fullPath: '/api/log'
-      preLoaderRoute: typeof ApiLogRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/chat': {
       id: '/api/chat'
       path: '/api/chat'
@@ -214,6 +207,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/chat/'
       preLoaderRoute: typeof AuthenticatedChatIndexRouteImport
       parentRoute: typeof AuthenticatedChatRoute
+    }
+    '/api/public/log': {
+      id: '/api/public/log'
+      path: '/api/public/log'
+      fullPath: '/api/public/log'
+      preLoaderRoute: typeof ApiPublicLogRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/chat/$threadId': {
       id: '/_authenticated/chat/$threadId'
@@ -257,8 +257,18 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
   ApiChatRoute: ApiChatRoute,
-  ApiLogRoute: ApiLogRoute,
+  ApiPublicLogRoute: ApiPublicLogRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
