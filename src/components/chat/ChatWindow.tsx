@@ -41,9 +41,7 @@ export function ChatWindow({
 }) {
   const [input, setInput] = useState("");
   const [token, setToken] = useState<string | null>(null);
-  const [model, setModel] = useState<AstrovoxModelId>(
-    initialModel ?? "google/gemini-3-flash-preview",
-  );
+  const [model, setModel] = useState<AstrovoxModelId>(initialModel ?? "gpt-4o-mini");
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const qc = useQueryClient();
