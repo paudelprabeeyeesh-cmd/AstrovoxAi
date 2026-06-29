@@ -41,6 +41,57 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          id: string
+          level: string
+          message: string
+          meta: Json | null
+          method: string | null
+          route: string | null
+          source: string
+          stack: string | null
+          status: number | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          level?: string
+          message: string
+          meta?: Json | null
+          method?: string | null
+          route?: string | null
+          source: string
+          stack?: string | null
+          status?: number | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          id?: string
+          level?: string
+          message?: string
+          meta?: Json | null
+          method?: string | null
+          route?: string | null
+          source?: string
+          stack?: string | null
+          status?: number | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
