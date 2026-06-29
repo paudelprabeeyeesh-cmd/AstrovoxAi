@@ -12,7 +12,7 @@ import {
 const BodySchema = z.object({
   messages: z.array(z.any()),
   model: z.string().optional(),
-  conversationId: z.string().uuid().optional(),
+  conversationId: z.string().uuid().nullable().optional(),
 });
 
 const allowedModels = new Set<string>(ASTROVOX_MODELS.map((m) => m.id));
@@ -61,8 +61,10 @@ export const Route = createFileRoute("/api/chat")({
         let parsed;
         try {
           parsed = BodySchema.parse(await request.json());
-        } catch {
-          return new Response(JSON.stringify({ error: "Invalid body" }), {
+        } catch (e) {
+          const detail = e instanceof Error ? e.message : "invalid";
+          console.error("[chat] invalid body:", detail);
+          return new Response(JSON.stringify({ error: "Invalid body", detail }), {
             status: 400,
             headers: { "content-type": "application/json" },
           });
