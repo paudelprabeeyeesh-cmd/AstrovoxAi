@@ -11,6 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { installClientLogger, logClient } from "../lib/client-logger";
 import { Toaster } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -41,6 +42,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+    logClient({
+      level: "error",
+      message: error.message || "React render error",
+      stack: error.stack,
+      meta: { kind: "react.errorBoundary" },
+    });
   }, [error]);
 
   return (
@@ -145,6 +152,7 @@ function RootComponent() {
   const router = useRouter();
 
   useEffect(() => {
+    installClientLogger();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       router.invalidate();
