@@ -5,8 +5,7 @@ import {
   ASTROVOX_MODELS,
   ASTROVOX_SYSTEM_PROMPT,
   DEFAULT_MODEL,
-  createLovableAiGatewayProvider,
-  getLovableAiGatewayRunId,
+  createOpenAIProvider,
   type AstrovoxModelId,
 } from "@/lib/ai-gateway.server";
 
@@ -22,9 +21,9 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const lovableApiKey = process.env.LOVABLE_API_KEY;
-        if (!lovableApiKey) {
-          return new Response(JSON.stringify({ error: "AI gateway not configured" }), {
+        const openaiKey = process.env.OPENAI_API_KEY;
+        if (!openaiKey) {
+          return new Response(JSON.stringify({ error: "OpenAI API key is not configured on the server." }), {
             status: 500,
             headers: { "content-type": "application/json" },
           });
@@ -73,8 +72,7 @@ export const Route = createFileRoute("/api/chat")({
           ? (parsed.model as AstrovoxModelId)
           : DEFAULT_MODEL;
 
-        const initialRunId = getLovableAiGatewayRunId(request);
-        const gateway = createLovableAiGatewayProvider(lovableApiKey, initialRunId);
+        const provider = createOpenAIProvider(openaiKey);
         const messages = parsed.messages as UIMessage[];
 
         // Persist the last user message (the new one)
@@ -97,7 +95,7 @@ export const Route = createFileRoute("/api/chat")({
 
         try {
           const result = streamText({
-            model: gateway(modelId),
+            model: provider(modelId),
             system: ASTROVOX_SYSTEM_PROMPT,
             messages: await convertToModelMessages(messages),
             onFinish: async ({ text }) => {
@@ -145,10 +143,16 @@ export const Route = createFileRoute("/api/chat")({
               headers: { "content-type": "application/json" },
             });
           }
-          if (status === 402) {
+          if (status === 401) {
             return new Response(
-              JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-              { status: 402, headers: { "content-type": "application/json" } },
+              JSON.stringify({ error: "Invalid OpenAI API key. Please check your server configuration." }),
+              { status: 401, headers: { "content-type": "application/json" } },
+            );
+          }
+          if (status === 402 || status === 429) {
+            return new Response(
+              JSON.stringify({ error: "OpenAI quota exceeded. Please check your plan and billing." }),
+              { status, headers: { "content-type": "application/json" } },
             );
           }
           return new Response(JSON.stringify({ error: message }), {
