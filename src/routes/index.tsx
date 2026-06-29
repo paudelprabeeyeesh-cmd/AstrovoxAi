@@ -30,6 +30,11 @@ function Index() {
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
         <AstroWordmark />
         <nav className="flex items-center gap-2">
+          <Link to="/about">
+            <Button variant="ghost" className="text-foreground/80 hover:text-foreground">
+              About
+            </Button>
+          </Link>
           <Link to="/auth">
             <Button variant="ghost" className="text-foreground/80 hover:text-foreground">
               Sign in
