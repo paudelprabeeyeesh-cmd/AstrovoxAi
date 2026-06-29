@@ -40,25 +40,33 @@ export function ChatWindow({
   initialModel?: AstrovoxModelId;
 }) {
   const [input, setInput] = useState("");
-  const [token, setToken] = useState<string | null>(null);
   const [model, setModel] = useState<AstrovoxModelId>(initialModel ?? "gpt-4o-mini");
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const tokenRef = useRef<string | null>(null);
   const qc = useQueryClient();
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
-      setToken(data.session?.access_token ?? null);
+      tokenRef.current = data.session?.access_token ?? null;
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
-      setToken(s?.access_token ?? null);
+      tokenRef.current = s?.access_token ?? null;
     });
     return () => sub.subscription.unsubscribe();
   }, []);
 
   const transport = new DefaultChatTransport({
     api: "/api/chat",
-    headers: (): Record<string, string> => (token ? { Authorization: `Bearer ${token}` } : {}),
+    headers: async (): Promise<Record<string, string>> => {
+      let t = tokenRef.current;
+      if (!t) {
+        const { data } = await supabase.auth.getSession();
+        t = data.session?.access_token ?? null;
+        tokenRef.current = t;
+      }
+      return t ? { Authorization: `Bearer ${t}` } : {};
+    },
     body: () => ({ model, conversationId: threadId }),
   });
 
