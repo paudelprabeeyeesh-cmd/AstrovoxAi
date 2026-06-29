@@ -43,7 +43,7 @@ export async function persistLog(record: LogRecord): Promise<void> {
       duration_ms: record.duration_ms ?? null,
       user_id: record.user_id ?? null,
       user_agent: clamp(record.user_agent ?? null, 500),
-      meta: record.meta ?? null,
+      meta: (record.meta ?? null) as never,
     };
     const { error } = await supabaseAdmin.from("error_logs").insert(row);
     if (error) console.error("[server-logger] persist failed:", error.message);
