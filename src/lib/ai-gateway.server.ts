@@ -3,15 +3,15 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 const LOVABLE_AIG_RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
 export const ASTROVOX_MODELS = [
-  { id: "google/gemini-3-flash-preview", label: "Astro Flash", description: "Fast, balanced default" },
-  { id: "google/gemini-2.5-pro", label: "Astro Pro", description: "Best reasoning + multimodal" },
-  { id: "openai/gpt-5", label: "Astro GPT-5", description: "OpenAI flagship" },
-  { id: "openai/gpt-5-mini", label: "Astro GPT-5 Mini", description: "Lower-cost OpenAI" },
+  { id: "gpt-4o-mini", label: "Astro Swift", description: "Fast, balanced default" },
+  { id: "gpt-4o", label: "Astro Pro", description: "Best quality + multimodal" },
+  { id: "gpt-4.1-mini", label: "Astro 4.1 Mini", description: "Latest small flagship" },
+  { id: "gpt-4.1", label: "Astro 4.1", description: "Latest flagship" },
 ] as const;
 
 export type AstrovoxModelId = (typeof ASTROVOX_MODELS)[number]["id"];
 
-export const DEFAULT_MODEL: AstrovoxModelId = "google/gemini-3-flash-preview";
+export const DEFAULT_MODEL: AstrovoxModelId = "gpt-4o-mini";
 
 export const ASTROVOX_SYSTEM_PROMPT = `You are AstrovoxAI — a premium, helpful AI assistant created by the AstrovoxAI team.
 
@@ -20,6 +20,16 @@ Voice:
 - For code, use fenced code blocks with the correct language tag.
 - When you don't know something, say so briefly and suggest what would help.
 - Never claim to be ChatGPT, Claude, Gemini, or any other product. You are AstrovoxAI.`;
+
+export function createOpenAIProvider(apiKey: string) {
+  return createOpenAICompatible({
+    name: "openai",
+    baseURL: "https://api.openai.com/v1",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  });
+}
 
 export function createLovableAiGatewayProvider(lovableApiKey: string, initialRunId?: string) {
   let runId = initialRunId?.trim() || undefined;
