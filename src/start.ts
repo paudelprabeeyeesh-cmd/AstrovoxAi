@@ -10,6 +10,13 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
     if (error != null && typeof error === "object" && "statusCode" in error) {
       throw error;
     }
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.startsWith("Unauthorized")) {
+      return new Response(JSON.stringify({ error: message }), {
+        status: 401,
+        headers: { "content-type": "application/json" },
+      });
+    }
     console.error(error);
     return new Response(renderErrorPage(), {
       status: 500,
