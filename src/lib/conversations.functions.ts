@@ -17,7 +17,7 @@ export const listConversations = createServerFn({ method: "GET" })
 
 export const createConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         title: z.string().max(120).optional(),
@@ -41,7 +41,7 @@ export const createConversation = createServerFn({ method: "POST" })
 
 export const renameConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z.object({ id: z.string().uuid(), title: z.string().min(1).max(120) }).parse(d),
   )
   .handler(async ({ data, context }) => {
@@ -56,7 +56,7 @@ export const renameConversation = createServerFn({ method: "POST" })
 
 export const deleteConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { error } = await context.supabase
       .from("conversations")
@@ -69,7 +69,7 @@ export const deleteConversation = createServerFn({ method: "POST" })
 
 export const getConversationWithMessages = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data, context }) => {
     const { data: convo, error: cErr } = await context.supabase
       .from("conversations")
@@ -105,7 +105,7 @@ export const getProfile = createServerFn({ method: "GET" })
 
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: unknown) =>
+  .validator((d: unknown) =>
     z
       .object({
         display_name: z.string().trim().min(1).max(80).optional(),
