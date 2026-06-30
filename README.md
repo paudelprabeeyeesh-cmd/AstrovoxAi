@@ -70,5 +70,27 @@ This project is licensed under the MIT License.
 ## Authors
 
 - Prabesh Paudel
+- 
+Founder & CEO 
+ Chief AI Architect 
+ Principal Software Engineer 
+ Full-Stack Engineer 
+ Software Solutions Architect 
+AI Systems Designer 
+ DevOps Engineer 
+ Product Strategist 
+ Technical Lead
+
+
 - Dipson Baral
-- Susanta Baral
+
+    Co-Founder
+    Senior Full-Stack Engineer
+    DevOps Engineer
+
+- 
+
+AI Research Engineer
+Machine Learning Engineer
+Data & AI Engineer
+
