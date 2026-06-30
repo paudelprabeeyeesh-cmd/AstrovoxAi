@@ -71,4 +71,4 @@ This project is licensed under the MIT License.
 
 - Prabesh Paudel
 - Dipson Baral
-- Susanta AI
+- Susanta Baral
