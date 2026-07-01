@@ -93,65 +93,38 @@ function AboutPage() {
               </span>
             </div>
 
-            <div className="grid gap-10 md:grid-cols-[minmax(0,320px)_1fr] md:items-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.92 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.9, ease: "easeOut", delay: 0.1 }}
-                className="relative mx-auto w-full max-w-[320px]"
+            <div className="text-center">
+              <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                Presenting
+              </div>
+              <h2
+                className="mt-2 text-balance text-6xl font-bold leading-[1.02] tracking-tight sm:text-7xl md:text-8xl"
+                style={{ fontFamily: "var(--font-display)" }}
               >
-                <div className="absolute -inset-1 rounded-2xl bg-aurora opacity-70 blur-lg" />
-                <div className="relative overflow-hidden rounded-2xl border border-accent/30">
-                  <img
-                    src={prabeshPortrait}
-                    alt="Prabesh Paudel — Founder & CEO of AstrovoxAI"
-                    width={1024}
-                    height={1280}
-                    className="h-auto w-full object-cover"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-background via-background/60 to-transparent p-4">
-                    <div className="text-[10px] uppercase tracking-[0.25em] text-accent">
-                      Founder · CEO
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              <div className="min-w-0">
-                <div className="text-xs uppercase tracking-[0.25em] text-muted-foreground">
-                  Presenting
-                </div>
-                <h2
-                  className="mt-2 text-balance text-5xl font-bold leading-[1.02] tracking-tight sm:text-6xl md:text-7xl"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  <span className="text-gradient-aurora">Prabesh Paudel</span>
-                </h2>
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-base text-foreground/90">
-                  <span className="rounded-md bg-primary/20 px-2.5 py-1 text-sm font-semibold text-primary-foreground">
-                    Founder &amp; CEO
+                <span className="text-gradient-aurora">Prabesh Paudel</span>
+              </h2>
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-base text-foreground/90">
+                <span className="rounded-md bg-primary/20 px-2.5 py-1 text-sm font-semibold text-primary-foreground">
+                  Founder &amp; CEO
+                </span>
+                <span className="text-muted-foreground">·</span>
+                <span className="font-medium">Astrovox AI</span>
+              </div>
+              <p className="mt-6 mx-auto max-w-2xl text-sm leading-relaxed text-foreground/80 sm:text-base">
+                Visionary technologist and the architect behind AstrovoxAI. Prabesh leads
+                product, engineering, and design — turning frontier AI into a warm,
+                premium experience anyone can use.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {PRABESH_ROLES.map(({ icon: Icon, label }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1.5 text-xs text-foreground/85 backdrop-blur-md transition hover:border-accent/50 hover:text-foreground"
+                  >
+                    <Icon className="h-3 w-3 text-accent" />
+                    {label}
                   </span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="font-medium">Astrovox AI</span>
-                </div>
-
-                <p className="mt-6 max-w-xl text-sm leading-relaxed text-foreground/80 sm:text-base">
-                  Visionary technologist and the architect behind AstrovoxAI. Prabesh leads
-                  product, engineering, and design — turning frontier AI into a warm,
-                  premium experience anyone can use.
-                </p>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {PRABESH_ROLES.map(({ icon: Icon, label }) => (
-                    <span
-                      key={label}
-                      className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-card/60 px-3 py-1.5 text-xs text-foreground/85 backdrop-blur-md transition hover:border-accent/50 hover:text-foreground"
-                    >
-                      <Icon className="h-3 w-3 text-accent" />
-                      {label}
-                    </span>
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
           </div>
@@ -170,15 +143,30 @@ function AboutPage() {
           <p className="mb-6 text-sm text-muted-foreground">
             AstrovoxAI is also built with:
           </p>
-          <ul className="grid gap-3 sm:grid-cols-2">
-            {CREATORS.map((c) => (
-              <li
+          <ul className="grid gap-6 sm:grid-cols-2">
+            {CREATORS.map((c, i) => (
+              <motion.li
                 key={c.name}
-                className="surface-glass rounded-xl px-5 py-4 text-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 * i }}
+                className="surface-glass relative overflow-hidden rounded-2xl border border-accent/20 px-8 py-10 text-center"
               >
-                <div className="text-base font-medium text-foreground">{c.name}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{c.role}</div>
-              </li>
+                <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
+                <div className="pointer-events-none absolute -bottom-16 -left-16 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
+                <div className="relative">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+                    <Star className="h-3 w-3" /> Core Team
+                  </span>
+                  <div
+                    className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    <span className="text-gradient-aurora">{c.name}</span>
+                  </div>
+                  <div className="mt-3 text-sm font-medium text-foreground/80">{c.role}</div>
+                </div>
+              </motion.li>
             ))}
           </ul>
         </section>
