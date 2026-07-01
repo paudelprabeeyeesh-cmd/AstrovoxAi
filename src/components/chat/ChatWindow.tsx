@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowUp, RefreshCw, Square, User, Copy, Check, PencilLine } from "lucide-react";
 import { AstroMark } from "@/components/brand/Logo";
@@ -45,6 +46,7 @@ export function ChatWindow({
   const taRef = useRef<HTMLTextAreaElement>(null);
   const tokenRef = useRef<string | null>(null);
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     void supabase.auth.getSession().then(({ data }) => {
@@ -74,7 +76,15 @@ export function ChatWindow({
     id: threadId ?? "new",
     messages: initialMessages,
     transport,
-    onError: (e) => toast.error(e.message || "Something went wrong"),
+    onError: (e) => {
+      const msg = e.message || "Something went wrong";
+      if (/unauthor/i.test(msg) || /401/.test(msg)) {
+        toast.error("Your session expired — please sign in again.");
+        void navigate({ to: "/auth" });
+        return;
+      }
+      toast.error(msg);
+    },
     onFinish: () => {
       void qc.invalidateQueries({ queryKey: conversationsQueryKey });
     },
