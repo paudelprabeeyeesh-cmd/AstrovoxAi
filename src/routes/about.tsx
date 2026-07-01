@@ -1,9 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Sparkles, Crown, Cpu, Code2, Cloud, Database, Palette, Plug, Boxes, GitBranch, Rocket } from "lucide-react";
+import { ArrowLeft, Sparkles, Crown, Cpu, Code2, Cloud, Database, Palette, Plug, Boxes, GitBranch, Rocket, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { AstroWordmark, AstroMark } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
-import prabeshPortrait from "@/assets/prabesh-vip.jpg";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
