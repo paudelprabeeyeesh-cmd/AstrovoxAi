@@ -76,7 +76,6 @@ export function ChatWindow({
     id: threadId ?? "new",
     messages: initialMessages,
     transport,
-    onError: (e) => toast.error(e.message || "Something went wrong"),
     onError: (e) => {
       const msg = e.message || "Something went wrong";
       if (/unauthor/i.test(msg) || /401/.test(msg)) {
