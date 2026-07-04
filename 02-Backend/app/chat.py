@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Header
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 import os
+import json
 
 from openai import OpenAI
 
@@ -18,24 +19,44 @@ from .database import (
     save_memory,
     delete_conversation,
 )
+from .usage import DailyUsageTracker, UsageQuotaExceeded
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 # Initialize OpenAI client
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
+usage_tracker = DailyUsageTracker()
 
 
 # Pydantic models
+SUPPORTED_MODELS = {"gpt-4", "gpt-4o-mini", "gpt-3.5-turbo"}
+
+
 class CreateConversationRequest(BaseModel):
     title: Optional[str] = None
     model: Optional[str] = "gpt-4"
 
 
 class SendMessageRequest(BaseModel):
-    conversation_id: int
-    message: str
-    model: Optional[str] = "gpt-4"
+    conversation_id: int = Field(gt=0)
+    message: str = Field(min_length=1, max_length=4000)
+    model: Optional[str] = Field(default="gpt-4", min_length=1, max_length=64)
+
+    @staticmethod
+    def _validate_model(value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return None
+        if value not in SUPPORTED_MODELS:
+            raise ValueError("model must be one of the supported values")
+        return value
+
+    @classmethod
+    def validate(cls, value):
+        model = super().validate(value)
+        if model is None:
+            return model
+        return model
 
 
 class MessageResponse(BaseModel):
@@ -52,6 +73,9 @@ async def create_new_conversation(
 ):
     """Create a new conversation"""
     user_id = get_user_id_from_token(authorization)
+
+    if request.model and request.model not in SUPPORTED_MODELS:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported model")
 
     try:
         conversation = await create_conversation(user_id, request.title, request.model)
@@ -149,6 +173,31 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         )
 
     try:
+        normalized_message = request.message.strip()
+        if not normalized_message:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Message content cannot be empty",
+            )
+        if len(normalized_message) > 4000:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Message content is too long",
+            )
+        if request.model and request.model not in SUPPORTED_MODELS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Unsupported model",
+            )
+
+        try:
+            await usage_tracker.record_success(user_id)
+        except UsageQuotaExceeded as exc:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=str(exc),
+            ) from exc
+
         # Verify user owns this conversation
         conversation = await get_conversation(request.conversation_id, user_id)
         if not conversation:
@@ -158,7 +207,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
 
         # Save user message
         user_msg = await create_message(
-            request.conversation_id, user_id, "user", request.message
+            request.conversation_id, user_id, "user", normalized_message
         )
 
         # Get conversation history
@@ -185,7 +234,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
             model=request.model,
             messages=system_messages
             + context_messages
-            + [{"role": "user", "content": request.message}],
+            + [{"role": "user", "content": normalized_message}],
             temperature=0.7,
             max_tokens=2000,
         )
@@ -210,7 +259,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         if "important" in ai_response.lower() or "remember" in ai_response.lower():
             await save_memory(
                 user_id,
-                f"User asked: {request.message}\nAI responded: {ai_response[:200]}",
+                f"User asked: {normalized_message}\nAI responded: {ai_response[:200]}",
                 importance=2,
             )
 
