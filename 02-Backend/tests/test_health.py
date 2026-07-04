@@ -37,3 +37,11 @@ def test_protected_route_requires_auth():
     # No Authorization header -> 401 from the shared auth dependency.
     resp = client.get("/api/me")
     assert resp.status_code == 401
+
+
+def test_chat_message_validation_rejects_invalid_payload():
+    resp = client.post(
+        "/chat/message",
+        json={"conversation_id": 0, "message": "   "},
+    )
+    assert resp.status_code == 422

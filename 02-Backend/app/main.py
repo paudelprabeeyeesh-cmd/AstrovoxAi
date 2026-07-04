@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
@@ -9,6 +9,8 @@ from .auth import router as auth_router
 from .chat import router as chat_router
 from .api import router as api_router
 from .memory import router as memory_router
+from .storage import router as storage_router
+from .rate_limit import rate_limit_middleware
 
 load_dotenv()
 
@@ -17,6 +19,8 @@ app = FastAPI(
     version="2.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
+
+app.middleware("http")(rate_limit_middleware)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
@@ -42,6 +46,7 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
+app.include_router(storage_router)
 
 
 # Health check endpoints

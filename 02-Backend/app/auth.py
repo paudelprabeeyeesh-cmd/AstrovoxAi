@@ -2,6 +2,7 @@ import os
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 from .supabase_client import get_supabase
 
@@ -29,6 +30,12 @@ class ResetPasswordRequest(BaseModel):
 class UpdatePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class OAuthRequest(BaseModel):
+    provider: str
+    access_token: str
+    email: Optional[str] = None
 
 
 # Routes
@@ -160,6 +167,23 @@ async def get_current_user(authorization: str = None):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
+
+
+@router.post("/oauth")
+async def oauth_login(request: OAuthRequest):
+    """A lightweight OAuth-compatible endpoint that forwards to Supabase if supported."""
+    try:
+        response = supabase.auth.sign_in_with_otp(
+            {"email": request.email or "", "create_user": True}
+        )
+        return {
+            "status": "OK",
+            "provider": request.provider,
+            "message": "OAuth flow initiated",
+            "otp_sent": bool(response),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
 
 
 @router.post("/refresh")
