@@ -2,23 +2,23 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
+
 def configure_logging():
     """Configure centralized logging for the application."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    
-    # Create logger
+    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+
     logger = logging.getLogger("astravox")
     logger.setLevel(getattr(logging, log_level))
-    
-    # Console handler
+
     console_handler = logging.StreamHandler()
     console_handler.setLevel(getattr(logging, log_level))
-    
-    # File handler (rotating)
+
     file_handler = RotatingFileHandler(
-        "logs/astravox.log",
-        maxBytes=10 * 1024 * 1024,  # 10 MB
-        backupCount=5
+        os.path.join(log_dir, "astravox.log"),
+        maxBytes=10 * 1024 * 1024,
+        backupCount=5,
     )
     file_handler.setLevel(getattr(logging, log_level))
     

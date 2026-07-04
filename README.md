@@ -45,6 +45,14 @@ To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.m
 - Backend tests: `c:/AstrovoxAi/venv/Scripts/python.exe -m pytest -q`
 - Frontend build: `npm run build`
 
+### Deployment checklist
+1. Configure Supabase URL and anon key.
+2. Configure OpenAI API key.
+3. Set ALLOWED_ORIGINS for the deployed frontend domain.
+4. Set RATE_LIMIT and DAILY_AI_LIMIT to desired production values.
+5. Apply the SQL schema and RLS policies in Supabase.
+6. Ensure the storage root is writable in the deployment environment.
+
 ## API Documentation
 
 For detailed information on the available API endpoints, request/response formats, and authentication mechanisms, please consult the [API.md](API.md) documentation.

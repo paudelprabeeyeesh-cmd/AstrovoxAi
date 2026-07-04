@@ -7,9 +7,11 @@ from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 
 from .logging_config import logger
-from .supabase_client import get_supabase
 
 router = APIRouter(prefix="/storage", tags=["storage"])
+
+ALLOWED_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain", "application/octet-stream"}
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
 
 class StorageService:
@@ -78,6 +80,10 @@ async def upload_storage_file(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required")
     try:
         content = await file.read()
+        if len(content) > MAX_UPLOAD_SIZE:
+            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large")
+        if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
+            raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Unsupported content type")
         result = storage_service.upload_file(
             user_id,
             bucket,

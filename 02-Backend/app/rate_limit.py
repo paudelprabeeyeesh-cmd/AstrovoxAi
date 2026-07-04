@@ -45,6 +45,13 @@ async def rate_limit_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["x-ratelimit-limit"] = str(limit)
     response.headers["x-ratelimit-remaining"] = str(remaining)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
+        "script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000 https://*.supabase.co"
+    )
     if not allowed:
         return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"}, headers={"x-ratelimit-limit": str(limit), "x-ratelimit-remaining": "0"})
     return response
