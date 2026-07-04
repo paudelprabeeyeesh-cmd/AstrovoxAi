@@ -34,6 +34,17 @@ ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelli
 
 To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.md) guide.
 
+### Production-ready capabilities added
+- Persistent usage quotas backed by SQLite instead of process-local memory.
+- HTTP rate limiting middleware with per-request headers.
+- Storage endpoints for upload/delete/signed URL generation with ownership checks.
+- Backend validation for chat payloads and supported AI models.
+- Expanded automated tests for usage, storage, auth, and health routes.
+
+### Verification
+- Backend tests: `c:/AstrovoxAi/venv/Scripts/python.exe -m pytest -q`
+- Frontend build: `npm run build`
+
 ## API Documentation
 
 For detailed information on the available API endpoints, request/response formats, and authentication mechanisms, please consult the [API.md](API.md) documentation.
