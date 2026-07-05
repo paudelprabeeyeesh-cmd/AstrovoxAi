@@ -3,15 +3,37 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 const LOVABLE_AIG_RUN_ID_HEADER = "X-Lovable-AIG-Run-ID";
 
 export const ASTROVOX_MODELS = [
-  { id: "gpt-4o-mini", label: "Astro Swift", description: "Fast, balanced default" },
-  { id: "gpt-4o", label: "Astro Pro", description: "Best quality + multimodal" },
-  { id: "gpt-4.1-mini", label: "Astro 4.1 Mini", description: "Latest small flagship" },
-  { id: "gpt-4.1", label: "Astro 4.1", description: "Latest flagship" },
+  {
+    id: "google/gemini-3-flash-preview",
+    label: "Astro Swift",
+    description: "Fast Gemini 3 — great default for most chats",
+  },
+  {
+    id: "google/gemini-2.5-pro",
+    label: "Astro Vision",
+    description: "Gemini 2.5 Pro — strong reasoning + multimodal",
+  },
+  {
+    id: "openai/gpt-5-mini",
+    label: "Astro Pro",
+    description: "GPT-5 mini — balanced quality and speed",
+  },
+  {
+    id: "openai/gpt-5",
+    label: "Astro Elite",
+    description: "GPT-5 — top-tier reasoning and coding",
+  },
 ] as const;
 
 export type AstrovoxModelId = (typeof ASTROVOX_MODELS)[number]["id"];
 
-export const DEFAULT_MODEL: AstrovoxModelId = "gpt-4o";
+export const DEFAULT_MODEL: AstrovoxModelId = "google/gemini-3-flash-preview";
+
+const ALLOWED_MODEL_IDS = new Set<string>(ASTROVOX_MODELS.map((m) => m.id));
+
+export function normalizeModelId(id: string | null | undefined): AstrovoxModelId {
+  return id && ALLOWED_MODEL_IDS.has(id) ? (id as AstrovoxModelId) : DEFAULT_MODEL;
+}
 
 export const ASTROVOX_SYSTEM_PROMPT = `You are AstrovoxAI — a premium, elite AI assistant created by the AstrovoxAI team, purpose-built to be world-class at software engineering while remaining an outstanding general assistant.
 
