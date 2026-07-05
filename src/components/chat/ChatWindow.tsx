@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ASTROVOX_MODELS, type AstrovoxModelId } from "@/lib/ai-gateway.server";
+import { ASTROVOX_MODELS, DEFAULT_MODEL, normalizeModelId, type AstrovoxModelId } from "@/lib/ai-gateway.server";
 import { conversationsQueryKey } from "@/components/chat/ChatSidebar";
 
 const SUGGESTIONS = [
@@ -41,7 +41,7 @@ export function ChatWindow({
   initialModel?: AstrovoxModelId;
 }) {
   const [input, setInput] = useState("");
-  const [model, setModel] = useState<AstrovoxModelId>(initialModel ?? "gpt-4o-mini");
+  const [model, setModel] = useState<AstrovoxModelId>(() => normalizeModelId(initialModel ?? DEFAULT_MODEL));
   const scrollRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const tokenRef = useRef<string | null>(null);
