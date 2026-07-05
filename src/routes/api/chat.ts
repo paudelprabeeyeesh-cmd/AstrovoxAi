@@ -5,7 +5,8 @@ import {
   ASTROVOX_MODELS,
   ASTROVOX_SYSTEM_PROMPT,
   DEFAULT_MODEL,
-  createOpenAIProvider,
+  createLovableAiGatewayProvider,
+  getLovableAiGatewayRunId,
   type AstrovoxModelId,
 } from "@/lib/ai-gateway.server";
 
@@ -21,9 +22,9 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const openaiKey = process.env.OPENAI_API_KEY;
-        if (!openaiKey) {
-          return new Response(JSON.stringify({ error: "OpenAI API key is not configured on the server." }), {
+        const lovableKey = process.env.LOVABLE_API_KEY;
+        if (!lovableKey) {
+          return new Response(JSON.stringify({ error: "LOVABLE_API_KEY is not configured on the server." }), {
             status: 500,
             headers: { "content-type": "application/json" },
           });
@@ -74,7 +75,7 @@ export const Route = createFileRoute("/api/chat")({
           ? (parsed.model as AstrovoxModelId)
           : DEFAULT_MODEL;
 
-        const provider = createOpenAIProvider(openaiKey);
+        const provider = createLovableAiGatewayProvider(lovableKey, getLovableAiGatewayRunId(request));
         const messages = parsed.messages as UIMessage[];
 
         // Persist the last user message (the new one)
@@ -139,22 +140,19 @@ export const Route = createFileRoute("/api/chat")({
         } catch (err) {
           const status = (err as { statusCode?: number })?.statusCode ?? 500;
           const message = err instanceof Error ? err.message : "AI gateway error";
+          console.error("[chat] gateway error", status, message);
           if (status === 429) {
-            return new Response(JSON.stringify({ error: "Rate limit reached. Try again shortly." }), {
+            return new Response(JSON.stringify({ error: "Rate limit reached. Please try again in a moment." }), {
               status: 429,
               headers: { "content-type": "application/json" },
             });
           }
-          if (status === 401) {
+          if (status === 402) {
             return new Response(
-              JSON.stringify({ error: "Invalid OpenAI API key. Please check your server configuration." }),
-              { status: 401, headers: { "content-type": "application/json" } },
-            );
-          }
-          if (status === 402 || status === 429) {
-            return new Response(
-              JSON.stringify({ error: "OpenAI quota exceeded. Please check your plan and billing." }),
-              { status, headers: { "content-type": "application/json" } },
+              JSON.stringify({
+                error: "AI credits exhausted. Add credits to your workspace to continue.",
+              }),
+              { status: 402, headers: { "content-type": "application/json" } },
             );
           }
           return new Response(JSON.stringify({ error: message }), {
