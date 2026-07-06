@@ -1,0 +1,156 @@
+*   [33md7265f60[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mfeature/my-first-task[m[33m)[m merge: import all changes from astrovox-ai into AstrovoxAi
+[31m|[m[32m\[m  
+[31m|[m *   [33m615cc49c[m Secured, tested, and polished
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33m061af137[m Changes
+[31m|[m [33m|[m * [33mc023769c[m Changes
+[31m|[m [33m|[m * [33md21ef887[m Changes
+[31m|[m [33m|[m * [33m57d1fd2a[m Changes
+[31m|[m [33m|[m * [33mc6fcd88d[m Changes
+[31m|[m [33m|[m * [33m564157cf[m Changes
+[31m|[m [33m|[m * [33ma792c629[m Changes
+[31m|[m [33m|[m * [33mb39125df[m Changes
+[31m|[m [33m|[m * [33m3d664bca[m Changes
+[31m|[m [33m|[m[33m/[m  
+[31m|[m *   [33m5a36b792[m Added Mermaid/KaTeX support
+[31m|[m [35m|[m[36m\[m  
+[31m|[m [35m|[m * [33mda7c0499[m Changes
+[31m|[m [35m|[m * [33m250f6fcc[m Changes
+[31m|[m [35m|[m * [33m023afe5c[m Changes
+[31m|[m [35m|[m * [33mf3b0c6b5[m Changes
+[31m|[m [35m|[m * [33m227953e4[m Changes
+[31m|[m [35m|[m[35m/[m  
+[31m|[m *   [33meb0af5ba[m Rotated LOVABLE_API_KEY
+[31m|[m [1;31m|[m[1;32m\[m  
+[31m|[m [1;31m|[m * [33mf57739e6[m Changes
+[31m|[m [1;31m|[m[1;31m/[m  
+[31m|[m *   [33m763a0bdc[m Multi-provider AI via gateway
+[31m|[m [1;33m|[m[1;34m\[m  
+[31m|[m [1;33m|[m * [33m8d4ae49d[m Changes
+[31m|[m [1;33m|[m * [33m5c55014a[m Changes
+[31m|[m [1;33m|[m * [33m2503db13[m Changes
+[31m|[m [1;33m|[m * [33m26b610bd[m Changes
+[31m|[m [1;33m|[m * [33mf1e473df[m Changes
+[31m|[m [1;33m|[m[1;33m/[m  
+[31m|[m *   [33me09d904b[m Lovable update
+[31m|[m [1;35m|[m[1;36m\[m  
+[31m|[m [1;35m|[m * [33m74e1bb29[m Work in progress
+[31m|[m [1;35m|[m[1;35m/[m  
+[31m|[m *   [33m11af86dd[m Upgraded VIP blocks & AI
+[31m|[m [31m|[m[32m\[m  
+[31m|[m [31m|[m * [33mb8d17465[m Changes
+[31m|[m [31m|[m * [33m97ca704d[m Changes
+[31m|[m [31m|[m * [33mc453bb09[m Changes
+[31m|[m [31m|[m[31m/[m  
+[31m|[m *   [33m972ab8cb[m Added Prabesh VIP section & chat
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33mafb07b06[m Changes
+[31m|[m [33m|[m * [33m881cbfa4[m Changes
+[31m|[m [33m|[m * [33m7d2d16d0[m Changes
+[31m|[m [33m|[m * [33m985b52a2[m Changes
+[31m|[m [33m|[m * [33m4bb77619[m Changes
+[31m|[m [33m|[m * [33mc7d97a5c[m Changes
+[31m|[m [33m|[m * [33m55a5ba51[m Work in progress
+[31m|[m [33m|[m[33m/[m  
+[31m|[m *   [33mbdec6ec3[m Fixed chat auth & 400 error
+[31m|[m [35m|[m[36m\[m  
+[31m|[m [35m|[m * [33m9095a9a5[m Changes
+[31m|[m [35m|[m * [33m6215d38f[m Changes
+[31m|[m [35m|[m * [33m83bc6dda[m Changes
+[31m|[m [35m|[m * [33m49c08462[m Changes
+[31m|[m [35m|[m[35m/[m  
+[31m|[m *   [33m6e3b8f02[m Added error monitoring & logs
+[31m|[m [1;31m|[m[1;32m\[m  
+[31m|[m [1;31m|[m * [33m15542f33[m Changes
+[31m|[m [1;31m|[m * [33m8a9e1187[m Changes
+[31m|[m [1;31m|[m * [33mcd9f4f1a[m Changes
+[31m|[m [1;31m|[m * [33m847fbff3[m Changes
+[31m|[m [1;31m|[m * [33mc35b6c69[m Changes
+[31m|[m [1;31m|[m * [33m9d35569a[m Changes
+[31m|[m [1;31m|[m * [33m91463b66[m Changes
+[31m|[m [1;31m|[m * [33me5697ab8[m Changes
+[31m|[m [1;31m|[m * [33mc6785bb4[m Changes
+[31m|[m [1;31m|[m * [33m602dcc17[m Changes
+[31m|[m [1;31m|[m[1;31m/[m  
+[31m|[m *   [33me2d72838[m Fixed auth 500s to return JSON
+[31m|[m [1;33m|[m[1;34m\[m  
+[31m|[m [1;33m|[m * [33m8b4e03f9[m Changes
+[31m|[m [1;33m|[m * [33mb13b19fb[m Changes
+[31m|[m [1;33m|[m * [33mb2c7d5c6[m Changes
+[31m|[m [1;33m|[m * [33m61265b74[m Changes
+[31m|[m [1;33m|[m[1;33m/[m  
+[31m|[m *   [33m5d7092d7[m Added chat & about route
+[31m|[m [1;35m|[m[1;36m\[m  
+[31m|[m [1;35m|[m * [33m952d2b2b[m Changes
+[31m|[m [1;35m|[m * [33m530c7a32[m Changes
+[31m|[m [1;35m|[m * [33m62632a37[m Changes
+[31m|[m [1;35m|[m * [33m8077ded3[m Changes
+[31m|[m [1;35m|[m * [33mc54ddb74[m Changes
+[31m|[m [1;35m|[m * [33mb8d20977[m Changes
+[31m|[m [1;35m|[m * [33m46e9eed5[m Changes
+[31m|[m [1;35m|[m * [33m94fe1dd7[m Changes
+[31m|[m [1;35m|[m[1;35m/[m  
+[31m|[m *   [33m89e5db75[m Built AstrovoxAI framework
+[31m|[m [31m|[m[32m\[m  
+[31m|[m [31m|[m * [33m1e43a804[m Changes
+[31m|[m [31m|[m * [33m1c1448f8[m Changes
+[31m|[m [31m|[m * [33m97e24a23[m Changes
+[31m|[m [31m|[m * [33mc49fc429[m Work in progress
+[31m|[m [31m|[m[31m/[m  
+[31m|[m *   [33mc21473f8[m Made the requested updates
+[31m|[m [33m|[m[34m\[m  
+[31m|[m [33m|[m * [33mec38b2bd[m Changes
+[31m|[m [33m|[m * [33meccc83e5[m Changes
+[31m|[m [33m|[m * [33m74289cfe[m Changes
+[31m|[m [33m|[m[33m/[m  
+[31m|[m * [33mcb759216[m template: tanstack_start_ts_current-40f3c252c0da
+* [33m4f9eecd0[m feat: integrate AI providers
+* [33mb9ec55e5[m feat: integrate AI providers
+* [33mddd10fec[m feat: integrate AI providers
+* [33m0be83384[m feat: integrate AI providers
+* [33mcd997d71[m[33m ([m[1;32magents/astrovoxai-integration-fixup[m[33m)[m Production readiness improvements and security hardening
+* [33m3ae785e0[m Production readiness improvements and security hardening
+* [33m7ebdff32[m fix: configure Supabase environment variables
+* [33m60f9aebd[m fix: update app.jsx
+* [33m942d0721[m feat: complete project improvements, bug fixes, UI enhancements, optimization, documentation updates, and production-ready deployment
+* [33m2c3c34ed[m Update README.md
+* [33m676e7e86[m Update README.md
+* [33mf03e21a8[m Update README.md
+* [33m4208134e[m refactor: replace print() with structured logging in database.py
+* [33md7aed710[m refactor: replace print() with structured logging in database.py
+* [33mccf8123c[m feat: add structured logging configuration module
+* [33m6f861e1a[m fix: update .env.example - remove unused vars, add LOG_LEVEL and RATE_LIMIT
+* [33m5999a445[m production: add comprehensive production readiness verification report
+* [33m05b82daa[m production: add production readiness checklist and verification report
+[34m|[m * [33m7799e46f[m Session 06d3c490-a300-4738-b372-1293f75e7588 - checkpoint turn 0
+[34m|[m * [33m00630d8d[m[33m ([m[1;31morigin/devin/1782666996-prod-hardening[m[33m)[m Address review: proxy-aware rate limit, CORS DELETE, recent-message ordering, prompt dedup
+[34m|[m * [33mb6dfc117[m Production hardening: CI, rate limiting, logging, validation, Docker, docs
+[34m|[m[34m/[m  
+*   [33m48a752cb[m Merge pull request #3 from paudelprabeeyeesh-cmd/devin/1782665537-prod-ready
+[36m|[m[1;31m\[m  
+[36m|[m * [33m2a176261[m[33m ([m[1;31morigin/devin/1782665537-prod-ready[m[33m)[m docs: refresh AUDIT_REPORT, add CHANGELOG + CLEANUP_REPORT for production-readiness pass
+[36m|[m * [33m48cfcbd3[m Backend quality: fix lint (flake8 clean), wire unused memory_context into prompt, add smoke tests
+[36m|[m * [33m9ffb1b80[m Cleanup: remove proven-unused legacy/duplicate architectures (321 files)
+[36m|[m * [33md0e88a57[m Backend: fix package imports (startup blocker), shared Supabase singleton + auth helper, drop deprecated utcnow
+[36m|[m[36m/[m  
+*   [33mee124a14[m Merge pull request #2 from paudelprabeeyeesh-cmd/devin/1782661648-audit-refactor
+[1;32m|[m[1;33m\[m  
+[1;32m|[m * [33ma2ba4a55[m[33m ([m[1;31morigin/devin/1782661648-audit-refactor[m[33m)[m Address Devin Review: tighten CORS methods/headers, document /api proxy requirement
+[1;32m|[m * [33m15099bad[m Audit & fix: repair build, purge junk, harden secrets/CORS, add DB migration
+[1;32m|[m[1;32m/[m  
+* [33m0059e7c1[m Complete ASTRAVOX PRIME: Auth, Database, AI Chat, Memory, Dashboard, and Documentation
+* [33m25e874a2[m plan
+* [33m8fef7506[m[33m ([m[1;31morigin/1-finish-remaining-tasks-for-astrovoxai-chat-application[m[33m)[m 🛡️ security: untrack .env and fix gitignore formatting
+* [33ma2759770[m ✨ ASTRAVOX PRIME — Full System v2.0.6
+* [33mb35baa47[m Initial commit: Vite and Supabase setup
+* [33mbcb9e525[m Updated frontend
+* [33me71ad645[m progress update
+* [33m8352b891[m progress update
+* [33mc1277b84[m Added config
+* [33m48f5ddf0[m Connected Supabase Python client
+* [33ma78dee95[m Improve gitignore
+*   [33m178cc1db[m Resolve merge conflict
+[1;34m|[m[1;35m\[m  
+[1;34m|[m * [33mefdbe4aa[m Initial commit
+* [33m49f79ca1[m Clean repository
+* [33mfc5f8875[m Initial Commit
