@@ -1,4 +1,4 @@
-# ASTRAVOX PRIME - Setup Guide
+# ASTRAVOX AI - Setup Guide Created By 🥇Prabesh Paudel
 
 ## Prerequisites
 

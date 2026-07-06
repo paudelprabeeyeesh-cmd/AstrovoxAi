@@ -336,7 +336,7 @@ export default function TerminalConsole({ userEmail, totalItems }) {
       }}>
         <span>TERMINAL v2.0.6</span>
         <span>PID: {Math.floor(Math.random() * 9000 + 1000)}</span>
-        <span>${history.length} lines</span>
+        <span>{history.length} lines</span>
       </div>
     </div>
   )
