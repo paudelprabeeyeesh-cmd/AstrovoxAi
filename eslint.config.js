@@ -26,6 +26,8 @@ export default [
         clearTimeout: 'readonly',
         localStorage: 'readonly',
         sessionStorage: 'readonly',
+        navigator: 'readonly',
+        performance: 'readonly',
       },
     },
     rules: {
