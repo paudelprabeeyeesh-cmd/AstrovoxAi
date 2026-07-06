@@ -9,9 +9,23 @@ import {
   getLovableAiGatewayRunId,
   type AstrovoxModelId,
 } from "@/lib/ai-gateway.server";
+import { rateLimit } from "@/lib/rate-limit";
+
+const MessagePartSchema = z
+  .object({ type: z.string(), text: z.string().max(32_000).optional() })
+  .passthrough();
+
+const UIMessageSchema = z
+  .object({
+    id: z.string().max(200).optional(),
+    role: z.enum(["system", "user", "assistant"]),
+    parts: z.array(MessagePartSchema).max(64).optional(),
+    content: z.string().max(32_000).optional(),
+  })
+  .passthrough();
 
 const BodySchema = z.object({
-  messages: z.array(z.any()),
+  messages: z.array(UIMessageSchema).min(1).max(200),
   model: z.string().optional(),
   conversationId: z.string().uuid().nullable().optional(),
 });
@@ -58,6 +72,21 @@ export const Route = createFileRoute("/api/chat")({
           });
         }
         const userId = userRes.user.id;
+
+        // Ad-hoc per-user rate limit: 30 chat calls per minute.
+        const rl = rateLimit(`chat:${userId}`, 30, 60_000);
+        if (!rl.ok) {
+          return new Response(
+            JSON.stringify({ error: "Too many requests. Please slow down." }),
+            {
+              status: 429,
+              headers: {
+                "content-type": "application/json",
+                "retry-after": String(rl.retryAfterSec),
+              },
+            },
+          );
+        }
 
         let parsed;
         try {
