@@ -105,7 +105,46 @@ We welcome contributions to ASTRAVOX PRIME! Please refer to the [ROADMAP.md](ROA
 This project is licensed under the MIT License.
 
 ## Authors
+Prabesh Paudel
 
-- Prabesh Paudel
-- Dipson Baral
-- Susanta AI
+    Founder & Chief Executive Officer (CEO)
+
+    Chief AI Architect
+
+    Principal Software Engineer
+
+    Lead Full-Stack Engineer
+
+    Software Solutions Architect
+
+    AI Systems Designer
+
+    DevOps Engineer
+
+    Product Strategist
+
+    Technical Lead
+
+Dipson Baral
+
+    Co-Founder
+
+    Senior Full-Stack Software Engineer
+
+    Backend Engineer
+
+    DevOps Engineer
+
+    API & Database Engineer
+
+Susanta Baral
+
+    AI Research Engineer
+
+    Machine Learning Engineer
+
+    Data & AI Engineer
+
+    AI Model Integration Engineer
+
+    Prompt Engineering Specialist
