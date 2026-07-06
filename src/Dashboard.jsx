@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 import Sidebar from './Sidebar'
 import Chat from './Chat'
@@ -21,9 +21,9 @@ export default function Dashboard({ session }) {
     if (session) {
       loadUserStats()
     }
-  }, [session])
+  }, [session, loadUserStats])
 
-  async function loadUserStats() {
+  const loadUserStats = useCallback(async () => {
     try {
       const { count, error } = await supabase
         .from('conversations')
@@ -38,12 +38,8 @@ export default function Dashboard({ session }) {
       console.error('Failed to load stats:', err)
       setDbStatus('offline')
     }
-  }
+  }, [session.user.id])
 
-  const pushSystemLog = (message) => {
-    const timestamp = new Date().toLocaleTimeString()
-    setTerminalLogs(prev => [...prev, `[${timestamp}] ${message}`])
-  }
 
   return (
     <div style={{

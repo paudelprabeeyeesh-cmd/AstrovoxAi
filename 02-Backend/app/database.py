@@ -1,5 +1,7 @@
+import logging
 from .supabase_client import get_supabase
 
+logger = logging.getLogger(__name__)
 supabase = get_supabase()
 
 
@@ -10,7 +12,7 @@ async def get_user_profile(user_id: str):
         response = supabase.table("profiles").select("*").eq("id", user_id).execute()
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error fetching user profile: {e}")
+        logger.error(f"Error fetching user profile: {e}")
         return None
 
 
@@ -33,7 +35,7 @@ async def create_user_profile(
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error creating user profile: {e}")
+        logger.error(f"Error creating user profile: {e}")
         return None
 
 
@@ -43,7 +45,7 @@ async def update_user_profile(user_id: str, **kwargs):
         response = supabase.table("profiles").update(kwargs).eq("id", user_id).execute()
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error updating user profile: {e}")
+        logger.error(f"Error updating user profile: {e}")
         return None
 
 
@@ -64,7 +66,7 @@ async def create_conversation(user_id: str, title: str = None, model: str = "gpt
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error creating conversation: {e}")
+        logger.error(f"Error creating conversation: {e}")
         return None
 
 
@@ -82,7 +84,7 @@ async def get_conversations(user_id: str, limit: int = 50, offset: int = 0):
         )
         return response.data
     except Exception as e:
-        print(f"Error fetching conversations: {e}")
+        logger.error(f"Error fetching conversations: {e}")
         return []
 
 
@@ -95,7 +97,7 @@ async def get_conversation(conversation_id: int, user_id: str = None):
         response = query.execute()
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error fetching conversation: {e}")
+        logger.error(f"Error fetching conversation: {e}")
         return None
 
 
@@ -110,7 +112,7 @@ async def update_conversation(conversation_id: int, **kwargs):
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error updating conversation: {e}")
+        logger.error(f"Error updating conversation: {e}")
         return None
 
 
@@ -122,7 +124,7 @@ async def delete_conversation(conversation_id: int):
         ).execute()
         return True
     except Exception as e:
-        print(f"Error deleting conversation: {e}")
+        logger.error(f"Error deleting conversation: {e}")
         return False
 
 
@@ -153,7 +155,7 @@ async def create_message(
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error creating message: {e}")
+        logger.error(f"Error creating message: {e}")
         return None
 
 
@@ -170,7 +172,7 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
         )
         return response.data
     except Exception as e:
-        print(f"Error fetching messages: {e}")
+        logger.error(f"Error fetching messages: {e}")
         return []
 
 
@@ -187,7 +189,7 @@ async def get_recent_messages(conversation_id: int, limit: int = 10):
         )
         return response.data
     except Exception as e:
-        print(f"Error fetching recent messages: {e}")
+        logger.error(f"Error fetching recent messages: {e}")
         return []
 
 
@@ -202,7 +204,7 @@ async def save_memory(user_id: str, content: str, importance: int = 1):
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error saving memory: {e}")
+        logger.error(f"Error saving memory: {e}")
         return None
 
 
@@ -220,7 +222,7 @@ async def get_user_memory(user_id: str, limit: int = 50):
         )
         return response.data
     except Exception as e:
-        print(f"Error fetching memory: {e}")
+        logger.error(f"Error fetching memory: {e}")
         return []
 
 
@@ -233,7 +235,7 @@ async def get_user_settings(user_id: str):
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error fetching settings: {e}")
+        logger.error(f"Error fetching settings: {e}")
         return None
 
 
@@ -248,5 +250,5 @@ async def update_user_settings(user_id: str, **kwargs):
         )
         return response.data[0] if response.data else None
     except Exception as e:
-        print(f"Error updating settings: {e}")
+        logger.error(f"Error updating settings: {e}")
         return None

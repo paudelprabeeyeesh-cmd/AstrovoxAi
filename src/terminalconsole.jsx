@@ -81,12 +81,13 @@ export default function TerminalConsole({ userEmail, totalItems }) {
         )
         break
 
-      case '/ping':
+      case '/ping': {
         const pingTime = Math.floor(Math.random() * 30 + 5)
         response.push(
           `   🏓 PING response: ${pingTime}ms (${pingTime < 15 ? '🟢 Fast' : pingTime < 25 ? '🟡 Moderate' : '🔴 Slow'})`
         )
         break
+      }
 
       case '/date':
         response.push(
@@ -94,7 +95,7 @@ export default function TerminalConsole({ userEmail, totalItems }) {
         )
         break
 
-      case '/uptime':
+      case '/uptime': {
         const uptime = Math.floor(performance.now() / 1000)
         const h = Math.floor(uptime / 3600)
         const m = Math.floor((uptime % 3600) / 60)
@@ -103,6 +104,7 @@ export default function TerminalConsole({ userEmail, totalItems }) {
           `   ⏱️ System Uptime: ${h}h ${m}m ${s}s`
         )
         break
+      }
 
       case '/matrix':
         response.push(
@@ -141,12 +143,13 @@ export default function TerminalConsole({ userEmail, totalItems }) {
         )
         break
 
-      case '/echo':
+      case '/echo': {
         const echoText = input.replace('/echo', '').trim() || '...nothing to echo...'
         response.push(
           `   📢 ${echoText}`
         )
         break
+      }
 
       default:
         // Handle custom commands as API calls

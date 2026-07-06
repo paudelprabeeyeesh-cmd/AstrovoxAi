@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel
 from typing import Optional
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import os
 
 from openai import OpenAI
@@ -20,6 +22,7 @@ from .database import (
 )
 
 router = APIRouter(prefix="/chat", tags=["chat"])
+limiter = Limiter(key_func=get_remote_address)
 
 # Initialize OpenAI client
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -138,6 +141,7 @@ async def get_conversation_messages(
 
 
 @router.post("/message")
+@limiter.limit("30/minute")
 async def send_message(request: SendMessageRequest, authorization: str = Header(None)):
     """Send a message and get AI response"""
     user_id = get_user_id_from_token(authorization)

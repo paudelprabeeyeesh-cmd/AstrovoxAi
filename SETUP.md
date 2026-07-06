@@ -6,17 +6,55 @@
 - Python 3.9+ (for backend)
 - Supabase account and project
 - OpenAI API key
+- Docker and Docker Compose (optional, for containerized setup)
 
 ## Installation
 
-### 1. Clone the Repository
+### Option 1: Docker Compose (Recommended)
+
+1. Clone the repository:
+```bash
+git clone https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi.git
+cd AstrovoxAi
+```
+
+2. Configure environment variables:
+```bash
+cp .env.example .env
+```
+
+Edit `.env` with your actual values:
+- `VITE_SUPABASE_URL`: Your Supabase project URL
+- `VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
+- `OPENAI_API_KEY`: Your OpenAI API key
+- `ALLOWED_ORIGINS`: Comma-separated list of allowed frontend origins
+
+3. Set up the database:
+   - Go to your Supabase project dashboard
+   - Navigate to SQL Editor
+   - Run the SQL from `database/schemas/supabase_setup.sql`
+   - Run the migration from `database/migrations/0001_indexes_and_signup_trigger.sql`
+
+4. Start the application:
+```bash
+docker-compose up --build
+```
+
+The application will be available at:
+- Frontend: http://localhost:80
+- Backend: http://localhost:8000
+- API Docs: http://localhost:8000/docs
+
+### Option 2: Manual Setup
+
+#### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi.git
 cd AstrovoxAi
 ```
 
-### 2. Environment Setup
+#### 2. Environment Setup
 
 Copy `.env.example` to `.env` and fill in your credentials:
 
@@ -28,8 +66,9 @@ Edit `.env` with your actual values:
 - `VITE_SUPABASE_URL`: Your Supabase project URL
 - `VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
 - `OPENAI_API_KEY`: Your OpenAI API key
+- `VITE_API_URL`: http://localhost:8000
 
-### 3. Frontend Setup
+#### 3. Frontend Setup
 
 ```bash
 # Install dependencies
@@ -41,7 +80,7 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
-### 4. Backend Setup
+#### 4. Backend Setup
 
 ```bash
 # Navigate to backend directory
@@ -65,12 +104,14 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 The backend will be available at `http://localhost:8000`
 
-### 5. Database Setup
+#### 5. Database Setup
 
 1. Go to your Supabase project dashboard
 2. Navigate to SQL Editor
 3. Run the SQL from `database/schemas/supabase_setup.sql`
-4. This will create all necessary tables with RLS policies
+4. Run the migration from `database/migrations/0001_indexes_and_signup_trigger.sql`
+
+This will create all necessary tables with RLS policies and performance indexes.
 
 ## Features
 
@@ -80,6 +121,7 @@ The backend will be available at `http://localhost:8000`
 - Forgot password functionality
 - Session persistence
 - Protected routes
+- Rate limiting (5/minute for signup, 10/minute for login)
 
 ### Chat
 - Create multiple conversations
@@ -87,6 +129,7 @@ The backend will be available at `http://localhost:8000`
 - View conversation history
 - Real-time message updates
 - Typing indicators
+- Rate limiting (30/minute for messages)
 
 ### Memory System
 - Save important information
@@ -131,22 +174,56 @@ The backend will be available at `http://localhost:8000`
 - `GET /api/stats` - User statistics
 - `GET /api/memory` - Get memory
 
+### Health
+- `GET /health` - Health check
+- `GET /health/readiness` - Readiness probe
+- `GET /health/liveness` - Liveness probe
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd 02-Backend
+python -m pytest tests/ -v
+```
+
+### Backend Linting
+
+```bash
+cd 02-Backend
+python -m flake8 app tests
+```
+
+### Frontend Build
+
+```bash
+npm run build
+```
+
 ## Troubleshooting
 
 ### Frontend won't connect to backend
 - Make sure backend is running on `http://localhost:8000`
-- Check CORS settings in backend
+- Check CORS settings in backend (`ALLOWED_ORIGINS`)
 - Verify `VITE_API_URL` in `.env`
 
 ### Supabase connection issues
 - Verify `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
 - Check that tables exist in Supabase
 - Verify RLS policies are correctly set
+- Ensure database migrations have been run
 
 ### OpenAI API errors
 - Verify `OPENAI_API_KEY` is correct
 - Check API key has sufficient credits
 - Verify model name is correct (gpt-4 or gpt-3.5-turbo)
+
+### Docker issues
+- Ensure Docker and Docker Compose are installed
+- Check that ports 80 and 8000 are not in use
+- Verify environment variables are set in `.env`
+- Check Docker logs: `docker-compose logs -f`
 
 ## Development
 
@@ -168,17 +245,29 @@ AstrovoxAi/
 │   └── main.jsx           # React entry point
 ├── 02-Backend/            # FastAPI backend
 │   ├── app/
-│   │   ├── main.py        # FastAPI app
+│   │   ├── main.py        # FastAPI app with CORS and rate limiting
 │   │   ├── auth.py        # Authentication routes
 │   │   ├── chat.py        # Chat routes
 │   │   ├── api.py         # API routes
 │   │   ├── memory.py      # Memory routes
-│   │   └── database.py    # Database operations
+│   │   ├── database.py    # Database operations
+│   │   ├── supabase_client.py # Singleton Supabase client
+│   │   └── auth_utils.py  # Shared authentication utilities
+│   ├── tests/             # Backend tests
 │   └── requirements.txt    # Python dependencies
 ├── database/
-│   └── schemas/
-│       └── supabase_setup.sql # Database schema
-├── .env                   # Environment variables
+│   ├── schemas/
+│   │   └── supabase_setup.sql # Database schema
+│   └── migrations/
+│       └── 0001_indexes_and_signup_trigger.sql # Performance indexes
+├── .github/               # GitHub Actions CI/CD
+│   └── workflows/
+│       └── ci.yml         # CI/CD pipeline
+├── Dockerfile.backend      # Backend Docker configuration
+├── Dockerfile.frontend     # Frontend Docker configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── nginx.conf              # Nginx configuration
+├── .env.example            # Example environment variables
 ├── package.json           # Frontend dependencies
 ├── vite.config.js         # Vite configuration
 └── index.html             # HTML entry point
@@ -186,17 +275,7 @@ AstrovoxAi/
 
 ## Deployment
 
-### Frontend (Vercel/Netlify)
-1. Push code to GitHub
-2. Connect repository to Vercel/Netlify
-3. Set environment variables
-4. Deploy
-
-### Backend (Railway/Render)
-1. Push code to GitHub
-2. Connect repository to Railway/Render
-3. Set environment variables
-4. Deploy
+For production deployment, please refer to the [DEPLOYMENT.md](DEPLOYMENT.md) guide.
 
 ## Support
 
