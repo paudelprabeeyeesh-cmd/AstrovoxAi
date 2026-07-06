@@ -1,9 +1,12 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Check, Copy } from "lucide-react";
 import { useState } from "react";
+import { MermaidDiagram } from "./MermaidDiagram";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -32,7 +35,8 @@ export function Markdown({ content }: { content: string }) {
   return (
     <div className="prose-astro">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkMath]}
+        rehypePlugins={[rehypeKatex]}
         components={{
           code(props) {
             const { children, className, node, ...rest } = props as {
@@ -50,6 +54,9 @@ export function Markdown({ content }: { content: string }) {
                   {children}
                 </code>
               );
+            }
+            if (match?.[1] === "mermaid") {
+              return <MermaidDiagram code={codeText} />;
             }
             return (
               <div className="relative my-3">
