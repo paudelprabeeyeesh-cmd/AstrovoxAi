@@ -80,6 +80,7 @@ ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
 -- Profiles: Users can view all profiles, but only update their own
 CREATE POLICY "Public profiles are viewable by everyone" ON public.profiles FOR SELECT USING (true);
 CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 
 -- Conversations: Users can only see/edit their own conversations
 CREATE POLICY "Users can view own conversations" ON public.conversations FOR SELECT USING (auth.uid() = user_id);
@@ -90,6 +91,7 @@ CREATE POLICY "Users can delete own conversations" ON public.conversations FOR D
 -- Messages: Users can only see/edit their own messages
 CREATE POLICY "Users can view own messages" ON public.messages FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own messages" ON public.messages FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own messages" ON public.messages FOR UPDATE USING (auth.uid() = user_id);
 
 -- AI Memory: Users can only see/edit their own memory
 CREATE POLICY "Users can view own memory" ON public.ai_memory FOR SELECT USING (auth.uid() = user_id);
@@ -101,6 +103,7 @@ CREATE POLICY "Users can delete own memory" ON public.ai_memory FOR DELETE USING
 CREATE POLICY "Users can view own settings" ON public.user_settings FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can update own settings" ON public.user_settings FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own settings" ON public.user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own settings" ON public.user_settings FOR DELETE USING (auth.uid() = user_id);
 
 -- Functions and Triggers
 CREATE OR REPLACE FUNCTION public.handle_new_user()

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -12,6 +12,8 @@ from .auth import router as auth_router
 from .chat import router as chat_router
 from .api import router as api_router
 from .memory import router as memory_router
+from .storage import router as storage_router
+from .rate_limit import rate_limit_middleware
 
 load_dotenv()
 
@@ -24,6 +26,8 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+app.middleware("http")(rate_limit_middleware)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
@@ -49,6 +53,7 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
+app.include_router(storage_router)
 
 
 # Health check endpoints
