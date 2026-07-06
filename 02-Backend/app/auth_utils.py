@@ -14,7 +14,7 @@ def get_user_id_from_token(authorization: str) -> str:
         )
 
     try:
-        token = authorization.replace("Bearer ", "")
+        token = authorization.replace("Bearer ", "", 1).strip()
         response = get_supabase().auth.get_user(token)
     except Exception:
         raise HTTPException(

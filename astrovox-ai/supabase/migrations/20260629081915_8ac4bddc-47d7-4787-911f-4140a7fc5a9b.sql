@@ -1,0 +1,1 @@
+CREATE POLICY "error_logs_no_client_access" ON public.error_logs FOR ALL TO authenticated, anon USING (false) WITH CHECK (false);
