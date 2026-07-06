@@ -29,7 +29,7 @@ export default function Auth() {
     try {
       setLoading(true)
       if (isSignUp) {
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -46,7 +46,7 @@ export default function Auth() {
         setFullName('')
         setTimeout(() => setIsSignUp(false), 2000)
       } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password
         })

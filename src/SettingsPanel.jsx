@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 
 export default function SettingsPanel({ session }) {
@@ -21,9 +21,9 @@ export default function SettingsPanel({ session }) {
     if (session) {
       loadSettings()
     }
-  }, [session])
+  }, [session, loadSettings])
 
-  async function loadSettings() {
+  const loadSettings = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error: fetchError } = await supabase
@@ -44,7 +44,7 @@ export default function SettingsPanel({ session }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session.user.id])
 
   async function handleSaveSettings() {
     try {

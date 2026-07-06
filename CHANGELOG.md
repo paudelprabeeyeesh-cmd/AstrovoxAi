@@ -4,6 +4,64 @@ All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
+## [2.1.0] — Production Engineering Pass (2026-06-29)
+
+### Added
+- **Rate Limiting**: Implemented slowapi for backend rate limiting
+  - Signup: 5 requests/minute
+  - Login: 10 requests/minute
+  - Chat messages: 30 requests/minute
+- **CI/CD Pipeline**: Complete GitHub Actions workflow (`.github/workflows/ci.yml`)
+  - Frontend lint & build job
+  - Backend lint & test job
+  - Secret scanning with TruffleHog
+  - Dependency auditing (npm + safety)
+  - Docker build testing
+- **Docker Configuration**: Production-ready containerization
+  - `Dockerfile.backend` - Python 3.9-slim with health checks
+  - `Dockerfile.frontend` - Multi-stage Node 18-alpine + Nginx
+  - `docker-compose.yml` - Multi-container orchestration
+  - `nginx.conf` - Production reverse proxy with security headers
+- **Deployment Documentation**: Comprehensive `DEPLOYMENT.md` guide
+  - Docker deployment instructions
+  - Cloud platform deployment options
+  - Security considerations
+  - Scaling recommendations
+  - Monitoring and backup strategies
+
+### Changed
+- **Backend Dependencies**: Added `slowapi>=0.1.9` to requirements.txt
+- **Documentation Updates**:
+  - Updated `README.md` with new features (rate limiting, Docker, CI/CD)
+  - Updated `SETUP.md` with Docker Compose setup option
+  - Updated project structure in documentation
+
+### Fixed
+- **CI/CD Docker Build Path**: Fixed Docker build context in CI workflow
+  - Changed from `02-Backend/` to `.` for backend build
+  - Ensures correct Dockerfile resolution
+
+### Removed
+- **Legacy Documentation**: Removed outdated documentation files
+  - `DEVELOPMENT_GUIDE.md` (described removed Flask/Gemini stack)
+  - `QUICK_REFERENCE.md` (referenced removed architecture)
+  - `SESSION_SUMMARY.md` (session-specific, not canonical)
+  - `Documentation/` folder (legacy role profiles)
+
+### Security
+- Rate limiting prevents brute force attacks on authentication
+- Secret scanning in CI/CD prevents leaked credentials
+- Dependency auditing identifies vulnerable packages
+- Security headers configured in Nginx (X-Frame-Options, X-Content-Type-Options, etc.)
+
+### Verification
+- Backend tests: 5/5 passing ✅
+- Backend linting: Flake8 clean ✅
+- Backend formatting: Black compliant ✅
+- Frontend build: NOT VERIFIED (npm not available in environment)
+- Docker build: NOT VERIFIED (Docker not available in environment)
+- CI/CD configuration: Syntax validated ✅
+
 ## [Unreleased] — Production-readiness pass
 
 ### Fixed

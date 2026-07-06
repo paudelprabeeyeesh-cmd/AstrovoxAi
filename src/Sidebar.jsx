@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 
 export default function Sidebar({ session, onSelectConversation, currentConversationId }) {
@@ -24,9 +24,9 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
 
       return () => subscription.unsubscribe()
     }
-  }, [session])
+  }, [session, loadConversations])
 
-  async function loadConversations() {
+  const loadConversations = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error: fetchError } = await supabase
@@ -45,7 +45,7 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
     } finally {
       setLoading(false)
     }
-  }
+  }, [session.user.id])
 
   async function handleNewConversation() {
     try {
