@@ -2,10 +2,13 @@ import os
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from .supabase_client import get_supabase
 
 supabase = get_supabase()
+limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -33,6 +36,7 @@ class UpdatePasswordRequest(BaseModel):
 
 # Routes
 @router.post("/signup")
+@limiter.limit("5/minute")
 async def sign_up(request: SignUpRequest):
     """Register a new user with Supabase Auth"""
     try:
@@ -62,6 +66,7 @@ async def sign_up(request: SignUpRequest):
 
 
 @router.post("/login")
+@limiter.limit("10/minute")
 async def login(request: LoginRequest):
     """Login user with email and password"""
     try:

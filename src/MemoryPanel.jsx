@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 
 export default function MemoryPanel({ session }) {
@@ -11,9 +11,9 @@ export default function MemoryPanel({ session }) {
     if (session) {
       loadMemory()
     }
-  }, [session])
+  }, [session, loadMemory])
 
-  async function loadMemory() {
+  const loadMemory = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error: fetchError } = await supabase
@@ -33,7 +33,7 @@ export default function MemoryPanel({ session }) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [session.user.id])
 
   async function handleSaveMemory(e) {
     e.preventDefault()

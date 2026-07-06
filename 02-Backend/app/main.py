@@ -2,6 +2,9 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 from dotenv import load_dotenv
 
@@ -12,11 +15,15 @@ from .memory import router as memory_router
 
 load_dotenv()
 
+# Rate limiting setup
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="AstrovoxAi Engine",
     version="2.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).

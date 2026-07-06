@@ -19,5 +19,8 @@ def get_supabase() -> Client:
     url = os.getenv("VITE_SUPABASE_URL")
     key = os.getenv("VITE_SUPABASE_ANON_KEY")
     if not url or not key:
-        raise RuntimeError("Supabase credentials not configured")
+        raise RuntimeError(
+            "Supabase credentials not configured. "
+            "Please copy .env.example to .env and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+        )
     return create_client(url, key)

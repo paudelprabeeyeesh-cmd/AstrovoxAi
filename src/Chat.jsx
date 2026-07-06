@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
 
-export default function Chat({ session, conversationId, onConversationChange }) {
+export default function Chat({ session, conversationId, _onConversationChange }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,9 +19,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
     if (conversationId) {
       loadMessages()
     }
-  }, [conversationId])
+  }, [conversationId, loadMessages])
 
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error: fetchError } = await supabase
@@ -39,7 +39,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [conversationId])
 
   async function handleSendMessage(e) {
     e.preventDefault()
