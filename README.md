@@ -1,8 +1,8 @@
-# ASTRAVOX PRIME
+# ASTRAVOX Ai 
 
 ## Advanced AI Chat Platform
 
-ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
+ASTRAVOX Ai is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
 
 ## Features
 
@@ -37,7 +37,7 @@ ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelli
 
 ## Getting Started
 
-To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.md) guide.
+To set up and run ASTRAVOX Ai locally, please refer to the [SETUP.md](SETUP.md) guide.
 
 For production deployment, see the [DEPLOYMENT.md](DEPLOYMENT.md) guide.
 
