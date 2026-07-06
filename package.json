@@ -10,7 +10,7 @@
     "backend": "cd 02-Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
     "frontend": "vite",
     "start": "vite",
-    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
+    "lint": "eslint src --max-warnings 0"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",

@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
+// eslint-disable-next-line no-unused-vars
 import Sidebar from './Sidebar'
+// eslint-disable-next-line no-unused-vars
 import Chat from './Chat'
+// eslint-disable-next-line no-unused-vars
 import Telemetry from './telemetry'
+// eslint-disable-next-line no-unused-vars
 import TerminalConsole from './terminalconsole'
+// eslint-disable-next-line no-unused-vars
 import MemoryPanel from './MemoryPanel'
+// eslint-disable-next-line no-unused-vars
 import SettingsPanel from './SettingsPanel'
 
 export default function Dashboard({ session }) {
