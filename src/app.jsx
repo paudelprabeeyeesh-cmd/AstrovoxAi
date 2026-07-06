@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from "./supabase";
+// eslint-disable-next-line no-unused-vars
 import Auth from './auth'
+// eslint-disable-next-line no-unused-vars
 import Dashboard from './Dashboard'
 
 function App() {
