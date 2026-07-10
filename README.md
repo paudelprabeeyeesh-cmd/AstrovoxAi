@@ -105,7 +105,7 @@ We welcome contributions to ASTRAVOX PRIME! Please refer to the [ROADMAP.md](ROA
 This project is licensed under the MIT License.
 
 ## Authors
-Prabesh Paudel
+## Prabesh Paudel
 
     Founder & Chief Executive Officer (CEO)
 
