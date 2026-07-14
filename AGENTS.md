@@ -1,4 +1,4 @@
-<!-- LOVABLE:BEGIN -->
+# Agents Details
 > [!IMPORTANT]
 > This project is connected to Many Databases and Artificial Intelligenceso  Avoid rewriting
 > published git history — force pushing, or rebasing/amending/squashing commits
