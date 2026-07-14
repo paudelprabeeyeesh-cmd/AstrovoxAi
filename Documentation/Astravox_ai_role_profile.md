@@ -4,7 +4,7 @@
 # PRABESH PAUDEL 
 # Founder & Lead AI Engineer
 
-Prabesh Sir is Under 16 founder of AstrovoxAi, leading the vision, architecture, and development of the platform. He focuses on building intelligent AI systems, scalable software, and secure cloud-based solutions while continuously improving the user experience. His mission is to create an AI platform that combines powerful conversational intelligence with modern engineering practices Which Help In Education System Of Nepal.
+Prabesh Paudel is Under 16 founder of AstrovoxAi, leading the vision, architecture, and development of the platform. He focuses on building intelligent AI systems, scalable software, and secure cloud-based solutions while continuously improving the user experience. His mission is to create an AI platform that combines powerful conversational intelligence with modern engineering practices Which Help In Education System Of Nepal.
 # Core Team 
 
 # AI Engineering
@@ -25,6 +25,7 @@ Maintains deployment pipelines, Docker environments, CI/CD workflows, monitoring
 # Security Engineering
 
 Ensures data protection, authentication, authorization, vulnerability management, and secure software development practices across the platform.
+
 
 # Quality Assurance (QA)
 
@@ -127,6 +128,7 @@ The primary objectives of AstrovoxAi are:
 - Vite
 - HTML5
 - CSS3
+- Python 
 
 ## Backend
 
