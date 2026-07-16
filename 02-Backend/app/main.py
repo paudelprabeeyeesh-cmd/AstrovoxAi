@@ -9,6 +9,7 @@ from .auth import router as auth_router
 from .chat import router as chat_router
 from .api import router as api_router
 from .memory import router as memory_router
+from .intelligence_router import router as intelligence_router
 
 load_dotenv()
 
@@ -42,6 +43,7 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
+app.include_router(intelligence_router)
 
 
 # Health check endpoints
