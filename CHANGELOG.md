@@ -4,7 +4,17 @@ All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
-## [Unreleased] — Production-readiness pass
+## [Unreleased]
+
+### Changed
+- Replaced the generic feature list with a delivery-gated Astrovox AI product
+  roadmap. It defines the AI Workspace Foundation, conversation workspace,
+  project workbench, trusted knowledge/memory, supervised agent runtime,
+  enterprise platform, and the measurable definition of 100% completion.
+- Updated the README to distinguish current capabilities from planned work and
+  link the delivery roadmap.
+
+## [2.0.0] — Production-readiness pass
 
 ### Fixed
 - **Backend could not start (P0).** `app/main.py` used top-level imports
