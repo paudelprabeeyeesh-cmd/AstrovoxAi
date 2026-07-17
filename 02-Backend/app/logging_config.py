@@ -1,6 +1,15 @@
 import logging
 import os
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
+
+
+def _get_log_path() -> Path:
+    """Return a configurable log path and ensure its parent exists."""
+    configured_path = os.getenv("LOG_FILE", "logs/astravox.log")
+    log_path = Path(configured_path)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    return log_path
 
 def configure_logging():
     """Configure centralized logging for the application."""
@@ -16,7 +25,7 @@ def configure_logging():
     
     # File handler (rotating)
     file_handler = RotatingFileHandler(
-        "logs/astravox.log",
+        _get_log_path(),
         maxBytes=10 * 1024 * 1024,  # 10 MB
         backupCount=5
     )

@@ -72,11 +72,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         throw new Error('No authentication token available')
       }
 
-      // Send to backend. Set VITE_API_URL at build time for production.
-      // The "/api" fallback only works where a proxy routes /api/* to the
-      // backend (the Vite dev server, or an nginx/CDN rule in production).
+      // Stream tokens through the backend so model credentials remain server-side.
       const apiBase = import.meta.env.VITE_API_URL || '/api'
-      const response = await fetch(`${apiBase}/chat/message`, {
+      const response = await fetch(`${apiBase}/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -89,26 +87,56 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Failed to send message')
+      if (!response.ok || !response.body) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || 'Failed to start response stream')
       }
 
-      const result = await response.json()
+      const assistantMessageId = `stream-${Date.now()}`
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
+        conversation_id: conversationId,
+        user_id: session.user.id,
+        role: 'assistant',
+        content: '',
+        created_at: new Date().toISOString()
+      }])
 
-      // Add AI message
-      if (result.ai_message) {
-        setMessages(prev => [...prev, {
-          ...result.ai_message,
-          created_at: new Date(result.ai_message.created_at).toISOString()
-        }])
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+        buffer += decoder.decode(value || new Uint8Array(), { stream: !done })
+
+        const events = buffer.split('\n\n')
+        buffer = events.pop() || ''
+        for (const eventBlock of events) {
+          const event = eventBlock.match(/^event: (.+)$/m)?.[1]
+          const dataLine = eventBlock.match(/^data: (.+)$/m)?.[1]
+          if (!event || !dataLine) continue
+
+          const data = JSON.parse(dataLine)
+          if (event === 'token') {
+            setMessages(prev => prev.map(message => (
+              message.id === assistantMessageId
+                ? { ...message, content: message.content + data.content }
+                : message
+            )))
+          }
+          if (event === 'error') {
+            throw new Error(data.detail || 'The response stream ended unexpectedly')
+          }
+        }
+
+        if (done) break
       }
-
-      setTyping(false)
     } catch (err) {
       setError(`Error: ${err.message}`)
-      setTyping(false)
       console.error(err)
+    } finally {
+      setTyping(false)
     }
   }
 
@@ -275,7 +303,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
           placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          disabled={loading || !conversationId}
+          disabled={loading || typing || !conversationId}
           style={{
             flex: 1,
             padding: '12px 16px',
@@ -294,7 +322,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         />
         <button
           type="submit"
-          disabled={loading || !input.trim() || !conversationId}
+          disabled={loading || typing || !input.trim() || !conversationId}
           style={{
             padding: '0 24px',
             backgroundColor: '#06b6d4',
@@ -309,7 +337,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
             opacity: loading || !input.trim() ? 0.5 : 1
           }}
           onMouseEnter={(e) => {
-            if (!loading && input.trim()) {
+            if (!loading && !typing && input.trim()) {
               e.target.style.transform = 'scale(1.02)'
               e.target.style.boxShadow = '0 0 20px rgba(6,182,212,0.4)'
             }

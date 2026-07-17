@@ -14,6 +14,22 @@ purged ~360 junk files, and added the first DB migration.
 - Updated the README to distinguish current capabilities from planned work and
   link the delivery roadmap.
 
+### Added
+- Added the authenticated `POST /chat/stream` Server-Sent Events endpoint and
+  live-token chat UI integration. The existing JSON chat endpoint remains
+  compatible, while both transports now use the same persisted context builder.
+
+### Fixed
+- Made backend logging safe on a clean checkout by creating the configured log
+  directory before initializing the rotating file handler.
+- Declared NumPy, which is required by the loaded vector-memory implementation,
+  as a backend dependency.
+- Fixed the missing `Tuple` type import that prevented the memory package from
+  loading during application startup.
+- Resolved the `app.memory` module/package collision by moving the HTTP router
+  to `memory_router.py`; memory endpoints now load alongside the layered memory
+  domain package.
+
 ## [2.0.0] — Production-readiness pass
 
 ### Fixed

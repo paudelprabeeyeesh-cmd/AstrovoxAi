@@ -162,6 +162,24 @@ Response:
 
 ## Chat Endpoints
 
+### Stream a Chat Response
+
+```http
+POST /chat/stream
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "conversation_id": 42,
+  "message": "Summarize this project",
+  "model": "gpt-4"
+}
+```
+
+Returns `text/event-stream`. Events are JSON payloads named `message`, `token`,
+`done`, and `error`. The assistant message is persisted only after a successful
+`done` event. Clients must treat `error` as a retryable incomplete response.
+
 ### Create Conversation
 
 ```http

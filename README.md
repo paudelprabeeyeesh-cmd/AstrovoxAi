@@ -17,6 +17,7 @@ scope, dependency order, acceptance gates, and definition of completion.
 - **Persistent Sessions**: Users remain logged in across sessions, providing a continuous experience.
 - **Protected Routes**: Ensures that only authenticated users can access sensitive parts of the application.
 - **AI Chat Interface**: A dynamic chat environment where users can interact with an AI, create new conversations, and review past interactions.
+- **Streaming AI Responses**: Authenticated Server-Sent Events deliver response tokens progressively while completed responses remain persisted in conversation history.
 - **Conversation History**: All messages and conversations are saved and can be loaded for future reference.
 - **AI Memory System**: An intelligent memory system that stores important information from conversations, allowing the AI to provide more personalized and context-aware responses.
 - **Dashboard**: A comprehensive dashboard featuring:

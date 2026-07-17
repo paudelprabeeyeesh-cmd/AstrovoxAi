@@ -14,6 +14,7 @@ anthropic>=0.18.0
 # Intelligence Engine Dependencies
 # Vector database for semantic search
 pgvector>=0.2.0
+numpy>=1.26.0
 
 # PDF processing
 PyPDF2>=3.0.0
