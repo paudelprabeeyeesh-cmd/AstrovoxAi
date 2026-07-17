@@ -1,10 +1,17 @@
-# ASTRAVOX PRIME
+# ASTROVOX AI
 
-## Advanced AI Chat Platform
+## AI Workspace Platform
 
-ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
+Astrovox AI is evolving from an AI chat application into a trusted workspace for
+conversation, knowledge, memory, projects, and supervised agent execution. It
+uses a React/Vite frontend, a FastAPI backend, and Supabase/PostgreSQL.
 
-## Features
+The delivery plan intentionally prioritizes a reliable ChatGPT-quality chat
+workspace, followed by a visible Devin-style project workbench and organized
+Gemini-style knowledge workflows. See [ROADMAP.md](ROADMAP.md) for the full
+scope, dependency order, acceptance gates, and definition of completion.
+
+## Current capabilities
 
 - **User Authentication**: Secure sign-up, login, logout, and password reset functionalities powered by Supabase Auth.
 - **Persistent Sessions**: Users remain logged in across sessions, providing a continuous experience.
@@ -29,6 +36,14 @@ ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelli
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **AI Integration**: OpenAI API
+
+## Product roadmap
+
+The current product baseline is documented above; planned capabilities must not
+be mistaken for released features. The complete product roadmap describes the
+target conversation workspace, project workbench, retrieval/memory platform,
+agent controls, enterprise requirements, and release gates:
+[ROADMAP.md](ROADMAP.md).
 
 ## Getting Started
 
