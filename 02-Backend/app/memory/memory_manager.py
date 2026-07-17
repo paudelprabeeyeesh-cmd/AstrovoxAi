@@ -18,7 +18,7 @@ Manages the complete memory lifecycle including:
 - Synchronization
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from datetime import datetime
 
 from .context_memory import ContextMemory, ContextType
