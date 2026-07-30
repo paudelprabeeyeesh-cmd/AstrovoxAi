@@ -23,10 +23,9 @@ cd AstrovoxAi
 cp .env.example .env
 ```
 
-Edit `.env` with your actual values:
-- `VITE_SUPABASE_URL`: Your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY`: Your Supabase anon key
-- `OPENAI_API_KEY`: Your OpenAI API key
+- `VITE_SUPABASE_URL`: Hidden
+- `VITE_SUPABASE_ANON_KEY`: Hidden
+- `OPENAI_API_KEY`: Hidden
 - `ALLOWED_ORIGINS`: Comma-separated list of allowed frontend origins
 
 3. Set up the database:
