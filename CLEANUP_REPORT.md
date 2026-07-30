@@ -16,7 +16,7 @@ For every candidate the following references were searched and found **empty**:
 - Imports inside `src/**` (no imports of `js/`, `css/`, `01-Frontend/`, `astravox-ai/`, etc.).
 - Imports inside `02-Backend/app/**` (only relative `.` imports + third-party libs).
 
-Verification after removal: `npm run build` ✅, `uvicorn app.main:app` imports (12 routes) ✅, `pytest` ✅.
+Verification after removal: `npm run build` {Done }, `uvicorn app.main:app` imports (12 routes) {Done }, `pytest` {Done }.
 
 ## Removed — alternate / parallel architectures (not the canonical stack)
 
