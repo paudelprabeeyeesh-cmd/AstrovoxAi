@@ -445,7 +445,6 @@ Special thanks to the open-source communities behind:
 Their technologies make modern, scalable application development possible.
 
 
-Conclusion
+Conclusion:-
 
 AstrovoxAi is designed as a scalable, maintainable, and production-ready AI platform. By combining a modern frontend, a robust backend, secure authentication, cloud database integration, and DevOps best practices, the project establishes a strong foundation for future AI-powered applications. Its modular architecture, deployment readiness, and emphasis on code quality make it suitable for continuous development, collaboration, and real-world use.
-
