@@ -170,8 +170,8 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 
 {
-  "title": "My First Chat",
-  "model": "gpt-4"
+  "title": "Casual Conversation",
+  "model": "optimus-3,5"
 }
 ```
 
@@ -182,8 +182,8 @@ Response:
   "conversation": {
     "id": 1,
     "user_id": "uuid",
-    "title": "My First Chat",
-    "model": "gpt-4",
+    "title": "Casual Conversation",
+    "model": "optimus-3,5",
     "created_at": "2024-01-01T12:00:00Z",
     "updated_at": "2024-01-01T12:00:00Z"
   }
@@ -205,8 +205,8 @@ Response:
     {
       "id": 1,
       "user_id": "uuid",
-      "title": "My First Chat",
-      "model": "gpt-4",
+      "title": "Casual conversation",
+      "model": "optimus-3,5",
       "created_at": "2024-01-01T12:00:00Z",
       "updated_at": "2024-01-01T12:00:00Z"
     }
@@ -229,8 +229,8 @@ Response:
   "conversation": {
     "id": 1,
     "user_id": "uuid",
-    "title": "My First Chat",
-    "model": "gpt-4",
+    "title": "Casual conversation",
+    "model": "optimus-3,5",
     "created_at": "2024-01-01T12:00:00Z",
     "updated_at": "2024-01-01T12:00:00Z"
   }
@@ -280,7 +280,7 @@ Content-Type: application/json
 {
   "conversation_id": 1,
   "message": "What is the capital of France?",
-  "model": "gpt-4"
+  "model": "optimus-3,5"
 }
 ```
 
@@ -402,7 +402,7 @@ Response:
 ```json
 {
   "status": "OK",
-  "service": "astravox-ai-api",
+  "service": "Astrovox-Ai-Api",
   "version": "2.0.0",
   "timestamp": "2024-01-01T12:00:00Z"
 }
@@ -514,4 +514,4 @@ Current version: **2.0.0**
 
 ## Support
 
-For API support, please refer to the GitHub repository or contact the development team.
+For API support, please contact the development team. 
