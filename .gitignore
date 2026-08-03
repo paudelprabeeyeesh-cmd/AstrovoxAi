@@ -13,7 +13,7 @@ build/
 !.env.example
 *.env
 .env
-
+*.env*
 
 # Python
 __pycache__/
