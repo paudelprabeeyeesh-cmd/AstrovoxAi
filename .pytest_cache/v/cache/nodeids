@@ -1,0 +1,13 @@
+[
+  "02-Backend/tests/test_auth_and_rate_limit.py::test_rate_limit_headers_present_on_health_endpoint",
+  "02-Backend/tests/test_health.py::test_chat_message_validation_rejects_invalid_payload",
+  "02-Backend/tests/test_health.py::test_health",
+  "02-Backend/tests/test_health.py::test_liveness",
+  "02-Backend/tests/test_health.py::test_protected_route_requires_auth",
+  "02-Backend/tests/test_health.py::test_readiness",
+  "02-Backend/tests/test_health.py::test_root_lists_endpoints",
+  "02-Backend/tests/test_persistence_and_storage.py::test_persistent_usage_tracker_uses_local_store",
+  "02-Backend/tests/test_persistence_and_storage.py::test_storage_service_uploads_and_enforces_owner_paths",
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id",
+  "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_blocks_excess_requests"
+]
