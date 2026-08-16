@@ -1,12 +1,12 @@
-# ASTRAVOX PRIME - Architecture Document
+# Astravox AI - Architecture Document
 
 ## 1. Introduction
 
-This document outlines the architectural design of ASTRAVOX PRIME, an advanced AI chat platform. It details the system's components, their interactions, and the technologies employed to ensure a scalable, maintainable, and robust application.
+This document outlines the architectural design of Astravox AI, an advanced AI chat platform. It details the system's components, their interactions, and the technologies employed to ensure a scalable, maintainable, and robust application.
 
 ## 2. High-Level Architecture
 
-ASTRAVOX PRIME follows a client-server architecture, separating the user interface from the backend logic and data storage. The system is composed of three main layers:
+Astravox AI follows a client-server architecture, separating the user interface from the backend logic and data storage. The system is composed of three main layers:
 
 1.  **Frontend (Client-side)**: A React-based web application providing the user interface.
 2.  **Backend (Server-side)**: A FastAPI application handling business logic, API endpoints, and communication with external services.
@@ -48,6 +48,8 @@ The backend is developed with FastAPI, a modern, fast (high-performance) web fra
 -   **Business Logic**: Processes requests, interacts with the database, and communicates with the AI service.
 -   **Authentication & Authorization**: Validates user tokens and enforces access control using Supabase's authentication system.
 -   **Error Handling & Logging**: Provides robust error handling and logging mechanisms.
+-   **Request Correlation**: Adds a safe `X-Request-ID` to every response so a
+    request can be traced across clients, handlers, and future background jobs.
 -   **Modularity**: Organized into distinct modules (e.g., `auth.py`, `chat.py`, `memory.py`, `api.py`, `database.py`) for clear separation of concerns.
 
 **Key Technologies:**
@@ -93,6 +95,8 @@ Supabase serves as the backend-as-a-service, providing a PostgreSQL database and
 -   **Authorization (RLS)**: Row Level Security policies are enforced at the database level to prevent unauthorized data access.
 -   **Environment Variables**: Sensitive API keys and credentials are stored in environment variables and not hardcoded in the codebase.
 -   **CORS**: Cross-Origin Resource Sharing is configured to allow secure communication between the frontend and backend.
+-   **Rate Limiting**: SlowAPI applies a configurable per-client limit at the
+    API boundary; distributed deployments should use shared Redis storage.
 -   **Input Validation**: Pydantic models are used in FastAPI to ensure all incoming data conforms to expected schemas, preventing common injection attacks.
 
 ## 6. Scalability and Maintainability
@@ -109,4 +113,4 @@ Supabase serves as the backend-as-a-service, providing a PostgreSQL database and
 -   **User Profile Management**: Allow users to update their profile information and preferences directly from the dashboard.
 -   **Custom AI Models**: Enable users to configure and use different AI models or fine-tuned models.
 
-This architecture provides a solid foundation for ASTRAVOX PRIME, allowing for continuous development and the integration of advanced AI features while maintaining a secure and performant system. 
+This architecture provides a solid foundation for Astravox AI, allowing for continuous development and the integration of advanced AI features while maintaining a secure and performant system.

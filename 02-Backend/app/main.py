@@ -14,7 +14,7 @@ from .chat import router as chat_router
 from .api import router as api_router
 from .memory_router import router as memory_router
 from .intelligence_router import router as intelligence_router
-from .security import SecurityHeadersMiddleware
+from .security import RequestIDMiddleware, SecurityHeadersMiddleware
 
 load_dotenv()
 
@@ -31,6 +31,7 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[rate_limit])
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(RequestIDMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS Middleware

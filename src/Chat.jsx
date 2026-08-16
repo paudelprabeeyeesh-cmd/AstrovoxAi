@@ -7,6 +7,8 @@ export default function Chat({ session, conversationId, onConversationChange }) 
   const [loading, setLoading] = useState(false)
   const [typing, setTyping] = useState(false)
   const messagesEndRef = useRef(null)
+  const abortControllerRef = useRef(null)
+  const lastPromptRef = useRef('')
   const [error, setError] = useState(null)
 
   // Auto-scroll to bottom
@@ -18,7 +20,10 @@ export default function Chat({ session, conversationId, onConversationChange }) 
   useEffect(() => {
     if (conversationId) {
       loadMessages()
+    } else {
+      setMessages([])
     }
+    return () => abortControllerRef.current?.abort()
   }, [conversationId])
 
   async function loadMessages() {
@@ -46,6 +51,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
     if (!input.trim() || !conversationId) return
 
     const userMessage = input.trim()
+    lastPromptRef.current = userMessage
     setInput('')
     setError(null)
 
@@ -74,12 +80,14 @@ export default function Chat({ session, conversationId, onConversationChange }) 
 
       // Stream tokens through the backend so model credentials remain server-side.
       const apiBase = import.meta.env.VITE_API_URL || '/api'
+      abortControllerRef.current = new AbortController()
       const response = await fetch(`${apiBase}/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
+        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           conversation_id: conversationId,
           message: userMessage,
@@ -133,11 +141,23 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         if (done) break
       }
     } catch (err) {
+      if (err.name === 'AbortError') return
       setError(`Error: ${err.message}`)
       console.error(err)
     } finally {
+      abortControllerRef.current = null
       setTyping(false)
     }
+  }
+
+  function stopResponse() {
+    abortControllerRef.current?.abort()
+    setTyping(false)
+  }
+
+  function retryLastPrompt() {
+    if (!lastPromptRef.current || typing) return
+    setInput(lastPromptRef.current)
   }
 
   return (
@@ -187,6 +207,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
             color: '#f87171'
           }}>
             ⚠️ {error}
+            <button type="button" onClick={retryLastPrompt} style={{ marginLeft: '10px', color: '#67e8f9', background: 'transparent', border: 0, cursor: 'pointer' }}>
+              Retry
+            </button>
           </div>
         )}
 
@@ -321,8 +344,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
           onBlur={(e) => e.target.style.borderColor = '#1e293b'}
         />
         <button
-          type="submit"
-          disabled={loading || typing || !input.trim() || !conversationId}
+          type={typing ? 'button' : 'submit'}
+          onClick={typing ? stopResponse : undefined}
+          disabled={loading || (!typing && (!input.trim() || !conversationId))}
           style={{
             padding: '0 24px',
             backgroundColor: '#06b6d4',
@@ -347,7 +371,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
             e.target.style.boxShadow = 'none'
           }}
         >
-          SEND
+          {typing ? 'STOP' : 'SEND'}
         </button>
       </form>
 

@@ -1,4 +1,4 @@
-# ASTRAVOX PRIME - Setup Guide
+# Astravox AI - Setup Guide
 
 ## Prerequisites
 
@@ -64,6 +64,12 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 The backend will be available at `http://localhost:8000`
+
+### Continuous integration
+
+Pull requests and pushes to `main`/`master` run `.github/workflows/ci.yml`.
+The workflow installs the backend requirements and runs `pytest`, then runs
+`npm ci` and the Vite production build.
 
 ### 5. Database Setup
 

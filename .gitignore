@@ -25,7 +25,6 @@ venv/
 
 # OS / editor junk
 .DS_Store
-<<<<<<< HEAD
 Thumbs.db
 desktop.ini
 
@@ -36,6 +35,4 @@ logs/*.log
 # Backup / temp files
 *~
 *.bak
-=======
 .aider*
->>>>>>> 7996aabd (Initial commit)
