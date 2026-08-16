@@ -4,6 +4,8 @@
 
 - Automatically select or create a conversation after authentication.
 - Add stop/cancel and retry controls for streamed chat responses.
+- Add safe code-block rendering, message copy controls, user-message editing, and multiline chat composition.
+- Support both legacy Supabase anon keys and current Supabase publishable-key configuration.
 - Remove stale `.gitignore` conflict markers and document the three-day demo launch checklist.
 - Update product attribution to Prabesh Paudel.
 

@@ -32,6 +32,7 @@ scope, dependency order, acceptance gates, and definition of completion.
 - **API Protection**: Request rate limiting and baseline browser-facing security headers are enabled at the FastAPI boundary.
 - **Request Correlation**: Every API response includes a safe `X-Request-ID` for tracing frontend and backend activity.
 - **Demo-ready conversation flow**: New accounts automatically open a conversation, and users can stop an in-flight response or retry the last prompt.
+- **Safer rich chat**: Messages render code blocks without injecting model HTML; users can copy messages and edit their own prompts.
 - **Launch evidence**: The three-day release and rehearsal plan is documented in [DEMO_LAUNCH_CHECKLIST.md](DEMO_LAUNCH_CHECKLIST.md).
 
 ## Technology Stack
