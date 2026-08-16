@@ -127,8 +127,8 @@ AstrovoxAi is undergoing final production hardening. This document tracks:
 | ENV-001 | Missing `.env` file in repo | LOW | EXPECTED | Use `.env.example` |
 | ENV-002 | RATE_LIMIT default documented | MEDIUM | VERIFY | Check if working |
 | ENV-003 | LOG_LEVEL validation missing | MEDIUM | TODO | Add validation |
-| SEC-001 | Rate limiting middleware | MEDIUM | TODO | Add slowapi config |
-| SEC-002 | Security headers | MEDIUM | TODO | Add middleware |
+| SEC-001 | Rate limiting middleware | MEDIUM | DONE | `slowapi` global limiter; move to Redis storage before multiple API replicas |
+| SEC-002 | Security headers | MEDIUM | DONE | API middleware adds baseline response headers |
 | PERF-001 | Bundle size optimization | LOW | DEFERRED | Next sprint |
 | TEST-001 | E2E test coverage | MEDIUM | PARTIAL | 5/9 tests passing |
 

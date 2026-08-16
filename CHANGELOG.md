@@ -30,6 +30,10 @@ purged ~360 junk files, and added the first DB migration.
   to `memory_router.py`; memory endpoints now load alongside the layered memory
   domain package.
 
+### Security
+- Added API-wide rate limiting and baseline security headers, with regression
+  coverage for the response headers and limiter configuration.
+
 ## [2.0.0] — Production-readiness pass
 
 ### Fixed
