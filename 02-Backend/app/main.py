@@ -2,6 +2,10 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+from slowapi.util import get_remote_address
 import os
 from dotenv import load_dotenv
 
@@ -10,6 +14,7 @@ from .chat import router as chat_router
 from .api import router as api_router
 from .memory_router import router as memory_router
 from .intelligence_router import router as intelligence_router
+from .security import SecurityHeadersMiddleware
 
 load_dotenv()
 
@@ -18,6 +23,15 @@ app = FastAPI(
     version="2.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
+
+# Keep rate limiting at the API edge. Redis storage should replace the in-memory
+# default before running multiple workers or replicas in production.
+rate_limit = os.getenv("RATE_LIMIT", "120/minute")
+limiter = Limiter(key_func=get_remote_address, default_limits=[rate_limit])
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).

@@ -29,6 +29,7 @@ scope, dependency order, acceptance gates, and definition of completion.
 - **Responsive UI**: Designed to provide an optimal viewing and interaction experience across a wide range of devices.
 - **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
 - **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
+- **API Protection**: Request rate limiting and baseline browser-facing security headers are enabled at the FastAPI boundary.
 
 ## Technology Stack
 
