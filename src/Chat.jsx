@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import MessageContent from './MessageContent'
 
 export default function Chat({ session, conversationId, onConversationChange }) {
   const [messages, setMessages] = useState([])
@@ -10,6 +11,9 @@ export default function Chat({ session, conversationId, onConversationChange }) 
   const abortControllerRef = useRef(null)
   const lastPromptRef = useRef('')
   const [error, setError] = useState(null)
+  const [editingMessageId, setEditingMessageId] = useState(null)
+  const [editedContent, setEditedContent] = useState('')
+  const [copiedMessageId, setCopiedMessageId] = useState(null)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -160,6 +164,41 @@ export default function Chat({ session, conversationId, onConversationChange }) 
     setInput(lastPromptRef.current)
   }
 
+  async function copyMessage(message) {
+    await navigator.clipboard?.writeText(message.content)
+    setCopiedMessageId(message.id)
+    window.setTimeout(() => setCopiedMessageId(null), 1500)
+  }
+
+  async function saveEditedMessage(message) {
+    const content = editedContent.trim()
+    if (!content || content === message.content) {
+      setEditingMessageId(null)
+      return
+    }
+
+    try {
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({ content })
+        .eq('id', message.id)
+        .eq('user_id', session.user.id)
+
+      if (updateError) throw updateError
+      setMessages(prev => prev.map(item => item.id === message.id ? { ...item, content } : item))
+      setEditingMessageId(null)
+    } catch (err) {
+      setError(`Unable to edit message: ${err.message}`)
+    }
+  }
+
+  function handleComposerKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      if (!typing && input.trim() && conversationId) handleSendMessage(event)
+    }
+  }
+
   return (
     <div style={{
       display: 'flex',
@@ -264,13 +303,34 @@ export default function Chat({ session, conversationId, onConversationChange }) 
               lineHeight: '1.5',
               wordWrap: 'break-word'
             }}>
-              {msg.content}
+              {editingMessageId === msg.id ? (
+                <div>
+                  <textarea
+                    autoFocus
+                    value={editedContent}
+                    onChange={(event) => setEditedContent(event.target.value)}
+                    style={{ width: '100%', minHeight: '72px', boxSizing: 'border-box', resize: 'vertical', background: '#020617', color: '#e2e8f0', border: '1px solid #67e8f9', borderRadius: '6px', padding: '8px', fontFamily: 'inherit' }}
+                  />
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                    <button type="button" onClick={() => saveEditedMessage(msg)} style={{ border: 0, borderRadius: '5px', padding: '5px 8px', background: '#67e8f9', cursor: 'pointer', fontSize: '10px' }}>Save</button>
+                    <button type="button" onClick={() => setEditingMessageId(null)} style={{ border: '1px solid #64748b', borderRadius: '5px', padding: '5px 8px', background: 'transparent', color: '#cbd5e1', cursor: 'pointer', fontSize: '10px' }}>Cancel</button>
+                  </div>
+                </div>
+              ) : <MessageContent content={msg.content} />}
               <div style={{
                 fontSize: '10px',
                 color: msg.role === 'user' ? 'rgba(0,0,0,0.5)' : '#64748b',
                 marginTop: '6px'
               }}>
                 {new Date(msg.created_at).toLocaleTimeString()}
+                <button type="button" onClick={() => copyMessage(msg)} style={{ marginLeft: '8px', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '10px' }}>
+                  {copiedMessageId === msg.id ? 'Copied' : 'Copy'}
+                </button>
+                {msg.role === 'user' && editingMessageId !== msg.id && (
+                  <button type="button" onClick={() => { setEditedContent(msg.content); setEditingMessageId(msg.id) }} style={{ marginLeft: '8px', border: 0, background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: '10px' }}>
+                    Edit
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -321,15 +381,18 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         backgroundColor: 'rgba(4, 8, 20, 0.5)',
         backdropFilter: 'blur(8px)'
       }}>
-        <input
-          type="text"
+        <textarea
           placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleComposerKeyDown}
           disabled={loading || typing || !conversationId}
           style={{
             flex: 1,
             padding: '12px 16px',
+            minHeight: '46px',
+            maxHeight: '140px',
+            resize: 'vertical',
             borderRadius: '40px',
             backgroundColor: '#050a18',
             border: '1px solid #1e293b',
