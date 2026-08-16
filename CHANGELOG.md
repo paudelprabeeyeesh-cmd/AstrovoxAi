@@ -1,13 +1,31 @@
 # Changelog
 
+## Unreleased — demo readiness
+
+- Automatically select or create a conversation after authentication.
+- Add stop/cancel and retry controls for streamed chat responses.
+- Remove stale `.gitignore` conflict markers and document the three-day demo launch checklist.
+- Update product attribution to Prabesh Paudel.
+
 All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
 ## [Unreleased]
 
+- Added request ID middleware with safe propagation for API observability.
+- Added regression coverage for request ID generation and sanitization.
+- Added GitHub Actions CI for backend tests and frontend production builds.
+
 ### Changed
-- Replaced the generic feature list with a delivery-gated Astrovox AI product
+- Standardized the public product name as **Astravox AI** in the README and
+  roadmap, and listed **Prabesh Paudel** as the sole public author.
+- Expanded the technical roadmap into a phased product plan covering premium
+  chat, projects, cited knowledge and memory, model routing, supervised agents,
+  developer tooling, multimodal AI, enterprise controls, reliability, and
+  domain-specific expert modes. The roadmap now includes exit criteria and
+  measurable success metrics for each investment area.
+- Replaced the generic feature list with a delivery-gated Astravox AI product
   roadmap. It defines the AI Workspace Foundation, conversation workspace,
   project workbench, trusted knowledge/memory, supervised agent runtime,
   enterprise platform, and the measurable definition of 100% completion.

@@ -1,326 +1,337 @@
-# Astrovox AI Technical Roadmap
+# Astravox AI Product and Technical Roadmap
 
 > **Status:** active delivery plan
 >
-> **North star:** Astrovox is an AI workspace platform, not just a chatbot. It should combine premium chat, project execution, memory, retrieval, agents, multimodal input, and enterprise controls into one coherent product.
+> **North star:** Astravox AI is an AI operating system where people and teams can think, research, build, automate, and retain knowledge in one trusted workspace.
 
-This roadmap is written for engineering execution. It prioritizes the foundational platform layers that make every later feature safer, cheaper, and faster to ship.
+This is an execution roadmap, not a list of claims. A capability is only released after it passes its product, security, reliability, and rollout gates.
 
-## Product strategy
+## Product thesis
 
-Astrovox should win by being:
+Astravox AI combines five capabilities that are usually separate:
 
-- a trusted assistant for everyday chat and writing,
-- a project workspace for ongoing work,
-- a knowledge system with inspectable citations and memory,
-- an execution environment for supervised agent workflows,
-- and a platform that can expand into many domains without rewriting the core.
+1. A fast, delightful conversational interface.
+2. Persistent projects, files, tasks, and organizational knowledge.
+3. A multi-model intelligence layer optimized for quality, latency, privacy, and cost.
+4. Supervised agents that execute work with clear boundaries and human approval.
+5. Enterprise governance that makes real business data safe to use.
 
-The goal is not to ship every AI feature immediately. The goal is to build a platform that can support many fields while staying maintainable, secure, and measurable.
+The first product wedge should be the **AI development and research workspace**. Users should be able to reason in chat, attach evidence, plan work, run supervised tools, review results, and preserve project context. That workflow earns daily retention before Astravox expands into every field.
 
-## What "best AI platform" means here
+## Operating principles
 
-To reach a world-class standard, Astrovox needs all of the following:
-
-- premium conversational UX with streaming, editing, branching, citations, and artifacts,
-- project/workspace persistence with tasks, files, notes, and history,
-- secure retrieval and memory with permissions and source traceability,
-- model routing and fallback across multiple providers,
-- safe agent orchestration with approvals, logging, and budgets,
-- multimodal support for documents, images, screenshots, OCR, and voice,
-- team and enterprise controls such as RBAC, audit logs, SSO, and quotas,
-- observability, evaluations, and release gates so quality can be measured.
-
-## Roadmap principles
-
-1. Trust before autonomy.
-2. One workspace, not many disconnected tools.
-3. Every important action must be observable.
-4. Every expensive action must be budgeted.
-5. Every protected resource must be authorized.
-6. New capabilities must be built on reusable platform primitives.
+1. **Trust before autonomy.** Agents show plans and actions; meaningful side effects require approval.
+2. **One workspace.** Chat, projects, memory, knowledge, and tasks share identity, permissions, and history.
+3. **Evidence over assertion.** Grounded answers cite sources; agents show logs, diffs, and test evidence.
+4. **Privacy by default.** Data ownership, retention, export, deletion, and connector permissions are explicit.
+5. **Measure quality.** Evaluate task success, grounding, safety, latency, reliability, retention, and unit cost.
+6. **Build reusable primitives.** Models, tools, connectors, memory, jobs, and policies remain modular.
+7. **Expand safely.** High-risk domains require extra controls and domain expertise.
 
 ## Definition of done
 
-A feature is only considered complete when it has:
+Every shipped capability requires:
 
-- a documented user flow,
-- validated API contracts,
-- authorization rules,
-- error states and loading states,
-- tests,
-- telemetry,
-- and a production rollout plan.
+- a documented user journey and API contract;
+- authentication, authorization, validation, and secure defaults;
+- accessible loading, empty, success, and failure states;
+- unit tests plus integration or end-to-end coverage where appropriate;
+- logs, metrics, traces, and operational alerts;
+- privacy, retention, audit, and cost behavior;
+- a migration and rollback plan; and
+- updated README, API, architecture, and changelog documentation when relevant.
 
-## Roadmap phases
+## Roadmap at a glance
 
-### Phase 0 - Platform stabilization
+| Phase | Product outcome | Core investment |
+| --- | --- | --- |
+| 0 | Reliable foundation | Architecture, testing, CI, security, observability |
+| 1 | Premium AI chat | Streaming, rich messages, conversations, accessibility |
+| 2 | Persistent workspace | Projects, files, tasks, sharing, activity history |
+| 3 | Trusted knowledge | Ingestion, cited RAG, inspectable memory, permissions |
+| 4 | Model intelligence | Multi-model gateway, routing, evaluations, cost control |
+| 5 | Supervised agents | Jobs, tools, sandboxes, approvals, audit trails |
+| 6 | Developer and automation platform | Code workspace, connectors, workflows, public API |
+| 7 | Multimodal intelligence | Vision, OCR, voice, real-time interactions |
+| 8 | Team and enterprise | Organizations, RBAC, SSO, billing, compliance |
+| 9 | Reliability at scale | SLOs, disaster recovery, capacity, security operations |
+| 10 | Vertical solutions | Domain workflows on the shared platform |
 
-Objective: make the current application safe to evolve.
+## Phase 0 - Platform foundation and engineering discipline
 
-Deliverables:
+**Goal:** make the product safe and inexpensive to evolve.
 
-- consistent codebase structure and naming,
-- environment validation,
-- typed frontend work for new components,
-- backend request validation and error handling,
-- structured logs and correlation IDs,
-- build/test automation,
-- database migration discipline,
-- security headers and rate limiting,
-- documentation cleanup.
+### Deliverables
 
-Exit criteria:
+- Clear presentation, application, domain, infrastructure, and database boundaries.
+- Typed frontend components and stable backend schemas.
+- Environment validation, secret management, configuration profiles, and migration discipline.
+- Central error handling, structured logs, request IDs, traces, and security event logging.
+- Automated builds, tests, linting, dependency checks, and deploy previews.
+- Rate limiting, secure headers, JWT validation, row-level tenant isolation, and audit foundations.
+- Product analytics taxonomy for activation, retention, task success, latency, and AI cost.
 
-- clean local build,
-- passing backend tests,
-- passing frontend build,
-- no secrets committed,
-- authenticated routes have authorization coverage.
+### Exit criteria
 
-### Phase 1 - Premium chat foundation
+- Clean build and repeatable local environment.
+- Critical authorization policies have automated coverage.
+- No secrets in tracked files; dependency and secret scans run in CI.
+- Incidents can be correlated across browser, API, background job, model, and connector events.
 
-Objective: deliver a ChatGPT-class chat experience.
+### Delivered in the current increment
 
-Deliverables:
+- Every HTTP response receives a safe `X-Request-ID`; valid IDs from the frontend
+  or an edge gateway are propagated for end-to-end correlation.
+- Security regression tests cover generated, propagated, and rejected request IDs.
+- GitHub Actions now runs backend tests and the production frontend build on every
+  pull request and on pushes to the default branches.
 
-- responsive shell with left rail, conversation canvas, and right context rail,
-- message streaming with cancel/retry/regenerate,
-- markdown, tables, code highlighting, copy actions, and sanitized links,
-- conversation history, title generation, search, pin/archive/delete,
-- message edit and branch support,
-- attachment upload and safe file previews,
-- keyboard shortcuts and accessible empty/error/loading states,
-- mobile-friendly layout.
+## Phase 1 - Premium AI chat
 
-Exit criteria:
+**Goal:** create the daily-use surface that feels excellent before adding complexity.
 
-- a user can complete a full chat session on desktop and mobile,
-- streamed responses are reliable,
-- content rendering is safe,
-- keyboard-only navigation works for the main flow.
+### Deliverables
 
-### Phase 2 - Workspace and projects
+- Responsive desktop and mobile layout with conversation rail, composer, context rail, and project switcher.
+- Reliable token streaming, stop, retry, regenerate, continuation, and provider fallback.
+- Sanitized Markdown, tables, Mermaid, syntax-highlighted code, copy actions, link previews, and artifact rendering.
+- Message editing, branching, response comparison, pinning, archiving, searchable history, and export.
+- File upload with type/size validation, safe preview, malware scanning integration point, and processing status.
+- Keyboard shortcuts, command palette, screen-reader support, reduced-motion behavior, and internationalization readiness.
+- Explicit model selection plus a transparent best-model route with request-level model and cost visibility.
 
-Objective: turn chat into persistent work.
+### Exit criteria
 
-Deliverables:
+- Core chat works accessibly on desktop and mobile.
+- Streaming is cancellable and errors never lose the user's prompt.
+- Rendering and uploads are safe against XSS and unsafe file content.
+- Conversation actions are persisted and covered by user-flow tests.
 
-- workspaces, projects, roles, membership, and invitations,
-- project-scoped conversations and files,
-- tasks, milestones, notes, and artifacts,
-- activity feed and change history,
-- resumable project sessions,
-- project-level search and filtering,
-- saved context attached to each project.
+## Phase 2 - Projects, workspaces, and collaboration
 
-Exit criteria:
+**Goal:** turn individual conversations into durable work.
 
-- a user can create, resume, and export a project,
-- workspace isolation is enforced,
-- shared resources have audit trails.
+### Deliverables
 
-### Phase 3 - Knowledge and memory
+- Personal workspaces, organizations, projects, membership, roles, invitations, and scoped permissions.
+- Project conversations, files, notes, tasks, milestones, decisions, and generated artifacts.
+- Kanban/list task views, assignees, due dates, dependencies, recurring tasks, and AI project updates.
+- Shared links, comments, mentions, notifications, presence, activity feed, version history, and restore points.
+- Project templates for software delivery, research, education, business planning, content, and operations.
+- Workspace-wide search with source-aware filtering.
 
-Objective: make Astrovox useful for long-term work.
+### Exit criteria
 
-Deliverables:
+- A team can create, share, resume, export, and archive a project without losing context.
+- Tenant and project isolation is proven through tests.
+- Every shared-resource change is attributable in activity and audit history.
 
-- document ingestion for PDF, DOCX, PPTX, Markdown, TXT, CSV, XLSX, web pages, GitHub repositories, and local files,
-- OCR and image text extraction,
-- chunking, embeddings, metadata, deduplication, and versioning,
-- hybrid retrieval with filters, ranking, and citations,
-- memory types for semantic, episodic, workspace, and procedural context,
-- memory editing, export, deletion, and retention controls,
-- retrieval traces explaining why a passage was used.
+## Phase 3 - Knowledge, retrieval, and memory
 
-Exit criteria:
+**Goal:** provide answers grounded in user-controlled, permission-aware information.
 
-- answers cite the exact sources used,
-- unauthorized content cannot be retrieved,
-- memory edits and deletes are reflected end to end,
-- retrieval quality is measured against a test set.
+### Deliverables
 
-### Phase 4 - Model platform
+- Ingestion for PDF, DOCX, PPTX, Markdown, TXT, CSV, XLSX, images, web pages, GitHub repositories, local files, and approved cloud sources.
+- Parsing, OCR, malware-scanning hook, normalization, chunking, embedding, metadata extraction, deduplication, versioning, and job progress.
+- Hybrid retrieval: keyword, semantic, metadata filtering, reranking, recency, and source-permission enforcement.
+- Source citations that open the exact file location, page, paragraph, or web fragment used in an answer.
+- Knowledge collections, access policies, freshness status, source sync schedules, and failed-sync recovery.
+- Short-term, semantic, episodic, workspace, and procedural memory with inspect, edit, pin, export, and delete controls.
+- Retrieval evaluations using curated question sets, citation-correctness checks, and permission-leak tests.
 
-Objective: make model usage flexible and cost-aware.
+### Exit criteria
 
-Deliverables:
+- Every grounded answer can show its evidence.
+- Users can delete or correct memory and observe the change end to end.
+- Unauthorized documents never enter results, citations, or model context.
+- Retrieval quality, latency, and cost are measured continuously.
 
-- model gateway for OpenAI, Anthropic, Gemini, and open-source providers,
-- capability registry for context window, streaming, tools, and safety,
-- routing by quality, latency, privacy, cost, and availability,
-- fallback behavior and provider health tracking,
-- prompt/version management,
-- usage accounting and per-workspace budgets,
-- evaluations for response quality and tool behavior.
+## Phase 4 - Multi-model intelligence platform
 
-Exit criteria:
+**Goal:** make Astravox AI provider-flexible, resilient, and cost-aware.
 
-- models can be swapped without changing the UI contract,
-- requests are routed intentionally,
-- costs are visible and bounded,
-- regressions can be detected with evals.
+### Deliverables
 
-### Phase 5 - Agent execution
+- Provider adapters for OpenAI, Anthropic, Gemini, and approved open-source or self-hosted models.
+- Capability registry for context window, modality, tools, structured output, reasoning, region, privacy, and pricing.
+- Routing by quality, latency, availability, privacy, workload, user preference, and budget.
+- Fallbacks, provider health checks, circuit breakers, retries, idempotency, and graceful degraded modes.
+- Prompt templates, versioning, experiments, feature flags, structured outputs, and schema validation.
+- Per-user, project, workspace, and organization metering, spend limits, alerts, and chargeback reporting.
+- Offline and online evaluations for response quality, safety, tool selection, and retrieval grounding.
 
-Objective: add supervised automation without losing control.
+### Exit criteria
 
-Deliverables:
+- Providers can change without breaking UI or API contracts.
+- The system records why a route was chosen and what it cost.
+- Release candidates pass agreed evaluation thresholds before rollout.
 
-- planner, executor, reviewer, memory, research, browser, file, and testing roles,
-- task graphs, approvals, retries, cancellation, and resumability,
-- terminal and code execution in isolated sandboxes,
-- GitHub and deployment adapters with least-privilege permissions,
-- tool-call logging and redaction,
-- human approval gates for risky or external actions,
-- final execution summaries with diffs and tests.
+## Phase 5 - Supervised multi-agent execution
 
-Exit criteria:
+**Goal:** automate real workflows without opaque or uncontrolled behavior.
 
-- a task can be planned, executed, and reviewed with a full audit trail,
-- dangerous actions require approval,
-- no tool has unrestricted host or network access.
+### Deliverables
 
-### Phase 6 - Multimodal and voice
+- Orchestrator roles: planner, researcher, coder, browser, file, memory, reviewer, tester, and deployment.
+- Durable task graphs with queues, checkpoints, retries, deadlines, cancellation, resumability, and human handoff.
+- Visible execution view: plan, live status, tool calls, terminal output, citations, files changed, tests run, and final summary.
+- Tool manifests with JSON schemas, scopes, policy checks, budgets, rate limits, and redaction rules.
+- Approval gates for external communication, credential use, payment, destructive changes, data egress, deployment, and production access.
+- Isolated code sandboxes with ephemeral credentials, resource quotas, network egress policy, package allowlists, and artifact retention.
+- Agent evaluations for planning quality, completion, unsafe-action rate, recovery, and cost per successful task.
 
-Objective: support richer inputs and outputs.
+### Exit criteria
 
-Deliverables:
+- Every agent run has an audit trail from request to result.
+- Risky actions pause for human approval.
+- Agent tools cannot access the host, arbitrary credentials, or unrestricted network resources.
+- Failed tasks are diagnosable, safely resumable, and never silently change user data.
 
-- screenshot analysis,
-- OCR,
-- diagram, chart, and image understanding,
-- voice input and text-to-speech,
-- real-time conversation workflows,
-- transcript review before side effects,
-- explicit consent for microphone and camera use.
+## Phase 6 - Developer platform and automation
 
-Exit criteria:
+**Goal:** become the place where technical teams plan, build, verify, and ship software safely.
 
-- multimodal uploads are isolated and traceable,
-- voice flows are understandable and reviewable,
-- accessibility is preserved.
+### Deliverables
 
-### Phase 7 - Collaboration and enterprise
+- File explorer, code editor, diff viewer, terminal panel, test results, logs, and deployment status.
+- GitHub integration for repositories, issues, pull requests, branches, code review, and CI status using least-privilege OAuth scopes.
+- Browser automation with isolated sessions, explicit domain policy, screenshots, recordings, and approval for authenticated or external actions.
+- Connector framework for Drive, Slack, Notion, Jira, Linear, databases, and internal APIs with per-connector permissions and sync health.
+- Workflow builder for triggers, approvals, schedules, webhooks, and reusable agent playbooks.
+- Public developer API, API keys, service accounts, SDKs, webhooks, rate limits, documentation, and sandbox environment.
+- Template marketplace for user-owned project templates, prompts, workflows, and approved tools.
 
-Objective: make Astrovox ready for teams.
+### Exit criteria
 
-Deliverables:
+- A development project can progress from issue to branch, implementation, test evidence, review, and approved deployment.
+- Connectors can be revoked, audited, and isolated by workspace.
+- API consumers have stable contracts, quotas, and observability.
 
-- organizations, shared workspaces, and granular roles,
-- comments, mentions, sharing, and presence,
-- SSO/SAML/OIDC and SCIM,
-- audit logs and export,
-- retention, deletion, and compliance controls,
-- billing, quotas, usage analytics, and admin dashboards,
-- connector and plugin platform with approval and isolation,
-- team onboarding and admin workflows.
+## Phase 7 - Multimodal and real-time AI
 
-Exit criteria:
+**Goal:** let users work naturally with visual and spoken information.
 
-- permissions are tested across all shared resources,
-- tenant boundaries are enforced,
-- admin and audit flows are operational,
-- enterprise onboarding is supportable.
+### Deliverables
 
-### Phase 8 - Reliability and scale
+- Image, screenshot, diagram, chart, and document understanding with visual citations when supported.
+- OCR correction UI, table extraction review, and confidence/error feedback.
+- Speech-to-text, text-to-speech, voice commands, live transcript, interruption handling, and language selection.
+- Camera and screen-share workflows with explicit consent, visible recording state, and data-handling disclosures.
+- Multimodal artifact generation and structured extraction into tasks, notes, tables, and knowledge collections.
 
-Objective: make the platform dependable at growth scale.
+### Exit criteria
 
-Deliverables:
+- Media processing has explicit consent, retention, and deletion behavior.
+- Users can correct extracted data before automation relies on it.
+- Voice and visual surfaces meet accessibility and privacy requirements.
 
-- CI/CD and release automation,
-- metrics, logs, traces, and alerting,
-- load testing and resilience drills,
-- backup and restore validation,
-- disaster recovery plan,
-- security scanning and dependency hygiene,
-- accessibility audits,
-- cost monitoring and capacity planning.
+## Phase 8 - Enterprise, monetization, and governance
 
-Exit criteria:
+**Goal:** make Astravox AI deployable in organizations with serious data and operational requirements.
 
-- the platform has measured SLOs,
-- rollback is safe,
-- incidents are diagnosable,
-- production releases are low risk.
+### Deliverables
 
-## Vertical AI roadmap
+- Organizations, granular RBAC/ABAC, group mapping, service accounts, and delegated administration.
+- SSO through SAML/OIDC, SCIM provisioning, domain verification, session controls, and enterprise onboarding.
+- Immutable audit logs, data residency options, retention, legal hold, export, deletion, and backup controls.
+- Encryption in transit and at rest, managed secrets, key rotation, tenant isolation tests, threat modeling, and incident runbooks.
+- Free, Pro, Team, and Enterprise plans; usage-based agent/compute charges, invoices, entitlements, trials, and upgrades.
+- Admin console for users, policies, models, connectors, data sources, budgets, usage analytics, and support diagnostics.
+- SOC 2 readiness, vendor review, privacy documentation, penetration testing, and disaster-recovery exercises.
 
-Astrovox should support specialized modes, but only after the core platform is stable. These modes share the same model gateway, memory, retrieval, project, and agent systems.
+### Exit criteria
 
-### Low-risk general-purpose modes first
+- Administrators can control identity, data, spend, models, connectors, and audit exports.
+- Security and operational controls have evidence appropriate for target customers.
+- Billing and quota enforcement are accurate, explainable, and tested.
 
-- Programming AI
-- Research AI
-- Business AI
-- Education AI
-- Creative AI
-- Language AI
+## Phase 9 - Reliability, security operations, and scale
 
-### High-risk domains later, with extra controls
+**Goal:** reliably serve growing customer workloads.
 
-- Medical AI
-- Legal AI
-- Finance and trading AI
-- Cybersecurity AI
+### Deliverables
 
-Each high-risk mode must include:
+- Service-level objectives for availability, latency, streaming, ingestion, retrieval, agent completion, and support.
+- Metrics, logs, traces, alert routing, synthetic checks, incident management, postmortems, and public status communication.
+- Load tests, resilience drills, queue back-pressure, autoscaling, database performance baselines, and capacity forecasts.
+- Backup/restore drills, multi-region recovery strategy, disaster-recovery objectives, and rollback rehearsals.
+- Vulnerability management, dependency updates, DAST/SAST, secret scanning, penetration tests, and LLM-threat red-team exercises.
+- FinOps reporting for models, embeddings, storage, sandboxes, connectors, and infrastructure cost per successful customer outcome.
 
-- explicit limitations,
-- source citations,
-- confidence or uncertainty indicators,
-- escalation language,
-- safety tests,
-- and domain-specific review rules.
+### Exit criteria
 
-## Recommended build order for the next 90 days
+- SLO performance is monitored and owned.
+- Recovery objectives are tested rather than assumed.
+- Security findings, incidents, and cost anomalies have documented response procedures.
 
-1. Finish the premium chat shell and streaming behavior.
-2. Add workspace/project models and permissions.
-3. Complete secure upload plus cited retrieval.
-4. Add agent task execution with approvals and audit logs.
-5. Add model routing, evaluations, observability, and cost controls.
-6. Add one strong vertical use case and recruit design partners around it.
+## Phase 10 - Expert modes and vertical solutions
 
-## What not to do yet
+**Goal:** deliver specialized value without fragmenting the platform.
 
-Do not try to ship all of these at once:
+### Foundation modes
 
-- native mobile apps,
-- voice,
-- vision,
-- plugins,
-- every enterprise integration,
-- every high-risk vertical,
-- or fully autonomous agents without approvals.
+- **Programming AI:** codebase-aware planning, implementation, test generation, review, and deployment assistance.
+- **Research AI:** literature review, source comparison, citations, evidence tables, and research briefs.
+- **Education AI:** tutoring, study plans, formative assessment, document feedback, and learning projects.
+- **Business AI:** analysis, reports, operational playbooks, customer research, and decision support.
+- **Creative AI:** writing rooms, content workflows, brand systems, and asset ideation.
+- **Language AI:** translation, language learning, transcription, and localized document workflows.
 
-The product becomes valuable by being exceptional in one workflow first, then expanding carefully.
+### High-risk modes, gated by controls and expertise
 
-## Cross-cutting engineering decisions
+- **Medical AI:** education and workflow support only until clinically validated; provenance and expert governance required.
+- **Legal AI:** document assistance with jurisdiction awareness, provenance, disclaimers, and legal-review workflow.
+- **Finance and trading AI:** research and analysis with data licensing, suitability controls, and no unapproved execution authority.
+- **Cybersecurity AI:** defensive analysis, secure sandboxes, abuse detection, and restrictions around harmful actions.
+
+No vertical mode can bypass core permissions, audit trails, evaluations, or safety policies.
+
+## Milestones and success metrics
+
+### First 90 days
+
+1. Finish the premium chat shell and robust streaming.
+2. Ship project/workspace data models and permission boundaries.
+3. Ship secure uploads and cited retrieval for a focused source set.
+4. Ship a supervised agent run with plan, tools, approval, and audit trail.
+5. Establish model routing, evaluation baselines, and cost dashboards.
+6. Recruit 10-20 design partners in the developer/research wedge.
+
+### 6-12 month target
+
+- Daily-returning teams use Astravox AI for a complete recurring workflow.
+- Retrieval answers are measurably grounded and permission-safe.
+- Agents complete bounded, valuable tasks with human approvals and test evidence.
+- Teams manage access, spend, data, and connectors from one admin surface.
+- Product decisions are guided by activation, retention, success rate, quality, reliability, and gross-margin metrics.
+
+### Core metrics
+
+| Area | Metrics |
+| --- | --- |
+| Customer value | Activation, weekly retained teams, successful tasks, time saved, user satisfaction |
+| AI quality | Grounded-answer score, citation correctness, task completion, unsafe-action rate |
+| Reliability | Availability, p95 latency, streaming completion, queue delay, incident recovery time |
+| Security | Authorization coverage, vulnerability remediation time, policy violations, audit completeness |
+| Economics | Cost per successful task, gross margin, routing savings, expansion revenue |
+
+## What we deliberately do not do first
+
+Native mobile apps, a full plugin marketplace, every enterprise connector, always-on voice, autonomous production deployment, and every expert mode are later investments. Each matters only after Astravox AI has a proven daily-use workflow and the guardrails to operate it safely.
+
+## Architectural direction
 
 | Area | Direction |
 | --- | --- |
-| Frontend | React, TypeScript, Vite, accessible component system, responsive shell |
-| Backend | FastAPI with clear application, domain, and infrastructure layers |
-| Database | PostgreSQL/Supabase for transactional data, pgvector for embeddings |
-| Cache / jobs | Redis where queues or caching are truly needed |
-| Models | Provider adapters behind a stable model contract |
-| Security | JWT validation, RLS, audit logging, least privilege, secret hygiene |
-| Observability | Structured logs, traces, metrics, and request correlation |
-| Testing | Unit, integration, and user-flow tests for every shipped feature |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, accessible responsive design system |
+| Backend | FastAPI organized into application, domain, infrastructure, and API layers |
+| Data | PostgreSQL/Supabase for transactions, pgvector for embeddings, object storage for files |
+| Jobs and cache | Redis-backed caching and durable background job orchestration where justified |
+| AI | Provider adapters behind stable contracts for chat, embeddings, tools, speech, and vision |
+| Security | JWT/RLS enforcement, least privilege, audit logs, encryption, secrets, policy engine |
+| Operations | GitHub Actions CI/CD, observability, feature flags, evaluation gates, safe rollouts |
 
-## Release gates
+## Final standard
 
-Every phase should end with:
-
-- an implementation demo,
-- test evidence,
-- updated docs,
-- security review notes,
-- and a rollback plan.
-
-## Final note
-
-Astrovox reaches "best in class" by being reliable, understandable, and extendable. That means every new feature must make the platform more useful without making it harder to trust or operate.
+Astravox AI becomes best in class by being **useful enough to return to every day, safe enough to trust with real work, and extensible enough to serve many fields without becoming a collection of disconnected features**. Every roadmap item must make the system clearer, more reliable, and more valuable for its users.

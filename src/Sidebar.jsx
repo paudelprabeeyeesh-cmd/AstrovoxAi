@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 
 export default function Sidebar({ session, onSelectConversation, currentConversationId }) {
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const initializedRef = useRef(false)
 
   useEffect(() => {
     if (session) {
+      initializedRef.current = false
       loadConversations()
       // Subscribe to real-time updates
       const subscription = supabase
@@ -37,7 +39,18 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
         .order('updated_at', { ascending: false })
 
       if (fetchError) throw fetchError
-      setConversations(data || [])
+      const items = data || []
+      setConversations(items)
+      // Make the first-run experience immediately usable. A logged-in user
+      // should land in a real conversation instead of an empty composer.
+      if (!initializedRef.current) {
+        initializedRef.current = true
+        if (items.length > 0) {
+          onSelectConversation(items[0].id)
+        } else {
+          await createConversation()
+        }
+      }
       setError(null)
     } catch (err) {
       setError(`Failed to load conversations: ${err.message}`)
@@ -47,7 +60,7 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
     }
   }
 
-  async function handleNewConversation() {
+  async function createConversation() {
     try {
       const { data, error: insertError } = await supabase
         .from('conversations')
@@ -60,12 +73,17 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
 
       if (insertError) throw insertError
       if (data && data[0]) {
+        setConversations(prev => [data[0], ...prev])
         onSelectConversation(data[0].id)
       }
     } catch (err) {
       setError(`Failed to create conversation: ${err.message}`)
       console.error(err)
     }
+  }
+
+  async function handleNewConversation() {
+    await createConversation()
   }
 
   async function handleDeleteConversation(id, e) {

@@ -1,8 +1,8 @@
-# ASTROVOX AI
+# Astravox AI
 
 ## AI Workspace Platform
 
-Astrovox AI is evolving from an AI chat application into a trusted workspace for
+Astravox AI is evolving from an AI chat application into a trusted workspace for
 conversation, knowledge, memory, projects, and supervised agent execution. It
 uses a React/Vite frontend, a FastAPI backend, and Supabase/PostgreSQL.
 
@@ -30,6 +30,9 @@ scope, dependency order, acceptance gates, and definition of completion.
 - **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
 - **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
 - **API Protection**: Request rate limiting and baseline browser-facing security headers are enabled at the FastAPI boundary.
+- **Request Correlation**: Every API response includes a safe `X-Request-ID` for tracing frontend and backend activity.
+- **Demo-ready conversation flow**: New accounts automatically open a conversation, and users can stop an in-flight response or retry the last prompt.
+- **Launch evidence**: The three-day release and rehearsal plan is documented in [DEMO_LAUNCH_CHECKLIST.md](DEMO_LAUNCH_CHECKLIST.md).
 
 ## Technology Stack
 
@@ -49,7 +52,7 @@ agent controls, enterprise requirements, and release gates:
 
 ## Getting Started
 
-To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.md) guide.
+To set up and run Astravox AI locally, please refer to the [SETUP.md](SETUP.md) guide.
 
 ## API Documentation
 
@@ -78,7 +81,7 @@ AstrovoxAi/
 
 ## Contributing
 
-We welcome contributions to ASTRAVOX PRIME! Please refer to the [ROADMAP.md](ROADMAP.md) for planned features and consider opening an issue or pull request for any enhancements or bug fixes.
+We welcome contributions to Astravox AI. Please refer to the [ROADMAP.md](ROADMAP.md) for planned features and consider opening an issue or pull request for any enhancements or bug fixes.
 
 ## License
 
@@ -87,5 +90,3 @@ This project is licensed under the MIT License.
 ## Authors
 
 - Prabesh Paudel
-- Dipson Baral
-- Susanta AI
