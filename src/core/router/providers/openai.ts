@@ -68,7 +68,7 @@ export const openaiProvider: ModelProvider = {
                   const txt = json?.choices?.[0]?.text;
                   if (txt) yield txt;
                 }
-              } catch (e) {
+              } catch {
                 yield s;
               }
             }
@@ -78,12 +78,16 @@ export const openaiProvider: ModelProvider = {
               const json = JSON.parse(buffer);
               const txt = json?.choices?.[0]?.delta?.content ?? json?.choices?.[0]?.text;
               if (txt) yield txt;
-            } catch (e) {
+            } catch {
               yield buffer;
             }
           }
         } finally {
-          try { reader.releaseLock(); } catch {}
+          try {
+            reader.releaseLock();
+          } catch {
+            // no-op
+          }
         }
       })();
     } else {
