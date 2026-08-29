@@ -13,6 +13,7 @@ from .chat import router as chat_router
 from .api import router as api_router
 from .memory import router as memory_router
 from .storage import router as storage_router
+from .telemetry import router as telemetry_router
 from .rate_limit import rate_limit_middleware
 
 load_dotenv()
@@ -54,6 +55,7 @@ app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
 app.include_router(storage_router)
+app.include_router(telemetry_router)
 
 
 # Health check endpoints
