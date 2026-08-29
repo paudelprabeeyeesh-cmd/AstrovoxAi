@@ -28,7 +28,7 @@ export class PromptLoader {
           await this.loadFolder(path.join(this.dir, e.name));
         }
       }
-    } catch (e) {
+    } catch {
       // no prompts folder yet
     }
   }
@@ -44,22 +44,21 @@ export class PromptLoader {
         if (tpl && tpl.name) {
           this.register(tpl);
         }
-      } catch (e) {
+      } catch {
         // ignore parse errors for now
-        console.error('Failed to load prompt', fp, e);
+        console.error('Failed to load prompt', fp);
       }
     }
   }
 
   private watch() {
     try {
-      this.watcher = fs.watch(this.dir, { recursive: true }, (eventType, filename) => {
+      this.watcher = fs.watch(this.dir, { recursive: true }, (_eventType, filename) => {
         if (!filename) return;
-        const fp = path.join(this.dir, filename);
         // simple invalidation: reload all
         this.loadAll();
       });
-    } catch (e) {
+    } catch {
       // watch not available
     }
   }
@@ -96,7 +95,7 @@ function parseTemplateFile(txt: string): PromptTemplate | null {
   const trimmed = txt.trim();
   // try JSON
   if (trimmed.startsWith('{')) {
-    try { return JSON.parse(trimmed) as PromptTemplate; } catch (e) { return null; }
+    try { return JSON.parse(trimmed) as PromptTemplate; } catch { return null; }
   }
   // minimal YAML parser for simple key: value + content: | blocks
   const lines = txt.split(/\r?\n/);
@@ -104,7 +103,7 @@ function parseTemplateFile(txt: string): PromptTemplate | null {
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    const m = line.match(/^([a-zA-Z0-9_\-]+):\s*(.*)$/);
+    const m = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
     if (m) {
       const key = m[1];
       let rest = m[2];
