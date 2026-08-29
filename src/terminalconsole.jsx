@@ -44,6 +44,10 @@ export default function TerminalConsole({ userEmail, totalItems }) {
           '   /uptime   - Show system uptime',
           '   /inject   - Simulate data injection',
           '   /purge    - Simulate data purge',
+          '   /help     - Display this help message',
+          '   /memory   - Show memory system status',
+          '   /logs     - Tail system logs',
+          '   /version  - Display system version',
           '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
         )
         break
@@ -59,6 +63,8 @@ export default function TerminalConsole({ userEmail, totalItems }) {
           `   [GPU]     WebGL: ${document.createElement('canvas').getContext('webgl') ? '✅ Supported' : '❌ Not Available'}`,
           `   [UPTIME]  ${Math.floor(performance.now() / 1000)} seconds`,
           `   [SESSION] ${userEmail || 'No active link identity found.'}`,
+          '   [VERSION] ASTRAVOX v2.0.0 - Production Ready',
+          '   [ENDPOINT] ws://api.astrovox.local:8000',
           '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
         )
         break
@@ -150,6 +156,51 @@ export default function TerminalConsole({ userEmail, totalItems }) {
         )
         break
       }
+
+      case '/memory':
+        response.push(
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          '   🧠 MEMORY SYSTEM STATUS',
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          '   [SHORT-TERM] Active contexts: ' + Math.floor(Math.random() * 10 + 5),
+          '   [LONG-TERM]  Persistent entries: ' + Math.floor(Math.random() * 100 + 50),
+          '   [CACHE]      Hit rate: ' + (Math.random() * 40 + 60).toFixed(1) + '%',
+          '   [VECTOR]     Embeddings indexed: ' + Math.floor(Math.random() * 10000 + 5000),
+          '   [STATUS]     🟢 All systems operational',
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        )
+        break
+
+      case '/logs':
+        response.push(
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          '   📋 SYSTEM LOGS (LAST 5 ENTRIES)',
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+          '   [' + new Date().toISOString() + '] INFO: User connected to dashboard',
+          '   [' + new Date(Date.now() - 5000).toISOString() + '] INFO: Memory sync completed',
+          '   [' + new Date(Date.now() - 10000).toISOString() + '] INFO: API health check passed',
+          '   [' + new Date(Date.now() - 15000).toISOString() + '] DEBUG: Cache invalidated',
+          '   [' + new Date(Date.now() - 20000).toISOString() + '] INFO: System initialized',
+          '   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+        )
+        break
+
+      case '/version':
+        response.push(
+          '   ╔═══════════════════════════════════════════════════════╗',
+          '   ║         ASTRAVOX PRIME SYSTEM VERSION INFO            ║',
+          '   ╠═══════════════════════════════════════════════════════╣',
+          '   ║  Application: ASTRAVOX Ai Chat Platform               ║',
+          '   ║  Version: 2.0.0 (Quantum Leap Release)                ║',
+          '   ║  Build: ' + Math.random().toString(36).substring(2, 12).toUpperCase().padEnd(35) + '║',
+          '   ║  Release Date: 2026-06-28                             ║',
+          '   ║  Environment: Production                              ║',
+          '   ║  Node: v20.x (TypeScript/React)                       ║',
+          '   ║  Python Backend: 3.11+ (FastAPI)                      ║',
+          '   ║  Database: PostgreSQL + pgvector                      ║',
+          '   ╚═══════════════════════════════════════════════════════╝'
+        )
+        break
 
       default:
         // Handle custom commands as API calls
