@@ -14,6 +14,7 @@ from .api import router as api_router
 from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
+from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 
 load_dotenv()
@@ -48,6 +49,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Include routers
 app.include_router(auth_router)
