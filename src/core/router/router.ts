@@ -18,12 +18,7 @@ export class Router {
   private async tryGenerate(providerName: string, options: GenerateOptions): Promise<GenerateResponse | AsyncIterable<string>> {
     const p = this.providers.get(providerName);
     if (!p) throw new Error(`Provider ${providerName} not found`);
-    try {
-      const result = await p.generate(options);
-      return result;
-    } catch (err) {
-      throw err;
-    }
+    return p.generate(options);
   }
 
   async generate(task: ModelTask, options: GenerateOptions): Promise<GenerateResponse | AsyncIterable<string>> {
@@ -57,7 +52,6 @@ export class Router {
       }
     }
 
-    const e = new Error(`All providers failed for task ${task}: ${JSON.stringify(tried.map(t => ({ provider: t.provider, error: String(t.error) })))}`);
-    throw e;
+    throw new Error(`All providers failed for task ${task}: ${JSON.stringify(tried.map(t => ({ provider: t.provider, error: String(t.error) })))}`);
   }
 }

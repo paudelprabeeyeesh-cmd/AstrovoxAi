@@ -73,8 +73,11 @@ class InMemoryVectorStore implements IVectorStore {
   name = 'inmemory-fallback';
   private store: Map<string, VectorRecord> = new Map();
   async init(): Promise<void> { }
-  async upsert(records: VectorRecord[]) { for (const r of records) this.store.set(r.id, { ...r }); }
-  async query(embedding: number[], k = 10) {
+  async upsert(records: VectorRecord[], options?: { batchSize?: number }): Promise<void> {
+    void options;
+    for (const r of records) this.store.set(r.id, { ...r });
+  }
+  async query(embedding: number[], k = 10, _options?: { namespace?: string; metric?: SimilarityMetric; filter?: Record<string, any> }): Promise<RetrievalResult[]> {
     const out: RetrievalResult[] = [];
     for (const v of this.store.values()) {
       if (v.deleted) continue;
@@ -84,9 +87,22 @@ class InMemoryVectorStore implements IVectorStore {
     out.sort((a, b) => b.score - a.score);
     return out.slice(0, k);
   }
-  async fetch(ids: string[]) { return ids.map(id => this.store.get(id)).filter(Boolean) as VectorRecord[]; }
-  async delete(ids: string[], options?: { soft?: boolean }) { for (const id of ids) { const v = this.store.get(id); if (!v) continue; if (options?.soft) { v.deleted = true; this.store.set(id, v); } else this.store.delete(id); } }
-  async close() { this.store.clear(); }
+  async fetch(ids: string[]): Promise<VectorRecord[]> {
+    return ids.map(id => this.store.get(id)).filter(Boolean) as VectorRecord[];
+  }
+  async delete(ids: string[], options?: { soft?: boolean }): Promise<void> {
+    for (const id of ids) {
+      const v = this.store.get(id);
+      if (!v) continue;
+      if (options?.soft) {
+        v.deleted = true;
+        this.store.set(id, v);
+      } else {
+        this.store.delete(id);
+      }
+    }
+  }
+  async close(): Promise<void> { this.store.clear(); }
   clear() { this.store.clear(); }
 }
 
