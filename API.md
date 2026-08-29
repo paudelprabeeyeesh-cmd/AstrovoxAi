@@ -452,6 +452,147 @@ Response:
 }
 ```
 
+## Telemetry Endpoints
+
+### Track Custom Event
+
+```http
+POST /telemetry/event
+Authorization: ******
+Content-Type: application/json
+
+{
+  "event_name": "feature_used",
+  "category": "feature",
+  "metadata": {
+    "feature": "memory_save",
+    "duration_ms": 250
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 123,
+  "message": "Event tracked successfully"
+}
+```
+
+### Track Page View
+
+```http
+POST /telemetry/page-view
+Authorization: ******
+Content-Type: application/json
+
+{
+  "page": "/dashboard",
+  "referrer": "/chat"
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 124,
+  "message": "Page view tracked"
+}
+```
+
+### Track Error
+
+```http
+POST /telemetry/error
+Authorization: ******
+Content-Type: application/json
+
+{
+  "error_name": "APIError",
+  "error_message": "Failed to fetch conversations",
+  "stack_trace": "Error: ...",
+  "context": {
+    "endpoint": "/chat/conversations",
+    "status_code": 500
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 125,
+  "message": "Error tracked"
+}
+```
+
+### Track User Action
+
+```http
+POST /telemetry/user-action
+Authorization: ******
+Content-Type: application/json
+
+{
+  "action": "message_sent",
+  "category": "chat",
+  "metadata": {
+    "conversation_id": 1,
+    "message_length": 42
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 126,
+  "message": "User action tracked"
+}
+```
+
+### Get Telemetry Stats
+
+```http
+GET /telemetry/stats?limit=100&offset=0
+Authorization: ******
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "user_id": "uuid",
+  "total_events": 150,
+  "event_counts": {
+    "message_sent": 45,
+    "page_view": 60,
+    "feature_used": 30,
+    "error": 15
+  },
+  "category_counts": {
+    "chat": 45,
+    "navigation": 60,
+    "feature": 30,
+    "error": 15
+  },
+  "recent_events": [
+    {
+      "id": 150,
+      "event_name": "page_view",
+      "category": "navigation",
+      "timestamp": "2024-01-01T12:05:00Z"
+    }
+  ],
+  "offset": 0,
+  "limit": 100
+}
+```
+
 ## Error Responses
 
 ### 400 Bad Request
