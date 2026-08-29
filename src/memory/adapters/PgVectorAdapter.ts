@@ -37,7 +37,7 @@ export class PgVectorAdapter implements IVectorStore {
       // ivfflat index creation if pgvector supports it
       try {
         await this.client.query(`SELECT vector_dimensions FROM pgvector.vector_columns WHERE table_name = $1`, [this.table]);
-      } catch (_) {
+      } catch {
         // ignore
       }
     } catch (e) {
@@ -55,7 +55,7 @@ export class PgVectorAdapter implements IVectorStore {
       const batch = records.slice(i, i + batchSize);
       const queries = batch.map(r => ({ text: `INSERT INTO ${this.table} (id, vector, metadata, namespace, created_at, deleted) VALUES ($1, $2::vector, $3, $4, $5, $6) ON CONFLICT (id) DO UPDATE SET vector = EXCLUDED.vector, metadata = EXCLUDED.metadata, namespace = EXCLUDED.namespace, created_at = EXCLUDED.created_at, deleted = EXCLUDED.deleted`, values: [r.id, `ARRAY[${r.vector.join(',')}]`, JSON.stringify(r.metadata ?? {}), r.namespace ?? null, r.createdAt ?? new Date().toISOString(), r.deleted ?? false] }));
       const client = this.client;
-      const tx = await client.query('BEGIN');
+      await client.query('BEGIN');
       try {
         for (const q of queries) await client.query(q);
         await client.query('COMMIT');
@@ -108,8 +108,11 @@ class InMemoryVectorStore implements IVectorStore {
   name = 'inmemory-fallback';
   private store: Map<string, VectorRecord> = new Map();
   async init(): Promise<void> { }
-  async upsert(records: VectorRecord[]) { for (const r of records) this.store.set(r.id, { ...r }); }
-  async query(embedding: number[], k = 10) {
+  async upsert(records: VectorRecord[], options?: { batchSize?: number }): Promise<void> {
+    void options;
+    for (const r of records) this.store.set(r.id, { ...r });
+  }
+  async query(embedding: number[], k = 10, _options?: { namespace?: string; metric?: SimilarityMetric; filter?: Record<string, any> }): Promise<RetrievalResult[]> {
     const out: RetrievalResult[] = [];
     for (const v of this.store.values()) {
       if (v.deleted) continue;
@@ -119,9 +122,22 @@ class InMemoryVectorStore implements IVectorStore {
     out.sort((a, b) => b.score - a.score);
     return out.slice(0, k);
   }
-  async fetch(ids: string[]) { return ids.map(id => this.store.get(id)).filter(Boolean) as VectorRecord[]; }
-  async delete(ids: string[], options?: { soft?: boolean }) { for (const id of ids) { const v = this.store.get(id); if (!v) continue; if (options?.soft) { v.deleted = true; this.store.set(id, v); } else this.store.delete(id); } }
-  async close() { this.store.clear(); }
+  async fetch(ids: string[]): Promise<VectorRecord[]> {
+    return ids.map(id => this.store.get(id)).filter(Boolean) as VectorRecord[];
+  }
+  async delete(ids: string[], options?: { soft?: boolean }): Promise<void> {
+    for (const id of ids) {
+      const v = this.store.get(id);
+      if (!v) continue;
+      if (options?.soft) {
+        v.deleted = true;
+        this.store.set(id, v);
+      } else {
+        this.store.delete(id);
+      }
+    }
+  }
+  async close(): Promise<void> { this.store.clear(); }
   clear() { this.store.clear(); }
 }
 

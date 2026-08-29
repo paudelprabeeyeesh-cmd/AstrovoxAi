@@ -1,5 +1,5 @@
 // Small helper to wrap non-stream responses into AsyncIterable
-import type { GenerateOptions, GenerateResponse } from './types';
+import type { GenerateResponse } from './types';
 
 export function asAsyncIterable(resultPromiseOrIterable: Promise<GenerateResponse> | AsyncIterable<string> | GenerateResponse): AsyncIterable<string> {
   if ((resultPromiseOrIterable as any)[Symbol.asyncIterator]) {

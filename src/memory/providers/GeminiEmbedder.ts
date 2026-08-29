@@ -18,7 +18,7 @@ export class GeminiEmbedder implements IEmbedder {
 
   getDimension(): number | undefined { return this.dimension; }
 
-  async embed(inputs: string[], options?: { namespace?: string; model?: string; signal?: AbortSignal }): Promise<number[][]> {
+  async embed(inputs: string[], _options?: { namespace?: string; model?: string; signal?: AbortSignal }): Promise<number[][]> {
     if (!this.apiKey) {
       return inputs.map(i => mockEmbed(i));
     }

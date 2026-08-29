@@ -12,23 +12,25 @@ export interface RenderResult {
   tokens?: number;
 }
 
-const PLACEHOLDER_RE = /{{\s*([a-zA-Z0-9_.\-]+)(?:\|([^}]+))?\s*}}/g;
+const PLACEHOLDER_RE = /{{\s*([a-zA-Z0-9_.-]+)(?:\|([^}]+))?\s*}}/g;
 
 function escapeHtml(s: string) {
-  return s.replace(/[&<>"']/g, (c) => ({
+  const map: Record<string, string> = {
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&#39;'
-  }[c]));
+  };
+
+  return s.replace(/[&<>"']/g, (c) => map[c] ?? c);
 }
 
 export function renderTemplate(template: string, variables: Record<string, any> = {}, options: RenderOptions = {}): RenderResult {
   const { sanitize = true, escapeHtml: doEscape = true, strict = true, tokenEstimator, types } = options;
   const missing: Set<string> = new Set();
 
-  const text = template.replace(PLACEHOLDER_RE, (_match, name: string, defaultValue: string) => {
+  const text = template.replace(PLACEHOLDER_RE, (_match, name: string, defaultValue: string | undefined) => {
     const val = lookupVariable(variables, name);
     if (val === undefined || val === null) {
       if (defaultValue !== undefined) {
@@ -53,7 +55,7 @@ export function renderTemplate(template: string, variables: Record<string, any> 
   if (tokenEstimator) {
     try {
       out.tokens = tokenEstimator(text);
-    } catch (e) {
+    } catch {
       // ignore estimator errors
     }
   }

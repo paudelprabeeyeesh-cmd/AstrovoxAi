@@ -11,16 +11,22 @@
     "start": "vite",
     "frontend": "vite",
     "backend": "cd 02-Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
+    "pg": "^8.23.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/node": "^26.4.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.68.0",
+    "@typescript-eslint/parser": "^8.68.0",
     "@vitejs/plugin-react": "^4.2.0",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
