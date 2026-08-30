@@ -1,0 +1,14 @@
+﻿...........                                                              [100%]
+============================== warnings summary ===============================
+..\..\..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\testclient.py:1
+  C:\Users\Dell\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+..\..\..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\slowapi\extension.py:720
+..\..\..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\slowapi\extension.py:720
+..\..\..\..\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\slowapi\extension.py:720
+  C:\Users\Dell\AppData\Local\Python\pythoncore-3.14-64\Lib\site-packages\slowapi\extension.py:720: DeprecationWarning: 'asyncio.iscoroutinefunction' is deprecated and slated for removal in Python 3.16; use inspect.iscoroutinefunction() instead
+    if asyncio.iscoroutinefunction(func):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+11 passed, 4 warnings in 4.85s
