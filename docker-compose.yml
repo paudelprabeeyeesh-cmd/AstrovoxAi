@@ -1,6 +1,29 @@
 version: '3.8'
 
 services:
+  # ==========================================================================
+  # Redis — Caching, session store, rate limiting backend
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: astravox-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    networks:
+      - astravox-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================================================
+  # FastAPI Backend
+  # ==========================================================================
   backend:
     build:
       context: .
@@ -12,27 +35,43 @@ services:
       - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
-      - SECRET_KEY=${SECRET_KEY}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - RATE_LIMIT=${RATE_LIMIT:-120/minute}
+      - DAILY_AI_LIMIT=${DAILY_AI_LIMIT:-50}
     restart: unless-stopped
     networks:
       - astravox-network
+    depends_on:
+      redis:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 5s
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs
+      - storage-data:/app/storage
 
+  # ==========================================================================
+  # React Frontend (served via nginx)
+  # ==========================================================================
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: astravox-frontend
+    container_name: astrovox-frontend
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - astravox-network
@@ -43,6 +82,64 @@ services:
       retries: 3
       start_period: 5s
 
+  # ==========================================================================
+  # Prometheus — Metrics collection
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: astravox-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    restart: unless-stopped
+    networks:
+      - astravox-network
+    profiles:
+      - monitoring
+
+  # ==========================================================================
+  # Grafana — Metrics visualization
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: astravox-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - astravox-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+# ==============================================================================
+# Networks
+# ==============================================================================
 networks:
   astravox-network:
     driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  storage-data:
+    driver: local

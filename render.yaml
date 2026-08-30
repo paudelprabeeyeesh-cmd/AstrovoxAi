@@ -1,0 +1,35 @@
+# Render Blueprint for AstrovoxAI
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # FastAPI Backend
+  - type: web
+    name: astrovox-backend
+    runtime: python
+    plan: free
+    buildCommand: cd 02-Backend && pip install -r requirements.txt
+    startCommand: cd 02-Backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: RATE_LIMIT
+        value: 120/minute
+      - key: DAILY_AI_LIMIT
+        value: 50
+
+  # Redis (optional, for caching)
+  - type: redis
+    name: astrovox-redis
+    plan: free
+    ipAllowList: [] # required for Redis

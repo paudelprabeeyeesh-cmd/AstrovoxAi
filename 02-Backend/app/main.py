@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
+import time
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -60,6 +61,44 @@ app.include_router(api_router)
 app.include_router(memory_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
+
+
+# Prometheus metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Track request metrics for Prometheus."""
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+
+    try:
+        from .metrics import track_request
+        track_request(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code,
+            duration=duration
+        )
+    except Exception:
+        pass
+
+    # Add performance headers
+    response.headers["X-Response-Time"] = f"{duration:.3f}s"
+    return response
+
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        from .metrics import get_metrics, CONTENT_TYPE_LATEST
+        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
+    except ImportError:
+        return Response(
+            content=b"# Prometheus client not installed\n",
+            media_type="text/plain"
+        )
 
 
 # Health check endpoints
