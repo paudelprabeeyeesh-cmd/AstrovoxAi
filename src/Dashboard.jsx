@@ -23,12 +23,6 @@ export default function Dashboard({ session }) {
   const [dbStatus, setDbStatus] = useState('online')
   const [activePanel, setActivePanel] = useState('chat') // 'chat', 'memory', 'settings'
 
-  useEffect(() => {
-    if (session) {
-      loadUserStats()
-    }
-  }, [session, loadUserStats])
-
   const loadUserStats = useCallback(async () => {
     try {
       const { count, error } = await supabase
@@ -45,6 +39,12 @@ export default function Dashboard({ session }) {
       setDbStatus('offline')
     }
   }, [session.user.id])
+
+  useEffect(() => {
+    if (session) {
+      loadUserStats()
+    }
+  }, [session, loadUserStats])
 
 
   return (
