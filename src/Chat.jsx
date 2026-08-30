@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
+import MessageContent from './MessageContent'
 
 export default function Chat({ session, conversationId }) {
   const [messages, setMessages] = useState([])
@@ -7,7 +8,11 @@ export default function Chat({ session, conversationId }) {
   const [loading, setLoading] = useState(false)
   const [typing, setTyping] = useState(false)
   const messagesEndRef = useRef(null)
+  const lastPromptRef = useRef('')
   const [error, setError] = useState(null)
+  const [editingMessageId, setEditingMessageId] = useState(null)
+  const [editedContent, setEditedContent] = useState('')
+  const [copiedMessageId, setCopiedMessageId] = useState(null)
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -46,6 +51,7 @@ export default function Chat({ session, conversationId }) {
     if (!input.trim() || !conversationId) return
 
     const userMessage = input.trim()
+    lastPromptRef.current = userMessage
     setInput('')
     setError(null)
 
@@ -109,6 +115,46 @@ export default function Chat({ session, conversationId }) {
       setError(`Error: ${err.message}`)
       setTyping(false)
       console.error(err)
+    }
+  }
+
+  function retryLastPrompt() {
+    if (!lastPromptRef.current || typing) return
+    setInput(lastPromptRef.current)
+  }
+
+  async function copyMessage(message) {
+    await navigator.clipboard?.writeText(message.content)
+    setCopiedMessageId(message.id)
+    window.setTimeout(() => setCopiedMessageId(null), 1500)
+  }
+
+  async function saveEditedMessage(message) {
+    const content = editedContent.trim()
+    if (!content || content === message.content) {
+      setEditingMessageId(null)
+      return
+    }
+
+    try {
+      const { error: updateError } = await supabase
+        .from('messages')
+        .update({ content })
+        .eq('id', message.id)
+        .eq('user_id', session.user.id)
+
+      if (updateError) throw updateError
+      setMessages(prev => prev.map(item => item.id === message.id ? { ...item, content } : item))
+      setEditingMessageId(null)
+    } catch (err) {
+      setError(`Unable to edit message: ${err.message}`)
+    }
+  }
+
+  function handleComposerKeyDown(event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault()
+      if (!typing && input.trim() && conversationId) handleSendMessage(event)
     }
   }
 
