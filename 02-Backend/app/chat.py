@@ -78,7 +78,9 @@ async def create_new_conversation(
     user_id = get_user_id_from_token(authorization)
 
     if request.model and request.model not in SUPPORTED_MODELS:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported model")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported model"
+        )
 
     try:
         conversation = await create_conversation(user_id, request.title, request.model)

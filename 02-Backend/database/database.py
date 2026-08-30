@@ -13,16 +13,19 @@ def _ensure_db_dir() -> None:
     os.makedirs(BASE_DIR, exist_ok=True)
 
 
-def _ensure_column(conn: sqlite3.Connection, table_name: str, column_name: str, definition: str) -> None:
-    existing = [row[1] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()]
+def _ensure_column(
+    conn: sqlite3.Connection, table_name: str, column_name: str, definition: str
+) -> None:
+    existing = [
+        row[1] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+    ]
     if column_name not in existing:
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
 def _ensure_tables(conn: sqlite3.Connection) -> None:
     cur = conn.cursor()
-    cur.execute(
-        """
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT UNIQUE,
@@ -31,10 +34,8 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             created_at TEXT,
             last_login TEXT
         )
-        """
-    )
-    cur.execute(
-        """
+        """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS chats (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             conversation_id TEXT,
@@ -43,10 +44,8 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             message TEXT,
             created_at TEXT
         )
-        """
-    )
-    cur.execute(
-        """
+        """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS usage (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id TEXT,
@@ -54,8 +53,7 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             used INTEGER,
             last_reset TEXT
         )
-        """
-    )
+        """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
 
@@ -89,7 +87,12 @@ def create_user(username: str, email: str, password: str) -> int:
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-        (username.strip(), email.strip().lower(), password_hash, datetime.utcnow().isoformat())
+        (
+            username.strip(),
+            email.strip().lower(),
+            password_hash,
+            datetime.utcnow().isoformat(),
+        ),
     )
     conn.commit()
     user_id = cur.lastrowid
@@ -103,7 +106,7 @@ def get_user_by_username_or_email(identifier: str) -> Optional[sqlite3.Row]:
     conn = get_db()
     cur = conn.execute(
         "SELECT * FROM users WHERE username=? OR email=? LIMIT 1",
-        (identifier.strip(), identifier.strip().lower())
+        (identifier.strip(), identifier.strip().lower()),
     )
     row = cur.fetchone()
     conn.close()
@@ -125,19 +128,27 @@ def update_user_last_login(user_id: int) -> None:
     conn = get_db()
     conn.execute(
         "UPDATE users SET last_login=? WHERE id=?",
-        (datetime.utcnow().isoformat(), user_id)
+        (datetime.utcnow().isoformat(), user_id),
     )
     conn.commit()
     conn.close()
 
 
-def save_chat_message(conversation_id: str, user_id: str, role: str, message: str) -> None:
+def save_chat_message(
+    conversation_id: str, user_id: str, role: str, message: str
+) -> None:
     if not conversation_id or not user_id or not message:
         return
     conn = get_db()
     conn.execute(
         "INSERT INTO chats (conversation_id, user_id, role, message, created_at) VALUES (?, ?, ?, ?, ?)",
-        (conversation_id, user_id, role, message.strip(), datetime.utcnow().isoformat())
+        (
+            conversation_id,
+            user_id,
+            role,
+            message.strip(),
+            datetime.utcnow().isoformat(),
+        ),
     )
     conn.commit()
     conn.close()
@@ -147,7 +158,7 @@ def get_conversation_history(conversation_id: str) -> List[Dict[str, str]]:
     conn = get_db()
     cur = conn.execute(
         "SELECT role, message, created_at FROM chats WHERE conversation_id=? ORDER BY created_at ASC",
-        (conversation_id,)
+        (conversation_id,),
     )
     rows = [dict(row) for row in cur.fetchall()]
     conn.close()
@@ -161,7 +172,7 @@ def check_limit(user_id: str, subscription: str, kind: str) -> Tuple[bool, int, 
     today = datetime.utcnow().date().isoformat()
     cur = conn.execute(
         "SELECT COUNT(*) AS c FROM chats WHERE user_id=? AND substr(created_at,1,10)=?",
-        (user_id, today)
+        (user_id, today),
     )
     row = cur.fetchone()
     used = row["c"] if row else 0
@@ -175,21 +186,24 @@ def increment_usage(user_id: str, kind: str = "questions") -> None:
     conn = get_db()
     cur = conn.cursor()
     today = datetime.utcnow().date().isoformat()
-    cur.execute("SELECT id, used, last_reset FROM usage WHERE user_id=? AND kind=?", (user_id, kind))
+    cur.execute(
+        "SELECT id, used, last_reset FROM usage WHERE user_id=? AND kind=?",
+        (user_id, kind),
+    )
     row = cur.fetchone()
     if row:
         record_id, used, last_reset = row
-        if last_reset is None or last_reset.split('T')[0] != today:
+        if last_reset is None or last_reset.split("T")[0] != today:
             used = 0
         used += 1
         cur.execute(
             "UPDATE usage SET used=?, last_reset=? WHERE id=?",
-            (used, datetime.utcnow().isoformat(), record_id)
+            (used, datetime.utcnow().isoformat(), record_id),
         )
     else:
         cur.execute(
             "INSERT INTO usage (user_id, kind, used, last_reset) VALUES (?, ?, ?, ?)",
-            (user_id, kind, 1, datetime.utcnow().isoformat())
+            (user_id, kind, 1, datetime.utcnow().isoformat()),
         )
     conn.commit()
     conn.close()
@@ -198,8 +212,7 @@ def increment_usage(user_id: str, kind: str = "questions") -> None:
 def get_user_usage(user_id: str) -> Dict[str, int]:
     conn = get_db()
     cur = conn.execute(
-        "SELECT COUNT(*) AS total_messages FROM chats WHERE user_id=?",
-        (user_id,)
+        "SELECT COUNT(*) AS total_messages FROM chats WHERE user_id=?", (user_id,)
     )
     row = cur.fetchone()
     total = row["total_messages"] if row else 0
@@ -210,8 +223,7 @@ def get_user_usage(user_id: str) -> Dict[str, int]:
 def get_user_usage_summary(user_id: str) -> Dict[str, Any]:
     conn = get_db()
     rows = conn.execute(
-        "SELECT kind, used, last_reset FROM usage WHERE user_id=?",
-        (user_id,)
+        "SELECT kind, used, last_reset FROM usage WHERE user_id=?", (user_id,)
     ).fetchall()
     conn.close()
     summary = {row["kind"]: row["used"] for row in rows}
