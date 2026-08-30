@@ -1,8 +1,4 @@
-/**
- * Telemetry and event tracking module
- * Provides centralized event tracking functionality with backend integration
- */
-
+import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
 // Get API base URL from environment or use default
@@ -172,11 +168,67 @@ export async function getTelemetryStats(limit = 100, offset = 0) {
   }
 }
 
-export default {
-  trackEvent,
-  logEvent,
-  trackPageView,
-  trackUserAction,
-  trackError,
-  getTelemetryStats
+export default function Telemetry({ totalPackets, dbStatus }) {
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    trackPageView('dashboard')
+  }, [])
+
+  useEffect(() => {
+    async function loadStats() {
+      try {
+        const data = await getTelemetryStats(50, 0)
+        setStats(data)
+      } catch (err) {
+        console.error('Failed to load telemetry stats:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadStats()
+  }, [])
+
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      padding: '12px',
+      backgroundColor: 'rgba(4, 8, 20, 0.5)',
+      border: '1px solid #1e293b',
+      borderRadius: '12px',
+      backdropFilter: 'blur(8px)'
+    }}>
+      <h3 style={{
+        margin: '0 0 8px 0',
+        fontSize: '12px',
+        color: '#67e8f9',
+        letterSpacing: '1px',
+        fontWeight: '600'
+      }}>
+        📡 TELEMETRY
+      </h3>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '8px',
+        fontSize: '11px'
+      }}>
+        <div style={{ color: '#94a3b8' }}>
+          <span style={{ color: '#34d399' }}>●</span> DB: {dbStatus}
+        </div>
+        <div style={{ color: '#94a3b8' }}>
+          Packets: {totalPackets || 0}
+        </div>
+        <div style={{ color: '#94a3b8' }}>
+          Events: {loading ? '...' : (stats?.total_events || 0)}
+        </div>
+        <div style={{ color: '#94a3b8' }}>
+          Errors: {loading ? '...' : (stats?.error_count || 0)}
+        </div>
+      </div>
+    </div>
+  )
 }
