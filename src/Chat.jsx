@@ -205,6 +205,9 @@ export default function Chat({ session, conversationId }) {
             color: '#f87171'
           }}>
             ⚠️ {error}
+            <button type="button" onClick={retryLastPrompt} style={{ marginLeft: '10px', color: '#67e8f9', background: 'transparent', border: 0, cursor: 'pointer' }}>
+              Retry
+            </button>
           </div>
         )}
 
