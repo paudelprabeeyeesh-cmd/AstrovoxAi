@@ -53,5 +53,9 @@ async def rate_limit_middleware(request: Request, call_next):
         "script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000 https://*.supabase.co"
     )
     if not allowed:
-        return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"}, headers={"x-ratelimit-limit": str(limit), "x-ratelimit-remaining": "0"})
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded"},
+            headers={"x-ratelimit-limit": str(limit), "x-ratelimit-remaining": "0"},
+        )
     return response

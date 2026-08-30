@@ -21,7 +21,9 @@ except Exception:  # pragma: no cover - fallback for missing package
 
 class _FallbackSupabaseClient:
     def __getattr__(self, name):
-        return lambda *args, **kwargs: SimpleNamespace(user=None, session=None, data=None)
+        return lambda *args, **kwargs: SimpleNamespace(
+            user=None, session=None, data=None
+        )
 
 
 @lru_cache(maxsize=1)
