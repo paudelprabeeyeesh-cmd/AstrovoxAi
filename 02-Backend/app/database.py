@@ -177,7 +177,9 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
             .range(offset, offset + limit - 1)
             .execute()
         )
-        logger.debug(f"Fetched {len(response.data)} messages from conversation {conversation_id}")
+        logger.debug(
+            f"Fetched {len(response.data)} messages from conversation {conversation_id}"
+        )
         return response.data
     except Exception as e:
         logger.error(f"Error fetching messages: {e}")
@@ -195,7 +197,9 @@ async def get_recent_messages(conversation_id: int, limit: int = 10):
             .limit(limit)
             .execute()
         )
-        logger.debug(f"Fetched {len(response.data)} recent messages from conversation {conversation_id}")
+        logger.debug(
+            f"Fetched {len(response.data)} recent messages from conversation {conversation_id}"
+        )
         return response.data
     except Exception as e:
         logger.error(f"Error fetching recent messages: {e}")
