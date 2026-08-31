@@ -130,7 +130,8 @@ class KnowledgeBase:
             chunks = self._chunker.chunk_text(content, document_id)
             document.chunk_count = len(chunks)
 
-            if embedding_service.is_configured and texts := [c.content for c in chunks]:
+            if embedding_service.is_configured and chunks:
+                texts = [c.content for c in chunks]
                 try:
                     embeddings = await embedding_service.embed_with_retry(texts)
                     for chunk, emb in zip(chunks, embeddings):
