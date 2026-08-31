@@ -1,15 +1,1 @@
-{
-  "02-Backend/tests/test_auth_and_rate_limit.py::TestClient": true,
-  "02-Backend/tests/test_health.py::TestClient": true,
-  "02-Backend/tests/test_integration.py::TestClient": true,
-  "02-Backend/tests/test_integration.py::TestHealthEndpoints": true,
-  "02-Backend/tests/test_integration.py::TestAPIEndpoints": true,
-  "02-Backend/tests/test_integration.py::TestChatModelsEndpoint": true,
-  "02-Backend/tests/test_integration.py::TestEmbeddingEndpoints": true,
-  "02-Backend/tests/test_integration.py::TestAuthValidation": true,
-  "02-Backend/tests/test_integration.py::TestChatValidation": true,
-  "02-Backend/tests/test_integration.py::TestMemoryValidation": true,
-  "02-Backend/tests/test_integration.py::TestErrorHandling": true,
-  "02-Backend/tests/test_storage_routes.py::TestClient": true,
-  "02-Backend/tests/test_terminal.py::TestClient": true
-}
+{}
