@@ -220,12 +220,6 @@ According to the existing AUDIT_REPORT.md, the following issues were previously 
    - Per-user access policies
    - Auth-based row ownership
 
-### Remaining Security Recommendations
-
-1. ⚠️ **Rotate leaked Gemini key** - Previous audit noted a leaked key in git history (owner must rotate)
-2. ⚠️ **Add SSL/TLS** - Configure HTTPS in production
-3. ⚠️ **Add request logging** - Implement audit logging for sensitive operations
-4. ⚠️ **Add input validation** - Enhance Pydantic models with stricter validation
 
 ---
 
