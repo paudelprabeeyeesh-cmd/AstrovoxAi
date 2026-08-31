@@ -3,7 +3,7 @@
 Supports: OpenAI, Anthropic (Claude), Google Gemini, Ollama (local).
 """
 
-from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig
+from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig, EmbeddingVector
 from .models import (
     ModelInfo,
     MODELS,
@@ -23,6 +23,7 @@ __all__ = [
     "ChatMessage",
     "ChatResponse",
     "ProviderConfig",
+    "EmbeddingVector",
     "ModelInfo",
     "MODELS",
     "get_model_info",

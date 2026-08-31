@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Header
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 from slowapi import Limiter
@@ -41,6 +42,7 @@ class SendMessageRequest(BaseModel):
     conversation_id: int = Field(gt=0)
     message: str = Field(min_length=1, max_length=4000)
     model: Optional[str] = Field(default="gpt-4", min_length=1, max_length=64)
+    stream: Optional[bool] = False
 
 
 class MessageResponse(BaseModel):
@@ -151,19 +153,17 @@ async def get_conversation_messages(
 @router.post("/message")
 @limiter.limit("30/minute")
 async def send_message(request: SendMessageRequest, authorization: str = Header(None)):
-    """Send a message and get AI response (multi-provider)"""
+    """Send a message and get AI response (multi-provider, with optional streaming)"""
     user_id = get_user_id_from_token(authorization)
 
     model = request.model or "gpt-4"
 
-    # Validate model
     if not is_valid_model(model):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Unsupported model: {model}",
         )
 
-    # Get provider for model
     provider_name = get_provider_for_model(model)
     provider = ProviderFactory.get(provider_name) if provider_name else None
 
@@ -224,8 +224,39 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         model_info = get_model_info(model)
         actual_model = model_info.id if model_info else model
 
+        if request.stream and provider.supports_streaming:
+            async def stream_generator():
+                full_content = ""
+                try:
+                    async for chunk in provider.stream(
+                        messages=context_messages,
+                        model=actual_model,
+                        temperature=0.7,
+                        max_tokens=2000,
+                        system_prompt=system_prompt,
+                    ):
+                        full_content += chunk
+                        yield f"data: {chunk}\n\n"
+                    yield "data: [DONE]\n\n"
+
+                    ai_msg = await create_message(
+                        request.conversation_id,
+                        user_id,
+                        "assistant",
+                        full_content,
+                        model_used=model,
+                    )
+                    await update_conversation(request.conversation_id, last_message_at="now()")
+                    track_ai_request(model=actual_model, status="success")
+                except Exception as e:
+                    track_ai_request(model=actual_model, status="error")
+                    sanitized = provider.sanitize_error(e)
+                    yield f"data: Error: {sanitized}\n\n"
+
+            return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
         try:
-            response = await provider.chat(
+            response = await provider.chat_with_retry(
                 messages=context_messages,
                 model=actual_model,
                 temperature=0.7,
