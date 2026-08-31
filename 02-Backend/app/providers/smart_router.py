@@ -2,7 +2,6 @@
 
 import time
 import logging
-import random
 from dataclasses import dataclass, field
 from typing import Optional
 from enum import Enum
@@ -10,6 +9,7 @@ from enum import Enum
 from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig
 from .factory import ProviderFactory
 from .models import get_model_info, get_provider_for_model, is_valid_model
+from ..shared import MODEL_COSTS
 
 logger = logging.getLogger(__name__)
 
