@@ -51,34 +51,6 @@ class ProviderMetrics:
         self.last_used = time.time()
 
 
-@dataclass
-class ModelCost:
-    """Cost per 1K tokens for a model."""
-    input_cost: float = 0.0
-    output_cost: float = 0.0
-
-
-# Cost table (USD per 1K tokens)
-MODEL_COSTS: dict[str, ModelCost] = {
-    "gpt-4": ModelCost(0.03, 0.06),
-    "gpt-4o-mini": ModelCost(0.00015, 0.0006),
-    "gpt-3.5-turbo": ModelCost(0.0005, 0.0015),
-    "claude-3-5-sonnet": ModelCost(0.003, 0.015),
-    "claude-3-opus": ModelCost(0.015, 0.075),
-    "claude-3-haiku": ModelCost(0.00025, 0.00125),
-    "gemini-1.5-pro": ModelCost(0.00125, 0.005),
-    "gemini-1.5-flash": ModelCost(0.000075, 0.0003),
-    "gemini-1.0-pro": ModelCost(0.0005, 0.0015),
-    "llama3": ModelCost(0, 0),
-    "llama3.1": ModelCost(0, 0),
-    "mistral": ModelCost(0, 0),
-    "mixtral": ModelCost(0, 0),
-    "codellama": ModelCost(0, 0),
-    "phi3": ModelCost(0, 0),
-    "gemma2": ModelCost(0, 0),
-}
-
-
 class SmartProviderRouter:
     """Intelligent provider routing with fallback and optimization."""
 
