@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
 import MessageContent from './MessageContent'
 
-export default function Chat({ session, conversationId }) {
+export default function Chat({ session, conversationId, model = 'gpt-4' }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -91,7 +91,7 @@ export default function Chat({ session, conversationId }) {
         body: JSON.stringify({
           conversation_id: conversationId,
           message: userMessage,
-          model: 'gpt-4'
+          model: model
         })
       })
 
