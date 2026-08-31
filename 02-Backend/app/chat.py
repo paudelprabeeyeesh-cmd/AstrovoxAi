@@ -152,11 +152,11 @@ async def get_conversation_messages(
 
 @router.post("/message")
 @limiter.limit("30/minute")
-async def send_message(request: SendMessageRequest, authorization: str = Header(None)):
+async def send_message(body: SendMessageRequest, authorization: str = Header(None)):
     """Send a message and get AI response (multi-provider, with optional streaming)"""
     user_id = get_user_id_from_token(authorization)
 
-    model = request.model or "gpt-4"
+    model = body.model or "gpt-4"
 
     if not is_valid_model(model):
         raise HTTPException(
@@ -180,7 +180,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         )
 
     try:
-        normalized_message = request.message.strip()
+        normalized_message = body.message.strip()
         if not normalized_message:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -200,17 +200,17 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 detail=str(exc),
             ) from exc
 
-        conversation = await get_conversation(request.conversation_id, user_id)
+        conversation = await get_conversation(body.conversation_id, user_id)
         if not conversation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
         user_msg = await create_message(
-            request.conversation_id, user_id, "user", normalized_message
+            body.conversation_id, user_id, "user", normalized_message
         )
 
-        messages = await get_recent_messages(request.conversation_id, limit=10)
+        messages = await get_recent_messages(body.conversation_id, limit=10)
         memory = await get_user_memory(user_id, limit=5)
 
         context_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
@@ -224,7 +224,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         model_info = get_model_info(model)
         actual_model = model_info.id if model_info else model
 
-        if request.stream and provider.supports_streaming:
+        if body.stream and provider.supports_streaming:
             async def stream_generator():
                 full_content = ""
                 try:
@@ -240,13 +240,13 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                     yield "data: [DONE]\n\n"
 
                     ai_msg = await create_message(
-                        request.conversation_id,
+                        body.conversation_id,
                         user_id,
                         "assistant",
                         full_content,
                         model_used=model,
                     )
-                    await update_conversation(request.conversation_id, last_message_at="now()")
+                    await update_conversation(body.conversation_id, last_message_at="now()")
                     track_ai_request(model=actual_model, status="success")
                 except Exception as e:
                     track_ai_request(model=actual_model, status="error")
@@ -273,7 +273,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
             )
 
         ai_msg = await create_message(
-            request.conversation_id,
+            body.conversation_id,
             user_id,
             "assistant",
             response.content,
@@ -281,7 +281,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
             tokens_used=response.tokens_used,
         )
 
-        await update_conversation(request.conversation_id, last_message_at="now()")
+        await update_conversation(body.conversation_id, last_message_at="now()")
 
         if "important" in response.content.lower() or "remember" in response.content.lower():
             await save_memory(
