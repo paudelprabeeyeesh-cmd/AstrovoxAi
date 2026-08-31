@@ -31,5 +31,10 @@
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_on_transient_error": true,
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_exhausts_retries": true,
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_no_retry_on_permanent_error": true,
-  "02-Backend/tests/test_providers.py::TestOpenAIProvider::test_sanitize_error_redacts_keys": true
+  "02-Backend/tests/test_providers.py::TestOpenAIProvider::test_sanitize_error_redacts_keys": true,
+  "02-Backend/tests/test_auth_and_rate_limit.py": true,
+  "02-Backend/tests/test_health.py": true,
+  "02-Backend/tests/test_integration.py": true,
+  "02-Backend/tests/test_storage_routes.py": true,
+  "02-Backend/tests/test_terminal.py": true
 }
