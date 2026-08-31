@@ -137,7 +137,8 @@ async def delete_storage_file(bucket: str, path: str, authorization: str = Heade
 
 
 @router.get("/{bucket}/{path:path}/signed-url")
-async def signed_url(bucket: str, path: str, user_id: str):
+async def signed_url(bucket: str, path: str, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
     try:
         return {"status": "OK", **storage_service.get_signed_url(user_id, bucket, path)}
     except ValueError as exc:
