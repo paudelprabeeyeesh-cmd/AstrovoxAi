@@ -71,8 +71,8 @@ class SmartProviderRouter:
 
     def estimate_cost(self, model: str, input_tokens: int = 1000, output_tokens: int = 1000) -> float:
         """Estimate the cost for a request in USD."""
-        cost = MODEL_COSTS.get(model, ModelCost())
-        return (cost.input_cost * input_tokens / 1000) + (cost.output_cost * output_tokens / 1000)
+        cost = MODEL_COSTS.get(model, {"input": 0, "output": 0})
+        return (cost["input"] * input_tokens / 1000) + (cost["output"] * output_tokens / 1000)
 
     def get_fastest_provider(self, model: str) -> Optional[AIProvider]:
         """Get the fastest responding provider for a model."""
