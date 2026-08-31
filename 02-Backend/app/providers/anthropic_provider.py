@@ -1,7 +1,7 @@
 """Anthropic (Claude) provider implementation."""
 
 import os
-from typing import Optional
+from typing import Optional, AsyncIterator
 
 from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig
 
@@ -53,7 +53,6 @@ class AnthropicProvider(AIProvider):
         if not self.is_configured:
             raise RuntimeError("Anthropic API key not configured")
 
-        # Anthropic uses a separate system parameter
         api_messages = [{"role": m.role, "content": m.content} for m in messages if m.role != "system"]
 
         kwargs = {
@@ -79,3 +78,31 @@ class AnthropicProvider(AIProvider):
             finish_reason=response.stop_reason,
             provider=self.name,
         )
+
+    async def stream(
+        self,
+        messages: list[ChatMessage],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncIterator[str]:
+        """Stream chat completion tokens from Anthropic."""
+        if not self.is_configured:
+            raise RuntimeError("Anthropic API key not configured")
+
+        api_messages = [{"role": m.role, "content": m.content} for m in messages if m.role != "system"]
+
+        kwargs = {
+            "model": model,
+            "messages": api_messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True,
+        }
+        if system_prompt:
+            kwargs["system"] = system_prompt
+
+        with self.client.messages.stream(**kwargs) as stream:
+            for text in stream.text_stream:
+                yield text
