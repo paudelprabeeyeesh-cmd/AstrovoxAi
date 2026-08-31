@@ -20,6 +20,9 @@ from .embeddings_route import router as embeddings_router
 from .analytics_route import router as analytics_router
 from .knowledge_route import router as knowledge_router
 from .agent_route import router as agent_router
+from .monitoring_route import router as monitoring_router
+from .security_route import router as security_router
+from .monitoring_route import router as monitoring_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -78,6 +81,8 @@ app.include_router(embeddings_router)
 app.include_router(analytics_router)
 app.include_router(knowledge_router)
 app.include_router(agent_router)
+app.include_router(monitoring_router)
+app.include_router(security_router)
 
 
 # Prometheus metrics middleware
