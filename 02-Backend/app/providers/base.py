@@ -4,6 +4,8 @@ Defines the interface that every provider must implement.
 All providers return a consistent ChatResponse format.
 """
 
+import asyncio
+import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Optional, AsyncIterator, Any
