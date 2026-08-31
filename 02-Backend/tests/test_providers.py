@@ -133,38 +133,44 @@ class TestProviderBase:
         assert vec.model == "embedding-001"
         assert vec.tokens_used is None
 
-    def test_sanitize_error_redacts_openai_key(self):
+    def _make_provider(self):
+        """Create a concrete AIProvider for testing abstract methods."""
         from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test"))
+        class TestProvider(AIProvider):
+            name = "test"
+            async def chat(self, messages, model, **kwargs):
+                return ChatResponse(content="test", model=model, provider=self.name)
+            def validate_model(self, model):
+                return True
+        return TestProvider(ProviderConfig(api_key="test"))
+
+    def test_sanitize_error_redacts_openai_key(self):
+        provider = self._make_provider()
         error = Exception("Invalid API key: sk-abc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_anthropic_key(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test"))
+        provider = self._make_provider()
         error = Exception("Invalid key: sk-ant-abc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_google_key(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test"))
+        provider = self._make_provider()
         error = Exception("Invalid key: AIzaSyAbc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_bearer_token(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test"))
+        provider = self._make_provider()
         error = Exception("Authorization: Bearer secret-token-12345")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     @pytest.mark.asyncio
     async def test_embed_not_implemented_by_default(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test"))
+        provider = self._make_provider()
         with pytest.raises(NotImplementedError):
             await provider.embed(["test"])
 
