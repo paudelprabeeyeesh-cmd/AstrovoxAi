@@ -29,7 +29,7 @@ class TestEmbeddingVector:
 class TestEmbeddingService:
     def test_init_without_provider(self):
         from app.embeddings import EmbeddingService
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = None
             service = EmbeddingService()
             assert service.is_configured is False
@@ -38,7 +38,7 @@ class TestEmbeddingService:
         from app.embeddings import EmbeddingService
         mock_provider = MagicMock()
         mock_provider.is_configured = True
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
             assert service.is_configured is True
@@ -46,7 +46,7 @@ class TestEmbeddingService:
     @pytest.mark.asyncio
     async def test_embed_without_provider_raises(self):
         from app.embeddings import EmbeddingService
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = None
             service = EmbeddingService()
             with pytest.raises(RuntimeError, match="not configured"):
@@ -60,7 +60,7 @@ class TestEmbeddingService:
         mock_provider.embed = AsyncMock(
             return_value=[EmbeddingVector(vector=[0.1, 0.2], model="m")]
         )
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
             results = await service.embed(["hello"])
@@ -75,7 +75,7 @@ class TestEmbeddingService:
         mock_provider.embed = AsyncMock(
             return_value=[EmbeddingVector(vector=[0.3, 0.4], model="m")]
         )
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
             result = await service.embed_one("hello")
@@ -86,7 +86,7 @@ class TestEmbeddingService:
         from app.embeddings import EmbeddingService
         mock_provider = MagicMock()
         mock_provider.is_configured = True
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
             results = await service.embed([])
@@ -100,7 +100,7 @@ class TestEmbeddingService:
         mock_provider.embed = AsyncMock(
             return_value=[EmbeddingVector(vector=[0.1], model="m")]
         )
-        with patch("app.embeddings.ProviderFactory") as mock_factory:
+        with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
             results = await service.embed_with_retry(["test"])
@@ -117,7 +117,7 @@ class TestEmbeddingService:
                 [EmbeddingVector(vector=[0.1], model="m")],
             ]
         )
-        with patch("app.embeddings.ProviderFactory") as mock_factory, \
+        with patch("app.providers.factory.ProviderFactory") as mock_factory, \
              patch("asyncio.sleep", new_callable=AsyncMock):
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
@@ -131,7 +131,7 @@ class TestEmbeddingService:
         mock_provider = MagicMock()
         mock_provider.is_configured = True
         mock_provider.embed = AsyncMock(side_effect=Exception("timeout"))
-        with patch("app.embeddings.ProviderFactory") as mock_factory, \
+        with patch("app.providers.factory.ProviderFactory") as mock_factory, \
              patch("asyncio.sleep", new_callable=AsyncMock):
             mock_factory.get.return_value = mock_provider
             service = EmbeddingService()
