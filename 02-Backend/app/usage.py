@@ -21,16 +21,14 @@ class DailyUsageTracker:
         if directory:
             os.makedirs(directory, exist_ok=True)
         with sqlite3.connect(self.storage_path) as conn:
-            conn.execute(
-                """
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS usage_events (
                     user_id TEXT NOT NULL,
                     day TEXT NOT NULL,
                     count INTEGER NOT NULL DEFAULT 0,
                     PRIMARY KEY (user_id, day)
                 )
-                """
-            )
+                """)
             conn.commit()
 
     def _today_key(self) -> str:

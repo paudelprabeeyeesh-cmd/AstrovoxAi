@@ -10,7 +10,14 @@ from .logging_config import logger
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
-ALLOWED_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp", "application/pdf", "text/plain", "application/octet-stream"}
+ALLOWED_CONTENT_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "application/pdf",
+    "text/plain",
+    "application/octet-stream",
+}
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
 
@@ -27,7 +34,9 @@ class StorageService:
             safe_path = safe_path[1:]
         if ".." in Path(safe_path).parts:
             raise ValueError("Invalid path traversal")
-        if not safe_path.startswith(f"user/{user_id}/") and not safe_path.startswith(f"users/{user_id}/"):
+        if not safe_path.startswith(f"user/{user_id}/") and not safe_path.startswith(
+            f"users/{user_id}/"
+        ):
             raise ValueError("Path does not belong to the authenticated user")
         target = self.base_dir / bucket / safe_path
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -77,13 +86,21 @@ async def upload_storage_file(
     path: str = "",
 ):
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required"
+        )
     try:
         content = await file.read()
         if len(content) > MAX_UPLOAD_SIZE:
-            raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large")
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File too large",
+            )
         if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
-            raise HTTPException(status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail="Unsupported content type")
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Unsupported content type",
+            )
         result = storage_service.upload_file(
             user_id,
             bucket,
@@ -91,12 +108,18 @@ async def upload_storage_file(
             content,
             content_type=file.content_type,
         )
-        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"status": "OK", **result})
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
+        )
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
     except Exception as exc:  # pragma: no cover - defensive path
         logger.exception("Storage upload failed")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
 
 
 @router.delete("/{bucket}/{path:path}")
@@ -104,10 +127,14 @@ async def delete_storage_file(bucket: str, path: str, user_id: str):
     try:
         deleted = storage_service.delete_file(user_id, bucket, path)
         if not deleted:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+            )
         return {"status": "OK", "deleted": True}
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
 
 
 @router.get("/{bucket}/{path:path}/signed-url")
@@ -115,4 +142,6 @@ async def signed_url(bucket: str, path: str, user_id: str):
     try:
         return {"status": "OK", **storage_service.get_signed_url(user_id, bucket, path)}
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc

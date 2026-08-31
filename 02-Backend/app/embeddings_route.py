@@ -27,6 +27,7 @@ class EmbedOneRequest(BaseModel):
 
 @router.post("/", response_model=EmbedResponse)
 async def generate_embeddings(request: EmbedRequest):
+<<<<<<< HEAD
     if not embedding_service.is_configured:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Embedding service not configured. Set GEMINI_API_KEY.")
     try:
@@ -34,10 +35,35 @@ async def generate_embeddings(request: EmbedRequest):
         return {"embeddings": [r.vector for r in results], "model": request.model or embedding_service.model, "count": len(results)}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Embedding generation failed: {str(e)}")
+=======
+    """Generate embeddings for a list of texts."""
+    if not embedding_service.is_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Embedding service not configured. Set GEMINI_API_KEY.",
+        )
+
+    try:
+        results = await embedding_service.embed_with_retry(
+            texts=request.texts,
+            model=request.model,
+        )
+        return {
+            "embeddings": [r.vector for r in results],
+            "model": request.model or embedding_service.model,
+            "count": len(results),
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Embedding generation failed: {str(e)}",
+        )
+>>>>>>> phase-5-complete
 
 
 @router.post("/one", response_model=EmbedResponse)
 async def generate_one_embedding(request: EmbedOneRequest):
+<<<<<<< HEAD
     if not embedding_service.is_configured:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Embedding service not configured. Set GEMINI_API_KEY.")
     try:
@@ -45,8 +71,40 @@ async def generate_one_embedding(request: EmbedOneRequest):
         return {"embeddings": [result.vector], "model": request.model or embedding_service.model, "count": 1}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Embedding generation failed: {str(e)}")
+=======
+    """Generate embedding for a single text."""
+    if not embedding_service.is_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Embedding service not configured. Set GEMINI_API_KEY.",
+        )
+
+    try:
+        result = await embedding_service.embed_one(
+            text=request.text,
+            model=request.model,
+        )
+        return {
+            "embeddings": [result.vector],
+            "model": request.model or embedding_service.model,
+            "count": 1,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Embedding generation failed: {str(e)}",
+        )
+>>>>>>> phase-5-complete
 
 
 @router.get("/status")
 async def embedding_status():
+<<<<<<< HEAD
     return {"configured": embedding_service.is_configured, "model": embedding_service.model}
+=======
+    """Check embedding service status."""
+    return {
+        "configured": embedding_service.is_configured,
+        "model": embedding_service.model,
+    }
+>>>>>>> phase-5-complete
