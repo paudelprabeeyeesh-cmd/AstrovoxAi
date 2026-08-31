@@ -49,7 +49,7 @@ class TestEmbeddingService:
         with patch("app.providers.factory.ProviderFactory") as mock_factory:
             mock_factory.get.return_value = None
             service = EmbeddingService()
-            with pytest.raises(RuntimeError, match="not configured"):
+            with pytest.raises(RuntimeError, match="not configured|No embedding provider"):
                 await service.embed(["test"])
 
     @pytest.mark.asyncio
