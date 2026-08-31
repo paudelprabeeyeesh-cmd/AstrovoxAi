@@ -7,6 +7,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import defaultdict
 
+from .shared import MODEL_COSTS
+
 logger = logging.getLogger(__name__)
 
 

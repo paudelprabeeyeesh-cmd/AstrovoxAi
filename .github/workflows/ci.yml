@@ -88,12 +88,11 @@ jobs:
       - name: Run type checking (mypy)
         run: |
           pip install mypy
-          mypy app --ignore-missing-imports || true
+          mypy app --ignore-missing-imports
 
       - name: Run tests
         run: |
-          pytest tests/ -v --tb=short || echo "No tests found or tests failed"
-        continue-on-error: true
+          pytest tests/ -v --tb=short
 
   # ============================================================================
   # Docker Build Validation
