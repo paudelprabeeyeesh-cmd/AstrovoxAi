@@ -21,7 +21,8 @@ export default function Dashboard({ session }) {
   ])
   const [totalConversations, setTotalConversations] = useState(0)
   const [dbStatus, setDbStatus] = useState('online')
-  const [activePanel, setActivePanel] = useState('chat') // 'chat', 'memory', 'settings'
+  const [activePanel, setActivePanel] = useState('chat')
+  const [selectedModel, setSelectedModel] = useState('gpt-4') // 'chat', 'memory', 'settings'
 
   const loadUserStats = useCallback(async () => {
     try {
@@ -193,6 +194,7 @@ export default function Dashboard({ session }) {
               <Chat
                 session={session}
                 conversationId={currentConversationId}
+                model={selectedModel}
                 onConversationChange={(id) => setCurrentConversationId(id)}
               />
             </div>
@@ -206,7 +208,7 @@ export default function Dashboard({ session }) {
 
           {activePanel === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <SettingsPanel session={session} />
+              <SettingsPanel session={session} onModelChange={setSelectedModel} />
             </div>
           )}
 
