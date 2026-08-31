@@ -21,22 +21,23 @@ def configure_logging():
         backupCount=5,
     )
     file_handler.setLevel(getattr(logging, log_level))
-    
+
     # Formatter
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-    
+
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
-    
+
     # Add handlers
     if not logger.handlers:
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
-    
+
     return logger
+
 
 # Initialize logger
 logger = configure_logging()

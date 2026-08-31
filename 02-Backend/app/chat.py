@@ -1,12 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Header
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import os
-import json
-
-from openai import OpenAI
 
 from .auth_utils import get_user_id_from_token
 from .database import (
@@ -22,18 +19,18 @@ from .database import (
     delete_conversation,
 )
 from .usage import DailyUsageTracker, UsageQuotaExceeded
+from .providers import (
+    ChatMessage,
+    ProviderFactory,
+    is_valid_model,
+    get_model_info,
+    get_provider_for_model,
+)
+from .metrics import track_ai_request
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 limiter = Limiter(key_func=get_remote_address)
-
-# Initialize OpenAI client
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 usage_tracker = DailyUsageTracker()
-
-
-# Pydantic models
-SUPPORTED_MODELS = {"gpt-4", "gpt-4o-mini", "gpt-3.5-turbo"}
 
 
 class CreateConversationRequest(BaseModel):
@@ -45,21 +42,7 @@ class SendMessageRequest(BaseModel):
     conversation_id: int = Field(gt=0)
     message: str = Field(min_length=1, max_length=4000)
     model: Optional[str] = Field(default="gpt-4", min_length=1, max_length=64)
-
-    @staticmethod
-    def _validate_model(value: Optional[str]) -> Optional[str]:
-        if value is None:
-            return None
-        if value not in SUPPORTED_MODELS:
-            raise ValueError("model must be one of the supported values")
-        return value
-
-    @classmethod
-    def validate(cls, value):
-        model = super().validate(value)
-        if model is None:
-            return model
-        return model
+    stream: Optional[bool] = False
 
 
 class MessageResponse(BaseModel):
@@ -70,6 +53,10 @@ class MessageResponse(BaseModel):
     created_at: str
 
 
+class ModelsResponse(BaseModel):
+    models: list[dict]
+
+
 @router.post("/conversations")
 async def create_new_conversation(
     request: CreateConversationRequest, authorization: str = Header(None)
@@ -77,7 +64,7 @@ async def create_new_conversation(
     """Create a new conversation"""
     user_id = get_user_id_from_token(authorization)
 
-    if request.model and request.model not in SUPPORTED_MODELS:
+    if request.model and not is_valid_model(request.model):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported model")
 
     try:
@@ -146,7 +133,6 @@ async def get_conversation_messages(
     user_id = get_user_id_from_token(authorization)
 
     try:
-        # Verify user owns this conversation
         conversation = await get_conversation(conversation_id, user_id)
         if not conversation:
             raise HTTPException(
@@ -167,13 +153,30 @@ async def get_conversation_messages(
 @router.post("/message")
 @limiter.limit("30/minute")
 async def send_message(request: SendMessageRequest, authorization: str = Header(None)):
-    """Send a message and get AI response"""
+    """Send a message and get AI response (multi-provider, with optional streaming)"""
     user_id = get_user_id_from_token(authorization)
 
-    if not client:
+    model = request.model or "gpt-4"
+
+    if not is_valid_model(model):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unsupported model: {model}",
+        )
+
+    provider_name = get_provider_for_model(model)
+    provider = ProviderFactory.get(provider_name) if provider_name else None
+
+    if not provider:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="OpenAI client not configured",
+            detail=f"No provider available for model: {model}. Configure {provider_name.upper()}_API_KEY.",
+        )
+
+    if not provider.is_configured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Provider {provider_name} is not configured. Set the {provider_name.upper()}_API_KEY environment variable.",
         )
 
     try:
@@ -188,11 +191,6 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Message content is too long",
             )
-        if request.model and request.model not in SUPPORTED_MODELS:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="Unsupported model",
-            )
 
         try:
             await usage_tracker.record_success(user_id)
@@ -202,68 +200,93 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 detail=str(exc),
             ) from exc
 
-        # Verify user owns this conversation
         conversation = await get_conversation(request.conversation_id, user_id)
         if not conversation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
             )
 
-        # Save user message
         user_msg = await create_message(
             request.conversation_id, user_id, "user", normalized_message
         )
 
-        # Get conversation history
         messages = await get_recent_messages(request.conversation_id, limit=10)
-
-        # Get user memory for context
         memory = await get_user_memory(user_id, limit=5)
 
-        # Build context
-        context_messages = [
-            {"role": msg["role"], "content": msg["content"]} for msg in messages
-        ]
+        context_messages = [ChatMessage(role=msg["role"], content=msg["content"]) for msg in messages]
 
-        # Add memory as system context
-        system_messages = []
+        system_prompt = None
         if memory:
-            memory_context = "User context/memory:\n" + "\n".join(
+            system_prompt = "User context/memory:\n" + "\n".join(
                 [m["content"] for m in memory[:3]]
             )
-            system_messages = [{"role": "system", "content": memory_context}]
 
-        # Call OpenAI API
-        response = client.chat.completions.create(
-            model=request.model,
-            messages=system_messages
-            + context_messages
-            + [{"role": "user", "content": normalized_message}],
-            temperature=0.7,
-            max_tokens=2000,
-        )
+        model_info = get_model_info(model)
+        actual_model = model_info.id if model_info else model
 
-        ai_response = response.choices[0].message.content
-        tokens_used = response.usage.total_tokens if response.usage else None
+        if request.stream and provider.supports_streaming:
+            async def stream_generator():
+                full_content = ""
+                try:
+                    async for chunk in provider.stream(
+                        messages=context_messages,
+                        model=actual_model,
+                        temperature=0.7,
+                        max_tokens=2000,
+                        system_prompt=system_prompt,
+                    ):
+                        full_content += chunk
+                        yield f"data: {chunk}\n\n"
+                    yield "data: [DONE]\n\n"
 
-        # Save AI message
+                    ai_msg = await create_message(
+                        request.conversation_id,
+                        user_id,
+                        "assistant",
+                        full_content,
+                        model_used=model,
+                    )
+                    await update_conversation(request.conversation_id, last_message_at="now()")
+                    track_ai_request(model=actual_model, status="success")
+                except Exception as e:
+                    track_ai_request(model=actual_model, status="error")
+                    sanitized = provider.sanitize_error(e)
+                    yield f"data: Error: {sanitized}\n\n"
+
+            return StreamingResponse(stream_generator(), media_type="text/event-stream")
+
+        try:
+            response = await provider.chat_with_retry(
+                messages=context_messages,
+                model=actual_model,
+                temperature=0.7,
+                max_tokens=2000,
+                system_prompt=system_prompt,
+            )
+            track_ai_request(model=actual_model, status="success", tokens=response.tokens_used or 0)
+        except Exception as e:
+            track_ai_request(model=actual_model, status="error")
+            sanitized = provider.sanitize_error(e)
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Provider {provider_name} error: {sanitized}",
+            )
+
         ai_msg = await create_message(
             request.conversation_id,
             user_id,
             "assistant",
-            ai_response,
-            model_used=request.model,
-            tokens_used=tokens_used,
+            response.content,
+            model_used=model,
+            tokens_used=response.tokens_used,
         )
 
-        # Update conversation
         await update_conversation(request.conversation_id, last_message_at="now()")
 
-        # Save important info to memory
-        if "important" in ai_response.lower() or "remember" in ai_response.lower():
+        if "important" in response.content.lower() or "remember" in response.content.lower():
             await save_memory(
                 user_id,
-                f"User asked: {normalized_message}\nAI responded: {ai_response[:200]}",
+                f"User asked: {normalized_message}\nAI responded: {response.content[:200]}",
                 importance=2,
             )
 
@@ -271,7 +294,8 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
             "status": "OK",
             "user_message": user_msg,
             "ai_message": ai_msg,
-            "tokens_used": tokens_used,
+            "tokens_used": response.tokens_used,
+            "provider": provider_name,
         }
     except HTTPException:
         raise
@@ -282,6 +306,26 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         )
 
 
+@router.get("/models")
+async def list_models():
+    """List all supported models across all providers."""
+    from .providers import list_models
+    models = list_models()
+    return {
+        "status": "OK",
+        "models": [
+            {
+                "id": m.id,
+                "provider": m.provider,
+                "display_name": m.display_name,
+                "supports_streaming": m.supports_streaming,
+                "description": m.description,
+            }
+            for m in models
+        ],
+    }
+
+
 @router.post("/conversations/{conversation_id}/title")
 async def update_conversation_title(
     conversation_id: int, title: str, authorization: str = Header(None)
@@ -290,7 +334,6 @@ async def update_conversation_title(
     user_id = get_user_id_from_token(authorization)
 
     try:
-        # Verify user owns this conversation
         conversation = await get_conversation(conversation_id, user_id)
         if not conversation:
             raise HTTPException(
@@ -316,7 +359,6 @@ async def delete_conversation_route(
     user_id = get_user_id_from_token(authorization)
 
     try:
-        # Verify user owns this conversation
         conversation = await get_conversation(conversation_id, user_id)
         if not conversation:
             raise HTTPException(

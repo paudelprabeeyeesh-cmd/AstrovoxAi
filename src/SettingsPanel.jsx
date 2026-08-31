@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
 
-export default function SettingsPanel({ session }) {
+export default function SettingsPanel({ session, onModelChange }) {
   const [settings, setSettings] = useState({
     theme: 'dark',
     ai_preferences: {
@@ -13,6 +13,27 @@ export default function SettingsPanel({ session }) {
     },
     notifications_enabled: true
   })
+
+  const MODELS = [
+    { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI' },
+    { id: 'claude-3-5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+    { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic' },
+    { id: 'claude-3-haiku', name: 'Claude 3 Haiku', provider: 'Anthropic' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', provider: 'Google' },
+    { id: 'gemini-1.0-pro', name: 'Gemini 1.0 Pro', provider: 'Google' },
+    { id: 'llama3', name: 'Llama 3 (Local)', provider: 'Ollama' },
+    { id: 'llama3.1', name: 'Llama 3.1 (Local)', provider: 'Ollama' },
+    { id: 'mistral', name: 'Mistral (Local)', provider: 'Ollama' },
+    { id: 'mixtral', name: 'Mixtral (Local)', provider: 'Ollama' },
+    { id: 'codellama', name: 'Code Llama (Local)', provider: 'Ollama' },
+    { id: 'phi3', name: 'Phi-3 (Local)', provider: 'Ollama' },
+    { id: 'gemma2', name: 'Gemma 2 (Local)', provider: 'Ollama' },
+  ]
+
+  const providers = [...new Set(MODELS.map(m => m.provider))]
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
@@ -77,6 +98,7 @@ export default function SettingsPanel({ session }) {
         [key]: value
       }
     }))
+    if (key === 'defaultModel' && onModelChange) onModelChange(value)
   }
 
   return (
@@ -167,7 +189,7 @@ export default function SettingsPanel({ session }) {
           marginBottom: '6px',
           letterSpacing: '0.5px'
         }}>
-          DEFAULT AI MODEL
+          DEFAULT AI MODEL: {settings.ai_preferences.defaultModel}
         </label>
         <select
           value={settings.ai_preferences.defaultModel}
@@ -183,8 +205,13 @@ export default function SettingsPanel({ session }) {
             fontSize: '11px'
           }}
         >
-          <option value="gpt-4">GPT-4</option>
-          <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+          {providers.map(provider => (
+            <optgroup key={provider} label={provider}>
+              {MODELS.filter(m => m.provider === provider).map(m => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </optgroup>
+          ))}
         </select>
       </div>
 
