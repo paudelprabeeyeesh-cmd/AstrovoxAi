@@ -5,10 +5,10 @@ from app.main import app
 client = TestClient(app)
 
 
-def test_storage_upload_requires_user_id():
+def test_storage_upload_requires_auth():
     response = client.post(
         "/storage/avatars/upload",
         files={"file": ("avatar.png", b"abc", "image/png")},
         data={"path": "user/test/avatar.png"},
     )
-    assert response.status_code == 400
+    assert response.status_code == 401
