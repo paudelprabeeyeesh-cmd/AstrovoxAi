@@ -180,10 +180,19 @@ class TestProviderBase:
 # ============================================================================
 
 class TestRetryLogic:
+    def _make_provider(self, max_retries=2):
+        from app.providers.base import AIProvider, ChatResponse
+        class TestProvider(AIProvider):
+            name = "test"
+            async def chat(self, messages, model, **kwargs):
+                return ChatResponse(content="test", model=model, provider=self.name)
+            def validate_model(self, model):
+                return True
+        return TestProvider(ProviderConfig(api_key="test", max_retries=max_retries))
+
     @pytest.mark.asyncio
     async def test_chat_with_retry_succeeds_first_try(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        provider = self._make_provider()
         provider.chat = AsyncMock(return_value=ChatResponse(content="Hi", model="test"))
         result = await provider.chat_with_retry(
             messages=[ChatMessage(role="user", content="Hello")],
@@ -194,8 +203,7 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_on_transient_error(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        provider = self._make_provider()
         mock = AsyncMock(
             side_effect=[
                 Exception("timeout error"),
@@ -213,8 +221,7 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_exhausts_retries(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test", max_retries=1))
+        provider = self._make_provider(max_retries=1)
         provider.chat = AsyncMock(side_effect=Exception("timeout error"))
         with patch("asyncio.sleep", new_callable=AsyncMock):
             with pytest.raises(Exception, match="timeout"):
@@ -226,8 +233,7 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_no_retry_on_permanent_error(self):
-        from app.providers.base import AIProvider
-        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        provider = self._make_provider()
         provider.chat = AsyncMock(side_effect=Exception("invalid model name"))
         with pytest.raises(Exception, match="invalid model"):
             await provider.chat_with_retry(
