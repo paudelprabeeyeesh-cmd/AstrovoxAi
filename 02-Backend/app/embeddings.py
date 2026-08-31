@@ -1,12 +1,8 @@
-<<<<<<< HEAD
-"""Embeddings service — provides text embedding generation via AI providers."""
-=======
 """Embeddings service — provides text embedding generation via AI providers.
 
 Currently supports Google Gemini Embedding API with batch processing,
 retry handling, and timeout support.
 """
->>>>>>> phase-5-complete
 
 import os
 import asyncio
@@ -27,24 +23,14 @@ class EmbeddingService:
         self._initialize_provider()
 
     def _initialize_provider(self):
-<<<<<<< HEAD
-        from .providers.factory import ProviderFactory
-=======
         """Initialize the embedding provider from environment variables."""
-        from .factory import ProviderFactory
+        from .providers.factory import ProviderFactory
 
->>>>>>> phase-5-complete
         gemini = ProviderFactory.get("gemini")
         if gemini and gemini.is_configured:
             self._provider = gemini
             logger.info("Embedding service initialized with Gemini provider")
         else:
-<<<<<<< HEAD
-            logger.warning("Gemini provider not configured. Set GEMINI_API_KEY to enable embeddings.")
-
-    @property
-    def is_configured(self) -> bool:
-=======
             logger.warning(
                 "Gemini provider not configured. "
                 "Set GEMINI_API_KEY to enable embeddings."
@@ -53,29 +39,10 @@ class EmbeddingService:
     @property
     def is_configured(self) -> bool:
         """Check if an embedding provider is available."""
->>>>>>> phase-5-complete
         return self._provider is not None
 
     @property
     def model(self) -> str:
-<<<<<<< HEAD
-        return self._model
-
-    async def embed(self, texts: list[str], model: Optional[str] = None) -> list[EmbeddingVector]:
-        if not self.is_configured:
-            raise RuntimeError("No embedding provider configured. Set GEMINI_API_KEY.")
-        if not texts:
-            return []
-        model = model or self._model
-        return await self._provider.embed(texts, model=model)
-
-    async def embed_one(self, text: str, model: Optional[str] = None) -> EmbeddingVector:
-        results = await self.embed([text], model=model)
-        return results[0]
-
-    async def embed_with_retry(self, texts: list[str], model: Optional[str] = None, max_retries: int = 2) -> list[EmbeddingVector]:
-        last_error: Optional[Exception] = None
-=======
         """Get the current embedding model name."""
         return self._model
 
@@ -142,25 +109,12 @@ class EmbeddingService:
         """
         last_error: Optional[Exception] = None
 
->>>>>>> phase-5-complete
         for attempt in range(max_retries + 1):
             try:
                 return await self.embed(texts, model=model)
             except Exception as e:
                 last_error = e
                 error_str = str(e).lower()
-<<<<<<< HEAD
-                is_transient = any(kw in error_str for kw in ["timeout", "rate limit", "429", "503", "502", "504", "connection", "temporary"])
-                if is_transient and attempt < max_retries:
-                    wait = 2 ** attempt
-                    logger.warning("Embedding request failed (attempt %d/%d), retrying in %ds: %s", attempt + 1, max_retries + 1, wait, str(e))
-                    await asyncio.sleep(wait)
-                    continue
-                raise
-        raise last_error
-
-
-=======
                 is_transient = any(
                     kw in error_str
                     for kw in [
@@ -191,5 +145,4 @@ class EmbeddingService:
 
 
 # Singleton instance
->>>>>>> phase-5-complete
 embedding_service = EmbeddingService()
