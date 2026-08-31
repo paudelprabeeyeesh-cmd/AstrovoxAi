@@ -3,10 +3,11 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote
 
-from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status, Header
 from fastapi.responses import JSONResponse
 
 from .logging_config import logger
+from .auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -82,13 +83,10 @@ storage_service = StorageService()
 async def upload_storage_file(
     bucket: str,
     file: UploadFile = File(...),
-    user_id: str = "",
     path: str = "",
+    authorization: str = Header(None),
 ):
-    if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required"
-        )
+    user_id = get_user_id_from_token(authorization)
     try:
         content = await file.read()
         if len(content) > MAX_UPLOAD_SIZE:
@@ -123,7 +121,8 @@ async def upload_storage_file(
 
 
 @router.delete("/{bucket}/{path:path}")
-async def delete_storage_file(bucket: str, path: str, user_id: str):
+async def delete_storage_file(bucket: str, path: str, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
     try:
         deleted = storage_service.delete_file(user_id, bucket, path)
         if not deleted:

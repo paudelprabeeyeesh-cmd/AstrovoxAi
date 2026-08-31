@@ -151,11 +151,26 @@ class AIAgent:
         return text[:500] + "..."
 
     async def _tool_calculate(self, expression: str) -> str:
+        import ast
+        import operator
         try:
-            safe_expr = re.sub(r'[^0-9+\-*/().%\s]', '', expression)
-            if not safe_expr:
-                return "Invalid expression"
-            result = eval(safe_expr, {"__builtins__": {}}, {})
+            node = ast.parse(expression.strip(), mode='eval')
+            allowed_ops = (
+                ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow,
+                ast.FloorDiv, ast.USub, ast.UAdd,
+            )
+            allowed_funcs = {'abs', 'round', 'min', 'max', 'sum'}
+            for n in ast.walk(node):
+                if isinstance(n, ast.BinOp) and not isinstance(n.op, allowed_ops):
+                    return "Unsupported operator"
+                if isinstance(n, ast.UnaryOp) and not isinstance(n.op, allowed_ops):
+                    return "Unsupported operator"
+                if isinstance(n, ast.Call):
+                    if isinstance(n.func, ast.Name) and n.func.id not in allowed_funcs:
+                        return f"Unsupported function: {n.func.id}"
+                if isinstance(n, (ast.Name, ast.Attribute, ast.Subscript)):
+                    return "Variables not allowed"
+            result = eval(compile(node, '<string>', 'eval'), {"__builtins__": {}}, {})
             return str(result)
         except Exception as e:
             return f"Calculation error: {str(e)}"
