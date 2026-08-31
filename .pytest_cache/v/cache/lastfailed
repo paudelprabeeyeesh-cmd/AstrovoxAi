@@ -1,1 +1,7 @@
-{}
+{
+  "02-Backend/tests/test_auth_and_rate_limit.py": true,
+  "02-Backend/tests/test_health.py": true,
+  "02-Backend/tests/test_integration.py": true,
+  "02-Backend/tests/test_storage_routes.py": true,
+  "02-Backend/tests/test_terminal.py": true
+}

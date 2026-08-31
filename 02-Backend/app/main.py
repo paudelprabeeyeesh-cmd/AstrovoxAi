@@ -19,6 +19,7 @@ from .terminal import router as terminal_router
 from .embeddings_route import router as embeddings_router
 from .analytics_route import router as analytics_router
 from .knowledge_route import router as knowledge_router
+from .agent_route import router as agent_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -76,6 +77,7 @@ app.include_router(terminal_router)
 app.include_router(embeddings_router)
 app.include_router(analytics_router)
 app.include_router(knowledge_router)
+app.include_router(agent_router)
 
 
 # Prometheus metrics middleware
