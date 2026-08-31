@@ -95,6 +95,7 @@
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_no_retry_on_permanent_error",
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_on_transient_error",
   "02-Backend/tests/test_providers.py::TestRetryLogic::test_chat_with_retry_succeeds_first_try",
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_auth",
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id",
   "02-Backend/tests/test_terminal.py::test_inject_rejects_empty_content",
   "02-Backend/tests/test_terminal.py::test_inject_rejects_oversized_content",
