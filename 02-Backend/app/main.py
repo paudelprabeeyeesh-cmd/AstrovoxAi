@@ -14,8 +14,11 @@ from .api import router as api_router
 from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
+from .terminal import router as terminal_router
+from .embeddings_route import router as embeddings_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
+from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 
 load_dotenv()
 
@@ -52,6 +55,12 @@ app.add_middleware(
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Add global exception handler (catches unhandled errors safely)
+app.add_middleware(GlobalExceptionMiddleware)
+
+# Add input validation middleware
+app.add_middleware(InputValidationMiddleware)
 
 # Include routers
 app.include_router(auth_router)
