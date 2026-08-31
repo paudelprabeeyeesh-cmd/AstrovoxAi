@@ -2,32 +2,14 @@
 
 import time
 import logging
+import secrets
 from typing import Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
 
+from .shared import MODEL_COSTS
+
 logger = logging.getLogger(__name__)
-
-
-# Cost per 1K tokens (USD)
-MODEL_COSTS = {
-    "gpt-4": {"input": 0.03, "output": 0.06},
-    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
-    "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
-    "claude-3-5-sonnet": {"input": 0.003, "output": 0.015},
-    "claude-3-opus": {"input": 0.015, "output": 0.075},
-    "claude-3-haiku": {"input": 0.00025, "output": 0.00125},
-    "gemini-1.5-pro": {"input": 0.00125, "output": 0.005},
-    "gemini-1.5-flash": {"input": 0.000075, "output": 0.0003},
-    "gemini-1.0-pro": {"input": 0.0005, "output": 0.0015},
-    "llama3": {"input": 0, "output": 0},
-    "llama3.1": {"input": 0, "output": 0},
-    "mistral": {"input": 0, "output": 0},
-    "mixtral": {"input": 0, "output": 0},
-    "codellama": {"input": 0, "output": 0},
-    "phi3": {"input": 0, "output": 0},
-    "gemma2": {"input": 0, "output": 0},
-}
 
 
 @dataclass

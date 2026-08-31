@@ -169,7 +169,7 @@ class AnalyticsTracker:
         for model, count in self._model_requests.items():
             if model in MODEL_COSTS:
                 cost = MODEL_COSTS[model]
-                estimated = (cost.input_cost + cost.output_cost) * count
+                estimated = (cost["input"] + cost["output"]) * count
                 costs[model] = round(estimated, 4)
         return costs
 
@@ -190,17 +190,6 @@ class AnalyticsTracker:
         }
 
 
-# Cost estimates per 1K tokens
-MODEL_COSTS = {
-    "gpt-4": type("Cost", (), {"input_cost": 0.03, "output_cost": 0.06})(),
-    "gpt-4o-mini": type("Cost", (), {"input_cost": 0.00015, "output_cost": 0.0006})(),
-    "gpt-3.5-turbo": type("Cost", (), {"input_cost": 0.0005, "output_cost": 0.0015})(),
-    "claude-3-5-sonnet": type("Cost", (), {"input_cost": 0.003, "output_cost": 0.015})(),
-    "claude-3-opus": type("Cost", (), {"input_cost": 0.015, "output_cost": 0.075})(),
-    "claude-3-haiku": type("Cost", (), {"input_cost": 0.00025, "output_cost": 0.00125})(),
-    "gemini-1.5-pro": type("Cost", (), {"input_cost": 0.00125, "output_cost": 0.005})(),
-    "gemini-1.5-flash": type("Cost", (), {"input_cost": 0.000075, "output_cost": 0.0003})(),
-    "gemini-1.0-pro": type("Cost", (), {"input_cost": 0.0005, "output_cost": 0.0015})(),
-}
+# Singleton instance
 
 analytics = AnalyticsTracker()
