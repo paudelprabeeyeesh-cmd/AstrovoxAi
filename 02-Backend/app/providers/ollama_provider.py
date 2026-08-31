@@ -3,7 +3,7 @@
 import os
 import json
 import httpx
-from typing import Optional
+from typing import Optional, AsyncIterator
 
 from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig
 
@@ -95,6 +95,58 @@ class OllamaProvider(AIProvider):
                 "prompt_eval_count": data.get("prompt_eval_count"),
             },
         )
+
+    async def stream(
+        self,
+        messages: list[ChatMessage],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncIterator[str]:
+        """Stream chat completion tokens from Ollama."""
+        if not await self._check_server():
+            raise RuntimeError(
+                "Ollama server not reachable. Start Ollama with: ollama serve"
+            )
+
+        api_messages = []
+        if system_prompt:
+            api_messages.append({"role": "system", "content": system_prompt})
+        api_messages.extend([{"role": m.role, "content": m.content} for m in messages])
+
+        payload = {
+            "model": model,
+            "messages": api_messages,
+            "stream": True,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+        }
+
+        async with httpx.AsyncClient(timeout=self.config.timeout) as client:
+            async with client.stream(
+                "POST",
+                f"{self.config.base_url}/api/chat",
+                json=payload,
+            ) as response:
+                if response.status_code != 200:
+                    raise RuntimeError(
+                        f"Ollama error {response.status_code}: {(await response.aread())[:200].decode()}"
+                    )
+
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                        if "message" in data and data["message"].get("content"):
+                            yield data["message"]["content"]
+                        if data.get("done", False):
+                            break
+                    except json.JSONDecodeError:
+                        continue
 
     async def list_local_models(self) -> list[str]:
         """List models available on the local Ollama server."""
