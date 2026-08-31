@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: 'localhost',
+    host: true,
     proxy: {
       '/api': {
         target: 'http://localhost:8000',
@@ -18,8 +18,5 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild'
-  },
-  define: {
-    'process.env': {}
   }
 })

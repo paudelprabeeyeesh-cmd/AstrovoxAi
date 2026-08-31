@@ -2,27 +2,23 @@
   "name": "astravox-ai",
   "private": true,
   "version": "2.0.0",
-  "description": "ASTRAVOX PRIME - Advanced AI Chat Platform",
+  "description": "ASTROVOX PRIME - Advanced AI Chat Platform",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "vite",
-    "frontend": "vite",
-    "backend": "cd 02-Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "start": "vite preview",
     "lint": "eslint src --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
-    "pg": "^8.23.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/node": "^26.4.0",
-    "@types/pg": "^8.23.1",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
     "@typescript-eslint/eslint-plugin": "^8.68.0",
@@ -35,4 +31,5 @@
     "vite": "^6.4.3",
     "vitest": "^4.1.11"
   }
+}
 }
