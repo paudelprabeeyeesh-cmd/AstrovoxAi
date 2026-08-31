@@ -1,9 +1,9 @@
 """Tests for the AI provider abstraction layer."""
 
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock, patch
 
-from app.providers.base import ChatMessage, ChatResponse, ProviderConfig
+from app.providers.base import ChatMessage, ChatResponse, ProviderConfig, EmbeddingVector
 from app.providers.models import (
     get_model_info,
     get_provider_for_model,
@@ -127,6 +127,109 @@ class TestProviderBase:
         assert config.timeout == 60
         assert config.max_retries == 2
 
+    def test_embedding_vector_creation(self):
+        vec = EmbeddingVector(vector=[0.1, 0.2, 0.3], model="embedding-001")
+        assert vec.vector == [0.1, 0.2, 0.3]
+        assert vec.model == "embedding-001"
+        assert vec.tokens_used is None
+
+    def test_sanitize_error_redacts_openai_key(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+        error = Exception("Invalid API key: sk-abc123def456ghi789jkl012mno345pqr")
+        sanitized = provider.sanitize_error(error)
+        assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
+
+    def test_sanitize_error_redacts_anthropic_key(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+        error = Exception("Invalid key: sk-ant-abc123def456ghi789jkl012mno345pqr")
+        sanitized = provider.sanitize_error(error)
+        assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
+
+    def test_sanitize_error_redacts_google_key(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+        error = Exception("Invalid key: AIzaSyAbc123def456ghi789jkl012mno345pqr")
+        sanitized = provider.sanitize_error(error)
+        assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
+
+    def test_sanitize_error_redacts_bearer_token(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+        error = Exception("Authorization: Bearer secret-token-12345")
+        sanitized = provider.sanitize_error(error)
+        assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
+
+    @pytest.mark.asyncio
+    async def test_embed_not_implemented_by_default(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+        with pytest.raises(NotImplementedError):
+            await provider.embed(["test"])
+
+
+# ============================================================================
+# Retry Logic Tests
+# ============================================================================
+
+class TestRetryLogic:
+    @pytest.mark.asyncio
+    async def test_chat_with_retry_succeeds_first_try(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        provider.chat = AsyncMock(return_value=ChatResponse(content="Hi", model="test"))
+        result = await provider.chat_with_retry(
+            messages=[ChatMessage(role="user", content="Hello")],
+            model="test",
+        )
+        assert result.content == "Hi"
+        assert provider.chat.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_chat_with_retry_on_transient_error(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        mock = AsyncMock(
+            side_effect=[
+                Exception("timeout error"),
+                ChatResponse(content="Hi", model="test"),
+            ]
+        )
+        provider.chat = mock
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            result = await provider.chat_with_retry(
+                messages=[ChatMessage(role="user", content="Hello")],
+                model="test",
+            )
+        assert result.content == "Hi"
+        assert mock.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_chat_with_retry_exhausts_retries(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=1))
+        provider.chat = AsyncMock(side_effect=Exception("timeout error"))
+        with patch("asyncio.sleep", new_callable=AsyncMock):
+            with pytest.raises(Exception, match="timeout"):
+                await provider.chat_with_retry(
+                    messages=[ChatMessage(role="user", content="Hello")],
+                    model="test",
+                )
+        assert provider.chat.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_chat_with_retry_no_retry_on_permanent_error(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+        provider.chat = AsyncMock(side_effect=Exception("invalid model name"))
+        with pytest.raises(Exception, match="invalid model"):
+            await provider.chat_with_retry(
+                messages=[ChatMessage(role="user", content="Hello")],
+                model="test",
+            )
+        assert provider.chat.call_count == 1
+
 
 # ============================================================================
 # OpenAI Provider Tests
@@ -165,6 +268,10 @@ class TestOpenAIProvider:
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
+    def test_supports_streaming(self):
+        provider = OpenAIProvider(ProviderConfig(api_key="test"))
+        assert provider.supports_streaming is True
+
 
 # ============================================================================
 # Anthropic Provider Tests
@@ -196,6 +303,10 @@ class TestAnthropicProvider:
                 messages=[ChatMessage(role="user", content="Hi")],
                 model="claude-3-5-sonnet-20241022",
             )
+
+    def test_supports_streaming(self):
+        provider = AnthropicProvider(ProviderConfig(api_key="test"))
+        assert provider.supports_streaming is True
 
 
 # ============================================================================
@@ -229,6 +340,16 @@ class TestGeminiProvider:
                 model="gemini-1.5-pro",
             )
 
+    def test_supports_streaming(self):
+        provider = GeminiProvider(ProviderConfig(api_key="test"))
+        assert provider.supports_streaming is True
+
+    @pytest.mark.asyncio
+    async def test_embed_without_key_raises(self):
+        provider = GeminiProvider(ProviderConfig(api_key=None))
+        with pytest.raises(RuntimeError, match="not configured"):
+            await provider.embed(["test text"])
+
 
 # ============================================================================
 # Ollama Provider Tests
@@ -257,6 +378,10 @@ class TestOllamaProvider:
                 messages=[ChatMessage(role="user", content="Hi")],
                 model="llama3",
             )
+
+    def test_supports_streaming(self):
+        provider = OllamaProvider()
+        assert provider.supports_streaming is True
 
 
 # ============================================================================
@@ -300,3 +425,19 @@ class TestProviderFactory:
         ProviderFactory.register("test", mock)
         ProviderFactory.clear()
         assert ProviderFactory.get("test") is None
+
+    def test_get_for_model(self):
+        from app.providers.factory import ProviderFactory
+        ProviderFactory.clear()
+
+        mock_provider = MagicMock()
+        mock_provider.is_configured = True
+        ProviderFactory.register("openai", mock_provider)
+
+        result = ProviderFactory.get_for_model("gpt-4")
+        assert result is mock_provider
+
+    def test_get_for_model_unknown(self):
+        from app.providers.factory import ProviderFactory
+        result = ProviderFactory.get_for_model("nonexistent")
+        assert result is None
