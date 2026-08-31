@@ -6,7 +6,7 @@ import reactPlugin from 'eslint-plugin-react';
 export default [
   js.configs.recommended,
   {
-    files: ['src/**/*.{ts,tsx}'],
+    files: ['src/**/*.{js,jsx,ts,tsx}'],
     ignores: ['dist/**'],
     plugins: {
       react: reactPlugin,
@@ -35,6 +35,9 @@ export default [
         sessionStorage: 'readonly',
         navigator: 'readonly',
         performance: 'readonly',
+        global: 'readonly',
+        AbortController: 'readonly',
+        URL: 'readonly',
       },
     },
     rules: {
