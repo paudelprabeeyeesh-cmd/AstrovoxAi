@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import hashlib
+import time
 from typing import Optional, Any
 
 logger = logging.getLogger(__name__)
@@ -135,9 +136,6 @@ class RedisCache(CacheBackend):
         except Exception as e:
             logger.error(f"Redis clear error: {e}")
             return False
-
-
-import time
 
 
 class CacheManager:

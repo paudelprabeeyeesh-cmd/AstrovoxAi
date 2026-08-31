@@ -173,7 +173,7 @@ class UptimeTracker:
 
     @property
     def uptime_formatted(self) -> str:
-        seconds = int(self.uptime_time)
+        seconds = int(self.uptime_seconds)
         days, remainder = divmod(seconds, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, secs = divmod(remainder, 60)

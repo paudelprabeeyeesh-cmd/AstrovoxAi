@@ -52,7 +52,7 @@ class RequestSigner:
             return False
 
         expected = self.sign_request(method, path, body, timestamp, nonce)
-        return hmac.compare_digest(expected, expected)
+        return hmac.compare_digest(expected, signature)
 
 
 class NonceValidator:
