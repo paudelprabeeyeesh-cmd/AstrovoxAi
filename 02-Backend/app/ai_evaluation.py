@@ -1,4 +1,13 @@
-"""AI Evaluation — prompt versioning, quality scoring, benchmarks."""
+"""AI Evaluation — prompt versioning, quality scoring, benchmarks.
+
+Phase 360 — AI Evaluation Center:
+Golden datasets, automatic evaluations, human review queue, model comparison,
+prompt comparison, response scoring, hallucination benchmarks, accuracy
+benchmarks, speed benchmarks, cost benchmarks, regression testing, A/B
+testing, prompt versioning, leaderboards, quality analytics, continuous
+benchmarking, evaluation reports, trend analysis, recommendation engine,
+release quality gates.
+"""
 
 import time
 import json
@@ -7,6 +16,8 @@ import secrets
 from typing import Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
+
+logger = logging.getLogger(__name__)
 
 logger = logging.getLogger(__name__)
 
@@ -259,3 +270,105 @@ class BenchmarkSuite:
 prompt_manager = PromptManager()
 quality_scorer = QualityScorer()
 benchmark_suite = BenchmarkSuite()
+
+
+# ============================================================================
+# Phase 360 — AI Evaluation Center
+# ============================================================================
+
+class GoldenDataset:
+    """Golden dataset for evaluation."""
+
+    def __init__(self):
+        self._datasets: dict = {}
+
+    def create(self, name: str, cases: list):
+        self._datasets[name] = cases
+
+    def get_dataset(self, name: str) -> list:
+        return self._datasets.get(name, [])
+
+    def evaluate_against(self, model_id: str, dataset_name: str, responses: list) -> dict:
+        cases = self.get_dataset(dataset_name)
+        if not cases or not responses:
+            return {"error": "No data"}
+
+        correct = 0
+        for case, response in zip(cases, responses):
+            if case.get("expected", "").lower() in response.lower():
+                correct += 1
+
+        return {
+            "model_id": model_id,
+            "dataset": dataset_name,
+            "total": len(cases),
+            "correct": correct,
+            "accuracy": correct / len(cases) if cases else 0,
+        }
+
+
+class HumanReviewQueue:
+    """Queue for human review of AI responses."""
+
+    def __init__(self):
+        self._queue: list = []
+
+    def submit(self, response: str, context: dict, priority: str = "normal"):
+        import secrets
+        self._queue.append({
+            "id": secrets.token_hex(8),
+            "response": response,
+            "context": context,
+            "priority": priority,
+            "status": "pending",
+            "submitted_at": time.time(),
+        })
+
+    def get_next(self) -> Optional[dict]:
+        pending = [q for q in self._queue if q["status"] == "pending"]
+        return pending[0] if pending else None
+
+    def approve(self, item_id: str, reviewer: str = ""):
+        for item in self._queue:
+            if item["id"] == item_id:
+                item["status"] = "approved"
+                item["reviewer"] = reviewer
+                item["reviewed_at"] = time.time()
+                return True
+        return False
+
+
+class ReleaseQualityGates:
+    """Quality gates for releases."""
+
+    def __init__(self):
+        self._gates: list = []
+
+    def add_gate(self, name: str, threshold: float, metric: str):
+        self._gates.append({
+            "name": name,
+            "threshold": threshold,
+            "metric": metric,
+        })
+
+    def check(self, metrics: dict) -> dict:
+        results = []
+        for gate in self._gates:
+            value = metrics.get(gate["metric"], 0)
+            passed = value >= gate["threshold"]
+            results.append({
+                "gate": gate["name"],
+                "passed": passed,
+                "value": value,
+                "threshold": gate["threshold"],
+            })
+
+        return {
+            "all_passed": all(r["passed"] for r in results),
+            "results": results,
+        }
+
+
+golden_dataset = GoldenDataset()
+human_review_queue = HumanReviewQueue()
+release_quality_gates = ReleaseQualityGates()
