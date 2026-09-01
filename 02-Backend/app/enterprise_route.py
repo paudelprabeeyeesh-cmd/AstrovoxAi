@@ -4,7 +4,8 @@ from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from .enterprise import org_manager, OrganizationRole
+from .enterprise import OrganizationManager, OrganizationRole
+org_manager = OrganizationManager()
 from .auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/enterprise", tags=["enterprise"])
