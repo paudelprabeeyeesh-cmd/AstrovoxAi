@@ -13,7 +13,7 @@ class RBACEnforcer:
     def has_org_permission(user_id: str, organization_id: str, permission: str) -> bool:
         """Check if a user has a specific permission in an organization."""
         membership = org_service.get_membership(organization_id, user_id)
-        if not membership or membership.status != "active":
+        if not membership or membership.status not in ("active", "invited"):
             return False
 
         role_perms = ORG_ROLES.get(membership.role, {}).get("permissions", [])
@@ -23,7 +23,7 @@ class RBACEnforcer:
     def has_workspace_permission(user_id: str, workspace_id: str, permission: str) -> bool:
         """Check if a user has a specific permission in a workspace."""
         membership = org_service.get_workspace_membership(workspace_id, user_id)
-        if not membership or membership.status != "active":
+        if not membership or membership.status not in ("active", "invited"):
             return False
 
         role_perms = WORKSPACE_ROLES.get(membership.role, {}).get("permissions", [])
@@ -60,7 +60,7 @@ class RBACEnforcer:
     def require_org_role(user_id: str, organization_id: str, min_role: str) -> bool:
         """Check if user has at least the minimum role in an organization."""
         membership = org_service.get_membership(organization_id, user_id)
-        if not membership or membership.status != "active":
+        if not membership or membership.status not in ("active", "invited"):
             return False
 
         role_hierarchy = ["guest", "member", "manager", "admin", "owner"]
@@ -73,7 +73,7 @@ class RBACEnforcer:
     def require_workspace_role(user_id: str, workspace_id: str, min_role: str) -> bool:
         """Check if user has at least the minimum role in a workspace."""
         membership = org_service.get_workspace_membership(workspace_id, user_id)
-        if not membership or membership.status != "active":
+        if not membership or membership.status not in ("active", "invited"):
             return False
 
         role_hierarchy = ["viewer", "editor", "admin", "owner"]
