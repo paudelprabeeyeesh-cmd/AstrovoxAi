@@ -19,7 +19,7 @@ class PasswordHasher:
         self._hasher = None
         self._init_hasher()
 
-    def _init_hasher):
+    def _init_hasher(self):
         try:
             from argon2 import PasswordHasher as Argon2Hasher
             from argon2.exceptions import VerifyMismatchError
