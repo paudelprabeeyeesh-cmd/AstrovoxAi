@@ -150,7 +150,7 @@ async def embedding_status(authorization: str = Header(None)):
     """Check embedding service status."""
     get_user_id_from_token(authorization)
 
-    from .embedding.providers import EmbeddingProviderFactory
+    from .providers import EmbeddingProviderFactory
     configured = EmbeddingProviderFactory.list_configured()
 
     return {

@@ -75,11 +75,11 @@ class TestModelsEndpoints:
 
 class TestEmbeddingEndpoints:
     def test_embedding_status(self):
-        response = client.get("/api/embedding/status")
+        response = client.get("/api/embedding/status", headers={"Authorization": "Bearer test-token"})
         assert response.status_code == 200
         data = response.json()
         assert "configured" in data
-        assert "model" in data
+        assert "providers" in data
 
 
 # ============================================================================
