@@ -1,0 +1,57 @@
+# Cloud-init script for AstrovoxAI EC2 instance
+# This runs on first boot to set up the application
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - docker.io
+  - docker-compose
+  - nginx
+  - certbot
+  - python3-certbot-nginx
+  - htop
+  - jq
+  - git
+  - curl
+  - unzip
+
+runcmd:
+  # Setup Docker
+  - systemctl enable docker
+  - systemctl start docker
+  - usermod -aG docker ubuntu
+
+  # Install AWS CLI
+  - curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  - unzip awscliv2.zip
+  - ./aws/install
+  - rm -rf aws awscliv2.zip
+
+  # Clone and setup application
+  - cd /opt
+  - git clone https://github.com/paudelprabesh-cmd/AstrovoxAi.git
+  - cd AstrovoxAi
+
+  # Create .env from AWS Secrets Manager
+  - |
+    aws secretsmanager get-secret-value \
+      --secret-id astrovox-ai/production \
+      --query SecretString \
+      --output text | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > .env
+
+  # Deploy
+  - docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+  # Setup Nginx
+  - cp nginx.conf /etc/nginx/sites-available/default
+  - nginx -t && systemctl reload nginx
+
+  # Setup SSL (after DNS is configured)
+  # - certbot --nginx -d yourdomain.com --non-interactive --agree-tos -m admin@yourdomain.com
+
+  # Setup automatic security updates
+  - apt-get install -y unattended-upgrades
+  - dpkg-reconfigure -plow unattended-upgrades
+
+final_message: "AstrovoxAI setup complete! System is ready."
