@@ -3,7 +3,7 @@
 from .service import EmbeddingService
 from .providers import EmbeddingProviderFactory, OpenAIEmbeddingProvider, OllamaEmbeddingProvider
 from .cache import EmbeddingCache
-from .base import EmbeddingVector, EmbeddingBatchResult, EmbeddingConfig
+from .providers import EmbeddingVector, EmbeddingBatchResult, EmbeddingConfig
 
 __all__ = [
     "EmbeddingService",

@@ -16,22 +16,10 @@ from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
-from .embeddings_route import router as embeddings_router
-from .analytics_route import router as analytics_router
-from .knowledge_route import router as knowledge_router
-from .agent_route import router as agent_router
-from .monitoring_route import router as monitoring_router
-from .security_route import router as security_router
-from .enterprise_route import router as enterprise_router
-from .admin_route import router as admin_router
-from .realtime_route import router as realtime_router
-from .realtime_route import tools_router
-from .realtime_route import security_router as scan_router
-from .agents_route import router as agents_router
-from .agents_route import memory_router as memory_v2_router
+from .embedding import router as embedding_router
+from .memory_engine import router as memory_engine_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
-from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 
 load_dotenv()
 
@@ -48,9 +36,6 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.middleware("http")(rate_limit_middleware)
 
 # CORS Middleware
-# Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
-# A wildcard "*" together with allow_credentials=True is rejected by browsers,
-# so we default to the local dev frontend instead.
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -69,12 +54,6 @@ app.add_middleware(
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Add global exception handler (catches unhandled errors safely)
-app.add_middleware(GlobalExceptionMiddleware)
-
-# Add input validation middleware
-app.add_middleware(InputValidationMiddleware)
-
 # Include routers
 app.include_router(auth_router)
 app.include_router(chat_router)
@@ -83,19 +62,8 @@ app.include_router(memory_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
-app.include_router(embeddings_router)
-app.include_router(analytics_router)
-app.include_router(knowledge_router)
-app.include_router(agent_router)
-app.include_router(monitoring_router)
-app.include_router(security_router)
-app.include_router(enterprise_router)
-app.include_router(admin_router)
-app.include_router(realtime_router)
-app.include_router(tools_router)
-app.include_router(scan_router)
-app.include_router(agents_router)
-app.include_router(memory_v2_router)
+app.include_router(embedding_router)
+app.include_router(memory_engine_router)
 
 
 # Prometheus metrics middleware
@@ -117,7 +85,6 @@ async def metrics_middleware(request: Request, call_next):
     except Exception:
         pass
 
-    # Add performance headers
     response.headers["X-Response-Time"] = f"{duration:.3f}s"
     return response
 
