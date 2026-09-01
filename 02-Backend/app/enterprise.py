@@ -344,3 +344,108 @@ class ExecutiveReports:
 policy_engine = PolicyEngine()
 approval_workflow = ApprovalWorkflow()
 executive_reports = ExecutiveReports()
+
+
+# ============================================================================
+# Phase 363 — Enterprise Workspace
+# ============================================================================
+
+class DepartmentManager:
+    """Manage departments within an organization."""
+
+    def __init__(self):
+        self._departments: dict = {}
+
+    def create(self, org_id: str, name: str, parent_id: str = None) -> dict:
+        """Create a department."""
+        import secrets
+        dept = {
+            "id": secrets.token_hex(8),
+            "org_id": org_id,
+            "name": name,
+            "parent_id": parent_id,
+            "members": [],
+            "created_at": time.time(),
+        }
+        self._departments[dept["id"]] = dept
+        return dept
+
+    def add_member(self, dept_id: str, user_id: str):
+        """Add a member to a department."""
+        if dept_id in self._departments and user_id not in self._departments[dept_id]["members"]:
+            self._departments[dept_id]["members"].append(user_id)
+
+    def get_departments(self, org_id: str) -> list:
+        """Get all departments in an org."""
+        return [d for d in self._departments.values() if d["org_id"] == org_id]
+
+
+class WorkspaceTemplateManager:
+    """Manage workspace templates."""
+
+    def __init__(self):
+        self._templates: dict = {}
+
+    def create(self, name: str, description: str, config: dict) -> dict:
+        """Create a workspace template."""
+        import secrets
+        template = {
+            "id": secrets.token_hex(8),
+            "name": name,
+            "description": description,
+            "config": config,
+            "created_at": time.time(),
+        }
+        self._templates[template["id"]] = template
+        return template
+
+    def list_templates(self) -> list:
+        """List all templates."""
+        return list(self._templates.values())
+
+    def apply(self, template_id: str, org_id: str) -> dict:
+        """Apply a template to an organization."""
+        template = self._templates.get(template_id)
+        if not template:
+            return {"error": "Template not found"}
+        return {"applied": True, "template": template["name"], "org_id": org_id}
+
+
+class AuditDashboard:
+    """Audit dashboard for organizations."""
+
+    def __init__(self):
+        self._events: list = []
+
+    def log_event(self, org_id: str, user_id: str, action: str, details: dict = None):
+        """Log an audit event."""
+        self._events.append({
+            "org_id": org_id,
+            "user_id": user_id,
+            "action": action,
+            "details": details or {},
+            "timestamp": time.time(),
+        })
+
+    def get_events(self, org_id: str, limit: int = 100) -> list:
+        """Get audit events for an org."""
+        events = [e for e in self._events if e["org_id"] == org_id]
+        return events[-limit:]
+
+    def get_summary(self, org_id: str) -> dict:
+        """Get audit summary."""
+        events = [e for e in self._events if e["org_id"] == org_id]
+        from collections import Counter
+        actions = Counter(e["action"] for e in events)
+        return {
+            "total_events": len(events),
+            "actions": dict(actions),
+            "recent_users": list(set(e["user_id"] for e in events[-20:])),
+        }
+
+
+import time
+
+department_manager = DepartmentManager()
+workspace_template_manager = WorkspaceTemplateManager()
+audit_dashboard = AuditDashboard()
