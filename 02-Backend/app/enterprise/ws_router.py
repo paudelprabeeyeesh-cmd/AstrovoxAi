@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from .enterprise.websocket import ws_manager
-from .enterprise.notifications import notification_service
+from .websocket import ws_manager
+from .notifications import notification_service
 
 router = APIRouter(tags=["realtime"])
 
