@@ -1,4 +1,11 @@
-"""Multi-Agent Collaboration System — Planner, Researcher, Coder, Reviewer, Security agents."""
+"""Multi-Agent Collaboration System — Planner, Researcher, Coder, Reviewer, Security agents.
+
+Phase 369 — Multi-Agent System:
+Planner agent, research agent, coding agent, testing agent, documentation
+agent, translation agent, analytics agent, manager agent, agent communication,
+task delegation, shared memory, agent permissions, agent monitoring, performance
+reports, failure recovery, consensus system.
+"""
 
 import time
 import logging
