@@ -55,10 +55,10 @@ class CalculatorTool:
             return ToolResult(False, f"Calculation error: {str(e)}", "calculator")
 
     def _eval_node(self, node):
-        if isinstance(node, ast.Num):
-            return node.n
         if isinstance(node, ast.Constant):
-            return node.value
+            if isinstance(node.value, (int, float)):
+                return node.value
+            raise ValueError(f"Unsupported constant: {type(node.value)}")
         if isinstance(node, ast.BinOp):
             op_type = type(node.op)
             if op_type not in self.ALLOWED_OPS:

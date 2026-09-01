@@ -1,3 +1,15 @@
 {
-  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent": true,
+  "02-Backend/tests/test_advanced.py::TestEnhancedMemory": true,
+  "02-Backend/tests/test_advanced.py::TestTools": true,
+  "02-Backend/tests/test_advanced.py::TestCircuitBreaker": true,
+  "02-Backend/tests/test_advanced.py::TestSecurity": true,
+  "02-Backend/tests/test_advanced.py::TestTools::test_calculator_basic": true,
+  "02-Backend/tests/test_advanced.py::TestTools::test_calculator_complex": true,
+  "02-Backend/tests/test_advanced.py::TestTools::test_execute_tool": true,
+  "02-Backend/tests/test_advanced.py::TestCircuitBreaker::test_token_quota_exceeded": true,
+  "02-Backend/tests/test_integration.py::TestMemoryValidation::test_save_memory_requires_auth": true,
+  "02-Backend/tests/test_integration.py::TestMemoryValidation::test_get_memory_requires_auth": true,
+  "02-Backend/tests/test_integration.py::TestMemoryValidation::test_memory_context_requires_auth": true
 }
