@@ -6,6 +6,12 @@ OpenAPI generation, API playground, Postman collection, sample applications,
 local development toolkit, mock server, SDK documentation, API versioning,
 authentication helpers, code generators, developer analytics, extension
 templates, integration testing.
+
+Phase 362 — Developer Experience:
+VS Code extension helpers, JetBrains plugin helpers, CLI improvements,
+API playground, SDK improvements, better debugging tools, code snippet
+generation, inline AI suggestions, commit message generation, PR review
+assistant, documentation generation, terminal integration, Git integration.
 """
 
 import json
@@ -215,3 +221,106 @@ import time
 cli_tool = CLITool()
 mock_server = MockServer()
 developer_analytics = DeveloperAnalytics()
+
+
+# ============================================================================
+# Phase 362 — Developer Experience
+# ============================================================================
+
+class VSCodeExtensionHelper:
+    """Helpers for VS Code extension integration."""
+
+    def generate_snippet(self, language: str, description: str, code: str) -> dict:
+        """Generate a VS Code snippet."""
+        return {
+            "prefix": description[:20].lower().replace(" ", "-"),
+            "description": description,
+            "body": code.split("\n"),
+        }
+
+    def generate_launch_config(self, project_name: str, port: int = 8000) -> dict:
+        """Generate VS Code launch configuration."""
+        return {
+            "version": "0.2.0",
+            "configurations": [
+                {
+                    "name": f"Python: {project_name}",
+                    "type": "debugpy",
+                    "request": "launch",
+                    "module": "uvicorn",
+                    "args": ["app.main:app", "--reload", "--port", str(port)],
+                }
+            ],
+        }
+
+
+class JetBrainsPluginHelper:
+    """Helpers for JetBrains plugin integration."""
+
+    def generate_live_template(self, name: str, template: str, variables: dict = None) -> dict:
+        """Generate a JetBrains live template."""
+        return {
+            "name": name,
+            "value": template,
+            "description": f"Template: {name}",
+            "variables": variables or {},
+        }
+
+
+class CodeSnippetGenerator:
+    """Generate code snippets for various languages."""
+
+    def generate_api_call(self, language: str, endpoint: str, method: str = "GET", params: dict = None) -> str:
+        """Generate an API call snippet."""
+        if language == "python":
+            return f"""import httpx
+
+response = httpx.{method.lower()}("{endpoint}")
+data = response.json()
+"""
+        elif language == "javascript":
+            return f"""const response = await fetch("{endpoint}", {{
+    method: "{method}",
+    headers: {{ "Content-Type": "application/json" }},
+}});
+const data = await response.json();
+"""
+        return f"// {method} {endpoint}"
+
+
+class CommitMessageGenerator:
+    """Generate commit messages from diffs."""
+
+    def generate(self, diff_summary: str, style: str = "conventional") -> str:
+        """Generate a commit message."""
+        if style == "conventional":
+            if "fix" in diff_summary.lower():
+                return f"fix: {diff_summary.lower()}"
+            if "add" in diff_summary.lower() or "new" in diff_summary.lower():
+                return f"feat: {diff_summary.lower()}"
+            if "refactor" in diff_summary.lower():
+                return f"refactor: {diff_summary.lower()}"
+            return f"chore: {diff_summary.lower()}"
+        return diff_summary
+
+
+class DocumentationGenerator:
+    """Generate documentation from code."""
+
+    def generate_api_doc(self, endpoint: str, method: str, params: list, response_schema: dict) -> str:
+        """Generate API documentation."""
+        doc = f"## {method.upper()} {endpoint}\n\n"
+        if params:
+            doc += "### Parameters\n"
+            for param in params:
+                doc += f"- `{param.get('name', 'unknown')}` ({param.get('type', 'string')}): {param.get('description', '')}\n"
+        doc += "\n### Response\n"
+        doc += f"```json\n{json.dumps(response_schema, indent=2)}\n```\n"
+        return doc
+
+
+vscode_helper = VSCodeExtensionHelper()
+jetbrains_helper = JetBrainsPluginHelper()
+snippet_generator = CodeSnippetGenerator()
+commit_generator = CommitMessageGenerator()
+doc_generator = DocumentationGenerator()
