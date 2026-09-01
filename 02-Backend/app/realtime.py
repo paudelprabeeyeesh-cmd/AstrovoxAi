@@ -351,3 +351,75 @@ class WorkflowEngine:
 
 
 workflow_engine = WorkflowEngine()
+
+
+# ============================================================================
+# Phase 368 — Automation Platform
+# ============================================================================
+
+class ScheduledJob:
+    """A scheduled automation job."""
+
+    def __init__(self):
+        self._jobs: dict = {}
+
+    def schedule(self, name: str, cron: str, action: dict, enabled: bool = True) -> dict:
+        """Schedule a job with cron expression."""
+        import secrets
+        job = {
+            "id": secrets.token_hex(8),
+            "name": name,
+            "cron": cron,
+            "action": action,
+            "enabled": enabled,
+            "last_run": 0,
+            "run_count": 0,
+            "created_at": time.time(),
+        }
+        self._jobs[job["id"]] = job
+        return job
+
+    def list_jobs(self) -> list:
+        return list(self._jobs.values())
+
+    def toggle(self, job_id: str):
+        if job_id in self._jobs:
+            self._jobs[job_id]["enabled"] = not self._jobs[job_id]["enabled"]
+
+
+class WebhookManager:
+    """Manage webhooks for external integrations."""
+
+    def __init__(self):
+        self._webhooks: dict = {}
+
+    def register(self, url: str, events: list[str], secret: str = "") -> dict:
+        """Register a webhook."""
+        import secrets
+        webhook = {
+            "id": secrets.token_hex(8),
+            "url": url,
+            "events": events,
+            "secret": secret or secrets.token_hex(16),
+            "active": True,
+            "created_at": time.time(),
+        }
+        self._webhooks[webhook["id"]] = webhook
+        return webhook
+
+    def trigger(self, event: str, payload: dict):
+        """Trigger webhooks for an event."""
+        triggered = []
+        for webhook in self._webhooks.values():
+            if webhook["active"] and event in webhook["events"]:
+                triggered.append({
+                    "webhook_id": webhook["id"],
+                    "url": webhook["url"],
+                    "event": event,
+                    "payload": payload,
+                })
+        return triggered
+
+
+scheduled_job = ScheduledJob()
+webhook_manager = WebhookManager()
