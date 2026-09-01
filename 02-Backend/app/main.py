@@ -26,7 +26,6 @@ from .knowledge_route import router as knowledge_router
 from .agent_route import router as agent_router
 from .monitoring_route import router as monitoring_router
 from .security_route import router as security_router
-from .enterprise_route import router as enterprise_v2_router
 from .admin_route import router as admin_router
 from .realtime_route import router as realtime_router
 from .realtime_route import tools_router
@@ -89,7 +88,6 @@ app.include_router(knowledge_router)
 app.include_router(agent_router)
 app.include_router(monitoring_router)
 app.include_router(security_router)
-app.include_router(enterprise_v2_router)
 app.include_router(admin_router)
 app.include_router(realtime_router)
 app.include_router(tools_router)
