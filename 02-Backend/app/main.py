@@ -20,6 +20,7 @@ from .embedding import router as embedding_router
 from .memory_engine import router as memory_engine_router
 from .enterprise.router import router as enterprise_router
 from .enterprise.ws_router import router as ws_router
+from .jobs_router import router as jobs_router, events_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 
@@ -68,6 +69,8 @@ app.include_router(embedding_router)
 app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(ws_router)
+app.include_router(jobs_router)
+app.include_router(events_router)
 
 
 # Prometheus metrics middleware
