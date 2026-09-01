@@ -16,13 +16,26 @@ from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
-from .embedding import router as embedding_router
-from .memory_engine import router as memory_engine_router
+from .embedding.router import router as embedding_router
+from .memory_engine.router import router as memory_engine_router
 from .enterprise.router import router as enterprise_router
 from .enterprise.ws_router import router as ws_router
 from .jobs_router import router as jobs_router, events_router
+from .analytics_route import router as analytics_router
+from .knowledge_route import router as knowledge_router
+from .agent_route import router as agent_router
+from .monitoring_route import router as monitoring_router
+from .security_route import router as security_router
+from .enterprise_route import router as enterprise_v2_router
+from .admin_route import router as admin_router
+from .realtime_route import router as realtime_router
+from .realtime_route import tools_router
+from .realtime_route import security_router as scan_router
+from .agents_route import router as agents_router
+from .agents_route import memory_router as memory_v2_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
+from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 
 load_dotenv()
 
@@ -71,6 +84,18 @@ app.include_router(enterprise_router)
 app.include_router(ws_router)
 app.include_router(jobs_router)
 app.include_router(events_router)
+app.include_router(analytics_router)
+app.include_router(knowledge_router)
+app.include_router(agent_router)
+app.include_router(monitoring_router)
+app.include_router(security_router)
+app.include_router(enterprise_v2_router)
+app.include_router(admin_router)
+app.include_router(realtime_router)
+app.include_router(tools_router)
+app.include_router(scan_router)
+app.include_router(agents_router)
+app.include_router(memory_v2_router)
 
 
 # Prometheus metrics middleware

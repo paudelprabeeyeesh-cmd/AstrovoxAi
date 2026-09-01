@@ -13,5 +13,11 @@
   "02-Backend/tests/test_api_comprehensive.py::TestMonitoringEndpoints::test_performance": true,
   "02-Backend/tests/test_api_comprehensive.py::TestMonitoringEndpoints::test_dashboard": true,
   "02-Backend/tests/test_api_comprehensive.py::TestErrorHandling::test_invalid_json_body": true,
-  "02-Backend/tests/test_integration.py::TestEmbeddingEndpoints::test_embedding_status": true
+  "02-Backend/tests/test_integration.py::TestEmbeddingEndpoints::test_embedding_status": true,
+  "02-Backend/tests/test_api_comprehensive.py": true,
+  "02-Backend/tests/test_auth_and_rate_limit.py": true,
+  "02-Backend/tests/test_health.py": true,
+  "02-Backend/tests/test_integration.py": true,
+  "02-Backend/tests/test_storage_routes.py": true,
+  "02-Backend/tests/test_terminal.py": true
 }
