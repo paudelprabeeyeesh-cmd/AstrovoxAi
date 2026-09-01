@@ -69,7 +69,8 @@ async def sign_up(request: SignUpRequest):
             },
         }
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning(f"Signup failed: {str(e)[:100]}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Registration failed")
 
 
 @router.post("/login")
@@ -127,7 +128,8 @@ async def reset_password(request: ResetPasswordRequest):
 
         return {"status": "OK", "message": "Password reset email sent successfully"}
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        logger.warning(f"Password reset failed: {str(e)[:100]}")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password reset failed")
 
 
 @router.get("/me")
@@ -188,8 +190,9 @@ async def oauth_login(request: OAuthRequest):
             "otp_sent": bool(response),
         }
     except Exception as exc:
+        logger.warning(f"OAuth failed: {str(exc)[:100]}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+            status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth authentication failed"
         ) from exc
 
 

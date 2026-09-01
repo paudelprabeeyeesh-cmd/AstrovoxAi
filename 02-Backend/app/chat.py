@@ -197,7 +197,7 @@ async def send_message(request: Request, body: SendMessageRequest, authorization
         except UsageQuotaExceeded as exc:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=str(exc),
+                detail="Daily AI usage quota exceeded. Please try again tomorrow.",
             ) from exc
 
         conversation = await get_conversation(body.conversation_id, user_id)
