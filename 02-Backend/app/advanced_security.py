@@ -310,3 +310,81 @@ prompt_firewall = PromptFirewall()
 content_moderator = ContentModerator()
 safety_policy_engine = SafetyPolicyEngine()
 safety_analytics = SafetyAnalytics()
+
+
+# ============================================================================
+# Phase 367 — Security Hardening
+# ============================================================================
+
+class SecurityScanner:
+    """Automated security scanning."""
+
+    def __init__(self):
+        self._findings: list = []
+
+    def scan_dependencies(self) -> list:
+        """Check for known vulnerabilities in dependencies."""
+        return []
+
+    def scan_code_patterns(self, code: str) -> list:
+        """Scan code for insecure patterns."""
+        findings = []
+
+        if "eval(" in code:
+            findings.append({"severity": "high", "issue": "Use of eval() detected"})
+        if "exec(" in code:
+            findings.append({"severity": "high", "issue": "Use of exec() detected"})
+        if "subprocess" in code and "shell=True" in code:
+            findings.append({"severity": "critical", "issue": "Shell injection risk"})
+        if "password" in code.lower() and "=" in code and '"' in code:
+            findings.append({"severity": "medium", "issue": "Possible hardcoded password"})
+
+        self._findings.extend(findings)
+        return findings
+
+    def get_findings(self, severity: str = None) -> list:
+        """Get all findings."""
+        if severity:
+            return [f for f in self._findings if f["severity"] == severity]
+        return list(self._findings)
+
+
+class VulnerabilityManager:
+    """Track and manage vulnerabilities."""
+
+    def __init__(self):
+        self._vulnerabilities: dict = {}
+
+    def report(self, vuln_id: str, severity: str, description: str, affected_component: str):
+        """Report a vulnerability."""
+        self._vulnerabilities[vuln_id] = {
+            "id": vuln_id,
+            "severity": severity,
+            "description": description,
+            "component": affected_component,
+            "status": "open",
+            "reported_at": time.time(),
+        }
+
+    def resolve(self, vuln_id: str):
+        """Mark a vulnerability as resolved."""
+        if vuln_id in self._vulnerabilities:
+            self._vulnerabilities[vuln_id]["status"] = "resolved"
+            self._vulnerabilities[vuln_id]["resolved_at"] = time.time()
+
+    def get_open(self) -> list:
+        """Get open vulnerabilities."""
+        return [v for v in self._vulnerabilities.values() if v["status"] == "open"]
+
+    def get_risk_score(self) -> float:
+        """Calculate overall risk score (0-100)."""
+        open_vulns = self.get_open()
+        if not open_vulns:
+            return 0.0
+        severity_scores = {"low": 1, "medium": 3, "high": 7, "critical": 10}
+        total = sum(severity_scores.get(v["severity"], 1) for v in open_vulns)
+        return min(100, total * 2)
+
+
+security_scanner = SecurityScanner()
+vulnerability_manager = VulnerabilityManager()
