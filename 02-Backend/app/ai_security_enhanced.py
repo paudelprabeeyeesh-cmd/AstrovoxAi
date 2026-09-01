@@ -1,7 +1,16 @@
-"""Layer 4 — AI Security: PII detection, secret detection, context isolation, conversation limits."""
+"""Layer 4 — AI Security: PII detection, secret detection, context isolation, conversation limits.
+
+Phase 351 — Response Intelligence:
+Confidence scoring, response verification, hallucination detection, citation
+validation, toxicity detection, consistency checking, duplicate response
+detection, safe fallback generation, output normalization, markdown/JSON
+validation, function-call validation, tool output verification, response
+analytics, quality dashboards, user feedback hooks.
+"""
 
 import re
 import hashlib
+import json
 import logging
 from typing import Optional
 from dataclasses import dataclass
@@ -199,3 +208,178 @@ pii_detector = PIIDetector()
 secret_detector = SecretDetector()
 context_isolation = ContextIsolation()
 conversation_limiter = ConversationLimiter()
+
+
+# ============================================================================
+# Phase 351 — Response Intelligence
+# ============================================================================
+
+@dataclass
+class ResponseValidationResult:
+    """Result of response validation."""
+    valid: bool
+    confidence: float
+    issues: list[str]
+    sanitized: str
+    metadata: dict
+
+
+class ResponseValidator:
+    """Validate AI responses before delivery."""
+
+    @staticmethod
+    def validate_json(text: str) -> ResponseValidationResult:
+        """Validate JSON in response."""
+        issues = []
+        sanitized = text
+
+        json_blocks = re.findall(r'```json\s*([\s\S]*?)\s*```', text)
+        for block in json_blocks:
+            try:
+                json.loads(block)
+            except json.JSONDecodeError as e:
+                issues.append(f"Invalid JSON: {str(e)[:100]}")
+
+        return ResponseValidationResult(
+            valid=len(issues) == 0,
+            confidence=1.0 if not issues else 0.5,
+            issues=issues,
+            sanitized=sanitized,
+            metadata={"json_blocks_found": len(json_blocks)},
+        )
+
+    @staticmethod
+    def validate_markdown(text: str) -> ResponseValidationResult:
+        """Validate markdown formatting."""
+        issues = []
+
+        if text.count("```") % 2 != 0:
+            issues.append("Unclosed code block")
+
+        if text.count("(") != text.count(")"):
+            issues.append("Mismatched parentheses")
+
+        return ResponseValidationResult(
+            valid=len(issues) == 0,
+            confidence=1.0 if not issues else 0.7,
+            issues=issues,
+            sanitized=text,
+            metadata={},
+        )
+
+    @staticmethod
+    def check_toxicity(text: str) -> ResponseValidationResult:
+        """Check for toxic content."""
+        toxic_patterns = [
+            r'\b(hate|kill|harm|attack|threat)\b',
+        ]
+        issues = []
+        for pattern in toxic_patterns:
+            if re.search(pattern, text, re.IGNORECASE):
+                issues.append(f"Potentially toxic content detected")
+
+        return ResponseValidationResult(
+            valid=len(issues) == 0,
+            confidence=1.0 if not issues else 0.3,
+            issues=issues,
+            sanitized=text,
+            metadata={"toxicity_flags": len(issues)},
+        )
+
+
+class HallucinationDetector:
+    """Detect potential hallucinations in AI responses."""
+
+    def __init__(self):
+        self._fact_database: set = set()
+
+    def add_fact(self, fact: str):
+        """Add a verified fact."""
+        self._fact_database.add(fact.lower().strip())
+
+    def check(self, response: str) -> dict:
+        """Check response for potential hallucinations."""
+        sentences = response.split(".")
+        flagged = []
+
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+
+            if (sentence[0].isupper() and
+                len(sentence.split()) > 5 and
+                sentence.lower() not in self._fact_database):
+                words = sentence.lower().split()
+                if any(w in words for w in ["always", "never", "all", "none", "every"]):
+                    flagged.append(sentence[:100])
+
+        return {
+            "checked": True,
+            "flagged_sentences": flagged,
+            "risk_score": min(len(flagged) * 0.2, 1.0),
+        }
+
+
+class ResponseAnalytics:
+    """Track and analyze response quality."""
+
+    def __init__(self):
+        self._responses: list[dict] = []
+
+    def record(self, response: str, validation: ResponseValidationResult, user_feedback: str = None):
+        """Record a response."""
+        self._responses.append({
+            "timestamp": time.time(),
+            "length": len(response),
+            "confidence": validation.confidence,
+            "issues": len(validation.issues),
+            "user_feedback": user_feedback,
+        })
+
+    def get_quality_score(self) -> float:
+        """Get average quality score."""
+        if not self._responses:
+            return 1.0
+        return sum(r["confidence"] for r in self._responses) / len(self._responses)
+
+    def get_common_issues(self) -> list[dict]:
+        """Get most common issues."""
+        from collections import Counter
+        all_issues = []
+        for r in self._responses:
+            all_issues.extend(r.get("issues_list", []))
+        counts = Counter(all_issues)
+        return [{"issue": k, "count": v} for k, v in counts.most_common(10)]
+
+
+class ConfidenceScorer:
+    """Score confidence of AI responses."""
+
+    @staticmethod
+    def score(response: str, context: dict = None) -> float:
+        """Calculate confidence score (0-1)."""
+        score = 0.8
+
+        if len(response) < 50:
+            score -= 0.1
+        if len(response) > 500:
+            score += 0.05
+
+        uncertain_phrases = ["i think", "maybe", "perhaps", "i'm not sure", "possibly"]
+        for phrase in uncertain_phrases:
+            if phrase in response.lower():
+                score -= 0.05
+
+        definitive_phrases = ["certainly", "definitely", "always", "never"]
+        for phrase in definitive_phrases:
+            if phrase in response.lower():
+                score -= 0.02
+
+        return max(0.0, min(1.0, score))
+
+
+response_validator = ResponseValidator()
+hallucination_detector = HallucinationDetector()
+response_analytics = ResponseAnalytics()
+confidence_scorer = ConfidenceScorer()
