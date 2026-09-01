@@ -1,4 +1,6 @@
 import os
+import re
+import secrets
 from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote
@@ -17,9 +19,37 @@ ALLOWED_CONTENT_TYPES = {
     "image/webp",
     "application/pdf",
     "text/plain",
-    "application/octet-stream",
 }
+
+ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".pdf", ".txt"}
+
+ALLOWED_BUCKETS = {"avatars", "documents", "uploads", "attachments"}
+
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+
+
+def sanitize_filename(filename: str) -> str:
+    """Sanitize filename to prevent path traversal and injection."""
+    filename = os.path.basename(filename)
+    filename = re.sub(r'[^a-zA-Z0-9._-]', '_', filename)
+    if not filename or filename.startswith('.'):
+        filename = f"file_{secrets.token_hex(8)}{filename}"
+    name, ext = os.path.splitext(filename)
+    if ext.lower() not in ALLOWED_EXTENSIONS:
+        ext = ".bin"
+    return f"{name}_{secrets.token_hex(4)}{ext}"
+
+
+def verify_magic_bytes(content: bytes, content_type: str) -> bool:
+    """Verify file magic bytes match claimed content type."""
+    magic_map = {
+        "image/png": content[:8] == b'\x89PNG\r\n\x1a\n',
+        "image/jpeg": content[:3] == b'\xff\xd8\xff',
+        "image/webp": content[:4] == b'RIFF',
+        "application/pdf": content[:5] == b'%PDF-',
+        "text/plain": all(32 <= b < 127 or b in (10, 13, 9) for b in content[:100]),
+    }
+    return magic_map.get(content_type, True)
 
 
 class StorageService:
@@ -87,34 +117,59 @@ async def upload_storage_file(
     authorization: str = Header(None),
 ):
     user_id = get_user_id_from_token(authorization)
+
+    # Validate bucket allowlist
+    if bucket not in ALLOWED_BUCKETS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid bucket",
+        )
+
     try:
         content = await file.read()
+
+        # Validate file size
         if len(content) > MAX_UPLOAD_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="File too large",
             )
+
+        # Validate content type
         if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 detail="Unsupported content type",
             )
+
+        # Verify magic bytes match claimed content type
+        if not verify_magic_bytes(content, file.content_type or ""):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File content does not match claimed type",
+            )
+
+        # Sanitize and generate random filename
+        safe_filename = sanitize_filename(file.filename or "upload.bin")
+
         result = storage_service.upload_file(
             user_id,
             bucket,
-            path or file.filename or "upload.bin",
+            path or safe_filename,
             content,
             content_type=file.content_type,
         )
         return JSONResponse(
             status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
         )
+    except HTTPException:
+        raise
     except ValueError as exc:
-        logger.warning(f"Storage delete access denied: {str(exc)[:100]}")
+        logger.warning(f"Storage upload access denied: {str(exc)[:100]}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
-    except Exception as exc:  # pragma: no cover - defensive path
+    except Exception as exc:
         logger.exception("Storage upload failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed"
