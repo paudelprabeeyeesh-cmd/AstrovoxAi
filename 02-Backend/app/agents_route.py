@@ -46,7 +46,7 @@ async def run_session(session_id: str, authorization: str = Header(None)):
     try:
         session = await collaboration_manager.run_session(session_id)
     except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail="Session not found")
 
     return {
         "status": "OK",

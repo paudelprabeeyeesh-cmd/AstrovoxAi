@@ -110,6 +110,7 @@ async def upload_storage_file(
             status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
         )
     except ValueError as exc:
+        logger.warning(f"Storage delete access denied: {str(exc)[:100]}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
