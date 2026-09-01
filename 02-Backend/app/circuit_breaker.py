@@ -1,12 +1,365 @@
-"""Layer 9 — Circuit breakers, token quotas, and cost monitoring."""
+"""Layer 9 — Circuit breakers, token quotas, cost monitoring.
+
+Phase 350 — AI Reliability Foundation:
+Unified error handling, retry engine, timeout management, request/response
+validation, health monitoring, service degradation, maintenance mode, automatic
+diagnostics, failure analytics, error categorization, crash recovery, graceful
+shutdown, startup verification, configuration validation, production readiness.
+"""
 
 import time
 import logging
-from typing import Optional
+import asyncio
+from typing import Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Phase 350 — Unified Error Handling & Exception Hierarchy
+# ============================================================================
+
+class AstrovoxError(Exception):
+    """Base exception for all AstrovoxAI errors."""
+    def __init__(self, message: str, code: str = "UNKNOWN", details: dict = None):
+        super().__init__(message)
+        self.code = code
+        self.details = details or {}
+        self.timestamp = time.time()
+
+
+class ProviderError(AstrovoxError):
+    """AI provider error."""
+    def __init__(self, message: str, provider: str = "", **kwargs):
+        super().__init__(message, code="PROVIDER_ERROR", **kwargs)
+        self.provider = provider
+
+
+class ValidationError(AstrovoxError):
+    """Input validation error."""
+    def __init__(self, message: str, field: str = "", **kwargs):
+        super().__init__(message, code="VALIDATION_ERROR", **kwargs)
+        self.field = field
+
+
+class QuotaExceededError(AstrovoxError):
+    """Quota exceeded error."""
+    def __init__(self, message: str, quota_type: str = "", **kwargs):
+        super().__init__(message, code="QUOTA_EXCEEDED", **kwargs)
+        self.quota_type = quota_type
+
+
+class SecurityError(AstrovoxError):
+    """Security violation error."""
+    def __init__(self, message: str, threat_type: str = "", **kwargs):
+        super().__init__(message, code="SECURITY_ERROR", **kwargs)
+        self.threat_type = threat_type
+
+
+class ErrorCategory(Enum):
+    """Error categories for analytics."""
+    PROVIDER = "provider"
+    VALIDATION = "validation"
+    QUOTA = "quota"
+    SECURITY = "security"
+    NETWORK = "network"
+    TIMEOUT = "timeout"
+    INTERNAL = "internal"
+
+
+@dataclass
+class ErrorEvent:
+    """An error event for analytics."""
+    error_type: str
+    category: ErrorCategory
+    message: str
+    timestamp: float
+    provider: str = ""
+    user_id: str = ""
+    resolved: bool = False
+
+
+class ErrorAnalytics:
+    """Track and analyze errors."""
+
+    def __init__(self):
+        self._errors: list[ErrorEvent] = []
+
+    def record(self, error: AstrovoxError, category: ErrorCategory, **kwargs):
+        """Record an error event."""
+        event = ErrorEvent(
+            error_type=type(error).__name__,
+            category=category,
+            message=str(error),
+            timestamp=time.time(),
+            **kwargs,
+        )
+        self._errors.append(event)
+
+    def get_error_rate(self, window_seconds: int = 3600) -> float:
+        """Get error rate in a time window."""
+        cutoff = time.time() - window_seconds
+        recent = [e for e in self._errors if e.timestamp >= cutoff]
+        return len(recent) / max(window_seconds / 60, 1)
+
+    def get_top_errors(self, limit: int = 10) -> list[dict]:
+        """Get most common errors."""
+        from collections import Counter
+        counts = Counter(e.error_type for e in self._errors)
+        return [{"error": k, "count": v} for k, v in counts.most_common(limit)]
+
+    def get_by_category(self) -> dict:
+        """Get error counts by category."""
+        from collections import Counter
+        return dict(Counter(e.category.value for e in self._errors))
+
+
+# ============================================================================
+# Phase 350 — Retry Engine
+# ============================================================================
+
+class RetryPolicy:
+    """Configurable retry policy."""
+
+    def __init__(
+        self,
+        max_retries: int = 3,
+        base_delay: float = 1.0,
+        max_delay: float = 30.0,
+        exponential_backoff: bool = True,
+        retryable_errors: tuple = (ProviderError, TimeoutError, ConnectionError),
+    ):
+        self.max_retries = max_retries
+        self.base_delay = base_delay
+        self.max_delay = max_delay
+        self.exponential_backoff = exponential_backoff
+        self.retryable_errors = retryable_errors
+
+    def get_delay(self, attempt: int) -> float:
+        """Get delay for a retry attempt."""
+        if self.exponential_backoff:
+            return min(self.base_delay * (2 ** attempt), self.max_delay)
+        return self.base_delay
+
+
+class RetryEngine:
+    """Execute functions with retry logic."""
+
+    def __init__(self, policy: RetryPolicy = None):
+        self._policy = policy or RetryPolicy()
+
+    async def execute(self, func: Callable, *args, **kwargs) -> Any:
+        """Execute a function with retries."""
+        last_error = None
+
+        for attempt in range(self._policy.max_retries + 1):
+            try:
+                if asyncio.iscoroutinefunction(func):
+                    return await func(*args, **kwargs)
+                return func(*args, **kwargs)
+            except Exception as e:
+                last_error = e
+
+                if attempt < self._policy.max_retries:
+                    if isinstance(e, self._policy.retryable_errors):
+                        delay = self._policy.get_delay(attempt)
+                        logger.warning(
+                            f"Retry {attempt + 1}/{self._policy.max_retries} "
+                            f"after {delay:.1f}s: {str(e)[:100]}"
+                        )
+                        await asyncio.sleep(delay)
+                        continue
+
+                raise
+
+        raise last_error
+
+
+# ============================================================================
+# Phase 350 — Timeout Management
+# ============================================================================
+
+class TimeoutManager:
+    """Manage timeouts for different operation types."""
+
+    def __init__(self):
+        self._timeouts: dict[str, float] = {
+            "default": 30.0,
+            "chat": 60.0,
+            "embedding": 30.0,
+            "health": 5.0,
+            "database": 10.0,
+            "file_upload": 120.0,
+        }
+
+    def get_timeout(self, operation: str) -> float:
+        """Get timeout for an operation."""
+        return self._timeouts.get(operation, self._timeouts["default"])
+
+    def set_timeout(self, operation: str, timeout: float):
+        """Set timeout for an operation."""
+        self._timeouts[operation] = timeout
+
+
+# ============================================================================
+# Phase 350 — Service Degradation & Maintenance Mode
+# ============================================================================
+
+class SystemMode(Enum):
+    """System operating mode."""
+    NORMAL = "normal"
+    DEGRADED = "degraded"
+    MAINTENANCE = "maintenance"
+    READONLY = "readonly"
+
+
+class ServiceDegradation:
+    """Manage service degradation and maintenance mode."""
+
+    def __init__(self):
+        self._mode = SystemMode.NORMAL
+        self._disabled_features: set = set()
+        self._degradation_hooks: list = []
+
+    @property
+    def mode(self) -> SystemMode:
+        return self._mode
+
+    def set_mode(self, mode: SystemMode):
+        """Set system mode."""
+        old_mode = self._mode
+        self._mode = mode
+        logger.info(f"System mode changed: {old_mode.value} -> {mode.value}")
+
+        for hook in self._degradation_hooks:
+            try:
+                hook(old_mode, mode)
+            except Exception:
+                pass
+
+    def disable_feature(self, feature: str):
+        """Disable a specific feature."""
+        self._disabled_features.add(feature)
+        logger.info(f"Feature disabled: {feature}")
+
+    def enable_feature(self, feature: str):
+        """Re-enable a feature."""
+        self._disabled_features.discard(feature)
+
+    def is_feature_enabled(self, feature: str) -> bool:
+        """Check if a feature is enabled."""
+        if self._mode == SystemMode.MAINTENANCE:
+            return False
+        if self._mode == SystemMode.READONLY and feature not in ("read", "search"):
+            return False
+        return feature not in self._disabled_features
+
+    def on_mode_change(self, hook: Callable):
+        """Register a mode change hook."""
+        self._degradation_hooks.append(hook)
+
+
+# ============================================================================
+# Phase 350 — Production Readiness & Diagnostics
+# ============================================================================
+
+@dataclass
+class ReadinessCheck:
+    """A production readiness check."""
+    name: str
+    passed: bool
+    message: str
+    severity: str = "info"
+
+
+class ProductionReadiness:
+    """Verify production readiness."""
+
+    def __init__(self):
+        self._checks: list[Callable] = []
+
+    def add_check(self, name: str, check_func: Callable, severity: str = "info"):
+        """Add a readiness check."""
+        self._checks.append({
+            "name": name,
+            "func": check_func,
+            "severity": severity,
+        })
+
+    async def run_checks(self) -> list[ReadinessCheck]:
+        """Run all readiness checks."""
+        results = []
+        for check in self._checks:
+            try:
+                passed = await check["func"]() if asyncio.iscoroutinefunction(check["func"]) else check["func"]()
+                results.append(ReadinessCheck(
+                    name=check["name"],
+                    passed=passed,
+                    message="OK" if passed else "Failed",
+                    severity=check["severity"] if passed else "error",
+                ))
+            except Exception as e:
+                results.append(ReadinessCheck(
+                    name=check["name"],
+                    passed=False,
+                    message=str(e)[:200],
+                    severity="error",
+                ))
+        return results
+
+    def is_ready(self, results: list[ReadinessCheck]) -> bool:
+        """Check if all critical checks passed."""
+        return all(r.passed for r in results if r.severity in ("error", "critical"))
+
+
+# ============================================================================
+# Phase 350 — Graceful Shutdown
+# ============================================================================
+
+class GracefulShutdown:
+    """Manage graceful shutdown."""
+
+    def __init__(self):
+        self._handlers: list[Callable] = []
+        self._is_shutting_down = False
+
+    def register(self, handler: Callable, name: str = ""):
+        """Register a shutdown handler."""
+        self._handlers.append({"func": handler, "name": name})
+
+    async def shutdown(self):
+        """Execute graceful shutdown."""
+        self._is_shutting_down = True
+        logger.info("Initiating graceful shutdown...")
+
+        for handler in self._handlers:
+            try:
+                if asyncio.iscoroutinefunction(handler["func"]):
+                    await handler["func"]()
+                else:
+                    handler["func"]()
+            except Exception as e:
+                logger.error(f"Shutdown handler '{handler['name']}' failed: {e}")
+
+        logger.info("Graceful shutdown complete")
+
+    @property
+    def is_shutting_down(self) -> bool:
+        return self._is_shutting_down
+
+
+# ============================================================================
+# Singletons
+# ============================================================================
+
+error_analytics = ErrorAnalytics()
+retry_engine = RetryEngine()
+timeout_manager = TimeoutManager()
+service_degradation = ServiceDegradation()
+production_readiness = ProductionReadiness()
+graceful_shutdown = GracefulShutdown()
 
 
 class CircuitState(Enum):
