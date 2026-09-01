@@ -10,9 +10,9 @@ from typing import Optional
 import time
 import uuid
 
-from .database import save_memory, get_user_memory
-from .embedding.service import EmbeddingService
-from .vector.engine import search_engine, VectorSearchEngine
+from ..database import save_memory, get_user_memory
+from ..embedding.service import EmbeddingService
+from ..vector.engine import search_engine, VectorSearchEngine
 
 
 @dataclass
