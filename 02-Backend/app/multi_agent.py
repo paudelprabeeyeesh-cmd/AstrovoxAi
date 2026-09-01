@@ -186,11 +186,11 @@ class CollaborationManager:
         )
 
         session.tasks = [
-            AgentTask(id=secrets.token_hex(4), role=AgentRole.PLANNER, description=f"Plan: {goal}"),
-            AgentTask(id=secrets.token_hex(4), role=AgentRole.RESEARCHER, description=f"Research: {goal}"),
-            AgentTask(id=secrets.token_hex(4), role=AgentRole.CODER, description=f"Implement: {goal}"),
-            AgentTask(id=secrets.token_hex(4), role=AgentRole.REVIEWER, description=f"Review: {goal}"),
-            AgentTask(id=secrets.token_hex(4), role=AgentRole.SECURITY, description=f"Security check: {goal}"),
+            AgentTask(id=secrets.token_hex(4), agent_role=AgentRole.PLANNER.value, description=f"Plan: {goal}"),
+            AgentTask(id=secrets.token_hex(4), agent_role=AgentRole.RESEARCHER.value, description=f"Research: {goal}"),
+            AgentTask(id=secrets.token_hex(4), agent_role=AgentRole.CODER.value, description=f"Implement: {goal}"),
+            AgentTask(id=secrets.token_hex(4), agent_role=AgentRole.REVIEWER.value, description=f"Review: {goal}"),
+            AgentTask(id=secrets.token_hex(4), agent_role=AgentRole.SECURITY.value, description=f"Security check: {goal}"),
         ]
 
         session.tasks[1].dependencies = [session.tasks[0].id]
