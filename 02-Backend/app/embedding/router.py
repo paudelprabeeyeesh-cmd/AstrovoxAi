@@ -143,3 +143,18 @@ async def list_embedding_providers(authorization: str = Header(None)):
             for name in ["openai", "ollama"]
         ]
     }
+
+
+@router.get("/status")
+async def embedding_status(authorization: str = Header(None)):
+    """Check embedding service status."""
+    get_user_id_from_token(authorization)
+
+    from .embedding.providers import EmbeddingProviderFactory
+    configured = EmbeddingProviderFactory.list_configured()
+
+    return {
+        "configured": len(configured) > 0,
+        "providers": configured,
+        "default_model": "text-embedding-3-small",
+    }
