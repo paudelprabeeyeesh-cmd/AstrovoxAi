@@ -218,7 +218,7 @@ class CollaborationManager:
                 continue
 
             task.status = TaskStatus.IN_PROGRESS
-            agent = self._agents.get(task.role)
+            agent = self._agents.get(AgentRole(task.agent_role))
 
             if agent:
                 context = {"goal": session.goal, "session": session}
@@ -278,12 +278,13 @@ class AgentTask:
     id: str
     agent_role: str
     description: str
-    status: AgentStatus = AgentStatus.IDLE
+    status: str = "pending"
     result: str = ""
     created_at: float = 0.0
     completed_at: float = 0.0
     retries: int = 0
     max_retries: int = 3
+    dependencies: list = field(default_factory=list)
 
 
 class AgentOrchestrator:
