@@ -372,3 +372,113 @@ class ReleaseQualityGates:
 golden_dataset = GoldenDataset()
 human_review_queue = HumanReviewQueue()
 release_quality_gates = ReleaseQualityGates()
+
+
+# ============================================================================
+# Phase 366 — AI Research Workspace
+# ============================================================================
+
+class PromptExperiment:
+    """Run prompt experiments with A/B testing."""
+
+    def __init__(self):
+        self._experiments: dict = {}
+
+    def create(self, name: str, variants: list[str]) -> dict:
+        """Create a prompt experiment."""
+        import secrets
+        exp = {
+            "id": secrets.token_hex(8),
+            "name": name,
+            "variants": {v: {"prompt": v, "responses": [], "scores": []} for v in variants},
+            "status": "running",
+            "created_at": time.time(),
+        }
+        self._experiments[exp["id"]] = exp
+        return exp
+
+    def record_response(self, exp_id: str, variant: str, response: str, score: float):
+        """Record a response for a variant."""
+        exp = self._experiments.get(exp_id)
+        if exp and variant in exp["variants"]:
+            exp["variants"][variant]["responses"].append(response)
+            exp["variants"][variant]["scores"].append(score)
+
+    def get_winner(self, exp_id: str) -> Optional[str]:
+        """Determine the winning variant."""
+        exp = self._experiments.get(exp_id)
+        if not exp:
+            return None
+        best_variant = None
+        best_score = -1
+        for variant, data in exp["variants"].items():
+            if data["scores"]:
+                avg = sum(data["scores"]) / len(data["scores"])
+                if avg > best_score:
+                    best_score = avg
+                    best_variant = variant
+        return best_variant
+
+
+class ModelBenchmarkSuite:
+    """Comprehensive model benchmarking."""
+
+    def __init__(self):
+        self._benchmarks: dict = {}
+
+    def run_benchmark(self, model_id: str, benchmark_type: str, results: dict) -> dict:
+        """Record benchmark results."""
+        key = f"{model_id}:{benchmark_type}"
+        self._benchmarks[key] = {
+            "model_id": model_id,
+            "type": benchmark_type,
+            "results": results,
+            "timestamp": time.time(),
+        }
+        return self._benchmarks[key]
+
+    def compare(self, model_ids: list[str], benchmark_type: str) -> dict:
+        """Compare models on a benchmark."""
+        comparison = {}
+        for model_id in model_ids:
+            key = f"{model_id}:{benchmark_type}"
+            if key in self._benchmarks:
+                comparison[model_id] = self._benchmarks[key]["results"]
+        return comparison
+
+
+class RegressionTestSuite:
+    """Track AI quality regressions."""
+
+    def __init__(self):
+        self._baselines: dict = {}
+        self._results: list = []
+
+    def set_baseline(self, metric: str, value: float):
+        """Set a baseline value."""
+        self._baselines[metric] = value
+
+    def check_regression(self, metric: str, current_value: float, threshold: float = 0.1) -> dict:
+        """Check for regression against baseline."""
+        baseline = self._baselines.get(metric)
+        if baseline is None:
+            return {"status": "no_baseline"}
+
+        regression = (baseline - current_value) / baseline
+        is_regression = regression > threshold
+
+        result = {
+            "metric": metric,
+            "baseline": baseline,
+            "current": current_value,
+            "regression_pct": regression * 100,
+            "is_regression": is_regression,
+            "timestamp": time.time(),
+        }
+        self._results.append(result)
+        return result
+
+
+prompt_experiment = PromptExperiment()
+model_benchmark_suite = ModelBenchmarkSuite()
+regression_test_suite = RegressionTestSuite()
