@@ -111,7 +111,7 @@ class TestChatModelsEndpoint:
 class TestEmbeddingEndpoints:
     def test_embedding_status(self):
         client = TestClient(app)
-        response = client.get("/embeddings/status")
+        response = client.get("/api/embedding/status")
         assert response.status_code == 200
         data = response.json()
         assert "configured" in data
