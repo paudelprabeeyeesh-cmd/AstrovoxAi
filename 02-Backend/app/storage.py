@@ -197,7 +197,7 @@ async def signed_url(bucket: str, path: str, authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
         return {"status": "OK", **storage_service.get_signed_url(user_id, bucket, path)}
-    except ValueError as exc:
+except ValueError as exc:
         logger.warning(f"Storage signed-url access denied: {str(exc)[:100]}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
