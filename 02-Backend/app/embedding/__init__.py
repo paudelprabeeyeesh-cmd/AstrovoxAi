@@ -4,6 +4,7 @@ from .service import EmbeddingService
 from .providers import EmbeddingProviderFactory, OpenAIEmbeddingProvider, OllamaEmbeddingProvider
 from .cache import EmbeddingCache
 from .providers import EmbeddingVector, EmbeddingBatchResult, EmbeddingConfig
+from .router import router
 
 __all__ = [
     "EmbeddingService",
@@ -14,4 +15,5 @@ __all__ = [
     "EmbeddingVector",
     "EmbeddingBatchResult",
     "EmbeddingConfig",
+    "router",
 ]
