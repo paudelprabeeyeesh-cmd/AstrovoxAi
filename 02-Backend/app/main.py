@@ -25,9 +25,9 @@ from .security_route import router as security_router
 from .enterprise_route import router as enterprise_router
 from .admin_route import router as admin_router
 from .realtime_route import router as realtime_router
-from .realtime_route import tools_router, security_router
+from .realtime_route import tools_router
 from .agents_route import router as agents_router
-from .agents_route import memory_router
+from .agents_route import memory_router as memory_v2_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -94,7 +94,7 @@ app.include_router(realtime_router)
 app.include_router(tools_router)
 app.include_router(security_router)
 app.include_router(agents_router)
-app.include_router(memory_router)
+app.include_router(memory_v2_router)
 
 
 # Prometheus metrics middleware
