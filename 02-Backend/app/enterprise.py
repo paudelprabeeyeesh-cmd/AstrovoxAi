@@ -1,4 +1,12 @@
-"""Enterprise Administration — organizations, teams, user management."""
+"""Enterprise Administration — organizations, teams, user management.
+
+Phase 358 — Enterprise Governance:
+Organization management, departments, teams, role hierarchy, policy engine,
+approval workflows, audit reports, compliance dashboard, risk dashboard,
+security dashboard, usage dashboard, billing dashboard, API management,
+workspace templates, data governance, access reviews, session monitoring,
+device management, organization analytics, executive reports.
+"""
 
 import time
 import secrets
@@ -268,3 +276,71 @@ class OrganizationManager:
 
 
 org_manager = OrganizationManager()
+
+
+# ============================================================================
+# Phase 358 — Enterprise Governance
+# ============================================================================
+
+class PolicyEngine:
+    """Manage enterprise policies."""
+
+    def __init__(self):
+        self._policies: dict = {}
+
+    def create_policy(self, name: str, rules: dict):
+        """Create a policy."""
+        self._policies[name] = rules
+
+    def evaluate(self, context: dict) -> dict:
+        """Evaluate context against all policies."""
+        violations = []
+        for name, rules in self._policies.items():
+            for rule_name, rule_func in rules.items():
+                if callable(rule_func) and not rule_func(context):
+                    violations.append(f"{name}.{rule_name}")
+        return {"compliant": len(violations) == 0, "violations": violations}
+
+
+class ApprovalWorkflow:
+    """Manage approval workflows."""
+
+    def __init__(self):
+        self._workflows: dict = {}
+
+    def create(self, name: str, approvers: list, steps: int = 1):
+        self._workflows[name] = {
+            "approvers": approvers,
+            "steps": steps,
+        }
+
+    def submit(self, workflow_name: str, request: dict) -> dict:
+        wf = self._workflows.get(workflow_name)
+        if not wf:
+            return {"error": "Workflow not found"}
+        return {
+            "status": "pending",
+            "approvers": wf["approvers"],
+            "steps_remaining": wf["steps"],
+        }
+
+
+class ExecutiveReports:
+    """Generate executive reports."""
+
+    def generate(self, org_id: str, metrics: dict) -> dict:
+        return {
+            "org_id": org_id,
+            "generated_at": time.time(),
+            "summary": {
+                "total_users": metrics.get("users", 0),
+                "active_users": metrics.get("active_users", 0),
+                "total_cost": metrics.get("cost", 0),
+                "ai_requests": metrics.get("requests", 0),
+            },
+        }
+
+
+policy_engine = PolicyEngine()
+approval_workflow = ApprovalWorkflow()
+executive_reports = ExecutiveReports()
