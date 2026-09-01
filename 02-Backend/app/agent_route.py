@@ -54,7 +54,7 @@ async def execute_task(task_id: str, authorization: str = Header(None)):
     try:
         task = await agent.execute_task(task_id)
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
     return {
         "status": "OK",
