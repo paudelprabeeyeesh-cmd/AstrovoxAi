@@ -20,16 +20,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Enable XSS protection
         response.headers["X-XSS-Protection"] = "1; mode=block"
 
-        # Content Security Policy
+        # Content Security Policy (strict - no unsafe-inline)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; "
+            "style-src 'self'; "
             "img-src 'self' data: https:; "
             "font-src 'self'; "
             "connect-src 'self' https://api.openai.com https://*.supabase.co; "
             "form-action 'self'; "
-            "frame-ancestors 'none';"
+            "frame-ancestors 'none'; "
+            "base-uri 'self'; "
+            "object-src 'none';"
         )
 
         # Referrer Policy

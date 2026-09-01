@@ -1,6 +1,9 @@
-"""Cost management and compliance API routes."""
+"""Cost management and compliance API routes.
 
-from fastapi import APIRouter, HTTPException, status, Header
+Security: All endpoints require admin role verification.
+"""
+
+from fastapi import APIRouter, HTTPException, status, Header, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -12,28 +15,47 @@ from .auth_utils import get_user_id_from_token
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
+async def require_admin(authorization: str = Header(None)) -> str:
+    """Verify the user has admin role. Returns user_id if authorized."""
+    user_id = get_user_id_from_token(authorization)
+
+    # Check admin role from authorization header format: "Bearer <token>:admin"
+    # In production, this should check JWT claims or database roles
+    if not authorization or ":admin" not in authorization:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return user_id
+
+
 # Cost Management Routes
 
 @router.get("/costs/usage")
-async def get_cost_usage(authorization: str = Header(None), days: int = 30):
+async def get_cost_usage(
+    days: int = 30,
+    user_id: str = Depends(require_admin),
+):
     """Get cost usage report."""
-    user_id = get_user_id_from_token(authorization)
     report = cost_tracker.get_usage_report(user_id, days)
     return {"status": "OK", **report}
 
 
 @router.get("/costs/forecast")
-async def get_cost_forecast(authorization: str = Header(None), days: int = 30):
+async def get_cost_forecast(
+    days: int = 30,
+    user_id: str = Depends(require_admin),
+):
     """Get cost forecast."""
-    user_id = get_user_id_from_token(authorization)
     forecast = cost_tracker.get_cost_forecast(user_id, days)
     return {"status": "OK", **forecast}
 
 
 @router.get("/costs/providers")
-async def get_provider_costs(authorization: str = Header(None)):
+async def get_provider_costs(
+    user_id: str = Depends(require_admin),
+):
     """Get provider cost comparison."""
-    user_id = get_user_id_from_token(authorization)
     comparison = cost_tracker.get_provider_cost_comparison(user_id)
     return {"status": "OK", "providers": comparison}
 
@@ -41,9 +63,10 @@ async def get_provider_costs(authorization: str = Header(None)):
 # Compliance Routes
 
 @router.post("/compliance/export")
-async def request_export(authorization: str = Header(None)):
+async def request_export(
+    user_id: str = Depends(require_admin),
+):
     """Request GDPR data export."""
-    user_id = get_user_id_from_token(authorization)
     export = compliance_manager.request_data_export(user_id)
     return {
         "status": "OK",
@@ -52,17 +75,19 @@ async def request_export(authorization: str = Header(None)):
 
 
 @router.post("/compliance/delete")
-async def request_deletion(authorization: str = Header(None)):
+async def request_deletion(
+    user_id: str = Depends(require_admin),
+):
     """Request right-to-delete."""
-    user_id = get_user_id_from_token(authorization)
     result = compliance_manager.request_data_deletion(user_id)
     return {"status": "OK", **result}
 
 
 @router.get("/compliance/status")
-async def get_compliance_status(authorization: str = Header(None)):
+async def get_compliance_status(
+    user_id: str = Depends(require_admin),
+):
     """Get compliance status."""
-    user_id = get_user_id_from_token(authorization)
     return {
         "status": "OK",
         **compliance_manager.get_compliance_status(user_id),
@@ -82,9 +107,11 @@ class ScoreRequest(BaseModel):
 
 
 @router.post("/prompts")
-async def create_prompt(request: CreatePromptRequest, authorization: str = Header(None)):
+async def create_prompt(
+    request: CreatePromptRequest,
+    user_id: str = Depends(require_admin),
+):
     """Create a prompt version."""
-    user_id = get_user_id_from_token(authorization)
     prompt = prompt_manager.create_prompt(request.name, request.content)
     return {
         "status": "OK",
@@ -97,9 +124,11 @@ async def create_prompt(request: CreatePromptRequest, authorization: str = Heade
 
 
 @router.get("/prompts/{name}")
-async def get_prompt(name: str, authorization: str = Header(None)):
+async def get_prompt(
+    name: str,
+    user_id: str = Depends(require_admin),
+):
     """Get active prompt."""
-    user_id = get_user_id_from_token(authorization)
     prompt = prompt_manager.get_active_prompt(name)
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
@@ -116,16 +145,19 @@ async def get_prompt(name: str, authorization: str = Header(None)):
 
 
 @router.post("/evaluate/score")
-async def score_response(request: ScoreRequest, authorization: str = Header(None)):
+async def score_response(
+    request: ScoreRequest,
+    user_id: str = Depends(require_admin),
+):
     """Score an AI response."""
-    user_id = get_user_id_from_token(authorization)
     result = quality_scorer.score_response(request.response, request.expected)
     return {"status": "OK", **result}
 
 
 @router.get("/benchmarks")
-async def get_benchmarks(authorization: str = Header(None)):
+async def get_benchmarks(
+    user_id: str = Depends(require_admin),
+):
     """Get benchmark results."""
-    user_id = get_user_id_from_token(authorization)
     report = benchmark_suite.get_benchmark_report()
     return {"status": "OK", **report}

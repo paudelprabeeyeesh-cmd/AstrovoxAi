@@ -49,8 +49,8 @@ async def rate_limit_middleware(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
-        "script-src 'self' 'unsafe-inline'; connect-src 'self' http://localhost:8000 https://*.supabase.co"
+        "default-src 'self'; img-src 'self' data: https:; style-src 'self'; "
+        "script-src 'self'; connect-src 'self' http://localhost:8000 https://*.supabase.co"
     )
     if not allowed:
         return JSONResponse(

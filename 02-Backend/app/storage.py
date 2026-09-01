@@ -111,12 +111,12 @@ async def upload_storage_file(
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
     except Exception as exc:  # pragma: no cover - defensive path
         logger.exception("Storage upload failed")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed"
         ) from exc
 
 
