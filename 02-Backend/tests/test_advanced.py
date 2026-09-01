@@ -41,17 +41,17 @@ class TestMultiAgent:
 
     def test_session_has_all_roles(self):
         session = collaboration_manager.create_session("user_1", "Test goal")
-        roles = {t.role for t in session.tasks}
-        assert AgentRole.PLANNER in roles
-        assert AgentRole.RESEARCHER in roles
-        assert AgentRole.CODER in roles
-        assert AgentRole.REVIEWER in roles
-        assert AgentRole.SECURITY in roles
+        roles = {t.agent_role for t in session.tasks}
+        assert "planner" in roles
+        assert "researcher" in roles
+        assert "coder" in roles
+        assert "reviewer" in roles
+        assert "security" in roles
 
     def test_session_dependencies(self):
         session = collaboration_manager.create_session("user_1", "Test goal")
-        planner = next(t for t in session.tasks if t.role == AgentRole.PLANNER)
-        coder = next(t for t in session.tasks if t.role == AgentRole.CODER)
+        planner = next(t for t in session.tasks if t.agent_role == "planner")
+        coder = next(t for t in session.tasks if t.agent_role == "coder")
         assert planner.id in coder.dependencies
 
     @pytest.mark.asyncio
