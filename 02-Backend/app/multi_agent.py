@@ -243,9 +243,9 @@ class CollaborationManager:
         if all_done:
             session.status = TaskStatus.COMPLETED
             session.completed_at = time.time()
-    session.result = "\n\n".join(
-            f"[{t.agent_role}] {t.result}" for t in session.tasks if t.result
-        )
+            session.result = "\n\n".join(
+                f"[{t.agent_role}] {t.result}" for t in session.tasks if t.result
+            )
 
         return session
 
