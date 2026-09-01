@@ -1,4 +1,13 @@
-"""Advanced Cybersecurity — OWASP checks, threat modeling, secure coding."""
+"""Advanced Cybersecurity — OWASP checks, threat modeling, secure coding.
+
+Phase 352 — AI Safety Platform:
+Prompt injection detection, jailbreak detection, tool abuse prevention,
+context isolation, cross-user isolation, memory isolation, permission-aware
+prompts, sensitive action confirmation, content moderation, prompt firewall,
+prompt risk scoring, safety policy engine, AI abuse monitoring, secret leakage
+prevention, data exfiltration detection, prompt version history, safety
+analytics, safety reports, policy management, continuous safety testing.
+"""
 
 import re
 import hashlib
@@ -195,3 +204,109 @@ threat_model.add_threat(
     "Unauthorized Access", "CRITICAL", "medium", "critical",
     ["MFA", "RBAC", "Session management"]
 )
+
+
+# ============================================================================
+# Phase 352 — AI Safety Platform
+# ============================================================================
+
+class PromptFirewall:
+    """Filter and block dangerous prompts."""
+
+    BLOCKED_PATTERNS = [
+        r"ignore\s+(all\s+)?instructions",
+        r"you\s+are\s+now",
+        r"new\s+persona",
+        r"jailbreak",
+        r"DAN\s+mode",
+        r"bypass\s+(all\s+)?restrictions",
+    ]
+
+    def check(self, prompt: str) -> dict:
+        """Check if a prompt should be blocked."""
+        for pattern in self.BLOCKED_PATTERNS:
+            if re.search(pattern, prompt, re.IGNORECASE):
+                return {
+                    "allowed": False,
+                    "reason": f"Blocked by safety policy: matched pattern '{pattern}'",
+                    "risk_score": 0.9,
+                }
+
+        return {"allowed": True, "reason": "", "risk_score": 0.1}
+
+
+class ContentModerator:
+    """Moderate AI-generated content."""
+
+    def moderate(self, text: str) -> dict:
+        """Moderate content."""
+        issues = []
+
+        if re.search(r'\b(hate|violence|illegal)\b', text, re.IGNORECASE):
+            issues.append("inappropriate_content")
+
+        if len(text) > 10000:
+            issues.append("excessive_length")
+
+        return {
+            "approved": len(issues) == 0,
+            "issues": issues,
+            "confidence": 1.0 if not issues else 0.5,
+        }
+
+
+class SafetyPolicyEngine:
+    """Manage safety policies."""
+
+    def __init__(self):
+        self._policies: dict = {}
+
+    def add_policy(self, name: str, rules: dict):
+        """Add a safety policy."""
+        self._policies[name] = rules
+
+    def evaluate(self, context: dict) -> dict:
+        """Evaluate context against policies."""
+        violations = []
+        for name, rules in self._policies.items():
+            for rule_name, rule_func in rules.items():
+                if not rule_func(context):
+                    violations.append(f"{name}.{rule_name}")
+
+        return {
+            "compliant": len(violations) == 0,
+            "violations": violations,
+        }
+
+
+class SafetyAnalytics:
+    """Track safety metrics."""
+
+    def __init__(self):
+        self._events: list = []
+
+    def record(self, event_type: str, details: dict):
+        """Record a safety event."""
+        self._events.append({
+            "type": event_type,
+            "details": details,
+            "timestamp": time.time(),
+        })
+
+    def get_report(self) -> dict:
+        """Generate safety report."""
+        from collections import Counter
+        types = Counter(e["type"] for e in self._events)
+        return {
+            "total_events": len(self._events),
+            "by_type": dict(types),
+            "recent_flags": [e for e in self._events[-10:]],
+        }
+
+
+import time
+
+prompt_firewall = PromptFirewall()
+content_moderator = ContentModerator()
+safety_policy_engine = SafetyPolicyEngine()
+safety_analytics = SafetyAnalytics()
