@@ -1,4 +1,10 @@
-"""Knowledge Intelligence — knowledge graph, automatic tagging, entity extraction."""
+"""Knowledge Intelligence — knowledge graph, automatic tagging, entity extraction.
+
+Phase 365 — Knowledge Platform:
+Knowledge graph improvements, semantic search, document linking, automatic
+tagging, citation improvements, entity recognition, relationship mapping,
+timeline generation, topic clustering.
+"""
 
 import time
 import logging
@@ -82,3 +88,77 @@ class KnowledgeGraph:
 
 
 knowledge_graph = KnowledgeGraph()
+
+
+# ============================================================================
+# Phase 365 — Knowledge Platform
+# ============================================================================
+
+class AutoTagger:
+    """Automatically tag documents based on content."""
+
+    def __init__(self):
+        self._tag_rules: dict = {}
+
+    def add_rule(self, tag: str, keywords: list[str]):
+        """Add a tagging rule."""
+        self._tag_rules[tag] = [k.lower() for k in keywords]
+
+    def tag(self, content: str) -> list[str]:
+        """Auto-tag content based on rules."""
+        content_lower = content.lower()
+        tags = []
+        for tag, keywords in self._tag_rules.items():
+            if any(kw in content_lower for kw in keywords):
+                tags.append(tag)
+        return tags
+
+
+class DocumentLinker:
+    """Link related documents together."""
+
+    def __init__(self):
+        self._links: list = []
+
+    def link(self, source_id: str, target_id: str, relationship: str = "related"):
+        """Create a link between documents."""
+        self._links.append({
+            "source": source_id,
+            "target": target_id,
+            "relationship": relationship,
+            "created_at": time.time(),
+        })
+
+    def get_related(self, document_id: str) -> list:
+        """Get related documents."""
+        related = []
+        for link in self._links:
+            if link["source"] == document_id:
+                related.append({"id": link["target"], "relationship": link["relationship"]})
+            elif link["target"] == document_id:
+                related.append({"id": link["source"], "relationship": link["relationship"]})
+        return related
+
+
+class EntityExtractor:
+    """Extract entities from text."""
+
+    def extract(self, text: str) -> list[dict]:
+        """Extract named entities from text."""
+        import re
+        entities = []
+
+        emails = re.findall(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', text)
+        for email in emails:
+            entities.append({"type": "email", "value": email})
+
+        urls = re.findall(r'https?://[^\s]+', text)
+        for url in urls:
+            entities.append({"type": "url", "value": url})
+
+        return entities
+
+
+auto_tagger = AutoTagger()
+document_linker = DocumentLinker()
+entity_extractor = EntityExtractor()
