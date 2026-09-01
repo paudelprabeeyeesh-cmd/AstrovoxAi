@@ -11,7 +11,7 @@ from .cost_management import cost_tracker
 from .compliance import compliance_manager
 from .ai_evaluation import prompt_manager, quality_scorer, benchmark_suite
 from .auth_utils import get_user_id_from_token
-from .auth_enhanced import get_current_user  # Import the enhanced auth function
+from .supabase_client import get_supabase
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
