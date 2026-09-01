@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 
 
 class InMemoryRateLimiter:
-    """Simple per-IP sliding-window limiter for local deployments."""
+    """Per-IP sliding-window limiter with automatic cleanup."""
 
     def __init__(self, limit: str = "120/minute"):
         self.limit = limit
@@ -17,6 +17,7 @@ class InMemoryRateLimiter:
         self.lock = Lock()
         self.window_seconds = self._parse_window(limit)
         self.max_requests = self._parse_max(limit)
+        self._last_cleanup = time.time()
 
     def _parse_max(self, limit: str) -> int:
         value = limit.split("/")[0]
@@ -26,10 +27,25 @@ class InMemoryRateLimiter:
         window = limit.split("/", 1)[1] if "/" in limit else "minute"
         return {"second": 1, "minute": 60, "hour": 3600}.get(window.lower(), 60)
 
+    def _cleanup(self):
+        """Remove expired entries to prevent memory leak."""
+        now = int(time.time())
+        cutoff = now - self.window_seconds * 2
+        expired_keys = [k for k in self.requests if k[1] < cutoff]
+        for key in expired_keys:
+            del self.requests[key]
+        self._last_cleanup = time.time()
+
     def is_allowed(self, client_ip: str) -> Tuple[bool, int, int]:
         now = int(time.time())
         window_start = now - self.window_seconds
         key = (client_ip, window_start)
+
+        # Periodic cleanup every 60 seconds
+        if now - self._last_cleanup > 60:
+            with self.lock:
+                self._cleanup()
+
         with self.lock:
             self.requests[key] += 1
             remaining = max(0, self.max_requests - self.requests[key])
