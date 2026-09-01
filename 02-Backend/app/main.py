@@ -26,6 +26,7 @@ from .enterprise_route import router as enterprise_router
 from .admin_route import router as admin_router
 from .realtime_route import router as realtime_router
 from .realtime_route import tools_router
+from .realtime_route import security_router as scan_router
 from .agents_route import router as agents_router
 from .agents_route import memory_router as memory_v2_router
 from .security_headers import SecurityHeadersMiddleware
@@ -92,7 +93,7 @@ app.include_router(enterprise_router)
 app.include_router(admin_router)
 app.include_router(realtime_router)
 app.include_router(tools_router)
-app.include_router(security_router)
+app.include_router(scan_router)
 app.include_router(agents_router)
 app.include_router(memory_v2_router)
 
