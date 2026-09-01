@@ -40,14 +40,22 @@ async def create_user_profile(
         return None
 
 
+ALLOWED_PROFILE_FIELDS = {"full_name", "avatar_url", "bio", "website"}
+ALLOWED_CONVERSATION_FIELDS = {"title", "model"}
+ALLOWED_SETTINGS_FIELDS = {"theme", "language", "notifications_enabled", "default_model"}
+
+
 async def update_user_profile(user_id: str, **kwargs):
-    """Update user profile"""
+    """Update user profile. Only whitelisted fields can be updated."""
+    safe_kwargs = {k: v for k, v in kwargs.items() if k in ALLOWED_PROFILE_FIELDS}
+    if not safe_kwargs:
+        return None
     try:
-        response = supabase.table("profiles").update(kwargs).eq("id", user_id).execute()
+        response = supabase.table("profiles").update(safe_kwargs).eq("id", user_id).execute()
         logger.info(f"Updated user profile for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
-        logger.error(f"Error updating user profile: {e}")
+        logger.error(f"Error updating user profile: {str(e)[:100]}")
         return None
 
 
@@ -106,18 +114,21 @@ async def get_conversation(conversation_id: int, user_id: str = None):
 
 
 async def update_conversation(conversation_id: int, **kwargs):
-    """Update conversation"""
+    """Update conversation. Only whitelisted fields can be updated."""
+    safe_kwargs = {k: v for k, v in kwargs.items() if k in ALLOWED_CONVERSATION_FIELDS}
+    if not safe_kwargs:
+        return None
     try:
         response = (
             supabase.table("conversations")
-            .update(kwargs)
+            .update(safe_kwargs)
             .eq("id", conversation_id)
             .execute()
         )
         logger.debug(f"Updated conversation {conversation_id}")
         return response.data[0] if response.data else None
     except Exception as e:
-        logger.error(f"Error updating conversation: {e}")
+        logger.error(f"Error updating conversation: {str(e)[:100]}")
         return None
 
 
@@ -255,16 +266,19 @@ async def get_user_settings(user_id: str):
 
 
 async def update_user_settings(user_id: str, **kwargs):
-    """Update user settings"""
+    """Update user settings. Only whitelisted fields can be updated."""
+    safe_kwargs = {k: v for k, v in kwargs.items() if k in ALLOWED_SETTINGS_FIELDS}
+    if not safe_kwargs:
+        return None
     try:
         response = (
             supabase.table("user_settings")
-            .update(kwargs)
+            .update(safe_kwargs)
             .eq("user_id", user_id)
             .execute()
         )
         logger.info(f"Updated user settings for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
-        logger.error(f"Error updating settings: {e}")
+        logger.error(f"Error updating user settings: {str(e)[:100]}")
         return None
