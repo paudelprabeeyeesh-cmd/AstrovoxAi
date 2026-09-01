@@ -257,3 +257,124 @@ class CollaborationManager:
 
 
 collaboration_manager = CollaborationManager()
+
+
+# ============================================================================
+# Phase 369 — Multi-Agent Intelligence Platform
+# ============================================================================
+
+class AgentStatus(Enum):
+    """Agent runtime status."""
+    IDLE = "idle"
+    RUNNING = "running"
+    WAITING = "waiting"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass
+class AgentTask:
+    """A task for an agent."""
+    id: str
+    agent_role: str
+    description: str
+    status: AgentStatus = AgentStatus.IDLE
+    result: str = ""
+    created_at: float = 0.0
+    completed_at: float = 0.0
+    retries: int = 0
+    max_retries: int = 3
+
+
+class AgentOrchestrator:
+    """Coordinate multi-agent task execution."""
+
+    def __init__(self):
+        self._agents: dict[str, Agent] = {
+            AgentRole.PLANNER: PlannerAgent(),
+            AgentRole.RESEARCHER: ResearcherAgent(),
+            AgentRole.CODER: CoderAgent(),
+            AgentRole.REVIEWER: ReviewerAgent(),
+            AgentRole.SECURITY: SecurityAgent(),
+        }
+        self._tasks: list[AgentTask] = []
+        self._agent_health: dict[str, dict] = {}
+
+    def submit_task(self, role: AgentRole, description: str) -> AgentTask:
+        """Submit a task to an agent."""
+        import secrets
+        task = AgentTask(
+            id=secrets.token_hex(8),
+            agent_role=role.value,
+            description=description,
+            created_at=time.time(),
+        )
+        self._tasks.append(task)
+        return task
+
+    async def execute_task(self, task_id: str) -> Optional[AgentTask]:
+        """Execute a task with automatic retry."""
+        task = next((t for t in self._tasks if t.id == task_id), None)
+        if not task:
+            return None
+
+        agent = self._agents.get(AgentRole(task.agent_role))
+        if not agent:
+            return None
+
+        task.status = AgentStatus.RUNNING
+
+        for attempt in range(task.max_retries + 1):
+            try:
+                result = await agent.execute(
+                    type("Task", (), {"description": task.description, "step_number": 0, "action": "", "status": "pending"}),
+                    {}
+                )
+                task.result = result
+                task.status = AgentStatus.COMPLETED
+                task.completed_at = time.time()
+
+                self._agent_health[task.agent_role] = {
+                    "last_success": time.time(),
+                    "status": "healthy",
+                }
+                return task
+            except Exception as e:
+                task.retries = attempt + 1
+                if attempt >= task.max_retries:
+                    task.status = AgentStatus.FAILED
+                    self._agent_health[task.agent_role] = {
+                        "last_failure": time.time(),
+                        "status": "unhealthy",
+                        "error": str(e)[:200],
+                    }
+                await asyncio.sleep(2 ** attempt)
+
+        return task
+
+    async def execute_parallel(self, task_ids: list[str]) -> list[AgentTask]:
+        """Execute multiple tasks in parallel."""
+        tasks = [self.execute_task(tid) for tid in task_ids]
+        return await asyncio.gather(*tasks)
+
+    def get_health(self) -> dict:
+        """Get agent health status."""
+        return dict(self._agent_health)
+
+    def get_analytics(self) -> dict:
+        """Get agent performance analytics."""
+        total = len(self._tasks)
+        completed = len([t for t in self._tasks if t.status == AgentStatus.COMPLETED])
+        failed = len([t for t in self._tasks if t.status == AgentStatus.FAILED])
+        return {
+            "total_tasks": total,
+            "completed": completed,
+            "failed": failed,
+            "success_rate": completed / total if total > 0 else 0,
+            "agents": {role.value: agent.name for role, agent in self._agents.items()},
+        }
+
+
+import asyncio
+
+agent_orchestrator = AgentOrchestrator()
