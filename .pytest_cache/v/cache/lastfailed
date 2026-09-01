@@ -1,3 +1,8 @@
 {
-  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent::test_create_session": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent::test_session_has_all_roles": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent::test_session_dependencies": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent::test_run_session": true,
+  "02-Backend/tests/test_advanced.py::TestMultiAgent::test_get_user_sessions": true
 }
