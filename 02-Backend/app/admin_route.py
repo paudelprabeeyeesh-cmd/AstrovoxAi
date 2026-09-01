@@ -11,6 +11,7 @@ from .cost_management import cost_tracker
 from .compliance import compliance_manager
 from .ai_evaluation import prompt_manager, quality_scorer, benchmark_suite
 from .auth_utils import get_user_id_from_token
+from .auth_enhanced import get_current_user  # Import the enhanced auth function
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -18,13 +19,24 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 async def require_admin(authorization: str = Header(None)) -> str:
     """Verify the user has admin role. Returns user_id if authorized."""
     user_id = get_user_id_from_token(authorization)
-
-    # Check admin role from authorization header format: "Bearer <token>:admin"
-    # In production, this should check JWT claims or database roles
-    if not authorization or ":admin" not in authorization:
+    
+    # Check admin role from user's profile in Supabase
+    from .supabase_client import get_supabase
+    supabase = get_supabase()
+    
+    try:
+        response = supabase.table("profiles").select("role").eq("id", user_id).execute()
+        if not response.data or response.data[0].get("role") != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin access required"
+            )
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
+            detail="Admin access required"
         )
     return user_id
 
