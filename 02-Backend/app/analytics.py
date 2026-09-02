@@ -137,7 +137,7 @@ class AgentPerformanceRecord:
     task_status: str
     duration: float
     tool_used: str = ""
-    timestamp: float
+    timestamp: float = 0.0
 
 
 @dataclass
