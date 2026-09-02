@@ -17,7 +17,7 @@ import asyncio
 import functools
 import traceback
 from typing import Optional, Any, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from enum import Enum
 from collections import defaultdict
 
