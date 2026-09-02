@@ -28,6 +28,7 @@ from .monitoring_route import router as monitoring_router
 from .security_route import router as security_router
 from .admin_route import router as admin_router
 from .realtime_route import router as realtime_router
+from .dashboard_route import router as dashboard_router
 from .realtime_route import tools_router
 from .realtime_route import security_router as scan_router
 from .agents_route import router as agents_router
