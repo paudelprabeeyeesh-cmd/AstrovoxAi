@@ -141,16 +141,17 @@ class AgentSelector:
         """Select the best agent based on task description."""
         desc_lower = task_description.lower()
 
-        if any(w in desc_lower for w in ["research", "search", "find", "analyze"]):
-            return AgentRole.RESEARCHER
-        if any(w in desc_lower for w in ["code", "implement", "build", "develop", "write"]):
-            return AgentRole.CODER
-        if any(w in desc_lower for w in ["review", "check", "test", "validate"]):
+        # Check more specific patterns first
+        if any(w in desc_lower for w in ["review", "check", "validate", "audit"]):
             return AgentRole.REVIEWER
         if any(w in desc_lower for w in ["security", "secure", "protect", "vulnerability"]):
             return AgentRole.SECURITY
         if any(w in desc_lower for w in ["plan", "design", "architect", "structure"]):
             return AgentRole.PLANNER
+        if any(w in desc_lower for w in ["research", "search", "find", "analyze", "explain"]):
+            return AgentRole.RESEARCHER
+        if any(w in desc_lower for w in ["code", "implement", "build", "develop", "write", "debug", "fix"]):
+            return AgentRole.CODER
 
         return AgentRole.RESEARCHER
 

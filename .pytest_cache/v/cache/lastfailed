@@ -1,5 +1,4 @@
 {
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
-  "02-Backend/tests/test_orchestrator.py::TestAgentSelector::test_select_reviewer": true,
   "02-Backend/tests/test_orchestrator.py::TestAgentSelector::test_select_security": true
 }
