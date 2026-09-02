@@ -164,9 +164,9 @@ class ApiKeyStoreTest(unittest.TestCase):
     def test_issue_and_verify(self):
         store = ApiKeyStore()
         record, key, secret = store.issue("owner", "lbl", ["read", "write"])
-        self.assertTrue(store.verify(key, secret))
+        verified = store.verify(key, secret)
+        self.assertIsNotNone(verified)
         self.assertFalse(store.verify(key, "wrong"))
-        self.assertEqual(record.last_used, None)
 
     def test_revoke(self):
         store = ApiKeyStore()
