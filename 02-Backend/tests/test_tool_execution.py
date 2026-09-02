@@ -2,6 +2,7 @@
 
 import pytest
 import asyncio
+from unittest.mock import MagicMock
 from app.tool_execution import (
     ToolRegistry,
     ToolExecutor,
@@ -156,6 +157,3 @@ class TestBuiltInTools:
     async def test_extract_entities(self):
         result = await extract_entities("Contact test@example.com or visit https://example.com")
         assert len(result) == 2
-
-
-from unittest.mock import MagicMock
