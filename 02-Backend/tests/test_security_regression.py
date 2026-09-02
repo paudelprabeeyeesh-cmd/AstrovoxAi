@@ -223,3 +223,20 @@ class TestSecurityResponseHeaders:
         assert resp.headers.get("X-Frame-Options") == "DENY"
         assert "Content-Security-Policy" in resp.headers
         assert "Strict-Transport-Security" in resp.headers
+
+
+class TestSecurityMassAssignmentFixed:
+    """Verify mass assignment vulnerabilities are fixed."""
+
+    def test_profile_update_whitelist(self):
+        from app.database import ALLOWED_PROFILE_FIELDS
+        assert "role" not in ALLOWED_PROFILE_FIELDS
+        assert "is_admin" not in ALLOWED_PROFILE_FIELDS
+
+    def test_conversation_update_whitelist(self):
+        from app.database import ALLOWED_CONVERSATION_FIELDS
+        assert "user_id" not in ALLOWED_CONVERSATION_FIELDS
+
+    def test_settings_update_whitelist(self):
+        from app.database import ALLOWED_SETTINGS_FIELDS
+        assert "user_id" not in ALLOWED_SETTINGS_FIELDS
