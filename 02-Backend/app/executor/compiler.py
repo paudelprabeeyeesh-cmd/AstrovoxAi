@@ -11,6 +11,7 @@ The compiler performs:
 from __future__ import annotations
 
 import hashlib
+import re
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -289,6 +290,14 @@ class Compiler:
                 if step.output:
                     self.bindings[step.output] = step.id
 
+    def _implicit_inputs(self, text: str) -> List[str]:
+        """Return step ids whose alias appears in the given text."""
+        inputs: List[str] = []
+        for alias, step_id in self.bindings.items():
+            if re.search(rf"\b{re.escape(alias)}\b", text or ""):
+                inputs.append(step_id)
+        return inputs
+
     def _lower_statement(self, stmt: Statement, parallel: bool = False) -> Optional[Step]:
         if isinstance(stmt, LoadStatement):
             step = Step(
@@ -345,10 +354,12 @@ class Compiler:
                 output=stmt.alias,
             )
         if isinstance(stmt, AskStatement):
+            inputs = self._implicit_inputs(stmt.prompt)
             return Step(
                 id=make_id("step"),
                 kind=StepKind.ASK,
                 args={"prompt": stmt.prompt},
+                inputs=inputs,
                 output=stmt.alias,
             )
         if isinstance(stmt, SaveStatement):
@@ -438,6 +449,7 @@ class Compiler:
         fused: List[Step] = []
         skip: set[str] = set()
         fusion_count = 0
+        bindings_updates: Dict[str, str] = {}
         for i, step in enumerate(graph.steps):
             if step.id in skip:
                 continue
@@ -463,9 +475,9 @@ class Compiler:
                 )
                 fused.append(fused_step)
                 if step.output:
-                    self.bindings[step.output] = fused_step.id
+                    bindings_updates[step.output] = fused_step.id
                 if next_step.output:
-                    self.bindings[next_step.output] = fused_step.id
+                    bindings_updates[next_step.output] = fused_step.id
                 skip.add(next_step.id)
                 fusion_count += 1
             else:
@@ -473,9 +485,12 @@ class Compiler:
         if fusion_count:
             self.optimizations_applied.append(f"execution_fusion: combined {fusion_count} SEARCH+SUMMARIZE pairs")
         graph.steps = fused
-        # Rebuild index.
+        # Apply binding updates.
+        for alias, step_id in bindings_updates.items():
+            if alias in graph.bindings:
+                graph.bindings[alias] = step_id
+        # Rebuild index and update inputs.
         index = {s.id: s for s in graph.steps}
-        # Update inputs to point to fused ids.
         for step in graph.steps:
             new_inputs: List[str] = []
             for inp in step.inputs:

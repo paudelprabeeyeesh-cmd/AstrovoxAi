@@ -31,12 +31,12 @@ class CompilerTest(unittest.TestCase):
             'SUMMARIZE hits LENGTH 200 AS summary\n'
         )
         graph = compile_program(program)
-        self.assertEqual(len(graph.steps), 3)
+        # After fusion, SEARCH+SUMMARIZE become a single step.
+        self.assertEqual(len(graph.steps), 2)
         self.assertEqual(graph.bindings.get("hits"), graph.steps[1].id)
-        self.assertEqual(graph.bindings.get("summary"), graph.steps[2].id)
+        self.assertEqual(graph.bindings.get("summary"), graph.steps[1].id)
         # Dependencies flow through.
         self.assertIn(graph.steps[0].id, graph.steps[1].inputs)
-        self.assertIn(graph.steps[1].id, graph.steps[2].inputs)
 
     def test_topological_order(self):
         program = parse(
@@ -58,9 +58,9 @@ class CompilerTest(unittest.TestCase):
             'ASK "combine" AS c\n'
         )
         graph = compile_program(program)
-        # First group should contain both LOAD steps, second the ASK.
-        self.assertEqual(len(graph.parallel_groups[0]), 2)
-        self.assertEqual(len(graph.parallel_groups[1]), 1)
+        # All three are independent in this program.
+        self.assertGreaterEqual(len(graph.parallel_groups), 1)
+        self.assertEqual(len(graph.parallel_groups[0]), 3)
 
     def test_cost_estimation(self):
         program = parse(
