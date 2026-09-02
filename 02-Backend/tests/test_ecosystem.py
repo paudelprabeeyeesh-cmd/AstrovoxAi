@@ -46,7 +46,7 @@ from app.ecosystem.plugins import (
     parse_version,
     satisfies_range,
 )
-from app.ecosystem.sdk import AstrovoxClient, sign_payload as sdk_sign
+from app.ecosystem.sdk import AstrovoxClient
 from app.ecosystem.security import AuditLog, DependencyScanner, SecretScrubber, SecretVault
 from app.ecosystem.webhooks import WebhookEvent, WebhookManager, WebhookSubscription
 

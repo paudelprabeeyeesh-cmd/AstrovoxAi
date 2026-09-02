@@ -17,6 +17,14 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional
 
+from .api_platform import sign_payload, verify_signature  # re-exports
+
+
+def sign_payload_compat(payload, secret, timestamp=None):
+    if isinstance(payload, str):
+        payload = payload.encode("utf-8")
+    return sign_payload(payload, secret, timestamp)
+
 
 class AstrovoxError(Exception):
     """Base error type raised by the SDK."""
