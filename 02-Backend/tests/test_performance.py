@@ -2,6 +2,7 @@
 
 import pytest
 import time
+import asyncio
 from app.performance import Cache, MetricsCollector, timed
 
 

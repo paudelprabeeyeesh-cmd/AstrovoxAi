@@ -3,6 +3,7 @@
 import time
 import logging
 import functools
+import asyncio
 from typing import Optional, Any, Callable
 from collections import defaultdict
 
@@ -91,28 +92,25 @@ class MetricsCollector:
 
 def timed(func: Callable) -> Callable:
     """Decorator to time function execution."""
-    @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        result = await func(*args, **kwargs)
-        duration = (time.perf_counter() - start) * 1000
-        logger.debug(f"{func.__name__} took {duration:.2f}ms")
-        return result
-
-    @functools.wraps(func)
-    def sync_wrapper(*args, **kwargs):
-        start = time.perf_counter()
-        result = func(*args, **kwargs)
-        duration = (time.perf_counter() - start) * 1000
-        logger.debug(f"{func.__name__} took {duration:.2f}ms")
-        return result
-
     if asyncio.iscoroutinefunction(func):
+        @functools.wraps(func)
+        async def async_wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            result = await func(*args, **kwargs)
+            duration = (time.perf_counter() - start) * 1000
+            logger.debug(f"{func.__name__} took {duration:.2f}ms")
+            return result
         return async_wrapper
-    return sync_wrapper
+    else:
+        @functools.wraps(func)
+        def sync_wrapper(*args, **kwargs):
+            start = time.perf_counter()
+            result = func(*args, **kwargs)
+            duration = (time.perf_counter() - start) * 1000
+            logger.debug(f"{func.__name__} took {duration:.2f}ms")
+            return result
+        return sync_wrapper
 
-
-import asyncio
 
 # Global instances
 cache = Cache()
