@@ -43,8 +43,11 @@ class EcosystemMonitor:
         integration: Optional[str] = None,
         endpoint: Optional[str] = None,
         cost: float = 0.0,
+        error: Optional[str] = None,
     ) -> None:
-        payload = payload or {}
+        payload = dict(payload or {})
+        if error is not None and "error" not in payload:
+            payload["error"] = error
         with self._lock:
             self._events.append(Event(name=name, payload=payload))
             self._counters[name] += 1
@@ -57,7 +60,7 @@ class EcosystemMonitor:
             if cost:
                 self._costs[name] += cost
             if payload.get("error"):
-                self._errors[payload.get("error")] += 1
+                self._errors[str(payload["error"])] += 1
 
     def summary(self) -> Dict[str, Any]:
         with self._lock:
