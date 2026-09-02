@@ -64,14 +64,14 @@ class TestUserJourneyAuthentication:
         with patch("app.auth_utils.get_supabase", return_value=mock_supabase):
             with patch("app.supabase_client.get_supabase", return_value=mock_supabase):
                 with patch("app.auth.supabase", mock_supabase):
-                # Step 1: Register
-                signup_resp = client.post("/auth/signup", json={
-                    "email": "e2e@test.com",
-                    "password": "SecurePass123!",
-                    "full_name": "E2E Test User"
-                })
-                assert signup_resp.status_code == 200
-                assert signup_resp.json()["status"] == "OK"
+                    # Step 1: Register
+                    signup_resp = client.post("/auth/signup", json={
+                        "email": "e2e@test.com",
+                        "password": "SecurePass123!",
+                        "full_name": "E2E Test User"
+                    })
+                    assert signup_resp.status_code == 200
+                    assert signup_resp.json()["status"] == "OK"
 
                 # Step 2: Login
                 login_resp = client.post("/auth/login", json={
