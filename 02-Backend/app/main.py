@@ -41,6 +41,7 @@ from .automation_route import router as automation_router
 from .ecosystem.router import router as ecosystem_router
 from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
+from .executor.api import router as executor_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -113,6 +114,7 @@ app.include_router(document_router)
 app.include_router(ecosystem_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
+app.include_router(executor_router)
 
 
 # Prometheus metrics middleware
