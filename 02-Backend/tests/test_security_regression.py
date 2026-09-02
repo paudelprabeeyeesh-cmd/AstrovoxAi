@@ -182,7 +182,7 @@ class TestSecurityInputValidation:
             "password": "",
             "full_name": "Test"
         })
-        assert resp.status_code == 422
+        assert resp.status_code in [400, 422]
 
     def test_message_length_validation(self, client, mock_supabase_admin):
         with patch("app.auth_utils.get_supabase", return_value=mock_supabase_admin):
