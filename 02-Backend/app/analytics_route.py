@@ -50,13 +50,6 @@ async def get_provider_breakdown(authorization: str = Header(None)):
     }
 
 
-@router.get("/costs")
-async def get_cost_estimate(authorization: str = Header(None)):
-    """Get estimated costs."""
-    user_id = get_user_id_from_token(authorization)
-    return {"status": "OK", "costs": analytics.get_cost_estimate()}
-
-
 @router.get("/daily")
 async def get_daily_usage(
     authorization: str = Header(None),
