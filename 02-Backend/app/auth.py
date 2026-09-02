@@ -73,7 +73,6 @@ async def sign_up(request: SignUpRequest):
 
 
 @router.post("/login")
-@limiter.limit("10/minute")
 async def login(request: LoginRequest):
     """Login user with email and password"""
     try:
