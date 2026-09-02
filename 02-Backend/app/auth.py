@@ -43,7 +43,6 @@ class OAuthRequest(BaseModel):
 
 # Routes
 @router.post("/signup")
-@limiter.limit("5/minute")
 async def sign_up(request: SignUpRequest):
     """Register a new user with Supabase Auth"""
     try:
