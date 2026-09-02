@@ -103,11 +103,10 @@ class SLOTracker:
             if not samples:
                 out[name] = {"breaches": 0, "compliance": 1.0, "samples": 0}
                 continue
-            breaches = sum(
-                1
-                for v in samples
-                if (v >= slo.threshold) if slo.comparator == "lt" else (v <= slo.threshold)
-            )
+            if slo.comparator == "lt":
+                breaches = sum(1 for v in samples if v >= slo.threshold)
+            else:
+                breaches = sum(1 for v in samples if v <= slo.threshold)
             out[name] = {
                 "breaches": breaches,
                 "compliance": round(1.0 - breaches / len(samples), 4),

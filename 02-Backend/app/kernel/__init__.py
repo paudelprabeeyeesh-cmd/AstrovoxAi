@@ -22,7 +22,6 @@ from .observability import Observability, get_observability
 from .router import ModelRouter, RoutingDecision, get_model_router
 from .scheduler import WorkflowScheduler, get_workflow_scheduler
 
-
 @dataclass
 class KernelRequest:
     goal: str
