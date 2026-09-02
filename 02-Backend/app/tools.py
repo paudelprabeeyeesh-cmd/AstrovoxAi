@@ -81,13 +81,43 @@ class CalculatorTool:
 
 
 class CodeExecutionTool:
-    """Sandboxed code execution."""
+    """Sandboxed code execution - ADMIN ONLY.
+
+    SECURITY: This tool executes arbitrary Python code. It must ONLY be
+    accessible to authenticated admin users. It uses RestrictedPython for
+    sandboxing and enforces strict resource limits.
+    """
 
     def execute(self, code: str, timeout: int = 5) -> ToolResult:
-        """Execute Python code in a restricted environment."""
+        """Execute Python code in a restricted environment.
+
+        SECURITY MEASURES:
+        - RestrictedPython for sandboxing
+        - No network access
+        - No filesystem access
+        - Strict timeout
+        - Memory limits
+        - No imports allowed
+        """
         try:
             import RestrictedPython
             from RestrictedPython import safe_builtins, compile_restricted
+
+            # Block dangerous patterns
+            dangerous_patterns = [
+                'import', '__import__', 'open', 'file', 'exec', 'eval',
+                'compile', 'globals', 'locals', 'vars', 'dir',
+                'getattr', 'setattr', 'delattr',
+                'subprocess', 'os.', 'sys.', 'importlib',
+            ]
+            code_lower = code.lower()
+            for pattern in dangerous_patterns:
+                if pattern in code_lower:
+                    return ToolResult(
+                        False,
+                        f"Security violation: '{pattern}' is not allowed",
+                        "code_executor",
+                    )
 
             compiled = compile_restricted(code, '<string>', 'exec')
             local_vars = {"__builtins__": safe_builtins}
@@ -102,7 +132,7 @@ class CodeExecutionTool:
                 "code_executor",
             )
         except Exception as e:
-            return ToolResult(False, f"Execution error: {str(e)}", "code_executor")
+            return ToolResult(False, f"Execution error: {str(e)[:200]}", "code_executor")
 
 
 class WebSearchTool:
