@@ -1,6 +1,5 @@
 {
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
   "02-Backend/tests/test_e2e.py::TestUserJourneyAuthentication::test_complete_auth_journey": true,
-  "02-Backend/tests/test_e2e.py::TestUserJourneyAuthentication::test_invalid_login_rejected": true,
   "02-Backend/tests/test_security_regression.py::TestSecurityInputValidation::test_signup_password_required": true
 }
