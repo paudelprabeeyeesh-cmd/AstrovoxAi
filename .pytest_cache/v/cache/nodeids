@@ -316,5 +316,20 @@
   "02-Backend/tests/test_terminal.py::test_usage_reports_count_and_limit",
   "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_blocks_excess_requests",
   "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_counts_independent_users",
-  "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_get_count_starts_at_zero"
+  "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_get_count_starts_at_zero",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_add_step",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_cancel_execution",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_clone_non_template_fails",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_clone_workflow",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_create_template",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_create_workflow",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_execute_workflow",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_execute_workflow_with_dependencies",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_get_analytics",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_get_workflow",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_list_templates",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowEngine::test_list_workflows",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowExecution::test_execution_creation",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowStep::test_step_creation",
+  "02-Backend/tests/test_workflow_engine.py::TestWorkflowStep::test_step_with_dependencies"
 ]
