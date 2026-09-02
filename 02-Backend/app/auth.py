@@ -1,4 +1,5 @@
 import os
+import logging
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
@@ -8,6 +9,7 @@ from typing import Optional
 
 from .supabase_client import get_supabase
 
+logger = logging.getLogger(__name__)
 supabase = get_supabase()
 limiter = Limiter(key_func=get_remote_address)
 
