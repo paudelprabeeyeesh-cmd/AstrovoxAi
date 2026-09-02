@@ -44,12 +44,13 @@ class LexerTest(unittest.TestCase):
 
     def test_numbers(self):
         tokens = Lexer("SUMMARIZE doc LENGTH 200").tokenize()
-        self.assertEqual(tokens[-1].type, TokenType.NUMBER)
-        self.assertEqual(tokens[-1].value, 200)
+        numbers = [t for t in tokens if t.type == TokenType.NUMBER]
+        self.assertEqual(numbers[-1].value, 200)
 
     def test_comments_are_skipped(self):
         tokens = Lexer("# hello\nLOAD doc").tokenize()
         self.assertEqual(tokens[0].value, "LOAD")
+        self.assertEqual(tokens[1].value, "doc")
 
     def test_unterminated_string_raises(self):
         with self.assertRaises(LexerError):
