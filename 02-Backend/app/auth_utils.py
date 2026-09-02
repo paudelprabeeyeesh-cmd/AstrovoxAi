@@ -39,7 +39,6 @@ def get_user_id_from_token(authorization: str) -> str:
 
 async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
-    request: Optional[Request] = None,
 ) -> Dict[str, Any]:
     """FastAPI dependency that resolves the authenticated user.
 
