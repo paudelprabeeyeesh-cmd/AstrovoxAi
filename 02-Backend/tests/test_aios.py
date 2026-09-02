@@ -414,9 +414,11 @@ class SelfHealingTest(unittest.TestCase):
         self.assertTrue(breaker.allow())  # transitions to half-open
 
     def test_retry_policy(self):
-        policy = RetryPolicy(max_attempts=3, base_delay_s=0.0, max_delay_s=0.0)
-        self.assertEqual(policy.delay(0), 0.0)
+        policy = RetryPolicy(max_attempts=3, base_delay_s=0.1, max_delay_s=10.0)
+        self.assertGreater(policy.delay(0), 0.0)
         self.assertGreater(policy.delay(2), 0.0)
+        # Exponential backoff: delay(2) > delay(0)
+        self.assertGreater(policy.delay(2), policy.delay(0))
 
     def test_retrier_eventually_succeeds(self):
         reg = CircuitRegistry()
