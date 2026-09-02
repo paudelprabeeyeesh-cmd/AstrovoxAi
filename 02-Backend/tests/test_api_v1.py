@@ -53,10 +53,25 @@ class TestWorkflowAPI:
             resp = client.get("/api/v1/workflows", headers=auth_headers())
             assert resp.status_code == 200
 
+    def test_get_workflow(self, client):
+        with patch("app.auth_utils.get_supabase") as mock_supabase:
+            mock_supabase.return_value.auth.get_user.return_value = MagicMock(user=MagicMock(id="u1"))
+            resp = client.get("/api/v1/workflows/nonexistent", headers=auth_headers())
+            assert resp.status_code == 404
+
     def test_list_templates(self, client):
         with patch("app.auth_utils.get_supabase") as mock_supabase:
             mock_supabase.return_value.auth.get_user.return_value = MagicMock(user=MagicMock(id="u1"))
             resp = client.get("/api/v1/workflows/templates", headers=auth_headers())
+            assert resp.status_code == 200
+
+    def test_create_template(self, client):
+        with patch("app.auth_utils.get_supabase") as mock_supabase:
+            mock_supabase.return_value.auth.get_user.return_value = MagicMock(user=MagicMock(id="u1"))
+            resp = client.post("/api/v1/workflows/templates", json={
+                "name": "Template",
+                "steps": [{"name": "Step1", "action": "agent_task"}],
+            }, headers=auth_headers())
             assert resp.status_code == 200
 
 
