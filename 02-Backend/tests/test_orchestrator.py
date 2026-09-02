@@ -74,7 +74,7 @@ class TestAgentSelector:
         assert role == AgentRole.REVIEWER
 
     def test_select_security(self):
-        role = AgentSelector.select("Check for vulnerabilities")
+        role = AgentSelector.select("Scan for injection vulnerabilities")
         assert role == AgentRole.SECURITY
 
     def test_select_planner(self):
