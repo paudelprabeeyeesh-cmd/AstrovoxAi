@@ -140,3 +140,18 @@ purged ~360 junk files, and added the first DB migration.
 - **Observability**: distributed tracing, SLO tracking, metrics with histograms.
 - **Kernel FastAPI router**: 24 endpoints under /kernel/*.
 - **Tests**: 24 unit tests covering bus, artifacts, context, router, scheduler, agents, cost, evaluation, observability, end-to-end kernel handle.
+
+## [2.4.0] — Custom AI Execution Engine (Stage 34)
+
+### Added
+- **DSL**: lexer, parser, AST (LOAD, SAVE, SEARCH, SUMMARIZE, GENERATE, EMAIL, ANALYZE, ASK, PARALLEL).
+- **Compiler**: AST → execution graph with cost estimation, parallel-group detection, dead-step elimination, execution fusion, constant propagation, and plan caching.
+- **Runtime**: parallel execution, retries, timeouts, cancellation, checkpoints.
+- **Worker cluster**: registration, heartbeats, load balancing, dead-worker detection, rebalance.
+- **Memory brain**: working, long-term, episodic, semantic, procedural memory with forgetting, consolidation, compression.
+- **Reasoning engine**: chain, tree, graph, debate, reflection, verification with confidence estimation.
+- **Learning engine**: feedback, failures, latencies, retrieval/planner/tool/workflow quality, automated improvement reports.
+- **Performance lab**: profiler, LRU cache with TTL, batcher, load tester.
+- **Reliability**: fault injector, recovery engine, backups, chaos suite.
+- **API surface**: 14 routes under /executor/*.
+- **Tests**: 91 unit tests across all subsystems.
