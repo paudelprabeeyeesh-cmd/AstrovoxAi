@@ -1,11 +1,9 @@
 {
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
-  "02-Backend/tests/test_e2e.py::TestUserJourneyAuthentication::test_complete_auth_journey": true,
   "02-Backend/tests/test_e2e.py::TestClient": true,
   "02-Backend/tests/test_e2e.py::TestUserJourneyAuthentication": true,
   "02-Backend/tests/test_e2e.py::TestUserJourneyChat": true,
   "02-Backend/tests/test_e2e.py::TestUserJourneyMemory": true,
   "02-Backend/tests/test_e2e.py::TestUserJourneyEnterprise": true,
-  "02-Backend/tests/test_e2e.py::TestUserJourneyErrorRecovery": true,
-  "02-Backend/tests/test_e2e.py": true
+  "02-Backend/tests/test_e2e.py::TestUserJourneyErrorRecovery": true
 }
