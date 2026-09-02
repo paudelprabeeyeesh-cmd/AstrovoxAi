@@ -154,6 +154,40 @@ async def list_workflows(authorization: str = Header(None)):
     }
 
 
+@router.get("/workflows/templates")
+async def list_templates(authorization: str = Header(None)):
+    """List workflow templates."""
+    user_id = get_user_id_from_token(authorization)
+    templates = workflow_engine.list_templates()
+    return {
+        "status": "OK",
+        "templates": [
+            {"id": t.id, "name": t.name, "steps": len(t.steps)}
+            for t in templates
+        ],
+    }
+
+
+@router.post("/workflows/templates")
+async def create_template(request: WorkflowCreateRequest, authorization: str = Header(None)):
+    """Create a workflow template."""
+    user_id = get_user_id_from_token(authorization)
+    template = workflow_engine.create_template(request.name, request.description)
+
+    for step_data in request.steps:
+        workflow_engine.add_step(
+            template.id,
+            step_data.get("name", "Step"),
+            StepAction(step_data.get("action", "agent_task")),
+            step_data.get("config", {}),
+        )
+
+    return {
+        "status": "OK",
+        "template": {"id": template.id, "name": template.name},
+    }
+
+
 @router.get("/workflows/{workflow_id}")
 async def get_workflow(workflow_id: str, authorization: str = Header(None)):
     """Get workflow details."""
@@ -199,41 +233,7 @@ async def execute_workflow(workflow_id: str, authorization: str = Header(None)):
     }
 
 
-@router.get("/workflows/templates")
-async def list_templates(authorization: str = Header(None)):
-    """List workflow templates."""
-    user_id = get_user_id_from_token(authorization)
-    templates = workflow_engine.list_templates()
-    return {
-        "status": "OK",
-        "templates": [
-            {"id": t.id, "name": t.name, "steps": len(t.steps)}
-            for t in templates
-        ],
-    }
-
-
-@router.post("/workflows/templates")
-async def create_template(request: WorkflowCreateRequest, authorization: str = Header(None)):
-    """Create a workflow template."""
-    user_id = get_user_id_from_token(authorization)
-    template = workflow_engine.create_template(request.name, request.description)
-
-    for step_data in request.steps:
-        workflow_engine.add_step(
-            template.id,
-            step_data.get("name", "Step"),
-            StepAction(step_data.get("action", "agent_task")),
-            step_data.get("config", {}),
-        )
-
-    return {
-        "status": "OK",
-        "template": {"id": template.id, "name": template.name},
-    }
-
-
-@router.post("/workflows/{template_id}/clone")
+@router.post("/workflows/clone/{template_id}")
 async def clone_workflow(template_id: str, name: str = "", authorization: str = Header(None)):
     """Clone a workflow template."""
     user_id = get_user_id_from_token(authorization)
