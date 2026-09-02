@@ -372,3 +372,108 @@ All errors follow this format:
 | 500 | Internal Server Error |
 | 502 | Bad Gateway (provider error) |
 | 503 | Service Unavailable |
+
+
+---
+
+## Ecosystem & Developer Platform (Stage 22)
+
+Stage 22 adds a fully featured developer platform under /ecosystem/*. See
+[DEVELOPER_PLATFORM.md](DEVELOPER_PLATFORM.md) for an overview and the
+following guides for specifics:
+
+- [PLUGIN_DEVELOPER_GUIDE.md](PLUGIN_DEVELOPER_GUIDE.md)
+- [WEBHOOKS.md](WEBHOOKS.md)
+- [SDK.md](SDK.md)
+- [INTEGRATIONS.md](INTEGRATIONS.md)
+- [SECURITY_BEST_PRACTICES.md](SECURITY_BEST_PRACTICES.md)
+
+### Plugin lifecycle
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/plugins | List installed plugins |
+| GET    | /ecosystem/plugins/discover | Discover plugin manifests |
+| POST   | /ecosystem/plugins/install | Install a plugin |
+| POST   | /ecosystem/plugins/{id}/enable | Enable a plugin |
+| POST   | /ecosystem/plugins/{id}/disable | Disable a plugin |
+| DELETE | /ecosystem/plugins/{id} | Uninstall a plugin |
+| POST   | /ecosystem/plugins/{id}/update | Upgrade a plugin |
+| PUT    | /ecosystem/plugins/{id}/config | Update configuration |
+| POST   | /ecosystem/plugins/{id}/permissions | Grant permissions |
+| DELETE | /ecosystem/plugins/{id}/permissions | Revoke permissions |
+| POST   | /ecosystem/plugins/{id}/invoke | Invoke a plugin method |
+
+### Public API platform
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/api/endpoints | List API endpoints |
+| POST   | /ecosystem/api/keys | Issue an API key |
+| GET    | /ecosystem/api/keys | List API keys |
+| DELETE | /ecosystem/api/keys/{id} | Revoke an API key |
+| GET    | /ecosystem/api/analytics | API usage analytics |
+| POST   | /ecosystem/api/oauth/clients | Register an OAuth client |
+| POST   | /ecosystem/api/oauth/authorize | Issue an auth code |
+| POST   | /ecosystem/api/oauth/token | Exchange a code/token |
+| GET    | /ecosystem/api/oauth/introspect | Inspect a token |
+
+### Webhooks
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/webhooks/events | List event types |
+| POST   | /ecosystem/webhooks/subscriptions | Subscribe to events |
+| GET    | /ecosystem/webhooks/subscriptions | List subscriptions |
+| DELETE | /ecosystem/webhooks/subscriptions/{id} | Delete a subscription |
+| POST   | /ecosystem/webhooks/subscriptions/{id}/pause | Pause delivery |
+| POST   | /ecosystem/webhooks/subscriptions/{id}/resume | Resume delivery |
+| POST   | /ecosystem/webhooks/publish | Publish an event |
+| GET    | /ecosystem/webhooks/deliveries | Tail delivery log |
+| GET    | /ecosystem/webhooks/dlq | Tail dead-letter queue |
+| GET    | /ecosystem/webhooks/analytics | Aggregate metrics |
+| POST   | /ecosystem/webhooks/verify | Verify an incoming signature |
+
+### Third-party integrations
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/integrations/catalog | List supported providers |
+| GET    | /ecosystem/integrations/categories | Browse by category |
+| POST   | /ecosystem/integrations/connections | Connect a provider |
+| GET    | /ecosystem/integrations/connections | List connections |
+| DELETE | /ecosystem/integrations/connections/{id} | Disconnect |
+| POST   | /ecosystem/integrations/connections/{id}/invoke | Run an action |
+
+### Marketplace
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/marketplace/listings | Search listings |
+| GET    | /ecosystem/marketplace/categories | Categories |
+| GET    | /ecosystem/marketplace/listings/{id} | Listing detail |
+| POST   | /ecosystem/marketplace/listings/{id}/install | Install |
+| DELETE | /ecosystem/marketplace/listings/{id} | Uninstall |
+| POST   | /ecosystem/marketplace/listings/{id}/toggle | Enable/disable |
+| POST   | /ecosystem/marketplace/listings/{id}/ratings | Rate |
+| GET    | /ecosystem/marketplace/notifications | Update notifications |
+
+### Monitoring, audit, security
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/monitoring/summary | Aggregated metrics |
+| GET    | /ecosystem/monitoring/health | Ecosystem health |
+| GET    | /ecosystem/monitoring/adoption | Plugin usage trends |
+| GET    | /ecosystem/monitoring/events | Recent events |
+| GET    | /ecosystem/audit | Audit log entries |
+| POST   | /ecosystem/security/scan | Scan deps/source |
+| POST   | /ecosystem/security/secrets/encrypt | Encrypt a secret |
+| POST   | /ecosystem/security/secrets/decrypt | Decrypt a secret |
+
+### Public SDK info
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET    | /ecosystem/public/info | Platform info |
+| GET    | /ecosystem/public/health | Public health check |
