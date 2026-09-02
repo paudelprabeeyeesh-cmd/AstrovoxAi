@@ -124,3 +124,19 @@ purged ~360 junk files, and added the first DB migration.
 - **SDKs**: official Python SDK (pp.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
 - **Monitoring**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber, and dependency/secret scan endpoints.
 - **Docs**: DEVELOPER_PLATFORM.md, PLUGIN_DEVELOPER_GUIDE.md, WEBHOOKS.md, SDK.md, INTEGRATIONS.md, SECURITY_BEST_PRACTICES.md.
+
+## [2.3.0] — Distributed Multimodal Intelligence Engine (Stage 31)
+
+### Added
+- **Intelligence Kernel** (pp/kernel/): central facade coordinating context, routing, artifacts, scheduling, agents, cost, and observability.
+- **Event bus**: in-process pub/sub for cross-module decoupling.
+- **Artifact system**: universal artifact types with version history and lineage.
+- **Context engine**: token-budgeted, deduplicated, rank-ordered context composition.
+- **Model router**: cost/latency/quality/capability-aware routing with fallback chain.
+- **Workflow scheduler**: DAG-based execution with retries, approval gates, and checkpoints.
+- **Agent runtime**: planning, reflection, working memory, inter-agent messaging, tool permissions.
+- **Cost manager**: per-workspace quotas, cost estimation, usage rollups.
+- **Evaluation framework**: per-response evaluation records and aggregates.
+- **Observability**: distributed tracing, SLO tracking, metrics with histograms.
+- **Kernel FastAPI router**: 24 endpoints under /kernel/*.
+- **Tests**: 24 unit tests covering bus, artifacts, context, router, scheduler, agents, cost, evaluation, observability, end-to-end kernel handle.
