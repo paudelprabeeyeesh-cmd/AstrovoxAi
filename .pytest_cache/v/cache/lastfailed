@@ -1,3 +1,5 @@
 {
-  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
+  "02-Backend/tests/test_dashboard.py::TestDashboardRoutes::test_get_stats": true,
+  "02-Backend/tests/test_dashboard.py::TestDashboardRoutes::test_get_tasks": true
 }
