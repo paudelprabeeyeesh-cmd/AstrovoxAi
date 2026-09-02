@@ -203,6 +203,8 @@ class PluginRecord:
     load_count: int = 0
     invocation_count: int = 0
     last_invoked: Optional[str] = None
+    installed_at: Optional[str] = None
+    updated_at: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -214,6 +216,8 @@ class PluginRecord:
             "load_count": self.load_count,
             "invocation_count": self.invocation_count,
             "last_invoked": self.last_invoked,
+            "installed_at": self.installed_at,
+            "updated_at": self.updated_at,
         }
 
 
