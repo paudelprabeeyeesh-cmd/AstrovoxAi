@@ -151,8 +151,7 @@ async def get_conversation_messages(
 
 
 @router.post("/message")
-@limiter.limit("30/minute")
-async def send_message(request: Request, body: SendMessageRequest, authorization: str = Header(None)):
+async def send_message(body: SendMessageRequest, authorization: str = Header(None)):
     """Send a message and get AI response (multi-provider, with optional streaming)"""
     user_id = get_user_id_from_token(authorization)
 
