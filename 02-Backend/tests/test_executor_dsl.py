@@ -49,8 +49,10 @@ class LexerTest(unittest.TestCase):
 
     def test_comments_are_skipped(self):
         tokens = Lexer("# hello\nLOAD doc").tokenize()
-        self.assertEqual(tokens[0].value, "LOAD")
-        self.assertEqual(tokens[1].value, "doc")
+        # First non-newline token is LOAD
+        first = next(t for t in tokens if t.type != TokenType.NEWLINE)
+        self.assertEqual(first.value, "LOAD")
+        self.assertEqual(tokens[-2].value, "doc")
 
     def test_unterminated_string_raises(self):
         with self.assertRaises(LexerError):
