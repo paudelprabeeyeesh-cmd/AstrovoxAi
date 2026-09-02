@@ -77,11 +77,15 @@ class CompilerTest(unittest.TestCase):
             'LOAD "a" AS a\n'
             'ASK "x" AS q\n'
             'SUMMARIZE q LENGTH 50 AS unused\n'
+            'ASK "final" AS final_result\n'
         )
         graph = compile_program(program)
-        # 'unused' has no consumer; should be removed.
+        # 'unused' has no consumer and is not first or last; should be removed.
         outputs = {s.output for s in graph.steps if s.output}
         self.assertNotIn("unused", outputs)
+        # First and last steps should be preserved
+        self.assertIn("a", outputs)
+        self.assertIn("final_result", outputs)
 
     def test_fusion(self):
         program = parse(

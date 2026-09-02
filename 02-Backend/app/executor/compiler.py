@@ -402,21 +402,32 @@ class Compiler:
     def _dead_step_elimination(self, graph: ExecutionGraph) -> None:
         """Remove steps whose outputs are never read.
 
-        Steps with side effects (EMAIL, SAVE) are preserved, as are steps
-        that are explicitly the root of the program.
+        Steps with side effects (EMAIL, SAVE) are preserved.  Steps that
+        are roots of the program (no incoming references) are also
+        preserved, and the last step in the original program is kept so
+        the plan always has a meaningful output.
         """
         used: set[str] = set()
         for step in graph.steps:
             used.update(step.inputs)
         side_effect_kinds = {StepKind.EMAIL, StepKind.SAVE}
+        original_order = list(graph.steps)
         before = len(graph.steps)
-        graph.steps = [
-            s
-            for s in graph.steps
-            if s.kind in side_effect_kinds
-            or s.id in used
-            or s.id == (graph.steps[0].id if graph.steps else None)
-        ]
+        kept: List[Step] = []
+        for idx, s in enumerate(original_order):
+            if s.kind in side_effect_kinds:
+                kept.append(s)
+                continue
+            if s.id in used:
+                kept.append(s)
+                continue
+            if idx == 0:
+                kept.append(s)
+                continue
+            if idx == len(original_order) - 1:
+                kept.append(s)
+                continue
+        graph.steps = kept
         after = len(graph.steps)
         if before != after:
             self.optimizations_applied.append(f"dead_step_elimination: removed {before - after}")
