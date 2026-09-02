@@ -204,8 +204,14 @@ class WorkflowScheduler:
         if not self._dag:
             return {"ok": False, "error": "no DAG loaded"}
         dag = self._dag
-        order = dag.topological()
-        tasks: List[asyncio.Task[Any]] = []
+        remaining: Dict[str, Job] = dict(dag.jobs)
+        completed: List[str] = []
+        failed: List[str] = []
+        # Track jobs that are waiting on approval to break out of the loop.
+        waiting_for_approval: set[str] = set()
+        # Bound the outer loop to avoid infinite waits.
+        max_iterations = len(dag.jobs) * 4 + 16
+        iteration = 0
 
         async def _runner(job: Job) -> None:
             async with self._sem:
@@ -241,11 +247,8 @@ class WorkflowScheduler:
                     {"id": job.id, "name": job.name, "error": job.error},
                 )
 
-        # Iterate level by level so we can stop on critical failures.
-        remaining: Dict[str, Job] = dict(dag.jobs)
-        completed: List[str] = []
-        failed: List[str] = []
-        while remaining:
+        while remaining and iteration < max_iterations:
+            iteration += 1
             ready = [
                 job
                 for job in remaining.values()
@@ -253,16 +256,25 @@ class WorkflowScheduler:
                 and not (job.requires_approval and not job.approved)
             ]
             if not ready:
-                # Either waiting on approval, blocked, or only failures left.
                 waiting = [
                     j
                     for j in remaining.values()
                     if j.requires_approval and not j.approved
                 ]
+                # Mark any job whose deps failed/skipped as skipped.
+                for j in list(remaining.values()):
+                    if any(
+                        dag.jobs[dep].state in {JobState.FAILED, JobState.SKIPPED}
+                        for dep in j.depends_on
+                        if dep in dag.jobs
+                    ):
+                        j.state = JobState.SKIPPED
+                        remaining.pop(j.id, None)
                 if not waiting:
                     break
-                await asyncio.sleep(0.05)
-                continue
+                # Record and exit so callers can approve and re-run.
+                waiting_for_approval = {j.id for j in waiting}
+                break
             ready.sort(key=lambda j: j.priority, reverse=True)
             tasks = [asyncio.create_task(_runner(j)) for j in ready]
             for j in ready:
@@ -273,16 +285,16 @@ class WorkflowScheduler:
                     completed.append(j.id)
                 elif j.state == JobState.FAILED:
                     failed.append(j.id)
-                    # Mark downstream as skipped.
                     for downstream in dag._adjacency.get(j.id, []):
                         ds = dag.jobs.get(downstream)
                         if ds and ds.state == JobState.PENDING:
                             ds.state = JobState.SKIPPED
 
         return {
-            "ok": not failed,
+            "ok": not failed and not waiting_for_approval,
             "completed": completed,
             "failed": failed,
+            "awaiting_approval": sorted(waiting_for_approval),
             "succeeded": len(completed),
             "failed_count": len(failed),
             "total": len(dag.jobs),

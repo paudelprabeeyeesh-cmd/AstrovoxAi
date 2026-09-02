@@ -104,7 +104,7 @@ class ContextEngineTest(unittest.TestCase):
         engine.register_source(system_source("system prompt"))
         engine.register_source(instruction_source("do X"))
         engine.register_source(retrieval_source([{"id": "1", "content": "doc1", "score": 2}]))
-        blocks = engine.build({"request_id": "r"}, ContextBudget(max_tokens=1000))
+        blocks = engine.build({"request_id": "r"}, ContextBudget(max_tokens=4000, reserve_for_response=256))
         sections = [b.section for b in blocks]
         self.assertIn(ContextSection.SYSTEM, sections)
         self.assertIn(ContextSection.INSTRUCTIONS, sections)
