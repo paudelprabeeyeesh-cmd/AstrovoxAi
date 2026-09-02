@@ -36,6 +36,7 @@ from .realtime_route import tools_router
 from .realtime_route import security_router as scan_router
 from .agents_route import router as agents_router
 from .agents_route import memory_router as memory_v2_router
+from .document_route import router as document_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -102,6 +103,7 @@ app.include_router(tools_router)
 app.include_router(scan_router)
 app.include_router(agents_router)
 app.include_router(memory_v2_router)
+app.include_router(document_router)
 
 
 # Prometheus metrics middleware

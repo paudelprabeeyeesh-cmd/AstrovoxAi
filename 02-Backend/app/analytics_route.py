@@ -1,5 +1,7 @@
-"""Analytics API routes — dashboard data and usage statistics."""
+"""Analytics API routes — comprehensive analytics endpoints."""
 
+import json
+from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, Header
 from typing import Optional
 
@@ -63,3 +65,91 @@ async def get_daily_usage(
     """Get daily usage counts."""
     user_id = get_user_id_from_token(authorization)
     return {"status": "OK", "daily_usage": analytics.get_daily_usage(days=days)}
+
+
+@router.get("/overview")
+async def get_overview(authorization: str = Header(None), days: int = 7):
+    """Get platform-wide analytics overview."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_overview(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/ai-usage")
+async def get_ai_usage(authorization: str = Header(None), days: int = 7):
+    """Get AI usage analytics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_ai_usage_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/tokens")
+async def get_token_analytics(authorization: str = Header(None), days: int = 7):
+    """Get token usage analytics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_token_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/costs")
+async def get_cost_analytics(authorization: str = Header(None), days: int = 7):
+    """Get cost analytics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_cost_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/models")
+async def get_model_performance(authorization: str = Header(None), days: int = 7):
+    """Get model performance comparison."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_model_performance(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/search")
+async def get_search_analytics(authorization: str = Header(None), days: int = 7):
+    """Get search quality metrics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_search_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/knowledge")
+async def get_knowledge_analytics(authorization: str = Header(None), days: int = 7):
+    """Get knowledge growth metrics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_knowledge_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/workflows")
+async def get_workflow_analytics(authorization: str = Header(None), days: int = 7):
+    """Get workflow statistics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_workflow_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/agents")
+async def get_agent_analytics(authorization: str = Header(None), days: int = 7):
+    """Get agent performance metrics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_agent_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/users")
+async def get_user_analytics(authorization: str = Header(None), days: int = 7):
+    """Get user activity metrics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_user_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/export")
+async def export_analytics(authorization: str = Header(None), days: int = 30, format: str = "json"):
+    """Export analytics data."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.export_analytics(days=days, format=format)
+    return {"status": "OK", "data": data}
