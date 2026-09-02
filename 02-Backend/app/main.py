@@ -30,6 +30,7 @@ from .admin_route import router as admin_router
 from .realtime_route import router as realtime_router
 from .dashboard_route import router as dashboard_router
 from .api_v1 import router as api_v1_router
+from .platform_route import router as platform_router
 from .realtime_route import tools_router
 from .realtime_route import security_router as scan_router
 from .agents_route import router as agents_router
@@ -94,6 +95,7 @@ app.include_router(admin_router)
 app.include_router(realtime_router)
 app.include_router(dashboard_router)
 app.include_router(api_v1_router)
+app.include_router(platform_router)
 app.include_router(tools_router)
 app.include_router(scan_router)
 app.include_router(agents_router)
