@@ -364,7 +364,7 @@ class EcosystemMonitorTest(unittest.TestCase):
     def test_record_and_summary(self):
         monitor = EcosystemMonitor()
         monitor.record("plugin.installed", {"plugin_id": "github"}, plugin_id="github")
-        monitor.record("plugin.installed", {}, plugin_id="github", payload={"error": "boom"})
+        monitor.record("plugin.error", error="boom", plugin_id="github")
         summary = monitor.summary()
         self.assertEqual(summary["total_events"], 2)
         self.assertIn("github", summary["plugins"])
