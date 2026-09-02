@@ -178,3 +178,100 @@ class NotificationCenter:
 comment_manager = CommentManager()
 presence_tracker = PresenceTracker()
 notification_center = NotificationCenter()
+
+
+# ============================================================================
+# Phase 21 — Real-time collaboration enhancements
+# ============================================================================
+
+@dataclass
+class TypingIndicator:
+    """Tracks a user's typing state within a resource."""
+    user_id: str
+    resource_type: str
+    resource_id: str
+    started_at: float = 0.0
+
+    def __post_init__(self):
+        if self.started_at == 0:
+            self.started_at = time.time()
+
+
+class TypingTracker:
+    """Track who is currently typing in each shared resource."""
+
+    def __init__(self):
+        self._typing: dict[str, TypingIndicator] = {}
+
+    @staticmethod
+    def _key(resource_type: str, resource_id: str, user_id: str) -> str:
+        return f"{resource_type}:{resource_id}:{user_id}"
+
+    def start_typing(self, user_id: str, resource_type: str, resource_id: str) -> TypingIndicator:
+        """Mark a user as typing."""
+        indicator = TypingIndicator(
+            user_id=user_id,
+            resource_type=resource_type,
+            resource_id=resource_id,
+        )
+        self._typing[self._key(resource_type, resource_id, user_id)] = indicator
+        return indicator
+
+    def stop_typing(self, user_id: str, resource_type: str, resource_id: str) -> bool:
+        """Clear a user's typing indicator."""
+        return self._typing.pop(self._key(resource_type, resource_id, user_id), None) is not None
+
+    def get_typing(self, resource_type: str, resource_id: str) -> list[TypingIndicator]:
+        """List users currently typing in a resource (within 15s window)."""
+        now = time.time()
+        active: list[TypingIndicator] = []
+        expired_keys: list[str] = []
+        for key, indicator in self._typing.items():
+            if indicator.resource_type != resource_type or indicator.resource_id != resource_id:
+                continue
+            if now - indicator.started_at > 15:
+                expired_keys.append(key)
+            else:
+                active.append(indicator)
+        for key in expired_keys:
+            self._typing.pop(key, None)
+        return active
+
+
+class FileShareManager:
+    """Workspace-scoped file sharing registry."""
+
+    def __init__(self):
+        self._files: dict[str, dict] = {}
+
+    def share(
+        self,
+        workspace_id: str,
+        filename: str,
+        user_id: str,
+        url: str = "",
+        size_bytes: int = 0,
+        content_type: str = "",
+    ) -> dict:
+        """Record a shared file."""
+        import secrets
+        record = {
+            "id": secrets.token_hex(8),
+            "workspace_id": workspace_id,
+            "name": filename,
+            "url": url,
+            "size_bytes": size_bytes,
+            "content_type": content_type,
+            "uploaded_by": user_id,
+            "created_at": time.time(),
+        }
+        self._files[record["id"]] = record
+        return record
+
+    def list_for_workspace(self, workspace_id: str) -> list[dict]:
+        """List files shared in a workspace."""
+        return [f for f in self._files.values() if f["workspace_id"] == workspace_id]
+
+
+typing_tracker = TypingTracker()
+file_share_manager = FileShareManager()
