@@ -7,7 +7,9 @@ from typing import Optional, Dict, Any
 
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
+from typing import Optional, Dict, Any
 
+from .analytics import analytics
 from .auth_utils import get_user_id_from_token
 from .logging_config import logger
 from .supabase_client import get_supabase
@@ -83,6 +85,8 @@ async def track_event(
             },
         )
 
+        analytics.track_user_action(user_id, event.event_name, event.metadata or {})
+
         return {
             "status": "OK",
             "event_id": response.data[0].get("id") if response.data else None,
@@ -126,6 +130,8 @@ async def track_page_view(
             f"Page view tracked: {event.page}",
             extra={"user_id": user_id, "page": event.page},
         )
+
+        analytics.track_user_session(user_id, "page_view", "navigation")
 
         return {
             "status": "OK",
@@ -176,6 +182,8 @@ async def track_error(
             extra={"user_id": user_id, "stack_trace": event.stack_trace},
         )
 
+        analytics.track_error(user_id, event.error_name, event.error_message)
+
         return {
             "status": "OK",
             "event_id": response.data[0].get("id") if response.data else None,
@@ -221,6 +229,9 @@ async def track_user_action(
                 "action": event.action,
             },
         )
+
+        analytics.track_user_action(user_id, event.action, event.metadata)
+        analytics.track_user_session(user_id, event.action, event.category)
 
         return {
             "status": "OK",
