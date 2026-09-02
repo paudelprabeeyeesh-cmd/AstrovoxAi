@@ -122,16 +122,19 @@ class DashboardService:
         """Get list of currently running tasks."""
         from .multi_agent import agent_orchestrator
         tasks = []
-        for task in agent_orchestrator._tasks:
-            if task.status == "running":
-                tasks.append(TaskView(
-                    id=task.id,
-                    name=task.description[:50],
-                    agent=task.agent_role,
-                    status=task.status,
-                    progress=0.5,
-                    started_at=time.time(),
-                ))
+
+        sessions = agent_orchestrator._sessions.values() if hasattr(agent_orchestrator, '_sessions') else []
+        for session in sessions:
+            for task in session.tasks:
+                if task.status == TaskStatus.IN_PROGRESS:
+                    tasks.append(TaskView(
+                        id=task.id,
+                        name=task.description[:50],
+                        agent=task.agent_role if hasattr(task, 'agent_role') else task.role.value,
+                        status=task.status.value if hasattr(task.status, 'value') else str(task.status),
+                        progress=0.5,
+                        started_at=time.time(),
+                    ))
         return tasks
 
     def get_workflow_status(self) -> list[WorkflowView]:
