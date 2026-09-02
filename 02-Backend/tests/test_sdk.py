@@ -6,7 +6,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-from app.ecosystem.sdk import AstrovoxClient, AstrovoxError, sign_payload, verify_payload
+from app.ecosystem.sdk import AstrovoxClient, AstrovoxError
+from app.ecosystem.api_platform import sign_payload, verify_signature as verify_payload
 
 
 class _StubResponse:

@@ -649,7 +649,7 @@ def get_api_registry() -> ApiRegistry:
 
 from fastapi import Depends, Header, HTTPException, Request, status  # noqa: E402
 
-from .auth_utils import get_current_user  # noqa: E402
+from ..auth_utils import get_current_user  # noqa: E402
 
 
 async def require_api_key(
