@@ -3,6 +3,19 @@ import os
 from logging.handlers import RotatingFileHandler
 
 
+def get_logger(name: str = "astravox") -> logging.Logger:
+    """Return a configured logger instance.
+
+    A thin wrapper so callers can opt into a child logger without
+    having to know how the root logger is configured.
+    """
+
+    root = logging.getLogger("astravox")
+    if not root.handlers:
+        configure_logging()
+    return root.getChild(name)
+
+
 def configure_logging():
     """Configure centralized logging for the application."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
