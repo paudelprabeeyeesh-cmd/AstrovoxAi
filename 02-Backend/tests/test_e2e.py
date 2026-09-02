@@ -32,16 +32,16 @@ def mock_supabase():
     mock_session.access_token = "test-access-token"
     mock_session.refresh_token = "test-refresh-token"
 
-    mock_response = MagicMock()
-    mock_response.user = mock_user
-    mock_response.session = mock_session
+    mock_auth_response = MagicMock()
+    mock_auth_response.user = mock_user
+    mock_auth_response.session = mock_session
 
     mock_auth = MagicMock()
-    mock_auth.get_user.return_value = mock_response
-    mock_auth.sign_up.return_value = mock_response
-    mock_auth.sign_in_with_password.return_value = mock_response
-    mock_auth.sign_in_with_otp.return_value = mock_response
-    mock_auth.refresh_session.return_value = mock_response
+    mock_auth.get_user.return_value = mock_auth_response
+    mock_auth.sign_up.return_value = mock_auth_response
+    mock_auth.sign_in_with_password.return_value = mock_auth_response
+    mock_auth.sign_in_with_otp.return_value = mock_auth_response
+    mock_auth.refresh_session.return_value = mock_auth_response
 
     mock_table = MagicMock()
     mock_table.insert.return_value = mock_table
