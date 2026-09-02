@@ -112,3 +112,15 @@ purged ~360 junk files, and added the first DB migration.
 - `uvicorn app.main:app` boot + live health checks → ✅
 - DB migration executed against a live Supabase instance → **NOT VERIFIED**
   (no Supabase credentials in this environment; SQL is idempotent + syntax-reviewed).
+
+## [2.2.0] — Platform Ecosystem (Stage 22)
+
+### Added
+- **Plugin framework**: manifest-driven loader, lifecycle (install/enable/disable/update/invoke), versioning, dependency resolution, sandbox, permission model, per-plugin storage, hooks.
+- **Public API platform**: API key issuance + verification, OAuth 2.0 (authorization code, client credentials, refresh), standardized error envelope, rate limiting policies, and analytics aggregation.
+- **Webhooks**: incoming + outgoing delivery with HMAC-SHA256 signatures, exponential-backoff retries, dead-letter queue, filters, event subscriptions, and an analytics endpoint.
+- **Third-party integrations**: typed adapters for GitHub, GitLab, Slack, Discord, Google Drive, OneDrive, Dropbox, Notion, Jira, and Trello with PKCE-friendly OAuth helpers.
+- **Marketplace**: catalog, search, ratings, categories, version history, install/uninstall, update notifications, and permissions overview.
+- **SDKs**: official Python SDK (pp.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
+- **Monitoring**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber, and dependency/secret scan endpoints.
+- **Docs**: DEVELOPER_PLATFORM.md, PLUGIN_DEVELOPER_GUIDE.md, WEBHOOKS.md, SDK.md, INTEGRATIONS.md, SECURITY_BEST_PRACTICES.md.
