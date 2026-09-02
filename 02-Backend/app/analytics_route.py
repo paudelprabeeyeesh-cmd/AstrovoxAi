@@ -1,9 +1,6 @@
 """Analytics API routes — comprehensive analytics endpoints."""
 
-import json
-from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, status, Header
-from typing import Optional
+from fastapi import APIRouter, Header
 
 from .analytics import analytics
 from .auth_utils import get_user_id_from_token
