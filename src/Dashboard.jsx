@@ -244,7 +244,7 @@ export default function Dashboard({ session }) {
           letterSpacing: '0.5px',
           padding: '16px'
         }}>
-          ASTRAVOX PRIME v2.0.6 · Built by Prabesh Paudel, Dipson Baral & Susanta AI
+          ASTRAVOX PRIME v2.0.6 · Built by Astrovox Team
           <span style={{ margin: '0 12px' }}>|</span>
           <span style={{ color: '#334155' }}>SYSTEM STATUS: {dbStatus === 'online' ? '🟢 OPERATIONAL' : '⚠️ DEGRADED'}</span>
         </div>

@@ -313,7 +313,7 @@ MIT License
 
 **Dipson Baral** - Co-Founder, Senior Full-Stack Software Engineer
 
-**Susanta Baral** - AI Research Engineer, Machine Learning Engineer
+**Ranjit Paudel** - Co-member of Astrovox
 
 ---
 
