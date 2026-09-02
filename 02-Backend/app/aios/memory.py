@@ -70,12 +70,13 @@ class HotStore:
         self._data: Dict[str, MemoryRecord] = {}
 
     def put(self, key: str, value: Any, *, tier: MemoryTier = MemoryTier.HOT, ttl: Optional[float] = None, **meta: Any) -> MemoryRecord:
+        expires_at = (now() + ttl) if ttl is not None else None
         record = MemoryRecord(
             key=key,
             value=value,
             tier=tier,
             metadata=dict(meta),
-            expires_at=(now() + ttl) if ttl else None,
+            expires_at=expires_at,
         )
         self._data[key] = record
         return record
