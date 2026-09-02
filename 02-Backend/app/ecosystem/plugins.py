@@ -331,9 +331,11 @@ class HookBus:
         results: List[Any] = []
         for handler in list(self._subscribers.get(event, [])):
             try:
-                results.append(handler(*args, **kwargs))
+                result = handler(*args, **kwargs)
+                results.append(result)
             except Exception as exc:  # pragma: no cover - defensive
                 logger.warning("hook %s failed: %s", event, exc)
+                results.append(None)
         return results
 
 
