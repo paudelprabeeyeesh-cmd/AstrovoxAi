@@ -268,10 +268,27 @@ class DistributedScheduler:
         completed: List[str] = []
         failed: List[str] = []
         iteration = 0
+        # Promote PENDING -> READY for jobs whose deps are satisfied.
+        for job in self.queue._jobs.values():
+            if job.state == JobState.PENDING and all(
+                (d in [j.id for j in self.queue._jobs.values()])
+                and self.queue._jobs[d].state == JobState.SUCCEEDED
+                for d in job.depends_on
+            ):
+                job.state = JobState.READY
+                self.queue.push(job)
         while now() - start < deadline_s:
             iteration += 1
             self.queue.sweep_expired_leases()
-            # Skip ready jobs whose dependencies haven't finished.
+            # Re-promote newly-unblocked jobs.
+            for job in self.queue._jobs.values():
+                if job.state == JobState.PENDING and all(
+                    (d in [j.id for j in self.queue._jobs.values()])
+                    and self.queue._jobs[d].state == JobState.SUCCEEDED
+                    for d in job.depends_on
+                ):
+                    job.state = JobState.READY
+                    self.queue.push(job)
             ready_jobs = [j for j in self.queue._jobs.values() if j.state == JobState.READY]
             progressed = False
             for job in ready_jobs:

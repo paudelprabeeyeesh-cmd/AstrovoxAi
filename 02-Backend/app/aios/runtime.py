@@ -44,7 +44,7 @@ class AgentQuota:
         self.used_concurrent += 1
         self.used_tasks += 1
         self.used_tokens += tokens
-        if self.used_tasks >= self.max_tasks_per_minute * 0.8:
+        if self.used_tasks >= self.max_tasks_per_minute * 0.8 and self.max_tasks_per_minute > 2:
             return QuotaUsage.WARNING
         return QuotaUsage.OK
 

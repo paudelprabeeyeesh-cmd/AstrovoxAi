@@ -253,12 +253,13 @@ class MemoryManager:
         compress: bool = False,
         **meta: Any,
     ) -> MemoryRecord:
+        expires_at = (now() + ttl) if ttl is not None else None
         record = MemoryRecord(
             key=key,
             value=value,
             tier=tier,
             metadata=meta,
-            expires_at=(now() + ttl) if ttl else None,
+            expires_at=expires_at,
             compressed=compress,
         )
         if record.checksum in self._dedup_index and self._dedup_index[record.checksum] != key:

@@ -37,11 +37,11 @@ class Policy:
     description: str = ""
 
     def matches(self, *, action: str, resource: str, principal: str, context: Dict[str, Any]) -> bool:
-        if self.actions and action not in self.actions:
+        if self.actions and "*" not in self.actions and action not in self.actions:
             return False
-        if self.resources and resource not in self.resources:
+        if self.resources and "*" not in self.resources and resource not in self.resources:
             return False
-        if self.principals and principal not in self.principals:
+        if self.principals and "*" not in self.principals and principal not in self.principals:
             return False
         for key, expected in self.conditions.items():
             if context.get(key) != expected:
