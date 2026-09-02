@@ -11,7 +11,7 @@ from ..auth_utils import get_current_user
 from .agents import AgentSpec, get_agent_registry
 from .artifacts import Artifact, ArtifactType, get_artifact_registry
 from .bus import get_event_bus
-from .context import ContextBudget, get_intelligence_kernel, ContextEngine
+from .context import ContextBudget, ContextEngine
 from .cost import Quota, get_cost_manager
 from .evaluation import get_evaluation_store
 from .observability import SLODefinition, get_observability
