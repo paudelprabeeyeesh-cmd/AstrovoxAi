@@ -101,13 +101,17 @@ class DashboardService:
         analytics = agent_orchestrator.get_analytics()
         wf_analytics = workflow_engine.get_analytics()
 
+        total_tasks = 0
+        agents = analytics.get("agents", [])
+        if isinstance(agents, list):
+            for a in agents:
+                if isinstance(a, dict):
+                    total_tasks += a.get("total_tasks", 0)
+
         return DashboardStats(
             total_agents=analytics.get("total_agents", 0),
             active_agents=analytics.get("total_agents", 0),
-            total_tasks=sum(
-                a.get("total_tasks", 0)
-                for a in analytics.get("agents", {}).values()
-            ),
+            total_tasks=total_tasks,
             completed_tasks=analytics.get("completed_plans", 0),
             failed_tasks=0,
             running_workflows=wf_analytics.get("running", 0),
