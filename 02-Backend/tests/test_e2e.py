@@ -63,6 +63,7 @@ class TestUserJourneyAuthentication:
     def test_complete_auth_journey(self, client, mock_supabase):
         with patch("app.auth_utils.get_supabase", return_value=mock_supabase):
             with patch("app.supabase_client.get_supabase", return_value=mock_supabase):
+                with patch("app.auth.supabase", mock_supabase):
                 # Step 1: Register
                 signup_resp = client.post("/auth/signup", json={
                     "email": "e2e@test.com",
