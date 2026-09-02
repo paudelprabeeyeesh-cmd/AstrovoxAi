@@ -10,10 +10,28 @@ from app.ecosystem.sdk import AstrovoxClient, AstrovoxError
 from app.ecosystem.api_platform import sign_payload, verify_signature as verify_payload
 
 
+import urllib.error
+
 class _StubResponse:
     def __init__(self, body, status=200):
         self._body = body
         self.status = status
+
+    def read(self):
+        return self._body.encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+
+class _StubErrorResponse:
+    def __init__(self, body, code=400, msg="Bad Request"):
+        self._body = body
+        self.code = code
+        self.reason = msg
 
     def read(self):
         return self._body.encode("utf-8")
@@ -46,7 +64,7 @@ class AstrovoxSdkTest(unittest.TestCase):
             captured["url"] = request.full_url
             captured["method"] = request.get_method()
             captured["headers"] = dict(request.headers)
-            captured["body"] = request.data.decode("utf-8")
+            captured["body"] = (request.data or b"").decode("utf-8")
             return _StubResponse(json.dumps({"ok": True}))
 
         client = AstrovoxClient(base_url="https://api.astrovox.ai", api_key="ak_x", api_secret="sk_x")
@@ -58,8 +76,16 @@ class AstrovoxSdkTest(unittest.TestCase):
         self.assertEqual(captured["headers"]["X-api-secret"], "sk_x")
 
     def test_request_raises_on_error(self):
+        err = urllib.error.HTTPError(
+            url="https://api.astrovox.ai/ecosystem/plugins",
+            code=400,
+            msg="Bad Request",
+            hdrs={},
+            fp=__import__("io").BytesIO(b'{"error":{"message":"boom"}}'),
+        )
+
         def fake_urlopen(request, timeout=30):
-            return _StubResponse(json.dumps({"error": {"message": "boom"}}), status=400)
+            raise err
 
         client = AstrovoxClient(base_url="https://api.astrovox.ai", api_key="x", api_secret="y")
         with patch("urllib.request.urlopen", side_effect=fake_urlopen):
