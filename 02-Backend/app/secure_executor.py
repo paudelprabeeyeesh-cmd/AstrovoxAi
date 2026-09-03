@@ -20,8 +20,6 @@ from __future__ import annotations
 
 import json
 import os
-import resource
-import signal
 import subprocess
 import sys
 import tempfile
@@ -30,6 +28,11 @@ import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+try:
+    import resource  # Unix-only
+except ImportError:  # pragma: no cover - Windows fallback
+    resource = None  # type: ignore[assignment]
 
 from .security_hardening import (
     CodeExecutionError,
