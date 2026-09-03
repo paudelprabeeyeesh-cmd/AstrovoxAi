@@ -119,8 +119,10 @@ class ExecutePythonTest(unittest.TestCase):
         self.assertFalse(result.success)
 
     def test_exit_code_propagated(self):
+        config = SandboxConfig(allow_imports=True)
         result = execute_python(
             "import sys; sys.exit(7)",
+            config=config,
             principal=AdminPrincipal(),
         )
         self.assertEqual(result.exit_code, 7)
