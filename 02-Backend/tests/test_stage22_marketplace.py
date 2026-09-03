@@ -144,6 +144,7 @@ class MarketplaceTest(unittest.TestCase):
         self.assertFalse(catalog.listings["github"].enabled)
 
     def test_notifications(self):
+        from app.ecosystem.manager import get_plugin_manager
         catalog = MarketplaceCatalog()
         catalog.register(
             Listing(
@@ -156,10 +157,9 @@ class MarketplaceTest(unittest.TestCase):
                 author="a",
             )
         )
-        # Install at version 1.0.0
+        # Install at version 1.0.0 via the global manager so notifications can see it.
         manifest = PluginManifest(id="x", name="X", version="1.0.0", entry_point="x:X")
-        manager = PluginManager()
-        manager.install(manifest)
+        get_plugin_manager().install(manifest)
         notifs = catalog.notifications()
         self.assertEqual(len(notifs), 1)
         self.assertEqual(notifs[0]["installed_version"], "1.0.0")
