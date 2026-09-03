@@ -69,7 +69,7 @@ class ComputeFabricAsyncTest(unittest.IsolatedAsyncioTestCase):
     async def test_checkpoints(self):
         job = self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
         await self.fabric.run(deadline_s=1.0)
-        cp = self.fabric.checkpoint(job.id)
+        cp = self.fabric.checkpoint_job(job.id)
         self.assertIsNotNone(cp)
 
 
@@ -101,6 +101,7 @@ class ComputeFabricSyncTest(unittest.TestCase):
     def test_migration(self):
         job = self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
         self.fabric._jobs[job.id].assigned_node = "n1"
+        self.fabric.checkpoint_job(job.id)
         ok = self.fabric.migrate(job.id, target_node="n1")
         self.assertTrue(ok)
 

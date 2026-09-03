@@ -189,7 +189,7 @@ class AIComputeFabric:
         job.state = JobState.CANCELLED
         return True
 
-    def checkpoint(self, job_id: str) -> Optional[Checkpoint]:
+    def checkpoint_job(self, job_id: str) -> Optional[Checkpoint]:
         job = self._jobs.get(job_id)
         if not job:
             return None
@@ -206,7 +206,7 @@ class AIComputeFabric:
         job = self._jobs.get(job_id)
         if not job:
             return False
-        cp = self.checkpoint.latest(job_id)
+        cp = self.checkpoints.latest(job_id)
         if cp is None:
             return False
         job.assigned_node = target_node
