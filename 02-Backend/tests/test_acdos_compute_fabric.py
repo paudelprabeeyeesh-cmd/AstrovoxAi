@@ -99,15 +99,15 @@ class ComputeFabricSyncTest(unittest.TestCase):
         self.fabric = AIComputeFabric(coordinator=self.coord)
 
     def test_migration(self):
-        self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
-        self.fabric._jobs["job"].assigned_node = "n1"
-        ok = self.fabric.migrate("job", target_node="n1")
+        job = self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
+        self.fabric._jobs[job.id].assigned_node = "n1"
+        ok = self.fabric.migrate(job.id, target_node="n1")
         self.assertTrue(ok)
 
     def test_cancel(self):
-        self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
-        self.fabric.cancel("job")
-        self.assertEqual(self.fabric._jobs["job"].state, JobState.CANCELLED)
+        job = self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
+        self.fabric.cancel(job.id)
+        self.assertEqual(self.fabric._jobs[job.id].state, JobState.CANCELLED)
 
     def test_status(self):
         status = self.fabric.status()
