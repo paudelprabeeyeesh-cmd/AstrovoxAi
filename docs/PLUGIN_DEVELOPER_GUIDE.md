@@ -59,24 +59,11 @@ class Plugin(_PluginBase):
 
 ## Lifecycle Hooks
 
-- `on_install()` – runs after the manifest is validated.
-- `on_enable()` – runs when the user enables the plugin.
-- `on_disable()` – runs when the user disables the plugin.
-- `on_uninstall()` – last chance to clean up resources.
-- `on_update(old, new)` – runs after an upgrade.
-
-## Packaging
-
-Create a `.zip` (or `.astrovox-plugin`) containing `plugin.json` and the
-plugin source files. Users can install it with:
-
-```
-POST /ecosystem/plugins/install
-{
-  "source": "github",
-  "permissions": ["network:outgoing"]
-}
-```
+- `on_install()` — runs after the manifest is validated.
+- `on_enable()` — runs when the user enables the plugin.
+- `on_disable()` — runs when the user disables the plugin.
+- `on_uninstall()` — last chance to clean up resources.
+- `on_update(old, new)` — runs after an upgrade.
 
 ## SDK Helpers
 

@@ -28,7 +28,7 @@ following practices keep the platform safe.
 
 ## API Authentication
 
-- API keys are issued with both an `api_key` and `api_secret`. Verify both.
+- API keys are issued with both an `api_key` and an `api_secret`. Verify both.
 - OAuth tokens use bearer auth and are short-lived; refresh tokens are 30
   days.
 - Rotate keys regularly; revoke old keys via `DELETE /ecosystem/api/keys/{id}`.

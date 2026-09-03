@@ -1,8 +1,8 @@
 # AstrovoxAI Developer Platform (Stage 22)
 
-Stage 22 transforms AstrovoxAI from a single-tenant AI backend into a
-connected ecosystem. Users can install plugins, use official SDKs, integrate
-external services, and subscribe to webhook events.
+Stage 22 transforms AstrovoxAI into a connected ecosystem. Users can
+install plugins, use official SDKs, integrate external services, and
+subscribe to webhook events.
 
 ## Capabilities
 
@@ -37,4 +37,10 @@ external services, and subscribe to webhook events.
 | Audit | `/ecosystem/audit` | tail, filter |
 | Public | `/ecosystem/public` | unauthenticated info & health |
 
-See `ECOSYSTEM.md` for the full reference.
+See the following guides for specifics:
+
+- [`PLUGIN_DEVELOPER_GUIDE.md`](PLUGIN_DEVELOPER_GUIDE.md)
+- [`WEBHOOKS.md`](WEBHOOKS.md)
+- [`SDK.md`](SDK.md)
+- [`INTEGRATIONS.md`](INTEGRATIONS.md)
+- [`SECURITY_BEST_PRACTICES.md`](SECURITY_BEST_PRACTICES.md)
