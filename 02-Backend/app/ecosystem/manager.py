@@ -23,6 +23,7 @@ from .plugins import (
     PluginState,
     get_plugin_registry,
     meets_dependency,
+    satisfies_range,
 )
 
 
