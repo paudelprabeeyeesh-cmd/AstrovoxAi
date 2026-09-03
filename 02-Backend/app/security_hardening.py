@@ -338,28 +338,28 @@ def safe_exec(
     *,
     timeout_s: float = 5.0,
     max_output_chars: int = 10_000,
+    max_code_chars: int = 50_000,
     allow_imports: bool = False,
 ) -> str:
     """Run untrusted Python in a sandboxed subprocess with strict limits.
 
     This avoids in-process exec() and isolates the host interpreter.
     """
+    if len(code) > max_code_chars:
+        raise CodeExecutionError(
+            f"code exceeds maximum length of {max_code_chars} characters"
+        )
+    bootstrap = _build_safe_bootstrap() if not allow_imports else ""
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".py", delete=False, encoding="utf-8"
     ) as tmp:
-        if not allow_imports:
-            tmp.write("import sys\n")
-            tmp.write("sys.modules.clear()\n")
-            tmp.write(
-                "_safe_builtins = "
-                + repr({k: v for k, v in SAFE_BUILTINS.items() if k != "__import__"})
-                + "\n"
-            )
+        tmp.write(bootstrap)
+        tmp.write("\n# --- user code ---\n")
         tmp.write(code)
         tmp_path = tmp.name
     try:
         result = subprocess.run(
-            [sys.executable, tmp_path],
+            [sys.executable, "-I", "-S", tmp_path],
             capture_output=True,
             text=True,
             timeout=timeout_s,
@@ -379,6 +379,29 @@ def safe_exec(
     if result.returncode != 0:
         raise CodeExecutionError(output or f"exit code {result.returncode}")
     return output
+
+
+def _build_safe_bootstrap() -> str:
+    """Build a bootstrap script that hardens the Python runtime before
+    executing user code."""
+    import json as _json
+
+    safe_builtins_json = _json.dumps(SAFE_BUILTINS)
+    return (
+        "import sys, builtins\n"
+        "_blocked = {m for m in sys.modules}\n"
+        "for _m in list(sys.modules.keys()):\n"
+        "    if _m not in _blocked:\n"
+        "        del sys.modules[_m]\n"
+        "del _m, _blocked\n"
+        "_allowed_builtins = "
+        + safe_builtins_json
+        + "\n"
+        "_allowed_builtins['__builtins__'] = _allowed_builtins\n"
+        "builtins.__dict__.clear()\n"
+        "builtins.__dict__.update(_allowed_builtins)\n"
+        "del _allowed_builtins\n"
+    )
 
 
 # ---------------------------------------------------------------------------
