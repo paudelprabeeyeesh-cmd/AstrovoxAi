@@ -171,7 +171,9 @@ class DeadLetterQueueTest(unittest.TestCase):
 
 class DispatchTest(unittest.TestCase):
     def test_dispatch_returns_subscriptions(self):
-        manager = WebhookManager(http_post=_always_200)
+        from app.ecosystem.webhooks import get_webhook_manager
+        manager = get_webhook_manager()
+        manager.subscriptions.clear()
         manager.create_subscription(url="https://a", events=["*"], owner_id="u1")
         result = dispatch_event("chat.completed", {}, owner_id="u1")
         self.assertEqual(len(result), 1)
