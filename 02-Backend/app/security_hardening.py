@@ -305,30 +305,30 @@ class CodeExecutionError(Exception):
     pass
 
 
-SAFE_BUILTINS = {
+SAFE_BUILTINS: Dict[str, Any] = {
     "abs": abs,
     "all": all,
     "any": any,
     "bool": bool,
     "dict": dict,
-    "enumerate": enumerate,
-    "filter": filter,
     "float": float,
     "int": int,
     "len": len,
     "list": list,
-    "map": map,
     "max": max,
     "min": min,
     "print": print,
     "range": range,
-    "reversed": reversed,
     "round": round,
     "set": set,
     "sorted": sorted,
     "str": str,
     "sum": sum,
     "tuple": tuple,
+    "enumerate": enumerate,
+    "filter": filter,
+    "map": map,
+    "reversed": reversed,
     "zip": zip,
 }
 
@@ -384,9 +384,10 @@ def safe_exec(
 def _build_safe_bootstrap() -> str:
     """Build a bootstrap script that hardens the Python runtime before
     executing user code."""
-    import json as _json
-
-    safe_builtins_json = _json.dumps(SAFE_BUILTINS)
+    # Generate code that references the builtins by name in the child
+    # process. This avoids the problem of non-JSON-serializable objects.
+    builtin_names = sorted(SAFE_BUILTINS.keys())
+    name_list = ", ".join(repr(n) for n in builtin_names)
     return (
         "import sys, builtins\n"
         "_blocked = {m for m in sys.modules}\n"
@@ -394,13 +395,16 @@ def _build_safe_bootstrap() -> str:
         "    if _m not in _blocked:\n"
         "        del sys.modules[_m]\n"
         "del _m, _blocked\n"
-        "_allowed_builtins = "
-        + safe_builtins_json
-        + "\n"
+        "_allowed_names = ["
+        + name_list
+        + "]\n"
+        "_allowed_builtins = {}\n"
+        "for _n in _allowed_names:\n"
+        "    _allowed_builtins[_n] = getattr(builtins, _n)\n"
         "_allowed_builtins['__builtins__'] = _allowed_builtins\n"
         "builtins.__dict__.clear()\n"
         "builtins.__dict__.update(_allowed_builtins)\n"
-        "del _allowed_builtins\n"
+        "del _allowed_builtins, _allowed_names\n"
     )
 
 
