@@ -75,7 +75,7 @@ class WebhookManagerTest(unittest.TestCase):
 
         deliveries = asyncio.run(run())
         self.assertEqual(len(deliveries), 1)
-        self.assertEqual(deliveries[0].subscription_id, manager.subscriptions[list(manager.subscriptions.keys())[0]].id)
+        self.assertEqual(deliveries[0].payload, {"x": 1})
 
     def test_pause_skips_delivery(self):
         async def run():
