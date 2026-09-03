@@ -105,6 +105,8 @@ def _set_resource_limits(config: SandboxConfig) -> None:
 def _build_safe_bootstrap() -> str:
     """Build a bootstrap script that hardens the Python runtime before
     executing user code."""
+    builtin_names = sorted(SAFE_BUILTINS.keys())
+    name_list = ", ".join(repr(n) for n in builtin_names)
     return (
         "import sys, builtins\n"
         "_blocked = {m for m in sys.modules}\n"
@@ -112,13 +114,16 @@ def _build_safe_bootstrap() -> str:
         "    if _m not in _blocked:\n"
         "        del sys.modules[_m]\n"
         "del _m, _blocked\n"
+        "_allowed_names = ["
+        + name_list
+        + "]\n"
         "_allowed_builtins = {}\n"
-        f"for _k, _v in {SAFE_BUILTINS!r}.items():\n"
-        "    _allowed_builtins[_k] = _v\n"
+        "for _n in _allowed_names:\n"
+        "    _allowed_builtins[_n] = getattr(builtins, _n)\n"
         "_allowed_builtins['__builtins__'] = _allowed_builtins\n"
         "builtins.__dict__.clear()\n"
         "builtins.__dict__.update(_allowed_builtins)\n"
-        "del _allowed_builtins\n"
+        "del _allowed_builtins, _allowed_names\n"
     )
 
 
