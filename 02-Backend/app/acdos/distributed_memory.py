@@ -93,7 +93,7 @@ class MemoryLayer:
     def __init__(self, capacity: int = 10000) -> None:
         self._items: Dict[str, MemoryItem] = {}
         self._capacity = capacity
-        self._access_order: deque = deque(maxlen=capacity)
+        self._access_order: deque = deque()
         self._lock = threading.Lock()
 
     def add(self, item: MemoryItem) -> None:
