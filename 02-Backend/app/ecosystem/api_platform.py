@@ -21,6 +21,15 @@ from enum import Enum
 from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Tuple
 
 
+API_VERSION = "v1"
+SIGNATURE_HEADER = "X-Astrovox-Signature"
+TIMESTAMP_HEADER = "X-Astrovox-Timestamp"
+EVENT_HEADER = "X-Astrovox-Event"
+DELIVERY_HEADER = "X-Astrovox-Delivery"
+API_KEY_HEADER = "X-API-Key"
+OAUTH_HEADER = "Authorization"
+
+
 class ApiErrorCode(str, Enum):
     BAD_REQUEST = "bad_request"
     UNAUTHENTICATED = "unauthenticated"
