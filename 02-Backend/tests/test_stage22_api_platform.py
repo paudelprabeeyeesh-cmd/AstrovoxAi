@@ -7,6 +7,8 @@ import unittest
 
 from app.ecosystem.api_platform import (
     ApiAnalytics,
+    ApiCall,
+    ApiEndpoint,
     ApiErrorCode,
     ApiKeyStore,
     ApiRegistry,
