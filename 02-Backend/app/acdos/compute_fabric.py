@@ -259,7 +259,7 @@ class AIComputeFabric:
             ready = [
                 j
                 for j in self.queue._index.values()
-                if j.state == JobState.PENDING
+                if j.state in {JobState.PENDING, JobState.SCHEDULED}
             ]
             ready.sort(key=lambda j: -int(j.priority))
             progressed = False
