@@ -336,17 +336,21 @@ def get_webhook_manager() -> WebhookManager:
 
 
 def dispatch_event(event: str, payload: Dict[str, Any], owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Best-effort sync dispatcher used from non-async contexts."""
+    """Best-effort sync dispatcher used from non-async contexts.
+
+    Returns the list of subscriptions that would receive this event. Use
+    `await manager.publish(...)` from async code for full delivery.
+    """
 
     manager = get_webhook_manager()
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            return [
-                {"id": sub.id, "url": sub.url, "status": "queued"}
-                for sub in manager.list_subscriptions(owner_id)
-                if sub.active and (event in sub.events or "*" in sub.events)
-            ]
-    except RuntimeError:
-        pass
-    return []
+    event_name = WebhookEvent.from_string(event).value
+    matching: List[Dict[str, Any]] = []
+    for sub in manager.list_subscriptions(owner_id):
+        if not sub.active:
+            continue
+        if sub.events and "*" not in sub.events and event_name not in sub.events:
+            continue
+        if sub.filters and not manager._match_filters(payload, sub.filters):
+            continue
+        matching.append({"id": sub.id, "url": sub.url, "event": event_name, "status": "queued"})
+    return matching
