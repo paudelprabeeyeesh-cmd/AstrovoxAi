@@ -46,12 +46,12 @@ class UserPrincipal:
 
 class ExecutePythonTest(unittest.TestCase):
     def test_simple_print(self):
-        result = execute_python("print('hello sandbox')")
+        result = execute_python("print('hello sandbox')", principal=AdminPrincipal())
         self.assertTrue(result.success)
         self.assertIn("hello sandbox", result.output)
 
     def test_arithmetic(self):
-        result = execute_python("print(2 + 3 * 4)")
+        result = execute_python("print(2 + 3 * 4)", principal=AdminPrincipal())
         self.assertIn("14", result.output)
 
     def test_rejects_non_admin(self):
