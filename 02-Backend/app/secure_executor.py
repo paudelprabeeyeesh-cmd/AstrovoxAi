@@ -217,15 +217,21 @@ def execute_python(
         # ---- execute -----------------------------------------------------
         start = time.time()
         timed_out = False
+        popen_kwargs: Dict[str, Any] = {
+            "stdout": subprocess.PIPE,
+            "stderr": subprocess.PIPE,
+            "stdin": subprocess.DEVNULL,
+            "env": env,
+            "cwd": workspace,
+        }
+        # preexec_fn is Unix-only; the resource limits will not be applied
+        # on Windows but the subprocess timeout still protects us.
+        if hasattr(os, "setuid") and resource is not None:
+            popen_kwargs["preexec_fn"] = _preexec
         try:
             proc = subprocess.Popen(
                 [sys.executable, "-I", "-S", script_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                stdin=subprocess.DEVNULL,
-                env=env,
-                cwd=workspace,
-                preexec_fn=_preexec,
+                **popen_kwargs,
             )
             try:
                 stdout_b, stderr_b = proc.communicate(timeout=config.timeout_s)
