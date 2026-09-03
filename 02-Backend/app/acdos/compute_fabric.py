@@ -150,8 +150,8 @@ class AIComputeFabric:
         self.queue = PriorityQueue()
         self.checkpoints = checkpoint_store or CheckpointStore()
         self._jobs: Dict[str, Job] = {}
-        self._workers: Dict[str, int] = 0  # node_id -> active jobs
-        self._tenants: Dict[str, int] = defaultdict(int)  # tenant -> active jobs
+        self._workers: Dict[str, int] = {}
+        self._tenants: Dict[str, int] = defaultdict(int)
         self._sem = asyncio.Semaphore(64)
         self._lock_proxy: List[Any] = []
 
