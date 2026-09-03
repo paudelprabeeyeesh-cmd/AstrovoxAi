@@ -138,6 +138,10 @@ class MemoryLayer:
                 return True
             return False
 
+    def list(self) -> List[MemoryItem]:
+        with self._lock:
+            return list(self._items.values())
+
     def search(self, query: str, *, limit: int = 10) -> List[MemoryItem]:
         terms = [t.lower() for t in query.split() if t]
         scored: List[Tuple[float, MemoryItem]] = []
