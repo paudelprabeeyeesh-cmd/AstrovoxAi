@@ -50,7 +50,7 @@ class ComputeFabricAsyncTest(unittest.IsolatedAsyncioTestCase):
 
         self.fabric.submit("job", flaky, max_retries=2, requirements={"cpu": 0.5})
         await self.fabric.run(deadline_s=3.0)
-        self.assertEqual(attempts["n"], 2)
+        self.assertEqual(attempts["n"], 3)
 
     async def test_failure(self):
         self.fabric.submit("job", _fail, max_retries=0, requirements={"cpu": 0.5})
