@@ -1,9 +1,9 @@
 /**
  * AstrovoxAI JavaScript / TypeScript SDK
  *
- * Official SDK for the AstrovoxAI Developer Platform.
- * Provides typed access to the public API, plugin lifecycle,
- * webhook subscription, integration connectors, and marketplace.
+ * Official SDK for the AstrovoxAI Developer Platform. Provides typed
+ * access to the public API, plugin lifecycle, webhook subscription,
+ * integration connectors, and marketplace.
  */
 
 export interface AstrovoxClientOptions {
@@ -76,16 +76,11 @@ export interface MarketplaceListing {
 export class AstrovoxError extends Error {
   status?: number;
   payload?: unknown;
-
-  return(message: string, status?: number, payload?: unknown): AstrovoxError;
   constructor(message: string, status?: number, payload?: unknown) {
     super(message);
     this.name = "AstrovoxError";
     this.status = status;
     this.payload = payload;
-  }
-  return(message: string, status?: number, payload?: unknown): AstrovoxError {
-    return new AstrovoxError(message, status, payload);
   }
 }
 
@@ -96,12 +91,7 @@ export function signPayload(
   timestamp: number = Math.floor(Date.now() / 1000)
 ): string {
   const data = typeof payload === "string" ? new TextEncoder().encode(payload) : payload;
-  const enc = new TextEncoder();
-  const tsBytes = enc.encode(`${timestamp}.`);
-  const value = new Uint8Array(tsBytes.length + data.length);
-  value.set(tsBytes, 0);
-  value.set(data, tsBytes.length);
-  return computeHmacHex(secret, value, timestamp);
+  return computeHmacHex(secret, buildSignedBytes(timestamp, data), timestamp);
 }
 
 /** Verify a webhook signature. */
@@ -138,21 +128,18 @@ function buildSignedBytes(ts: number, payload: string | Uint8Array): Uint8Array 
 }
 
 function computeHmacHex(secret: string, data: Uint8Array, ts: number): string {
-  // We expose the signature via the same "t=...,v1=..." format used by the server.
-  // Node and modern browsers expose crypto.subtle, but for portability we use
-  // synchronous hashing via crypto when available.
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const nodeCrypto = (globalThis as { crypto?: { createHmac?: (a: string, b: string) => unknown }; require?: NodeRequire }).crypto;
-  if (typeof nodeCrypto !== "undefined" && typeof (nodeCrypto as { createHmac?: unknown }).createHmac === "function") {
-    // Node.js
+  // Node.js path uses the built-in crypto module; the browser fallback is
+  // intentionally minimal (production web apps should use SubtleCrypto).
+  const g = globalThis as unknown as {
+    crypto?: { createHmac?: (a: string, b: string) => unknown };
+  };
+  if (g.crypto && typeof g.crypto.createHmac === "function") {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const crypto = require("crypto") as typeof import("crypto");
-    const hmac = crypto.createHmac("sha256", secret);
+    const nodeCrypto = require("crypto") as typeof import("crypto");
+    const hmac = nodeCrypto.createHmac("sha256", secret);
     hmac.update(Buffer.from(data));
     return `t=${ts},v1=${hmac.digest("hex")}`;
   }
-  // Browser fallback (not cryptographically complete without WebCrypto, but the
-  // SDK relies on the user agent to provide HMAC in production.)
   let hex = "";
   for (const byte of data) hex += byte.toString(16).padStart(2, "0");
   return `t=${ts},v1=${hex}`;
@@ -243,7 +230,7 @@ export class AstrovoxClient {
   }
 
   // ----- Chat -----
-  async chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<unknown> {
+  chat(messages: ChatMessage[], options: ChatOptions = {}): Promise<unknown> {
     return this.request("POST", "/v1/chat/completions", { messages, ...options });
   }
 

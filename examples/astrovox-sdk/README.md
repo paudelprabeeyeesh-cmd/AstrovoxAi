@@ -37,7 +37,6 @@ app.post("/webhook", (req, res) => {
   const sig = req.headers["x-astrovox-signature"] as string;
   const ok = verifyPayload(req.rawBody, sig, process.env.WEBHOOK_SECRET!);
   if (!ok) return res.status(401).send("invalid");
-  // handle event
   res.status(200).end();
 });
 ```
