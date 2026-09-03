@@ -196,7 +196,8 @@ def execute_python(
 
         # ---- preexec_fn: apply resource limits + drop privileges -------
         def _preexec() -> None:
-            _set_resource_limits(config)
+            if resource is not None:
+                _set_resource_limits(config)
             if config.drop_to_uid is not None:
                 try:
                     import os as _os
