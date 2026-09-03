@@ -78,16 +78,17 @@ class ExecutePythonTest(unittest.TestCase):
         self.assertFalse(result.success)
 
     def test_timeout(self):
+        config = SandboxConfig(timeout_s=1.0)
         result = execute_python(
             "while True: pass",
-            timeout_s=1.0,
+            config=config,
             principal=AdminPrincipal(),
         )
         self.assertTrue(result.timed_out)
         self.assertFalse(result.success)
 
     def test_rejects_non_string(self):
-        result = execute_python(12345)
+        result = execute_python(12345, principal=AdminPrincipal())
         self.assertFalse(result.success)
         self.assertIn("string", result.error)
 
