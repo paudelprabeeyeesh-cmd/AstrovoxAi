@@ -155,3 +155,17 @@ purged ~360 junk files, and added the first DB migration.
 - **Reliability**: fault injector, recovery engine, backups, chaos suite.
 - **API surface**: 14 routes under /executor/*.
 - **Tests**: 91 unit tests across all subsystems.
+
+
+## [2.5.0] — Platform Ecosystem (Stage 22)
+
+### Added
+- **Plugin framework**: manifest-driven loader, lifecycle (install/enable/disable/update/invoke), versioning, dependency resolution, sandbox, permission model, per-plugin storage, hooks.
+- **Public API platform**: API key issuance + verification, OAuth 2.0 (authorization code, client credentials, refresh), standardized error envelope, rate limiting policies, analytics aggregation.
+- **Webhooks**: incoming + outgoing delivery with HMAC-SHA256 signatures, exponential-backoff retries, dead-letter queue, filters, event subscriptions, analytics.
+- **Third-party integrations**: typed adapters for GitHub, GitLab, Slack, Discord, Google Drive, OneDrive, Dropbox, Notion, Jira, Trello.
+- **Marketplace**: catalog, search, ratings, categories, version history, install/uninstall, update notifications, permissions overview.
+- **SDKs**: official Python SDK (pp.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
+- **Monitoring & security**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber.
+- **API surface**: 57 routes under /ecosystem/*.
+- **Tests**: 105+ unit tests across all subsystems.
