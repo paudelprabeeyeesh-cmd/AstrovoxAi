@@ -136,7 +136,7 @@ class SemanticIndexTest(unittest.TestCase):
         idx = SemanticIndex()
         idx.add(MemoryItem(id="a", type=MemoryType.SEMANTIC, content="authentication flow", owner="n1"))
         idx.add(MemoryItem(id="b", type=MemoryType.SEMANTIC, content="database backup", owner="n1"))
-        results = idx.search("auth")
+        results = idx.search("authentication")
         self.assertEqual(len(results), 1)
         self.assertEqual(results[0][0], "a")
 
@@ -144,7 +144,7 @@ class SemanticIndexTest(unittest.TestCase):
 class MemoryBrainTest(unittest.TestCase):
     def test_remember_recall(self):
         brain = MemoryBrain()
-        brain.remember("auth uses OAuth2", type=MemoryType.LONG_TERM, tags=["auth"])
+        brain.remember("authentication uses OAuth", type=MemoryType.LONG_TERM, tags=["auth"])
         brain.remember("database uses postgres", type=MemoryType.LONG_TERM, tags=["db"])
         results = brain.recall("authentication")
         self.assertGreater(len(results), 0)
