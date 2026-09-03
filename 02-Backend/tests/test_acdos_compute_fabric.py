@@ -67,9 +67,9 @@ class ComputeFabricAsyncTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("t2", status["jobs_by_tenant"])
 
     async def test_checkpoints(self):
-        self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
+        job = self.fabric.submit("job", _ok, requirements={"cpu": 0.5})
         await self.fabric.run(deadline_s=1.0)
-        cp = self.fabric.checkpoint("job")
+        cp = self.fabric.checkpoint(job.id)
         self.assertIsNotNone(cp)
 
 
