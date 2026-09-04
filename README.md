@@ -1,4 +1,4 @@
-# ASTRAVOX AI
+# ASTRAVOX AI 🚀
 
 ## Advanced AI Chat Platform 🚀
 
