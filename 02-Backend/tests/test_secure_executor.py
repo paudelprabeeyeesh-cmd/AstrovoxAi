@@ -126,3 +126,20 @@ class ExecutePythonTest(unittest.TestCase):
             principal=AdminPrincipal(),
         )
         self.assertEqual(result.exit_code, 7)
+
+    def test_cross_platform_without_resource_module(self):
+        """Execution must succeed even when the `resource` module is
+        unavailable, as is the case on Windows."""
+        import app.secure_executor as se
+
+        original = getattr(se, "resource", None)
+        try:
+            se.resource = None  # type: ignore[attr-defined]
+            result = execute_python(
+                "print('no resource module')",
+                principal=AdminPrincipal(),
+            )
+            self.assertTrue(result.success)
+            self.assertIn("no resource module", result.output)
+        finally:
+            se.resource = original
