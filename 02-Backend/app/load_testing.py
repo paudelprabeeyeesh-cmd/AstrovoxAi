@@ -327,5 +327,5 @@ class StabilityTest:
             total_iterations=len(self._memory_samples),
             memory_leak_detected=self.detect_memory_leak(),
             error_rate_trend=self.detect_error_trend(),
-            health_degradation=self.detect_memory_leak() or self.detect_error_trend() > 0.05,
+            health_degradation=self.detect_memory_leak() or self.detect_error_trend() > 0.03,
         )

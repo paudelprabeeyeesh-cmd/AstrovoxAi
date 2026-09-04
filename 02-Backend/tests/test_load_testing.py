@@ -117,8 +117,8 @@ class CapacityPlanningTest(unittest.TestCase):
         self.assertGreater(plan.required_workers, 0)
 
     def test_high_rps_needs_more_concurrency(self):
-        plan_low = capacity_plan(target_rps=10, avg_latency_ms=100)
-        plan_high = capacity_plan(target_rps=1000, avg_latency_ms=100)
+        plan_low = capacity_plan(target_rps=10, avg_latency_ms=100, p95_latency_ms=200)
+        plan_high = capacity_plan(target_rps=1000, avg_latency_ms=100, p95_latency_ms=200)
         self.assertGreater(plan_high.concurrency, plan_low.concurrency)
 
     def test_storage_projection(self):
