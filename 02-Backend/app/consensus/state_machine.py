@@ -157,6 +157,13 @@ class RaftNode:
         if len(initial_membership.nodes) == 1:
             self.cluster.state = NodeState.LEADER
             self._election_deadline_ns = 0  # No election needed
+            # Initialize leader volatile state
+            last_index = self.persistent.last_index()
+            self.volatile.next_index = {}
+            self.volatile.match_index = {}
+            self._lease_deadline_ns = time.monotonic_ns() + int(
+                self.config.lease_duration_s * 1e9
+            )
 
         # Internal state
         self._election_deadline_ns = time.monotonic_ns() + int(
