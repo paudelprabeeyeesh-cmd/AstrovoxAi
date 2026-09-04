@@ -123,6 +123,16 @@ class LogIndex:
             return NotImplemented
         return self.value > other.value
 
+    def __le__(self, other: "LogIndex") -> bool:
+        if not isinstance(other, LogIndex):
+            return NotImplemented
+        return self.value <= other.value
+
+    def __ge__(self, other: "LogIndex") -> bool:
+        if not isinstance(other, LogIndex):
+            return NotImplemented
+        return self.value >= other.value
+
     def __add__(self, other: Union[int, "LogIndex"]) -> "LogIndex":
         if isinstance(other, LogIndex):
             return LogIndex(self.value + other.value)
