@@ -22,7 +22,7 @@ from app.consensus.types import (
     VoteRequest,
     VoteResponse,
 )
-from app.consensus.state_machine import RaftConfig, RaftNode
+from app.consensus.state_machine import RaftConfig, RaftNode, RaftCallbacks
 from app.consensus.transport import InMemoryTransport, RaftTransport
 from app.consensus.leader_election import LeaderElector, ElectionState
 from app.consensus.log_replicator import LogReplicator, ReplicationState
@@ -59,7 +59,7 @@ def make_node(
         lease_duration_s=0.10,
     )
 
-    callbacks = RaftNode._make_callbacks(
+    callbacks = RaftCallbacks(
         apply_command=lambda cmd: None,
         build_snapshot=lambda: b"",
         restore_snapshot=lambda state: None,
