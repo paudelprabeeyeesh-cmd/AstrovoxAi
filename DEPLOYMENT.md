@@ -14,20 +14,20 @@ Create a `.env` file in the root directory with the following variables:
 ```bash
 # Supabase Configuration
 VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_ANON_KEY=_supabase_anon_key
 
 # Backend Configuration
 VITE_API_URL=http://localhost:8000
 
 # OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY _openai_api_key
 
 # Backend CORS (comma-separated list of allowed frontend origins)
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 # App Settings
 USE_MOCK_AI=false
-SECRET_KEY=your_secret_key_here
+SECRET_KEY=2068/07/16
 ```
 
 ## Database Setup
