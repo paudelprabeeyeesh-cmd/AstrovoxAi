@@ -45,7 +45,7 @@ from .executor.api import router as executor_router
 from .document_route import router as document_router
 from .ecosystem.router import router as ecosystem_router
 from .security_headers import SecurityHeadersMiddleware
-from .rate_limit import rate_limit_middleware
+from .rate_limit_hardened import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 
 load_dotenv()
