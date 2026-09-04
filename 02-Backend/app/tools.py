@@ -80,57 +80,33 @@ class CalculatorTool:
         raise ValueError(f"Unsupported expression: {type(node).__name__}")
 
 
+from app.secure_executor import SandboxConfig, execute_python
+from app.security_hardening import Principal
+
+
 class CodeExecutionTool:
     """Sandboxed code execution - ADMIN ONLY.
 
     SECURITY: This tool executes arbitrary Python code. It must ONLY be
-    accessible to authenticated admin users. It uses RestrictedPython for
-    sandboxing and enforces strict resource limits.
+    accessible to authenticated admin users. It uses the secure subprocess
+    executor with strict resource limits.
     """
 
-    def execute(self, code: str, timeout: int = 5) -> ToolResult:
+    def execute(self, code: str, timeout: int = 5, principal: Optional[Principal] = None) -> ToolResult:
         """Execute Python code in a restricted environment.
 
         SECURITY MEASURES:
-        - RestrictedPython for sandboxing
-        - No network access
-        - No filesystem access
-        - Strict timeout
-        - Memory limits
-        - No imports allowed
+        - Subprocess isolation with no network/filesystem access
+        - Strict timeout and memory limits
+        - Admin-only authorization
+        - Truncated, scrubbed output
         """
         try:
-            import RestrictedPython
-            from RestrictedPython import safe_builtins, compile_restricted
-
-            # Block dangerous patterns
-            dangerous_patterns = [
-                'import', '__import__', 'open', 'file', 'exec', 'eval',
-                'compile', 'globals', 'locals', 'vars', 'dir',
-                'getattr', 'setattr', 'delattr',
-                'subprocess', 'os.', 'sys.', 'importlib',
-            ]
-            code_lower = code.lower()
-            for pattern in dangerous_patterns:
-                if pattern in code_lower:
-                    return ToolResult(
-                        False,
-                        f"Security violation: '{pattern}' is not allowed",
-                        "code_executor",
-                    )
-
-            compiled = compile_restricted(code, '<string>', 'exec')
-            local_vars = {"__builtins__": safe_builtins}
-
-            exec(compiled, local_vars)
-
-            return ToolResult(True, str(local_vars.get("result", "Executed")), "code_executor")
-        except ImportError:
-            return ToolResult(
-                False,
-                "Code execution requires RestrictedPython. Install: pip install RestrictedPython",
-                "code_executor",
-            )
+            config = SandboxConfig(timeout_s=float(timeout))
+            result = execute_python(code, config=config, principal=principal)
+            if result.success:
+                return ToolResult(True, result.output, "code_executor")
+            return ToolResult(False, result.error or "Execution failed", "code_executor")
         except Exception as e:
             return ToolResult(False, f"Execution error: {str(e)[:200]}", "code_executor")
 
