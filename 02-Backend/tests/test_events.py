@@ -187,10 +187,9 @@ class DeadLetterQueueTest(unittest.TestCase):
 
     def test_max_retries(self):
         dlq = DeadLetterQueue()
-        dlq._queue[0].max_retries = 1  # Will fail after first retry
-
         event = make_event("TestEvent")
         dlq.enqueue(event, "handler_failed", "connection error")
+        dlq._queue[0].max_retries = 1  # Will fail after first retry
 
         def failing_handler(e):
             raise RuntimeError("still failing")

@@ -242,6 +242,7 @@ class EventStore:
     def __init__(self, schema_registry: EventSchemaRegistry) -> None:
         self._registry = schema_registry
         self._events: List[EventEnvelope] = []
+        self._positions: Dict[str, int] = {}  # event_id -> position
         self._snapshots: Dict[str, Dict[str, Any]] = {}  # aggregate_id -> snapshot
         self._idempotency: Dict[str, EventEnvelope] = {}  # key -> event
         self._dead_letter: List[EventEnvelope] = []
@@ -263,16 +264,14 @@ class EventStore:
 
         # Store event
         self._global_position += 1
-        event_dict = event.to_dict()
-        event_dict["_position"] = self._global_position
-        stored = EventEnvelope.from_dict(event_dict)
-        self._events.append(stored)
+        self._positions[event.event_id] = self._global_position
+        self._events.append(event)
 
         # Track idempotency
         if idempotency_key:
-            self._idempotency[idempotency_key] = stored
+            self._idempotency[idempotency_key] = event
 
-        return stored
+        return event
 
     def get_events(
         self,
@@ -284,7 +283,8 @@ class EventStore:
         """Query events with filtering."""
         results = []
         for event in self._events:
-            if event._position <= since_position:
+            pos = self._positions.get(event.event_id, 0)
+            if pos <= since_position:
                 continue
             if event_type and event.event_type != event_type:
                 continue

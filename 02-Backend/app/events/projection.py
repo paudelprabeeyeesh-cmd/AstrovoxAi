@@ -125,9 +125,11 @@ class ProjectionEngine:
 
         # Update checkpoint
         if processed > 0:
+            last_event_id = events[-1].event_id
+            last_position = self._store._positions.get(last_event_id, 0)
             self._checkpoints[name] = ProjectionCheckpoint(
                 projection_name=name,
-                last_position=events[-1]._position,
+                last_position=last_position,
                 state=state,
                 updated_at=datetime.now(timezone.utc),
             )
