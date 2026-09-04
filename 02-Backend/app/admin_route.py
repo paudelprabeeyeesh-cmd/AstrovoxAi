@@ -1,44 +1,21 @@
 """Cost management and compliance API routes.
 
-Security: All endpoints require admin role verification.
+Security: All endpoints require admin role verification via Principal.
 """
 
-from fastapi import APIRouter, HTTPException, status, Header, Depends
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
 
 from .cost_management import cost_tracker
 from .compliance import compliance_manager
 from .ai_evaluation import prompt_manager, quality_scorer, benchmark_suite
-from .auth_utils import get_user_id_from_token
-from .supabase_client import get_supabase
+from .iam import require_admin
+from .security_hardening import Principal, get_audit_log
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
-
-async def require_admin(authorization: str = Header(None)) -> str:
-    """Verify the user has admin role. Returns user_id if authorized."""
-    user_id = get_user_id_from_token(authorization)
-    
-    # Check admin role from user's profile in Supabase
-    from .supabase_client import get_supabase
-    supabase = get_supabase()
-    
-    try:
-        response = supabase.table("profiles").select("role").eq("id", user_id).execute()
-        if not response.data or response.data[0].get("role") != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Admin access required"
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
-    return user_id
+_audit = get_audit_log()
 
 
 # Cost Management Routes
@@ -46,29 +23,32 @@ async def require_admin(authorization: str = Header(None)) -> str:
 @router.get("/costs/usage")
 async def get_cost_usage(
     days: int = 30,
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get cost usage report."""
-    report = cost_tracker.get_usage_report(user_id, days)
+    _audit.record(actor=principal.id, action="admin_cost_usage", target="costs", outcome="success")
+    report = cost_tracker.get_usage_report(principal.id, days)
     return {"status": "OK", **report}
 
 
 @router.get("/costs/forecast")
 async def get_cost_forecast(
     days: int = 30,
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get cost forecast."""
-    forecast = cost_tracker.get_cost_forecast(user_id, days)
+    _audit.record(actor=principal.id, action="admin_cost_forecast", target="costs", outcome="success")
+    forecast = cost_tracker.get_cost_forecast(principal.id, days)
     return {"status": "OK", **forecast}
 
 
 @router.get("/costs/providers")
 async def get_provider_costs(
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get provider cost comparison."""
-    comparison = cost_tracker.get_provider_cost_comparison(user_id)
+    _audit.record(actor=principal.id, action="admin_provider_costs", target="costs", outcome="success")
+    comparison = cost_tracker.get_provider_cost_comparison(principal.id)
     return {"status": "OK", "providers": comparison}
 
 
@@ -76,10 +56,11 @@ async def get_provider_costs(
 
 @router.post("/compliance/export")
 async def request_export(
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Request GDPR data export."""
-    export = compliance_manager.request_data_export(user_id)
+    _audit.record(actor=principal.id, action="admin_compliance_export", target="compliance", outcome="success")
+    export = compliance_manager.request_data_export(principal.id)
     return {
         "status": "OK",
         "export": {"id": export.id, "status": export.status},
@@ -88,21 +69,23 @@ async def request_export(
 
 @router.post("/compliance/delete")
 async def request_deletion(
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Request right-to-delete."""
-    result = compliance_manager.request_data_deletion(user_id)
+    _audit.record(actor=principal.id, action="admin_compliance_delete", target="compliance", outcome="success")
+    result = compliance_manager.request_data_deletion(principal.id)
     return {"status": "OK", **result}
 
 
 @router.get("/compliance/status")
 async def get_compliance_status(
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get compliance status."""
+    _audit.record(actor=principal.id, action="admin_compliance_status", target="compliance", outcome="success")
     return {
         "status": "OK",
-        **compliance_manager.get_compliance_status(user_id),
+        **compliance_manager.get_compliance_status(principal.id),
     }
 
 
@@ -121,9 +104,10 @@ class ScoreRequest(BaseModel):
 @router.post("/prompts")
 async def create_prompt(
     request: CreatePromptRequest,
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Create a prompt version."""
+    _audit.record(actor=principal.id, action="admin_create_prompt", target="prompts", outcome="success")
     prompt = prompt_manager.create_prompt(request.name, request.content)
     return {
         "status": "OK",
@@ -138,9 +122,10 @@ async def create_prompt(
 @router.get("/prompts/{name}")
 async def get_prompt(
     name: str,
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get active prompt."""
+    _audit.record(actor=principal.id, action="admin_get_prompt", target="prompts", outcome="success")
     prompt = prompt_manager.get_active_prompt(name)
     if not prompt:
         raise HTTPException(status_code=404, detail="Prompt not found")
@@ -159,17 +144,19 @@ async def get_prompt(
 @router.post("/evaluate/score")
 async def score_response(
     request: ScoreRequest,
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Score an AI response."""
+    _audit.record(actor=principal.id, action="admin_score_response", target="evaluation", outcome="success")
     result = quality_scorer.score_response(request.response, request.expected)
     return {"status": "OK", **result}
 
 
 @router.get("/benchmarks")
 async def get_benchmarks(
-    user_id: str = Depends(require_admin),
+    principal: Principal = Depends(require_admin),
 ):
     """Get benchmark results."""
+    _audit.record(actor=principal.id, action="admin_get_benchmarks", target="benchmarks", outcome="success")
     report = benchmark_suite.get_benchmark_report()
     return {"status": "OK", **report}
