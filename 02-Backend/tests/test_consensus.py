@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
+import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from app.consensus.types import (
     ChangeType,
@@ -18,6 +21,8 @@ from app.consensus.types import (
     NodeId,
     NodeState,
     PersistentState,
+    Snapshot,
+    SnapshotMetadata,
     Term,
     VoteRequest,
     VoteResponse,

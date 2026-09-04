@@ -153,6 +153,10 @@ class RaftNode:
             membership=initial_membership,
         )
 
+        # Single-node cluster: become leader immediately
+        if len(initial_membership.nodes) == 1:
+            self._become_leader()
+
         # Internal state
         self._election_deadline_ns = time.monotonic_ns() + int(
             config.random_election_timeout() * 1e9
