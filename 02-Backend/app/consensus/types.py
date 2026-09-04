@@ -167,6 +167,9 @@ class LogEntry:
             raise TypeError("index must be a LogIndex")
         if not isinstance(self.command, Command):
             raise TypeError("command must be a Command")
+        # Auto-compute hash from command payload if not explicitly set
+        if self.hash == hashlib.sha256().digest():
+            object.__setattr__(self, 'hash', hashlib.sha256(self.command.payload).digest())
 
 
 @dataclass(frozen=True)
