@@ -103,6 +103,7 @@ class EventStoreTest(unittest.TestCase):
 
     def test_idempotency(self):
         registry = EventSchemaRegistry()
+        registry.register(EventSchema(name="TestEvent", version=EventVersion.V1, fields={}))
         store = EventStore(registry)
 
         event = make_event("TestEvent")
@@ -119,7 +120,7 @@ class EventStoreTest(unittest.TestCase):
         store.snapshot("agg-1", {"state": "value"}, position=10)
         snapshot = store.get_snapshot("agg-1")
         self.assertIsNotNone(snapshot)
-        self.assertEqual(snapshot["state"], "value")
+        self.assertEqual(snapshot["state"]["state"], "value")
         self.assertEqual(snapshot["position"], 10)
 
     def test_replay(self):
