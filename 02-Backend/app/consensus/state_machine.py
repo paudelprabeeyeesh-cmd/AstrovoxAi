@@ -30,6 +30,7 @@ from typing import (
 from .types import (
     AppendEntriesRequest,
     AppendEntriesResponse,
+    ChangeType,
     Command,
     EvidenceRecord,
     GetLeaderRequest,
