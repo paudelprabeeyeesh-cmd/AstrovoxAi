@@ -1,0 +1,5 @@
+# Benchmark Dependencies
+pytest>=6.0.0
+pytest-benchmark>=3.2.0
+memory-profiler>=0.60.0
+pyflame>=1.0.0
