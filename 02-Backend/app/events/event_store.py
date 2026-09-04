@@ -324,11 +324,12 @@ class EventStore:
         """
         replayed = 0
         for event in self._events:
-            if event._position <= since_position:
+            pos = self._positions.get(event.event_id, 0)
+            if pos <= since_position:
                 continue
             if event_type and event.event_type != event_type:
                 continue
-            if until_position and event._position > until_position:
+            if until_position and pos > until_position:
                 break
             try:
                 handler(event)
