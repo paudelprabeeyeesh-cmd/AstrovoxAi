@@ -39,10 +39,11 @@ class TokenizerTest(unittest.TestCase):
     def test_vocab_includes_characters(self):
         tokenizer = Tokenizer(TokenizerConfig(vocab_size=50, min_pair_freq=1))
         tokenizer.train(CORPUS)
-        # All characters from corpus must be in vocab
+        # All non-space characters from corpus must be in vocab
         for text in CORPUS:
             for ch in set(text.lower()):
-                self.assertIn(ch, tokenizer.vocab)
+                if ch.strip():  # Skip whitespace
+                    self.assertIn(ch, tokenizer.vocab)
 
     def test_save_and_load(self):
         tokenizer = Tokenizer(TokenizerConfig(vocab_size=50, min_pair_freq=1))

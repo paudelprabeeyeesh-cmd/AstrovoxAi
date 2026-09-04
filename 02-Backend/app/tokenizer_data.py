@@ -15,7 +15,7 @@ from __future__ import annotations
 import hashlib
 import re
 import unicodedata
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
