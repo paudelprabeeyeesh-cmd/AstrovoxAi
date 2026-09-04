@@ -9,13 +9,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from . import now
+from . import make_id, now
 from .dsl import (
     AskStatement,
     AnalyzeStatement,
     EmailStatement,
     GenerateStatement,
     LoadStatement,
+    SaveStatement,
     SearchStatement,
     SummarizeStatement,
     Statement,
@@ -31,6 +32,16 @@ class StepKind(str, Enum):
     ANALYZE = "analyze"
     ASK = "ask"
     SAVE = "save"
+
+
+class StepState(str, Enum):
+    PENDING = "pending"
+    READY = "ready"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    SKIPPED = "skipped"
 
 
 COST_WEIGHTS = {
@@ -58,7 +69,30 @@ class CompiledStep:
     inputs: List[str]
     outputs: List[str]
     estimated_cost: float
+    state: StepState = StepState.PENDING
+    result: Any = None
+    error: Optional[str] = None
+    duration_ms: float = 0.0
+    started_at: float = 0.0
+    timeout_s: float = 30.0
+    attempts: int = 0
+    max_retries: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "kind": self.kind,
+            "inputs": self.inputs,
+            "outputs": self.outputs,
+            "estimated_cost": round(self.estimated_cost, 4),
+            "state": self.state.value if isinstance(self.state, StepState) else self.state,
+            "result": self.result,
+            "error": self.error,
+            "duration_ms": round(self.duration_ms, 2),
+            "attempts": self.attempts,
+            "max_retries": self.max_retries,
+        }
 
 
 Step = CompiledStep
@@ -82,9 +116,44 @@ class ExecutionGraph:
             "cache_key": self.cache_key,
         }
 
+    def topological(self) -> List[str]:
+        """Return step ids in topological order."""
+        order: List[str] = []
+        visited: set = set()
+        step_index = {s.id: s for s in self.steps}
+        temp_mark: set = set()
+
+        def visit(step_id: str) -> None:
+            if step_id in visited:
+                return
+            if step_id in temp_mark:
+                return
+            temp_mark.add(step_id)
+            for input_id in step_index[step_id].inputs:
+                if input_id in step_index:
+                    visit(input_id)
+            temp_mark.discard(step_id)
+            visited.add(step_id)
+            order.append(step_id)
+
+        for s in self.steps:
+            visit(s.id)
+        return order
+
+    def ready(self) -> List[CompiledStep]:
+        done = {s.id for s in self.steps if s.state in {StepState.SUCCEEDED, StepState.SKIPPED, StepState.CANCELLED}}
+        out: List[CompiledStep] = []
+        for step in self.steps:
+            if step.state != StepState.PENDING:
+                continue
+            if all(inp in done for inp in step.inputs):
+                out.append(step)
+        return out
+
 
 class Compiler:
-    def __init__(self) -> None:
+    def __init__(self, cache: Optional[PlanCache] = None) -> None:
+        self.cache = cache or _GLOBAL_CACHE
         self.constants: Dict[str, Any] = {}
         self.steps: List[CompiledStep] = []
         self.bindings: Dict[str, str] = {}
@@ -94,7 +163,12 @@ class Compiler:
         self.steps = []
         self.bindings = {}
         self.optimizations_applied = []
-        self._lower(program)
+        for stmt in program.statements:
+            step = self._lower_statement(stmt)
+            if step is not None:
+                self.steps.append(step)
+                if step.outputs:
+                    self.bindings[step.outputs[0]] = step.id
         self._optimize()
         return ExecutionGraph(
             id=make_id("plan"),
@@ -181,7 +255,7 @@ class Compiler:
         groups: List[List[str]] = []
         remaining: set = {s.id for s in self.steps}
         while remaining:
-            ready = [s for s in remaining if all(inp in done for inp in self.steps[s].inputs)]
+            ready = [s for s in remaining if all(inp in done for inp in index[s].inputs)]
             if not ready:
                 break
             groups.append(ready)
@@ -235,9 +309,9 @@ class Compiler:
                 )
                 fused.append(fused_step)
                 if self.steps[i].outputs:
-                    self._bindings[self.steps[i].outputs] = fused_step.id
+                    self.bindings[self.steps[i].outputs[0]] = fused_step.id
                 if self.steps[i + 1].outputs:
-                    self._bindings[self.steps[i + 1].outputs] = fused_step.id
+                    self.bindings[self.steps[i + 1].outputs[0]] = fused_step.id
                 skip.add(self.steps[i + 1].id)
                 fusion_count += 1
             else:
@@ -249,10 +323,10 @@ class Compiler:
     def _constant_propagation(self) -> None:
         """Inline constant LOAD sources so downstream steps don't need them."""
         for step in self.steps:
-            if step.kind == StepKind.LOAD and isinstance(self._bindings.get(step.outputs[0]), str):
+            if step.kind == StepKind.LOAD and isinstance(self.bindings.get(step.outputs[0]), str):
                 # Replace references to this step with the actual constant
                 pass  # Inline the constant value
-        propagated = sum(1 for s in self.steps if s.kind != StepKind.LOAD and any(s.id in self._bindings for _ in [s]))
+        propagated = sum(1 for s in self.steps if s.kind != StepKind.LOAD and any(s.id in self.bindings for _ in [s]))
         if propagated:
             self.optimizations_applied.append(f"constant_propagation: {propagated} steps affected")
 
@@ -263,3 +337,54 @@ class Compiler:
 
 def compile_program(program: Program) -> ExecutionGraph:
     return Compiler().compile(program)
+
+
+# ---------------------------------------------------------------------------
+# Compiler errors
+# ---------------------------------------------------------------------------
+
+
+class CompilerError(Exception):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Plan cache
+# ---------------------------------------------------------------------------
+
+
+class PlanCache:
+    def __init__(self, capacity: int = 128) -> None:
+        self._cache: Dict[str, ExecutionGraph] = {}
+        self._order: List[str] = []
+        self._capacity = capacity
+        self.hits = 0
+        self.misses = 0
+
+    def get(self, key: str) -> Optional[ExecutionGraph]:
+        graph = self._cache.get(key)
+        if graph is None:
+            self.misses += 1
+            return None
+        self.hits += 1
+        return graph
+
+    def put(self, key: str, graph: ExecutionGraph) -> None:
+        if key in self._cache:
+            return
+        if len(self._cache) >= self._capacity:
+            evict = self._order.pop(0)
+            self._cache.pop(evict, None)
+        self._cache[key] = graph
+        self._order.append(key)
+
+    def stats(self) -> Dict[str, int]:
+        return {
+            "size": len(self._cache),
+            "capacity": self._capacity,
+            "hits": self.hits,
+            "misses": self.misses,
+        }
+
+
+_GLOBAL_CACHE: PlanCache = PlanCache()
