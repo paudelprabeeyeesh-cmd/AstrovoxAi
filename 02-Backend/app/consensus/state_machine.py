@@ -153,9 +153,10 @@ class RaftNode:
             membership=initial_membership,
         )
 
-        # Single-node cluster: become leader immediately
+        # Single-node cluster: become leader immediately (defer async tasks)
         if len(initial_membership.nodes) == 1:
-            self._become_leader()
+            self.cluster.state = NodeState.LEADER
+            self._election_deadline_ns = 0  # No election needed
 
         # Internal state
         self._election_deadline_ns = time.monotonic_ns() + int(
