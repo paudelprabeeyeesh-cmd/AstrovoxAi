@@ -22,6 +22,29 @@ from .dsl import (
 )
 
 
+class StepKind(str, Enum):
+    LOAD = "load"
+    SEARCH = "search"
+    SUMMARIZE = "summarize"
+    GENERATE = "generate"
+    EMAIL = "email"
+    ANALYZE = "analyze"
+    ASK = "ask"
+    SAVE = "save"
+
+
+COST_WEIGHTS = {
+    StepKind.LOAD: 1.0,
+    StepKind.SEARCH: 2.0,
+    StepKind.SUMMARIZE: 1.5,
+    StepKind.GENERATE: 3.0,
+    StepKind.EMAIL: 1.0,
+    StepKind.ANALYZE: 2.5,
+    StepKind.ASK: 2.0,
+    StepKind.SAVE: 1.0,
+}
+
+
 class CompilerPhase(Enum):
     LOWERING = "lowering"
     OPTIMIZATION = "optimization"
@@ -36,6 +59,9 @@ class CompiledStep:
     outputs: List[str]
     estimated_cost: float
     metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+Step = CompiledStep
 
 
 @dataclass
