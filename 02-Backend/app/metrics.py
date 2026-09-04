@@ -63,6 +63,18 @@ if PROMETHEUS_AVAILABLE:
         buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
     )
 
+    rate_limit_total = Counter(
+        "rate_limit_total",
+        "Total rate limit checks",
+        ["policy", "identity", "allowed"]
+    )
+
+    rate_limit_remaining = Gauge(
+        "rate_limit_remaining",
+        "Remaining requests in current window",
+        ["policy", "identity"]
+    )
+
 
 def track_request(method: str, endpoint: str, status: int, duration: float):
     """Track an HTTP request."""
@@ -95,6 +107,13 @@ def track_db_query(operation: str, duration: float):
     """Track a database query."""
     if PROMETHEUS_AVAILABLE:
         db_query_duration.labels(operation=operation).observe(duration)
+
+
+def track_rate_limit(policy: str, identity: str, allowed: bool, remaining: int = 0):
+    """Track a rate limit check."""
+    if PROMETHEUS_AVAILABLE:
+        rate_limit_total.labels(policy=policy, identity=identity, allowed=str(allowed)).inc()
+        rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
 
 
 def get_metrics():

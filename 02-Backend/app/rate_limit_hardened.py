@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, Optional, Tuple
 
 from .security_hardening import AuditLog, get_audit_log
+from .metrics import track_rate_limit
 
 
 # ---------------------------------------------------------------------------
@@ -34,7 +35,8 @@ class RateLimitConfig:
     name: str
     requests: int
     window_seconds: float
-    scope: str = "user"  # "user" | "ip" | "endpoint" | "global"
+    scope: str = "user"
+    burst: Optional[int] = None
 
 
 DEFAULT_LIMITS: Dict[str, RateLimitConfig] = {
@@ -81,6 +83,35 @@ class SlidingWindowCounter:
     def reset(self) -> None:
         with self._lock:
             self._hits.clear()
+
+
+class TokenBucket:
+    """Token bucket for burst protection.
+
+    Refills at a steady rate and allows short bursts up to `burst_capacity`.
+    """
+
+    def __init__(self, capacity: int, refill_rate: float) -> None:
+        self.capacity = capacity
+        self.refill_rate = refill_rate
+        self.tokens = float(capacity)
+        self._last = time.time()
+        self._lock = threading.Lock()
+
+    def consume(self, amount: int = 1) -> Tuple[bool, int]:
+        with self._lock:
+            now = time.time()
+            elapsed = now - self._last
+            self._last = now
+            self.tokens = min(self.capacity, self.tokens + elapsed * self.refill_rate)
+            if self.tokens >= amount:
+                self.tokens -= amount
+                return True, int(self.tokens)
+            return False, int(self.tokens)
+
+    def remaining(self) -> int:
+        with self._lock:
+            return int(self.tokens)
 
 
 # ---------------------------------------------------------------------------
@@ -252,6 +283,17 @@ class RateLimiter:
         else:
             self._redis = None
         self._audit: AuditLog = get_audit_log()
+        self._burst_buckets: Dict[str, TokenBucket] = {}
+
+    def _get_burst_bucket(self, policy: str, identity: str) -> Optional[TokenBucket]:
+        config = DEFAULT_LIMITS.get(policy)
+        if config is None or config.burst is None:
+            return None
+        key = f"{policy}:{identity}"
+        if key not in self._burst_buckets:
+            refill_rate = config.requests / config.window_seconds
+            self._burst_buckets[key] = TokenBucket(config.burst, refill_rate)
+        return self._burst_buckets[key]
 
     def configure(self, key: str, config: RateLimitConfig) -> None:
         self._inprocess.configure(key, config)
@@ -263,6 +305,27 @@ class RateLimiter:
         *,
         amount: int = 1,
     ) -> Dict[str, Any]:
+        burst = self._get_burst_bucket(policy, identity)
+        if burst is not None:
+            allowed, remaining = burst.consume(amount)
+            if not allowed:
+                result = {
+                    "allowed": False,
+                    "limit": DEFAULT_LIMITS.get(policy, RateLimitConfig(policy, 60, 60)).requests,
+                    "remaining": 0,
+                    "reset_seconds": 0,
+                    "policy": policy,
+                    "identity": identity,
+                }
+                self._audit.record(
+                    actor=identity or "anonymous",
+                    action="rate_limit_exceeded",
+                    target=policy,
+                    outcome="denied",
+                    metadata={"policy": policy, "amount": amount, "burst": True},
+                )
+                track_rate_limit(policy, identity or "anonymous", False, 0)
+                return result
         if self._redis is not None:
             result = self._redis.check(policy, identity, amount=amount)
         else:
@@ -279,6 +342,7 @@ class RateLimiter:
                     "limit": result.get("limit"),
                 },
             )
+        track_rate_limit(policy, identity or "anonymous", result.get("allowed", True), result.get("remaining", 0))
         return result
 
 
@@ -287,6 +351,34 @@ def get_rate_limiter() -> RateLimiter:
     if _GLOBAL_LIMITER is None:
         _GLOBAL_LIMITER = RateLimiter()
     return _GLOBAL_LIMITER
+
+
+# ---------------------------------------------------------------------------
+# FastAPI middleware
+# ---------------------------------------------------------------------------
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+
+async def rate_limit_middleware(request: Request, call_next):
+    limiter = get_rate_limiter()
+    client_ip = request.client.host if request.client else "unknown"
+    result = limiter.check("api_anonymous", client_ip)
+    if not result.get("allowed", True):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded"},
+            headers={
+                "X-RateLimit-Limit": str(result.get("limit") or ""),
+                "X-RateLimit-Remaining": "0",
+                "Retry-After": str(result.get("reset_seconds") or 60),
+            },
+        )
+    response = await call_next(request)
+    response.headers["X-RateLimit-Limit"] = str(result.get("limit") or "")
+    response.headers["X-RateLimit-Remaining"] = str(result.get("remaining") or 0)
+    return response
 
 
 # ---------------------------------------------------------------------------
