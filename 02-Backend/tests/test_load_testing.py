@@ -122,11 +122,11 @@ class CapacityPlanningTest(unittest.TestCase):
         self.assertGreater(plan_high.concurrency, plan_low.concurrency)
 
     def test_storage_projection(self):
-        plan = capacity_plan(target_rps=100, avg_latency_ms=10)
+        plan = capacity_plan(target_rps=100, avg_latency_ms=10, p95_latency_ms=20)
         self.assertGreaterEqual(plan.storage_gb, 0)
 
     def test_to_dict(self):
-        plan = capacity_plan(target_rps=100, avg_latency_ms=10)
+        plan = capacity_plan(target_rps=100, avg_latency_ms=10, p95_latency_ms=20)
         d = plan.to_dict()
         self.assertIn("target_rps", d)
         self.assertIn("required_workers", d)
