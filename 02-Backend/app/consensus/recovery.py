@@ -9,9 +9,11 @@ Implements:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import pickle
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,11 +26,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WriteAheadLog:
-    """Write-ahead log for crash recovery.
-
-    Stores all persistent state changes to disk before applying them.
-    On recovery, replays WAL to reconstruct state.
-    """
+    """Write-ahead log for crash recovery."""
 
     path: Path
     node_id: NodeId
@@ -86,14 +84,7 @@ class WriteAheadLog:
 
 
 class RecoveryManager:
-    """Handles crash recovery for Raft nodes.
-
-    Recovery process:
-    1. Load latest snapshot (if exists)
-    2. Replay WAL entries after snapshot
-    3. Validate log consistency
-    4. Resume normal operation
-    """
+    """Handles crash recovery for Raft nodes."""
 
     def __init__(self, node_id: NodeId, data_dir: Path) -> None:
         self.node_id = node_id
@@ -101,41 +92,27 @@ class RecoveryManager:
         self.wal_path = data_dir / f"{node_id.value}.wal"
         self.snapshot_path = data_dir / f"{node_id.value}.snapshot"
 
-    def recover(self) -> Optional[PersistentState]:
-        """Recover state from disk.
-
-        Returns recovered persistent state or None if no state found.
-        """
+    def recover(self) -> PersistentState:
+        """Recover state from disk."""
         state = PersistentState()
 
         # Try to load snapshot
         snapshot = self._load_snapshot()
         if snapshot:
             state.snapshot = snapshot
-            logger.info(
-                "recovered snapshot at index %s",
-                snapshot.metadata.last_included_index,
-            )
+            logger.info("recovered snapshot at index %s", snapshot.metadata.last_included_index)
 
         # Replay WAL
-        wal = WriteAheadLog(path=self.wal_path, node_id=self.node_id)
+        wal = WriteAledLog(path=self.wal_path, node_id=self.node_id)
         entries = wal.replay()
 
-        # Rebuild log from WAL (simplified - production would store full entries)
-        # In production: WAL stores full log entries or references
         if entries:
             last_entry = entries[-1]
             state.current_term = Term(last_entry["term"])
             if last_entry.get("voted_for"):
-                from .types import NodeId
-
                 state.voted_for = NodeId(last_entry["voted_for"])
 
-        logger.info(
-            "recovery complete: term=%s, log_len=%d",
-            state.current_term,
-            len(state.log),
-        )
+        logger.info("recovery complete: term=%s, log_len=%d", state.current_term, len(state.log))
         return state
 
     def _load_snapshot(self) -> Optional[Snapshot]:
@@ -144,8 +121,6 @@ class RecoveryManager:
             return None
 
         try:
-            import pickle
-
             with open(self.snapshot_path, "rb") as f:
                 return pickle.load(f)
         except Exception:
@@ -156,9 +131,6 @@ class RecoveryManager:
         """Persist snapshot to disk."""
         self.snapshot_path.parent.mkdir(parents=True, exist_ok=True)
         try:
-            import pickle
-
-            # Atomic write
             tmp_path = self.snapshot_path.with_suffix(".tmp")
             with open(tmp_path, "wb") as f:
                 pickle.dump(snapshot, f)
@@ -168,31 +140,22 @@ class RecoveryManager:
             logger.exception("failed to save snapshot")
 
     def validate_log(self, log: List[LogEntry]) -> List[LogEntry]:
-        """Validate log entries and remove corrupt ones.
-
-        Returns list of valid log entries.
-        """
+        """Validate log entries and remove corrupt ones."""
         valid = []
         last_term = Term(0)
         last_index = LogIndex(0)
 
         for entry in log:
-            # Check term monotonicity
             if entry.term < last_term:
                 logger.warning("skipping log entry with decreasing term")
                 continue
-
-            # Check index monotonicity
             if entry.index <= last_index:
                 logger.warning("skipping log entry with non-increasing index")
                 continue
-
-            # Check hash
             expected_hash = hashlib.sha256(entry.command.payload).digest()
             if entry.hash != expected_hash:
                 logger.warning("skipping log entry with invalid hash")
                 continue
-
             valid.append(entry)
             last_term = entry.term
             last_index = entry.index
@@ -202,5 +165,3 @@ class RecoveryManager:
     def compact_log(self, log: List[LogEntry], snapshot_index: LogIndex) -> List[LogEntry]:
         """Remove log entries covered by snapshot."""
         return [e for e in log if e.index > snapshot_index]
-
-</
