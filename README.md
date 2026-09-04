@@ -1,10 +1,10 @@
 # ASTRAVOX AI
 
-## Advanced AI Chat Platform
+## Advanced AI Chat Platform 🚀
 
 ASTRAVOX AI is a cutting-edge AI chat platform with multi-provider support, featuring a modern React frontend, a robust FastAPI backend, and Supabase for database and authentication. The platform supports streaming responses, AI memory, embeddings, telemetry, and an interactive terminal console.
 
-## Features
+## Features 
 
 - **User Authentication**: Secure sign-up, login, logout, and password reset via Supabase Auth
 - **Multi-Provider AI Chat**: Support for OpenAI, Anthropic (Claude), Google Gemini, and Ollama (local models)
@@ -19,7 +19,7 @@ ASTRAVOX AI is a cutting-edge AI chat platform with multi-provider support, feat
 - **Docker Support**: Containerized deployment with Docker Compose
 - **CI/CD Pipeline**: Automated testing, linting, and security scanning via GitHub Actions
 
-## Technology Stack
+## Technology Stack 🚀
 
 - **Frontend**: React 18, Vite 6
 - **Backend**: FastAPI, Python 3.9+
