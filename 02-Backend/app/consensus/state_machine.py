@@ -30,7 +30,6 @@ from typing import (
 from .types import (
     AppendEntriesRequest,
     AppendEntriesResponse,
-    ClusterState,
     Command,
     EvidenceRecord,
     GetLeaderRequest,
@@ -46,8 +45,6 @@ from .types import (
     NodeId,
     NodeState,
     PersistentState,
-    RaftTransport,
-    RpcResult,
     Snapshot,
     Term,
     TransferLeaderRequest,
@@ -56,6 +53,7 @@ from .types import (
     VoteResponse,
     VolatileState,
 )
+from .transport import RaftTransport
 
 logger = logging.getLogger(__name__)
 
