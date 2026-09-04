@@ -31,6 +31,7 @@ from .types import (
     AppendEntriesRequest,
     AppendEntriesResponse,
     ChangeType,
+    ClusterState,
     Command,
     EvidenceRecord,
     GetLeaderRequest,
