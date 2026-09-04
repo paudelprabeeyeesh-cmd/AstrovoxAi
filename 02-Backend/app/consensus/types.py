@@ -123,7 +123,9 @@ class LogIndex:
             return NotImplemented
         return self.value > other.value
 
-    def __add__(self, other: int) -> "LogIndex":
+    def __add__(self, other: Union[int, "LogIndex"]) -> "LogIndex":
+        if isinstance(other, LogIndex):
+            return LogIndex(self.value + other.value)
         return LogIndex(self.value + other)
 
 
