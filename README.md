@@ -309,8 +309,9 @@ MIT License
 
 ## Authors
 
-**Prabesh Paudel** 
-***Founder & Chief Executive Officer (CEO), Chief Technology Officer (CTO), Chief AI Architect, Product Vision Lead, Lead Software Architect, Full-Stack Developer, Backend Engineer, Frontend Engineer, AI Systems Engineer, Distributed Systems Engineer, Platform Engineer, AI Runtime Engineer, AI Compiler Engineer, Workflow Engine Developer, API Engineer, Cloud Infrastructure Engineer, DevOps Engineer, Site Reliability Engineer (SRE), Security Engineer, Identity & Access Management (IAM) Engineer, Performance Engineer, Reliability Engineer, Knowledge Systems Engineer, Memory Systems Engineer, Data Platform Engineer, SDK & Developer Experience Engineer, QA Automation Engineer, Test Infrastructure Engineer, Technical Documentation Lead, Research & Development Engineer, Open Source Maintainer, Lead System Integrator, Principal Software Engineer, Creator of AstrovoxAI.***
+**Prabesh Paudel**  
+
+- ***Founder & Chief Executive Officer (CEO), Chief Technology Officer (CTO), Chief AI Architect, Product Vision Lead, Lead Software Architect, Full-Stack Developer, Backend Engineer, Frontend Engineer, AI Systems Engineer, Distributed Systems Engineer, Platform Engineer, AI Runtime Engineer, AI Compiler Engineer, Workflow Engine Developer, API Engineer, Cloud Infrastructure Engineer, DevOps Engineer, Site Reliability Engineer (SRE), Security Engineer, Identity & Access Management (IAM) Engineer, Performance Engineer, Reliability Engineer, Knowledge Systems Engineer, Memory Systems Engineer, Data Platform Engineer, SDK & Developer Experience Engineer, QA Automation Engineer, Test Infrastructure Engineer, Technical Documentation Lead, Research & Development Engineer, Open Source Maintainer, Lead System Integrator, Principal Software Engineer, Creator of AstrovoxAI.***
 
 
 **Dipson Baral** - *Co-Founder*
