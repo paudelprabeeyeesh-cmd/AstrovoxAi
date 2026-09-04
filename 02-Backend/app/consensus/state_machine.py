@@ -603,7 +603,7 @@ class RaftNode:
             if match_idx >= self.volatile.commit_index:
                 committed += 1
 
-        # Include self
+        # Include self (leader's own log)
         committed += 1
 
         if committed >= majority:
@@ -611,9 +611,12 @@ class RaftNode:
             all_indices = [self.volatile.commit_index] + list(
                 self.volatile.match_index.values()
             )
+            # Add leader's own last log index
+            all_indices.append(self.persistent.last_index())
             new_commit = max(all_indices)
-            self.volatile.commit_index = new_commit
-            self._apply_committed_entries()
+            if new_commit > self.volatile.commit_index:
+                self.volatile.commit_index = new_commit
+                self._apply_committed_entries()
 
     def _apply_committed_entries(self) -> None:
         """Apply committed entries to state machine."""
