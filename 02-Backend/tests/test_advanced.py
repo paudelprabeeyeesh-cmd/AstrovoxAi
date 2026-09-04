@@ -16,6 +16,7 @@ from app.multi_agent import (
 )
 from app.memory_enhanced import memory_store, MemoryRanker, MemoryEntry
 from app.tools import tool_registry, CalculatorTool
+from app.security_hardening import Principal
 from app.circuit_breaker import (
     circuit_breaker_manager,
     quota_manager,
@@ -163,6 +164,18 @@ class TestTools:
         result = await tool_registry.execute("calculator", expression="3 * 3")
         assert result.success
         assert result.result == "9"
+
+    def test_code_executor_uses_secure_executor(self):
+        admin = Principal(id="admin-1", email="admin@test.com", role="admin")
+        result = tool_registry.code_executor.execute("print('secure test')", principal=admin)
+        assert result.success
+        assert "secure test" in result.result
+
+    def test_code_executor_rejects_non_admin(self):
+        user = Principal(id="user-1", email="user@test.com", role="user")
+        result = tool_registry.code_executor.execute("print('hack')", principal=user)
+        assert not result.success
+        assert "admin" in result.result.lower() or "privilege" in result.result.lower()
 
 
 # ============================================================================
