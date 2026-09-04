@@ -7,6 +7,9 @@ import unittest
 from app.iam import (
     get_jwt_algorithms,
     get_jwt_secret,
+    require_admin,
+    require_authenticated,
+    get_current_principal,
 )
 from app.rate_limit_hardened import (
     DEFAULT_LIMITS,
@@ -195,6 +198,34 @@ class RateLimiterTest(unittest.TestCase):
             limiter.check("auth_login", "user-1")
         limiter._buckets["auth_login:user-1"].reset()
         self.assertTrue(limiter.check("auth_login", "user-1")["allowed"])
+
+
+class PrincipalAuthorizationTest(unittest.TestCase):
+    def test_require_admin_rejects_user(self):
+        user = Principal(id="u-1", email="u@e.com", role="user")
+        self.assertFalse(user.is_admin())
+        self.assertFalse(is_admin_role(user.role))
+
+    def test_require_admin_accepts_admin(self):
+        admin = Principal(id="a-1", email="a@e.com", role="admin")
+        self.assertTrue(admin.is_admin())
+        self.assertTrue(is_admin_role(admin.role))
+
+    def test_require_admin_accepts_superadmin(self):
+        superadmin = Principal(id="s-1", email="s@e.com", role="superadmin")
+        self.assertTrue(superadmin.is_admin())
+        self.assertTrue(is_admin_role(superadmin.role))
+
+    def test_principal_scopes(self):
+        principal = Principal(id="u-1", email="u@e.com", scopes={"read", "write"})
+        self.assertTrue(principal.has_scope("read"))
+        self.assertFalse(principal.has_scope("delete"))
+
+    def test_principal_to_dict(self):
+        principal = Principal(id="u-1", email="u@e.com", role="admin")
+        d = principal.to_dict()
+        self.assertEqual(d["id"], "u-1")
+        self.assertEqual(d["role"], "admin")
 
 
 if __name__ == "__main__":

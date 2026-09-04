@@ -20,6 +20,7 @@ from .secure_executor import (
     SandboxConfig,
     execute_user_code,
 )
+from .iam import require_admin
 
 
 router = APIRouter(prefix="/sandbox", tags=["sandbox"])
@@ -42,48 +43,10 @@ class ExecuteResponse(BaseModel):
     truncated: bool
 
 
-def get_admin_principal(request: Request) -> Principal:
-    """Resolve the calling principal and verify admin role.
-
-    Replaces the legacy `":admin" in authorization` check with proper
-    JWT role verification.
-    """
-    auth = request.headers.get("authorization", "")
-    if not auth:
-        raise HTTPException(status_code=401, detail="missing authorization header")
-    if not auth.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="invalid authorization scheme")
-    token = auth.split(" ", 1)[1].strip()
-    from .security_hardening import jwt_decode, JWTError
-
-    try:
-        claims = jwt_decode(token, secret=_get_jwt_secret())
-    except JWTError as exc:
-        raise HTTPException(status_code=401, detail=f"invalid token: {exc}")
-
-    principal = principal_from_jwt_claims(claims)
-    if not principal.is_admin():
-        raise HTTPException(status_code=403, detail="code_executor requires admin role")
-    return principal
-
-
-def _get_jwt_secret() -> str:
-    import os
-
-    secret = os.getenv("JWT_SECRET", "")
-    if not secret:
-        # Default to a random secret for development; production must
-        # always set JWT_SECRET.
-        import secrets
-
-        secret = secrets.token_urlsafe(32)
-    return secret
-
-
 @router.post("/execute", response_model=ExecuteResponse)
 async def execute_code(
     req: ExecuteRequest,
-    principal: Principal = Depends(get_admin_principal),
+    principal: Principal = Depends(require_admin),
 ) -> ExecuteResponse:
     """Execute untrusted Python code in a sandboxed environment.
 

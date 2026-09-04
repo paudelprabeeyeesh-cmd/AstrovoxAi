@@ -1,16 +1,18 @@
 import os
 import logging
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Header, Depends
 from pydantic import BaseModel, EmailStr
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from typing import Optional
 
 from .supabase_client import get_supabase
+from .security_hardening import get_audit_log
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()
+_audit = get_audit_log()
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -61,6 +63,12 @@ async def sign_up(request: SignUpRequest):
             }
         )
 
+        _audit.record(
+            actor=request.email,
+            action="auth_signup",
+            target="user",
+            outcome="success",
+        )
         return {
             "status": "OK",
             "message": "User registered successfully. Please verify your email.",
@@ -70,6 +78,13 @@ async def sign_up(request: SignUpRequest):
             },
         }
     except Exception as e:
+        _audit.record(
+            actor=request.email,
+            action="auth_signup",
+            target="user",
+            outcome="failed",
+            metadata={"error": str(e)[:100]},
+        )
         logger.warning(f"Signup failed: {str(e)[:100]}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Registration failed")
 
@@ -83,10 +98,23 @@ async def login(request: LoginRequest):
         )
 
         if not response.user:
+            _audit.record(
+                actor=request.email,
+                action="auth_login",
+                target="user",
+                outcome="failed",
+                metadata={"reason": "invalid_credentials"},
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
 
+        _audit.record(
+            actor=request.email,
+            action="auth_login",
+            target="user",
+            outcome="success",
+        )
         return {
             "status": "OK",
             "message": "Login successful",
@@ -100,15 +128,26 @@ async def login(request: LoginRequest):
                 ),
             },
         }
-    except Exception:
+    except HTTPException:
+        raise
+    except Exception as e:
+        _audit.record(
+            actor=request.email,
+            action="auth_login",
+            target="user",
+            outcome="failed",
+            metadata={"error": str(e)[:100]},
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
 
 
 @router.post("/logout")
-async def logout():
+async def logout(authorization: str = Header(None)):
     """Logout user (client-side operation in Supabase)"""
+    user_id = get_user_id_from_token(authorization) if authorization else "anonymous"
+    _audit.record(actor=user_id, action="auth_logout", target="user", outcome="success")
     return {
         "status": "OK",
         "message": "Logout successful. Please clear your session tokens on the client.",
@@ -125,9 +164,21 @@ async def reset_password(request: ResetPasswordRequest):
                 "redirect_to": f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/reset-password"
             },
         )
-
+        _audit.record(
+            actor=request.email,
+            action="auth_password_reset",
+            target="user",
+            outcome="success",
+        )
         return {"status": "OK", "message": "Password reset email sent successfully"}
     except Exception as e:
+        _audit.record(
+            actor=request.email,
+            action="auth_password_reset",
+            target="user",
+            outcome="failed",
+            metadata={"error": str(e)[:100]},
+        )
         logger.warning(f"Password reset failed: {str(e)[:100]}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password reset failed")
 
@@ -142,19 +193,28 @@ async def get_current_user(authorization: str = None):
         )
 
     try:
-        # Extract token from "Bearer <token>"
         token = authorization.replace("Bearer ", "")
-
-        # Get user from token
         response = supabase.auth.get_user(token)
 
         if not response.user:
+            _audit.record(
+                actor="anonymous",
+                action="auth_get_me",
+                target="user",
+                outcome="failed",
+                metadata={"reason": "invalid_token"},
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
 
-        # Fetch user profile
+        _audit.record(
+            actor=response.user.id,
+            action="auth_get_me",
+            target="user",
+            outcome="success",
+        )
         profile_response = (
             supabase.table("profiles").select("*").eq("id", response.user.id).execute()
         )
@@ -171,6 +231,12 @@ async def get_current_user(authorization: str = None):
     except HTTPException:
         raise
     except Exception:
+        _audit.record(
+            actor="anonymous",
+            action="auth_get_me",
+            target="user",
+            outcome="failed",
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -183,6 +249,12 @@ async def oauth_login(request: OAuthRequest):
         response = supabase.auth.sign_in_with_otp(
             {"email": request.email or "", "create_user": True}
         )
+        _audit.record(
+            actor=request.email or "anonymous",
+            action="auth_oauth",
+            target="user",
+            outcome="success",
+        )
         return {
             "status": "OK",
             "provider": request.provider,
@@ -190,6 +262,13 @@ async def oauth_login(request: OAuthRequest):
             "otp_sent": bool(response),
         }
     except Exception as exc:
+        _audit.record(
+            actor=request.email or "anonymous",
+            action="auth_oauth",
+            target="user",
+            outcome="failed",
+            metadata={"error": str(exc)[:100]},
+        )
         logger.warning(f"OAuth failed: {str(exc)[:100]}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth authentication failed"
@@ -203,10 +282,23 @@ async def refresh_token(refresh_token: str):
         response = supabase.auth.refresh_session(refresh_token)
 
         if not response.session:
+            _audit.record(
+                actor="anonymous",
+                action="auth_refresh",
+                target="session",
+                outcome="failed",
+                metadata={"reason": "invalid_refresh_token"},
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
             )
 
+        _audit.record(
+            actor=response.user.id if response.user else "anonymous",
+            action="auth_refresh",
+            target="session",
+            outcome="success",
+        )
         return {
             "status": "OK",
             "session": {
@@ -217,6 +309,12 @@ async def refresh_token(refresh_token: str):
     except HTTPException:
         raise
     except Exception:
+        _audit.record(
+            actor="anonymous",
+            action="auth_refresh",
+            target="session",
+            outcome="failed",
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh token"
         )
