@@ -193,7 +193,7 @@ class Compiler:
                     self.steps.append(step)
                     if step.outputs:
                         self.bindings[step.outputs[0]] = step.id
-            self._optimize()
+        self._optimize()
         total_cost = sum(step.estimated_cost for step in self.steps)
         graph = ExecutionGraph(
             id=make_id("plan"),
