@@ -117,6 +117,72 @@ class CompilerTest(unittest.TestCase):
         self.assertEqual(len(ready), 1)
         self.assertEqual(ready[0].kind, StepKind.ASK)
 
+    def test_fusion_multiple_chains(self):
+        program = parse(
+            'LOAD "doc" AS doc\n'
+            'SEARCH "auth" IN doc LIMIT 5 AS hits1\n'
+            'SUMMARIZE hits1 LENGTH 100 AS summary1\n'
+            'SEARCH "auth2" IN doc LIMIT 5 AS hits2\n'
+            'SUMMARIZE hits2 LENGTH 100 AS summary2\n'
+        )
+        graph = compile_program(program)
+        self.assertEqual(len(graph.steps), 3)
+        self.assertIn("execution_fusion", ",".join(graph.metadata.get("optimizations", [])))
+
+    def test_fusion_skips_non_adjacent(self):
+        program = parse(
+            'LOAD "doc" AS doc\n'
+            'SEARCH "auth" IN doc LIMIT 5 AS hits\n'
+            'ASK "break" AS q\n'
+            'SUMMARIZE hits LENGTH 100 AS summary\n'
+        )
+        graph = compile_program(program)
+        self.assertEqual(len(graph.steps), 4)
+
+    def test_dead_step_preserves_email_save(self):
+        program = parse(
+            'LOAD "a" AS a\n'
+            'EMAIL "a" TO "x@example.com"\n'
+            'SAVE a TO "out.txt"\n'
+        )
+        graph = compile_program(program)
+        kinds = {s.kind for s in graph.steps}
+        self.assertIn(StepKind.EMAIL, kinds)
+        self.assertIn(StepKind.SAVE, kinds)
+
+    def test_parallel_block_multiple_groups(self):
+        program = parse(
+            'PARALLEL {\n'
+            '  LOAD "a" AS a\n'
+            '  LOAD "b" AS b\n'
+            '}\n'
+            'PARALLEL {\n'
+            '  LOAD "c" AS c\n'
+            '  LOAD "d" AS d\n'
+            '}\n'
+            'ASK "combine" AS result\n'
+        )
+        graph = compile_program(program)
+        self.assertEqual(len(graph.parallel_groups), 3)
+
+    def test_cache_key_stable(self):
+        program = parse('LOAD "x" AS x\n')
+        compiler = Compiler()
+        g1 = compiler.compile(program)
+        g2 = compiler.compile(program)
+        self.assertEqual(g1.cache_key, g2.cache_key)
+
+    def test_topological_order_with_dependencies(self):
+        program = parse(
+            'LOAD "a" AS a\n'
+            'SEARCH "x" IN a LIMIT 1 AS hits\n'
+            'SUMMARIZE hits LENGTH 10 AS summary\n'
+            'ASK "final" AS result\n'
+        )
+        graph = compile_program(program)
+        order = graph.topological()
+        self.assertEqual(len(order), len(graph.steps))
+
 
 if __name__ == "__main__":
     unittest.main()
