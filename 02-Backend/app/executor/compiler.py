@@ -167,14 +167,15 @@ class Compiler:
         self.bindings = {}
         self.optimizations_applied = []
         for stmt in program.statements:
+            print(f"COMPILE LOOP: {type(stmt).__name__}")
             step = self._lower_statement(stmt)
             if step is not None:
                 self.steps.append(step)
                 if step.outputs:
                     self.bindings[step.outputs[0]] = step.id
             self._optimize()
-            total_cost = sum(step.estimated_cost for step in self.steps)
-            return ExecutionGraph(
+        total_cost = sum(step.estimated_cost for step in self.steps)
+        return ExecutionGraph(
                 id=make_id("plan"),
                 name=program.__class__.__name__,
                 steps=self.steps,
@@ -275,8 +276,11 @@ class Compiler:
             step.estimated_cost = COST_WEIGHTS.get(step.kind, 1.0)
 
     def _optimize(self) -> None:
+        print(f"OPTIMIZE called with {len(self.steps)} steps")
         self._dead_step_elimination()
+        print(f"  after dead_step: {len(self.steps)} steps")
         self._execution_fusion()
+        print(f"  after fusion: {len(self.steps)} steps")
         self._constant_propagation()
 
     def _dead_step_elimination(self) -> None:
@@ -303,9 +307,15 @@ class Compiler:
         skip: set = set()
         fusion_count = 0
         for i, step in enumerate(self.steps):
+            print(f"FUSION LOOP i={i} step.kind={step.kind} step.id={step.id} skip={skip}")
             if skip and skip and skip.__contains__(step.id):
+                print(f"  SKIPPING {step.id}")
                 continue
-            if step.kind == StepKind.SEARCH and self.steps[i + 1].kind == StepKind.SUMMARIZE and self.steps[i + 1].inputs == [self.steps[i].id]:
+            print(f"  Checking i+1={i+1} len={len(self.steps)}")
+            if i + 1 < len(self.steps):
+                nxt = self.steps[i + 1]
+                print(f"  Next: kind={nxt.kind} inputs={nxt.inputs}")
+            if step.kind == StepKind.SEARCH and i + 1 < len(self.steps) and self.steps[i + 1].kind == StepKind.SUMMARIZE and self.steps[i + 1].inputs == [self.steps[i].id]:
                 next_step = self.steps[i + 1]
                 fused_step = CompiledStep(
                     id=make_id("fused"),
