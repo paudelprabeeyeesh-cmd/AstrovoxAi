@@ -31,25 +31,25 @@ StepHandler = Callable[[Step, Dict[str, Any]], Awaitable[Any]]
 
 
 async def _echo_handler(step: Step, _inputs: Dict[str, Any]) -> Any:
-    """Default handler that echoes the step's intent."""
+    """Default handler that returns a successful result for any step kind."""
 
     if step.kind == StepKind.LOAD:
-        return {"source": step.args.get("source"), "content": f"loaded {step.args.get('source')}"}
+        return {"source": step.inputs[0] if step.inputs else "", "content": f"loaded {step.outputs[0] if step.outputs else ''}"}
     if step.kind == StepKind.SEARCH:
-        return {"query": step.args.get("query"), "results": [f"hit for {step.args.get('query')}"]}
+        return {"query": step.inputs[0] if step.inputs else "", "results": [f"hit for {step.outputs[0] if step.outputs else ''}"]}
     if step.kind == StepKind.SUMMARIZE:
-        return {"summary": f"summary of {step.args.get('length', 100)} chars"}
+        return {"summary": f"summary of {step.outputs[0] if step.outputs else ''}"}
     if step.kind == StepKind.GENERATE:
-        return {"generated": f"output for {step.args.get('target')}", "template": step.args.get("template")}
+        return {"generated": f"output for {step.outputs[0] if step.outputs else ''}"}
     if step.kind == StepKind.EMAIL:
-        return {"delivered": True, "to": step.args.get("recipient")}
+        return {"delivered": True, "to": step.inputs[0] if step.inputs else ""}
     if step.kind == StepKind.ANALYZE:
-        return {"analysis": f"analysis of {step.args.get('target')}"}
+        return {"analysis": f"analysis of {step.outputs[0] if step.outputs else ''}"}
     if step.kind == StepKind.ASK:
-        return {"answer": f"answer to {step.args.get('prompt')}"}
+        return {"answer": f"answer to {step.outputs[0] if step.outputs else ''}"}
     if step.kind == StepKind.SAVE:
-        return {"saved": True, "destination": step.args.get("destination")}
-    return {"echo": True, "kind": step.kind.value, "args": step.args}
+        return {"saved": True, "destination": step.inputs[0] if step.inputs else ""}
+    return {"echo": True, "kind": step.kind.value}
 
 
 # ---------------------------------------------------------------------------

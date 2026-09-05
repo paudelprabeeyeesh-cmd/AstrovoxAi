@@ -242,6 +242,15 @@ class WorkflowEngine:
         """Create a workflow template."""
         wf = self.create_workflow(name, description)
         wf.is_template = True
+        self._templates[wf.id] = WorkflowTemplate(
+            id=wf.id,
+            name=wf.name,
+            description=wf.description,
+            steps=[{"name": s.name, "action": s.action, "config": s.config} for s in wf.steps],
+            tags=[],
+            category="",
+            shared=False,
+        )
         return wf
 
     def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
@@ -907,7 +916,7 @@ class WorkflowEngine:
         """Clone a template workflow."""
         import secrets
         template = self._workflows.get(template_id)
-        if not template:
+        if not template or not template.is_template:
             return None
 
         clone = Workflow(

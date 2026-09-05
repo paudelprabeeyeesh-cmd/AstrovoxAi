@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import time
 from collections import defaultdict
@@ -405,7 +406,7 @@ class PlanCache:
             self.misses += 1
             return None
         self.hits += 1
-        return graph
+        return copy.deepcopy(graph)
 
     def put(self, key: str, graph: ExecutionGraph) -> None:
         if key in self._cache:
@@ -413,7 +414,7 @@ class PlanCache:
         if len(self._cache) >= self._capacity:
             evict = self._order.pop(0)
             self._cache.pop(evict, None)
-        self._cache[key] = graph
+        self._cache[key] = copy.deepcopy(graph)
         self._order.append(key)
 
     def stats(self) -> Dict[str, int]:
