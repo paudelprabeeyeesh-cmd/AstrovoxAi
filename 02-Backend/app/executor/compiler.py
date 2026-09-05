@@ -106,6 +106,9 @@ class ExecutionGraph:
     parallel_groups: List[List[str]]
     cache_key: str
     created_at: float = field(default_factory=now)
+    bindings: Dict[str, str] = field(default_factory=dict)
+    total_estimated_cost: float = 0.0
+    optimizations_applied: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -169,14 +172,18 @@ class Compiler:
                 self.steps.append(step)
                 if step.outputs:
                     self.bindings[step.outputs[0]] = step.id
-        self._optimize()
-        return ExecutionGraph(
-            id=make_id("plan"),
-            name=program.__class__.__name__,
-            steps=self.steps,
-            parallel_groups=self._detect_parallel_groups(),
-            cache_key=self._cache_key(program),
-        )
+            self._optimize()
+            total_cost = sum(step.estimated_cost for step in self.steps)
+            return ExecutionGraph(
+                id=make_id("plan"),
+                name=program.__class__.__name__,
+                steps=self.steps,
+                parallel_groups=self._detect_parallel_groups(),
+                cache_key=self._cache_key(program),
+                bindings=dict(self.bindings),
+                total_estimated_cost=total_cost,
+                optimizations_applied=list(self.optimizations_applied),
+            )
 
     def _lower_statement(self, stmt: Statement) -> CompiledStep:
         if isinstance(stmt, LoadStatement):
