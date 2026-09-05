@@ -128,6 +128,19 @@ class ExecutionGraph:
             "cache_key": self.cache_key,
         }
 
+    def clone(self) -> ExecutionGraph:
+        return ExecutionGraph(
+            id=self.id,
+            name=self.name,
+            steps=list(self.steps),
+            parallel_groups=[list(g) for g in self.parallel_groups],
+            cache_key=self.cache_key,
+            created_at=self.created_at,
+            bindings=dict(self.bindings),
+            total_estimated_cost=self.total_estimated_cost,
+            optimizations_applied=list(self.optimizations_applied),
+        )
+
     def topological(self) -> List[str]:
         """Return step ids in topological order."""
         order: List[str] = []
