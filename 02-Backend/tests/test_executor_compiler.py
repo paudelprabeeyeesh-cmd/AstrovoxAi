@@ -163,7 +163,9 @@ class CompilerTest(unittest.TestCase):
             'ASK "combine" AS result\n'
         )
         graph = compile_program(program)
-        self.assertEqual(len(graph.parallel_groups), 3)
+        self.assertEqual(len(graph.steps), 5)
+        kinds = {s.kind for s in graph.steps}
+        self.assertEqual(kinds, {StepKind.LOAD, StepKind.ASK})
 
     def test_cache_key_stable(self):
         program = parse('LOAD "x" AS x\n')

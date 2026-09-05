@@ -34,6 +34,7 @@ Quick start:
 
 from __future__ import annotations
 
+from ..events import EventBus, Event, event_bus
 from .event_store import EventEnvelope, EventSchema, EventSchemaRegistry, EventStore, EventVersion
 from .projection import ProjectionCheckpoint, ProjectionDefinition, ProjectionEngine
 from .replay import ReplayEngine, ReplayOptions, ReplayResult
@@ -42,6 +43,9 @@ from .idempotency import IdempotencyRecord, IdempotencyTracker
 from .multi_region import MultiRegionEventStore, VectorClock, RegionConfig
 
 __all__ = [
+    "Event",
+    "EventBus",
+    "event_bus",
     "EventEnvelope",
     "EventSchema",
     "EventSchemaRegistry",
