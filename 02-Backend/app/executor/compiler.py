@@ -16,6 +16,7 @@ from .dsl import (
     EmailStatement,
     GenerateStatement,
     LoadStatement,
+    ParallelBlock,
     SaveStatement,
     SearchStatement,
     SummarizeStatement,
@@ -94,6 +95,10 @@ class CompiledStep:
             "max_retries": self.max_retries,
         }
 
+    @property
+    def output(self) -> Optional[str]:
+        return self.outputs[0] if self.outputs else None
+
 
 Step = CompiledStep
 
@@ -109,6 +114,10 @@ class ExecutionGraph:
     bindings: Dict[str, str] = field(default_factory=dict)
     total_estimated_cost: float = 0.0
     optimizations_applied: List[str] = field(default_factory=list)
+
+    @property
+    def metadata(self) -> Dict[str, Any]:
+        return {"optimizations": list(self.optimizations_applied)}
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -163,28 +172,41 @@ class Compiler:
         self.optimizations_applied: List[str] = []
 
     def compile(self, program: Program) -> ExecutionGraph:
+        cache_key = self._cache_key(program)
+        cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
         self.steps = []
         self.bindings = {}
         self.optimizations_applied = []
         for stmt in program.statements:
-            print(f"COMPILE LOOP: {type(stmt).__name__}")
-            step = self._lower_statement(stmt)
-            if step is not None:
-                self.steps.append(step)
-                if step.outputs:
-                    self.bindings[step.outputs[0]] = step.id
+            if isinstance(stmt, ParallelBlock):
+                for inner in stmt.statements:
+                    step = self._lower_statement(inner)
+                    if step is not None:
+                        self.steps.append(step)
+                        if step.outputs:
+                            self.bindings[step.outputs[0]] = step.id
+            else:
+                step = self._lower_statement(stmt)
+                if step is not None:
+                    self.steps.append(step)
+                    if step.outputs:
+                        self.bindings[step.outputs[0]] = step.id
             self._optimize()
         total_cost = sum(step.estimated_cost for step in self.steps)
-        return ExecutionGraph(
-                id=make_id("plan"),
-                name=program.__class__.__name__,
-                steps=self.steps,
-                parallel_groups=self._detect_parallel_groups(),
-                cache_key=self._cache_key(program),
-                bindings=dict(self.bindings),
-                total_estimated_cost=total_cost,
-                optimizations_applied=list(self.optimizations_applied),
-            )
+        graph = ExecutionGraph(
+            id=make_id("plan"),
+            name=program.__class__.__name__,
+            steps=self.steps,
+            parallel_groups=self._detect_parallel_groups(),
+            cache_key=cache_key,
+            bindings=dict(self.bindings),
+            total_estimated_cost=total_cost,
+            optimizations_applied=list(self.optimizations_applied),
+        )
+        self.cache.put(cache_key, graph)
+        return graph
 
     def _lower_statement(self, stmt: Statement) -> CompiledStep:
         if isinstance(stmt, LoadStatement):
@@ -276,27 +298,27 @@ class Compiler:
             step.estimated_cost = COST_WEIGHTS.get(step.kind, 1.0)
 
     def _optimize(self) -> None:
-        print(f"OPTIMIZE called with {len(self.steps)} steps")
         self._dead_step_elimination()
-        print(f"  after dead_step: {len(self.steps)} steps")
         self._execution_fusion()
-        print(f"  after fusion: {len(self.steps)} steps")
         self._constant_propagation()
 
     def _dead_step_elimination(self) -> None:
         """Remove steps whose outputs are never read."""
         used: set = set()
-        # Collect all output references from downstream steps
         for step in self.steps:
             for downstream in self.steps:
                 if downstream.id != step.id and step.id in downstream.inputs:
                     used.add(step.id)
-        # Also keep first and last steps
         if self.steps:
             used.add(self.steps[0].id)
             used.add(self.steps[-1].id)
         before = len(self.steps)
-        self.steps = [s for s in self.steps if s.id in used or s.kind in {StepKind.EMAIL, StepKind.SAVE}]
+        self.steps = [
+            s for s in self.steps
+            if s.id in used
+            or s.kind in {StepKind.EMAIL, StepKind.SAVE}
+            or not s.inputs
+        ]
         after = len(self.steps)
         if before != after:
             self.optimizations_applied.append(f"dead_step_elimination: removed {before - after}")
@@ -307,29 +329,28 @@ class Compiler:
         skip: set = set()
         fusion_count = 0
         for i, step in enumerate(self.steps):
-            print(f"FUSION LOOP i={i} step.kind={step.kind} step.id={step.id} skip={skip}")
-            if skip and skip and skip.__contains__(step.id):
-                print(f"  SKIPPING {step.id}")
+            if step.id in skip:
                 continue
-            print(f"  Checking i+1={i+1} len={len(self.steps)}")
-            if i + 1 < len(self.steps):
-                nxt = self.steps[i + 1]
-                print(f"  Next: kind={nxt.kind} inputs={nxt.inputs}")
-            if step.kind == StepKind.SEARCH and i + 1 < len(self.steps) and self.steps[i + 1].kind == StepKind.SUMMARIZE and self.steps[i + 1].inputs == [self.steps[i].id]:
+            if (
+                step.kind == StepKind.SEARCH
+                and i + 1 < len(self.steps)
+                and self.steps[i + 1].kind == StepKind.SUMMARIZE
+                and self.steps[i + 1].inputs == [step.id]
+            ):
                 next_step = self.steps[i + 1]
                 fused_step = CompiledStep(
                     id=make_id("fused"),
                     kind=StepKind.SUMMARIZE,
-                    inputs=list(self.steps[i].inputs),
-                    outputs=list(self.steps[i + 1].outputs),
-                    estimated_cost=self.steps[i].estimated_cost + self.steps[i + 1].estimated_cost * 0.8,
+                    inputs=list(step.inputs),
+                    outputs=list(next_step.outputs),
+                    estimated_cost=step.estimated_cost + next_step.estimated_cost * 0.8,
                 )
                 fused.append(fused_step)
-                if self.steps[i].outputs:
-                    self.bindings[self.steps[i].outputs[0]] = fused_step.id
-                if self.steps[i + 1].outputs:
-                    self.bindings[self.steps[i + 1].outputs[0]] = fused_step.id
-                skip.add(self.steps[i + 1].id)
+                if step.outputs:
+                    self.bindings[step.outputs[0]] = fused_step.id
+                if next_step.outputs:
+                    self.bindings[next_step.outputs[0]] = fused_step.id
+                skip.add(next_step.id)
                 fusion_count += 1
             else:
                 fused.append(step)
