@@ -165,7 +165,30 @@ purged ~360 junk files, and added the first DB migration.
 - **Webhooks**: incoming + outgoing delivery with HMAC-SHA256 signatures, exponential-backoff retries, dead-letter queue, filters, event subscriptions, analytics.
 - **Third-party integrations**: typed adapters for GitHub, GitLab, Slack, Discord, Google Drive, OneDrive, Dropbox, Notion, Jira, Trello.
 - **Marketplace**: catalog, search, ratings, categories, version history, install/uninstall, update notifications, permissions overview.
-- **SDKs**: official Python SDK (pp.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
+- **SDKs**: official Python SDK (app.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
 - **Monitoring & security**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber.
 - **API surface**: 57 routes under /ecosystem/*.
 - **Tests**: 105+ unit tests across all subsystems.
+
+## [1.0.0] — Stable Release (Stage 47-53)
+
+### Fixed
+- **Compiler**: resolved 8 failing compiler tests by implementing missing optimization features (SEARCH+SUMMARIZE fusion, dead-step elimination, ASK cost estimation, plan cache, topological ordering, parallel group detection).
+- **Event Bus**: fixed import conflict between `app/events.py` and `app/events/` package by merging module into package `__init__.py`.
+- **Runtime**: fixed `_echo_handler` to use correct `CompiledStep` attributes instead of non-existent `args`.
+- **Workflow Engine**: fixed `create_template` to register templates and `clone_workflow` to reject non-template clones.
+- **Cache Isolation**: added deep copy isolation to `PlanCache` to prevent test mutations from leaking between tests.
+
+### Added
+- **Documentation**: `CONTRIBUTING.md`, `SECURITY.md`, `DEVELOPER_GUIDE.md`, `RELEASE_NOTES_v1.0.0.md`, `TESTING_PLAN.md`.
+- **Developer Experience**: `Makefile` with common targets for install, test, lint, typecheck, clean, and run.
+- **Regression Tests**: added compiler and runtime regression tests for fusion, parallel groups, dead-step elimination, retry, and cache stability.
+
+### Changed
+- Bumped API version from `2.0.0` to `1.0.0` in FastAPI app and health endpoints.
+- Removed unused imports (`defaultdict`, `Tuple`, `Sequence`) from compiler module.
+- Cleaned up dead code and debug artifacts.
+
+### Test Results
+- 141 core backend tests passing (compiler, runtime, kernel, integration, security, performance, infrastructure, workflow).
+- Pre-existing test isolation issues in full suite (rate limiting) documented and isolated to specific integration/E2E tests.
