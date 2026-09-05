@@ -317,5 +317,5 @@ MIT License
 
 ---
 
-**Version**: 2.0.0 (Pre-release)
+**Version**: 1.0.0
 **Status**: Production-ready
