@@ -1,10 +1,10 @@
-# ASTRAVOX AI
+# ASTRAVOX AI 🚀
 
-## Advanced AI Chat Platform
+## Advanced AI Chat Platform 🚀
 
 ASTRAVOX AI is a cutting-edge AI chat platform with multi-provider support, featuring a modern React frontend, a robust FastAPI backend, and Supabase for database and authentication. The platform supports streaming responses, AI memory, embeddings, telemetry, and an interactive terminal console.
 
-## Features
+## Features 
 
 - **User Authentication**: Secure sign-up, login, logout, and password reset via Supabase Auth
 - **Multi-Provider AI Chat**: Support for OpenAI, Anthropic (Claude), Google Gemini, and Ollama (local models)
@@ -19,7 +19,7 @@ ASTRAVOX AI is a cutting-edge AI chat platform with multi-provider support, feat
 - **Docker Support**: Containerized deployment with Docker Compose
 - **CI/CD Pipeline**: Automated testing, linting, and security scanning via GitHub Actions
 
-## Technology Stack
+## Technology Stack 🚀
 
 - **Frontend**: React 18, Vite 6
 - **Backend**: FastAPI, Python 3.9+
@@ -309,11 +309,14 @@ MIT License
 
 ## Authors
 
-**Prabesh Paudel** - Founder & CEO, Chief AI Architect, Principal Software Engineer
+**Prabesh Paudel**  
 
-**Dipson Baral** - Co-Founder, Senior Full-Stack Software Engineer
+- ***Founder & Chief Executive Officer (CEO), Chief Technology Officer (CTO), Chief AI Architect, Product Vision Lead, Lead Software Architect, Full-Stack Developer, Backend Engineer, Frontend Engineer, AI Systems Engineer, Distributed Systems Engineer, Platform Engineer, AI Runtime Engineer, AI Compiler Engineer, Workflow Engine Developer, API Engineer, Cloud Infrastructure Engineer, DevOps Engineer, Site Reliability Engineer (SRE), Security Engineer, Identity & Access Management (IAM) Engineer, Performance Engineer, Reliability Engineer, Knowledge Systems Engineer, Memory Systems Engineer, Data Platform Engineer, SDK & Developer Experience Engineer, QA Automation Engineer, Test Infrastructure Engineer, Technical Documentation Lead, Research & Development Engineer, Open Source Maintainer, Lead System Integrator, Principal Software Engineer, Creator of AstrovoxAI.***
 
-**Ranjit Paudel** - Co-member of Astrovox
+
+**Dipson Baral** - *Co-Founder*
+
+**Ranjit Paudel** - *Member of Astrovox*
 
 ---
 
