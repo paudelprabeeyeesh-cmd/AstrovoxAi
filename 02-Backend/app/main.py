@@ -53,8 +53,8 @@ load_dotenv()
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
-    title="AstrovoxAi Engine",
-    version="2.0.0",
+    title="AstravoxAi Engine",
+    version="1.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
 app.state.limiter = limiter
@@ -159,7 +159,7 @@ async def metrics():
 # Health check endpoints
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "astravox-ai-backend", "version": "2.0.0"}
+    return {"status": "healthy", "service": "astravox-ai-backend", "version": "1.0.0"}
 
 
 @app.get("/health/readiness")
@@ -177,7 +177,7 @@ async def liveness_check():
 @app.get("/")
 async def root():
     return {
-        "message": "🚀 ASTRAVOX PRIME Backend v2.0.0",
+        "message": "🚀 ASTRAVOX PRIME Backend v1.0.0",
         "status": "operational",
         "endpoints": {
             "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
