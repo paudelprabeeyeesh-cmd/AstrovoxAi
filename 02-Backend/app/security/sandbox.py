@@ -337,9 +337,6 @@ class SandboxExecutor:
         """Execute a command in a sandbox."""
         if args is None:
             args = []
-         args = []
-        
-        start_time = time.time()
         
         # Create temporary directory for execution
         work_dir = self._create_temp_dir()
@@ -445,3 +442,4 @@ __all__ = [
     "execute_python_sandboxed",
     "execute_command_sandboxed"
 ]
+

@@ -1,0 +1,29 @@
+AstrovoxAi has been installed to your Kubernetes cluster.
+
+To access the backend API:
+  1. Get the backend service URL:
+     export SERVICE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].port}" services {{ include "astrovoxai.fullname" . }}-backend)
+     echo "http://127.0.0.1:${SERVICE_PORT}"
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "astrovoxai.fullname" . }}-backend ${SERVICE_PORT}:80
+
+To access the frontend:
+  1. Get the frontend service URL:
+     export FRONTEND_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].port}" services {{ include "astrovoxai.fullname" . }}-frontend)
+     echo "http://127.0.0.1:${FRONTEND_PORT}"
+     kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "astrovoxai.fullname" . }}-frontend ${FRONTEND_PORT}:80
+
+Default login credentials:
+  Username: admin@astrovoxai.com
+  Password: changeme123
+
+Documentation:
+  https://docs.astrovoxai.com
+
+{{- if .Values.ingress.enabled }}
+Backend API URL: https://{{- index .Values.ingress.hosts 0 .host }}
+Frontend URL: https://{{- index .Values.frontend.ingress.hosts 0 .host }}
+{{- end }}
+
+{{- if .Values.frontend.ingress.enabled }}
+Frontend URL: https://{{- index .Values.frontend.ingress.hosts 0 .host }}
+{{- end }}

@@ -1,0 +1,24 @@
+apiVersion: v2
+name: astrovoxai
+description: A Helm chart for AstrovoxAi - AI-powered automation platform
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/your-org/astrovoxai
+sources:
+  - https://github.com/your-org/astrovoxai
+maintainers:
+  - name: AstrovoxAi Team
+    email: dev@astrovoxai.com
+keywords:
+  - ai
+  - automation
+  - astrovoxai
+  - llm
+annotations:
+  artifacthub.io/license: MIT
+  artifacthub.io/links: |
+    - name: GitHub Repository
+      url: https://github.com/your-org/astrovoxai
+    - name: Documentation
+      url: https://docs.astrovoxai.com

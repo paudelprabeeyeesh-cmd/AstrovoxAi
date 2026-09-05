@@ -1,0 +1,185 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-backend
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "astrovoxai.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "astrovoxai.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}-backend
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            # Application configuration
+            - name: APP_NAME
+              value: "{{ .Values.astrovoxai.app.name }}"
+            - name: APP_VERSION
+              value: "{{ .Values.astrovoxai.app.version }}"
+            - name: DEBUG
+              value: "{{ .Values.astrovoxai.app.debug | quote }}"
+              
+            # Server configuration
+            - name: SERVER_HOST
+              value: "{{ .Values.astrovoxai.server.host }}"
+            - name: SERVER_PORT
+              value: "{{ .Values.astrovoxai.server.port | quote }}"
+            - name: SERVER_WORKERS
+              value: "{{ .Values.astrovoxai.server.workers | quote }}"
+              
+            # Database configuration
+            - name: DATABASE_URL
+              value: "{{ .Values.astrovoxai.database.url }}"
+            - name: DATABASE_POOL_SIZE
+              value: "{{ .Values.astrovoxai.database.pool_size | quote }}"
+              
+            # Redis configuration
+            - name: REDIS_URL
+              value: "{{ .Values.astrovoxai.redis.url }}"
+              
+            # Supabase configuration
+            - name: SUPABASE_URL
+              value: "{{ .Values.astrovoxai.supabase.url }}"
+            - name: SUPABASE_ANON_KEY
+              value: "{{ .Values.astrovoxai.supabase.anon_key }}"
+            - name: SUPABASE_SERVICE_ROLE_KEY
+              value: "{{ .Values.astrovoxai.supabase.service_role_key }}"
+              
+            # AI Provider API Keys
+            - name: OPENAI_API_KEY
+              value: "{{ .Values.astrovoxai.openai.api_key }}"
+            - name: ANTHROPIC_API_KEY
+              value: "{{ .Values.astrovoxai.anthropic.api_key }}"
+            - name: GOOGLE_API_KEY
+              value: "{{ .Values.astrovoxai.google.api_key }}"
+              
+            # Feature flags
+            - name: FEATURE_ENABLE_WEBSOCKET
+              value: "{{ .Values.astrovoxai.features.enable_websocket | quote }}"
+            - name: FEATURE_ENABLE_FILE_UPLOAD
+              value: "{{ .Values.astrovoxai.features.enable_file_upload | quote }}"
+            - name: FEATURE_ENABLE_EMAIL
+              value: "{{ .Values.astrovoxai.features.enable_email | quote }}"
+            - name: FEATURE_ENABLE_WEBHOOKS
+              value: "{{ .Values.astrovoxai.features.enable_webhooks | quote }}"
+              
+            # Rate limiting
+            - name: RATE_LIMIT_ENABLED
+              value: "{{ .Values.astrovoxai.rate_limit.enabled | quote }}"
+            - name: RATE_LIMIT_DEFAULT
+              value: "{{ .Values.astrovoxai.rate_limit.default }}"
+            - name: RATE_LIMIT_AUTH
+              value: "{{ .Values.astrovoxai.rate_limit.auth }}"
+              
+            # Monitoring
+            - name: MONITORING_ENABLED
+              value: "{{ .Values.astrovoxai.monitoring.enabled | quote }}"
+            - name: PROMETHEUS_PORT
+              value: "{{ .Values.astrovoxai.monitoring.prometheus_port | quote }}"
+            - name: METRICS_ENDPOINT
+              value: "{{ .Values.astrovoxai.monitoring.metrics_endpoint }}"
+              
+            # Logging
+            - name: LOG_LEVEL
+              value: "{{ .Values.astrovoxai.logging.level }}"
+            - name: LOG_FORMAT
+              value: "{{ .Values.astrovoxai.logging.format }}"
+              
+            # Security
+            - name: JWT_SECRET
+              value: "{{ .Values.astrovoxai.security.jwt_secret }}"
+            - name: JWT_EXPIRATION_HOURS
+              value: "{{ .Values.astrovoxai.security.jwt_expiration_hours | quote }}"
+            - name: BCRYPT_ROUNDS
+              value: "{{ .Values.astrovoxai.security.bcrypt_rounds | quote }}"
+              
+            # File storage
+            - name: STORAGE_TYPE
+              value: "{{ .Values.astrovoxai.storage.type }}"
+            - name: STORAGE_LOCAL_PATH
+              value: "{{ .Values.astrovoxai.storage.local_path }}"
+            - name: STORAGE_S3_BUCKET
+              value: "{{ .Values.astrovoxai.storage.bucket | default \"\" }}"
+            - name: STORAGE_S3_REGION
+              value: "{{ .Values.astrovoxai.storage.region | default \"\" }}"
+            - name: STORAGE_S3_ACCESS_KEY_ID
+              value: "{{ .Values.astrovoxai.storage.access_key_id | default \"\" }}"
+            - name: STORAGE_S3_SECRET_ACCESS_KEY
+              value: "{{ .Values.astrovoxai.storage.secret_access_key | default \"\" }}"
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: app-storage
+              mountPath: /app/storage
+      volumes:
+        - name: app-storage
+          emptyDir: {}
+{{- if .Values.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-backend
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "astrovoxai.fullname" . }}-backend
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

@@ -1,0 +1,2 @@
+# API Documentation Dependencies
+pyyaml>=6.0
