@@ -1,0 +1,802 @@
+openapi: 3.0.3
+info:
+  title: AstrovoxAi API
+  description: AI-powered automation platform API
+  version: 1.0.0
+  contact:
+    name: AstrovoxAi Support
+    email: support@astrovoxai.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.astrovoxai.com
+    description: Production server
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the API
+      operationId: healthCheck
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: 1.0.0
+        '503':
+          description: Service unavailable
+  /api/v1/execute:
+    post:
+      summary: Execute DSL commands
+      description: Execute AI automation DSL commands
+      operationId: executeDsl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - dsl
+              properties:
+                dsl:
+                  type: string
+                  description: DSL commands to execute
+                  example: |
+                    load data from "https://example.com/data.csv" as raw_data
+                    search web for "AI trends 2024" as trends
+                    summarize raw_data as summary
+                    generate report from summary and trends as report
+                    email report to "user@example.com" subject "AI Report"
+                parameters:
+                  type: object
+                  description: Optional parameters for DSL execution
+                  additionalProperties:
+                    type: string
+      responses:
+        '200':
+          description: Execution successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  result:
+                    type: object
+                    description: Execution result
+                  execution_id:
+                    type: string
+                    format: uuid
+                  duration_ms:
+                    type: number
+                    example: 1250.5
+        '400':
+          description: Invalid DSL or parameters
+        '429':
+          description: Rate limit exceeded
+        '500':
+          description: Internal server error
+  /api/v1/memory:
+    get:
+      summary: Retrieve memories
+      description: Get stored memories for a user
+      operationId: getMemories
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: User ID
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+          description: Maximum number of memories to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Offset for pagination
+      responses:
+        '200':
+          description: Memories retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  memories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        content:
+                          type: string
+                        importance:
+                          type: integer
+                        created_at:
+                          type: string
+                          format: date-time
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    post:
+      summary: Store a memory
+      description: Save a new memory entry
+      operationId: storeMemory
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          schema:
+            type: string
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - content
+              properties:
+                content:
+                  type: string
+                  description: Memory content
+                  maxLength: 10000
+                importance:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 5
+                  description: Importance level (1-10)
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  description: Tags for categorization
+                  maxItems: 10
+      responses:
+        '201':
+          description: Memory stored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  message:
+                    type: string
+                    example: Memory stored successfully
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/agents:
+    get:
+      summary: List available agents
+      description: Get a list of available AI agents and their capabilities
+      operationId: listAgents
+      responses:
+        '200':
+          description: Agents list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agents:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        capabilities:
+                          type: array
+                          items:
+                            type: string
+                        status:
+                          type: string
+                          enum: [active, inactive, maintenance]
+                  total:
+                    type: integer
+    post:
+      summary: Create a new agent
+      description: Create a custom AI agent with specific capabilities
+      operationId: createAgent
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - capabilities
+              properties:
+                name:
+                  type: string
+                  description: Agent name
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Agent description
+                  maxLength: 500
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                  description: List of capabilities
+                  minItems: 1
+                  maxItems: 20
+                configuration:
+                  type: object
+                  description: Agent-specific configuration
+                  additionalProperties: true
+      responses:
+        '201':
+          description: Agent created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    example: active
+                  created_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid agent configuration
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Agent with this name already exists
+  /api/v1/agents/{agent_id}:
+    get:
+      summary: Get agent details
+      description: Get detailed information about a specific agent
+      operationId: getAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Agent ID
+      responses:
+        '200':
+          description: Agent details retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  capabilities:
+                    type: array
+                    items:
+                      type: string
+                  configuration:
+                    type: object
+                  status:
+                    type: string
+                    enum: [active, inactive, maintenance]
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
+                  last_used:
+                    type: string
+                    format: date-time
+                    nullable: true
+        '404':
+          description: Agent not found
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+    put:
+      summary: Update an agent
+      description: Update an existing agent's configuration
+      operationId: updateAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Agent ID
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Agent name
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Agent description
+                  maxLength: 500
+                capabilities:
+                  type: array
+                  items:
+                    type: string
+                  description: List of capabilities
+                  maxItems: 20
+                configuration:
+                  type: object
+                  description: Agent-specific configuration
+                  additionalProperties: true
+      responses:
+        '200':
+          description: Agent updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    example: active
+                  updated_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid update data
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Agent not found
+        '409':
+          description: Agent with this name already exists
+    delete:
+      summary: Delete an agent
+      description: Remove an agent from the system
+      operationId: deleteAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Agent ID
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Agent deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Agent not found
+  /api/v1/workflows:
+    get:
+      summary: List workflows
+      description: Get a list of workflows for the authenticated user
+      operationId: listWorkflows
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [draft, active, paused, completed, failed]
+      responses:
+        '200':
+          description: Workflows list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workflows:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        description:
+                          type: string
+                        status:
+                          type: string
+                          enum: [draft, active, paused, completed, failed]
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                        trigger_type:
+                          type: string
+                          enum: [manual, schedule, webhook, event]
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '401':
+          description: Unauthorized
+    post:
+      summary: Create a new workflow
+      description: Create a new automated workflow
+      operationId: createWorkflow
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - trigger
+              properties:
+                name:
+                  type: string
+                  description: Workflow name
+                  minLength: 1
+                  maxLength: 100
+                description:
+                  type: string
+                  description: Workflow description
+                  maxLength: 500
+                trigger:
+                  type: object
+                  required:
+                    - type
+                  properties:
+                    type:
+                      type: string
+                      enum: [manual, schedule, webhook, event]
+                    config:
+                      type: object
+                      description: Trigger-specific configuration
+                      additionalProperties: true
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - action
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                      action:
+                        type: string
+                        enum: [load, search, summarize, generate, email, save, wait, condition]
+                      config:
+                        type: object
+                        description: Action-specific configuration
+                        additionalProperties: true
+                      next_steps:
+                        type: array
+                        items:
+                          type: string
+                        description: IDs of next steps to execute
+                    minItems: 1
+      responses:
+        '201':
+          description: Workflow created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  name:
+                    type: string
+                  status:
+                    type: string
+                    example: draft
+                  created_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid workflow configuration
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+  /api/v1/workflows/{workflow_id}/execute:
+    post:
+      summary: Execute a workflow
+      description: Trigger execution of a workflow
+      operationId: executeWorkflow
+      parameters:
+        - name: workflow_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Workflow ID
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parameters:
+                  type: object
+                  description: Input parameters for workflow execution
+                  additionalProperties: true
+      responses:
+        '202':
+          description: Workflow execution started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  execution_id:
+                    type: string
+                    format: uuid
+                  workflow_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    example: queued
+                  started_at:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid workflow or parameters
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Workflow not found
+        '409':
+          description: Workflow already running
+  /api/v1/executions/{execution_id}:
+    get:
+      summary: Get execution status
+      description: Get the status and results of a workflow or DSL execution
+      operationId: getExecutionStatus
+      parameters:
+        - name: execution_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Execution ID
+      responses:
+        '200':
+          description: Execution status retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    format: uuid
+                  workflow_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                  dsl:
+                    type: string
+                    nullable: true
+                  status:
+                    type: string
+                    enum: [queued, running, completed, failed, cancelled]
+                  progress:
+                    type: number
+                    minimum: 0
+                    maximum: 100
+                    example: 75
+                  result:
+                    type: object
+                    nullable: true
+                  error:
+                    type: string
+                    nullable: true
+                  started_at:
+                    type: string
+                    format: date-time
+                  completed_at:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  duration_ms:
+                    type: integer
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Execution not found
+  /api/v1/metrics:
+    get:
+      summary: Get system metrics
+      description: Retrieve system performance and usage metrics
+      operationId: getSystemMetrics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: start_time
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Start time for metrics range
+        - name: end_time
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: End time for metrics range
+        - name: metrics
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [cpu, memory, disk, network, requests, errors, latency]
+            description: Specific metrics to retrieve
+      responses:
+        '200':
+          description: Metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                    format: date-time
+                  range_start:
+                    type: string
+                    format: date-time
+                  range_end:
+                    type: string
+                    format: date-time
+                  metrics:
+                    type: object
+                    additionalProperties:
+                      type: object
+                      additionalProperties:
+                        type: [number, string]
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+  - name: health
+    description: Health check and system status endpoints
+  - name: execution
+    description: DSL command execution and workflow management
+  - name: memory
+    description: Memory storage and retrieval operations
+  - name: agents
+    description: AI agent management and configuration
+  - name: workflows
+    description: Workflow creation, management, and execution
+  - name: metrics
+    description: System metrics and monitoring
+externalDocs:
+  description: Find more information here
+  url: https://docs.astrovoxai.com

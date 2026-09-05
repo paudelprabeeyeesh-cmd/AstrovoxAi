@@ -1,0 +1,207 @@
+# Default values for astrovoxai.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 2
+
+image:
+  repository: astrovoxai/backend
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: astrovoxai.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: astrovoxai-tls
+  #    hosts:
+  #      - astrovoxai.example.com
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Container definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Configuration for the AstrovoxAi application
+astrovoxai:
+  # Application configuration
+  app:
+    name: "AstrovoxAi"
+    version: "1.0.0"
+    debug: false
+    
+  # Server configuration
+  server:
+    host: "0.0.0.0"
+    port: 8000
+    workers: 4
+    
+  # Database configuration (if using external database)
+  database:
+    url: ""
+    pool_size: 10
+    
+  # Redis configuration (if using external redis)
+  redis:
+    url: ""
+    
+  # Supabase configuration
+  supabase:
+    url: ""
+    anon_key: ""
+    service_role_key: ""
+    
+  # AI Provider API Keys
+  openai:
+    api_key: ""
+  anthropic:
+    api_key: ""
+  google:
+    api_key: ""
+    
+  # Feature flags
+  features:
+    enable_websocket: true
+    enable_file_upload: true
+    enable_email: true
+    enable_webhooks: true
+    
+  # Rate limiting
+  rate_limit:
+    enabled: true
+    default: "120/minute"
+    auth: "5/minute"
+    
+  # Monitoring
+  monitoring:
+    enabled: true
+    prometheus_port: 9090
+    metrics_endpoint: "/metrics"
+    
+  # Logging
+  logging:
+    level: "INFO"
+    format: "json"
+    
+  # Security
+  security:
+    jwt_secret: ""
+    jwt_expiration_hours: 24
+    bcrypt_rounds: 12
+    
+  # File storage
+  storage:
+    type: "local"  # local, s3, gcs
+    local_path: "./storage"
+    # For S3/GCS:
+    # bucket: ""
+    # region: ""
+    # access_key_id: ""
+    # secret_access_key: ""
+
+# Configuration for the frontend
+frontend:
+  replicaCount: 2
+  
+  image:
+    repository: astrovoxai/frontend
+    pullPolicy: IfNotPresent
+    tag: "latest"
+    
+  service:
+    type: ClusterIP
+    port: 80
+    
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: frontend.astrovoxai.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 128Mi
+      
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
