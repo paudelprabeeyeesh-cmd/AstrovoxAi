@@ -13,6 +13,7 @@ from typing import Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
+from app.utils import BackoffStrategy
 from .events import event_bus, Event
 from .jobs import job_queue, JobPriority
 
@@ -36,12 +37,6 @@ class StepAction(Enum):
     DELAY = "delay"
     WEBHOOK = "webhook"
     NOTIFICATION = "notification"
-
-
-class BackoffStrategy(Enum):
-    EXPONENTIAL = "exponential"
-    LINEAR = "linear"
-    FIXED = "fixed"
 
 
 @dataclass

@@ -5,12 +5,16 @@ Provides common helpers used across multiple modules:
 - Naive keyword tagging
 - Extractive text summarization
 - Datetime normalization
+- Retry backoff strategies
 """
 
 from __future__ import annotations
 
 import re
 import secrets
+import time
+from dataclasses import dataclass, field
+from enum import Enum
 from typing import List
 
 
@@ -21,6 +25,14 @@ _STOPWORDS = {
     "will", "would", "could", "should", "may", "might", "can", "i", "we", "you",
     "they", "he", "she", "them", "us", "our", "your", "their",
 }
+
+
+class BackoffStrategy(str, Enum):
+    """Retry backoff strategies."""
+
+    EXPONENTIAL = "exponential"
+    LINEAR = "linear"
+    FIXED = "fixed"
 
 
 def generate_id(prefix: str = "") -> str:
@@ -64,3 +76,19 @@ def truncate(text: str, limit: int = 120) -> str:
     if len(text) <= limit:
         return text
     return text[: limit - 3] + "..."
+
+
+def backoff_delay(strategy: BackoffStrategy | str, attempt: int, base: float = 1.0) -> float:
+    """Compute retry backoff delay."""
+    if isinstance(strategy, str):
+        strategy = BackoffStrategy(strategy)
+    if strategy == BackoffStrategy.EXPONENTIAL:
+        return base * (2 ** (attempt - 1))
+    if strategy == BackoffStrategy.LINEAR:
+        return base * attempt
+    return base
+
+
+def now() -> float:
+    """Return current UTC timestamp."""
+    return time.time()

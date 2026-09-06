@@ -4,8 +4,10 @@ import asyncio
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Optional, Callable, Any
 from enum import Enum
+from typing import Optional, Callable, Any
+
+from app.utils import BackoffStrategy
 
 
 class JobStatus(Enum):
@@ -23,12 +25,6 @@ class JobPriority(Enum):
     NORMAL = 5
     HIGH = 10
     CRITICAL = 20
-
-
-class BackoffStrategy(Enum):
-    EXPONENTIAL = "exponential"
-    LINEAR = "linear"
-    FIXED = "fixed"
 
 
 @dataclass

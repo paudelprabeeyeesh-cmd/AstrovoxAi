@@ -14,20 +14,9 @@ from typing import Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
+from app.exceptions import AstrovoxError
+
 logger = logging.getLogger(__name__)
-
-
-# ============================================================================
-# Phase 350 — Unified Error Handling & Exception Hierarchy
-# ============================================================================
-
-class AstrovoxError(Exception):
-    """Base exception for all AstrovoxAI errors."""
-    def __init__(self, message: str, code: str = "UNKNOWN", details: dict = None):
-        super().__init__(message)
-        self.code = code
-        self.details = details or {}
-        self.timestamp = time.time()
 
 
 class ProviderError(AstrovoxError):
