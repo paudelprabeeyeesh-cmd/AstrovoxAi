@@ -72,4 +72,33 @@ Focus: performance profiling, memory footprint reduction, startup time improveme
 - Replace with `httpx.AsyncClient` + `asyncio.sleep`.
 - **Commit boundary**: one commit per module converted.
 
+## Phase 4: Harden
+
+Focus: security audits, robust error handling, crash recovery testing, and verifying backup/checkpoint restoration processes.
+
+### Task 4.1 — Security Audit
+- Run `bandit -r app/` and `pip-audit` against `requirements.txt`.
+- Document every finding in `docs/security-findings.md` with severity, owner, and fix plan.
+- **Commit boundary**: one commit per severity tier (critical → high → medium → low).
+
+### Task 4.2 — Robust Error Handling
+- Wrap all external HTTP calls with `tenacity` retry policies (exponential backoff, jitter, circuit-breaker fallback).
+- Ensure every `try` block has an `except` that logs context and re-raises or degrades gracefully.
+- **Commit boundary**: one commit per module hardened.
+
+### Task 4.3 — Crash Recovery & Checkpoint Testing
+- For `ai_kernel.py` and `workflow_engine.py`, write integration tests that:
+  1. Start an execution
+  2. Kill the process
+  3. Restore from checkpoint / re-hydrate state
+  4. Assert continuation or correct failure state
+- **Commit boundary**: one commit per checkpoint test suite.
+
+### Task 4.4 — Secret & Credential Hygiene
+- Audit `app/api_security.py`, `app/advanced_security.py`, and environment variable usage for hardcoded credentials.
+- Ensure all secrets come from environment variables or a secret manager.
+- Document rotation policy in `docs/deployment/secrets.md`.
+- **Commit boundary**: one commit per secret remediation.
+
+
 
