@@ -24,10 +24,8 @@ from .workspace_types import (
     SharedConversation,
     SharedFile,
     Task,
-    _auto_summary,
-    _auto_tag,
-    _generate_id,
 )
+from app.utils import auto_summary, auto_tag, generate_id
 
 
 # ============================================================================
@@ -65,13 +63,13 @@ class WorkspaceManager:
             return None
 
         project = Project(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             name=name,
             description=description,
             owner_id=owner_id,
-            tags=list(tags) if tags else _auto_tag(f"{name} {description}"),
-            summary=_auto_summary(description),
+            tags=list(tags) if tags else auto_tag(f"{name} {description}"),
+            summary=auto_summary(description),
         )
         self._projects[project.id] = project
         return project
@@ -105,8 +103,8 @@ class WorkspaceManager:
             project.name = name
         if description is not None:
             project.description = description
-            project.summary = _auto_summary(description)
-            project.tags = _auto_tag(f"{project.name} {description}")
+            project.summary = auto_summary(description)
+            project.tags = auto_tag(f"{project.name} {description}")
         if status is not None:
             project.status = status
         project.updated_at = time.time()
@@ -130,7 +128,7 @@ class WorkspaceManager:
         if not project:
             return None
         entry = MemoryEntry(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=project.workspace_id,
             user_id=user_id,
             content=content,
@@ -169,18 +167,18 @@ class WorkspaceManager:
             return None
 
         note = Note(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             title=title,
             content=content,
             author_id=author_id,
             project_id=project_id,
-            tags=list(tags) if tags else _auto_tag(f"{title} {content}"),
+            tags=list(tags) if tags else auto_tag(f"{title} {content}"),
             collaborators=[author_id],
         )
         if content:
             note.versions.append(NoteVersion(
-                id=_generate_id(),
+                id=generate_id(),
                 version_number=1,
                 content=content,
                 author_id=author_id,
@@ -221,13 +219,13 @@ class WorkspaceManager:
             note.title = title
         if content is not None and content != note.content:
             note.versions.append(NoteVersion(
-                id=_generate_id(),
+                id=generate_id(),
                 version_number=len(note.versions) + 1,
                 content=content,
                 author_id=user_id,
             ))
             note.content = content
-            note.tags = _auto_tag(f"{note.title} {content}")
+            note.tags = auto_tag(f"{note.title} {content}")
         note.updated_at = time.time()
         if user_id and user_id not in note.collaborators:
             note.collaborators.append(user_id)
@@ -268,7 +266,7 @@ class WorkspaceManager:
             return None
 
         task = Task(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             title=title,
             description=description,
@@ -279,7 +277,7 @@ class WorkspaceManager:
             due_date=due_date,
             dependencies=list(dependencies) if dependencies else [],
             estimated_hours=estimated_hours,
-            tags=list(tags) if tags else _auto_tag(f"{title} {description}"),
+            tags=list(tags) if tags else auto_tag(f"{title} {description}"),
             ai_suggested=ai_suggested,
         )
         self._tasks[task.id] = task
@@ -435,7 +433,7 @@ class WorkspaceManager:
             title = f"{title} ({len(seen) + 1})"
         seen.add(title)
         task = Task(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             title=title,
             description=description or context,
@@ -466,7 +464,7 @@ class WorkspaceManager:
             return None
 
         entry = MemoryEntry(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             user_id=user_id,
             content=content,
@@ -565,7 +563,7 @@ class WorkspaceManager:
             return None
 
         conversation = SharedConversation(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             title=title,
             project_id=project_id,
@@ -574,7 +572,7 @@ class WorkspaceManager:
             participants=list(participants) if participants else [created_by],
         )
         main_branch = ConversationBranch(
-            id=_generate_id(),
+            id=generate_id(),
             parent_branch_id="",
             name="main",
             created_by=created_by,
@@ -615,7 +613,7 @@ class WorkspaceManager:
         if not branch:
             return None
         message = {
-            "id": _generate_id(),
+            "id": generate_id(),
             "user_id": user_id,
             "role": role,
             "content": content,
@@ -641,7 +639,7 @@ class WorkspaceManager:
         parent = parent_branch_id or conversation.active_branch_id
         parent_branch = next((b for b in conversation.branches if b.id == parent), None)
         branch = ConversationBranch(
-            id=_generate_id(),
+            id=generate_id(),
             parent_branch_id=parent,
             name=name,
             created_by=user_id,
@@ -667,7 +665,7 @@ class WorkspaceManager:
         if not org_service.get_workspace(workspace_id):
             return None
         dashboard = Dashboard(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             owner_id=owner_id,
             name=name,
@@ -681,7 +679,7 @@ class WorkspaceManager:
         """Default widget set for new dashboards."""
         return [
             DashboardWidget(
-                id=_generate_id(),
+                id=generate_id(),
                 type="stat",
                 title="Active Projects",
                 config={"metric": "projects.active"},
@@ -689,7 +687,7 @@ class WorkspaceManager:
                 size="small",
             ),
             DashboardWidget(
-                id=_generate_id(),
+                id=generate_id(),
                 type="stat",
                 title="Open Tasks",
                 config={"metric": "tasks.open"},
@@ -697,7 +695,7 @@ class WorkspaceManager:
                 size="small",
             ),
             DashboardWidget(
-                id=_generate_id(),
+                id=generate_id(),
                 type="list",
                 title="Recent Activity",
                 config={"resource": "activity", "limit": 10},
@@ -705,7 +703,7 @@ class WorkspaceManager:
                 size="medium",
             ),
             DashboardWidget(
-                id=_generate_id(),
+                id=generate_id(),
                 type="quick_action",
                 title="Quick Actions",
                 config={"actions": ["new_project", "new_note", "new_task"]},
@@ -737,7 +735,7 @@ class WorkspaceManager:
         if not dashboard:
             return None
         widget = DashboardWidget(
-            id=_generate_id(),
+            id=generate_id(),
             type=widget_type,
             title=title,
             config=config or {},
@@ -773,7 +771,7 @@ class WorkspaceManager:
                 overlap = ctx_words & note_words
                 if overlap:
                     recs.append(Recommendation(
-                        id=_generate_id(),
+                        id=generate_id(),
                         workspace_id=workspace_id,
                         type="document",
                         title=note.title,
@@ -787,7 +785,7 @@ class WorkspaceManager:
         open_tasks = [t for t in tasks if t.status in ("todo", "in_progress")]
         for task in open_tasks[:5]:
             recs.append(Recommendation(
-                id=_generate_id(),
+                id=generate_id(),
                 workspace_id=workspace_id,
                 type="task",
                 title=f"Resume task: {task.title}",
@@ -802,7 +800,7 @@ class WorkspaceManager:
             if any(r.target_id == note.id for r in recs):
                 continue
             recs.append(Recommendation(
-                id=_generate_id(),
+                id=generate_id(),
                 workspace_id=workspace_id,
                 type="knowledge",
                 title=f"Review note: {note.title}",
@@ -821,7 +819,7 @@ class WorkspaceManager:
         for m in members[:5]:
             load = member_load.get(m.user_id, 0)
             recs.append(Recommendation(
-                id=_generate_id(),
+                id=generate_id(),
                 workspace_id=workspace_id,
                 type="member",
                 title=f"Connect with teammate",
@@ -834,7 +832,7 @@ class WorkspaceManager:
         # Action recommendation: summarize if project has many open tasks
         if len(open_tasks) > 5:
             recs.append(Recommendation(
-                id=_generate_id(),
+                id=generate_id(),
                 workspace_id=workspace_id,
                 type="action",
                 title="Review task backlog",
@@ -939,7 +937,7 @@ class WorkspaceManager:
         if not org_service.get_workspace(workspace_id):
             return None
         file = SharedFile(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             name=name,
             url=url,
@@ -967,7 +965,7 @@ class WorkspaceManager:
         if not org_service.get_workspace(workspace_id):
             return None
         thread = DiscussionThread(
-            id=_generate_id(),
+            id=generate_id(),
             workspace_id=workspace_id,
             resource_type=resource_type,
             resource_id=resource_id,
@@ -977,7 +975,7 @@ class WorkspaceManager:
         )
         if initial_message:
             thread.messages.append({
-                "id": _generate_id(),
+                "id": generate_id(),
                 "user_id": user_id,
                 "content": initial_message,
                 "timestamp": time.time(),
@@ -995,7 +993,7 @@ class WorkspaceManager:
         if not thread:
             return None
         message = {
-            "id": _generate_id(),
+            "id": generate_id(),
             "user_id": user_id,
             "content": content,
             "timestamp": time.time(),
