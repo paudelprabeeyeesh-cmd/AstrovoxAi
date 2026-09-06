@@ -14,6 +14,8 @@ from typing import Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.utils import now
+
 from .embeddings import embedding_service
 from .providers.base import EmbeddingVector
 
@@ -325,7 +327,7 @@ class RetrievalAnalytics:
             "query": query[:100],
             "num_results": num_results,
             "latency_ms": latency_ms,
-            "timestamp": time.time(),
+            "timestamp": now(),
         })
 
     def get_stats(self) -> dict:
@@ -340,8 +342,6 @@ class RetrievalAnalytics:
             "avg_results": sum(q["num_results"] for q in self._queries) / len(self._queries),
         }
 
-
-import time
 
 citation_generator = CitationGenerator()
 re_ranker = ReRanker()

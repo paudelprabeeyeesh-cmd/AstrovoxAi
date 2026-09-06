@@ -1,13 +1,12 @@
 """Background Job Queue — production-grade job processing with retries, dead-letter, and monitoring."""
 
 import asyncio
-import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Callable, Any
 
-from app.utils import BackoffStrategy
+from app.utils import BackoffStrategy, now
 
 
 class JobStatus(Enum):
@@ -41,7 +40,7 @@ class Job:
     error: str = ""
     result: Any = None
     progress: int = 0
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     started_at: float = 0.0
     completed_at: float = 0.0
     next_retry_at: float = 0.0
@@ -204,7 +203,7 @@ class JobQueue:
                 continue
 
             job.status = JobStatus.RUNNING
-            job.started_at = time.time()
+            job.started_at = now()
             job.worker_id = worker_tag
             await self._fire_hooks(job)
 
@@ -212,7 +211,7 @@ class JobQueue:
                 result = await asyncio.wait_for(handler(job), timeout=job.timeout_seconds)
                 job.result = result
                 job.status = JobStatus.COMPLETED
-                job.completed_at = time.time()
+                job.completed_at = now()
                 job.progress = 100
                 self._stats["completed"] += 1
                 await self._fire_hooks(job)
@@ -239,7 +238,7 @@ class JobQueue:
         else:
             job.status = JobStatus.PENDING
             delay = self._backoff_delay(job.backoff_strategy, job.retry_count)
-            job.next_retry_at = time.time() + delay
+            job.next_retry_at = now() + delay
             await asyncio.sleep(delay)
             await self._queue.put((-job.priority.value, job.created_at, job.id))
 

@@ -1,11 +1,12 @@
 """AI Agent system — autonomous multi-step reasoning and task execution."""
 
 import logging
-import time
 import re
 from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
+
+from app.utils import now
 
 from .providers.base import AIProvider, ChatMessage, ChatResponse
 from .providers.factory import ProviderFactory
@@ -201,7 +202,7 @@ class AIAgent:
             user_id=self.user_id,
             goal=goal,
             state=AgentState.PLANNING,
-            created_at=time.time(),
+            created_at=now(),
         )
 
         plan = await self._create_plan(goal)
@@ -287,7 +288,7 @@ class AIAgent:
                 return task
 
         task.state = AgentState.COMPLETED
-        task.completed_at = time.time()
+        task.completed_at = now()
         task.result = "\n".join(
             f"Step {s.step_number}: {s.result}" for s in task.steps
         )
