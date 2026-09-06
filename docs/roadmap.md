@@ -23,3 +23,27 @@ Focus: bug resolution, technical debt reduction, and maintaining test suite inte
 - `CircuitState` enum deduplicated into `app/utils.py`.
 - `now()` helper replaces direct `time.time()` calls in core modules (`executor`, `jobs`, `agent`, `knowledge_base`, `ai_kernel`, `multi_agent`, `workflow_engine`).
 - **Commit boundary**: one commit per module refactored.
+
+## Phase 2: Simplify
+
+Focus: directory restructuring, file reduction, modularizing oversized files, and eliminating code duplication.
+
+### Task 2.1 — Audit File Count & Module Responsibilities
+- Run a tree-based audit to identify files > 600 LOC or with > 3 distinct responsibilities (e.g., `caching.py`, `circuit_breaker.py`).
+- Produce a `docs/refactor-candidates.md` mapping each oversized file to a proposed split.
+- **Commit boundary**: document commit first; each split is a subsequent commit.
+
+### Task 2.2 — Directory Restructuring
+- Consolidate `app/providers/` subpackages that expose only 1–2 classes into a single `providers/core.py` module.
+- Move rarely used utilities (`app/utils.py` extensions, analytics helpers) into a `libs/` package.
+- **Commit boundary**: move + rename each package as an atomic commit.
+
+### Task 2.3 — Eliminate Enum Duplication
+- Compare `AgentState` in `app/agent.py` vs `app/multi_agent.py`. If they diverge intentionally, document the difference in `docs/enums.md`; if they overlap, merge into `app/utils.py`.
+- **Commit boundary**: one commit per enum deduplication.
+
+### Task 2.4 — Remove Dead Imports & Unused Dependencies
+- Use `ruff` to flag unused imports; delete them module-by-module.
+- Audit `requirements.txt` for packages with no import references in `app/`.
+- **Commit boundary**: one commit per module or dependency batch.
+
