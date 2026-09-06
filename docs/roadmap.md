@@ -143,6 +143,40 @@ Focus: real-world application testing, feedback integration, resolving usage-bas
 - Publish an OpenAPI spec or typed interface contract for internal consumers.
 - **Commit boundary**: one commit per interface revision.
 
+## Phase 7: Maintain
+
+Focus: iterative updates, dependency management, and prioritizing quality over feature complexity.
+
+### Task 7.1 — Dependency Management
+- Enable `dependabot` or `renovate` for automated PRs.
+- Review dependency updates weekly; merge only after tests pass.
+- **Commit boundary**: merge commit per dependency PR; do not squash-and-merge without review.
+
+### Task 7.2 — Iterative Refactoring Cadence
+- Reserve 20% of each sprint for Phase 1–3 tasks.
+- Track technical-debt tickets in the project board with clear acceptance criteria.
+- **Commit boundary**: one commit per refactoring task, linked to the ticket.
+
+### Task 7.3 — Quality Gates
+- Add a GitHub Actions workflow (or equivalent) that blocks merges when:
+  - Tests fail
+  - Lint errors appear
+  - Coverage drops
+  - Security scan finds new high/critical findings
+- **Commit boundary**: workflow definition commit + any required configuration updates.
+
+## Commit Discipline
+
+Every task in this roadmap is designed to be atomic and independently reviewable.
+No task should span multiple commits unless explicitly noted. After each commit:
+
+1. Run `git status` to verify the working tree is clean.
+2. Run `git push` (or equivalent) to sync the commit to the connected branch.
+3. Verify CI passes before beginning the next task.
+
+This ensures that Lovable's editor and any reviewers always have a working, buildable revision to inspect.
+
+
 
 
 
