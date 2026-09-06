@@ -5,7 +5,6 @@ conditional branches, loops, retry policies, scheduling, triggers,
 templates, approvals, notifications, and execution history.
 """
 
-import time
 import logging
 import asyncio
 import json
@@ -13,7 +12,7 @@ from typing import Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
-from app.utils import BackoffStrategy
+from app.utils import BackoffStrategy, now
 from .events import event_bus, Event
 from .jobs import job_queue, JobPriority
 
@@ -70,7 +69,7 @@ class Workflow:
     schedule: str = ""
     is_template: bool = False
     status: str = "inactive"
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     last_run: float = 0.0
     run_count: int = 0
     owner_id: str = ""
@@ -87,7 +86,7 @@ class WorkflowTemplate:
     tags: list[str] = field(default_factory=list)
     category: str = ""
     shared: bool = False
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     usage_count: int = 0
 
 
@@ -104,7 +103,7 @@ class WorkflowSchedule:
     next_run: float = 0.0
     last_run: float = 0.0
     run_count: int = 0
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
 
 
 @dataclass
@@ -116,7 +115,7 @@ class EventTrigger:
     filter_conditions: dict = field(default_factory=dict)
     enabled: bool = True
     triggered_count: int = 0
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
 
 
 @dataclass
@@ -137,7 +136,7 @@ class ApprovalRequest:
     execution_id: str
     step_id: str
     workflow_id: str
-    requested_at: float = field(default_factory=time.time)
+    requested_at: float = field(default_factory=now)
     expires_at: float = 0.0
     status: str = "pending"
     approver_id: str = ""
@@ -381,16 +380,16 @@ class WorkflowEngine:
         recurring: bool,
     ) -> float:
         """Compute next execution time for a schedule."""
-        now = time.time()
+        now_ts = now()
         if cron:
-            return self._next_cron(cron, now)
-        if run_at > now:
+            return self._next_cron(cron, now_ts)
+        if run_at > now_ts:
             return run_at
         if recurring and interval_seconds > 0:
-            return now + interval_seconds
-        return run_at if run_at > now else 0.0
+            return now_ts + interval_seconds
+        return run_at if run_at > now_ts else 0.0
 
-    def _next_cron(self, cron: str, now: float) -> float:
+    def _next_cron(self, cron: str, current_time: float) -> float:
         """Compute next matching time for a cron expression.
 
         Supports simple cron patterns: "minute hour day month weekday"
@@ -398,18 +397,18 @@ class WorkflowEngine:
         try:
             parts = cron.split()
             if len(parts) != 5:
-                return now + 60
+                return current_time + 60
             minute_s, hour_s, dom_s, mon_s, dow_s = parts
             from datetime import datetime, timedelta
-            dt = datetime.fromtimestamp(now) + timedelta(minutes=1)
+            dt = datetime.fromtimestamp(current_time) + timedelta(minutes=1)
             dt = dt.replace(second=0, microsecond=0)
             for _ in range(60 * 24 * 7):
                 if self._cron_match(dt, minute_s, hour_s, dom_s, mon_s, dow_s):
                     return dt.timestamp()
                 dt += timedelta(minutes=1)
-            return now + 3600
+            return current_time + 3600
         except Exception:
-            return now + 60
+            return current_time + 60
 
     def _cron_match(self, dt, minute_s, hour_s, dom_s, mon_s, dow_s) -> bool:
         """Check if datetime matches cron fields."""
@@ -477,12 +476,12 @@ class WorkflowEngine:
     async def _scheduler_loop(self):
         """Run scheduled workflows at their next_run time."""
         while self._scheduler_running:
-            now = time.time()
+            now_ts = now()
             for sid in list(self._schedules.keys()):
                 sched = self._schedules.get(sid)
                 if not sched or not sched.enabled:
                     continue
-                if sched.next_run > 0 and sched.next_run <= now:
+                if sched.next_run > 0 and sched.next_run <= now_ts:
                     try:
                         await self.execute_workflow(
                             sched.workflow_id,
@@ -490,10 +489,10 @@ class WorkflowEngine:
                         )
                     except Exception as e:
                         logger.error(f"Scheduled execution failed: {e}")
-                    sched.last_run = now
+                    sched.last_run = now_ts
                     sched.run_count += 1
                     sched.next_run = self._compute_next_run(
-                        sched.cron, now, sched.interval_seconds, sched.recurring
+                        sched.cron, now_ts, sched.interval_seconds, sched.recurring
                     )
             await asyncio.sleep(1)
 
@@ -599,7 +598,7 @@ class WorkflowEngine:
         self._executions[execution.id] = execution
         self._running.add(execution.id)
         self._execution_logs[execution.id] = []
-        execution.started_at = time.time()
+        execution.started_at = now()
         execution.logs.append(self._log(execution.id, "", "info", f"Workflow {wf.name} started"))
         wf.status = "running"
         wf.run_count += 1
@@ -616,10 +615,10 @@ class WorkflowEngine:
             logger.error(f"Workflow {workflow_id} failed: {str(e)[:200]}")
             await self._fire_notification(wf, execution, "failed")
         finally:
-            execution.completed_at = time.time()
+            execution.completed_at = now()
             wf.status = "completed" if execution.status == WorkflowStatus.COMPLETED else "failed"
             self._running.discard(execution.id)
-            wf.last_run = time.time()
+            wf.last_run = now()
 
         return execution
 
@@ -645,7 +644,7 @@ class WorkflowEngine:
         """Execute a single workflow step."""
         import secrets
         step.status = "running"
-        step.started_at = time.time()
+        step.started_at = now()
         execution.logs.append(self._log(execution.id, step.id, "info", f"Step '{step.name}' started"))
 
         if step.condition and not self._evaluate_condition(step.condition, execution):
@@ -661,7 +660,7 @@ class WorkflowEngine:
                 )
                 step.status = "completed"
                 step.result = str(result)
-                step.completed_at = time.time()
+                step.completed_at = now()
                 execution.step_results[step.id] = step.result
                 execution.logs.append(self._log(execution.id, step.id, "info", f"Step completed: {step.result[:120]}"))
                 return
@@ -724,7 +723,7 @@ class WorkflowEngine:
             execution_id=execution.id,
             step_id="",
             workflow_id=execution.workflow_id,
-            expires_at=time.time() + timeout,
+            expires_at=now() + timeout,
             auto_action=config.get("on_timeout", "reject"),
         )
         self._approvals[request.id] = request
@@ -734,7 +733,7 @@ class WorkflowEngine:
             await self._fire_notification(wf, execution, "approval_required")
 
         deadline = request.expires_at
-        while time.time() < deadline and request.status == "pending":
+        while now() < deadline and request.status == "pending":
             await asyncio.sleep(1)
             if request.status != "pending":
                 break
@@ -761,7 +760,7 @@ class WorkflowEngine:
             execution = self._executions.get(execution_id)
             if execution:
                 execution.status = WorkflowStatus.CANCELLED
-                execution.completed_at = time.time()
+                execution.completed_at = now()
             return True
         return False
 
@@ -960,7 +959,7 @@ class WorkflowEngine:
         entry = StepLog(
             step_id=step_id,
             execution_id=execution_id,
-            timestamp=time.time(),
+            timestamp=now(),
             level=level,
             message=message,
         )
