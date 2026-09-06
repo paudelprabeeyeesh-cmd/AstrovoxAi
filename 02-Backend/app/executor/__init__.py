@@ -13,19 +13,13 @@ This is Stage 34 — the architectural core of the platform.
 
 from __future__ import annotations
 
-import time
-import uuid
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+
+from app.utils import generate_id, now
 
 
 def make_id(prefix: str = "exec") -> str:
-    return f"{prefix}_{uuid.uuid4().hex[:10]}"
-
-
-def now() -> float:
-    return time.time()
+    return f"{prefix}_{generate_id()}"
 
 
 def now_iso() -> str:
