@@ -6,6 +6,7 @@ Provides common helpers used across multiple modules:
 - Extractive text summarization
 - Datetime normalization
 - Retry backoff strategies
+- Circuit breaker states
 """
 
 from __future__ import annotations
@@ -33,6 +34,14 @@ class BackoffStrategy(str, Enum):
     EXPONENTIAL = "exponential"
     LINEAR = "linear"
     FIXED = "fixed"
+
+
+class CircuitState(str, Enum):
+    """Circuit breaker states."""
+
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
 
 
 def generate_id(prefix: str = "") -> str:

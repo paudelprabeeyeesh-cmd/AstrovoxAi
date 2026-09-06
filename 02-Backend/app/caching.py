@@ -3,13 +3,8 @@
 import time
 import asyncio
 from typing import Optional, Any
-from enum import Enum
 
-
-class CircuitState(Enum):
-    CLOSED = "closed"
-    OPEN = "open"
-    HALF_OPEN = "half_open"
+from app.utils import CircuitState
 
 
 class CircuitBreaker:
