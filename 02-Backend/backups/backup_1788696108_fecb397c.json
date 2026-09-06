@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "backup_id": "backup_1788696108_fecb397c",
+    "timestamp": 1788696108.376687,
+    "version": "1.0.0",
+    "components": [
+      "kernel",
+      "memory"
+    ]
+  },
+  "state": {
+    "test": "data",
+    "value": 42
+  }
+}
