@@ -100,5 +100,30 @@ Focus: security audits, robust error handling, crash recovery testing, and verif
 - Document rotation policy in `docs/deployment/secrets.md`.
 - **Commit boundary**: one commit per secret remediation.
 
+## Phase 5: Polish
+
+Focus: enhancing UI/UX, refining the CLI, improving logging/error messaging, and producing clear documentation.
+
+### Task 5.1 — Logging Standardization
+- Define a structured log schema: `{"ts", "level", "logger", "msg", "context", "trace_id"}`.
+- Migrate `logging` calls to use `structlog` or a consistent `LoggerAdapter`.
+- **Commit boundary**: one commit per logger migration batch.
+
+### Task 5.2 — CLI & Developer Tooling
+- Add a `Makefile` or `justfile` with commands: `lint`, `typecheck`, `test`, `profile`, `migrate`, `seed`.
+- Ensure every command is idempotent and documented in `docs/developer-tools.md`.
+- **Commit boundary**: one commit per tool added.
+
+### Task 5.3 — Documentation Generation
+- Ensure every public function and class has a Google-style docstring.
+- Run `pdoc --html app/ -o docs/api/` and review the output for completeness.
+- **Commit boundary**: one commit per documentation section (API, guides, examples).
+
+### Task 5.4 — Error-Message Clarity
+- Audit `AstrovoxError` subclasses for user-facing messages; replace technical jargon with actionable guidance.
+- Add error codes and a public error-reference page in `docs/errors.md`.
+- **Commit boundary**: one commit per error-message batch.
+
+
 
 
