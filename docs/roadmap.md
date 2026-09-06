@@ -47,3 +47,29 @@ Focus: directory restructuring, file reduction, modularizing oversized files, an
 - Audit `requirements.txt` for packages with no import references in `app/`.
 - **Commit boundary**: one commit per module or dependency batch.
 
+## Phase 3: Optimize
+
+Focus: performance profiling, memory footprint reduction, startup time improvement, and addressing specific measured bottlenecks.
+
+### Task 3.1 — Baseline Profiling
+- Run `python -m cProfile -o profile.out` on representative endpoints (chat, upload, workflow trigger).
+- Use `snakeviz profile.out` or `py-spy record` to identify top-10 hot functions.
+- Document the baseline in `docs/performance-baseline.md`.
+- **Commit boundary**: profiling scripts + baseline report commit.
+
+### Task 3.2 — Startup Time Reduction
+- Lazy-load heavy singletons (`knowledge_base`, `executor`, `workflow_engine`) behind function calls instead of module-import side effects.
+- Measure cold-start time before/after with `time.perf_counter()`.
+- **Commit boundary**: one commit per lazy-load refactor.
+
+### Task 3.3 — Memory Footprint Optimization
+- Replace in-memory dictionaries holding large payloads (e.g., `caching.py`, `analytics.py`) with bounded LRU caches (`functools.lru_cache` or `cachetools.LRUCache`).
+- Add `__slots__` to hot dataclasses (`Job`, `Task`, `WorkflowExecution`) after confirming memory savings with `tracemalloc`.
+- **Commit boundary**: one commit per memory optimization.
+
+### Task 3.4 — Async I/O Audit
+- Scan for synchronous `requests` / `time.sleep` calls in `async` functions.
+- Replace with `httpx.AsyncClient` + `asyncio.sleep`.
+- **Commit boundary**: one commit per module converted.
+
+
