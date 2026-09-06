@@ -20,7 +20,6 @@ import inspect
 import os
 import signal
 import sys
-import time
 import traceback
 import uuid
 from collections import defaultdict
@@ -28,6 +27,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+
+from app.utils import now
 
 from .security_hardening import AuditLog, get_audit_log
 
@@ -74,7 +75,7 @@ class Task:
     result: Any = None
     error: Optional[str] = None
     dependencies: List[str] = field(default_factory=list)
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     started_at: Optional[float] = None
     completed_at: Optional[float] = None
     retries: int = 0
@@ -115,13 +116,13 @@ class MemoryManager:
         if entry is None:
             return None
         value, expires_at = entry
-        if expires_at is not None and expires_at < time.time():
+        if expires_at is not None and expires_at < now():
             del self._store[key]
             return None
         return value
 
     def put(self, key: str, value: Any, ttl_seconds: Optional[float] = None) -> None:
-        expires_at = time.time() + ttl_seconds if ttl_seconds is not None else None
+        expires_at = now() + ttl_seconds if ttl_seconds is not None else None
         self._store[key] = (value, expires_at)
         self._version += 1
 
@@ -209,7 +210,7 @@ class EventBus:
 
     async def publish(self, event_type: str, payload: Any = None) -> int:
         async with self._lock:
-            self._history.append((event_type, payload, time.time()))
+            self._history.append((event_type, payload, now()))
             if len(self._history) > self._history_size:
                 self._history.pop(0)
             handlers = list(self._subscribers.get(event_type, []))
@@ -243,7 +244,7 @@ class PluginRecord:
         self.path = path
         self.module = module
         self.instance = instance
-        self.loaded_at = time.time()
+        self.loaded_at = now()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -303,7 +304,7 @@ class PluginLoader:
 class Checkpoint:
     id: str
     state: Dict[str, Any]
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -478,8 +479,8 @@ class TaskScheduler:
             if not self._pending:
                 return []
             # Check deadlines
-            now = time.time()
-            self._pending = [t for t in self._pending if t.deadline is None or t.deadline > now]
+            now_ts = now()
+            self._pending = [t for t in self._pending if t.deadline is None or t.deadline > now_ts]
             if not self._pending:
                 return []
             task = self._pending.pop(0)
@@ -496,7 +497,7 @@ class TaskScheduler:
 
     async def _run_task(self, task: Task) -> Task:
         task.state = TaskState.RUNNING
-        task.started_at = time.time()
+        task.started_at = now()
         self._running[task.id] = task
         try:
             async with self._semaphore:
@@ -514,7 +515,7 @@ class TaskScheduler:
                 task.state = TaskState.FAILED
                 await self.bus.publish("task.failed", task.to_dict())
         finally:
-            task.completed_at = time.time()
+            task.completed_at = now()
             self._running.pop(task.id, None)
             if task.state == TaskState.COMPLETED:
                 self._completed.append(task)
