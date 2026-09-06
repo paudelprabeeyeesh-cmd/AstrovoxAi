@@ -124,6 +124,26 @@ Focus: enhancing UI/UX, refining the CLI, improving logging/error messaging, and
 - Add error codes and a public error-reference page in `docs/errors.md`.
 - **Commit boundary**: one commit per error-message batch.
 
+## Phase 6: Validate
+
+Focus: real-world application testing, feedback integration, resolving usage-based issues, and refining developer APIs.
+
+### Task 6.1 — Real-World Endpoint Testing
+- Deploy to a staging environment and run load tests (`locust` or `k6`) against chat, agent reasoning, and workflow endpoints.
+- Set SLOs: p95 latency < 500 ms, error rate < 0.5%.
+- **Commit boundary**: one commit per test script + results artifact.
+
+### Task 6.2 — Feedback Integration Loop
+- Instrument `app/analytics.py` to capture user-impacting errors with anonymized metadata.
+- Create a `docs/feedback-log.md` template; review weekly.
+- **Commit boundary**: one commit per instrumentation change.
+
+### Task 6.3 — Developer API Refinement
+- Review `app/providers/` interfaces for consistency (method signatures, return types, error contracts).
+- Publish an OpenAPI spec or typed interface contract for internal consumers.
+- **Commit boundary**: one commit per interface revision.
+
+
 
 
 
