@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from app.exceptions import AstrovoxError
+from app.utils import CircuitState
 
 logger = logging.getLogger(__name__)
 
@@ -349,13 +350,6 @@ timeout_manager = TimeoutManager()
 service_degradation = ServiceDegradation()
 production_readiness = ProductionReadiness()
 graceful_shutdown = GracefulShutdown()
-
-
-class CircuitState(Enum):
-    """Circuit breaker state."""
-    CLOSED = "closed"
-    OPEN = "open"
-    HALF_OPEN = "half_open"
 
 
 @dataclass
