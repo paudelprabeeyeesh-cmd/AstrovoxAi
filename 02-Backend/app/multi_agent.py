@@ -11,13 +11,14 @@ Features:
 - Comprehensive error recovery
 """
 
-import time
 import json
 import logging
 import secrets
 import asyncio
 import os
 from typing import Optional, Any
+
+from app.utils import now
 from dataclasses import dataclass, field, asdict
 from enum import Enum
 from datetime import datetime, timezone
@@ -117,8 +118,8 @@ class AgentMetadata:
     })
     health: AgentHealth = field(default_factory=AgentHealth)
     state: AgentState = AgentState.CREATED
-    created_at: float = field(default_factory=time.time)
-    updated_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
+    updated_at: float = field(default_factory=now)
 
 
 @dataclass
@@ -178,7 +179,7 @@ class Agent:
         self.state = AgentState.CREATED
         self._execution_times: list[float] = []
         self._error_count = 0
-        self._start_time = time.time()
+        self._start_time = now()
 
         # Lifecycle validation
         self._valid_transitions = {
@@ -206,7 +207,7 @@ class Agent:
         old_state = self.state
         self.state = new_state
         self.metadata.state = new_state
-        self.metadata.updated_at = time.time()
+        self.metadata.updated_at = now()
 
         logger.info(
             f"Agent '{self.config.name}' transitioned: "
@@ -245,7 +246,7 @@ class Agent:
     def get_health(self) -> AgentHealth:
         """Get current health metrics."""
         self.metadata.health.status = self.state.value
-        self.metadata.health.uptime_seconds = time.time() - self._start_time
+        self.metadata.health.uptime_seconds = now() - self._start_time
         self.metadata.health.error_count = self._error_count
 
         if self._execution_times:
@@ -394,7 +395,7 @@ class AgentTask:
     description: str
     status: TaskStatus = TaskStatus.PENDING
     result: str = ""
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     completed_at: float = 0.0
     retries: int = 0
     max_retries: int = 3
@@ -421,7 +422,7 @@ class CollaborationSession:
     status: TaskStatus = TaskStatus.PENDING
     tasks: list[AgentTask] = field(default_factory=list)
     messages: list[AgentMessage] = field(default_factory=list)
-    created_at: float = field(default_factory=time.time)
+    created_at: float = field(default_factory=now)
     completed_at: float = 0.0
     result: str = ""
 
@@ -528,18 +529,18 @@ class AgentOrchestrator:
             return task
 
         task.status = TaskStatus.IN_PROGRESS
-        start_time = time.time()
+        start_time = now()
 
         for attempt in range(task.max_retries + 1):
             try:
                 result = await agent.execute(task, {})
                 task.result = result
                 task.status = TaskStatus.COMPLETED
-                task.completed_at = time.time()
+                task.completed_at = now()
 
-                duration = time.time() - start_time
+                duration = now() - start_time
                 agent.record_execution(duration)
-                agent.metadata.health.last_heartbeat = time.time()
+                agent.metadata.health.last_heartbeat = now()
 
                 self.registry.record_health(agent.role, agent.get_health())
                 return task
@@ -640,14 +641,14 @@ class CollaborationManager:
                 from_agent=task.agent_role,
                 to_agent="manager",
                 content=task.result,
-                timestamp=time.time(),
+                timestamp=now(),
                 message_type="result",
             ))
 
         all_done = all(t.status in (TaskStatus.COMPLETED, TaskStatus.FAILED) for t in session.tasks)
         if all_done:
             session.status = TaskStatus.COMPLETED
-            session.completed_at = time.time()
+            session.completed_at = now()
             session.result = "\n\n".join(
                 f"[{t.agent_role}] {t.result}" for t in session.tasks if t.result
             )
