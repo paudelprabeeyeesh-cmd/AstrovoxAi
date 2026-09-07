@@ -60,6 +60,7 @@ class UniversalLookupEngine:
         permission_filter: Optional[List[str]] = None,
         semantic: bool = False,
     ) -> List[LookupResult]:
+        self._evict_expired()
         candidates = providers or list(self._providers.keys())
         allowed = permission_filter or self._permissions
         results: List[LookupResult] = []
@@ -80,10 +81,19 @@ class UniversalLookupEngine:
         return results[:max_results]
 
     def get(self, provider_name: str, key: str) -> Optional[Dict[str, Any]]:
+        self._evict_expired()
         provider = self._providers.get(provider_name)
         if not provider:
             return None
         return provider.get(key)
+
+    def _evict_expired(self) -> None:
+        now_ts = time.time()
+        with self._lock:
+            expired = [cache_key for cache_key, ts in self._cache_ttl.items() if now_ts > ts]
+            for cache_key in expired:
+                self._cache.pop(cache_key, None)
+                self._cache_ttl.pop(cache_key, None)
 
     def incremental_index(self, provider_name: str, changed_keys: List[str]) -> None:
         provider = self._providers.get(provider_name)

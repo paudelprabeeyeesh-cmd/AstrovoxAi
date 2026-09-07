@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 import os
 import time
@@ -42,7 +43,7 @@ class TransactionLogEntry:
     @staticmethod
     def _checksum(payload: Dict[str, Any]) -> str:
         raw = json.dumps(payload, sort_keys=True, default=str)
-        return str(hash(raw))
+        return hashlib.sha256(raw.encode()).hexdigest()
 
 
 @dataclass

@@ -140,7 +140,10 @@ class EcosystemRegistry:
         return self._verify_signature(entry)
 
     def _hash_entry(self, entry: RegistryEntry) -> str:
-        payload = json.dumps(entry.to_dict(), sort_keys=True, default=str)
+        stable = entry.to_dict()
+        stable.pop("discovered_at", None)
+        stable.pop("updated_at", None)
+        payload = json.dumps(stable, sort_keys=True, default=str)
         return hashlib.sha256(payload.encode()).hexdigest()
 
     def _verify_signature(self, entry: RegistryEntry) -> bool:
