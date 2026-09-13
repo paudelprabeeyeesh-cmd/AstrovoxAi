@@ -25,20 +25,33 @@ from .addons import create_addon, list_addons, get_addon_cost
 from .audit import log_action, get_audit_logs
 from .digest import send_daily_digest
 from .subscriptions import get_plan_limits, create_team_checkout, create_embed_subscription
-from .api_keys import create_api_key, validate_api_key, list_api_keys, delete_api_key
-from .teams import create_team, add_member, list_teams, get_team
-from .marketplace import create_prompt, list_prompts, get_prompt, increment_downloads
-from .addons import create_addon, list_addons, get_addon_cost
-from .audit import log_action, get_audit_logs
-from .digest import send_daily_digest
-from .subscriptions import get_plan_limits, create_team_checkout, create_embed_subscription
 from .rate_limit import RateLimitMiddleware
 from .ab_runner import create_ab_test, get_variant, record_result as record_ab_result
 from .citations import get_sources, create_citation
 from .usage import record_usage
+from .referrals import create_referral, track_signup, get_referral_stats
+from .integrations import create_integration, list_integrations, delete_integration
+from .posts import create_post, list_posts
+from .comments import create_comment, list_comments
+from .amas import create_ama, list_amas
+from .case_studies import create_case_study, list_case_studies
+from .outreach import create_outreach, list_outreach
+from .campaigns import create_ad_campaign, list_campaigns
+from .affiliates import create_affiliate, list_affiliates, track_conversion
+from .enterprise_accounts import create_enterprise_account, list_enterprise_accounts
+from .sso import create_sso_connection, list_sso_connections
+from .enterprise_audit import create_audit_log as create_enterprise_audit_log, list_audit_logs as list_enterprise_audit_logs
+from .slas import create_sla, get_sla
+from .custom_models import create_custom_model, list_custom_models
+from .verticals import create_vertical, list_verticals
+from .regions import create_region, list_regions
+from .sdk_keys import create_sdk_key, list_sdk_keys
+from .ma_targets import create_ma_target, list_ma_targets
+from .ipo_metrics import create_ipo_metric, list_ipo_metrics
 import uuid
+import json
 
-app = FastAPI(title="AstrovoxAi", version="0.3.0")
+app = FastAPI(title="AstrovoxAi", version="0.4.0")
 security = HTTPBearer()
 
 app.add_middleware(
@@ -101,15 +114,6 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
     sources = get_sources(str(uuid.uuid4()), user_id)
     citations = [create_citation(s, result["echo"][:200]) for s in sources]
     
-    record_usage(user_id, tokens, round(tokens * 0.00001, 6), model, result.get("cached", False))
-    
-    ab_variant = get_variant("model-comparison", user_id)
-    if ab_variant:
-        record_ab_result("model-comparison", ab_variant, "cost", tokens * 0.00001)
-    
-    sources = get_sources(str(uuid.uuid4()), user_id)
-    citations = [create_citation(s, result["echo"][:200]) for s in sources]
-    
     return SolveResponse(
         result=result["echo"],
         model=result["model"],
@@ -129,25 +133,6 @@ async def metrics():
     usage = get_usage(days=30)
     revenue = get_revenue(days=30)
     return {**usage, **revenue}
-
-@app.post("/ab/tests")
-async def create_ab_test_endpoint(name: str, variants: str, traffic_split: str, user_id: str = Depends(get_user_id)):
-    return {"test_id": create_ab_test(name, json.loads(variants), json.loads(traffic_split))}
-
-@app.get("/citations")
-async def get_citations(request_id: str = None, user_id: str = Depends(get_user_id)):
-    sources = get_sources(request_id or str(uuid.uuid4()), user_id)
-    return [create_citation(s, "") for s in sources]
-
-@app.post("/ab/tests")
-async def create_ab_test_endpoint(name: str, variants: str, traffic_split: str, user_id: str = Depends(get_user_id)):
-    import json
-    return {"test_id": create_ab_test(name, json.loads(variants), json.loads(traffic_split))}
-
-@app.get("/citations")
-async def get_citations(request_id: str = None, user_id: str = Depends(get_user_id)):
-    sources = get_sources(request_id or str(uuid.uuid4()), user_id)
-    return [create_citation(s, "") for s in sources]
 
 @app.get("/usage")
 async def usage(user_id: str = Depends(get_user_id)):
