@@ -103,13 +103,16 @@ jobs:
           asset_content_type: application/gzip
       
       - name: Upload Docker images to Docker Hub (optional)
-        if: secrets.DOCKER_USERNAME != '' && secrets.DOCKER_TOKEN != ''
+        if: ${{ secrets.DOCKER_USERNAME != '' && secrets.DOCKER_TOKEN != '' }}
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
         run: |
-          echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker tag astrovoxai/backend:${{ github.ref_name }} ${{ secrets.DOCKER_USERNAME }}/astrovoxai-backend:${{ github.ref_name }}
-          docker tag astrovoxai/frontend:${{ github.ref_name }} ${{ secrets.DOCKER_USERNAME }}/astrovoxai-frontend:${{ github.ref_name }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/astrovoxai-backend:${{ github.ref_name }}
-          docker push ${{ secrets.DOCKER_USERNAME }}/astrovoxai-frontend:${{ github.ref_name }}
+          echo "$DOCKER_TOKEN" | docker login -u "$DOCKER_USERNAME" --password-stdin
+          docker tag astrovoxai/backend:${{ github.ref_name }} "$DOCKER_USERNAME"/astrovoxai-backend:${{ github.ref_name }}
+          docker tag astrovoxai/frontend:${{ github.ref_name }} "$DOCKER_USERNAME"/astrovoxai-frontend:${{ github.ref_name }}
+          docker push "$DOCKER_USERNAME"/astrovoxai-backend:${{ github.ref_name }}
+          docker push "$DOCKER_USERNAME"/astrovoxai-frontend:${{ github.ref_name }}
       
       - name: Upload Docker images to GitHub Packages (optional)
         if: secrets.GITHUB_TOKEN != ''
