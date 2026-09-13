@@ -8,10 +8,7 @@ services:
     envVars:
       - key: OPENAI_API_KEY
         sync: false
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: astrovox-redis
-          property: connectionString
       - key: ASTROVOX_DB
         value: /data/astrovox.db
+      - key: REDIS_URL
+        value: redis://localhost:6379
