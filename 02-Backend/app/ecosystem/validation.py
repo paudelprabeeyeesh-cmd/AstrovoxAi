@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import subprocess
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
@@ -52,7 +51,7 @@ class ContinuousValidator:
         self._results: Dict[str, ValidationResult] = {}
 
     def run_unit_tests(self, target: str, runner: str = "pytest") -> ValidationResult:
-        validation_id = f"unit-{int(time.time() * 1000)}"
+        validation_id = f"unit-{int(now() * 1000)}"
         started = time.perf_counter()
         result = ValidationResult(
             validation_id=validation_id,
@@ -85,7 +84,7 @@ class ContinuousValidator:
         return result
 
     def run_security_scan(self, target: str, tool: str = "bandit") -> ValidationResult:
-        validation_id = f"security-{int(time.time() * 1000)}"
+        validation_id = f"security-{int(now() * 1000)}"
         started = time.perf_counter()
         result = ValidationResult(
             validation_id=validation_id,
@@ -118,7 +117,7 @@ class ContinuousValidator:
         return result
 
     def run_compatibility_check(self, target: str, checker: Callable[[str], Dict[str, Any]]) -> ValidationResult:
-        validation_id = f"compat-{int(time.time() * 1000)}"
+        validation_id = f"compat-{int(now() * 1000)}"
         started = time.perf_counter()
         result = ValidationResult(
             validation_id=validation_id,
@@ -142,7 +141,7 @@ class ContinuousValidator:
         return result
 
     def run_performance_benchmark(self, target: str, benchmark: Callable[[str], Dict[str, Any]]) -> ValidationResult:
-        validation_id = f"perf-{int(time.time() * 1000)}"
+        validation_id = f"perf-{int(now() * 1000)}"
         started = time.perf_counter()
         result = ValidationResult(
             validation_id=validation_id,

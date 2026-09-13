@@ -14,7 +14,6 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
-import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
@@ -115,7 +114,7 @@ class TokenBucket:
         self._hits: Deque[float] = deque()
 
     def consume(self, amount: int = 1) -> Tuple[bool, int]:
-        now = time.time()
+        now = now()
         cutoff = now - self.window
         while self._hits and self._hits[0] < cutoff:
             self._hits.popleft()
@@ -127,7 +126,7 @@ class TokenBucket:
         return True, 0
 
     def remaining(self) -> int:
-        now = time.time()
+        now = now()
         cutoff = now - self.window
         while self._hits and self._hits[0] < cutoff:
             self._hits.popleft()
@@ -316,7 +315,7 @@ class OAuthToken:
     issued_at: float = field(default_factory=time.time)
 
     def is_expired(self) -> bool:
-        return time.time() - self.issued_at >= self.expires_in
+        return now() - self.issued_at >= self.expires_in
 
 
 class OAuthServer:
@@ -377,7 +376,7 @@ class OAuthServer:
             "redirect_uri": redirect_uri,
             "scope": scope,
             "state": state,
-            "expires_at": time.time() + self.AUTH_CODE_TTL,
+            "expires_at": now() + self.AUTH_CODE_TTL,
         }
         return code
 
@@ -385,7 +384,7 @@ class OAuthServer:
         self, code: str, client_id: str, redirect_uri: str
     ) -> Optional[OAuthToken]:
         data = self._codes.pop(code, None)
-        if not data or data["expires_at"] < time.time():
+        if not data or data["expires_at"] < now():
             return None
         if data["client_id"] != client_id or data["redirect_uri"] != redirect_uri:
             return None
@@ -448,7 +447,7 @@ class OAuthServer:
 
 
 def sign_payload(payload: bytes, secret: str, timestamp: Optional[int] = None) -> str:
-    ts = timestamp or int(time.time())
+    ts = timestamp or int(now())
     mac = hmac.new(
         secret.encode("utf-8"),
         f"{ts}.".encode("utf-8") + payload,
@@ -474,7 +473,7 @@ def verify_signature(
         ts = int(ts_raw)
     except ValueError:
         return False
-    if abs(time.time() - ts) > max_age_seconds:
+    if abs(now() - ts) > max_age_seconds:
         return False
     expected = hmac.new(
         secret.encode("utf-8"),

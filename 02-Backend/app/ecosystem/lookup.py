@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import threading
-import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -88,7 +87,7 @@ class UniversalLookupEngine:
         return provider.get(key)
 
     def _evict_expired(self) -> None:
-        now_ts = time.time()
+        now_ts = now()
         with self._lock:
             expired = [cache_key for cache_key, ts in self._cache_ttl.items() if now_ts > ts]
             for cache_key in expired:

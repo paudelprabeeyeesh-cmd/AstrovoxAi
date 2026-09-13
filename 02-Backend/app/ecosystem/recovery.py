@@ -6,7 +6,6 @@ import copy
 import hashlib
 import json
 import os
-import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -28,7 +27,7 @@ class TransactionLogEntry:
         self.operation_id = operation_id
         self.action = action
         self.payload = payload
-        self.timestamp = time.time()
+        self.timestamp = now()
         self.checksum = self._checksum(payload)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -81,7 +80,7 @@ class RecoveryReport:
         self.failed: List[str] = []
         self.skipped: List[str] = []
         self.consistency_valid = True
-        self.report_generated_at = time.time()
+        self.report_generated_at = now()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -126,7 +125,7 @@ class RecoveryRollbackFramework:
         if not record:
             raise KeyError(f"Unknown operation: {operation_id}")
         record.status = OperationStatus.COMPLETED
-        record.completed_at = time.time()
+        record.completed_at = now()
         record.result = result
         record.transaction_log.append(TransactionLogEntry(operation_id, "completed", result))
 
@@ -136,7 +135,7 @@ class RecoveryRollbackFramework:
             raise KeyError(f"Unknown operation: {operation_id}")
         record.status = OperationStatus.FAILED
         record.error = error
-        record.completed_at = time.time()
+        record.completed_at = now()
         record.transaction_log.append(TransactionLogEntry(operation_id, "failed", {"error": error}))
 
     def rollback(self, operation_id: str) -> Dict[str, Any]:
@@ -145,7 +144,7 @@ class RecoveryRollbackFramework:
             raise KeyError(f"Unknown operation: {operation_id}")
         previous_state = copy.deepcopy(record.checkpoint_data)
         record.status = OperationStatus.ROLLED_BACK
-        record.completed_at = time.time()
+        record.completed_at = now()
         record.transaction_log.append(TransactionLogEntry(operation_id, "rolled_back", previous_state))
         return previous_state
 

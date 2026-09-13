@@ -6,7 +6,6 @@ import base64
 import hashlib
 import hmac
 import secrets
-import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -330,7 +329,7 @@ class IntegrationClient:
         self, connection_id: str, channel: str, text: str
     ) -> Dict[str, Any]:
         self._require(connection_id)
-        return {"ok": True, "channel": channel, "text": text, "ts": str(time.time())}
+        return {"ok": True, "channel": channel, "text": text, "ts": str(now())}
 
     # --- Discord ---
     def discord_post_message(

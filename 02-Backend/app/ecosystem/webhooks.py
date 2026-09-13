@@ -6,7 +6,6 @@ import asyncio
 import json
 import os
 import random
-import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
@@ -220,12 +219,12 @@ class WebhookManager:
                 {
                     "id": f"evt_{uuid.uuid4().hex[:12]}",
                     "event": event_name,
-                    "created_at": int(time.time()),
+                    "created_at": int(now()),
                     "data": payload,
                 },
                 default=str,
             ).encode("utf-8")
-            ts = int(time.time())
+            ts = int(now())
             signature = sign_payload(body, sub.secret, ts)
             delivery = WebhookDelivery(
                 id=f"del_{uuid.uuid4().hex[:12]}",
@@ -260,7 +259,7 @@ class WebhookManager:
             sub.last_delivery = datetime.now(timezone.utc).isoformat()
             if 200 <= status_code < 300:
                 delivery.status = "delivered"
-                delivery.delivered_at = time.time()
+                delivery.delivered_at = now()
                 self._metrics["delivered"] += 1
                 await self.delivery_store.append(delivery)
                 return
@@ -318,7 +317,7 @@ class WebhookManager:
     ) -> bool:
         if timestamp_header is not None:
             try:
-                if abs(int(timestamp_header) - int(time.time())) > 300:
+                if abs(int(timestamp_header) - int(now())) > 300:
                     return False
             except ValueError:
                 return False
