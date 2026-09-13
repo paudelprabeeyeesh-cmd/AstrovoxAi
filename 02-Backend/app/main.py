@@ -306,3 +306,156 @@ async def checkout(user_id: str = Depends(get_user_id)):
 async def cancel_billing(user_id: str = Depends(get_user_id)):
     cancel_subscription(user_id)
     return {"ok": True}
+
+@app.post("/referrals")
+async def create_referral_endpoint(email: str, user_id: str = Depends(get_user_id)):
+    return create_referral(user_id, email)
+
+@app.get("/referrals")
+async def get_referral_stats_endpoint(user_id: str = Depends(get_user_id)):
+    return get_referral_stats(user_id)
+
+@app.post("/integrations")
+async def create_integration_endpoint(type: str, config: str, user_id: str = Depends(get_user_id)):
+    return create_integration(user_id, type, config)
+
+@app.get("/integrations")
+async def list_integrations_endpoint(user_id: str = Depends(get_user_id)):
+    return list_integrations(user_id)
+
+@app.delete("/integrations/{integration_id}")
+async def delete_integration_endpoint(integration_id: str, user_id: str = Depends(get_user_id)):
+    delete_integration(integration_id, user_id)
+    return {"ok": True}
+
+@app.post("/posts")
+async def create_post_endpoint(title: str, content: str, user_id: str = Depends(get_user_id)):
+    return create_post(title, content, user_id)
+
+@app.get("/posts")
+async def list_posts_endpoint():
+    return list_posts()
+
+@app.post("/posts/{post_id}/comments")
+async def create_comment_endpoint(post_id: str, content: str, user_id: str = Depends(get_user_id)):
+    return create_comment(post_id, user_id, content)
+
+@app.get("/posts/{post_id}/comments")
+async def list_comments_endpoint(post_id: str):
+    return list_comments(post_id)
+
+@app.post("/amas")
+async def create_ama_endpoint(title: str, description: str, scheduled_at: str, user_id: str = Depends(get_user_id)):
+    return create_ama(title, description, scheduled_at)
+
+@app.get("/amas")
+async def list_amas_endpoint():
+    return list_amas()
+
+@app.post("/case-studies")
+async def create_case_study_endpoint(title: str, content: str, user_id: str = Depends(get_user_id)):
+    return create_case_study(title, content, user_id)
+
+@app.get("/case-studies")
+async def list_case_studies_endpoint():
+    return list_case_studies()
+
+@app.post("/outreach")
+async def create_outreach_endpoint(template_name: str, subject: str, body: str, recipient_email: str, user_id: str = Depends(get_user_id)):
+    return create_outreach(user_id, template_name, subject, body, recipient_email)
+
+@app.get("/outreach")
+async def list_outreach_endpoint(user_id: str = Depends(get_user_id)):
+    return list_outreach(user_id)
+
+@app.post("/campaigns")
+async def create_campaign_endpoint(name: str, platform: str, budget: float, start_date: str, end_date: str, user_id: str = Depends(get_user_id)):
+    return create_ad_campaign(name, platform, budget, start_date, end_date)
+
+@app.get("/campaigns")
+async def list_campaigns_endpoint():
+    return list_campaigns()
+
+@app.post("/affiliates")
+async def create_affiliate_endpoint(name: str, email: str, user_id: str = Depends(get_user_id)):
+    return create_affiliate(user_id, name, email)
+
+@app.get("/affiliates")
+async def list_affiliates_endpoint():
+    return list_affiliates()
+
+@app.post("/enterprise/accounts")
+async def create_enterprise_account_endpoint(company: str, contact_email: str, user_id: str = Depends(get_user_id)):
+    return create_enterprise_account(company, contact_email)
+
+@app.get("/enterprise/accounts")
+async def list_enterprise_accounts_endpoint():
+    return list_enterprise_accounts()
+
+@app.post("/sso")
+async def create_sso_endpoint(provider: str, config: str, user_id: str = Depends(get_user_id)):
+    return create_sso_connection(user_id, provider, config)
+
+@app.get("/sso")
+async def list_sso_endpoint(user_id: str = Depends(get_user_id)):
+    return list_sso_connections(user_id)
+
+@app.get("/enterprise/audit")
+async def enterprise_audit_endpoint(user_id: str = Depends(get_user_id)):
+    return list_enterprise_audit_logs(user_id)
+
+@app.post("/slas")
+async def create_sla_endpoint(account_id: str, tier: str, uptime_guarantee: float, response_time_hours: int, user_id: str = Depends(get_user_id)):
+    return create_sla(account_id, tier, uptime_guarantee, response_time_hours)
+
+@app.get("/slas/{account_id}")
+async def get_sla_endpoint(account_id: str, user_id: str = Depends(get_user_id)):
+    return get_sla(account_id)
+
+@app.post("/custom-models")
+async def create_custom_model_endpoint(name: str, config: str, user_id: str = Depends(get_user_id)):
+    return create_custom_model(user_id, name, config)
+
+@app.get("/custom-models")
+async def list_custom_models_endpoint(user_id: str = Depends(get_user_id)):
+    return list_custom_models(user_id)
+
+@app.post("/verticals")
+async def create_vertical_endpoint(name: str, description: str, config: str, user_id: str = Depends(get_user_id)):
+    return create_vertical(name, description, config)
+
+@app.get("/verticals")
+async def list_verticals_endpoint():
+    return list_verticals()
+
+@app.post("/regions")
+async def create_region_endpoint(name: str, code: str, config: str, user_id: str = Depends(get_user_id)):
+    return create_region(name, code, config)
+
+@app.get("/regions")
+async def list_regions_endpoint():
+    return list_regions()
+
+@app.post("/sdk-keys")
+async def create_sdk_key_endpoint(name: str, user_id: str = Depends(get_user_id)):
+    return create_sdk_key(user_id, name)
+
+@app.get("/sdk-keys")
+async def list_sdk_keys_endpoint(user_id: str = Depends(get_user_id)):
+    return list_sdk_keys(user_id)
+
+@app.post("/ma-targets")
+async def create_ma_target_endpoint(name: str, description: str, valuation: float, user_id: str = Depends(get_user_id)):
+    return create_ma_target(name, description, valuation)
+
+@app.get("/ma-targets")
+async def list_ma_targets_endpoint():
+    return list_ma_targets()
+
+@app.post("/ipo-metrics")
+async def create_ipo_metric_endpoint(name: str, target: str, current: str, user_id: str = Depends(get_user_id)):
+    return create_ipo_metric(name, target, current)
+
+@app.get("/ipo-metrics")
+async def list_ipo_metrics_endpoint():
+    return list_ipo_metrics()
