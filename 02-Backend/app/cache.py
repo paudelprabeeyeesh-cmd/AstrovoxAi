@@ -4,6 +4,7 @@ import json
 try:
     import redis
     r = redis.Redis()
+    r.exists("test")
 except Exception:
     r = None
 
