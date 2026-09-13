@@ -45,6 +45,7 @@ build_output.txt
 lint_output.txt
 typecheck_output.txt
 vitest_*.txt
+*.txt
 
 # Project noise
 .packagejsonbyai/
