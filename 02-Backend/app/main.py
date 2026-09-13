@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from .cost import count_tokens
 from .cache import cached
 from .router import choose_model
@@ -31,6 +32,7 @@ from .addons import create_addon, list_addons, get_addon_cost
 from .audit import log_action, get_audit_logs
 from .digest import send_daily_digest
 from .subscriptions import get_plan_limits, create_team_checkout, create_embed_subscription
+from .rate_limit import RateLimitMiddleware
 from .ab_runner import create_ab_test, get_variant, record_result as record_ab_result
 from .citations import get_sources, create_citation
 from .usage import record_usage
@@ -38,6 +40,16 @@ import uuid
 
 app = FastAPI(title="AstrovoxAi", version="0.3.0")
 security = HTTPBearer()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.add_middleware(RateLimitMiddleware)
 
 @app.on_event("startup")
 def startup():

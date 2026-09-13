@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AstrovoxAI Embed</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; }
+    #chat { height: 500px; display: flex; flex-direction: column; }
+    #messages { flex: 1; padding: 10px; overflow-y: auto; }
+    .user { text-align: right; color: #2563eb; }
+    .bot { text-align: left; color: #4b5563; }
+    #input-area { display: flex; padding: 10px; border-top: 1px solid #e5e7eb; }
+    #prompt { flex: 1; padding: 8px; }
+  </style>
+</head>
+<body>
+  <div id="chat">
+    <div id="messages"></div>
+    <div id="input-area">
+      <input type="text" id="prompt" placeholder="Ask anything..." />
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+  <script>
+    const API_KEY = "YOUR_API_KEY";
+    async function send() {
+      const input = document.getElementById("prompt");
+      const messages = document.getElementById("messages");
+      const text = input.value;
+      messages.innerHTML += `<div class="user">${text}</div>`;
+      const res = await fetch("https://api.astrovox.ai/v1/solve", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${API_KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      messages.innerHTML += `<div class="bot">${data.result}</div>`;
+      input.value = "";
+    }
+  </script>
+</body>
+</html>

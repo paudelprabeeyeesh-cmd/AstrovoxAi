@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "AstrovoxAI",
+  "version": "1.0",
+  "description": "Summarize any page with AstrovoxAI",
+  "permissions": ["activeTab", "storage"],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
