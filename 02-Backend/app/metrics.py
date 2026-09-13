@@ -1,123 +1,44 @@
-"""Prometheus metrics for AstrovoxAI backend."""
-
-import time
+import sqlite3
 import os
-from functools import wraps
+from datetime import datetime, timedelta
+from .database import DB_PATH
 
-# Prometheus availability flag
-PROMETHEUS_AVAILABLE = False
-try:
-    from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
-    PROMETHEUS_AVAILABLE = True
-except ImportError:
-    pass
+def get_usage(user_id: str = None, days: int = 30) -> dict:
+    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        where = "WHERE created_at >= ?"
+        params = [cutoff]
+        if user_id:
+            where += " AND user_id = ?"
+            params.append(user_id)
+        rows = conn.execute(f"SELECT COUNT(*) as total_requests, SUM(tokens) as total_tokens, SUM(cost) as total_cost FROM usage {where}", params).fetchone()
+        return {
+            "total_requests": rows["total_requests"] or 0,
+            "total_tokens": rows["total_tokens"] or 0,
+            "total_cost": round(rows["total_cost"] or 0, 4),
+        }
 
-# Metrics
-if PROMETHEUS_AVAILABLE:
-    http_requests_total = Counter(
-        "http_requests_total",
-        "Total HTTP requests",
-        ["method", "endpoint", "status"]
-    )
+def get_daily_cost(days: int = 7) -> list[dict]:
+    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute("""
+            SELECT date(created_at) as day, SUM(cost) as cost, COUNT(*) as requests
+            FROM usage
+            WHERE created_at >= ?
+            GROUP BY date(created_at)
+            ORDER BY day DESC
+        """, (cutoff,)).fetchall()
+        return [{"day": r["day"], "cost": round(r["cost"] or 0, 4), "requests": r["requests"]} for r in rows]
 
-    http_request_duration = Histogram(
-        "http_request_duration_seconds",
-        "HTTP request duration in seconds",
-        ["method", "endpoint"],
-        buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
-    )
-
-    active_users = Gauge(
-        "active_users",
-        "Number of active users in the last 5 minutes"
-    )
-
-    ai_requests_total = Counter(
-        "ai_requests_total",
-        "Total AI API requests",
-        ["model", "status"]
-    )
-
-    ai_tokens_total = Counter(
-        "ai_tokens_total",
-        "Total AI tokens consumed",
-        ["model"]
-    )
-
-    cache_hits_total = Counter(
-        "cache_hits_total",
-        "Total cache hits",
-        ["backend_type"]
-    )
-
-    cache_misses_total = Counter(
-        "cache_misses_total",
-        "Total cache misses",
-        ["backend_type"]
-    )
-
-    db_query_duration = Histogram(
-        "db_query_duration_seconds",
-        "Database query duration in seconds",
-        ["operation"],
-        buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
-    )
-
-    rate_limit_total = Counter(
-        "rate_limit_total",
-        "Total rate limit checks",
-        ["policy", "identity", "allowed"]
-    )
-
-    rate_limit_remaining = Gauge(
-        "rate_limit_remaining",
-        "Remaining requests in current window",
-        ["policy", "identity"]
-    )
-
-
-def track_request(method: str, endpoint: str, status: int, duration: float):
-    """Track an HTTP request."""
-    if PROMETHEUS_AVAILABLE:
-        http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
-        http_request_duration.labels(method=method, endpoint=endpoint).observe(duration)
-
-
-def track_ai_request(model: str, status: str, tokens: int = 0):
-    """Track an AI API request."""
-    if PROMETHEUS_AVAILABLE:
-        ai_requests_total.labels(model=model, status=status).inc()
-        if tokens > 0:
-            ai_tokens_total.labels(model=model).inc(tokens)
-
-
-def track_cache_hit(backend_type: str):
-    """Track a cache hit."""
-    if PROMETHEUS_AVAILABLE:
-        cache_hits_total.labels(backend_type=backend_type).inc()
-
-
-def track_cache_miss(backend_type: str):
-    """Track a cache miss."""
-    if PROMETHEUS_AVAILABLE:
-        cache_misses_total.labels(backend_type=backend_type).inc()
-
-
-def track_db_query(operation: str, duration: float):
-    """Track a database query."""
-    if PROMETHEUS_AVAILABLE:
-        db_query_duration.labels(operation=operation).observe(duration)
-
-
-def track_rate_limit(policy: str, identity: str, allowed: bool, remaining: int = 0):
-    """Track a rate limit check."""
-    if PROMETHEUS_AVAILABLE:
-        rate_limit_total.labels(policy=policy, identity=identity, allowed=str(allowed)).inc()
-        rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
-
-
-def get_metrics():
-    """Get Prometheus-formatted metrics."""
-    if PROMETHEUS_AVAILABLE:
-        return generate_latest()
-    return b"# Prometheus client not available\n"
+def get_revenue(days: int = 30) -> dict:
+    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute("""
+            SELECT COUNT(*) as paying_users, SUM(amount) as revenue
+            FROM subscriptions
+            WHERE created_at >= ?
+        """, (cutoff,)).fetchone()
+        return {"paying_users": row["paying_users"] or 0, "revenue": round(row["revenue"] or 0, 2)}
