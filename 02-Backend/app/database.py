@@ -163,11 +163,147 @@ def init_db():
             stripe_price_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
-        CREATE TABLE IF NOT EXISTS audit_logs (
+        CREATE TABLE IF NOT EXISTS ipo_metrics (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            target TEXT NOT NULL,
+            current TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS referrals (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            code TEXT UNIQUE NOT NULL,
+            email TEXT NOT NULL,
+            signup_user_id TEXT,
+            signup_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS integrations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            config TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS posts (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            author TEXT DEFAULT 'founder',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS comments (
+            id TEXT PRIMARY KEY,
+            post_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS amas (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            scheduled_at TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS case_studies (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS outreach (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            template_name TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            body TEXT NOT NULL,
+            recipient_email TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS ad_campaigns (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            platform TEXT NOT NULL,
+            budget REAL NOT NULL,
+            start_date TEXT NOT NULL,
+            end_date TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS affiliates (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            code TEXT UNIQUE NOT NULL,
+            conversions INTEGER DEFAULT 0,
+            revenue REAL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS enterprise_accounts (
+            id TEXT PRIMARY KEY,
+            company TEXT NOT NULL,
+            contact_email TEXT NOT NULL,
+            plan TEXT DEFAULT 'enterprise',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS sso_connections (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            provider TEXT NOT NULL,
+            config TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS enterprise_audit_logs (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             action TEXT NOT NULL,
             metadata TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS slas (
+            id TEXT PRIMARY KEY,
+            account_id TEXT NOT NULL,
+            tier TEXT NOT NULL,
+            uptime_guarantee REAL NOT NULL,
+            response_time_hours INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS custom_models (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            config TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS verticals (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            config TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS regions (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            code TEXT NOT NULL,
+            config TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS sdk_keys (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            key_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS ma_targets (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            valuation REAL NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
@@ -188,6 +324,25 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
 CREATE INDEX IF NOT EXISTS idx_marketplace_user ON marketplace_prompts(user_id);
 CREATE INDEX IF NOT EXISTS idx_addons_user ON addons(user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_user ON referrals(user_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_code ON referrals(code);
+CREATE INDEX IF NOT EXISTS idx_integrations_user ON integrations(user_id);
+CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
+CREATE INDEX IF NOT EXISTS idx_amas_scheduled ON amas(scheduled_at);
+CREATE INDEX IF NOT EXISTS idx_case_studies_user ON case_studies(user_id);
+CREATE INDEX IF NOT EXISTS idx_outreach_user ON outreach(user_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON ad_campaigns(start_date, end_date);
+CREATE INDEX IF NOT EXISTS idx_affiliates_code ON affiliates(code);
+CREATE INDEX IF NOT EXISTS idx_enterprise_accounts_company ON enterprise_accounts(company);
+CREATE INDEX IF NOT EXISTS idx_sso_user ON sso_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_enterprise_audit_user ON enterprise_audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_slas_account ON slas(account_id);
+CREATE INDEX IF NOT EXISTS idx_custom_models_user ON custom_models(user_id);
+CREATE INDEX IF NOT EXISTS idx_verticals_name ON verticals(name);
+CREATE INDEX IF NOT EXISTS idx_regions_code ON regions(code);
+CREATE INDEX IF NOT EXISTS idx_sdk_keys_user ON sdk_keys(user_id);
+CREATE INDEX IF NOT EXISTS idx_ma_targets_name ON ma_targets(name);
+CREATE INDEX IF NOT EXISTS idx_ipo_metrics_name ON ipo_metrics(name);
         """)
 
 @contextmanager
