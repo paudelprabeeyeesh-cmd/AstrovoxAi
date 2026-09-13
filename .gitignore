@@ -1,5 +1,3 @@
-
-
 # Dependencies
 node_modules/
 
@@ -21,11 +19,13 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+.pytest_cache/
 
 # Databases / local data
 *.db
 *.sqlite
 *.sqlite3
+usage.db
 
 # OS / editor junk
 .DS_Store
@@ -39,3 +39,28 @@ logs/*.log
 # Backup / temp files
 *~
 *.bak
+
+# Scratch / output files
+build_output.txt
+lint_output.txt
+typecheck_output.txt
+vitest_*.txt
+
+# Project noise
+.packagejsonbyai/
+.aider*
+charts/
+infrastructure/
+monitoring/
+scripts/
+supabase/
+database/
+tools/
+examples/
+tests/
+Frontend/
+Backend/
+astrovox-ai/
+01-Frontend/
+storage/
+*.jsonl
