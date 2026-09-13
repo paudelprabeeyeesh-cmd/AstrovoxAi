@@ -48,10 +48,22 @@ from .regions import create_region, list_regions
 from .sdk_keys import create_sdk_key, list_sdk_keys
 from .ma_targets import create_ma_target, list_ma_targets
 from .ipo_metrics import create_ipo_metric, list_ipo_metrics
+from .api.solve import Solver
+from .core.guardrails import sanitize_input, validate_output, add_canary
+from .core.pii import redact_pii, restore_pii
+from .core.moderation import check_moderation
+from .core.grounding import ground_answer
+from .core.tracing import start_trace, log_llm_call, get_prompt_hash
+from .core.context import ContextManager
+from .core.ratelimit import rate_limiter
+from .core.budget import cost_circuit_breaker
+from .core.circuit_breaker import CircuitBreaker
+from .prompts import PromptVersionManager
 import uuid
 import json
+import time
 
-app = FastAPI(title="AstrovoxAi", version="0.4.0")
+app = FastAPI(title="AstrovoxAi", version="0.5.0")
 security = HTTPBearer()
 
 app.add_middleware(
@@ -74,55 +86,99 @@ def get_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -
         raise HTTPException(status_code=401, detail="Invalid token")
     return token.replace("user-", "")
 
+solver = Solver(llm_client=None)
+context_manager = ContextManager()
+prompt_manager = PromptVersionManager()
+
 @app.post("/solve")
 async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
-    memories = search_memories(user_id, req.text, limit=3)
-    memory_context = "\n".join([f"- {m.key}: {m.value}" for m in memories])
-    
-    docs = search_docs(user_id, req.text, limit=3)
-    doc_context = "\n".join([f"[{d.title or 'doc'}]: {d.content[:500]}" for d in docs])
-    
-    context_parts = []
-    if memory_context:
-        context_parts.append(f"Memories:\n{memory_context}")
-    if doc_context:
-        context_parts.append(f"Knowledge:\n{doc_context}")
-    
-    full_prompt = "\n\n".join(context_parts + [f"User: {req.text}"]) if context_parts else req.text
-    model = choose_model("simple")
-    tokens = count_tokens(full_prompt, model=model)
-    
-    cache_key = f"{user_id}:{req.text}"
-    result = cached(cache_key, lambda t: {"echo": t, "model": model, "tokens": tokens})
-    confidence = 0.9 if tokens < 50 else 0.6
-    answer = safe_answer(confidence)
-    
-    conversation_id = req.conversation_id
-    if not conversation_id:
-        conv = create_conversation(user_id, title=req.text[:50])
-        conversation_id = conv.id
-    
-    add_message(conversation_id, "user", req.text)
-    bot_msg = add_message(conversation_id, "assistant", result["echo"])
-    
-    record_usage(user_id, tokens, round(tokens * 0.00001, 6), model, result.get("cached", False))
-    
-    ab_variant = get_variant("model-comparison", user_id)
-    if ab_variant:
-        record_ab_result("model-comparison", ab_variant, "cost", tokens * 0.00001)
-    
-    sources = get_sources(str(uuid.uuid4()), user_id)
-    citations = [create_citation(s, result["echo"][:200]) for s in sources]
-    
-    return SolveResponse(
-        result=result["echo"],
-        model=result["model"],
-        cost_usd=round(tokens * 0.00001, 6),
-        cached=result.get("cached", False),
-        memories_used=[m.key for m in memories],
-        conversation_id=conversation_id,
-        message_id=bot_msg.id
-    )
+    with start_trace("solve", user_id, {"query_length": len(req.text)}):
+        sanitized, injection_detected = sanitize_input(req.text)
+        if injection_detected:
+            log_action(user_id, "injection_attempt", json.dumps({"query": req.text[:100]}))
+        
+        moderated, flagged_category = check_moderation(sanitized)
+        if moderated:
+            return SolveResponse(
+                result="I cannot process this request.",
+                model="moderation",
+                cost_usd=0.0,
+                cached=False,
+                memories_used=[],
+                conversation_id=None,
+                message_id=None,
+            )
+        
+        redacted = redact_pii(sanitized)
+        prompt_with_canary = add_canary(redacted)
+        
+        memories = search_memories(user_id, req.text, limit=3)
+        docs = search_docs(user_id, req.text, limit=3)
+        
+        context_parts = []
+        if memories:
+            memory_context = "\n".join([f"- {m.key}: {m.value}" for m in memories])
+            context_parts.append(f"Memories:\n{memory_context}")
+        if docs:
+            doc_context = "\n".join([f"[{d.title or 'doc'}]: {d.content[:500]}" for d in docs])
+            context_parts.append(f"Knowledge:\n{doc_context}")
+        
+        full_prompt = "\n\n".join(context_parts + [f"User: {prompt_with_canary}"]) if context_parts else prompt_with_canary
+        
+        model = choose_model("simple")
+        tokens = count_tokens(full_prompt, model=model)
+        
+        cache_key = f"{user_id}:{req.text}"
+        result = cached(cache_key, lambda t: {"echo": t, "model": model, "tokens": tokens})
+        confidence = 0.9 if tokens < 50 else 0.6
+        
+        response_text = result["echo"]
+        cleaned_response, canary_detected = validate_output(response_text)
+        
+        grounded_response, refused, confidence = ground_answer(
+            cleaned_response, docs, req.text
+        )
+        
+        conversation_id = req.conversation_id
+        if not conversation_id:
+            conv = create_conversation(user_id, title=req.text[:50])
+            conversation_id = conv.id
+        
+        add_message(conversation_id, "user", req.text)
+        bot_msg = add_message(conversation_id, "assistant", grounded_response)
+        
+        record_usage(user_id, tokens, round(tokens * 0.00001, 6), model, result.get("cached", False))
+        
+        ab_variant = get_variant("model-comparison", user_id)
+        if ab_variant:
+            record_ab_result("model-comparison", ab_variant, "cost", tokens * 0.00001)
+        
+        sources = get_sources(str(uuid.uuid4()), user_id)
+        citations = [create_citation(s, grounded_response[:200]) for s in sources]
+        
+        prompt_hash = get_prompt_hash(full_prompt)
+        log_llm_call(
+            prompt_hash=prompt_hash,
+            model=model,
+            tokens=tokens,
+            cost=round(tokens * 0.00001, 6),
+            latency_ms=0,
+            cached=result.get("cached", False),
+        )
+        
+        cost_circuit_breaker.record_cost(user_id, round(tokens * 0.00001, 6))
+        
+        return SolveResponse(
+            result=grounded_response,
+            model=model,
+            cost_usd=round(tokens * 0.00001, 6),
+            cached=result.get("cached", False),
+            memories_used=[m.key for m in memories],
+            conversation_id=conversation_id,
+            message_id=bot_msg.id,
+            confidence=confidence,
+            refused=refused,
+        )
 
 @app.get("/health")
 async def health():

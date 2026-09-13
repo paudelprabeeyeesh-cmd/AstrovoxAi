@@ -2,23 +2,31 @@ import logging
 import time
 import uuid
 from typing import Optional
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
 
 logger = logging.getLogger(__name__)
 
-trace.set_tracer_provider(
-    TracerProvider(
-        resource=Resource.create({"service.name": "astrovoxai"})
+try:
+    from opentelemetry import trace
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
+    
+    trace.set_tracer_provider(
+        TracerProvider(
+            resource=Resource.create({"service.name": "astrovoxai"})
+        )
     )
-)
-tracer = trace.get_tracer(__name__)
+    tracer = trace.get_tracer(__name__)
+    OPENTELEMETRY_AVAILABLE = True
+except ImportError:
+    tracer = None
+    OPENTELEMETRY_AVAILABLE = False
 
 
-def start_trace(name: str, user_id: str, attributes: dict = None) -> trace.Span:
+def start_trace(name: str, user_id: str, attributes: dict = None):
+    if not OPENTELEMETRY_AVAILABLE:
+        return None
     span = tracer.start_as_current_editor(name)
     span.set_attribute("user_id", user_id)
     span.set_attribute("request_id", str(uuid.uuid4()))

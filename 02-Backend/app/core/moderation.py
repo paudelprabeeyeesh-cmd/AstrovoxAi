@@ -1,6 +1,5 @@
 import logging
 from typing import Optional
-import openai
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +11,7 @@ MODERATION_CATEGORIES = [
 
 def check_moderation(text: str) -> tuple[bool, Optional[str]]:
     try:
+        import openai
         client = openai.OpenAI()
         response = client.moderations.create(input=text)
         result = response.results[0]

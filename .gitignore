@@ -45,7 +45,6 @@ build_output.txt
 lint_output.txt
 typecheck_output.txt
 vitest_*.txt
-*.txt
 
 # Project noise
 .packagejsonbyai/
@@ -53,15 +52,12 @@ vitest_*.txt
 charts/
 infrastructure/
 monitoring/
-scripts/
 supabase/
 database/
 tools/
 examples/
-tests/
 Frontend/
 Backend/
 astrovox-ai/
 01-Frontend/
 storage/
-*.jsonl

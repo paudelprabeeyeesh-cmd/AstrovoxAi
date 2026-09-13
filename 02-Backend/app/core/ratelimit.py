@@ -44,3 +44,6 @@ class PerUserRateLimiter:
             return False, {"reason": "burst_limit_exceeded", "limit": limit["burst"]}
         
         return True, {"remaining": limit["sustained"] - user_data["requests"]}
+
+
+rate_limiter = PerUserRateLimiter()

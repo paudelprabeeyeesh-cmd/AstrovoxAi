@@ -34,3 +34,6 @@ class CostCircuitBreaker:
     def _get_today(self) -> str:
         from datetime import datetime
         return datetime.utcnow().date().isoformat()
+
+
+cost_circuit_breaker = CostCircuitBreaker()

@@ -1,3 +1,3 @@
-from app.services.rag import search, retrieve
+from app.services.rag import RAGService
 
-__all__ = ["search", "retrieve"]
+__all__ = ["RAGService"]
