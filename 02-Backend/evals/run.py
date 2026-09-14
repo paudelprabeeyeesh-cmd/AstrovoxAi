@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Evaluation pipeline for AstrovoxAI.
 Runs golden test set and scores precision/recall/faithfulness/answer_relevance.
@@ -12,10 +12,10 @@ from app.core.router import call_llm
 from app.database import get_db
 
 GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden.jsonl")
+BASELINE_PATH = os.path.join(os.path.dirname(__file__), "baseline.json")
 
 
 def load_golden_set():
-    """Load golden test pairs."""
     if not os.path.exists(GOLDEN_PATH):
         print(f"Golden set not found at {GOLDEN_PATH}")
         return []
@@ -24,10 +24,6 @@ def load_golden_set():
 
 
 def score_response(prompt: str, expected: str, actual: str) -> dict:
-    """
-    Score a response against expected output.
-    Returns precision, recall, faithfulness, answer_relevance.
-    """
     expected_words = set(expected.lower().split())
     actual_words = set(actual.lower().split())
     
@@ -50,17 +46,25 @@ def score_response(prompt: str, expected: str, actual: str) -> dict:
     }
 
 
+def load_baseline() -> dict | None:
+    if not os.path.exists(BASELINE_PATH):
+        return None
+    with open(BASELINE_PATH, "r") as f:
+        return json.load(f)
+
+
+def save_baseline(scores: dict):
+    with open(BASELINE_PATH, "w") as f:
+        json.dump(scores, f, indent=2)
+
+
 def run_evaluation():
-    """Run full evaluation pipeline."""
     print("=== AstrovoxAI Evaluation Pipeline ===")
     
     golden_set = load_golden_set()
     if not golden_set:
-        print("No golden test set found. Creating sample...")
-        golden_set = [
-            {"prompt": "What is the capital of France?", "expected": "Paris"},
-            {"prompt": "Explain Newton's first law", "expected": "An object at rest stays at rest"},
-        ]
+        print("No golden test set found.")
+        return
     
     print(f"Running {len(golden_set)} test cases...\n")
     
@@ -93,15 +97,33 @@ def run_evaluation():
         print(f"[{i+1}] {status} - relevance={scores['answer_relevance']:.2f}, precision={scores['precision']:.2f}")
     
     n = len(results) if results else 1
+    avg_scores = {
+        "precision": round(total["precision"] / n, 3),
+        "recall": round(total["recall"] / n, 3),
+        "faithfulness": round(total["faithfulness"] / n, 3),
+        "answer_relevance": round(total["answer_relevance"] / n, 3),
+    }
+    
     print(f"\n=== Summary ===")
     print(f"Tests run: {len(results)}")
-    print(f"Avg precision: {total['precision']/n:.3f}")
-    print(f"Avg recall: {total['recall']/n:.3f}")
-    print(f"Avg faithfulness: {total['faithfulness']/n:.3f}")
-    print(f"Avg answer_relevance: {total['answer_relevance']/n:.3f}")
+    for k, v in avg_scores.items():
+        print(f"Avg {k}: {v:.3f}")
     
     passed = sum(1 for r in results if r["scores"]["answer_relevance"] >= 0.5)
-    print(f"Pass rate: {passed}/{len(results)} ({100*passed/len(results):.1f}%)")
+    pass_rate = 100 * passed / len(results) if results else 0
+    print(f"Pass rate: {passed}/{len(results)} ({pass_rate:.1f}%)")
+    
+    baseline = load_baseline()
+    if baseline:
+        drop = (baseline["answer_relevance"] - avg_scores["answer_relevance"]) / baseline["answer_relevance"] if baseline["answer_relevance"] else 0
+        if drop > 0.10:
+            print(f"BLOCKED: answer_relevance dropped {100*drop:.1f}% from baseline {baseline['answer_relevance']}")
+            sys.exit(1)
+        else:
+            print(f"OK: answer_relevance within tolerance")
+    else:
+        save_baseline(avg_scores)
+        print("Baseline saved")
     
     return results
 
