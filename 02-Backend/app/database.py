@@ -87,17 +87,24 @@ INDEXES = [
 ]
 
 def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("PRAGMA journal_mode=WAL")
-        conn.execute("PRAGMA busy_timeout=5000")
-        conn.executescript(TABLES_SQL)
-        conn.commit()
-        for stmt in INDEXES:
-            try:
-                conn.execute(stmt)
-            except sqlite3.OperationalError as e:
-                print(f"index skipped: {e}")
-        conn.commit()
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    stmts = [x.strip() for x in TABLES_SQL.split(";") if x.strip()]
+    for stmt in stmts:
+        try:
+            conn.execute(stmt)
+        except sqlite3.OperationalError as e:
+            print(f"table skipped: {e}", flush=True)
+    conn.commit()
+    for stmt in INDEXES:
+        try:
+            conn.execute(stmt)
+        except sqlite3.OperationalError as e:
+            print(f"index skipped: {e}", flush=True)
+    conn.commit()
+    conn.close()
+
 
 @contextmanager
 def get_db():
