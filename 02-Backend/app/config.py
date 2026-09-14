@@ -16,8 +16,10 @@ class Settings:
     DAILY_BUDGET_USD: float = float(os.getenv("DAILY_BUDGET_USD", "10.0"))
     PER_USER_DAILY_CAP_USD: float = float(os.getenv("PER_USER_DAILY_CAP_USD", "1.0"))
     
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "change-me-in-production-32-chars-min")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "")
     JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     
     STRIPE_SECRET_KEY: str = os.getenv("STRIPE_SECRET_KEY", "")
     STRIPE_WEBHOOK_SECRET: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")

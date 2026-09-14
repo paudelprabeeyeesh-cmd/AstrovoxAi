@@ -4,6 +4,7 @@ import base64
 from datetime import datetime
 from .database import get_db
 from .schemas import ToolCreate, ToolOut
+from .core.encryption import encrypt, decrypt
 
 def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
     tool_id = str(uuid.uuid4())
@@ -15,9 +16,10 @@ def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
             config = json.dumps(creds)
         except Exception:
             pass
+    encrypted_config = encrypt(config)
     with get_db() as conn:
         conn.execute("INSERT INTO tools (id, user_id, type, config) VALUES (?, ?, ?, ?)",
-                     (tool_id, user_id, data.type, config))
+                     (tool_id, user_id, data.type, encrypted_config))
         conn.commit()
     return ToolOut(id=tool_id, type=data.type, config=config, created_at=datetime.utcnow())
 
@@ -26,7 +28,7 @@ def get_tool(tool_id: str, user_id: str) -> ToolOut:
         row = conn.execute("SELECT id, type, config, created_at FROM tools WHERE id = ? AND user_id = ?", (tool_id, user_id)).fetchone()
         if not row:
             raise ValueError("Tool not found")
-        config = row["config"]
+        config = decrypt(row["config"])
         if row["type"] == "gmail":
             try:
                 creds = json.loads(config)
@@ -41,7 +43,7 @@ def list_tools(user_id: str) -> list[ToolOut]:
         rows = conn.execute("SELECT id, type, config, created_at FROM tools WHERE user_id = ?", (user_id,)).fetchall()
         result = []
         for r in rows:
-            config = r["config"]
+            config = decrypt(r["config"])
             if r["type"] == "gmail":
                 try:
                     creds = json.loads(config)

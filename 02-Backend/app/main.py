@@ -17,7 +17,7 @@ from .workflows import create_workflow, get_workflow, list_workflows, delete_wor
 from .tools import create_tool, get_tool, list_tools, delete_tool
 from .feedback import create_feedback, list_feedback
 from .metrics import get_usage, get_daily_cost, get_revenue
-from .billing import create_checkout_session, cancel_subscription
+from .billing import create_checkout_session, cancel_subscription, handle_stripe_webhook
 from .api_keys import create_api_key, validate_api_key, list_api_keys, delete_api_key
 from .teams import create_team, add_member, list_teams, get_team
 from .marketplace import create_prompt, list_prompts, get_prompt, increment_downloads
@@ -38,27 +38,25 @@ from .case_studies import create_case_study, list_case_studies
 from .outreach import create_outreach, list_outreach
 from .campaigns import create_ad_campaign, list_campaigns
 from .affiliates import create_affiliate, list_affiliates, track_conversion
-from .enterprise_accounts import create_enterprise_account, list_enterprise_accounts
-from .sso import create_sso_connection, list_sso_connections
-from .enterprise_audit import create_audit_log as create_enterprise_audit_log, list_audit_logs as list_enterprise_audit_logs
-from .slas import create_sla, get_sla
-from .custom_models import create_custom_model, list_custom_models
-from .verticals import create_vertical, list_verticals
-from .regions import create_region, list_regions
-from .sdk_keys import create_sdk_key, list_sdk_keys
-from .ma_targets import create_ma_target, list_ma_targets
-from .ipo_metrics import create_ipo_metric, list_ipo_metrics
+from .api_keys import create_api_key, validate_api_key, list_api_keys, delete_api_key
+from .teams import create_team, add_member, list_teams, get_team
+from .marketplace import create_prompt, list_prompts, get_prompt, increment_downloads
+from .addons import create_addon, list_addons, get_addon_cost
+from .audit import log_action, get_audit_logs
 from .api.solve import Solver
+from .core.llm import OpenAIClient, MockLLMClient
 from .core.guardrails import sanitize_input, validate_output, add_canary
 from .core.pii import redact_pii, restore_pii
 from .core.moderation import check_moderation
 from .core.grounding import ground_answer
 from .core.tracing import start_trace, log_llm_call, get_prompt_hash
 from .core.context import ContextManager
+from .prompts import PromptVersionManager
 from .core.ratelimit import rate_limiter
 from .core.budget import cost_circuit_breaker
 from .core.circuit_breaker import CircuitBreaker
-from .prompts import PromptVersionManager
+from .auth import get_current_user, require_admin, register_user, login_user, refresh_access_token
+import os
 import uuid
 import json
 import time
@@ -68,10 +66,10 @@ security = HTTPBearer()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "https://astrovox.ai"],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 app.add_middleware(RateLimitMiddleware)
@@ -80,13 +78,12 @@ app.add_middleware(RateLimitMiddleware)
 def startup():
     init_db()
 
-def get_user_id(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
-    token = credentials.credentials
-    if not token.startswith("user-"):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return token.replace("user-", "")
+def get_user_id(user_id: str = Depends(get_current_user)) -> str:
+    return user_id
 
-solver = Solver(llm_client=None)
+api_key = os.getenv("OPENAI_API_KEY", "")
+llm_client = OpenAIClient(api_key=api_key) if api_key else MockLLMClient()
+solver = Solver(llm_client=llm_client)
 context_manager = ContextManager()
 prompt_manager = PromptVersionManager()
 
@@ -125,14 +122,19 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         
         full_prompt = "\n\n".join(context_parts + [f"User: {prompt_with_canary}"]) if context_parts else prompt_with_canary
         
-        model = choose_model("simple")
-        tokens = count_tokens(full_prompt, model=model)
+        try:
+            solver_result = solver.solve(user_id, full_prompt, contexts=[{"content": d.content, "title": d.title} for d in docs])
+            response_text = solver_result.get("result", "")
+            model = solver_result.get("model", "unknown")
+            confidence = solver_result.get("confidence", 0.0)
+            refused = solver_result.get("refused", False)
+        except Exception as e:
+            logger.error(f"Solver failed: {e}")
+            response_text = "I encountered an error processing your request."
+            model = "error"
+            confidence = 0.0
+            refused = False
         
-        cache_key = f"{user_id}:{req.text}"
-        result = cached(cache_key, lambda t: {"echo": t, "model": model, "tokens": tokens})
-        confidence = 0.9 if tokens < 50 else 0.6
-        
-        response_text = result["echo"]
         cleaned_response, canary_detected = validate_output(response_text)
         
         grounded_response, refused, confidence = ground_answer(
@@ -147,11 +149,13 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         add_message(conversation_id, "user", req.text)
         bot_msg = add_message(conversation_id, "assistant", grounded_response)
         
-        record_usage(user_id, tokens, round(tokens * 0.00001, 6), model, result.get("cached", False))
+        tokens = count_tokens(full_prompt, model=model)
+        cost = round(tokens * 0.00001, 6)
+        record_usage(user_id, tokens, cost, model, False)
         
         ab_variant = get_variant("model-comparison", user_id)
         if ab_variant:
-            record_ab_result("model-comparison", ab_variant, "cost", tokens * 0.00001)
+            record_ab_result("model-comparison", ab_variant, "cost", cost)
         
         sources = get_sources(str(uuid.uuid4()), user_id)
         citations = [create_citation(s, grounded_response[:200]) for s in sources]
@@ -161,18 +165,18 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             prompt_hash=prompt_hash,
             model=model,
             tokens=tokens,
-            cost=round(tokens * 0.00001, 6),
+            cost=cost,
             latency_ms=0,
-            cached=result.get("cached", False),
+            cached=False,
         )
         
-        cost_circuit_breaker.record_cost(user_id, round(tokens * 0.00001, 6))
+        cost_circuit_breaker.record_cost(user_id, cost)
         
         return SolveResponse(
             result=grounded_response,
             model=model,
-            cost_usd=round(tokens * 0.00001, 6),
-            cached=result.get("cached", False),
+            cost_usd=cost,
+            cached=False,
             memories_used=[m.key for m in memories],
             conversation_id=conversation_id,
             message_id=bot_msg.id,
@@ -184,8 +188,36 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
 async def health():
     return {"status": "ok"}
 
+from pydantic import BaseModel
+
+class RegisterRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+@app.post("/auth/register")
+async def register(data: RegisterRequest):
+    user = register_user(data.email, data.password)
+    return {"user": user}
+
+@app.post("/auth/login")
+async def login(data: LoginRequest):
+    result = login_user(data.email, data.password)
+    return result
+
+@app.post("/auth/refresh")
+async def refresh(data: RefreshRequest):
+    result = refresh_access_token(data.refresh_token)
+    return result
+
 @app.get("/metrics")
-async def metrics():
+async def metrics(user_id: str = Depends(require_admin)):
     usage = get_usage(days=30)
     revenue = get_revenue(days=30)
     return {**usage, **revenue}
@@ -335,13 +367,26 @@ async def list_feedback_endpoint(user_id: str = Depends(get_user_id)):
     return list_feedback(user_id)
 
 @app.get("/cost/daily")
-async def daily_cost(user_id: str = Depends(get_user_id)):
+async def daily_cost(user_id: str = Depends(require_admin)):
     return get_daily_cost()
 
 @app.post("/billing/checkout")
 async def checkout(user_id: str = Depends(get_user_id)):
-    session_url = create_checkout_session(user_id, f"user{user_id}@example.com")
+    with get_db() as conn:
+        row = conn.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+        email = row["email"] if row else f"user{user_id}@example.com"
+    session_url = create_checkout_session(user_id, email)
     return {"url": session_url}
+
+@app.post("/billing/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+    try:
+        result = handle_stripe_webhook(payload, sig_header)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/billing/cancel")
 async def cancel_billing(user_id: str = Depends(get_user_id)):
@@ -373,49 +418,17 @@ async def delete_integration_endpoint(integration_id: str, user_id: str = Depend
 async def create_post_endpoint(title: str, content: str, user_id: str = Depends(get_user_id)):
     return create_post(title, content, user_id)
 
-@app.get("/posts")
-async def list_posts_endpoint():
-    return list_posts()
-
 @app.post("/posts/{post_id}/comments")
 async def create_comment_endpoint(post_id: str, content: str, user_id: str = Depends(get_user_id)):
     return create_comment(post_id, user_id, content)
-
-@app.get("/posts/{post_id}/comments")
-async def list_comments_endpoint(post_id: str):
-    return list_comments(post_id)
 
 @app.post("/amas")
 async def create_ama_endpoint(title: str, description: str, scheduled_at: str, user_id: str = Depends(get_user_id)):
     return create_ama(title, description, scheduled_at)
 
-@app.get("/amas")
-async def list_amas_endpoint():
-    return list_amas()
-
-@app.post("/case-studies")
-async def create_case_study_endpoint(title: str, content: str, user_id: str = Depends(get_user_id)):
-    return create_case_study(title, content, user_id)
-
-@app.get("/case-studies")
-async def list_case_studies_endpoint():
-    return list_case_studies()
-
-@app.post("/outreach")
-async def create_outreach_endpoint(template_name: str, subject: str, body: str, recipient_email: str, user_id: str = Depends(get_user_id)):
-    return create_outreach(user_id, template_name, subject, body, recipient_email)
-
-@app.get("/outreach")
-async def list_outreach_endpoint(user_id: str = Depends(get_user_id)):
-    return list_outreach(user_id)
-
 @app.post("/campaigns")
 async def create_campaign_endpoint(name: str, platform: str, budget: float, start_date: str, end_date: str, user_id: str = Depends(get_user_id)):
     return create_ad_campaign(name, platform, budget, start_date, end_date)
-
-@app.get("/campaigns")
-async def list_campaigns_endpoint():
-    return list_campaigns()
 
 @app.post("/affiliates")
 async def create_affiliate_endpoint(name: str, email: str, user_id: str = Depends(get_user_id)):
@@ -432,71 +445,3 @@ async def create_enterprise_account_endpoint(company: str, contact_email: str, u
 @app.get("/enterprise/accounts")
 async def list_enterprise_accounts_endpoint():
     return list_enterprise_accounts()
-
-@app.post("/sso")
-async def create_sso_endpoint(provider: str, config: str, user_id: str = Depends(get_user_id)):
-    return create_sso_connection(user_id, provider, config)
-
-@app.get("/sso")
-async def list_sso_endpoint(user_id: str = Depends(get_user_id)):
-    return list_sso_connections(user_id)
-
-@app.get("/enterprise/audit")
-async def enterprise_audit_endpoint(user_id: str = Depends(get_user_id)):
-    return list_enterprise_audit_logs(user_id)
-
-@app.post("/slas")
-async def create_sla_endpoint(account_id: str, tier: str, uptime_guarantee: float, response_time_hours: int, user_id: str = Depends(get_user_id)):
-    return create_sla(account_id, tier, uptime_guarantee, response_time_hours)
-
-@app.get("/slas/{account_id}")
-async def get_sla_endpoint(account_id: str, user_id: str = Depends(get_user_id)):
-    return get_sla(account_id)
-
-@app.post("/custom-models")
-async def create_custom_model_endpoint(name: str, config: str, user_id: str = Depends(get_user_id)):
-    return create_custom_model(user_id, name, config)
-
-@app.get("/custom-models")
-async def list_custom_models_endpoint(user_id: str = Depends(get_user_id)):
-    return list_custom_models(user_id)
-
-@app.post("/verticals")
-async def create_vertical_endpoint(name: str, description: str, config: str, user_id: str = Depends(get_user_id)):
-    return create_vertical(name, description, config)
-
-@app.get("/verticals")
-async def list_verticals_endpoint():
-    return list_verticals()
-
-@app.post("/regions")
-async def create_region_endpoint(name: str, code: str, config: str, user_id: str = Depends(get_user_id)):
-    return create_region(name, code, config)
-
-@app.get("/regions")
-async def list_regions_endpoint():
-    return list_regions()
-
-@app.post("/sdk-keys")
-async def create_sdk_key_endpoint(name: str, user_id: str = Depends(get_user_id)):
-    return create_sdk_key(user_id, name)
-
-@app.get("/sdk-keys")
-async def list_sdk_keys_endpoint(user_id: str = Depends(get_user_id)):
-    return list_sdk_keys(user_id)
-
-@app.post("/ma-targets")
-async def create_ma_target_endpoint(name: str, description: str, valuation: float, user_id: str = Depends(get_user_id)):
-    return create_ma_target(name, description, valuation)
-
-@app.get("/ma-targets")
-async def list_ma_targets_endpoint():
-    return list_ma_targets()
-
-@app.post("/ipo-metrics")
-async def create_ipo_metric_endpoint(name: str, target: str, current: str, user_id: str = Depends(get_user_id)):
-    return create_ipo_metric(name, target, current)
-
-@app.get("/ipo-metrics")
-async def list_ipo_metrics_endpoint():
-    return list_ipo_metrics()
