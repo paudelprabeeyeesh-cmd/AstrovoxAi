@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from .cost import count_tokens
 from .cache import cached
 from .router import choose_model
@@ -76,9 +77,19 @@ app.add_middleware(
 
 app.add_middleware(RateLimitMiddleware)
 
-@app.on_event("startup")
-def startup():
-    init_db()
+_db_initialized = False
+
+def _ensure_db():
+    global _db_initialized
+    if not _db_initialized:
+        init_db()
+        _db_initialized = True
+
+@asynccontextmanager
+async def lifespan(app):
+    yield
+
+app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
 
 def get_user_id(user_id: str = Depends(get_current_user)) -> str:
     return user_id
@@ -89,6 +100,7 @@ prompt_manager = PromptVersionManager()
 
 @app.post("/solve")
 async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
     with start_trace("solve", user_id, {"query_length": len(req.text)}):
         sanitized, injection_detected = sanitize_input(req.text)
         if injection_detected:
