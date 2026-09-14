@@ -64,3 +64,45 @@ def get_revenue(days: int = 30) -> dict:
             "paying_users": row["paying_users"] or 0,
             "revenue": round(row["revenue"] or 0, 2),
         }
+
+
+def get_second_use_metric(days: int = 7) -> dict:
+    """Calculate % of users who called /solve twice within 7 days."""
+    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        
+        # Users with at least 2 interactions in the period
+        row = conn.execute(
+            """
+            SELECT COUNT(*) as returning_users FROM (
+                SELECT user_id
+                FROM interactions
+                WHERE created_at >= ?
+                GROUP BY user_id
+                HAVING COUNT(*) >= 2
+            )
+        """,
+            (cutoff,),
+        ).fetchone()
+        
+        returning = row["returning_users"] or 0
+        
+        # Total unique users in the period
+        row2 = conn.execute(
+            """
+            SELECT COUNT(DISTINCT user_id) as total_users
+            FROM interactions
+            WHERE created_at >= ?
+            """,
+            (cutoff,),
+        ).fetchone()
+        
+        total = row2["total_users"] or 0
+        rate = (returning / total * 100) if total > 0 else 0
+        
+        return {
+            "returning_users": returning,
+            "total_users": total,
+            "second_use_rate": round(rate, 2),
+        }

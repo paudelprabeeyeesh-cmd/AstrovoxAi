@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstrovoxAI - Pricing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+        }
+        .animate-breathe { animation: breathe 4s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <nav class="border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="text-2xl font-bold">AstrovoxAI</div>
+                <div class="space-x-4">
+                    <a href="/pricing" class="text-gray-300 hover:text-white">Pricing</a>
+                    <a href="/terms" class="text-gray-300 hover:text-white">Terms</a>
+                    <a href="/privacy" class="text-gray-300 hover:text-white">Privacy</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
+            <p class="text-xl text-gray-400">Start free. Upgrade when you need more.</p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <!-- Free Tier -->
+            <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700">
+                <h3 class="text-2xl font-bold mb-2">Free</h3>
+                <div class="text-4xl font-bold mb-4">$0<span class="text-lg text-gray-400">/mo</span></div>
+                <p class="text-gray-400 mb-6">Perfect for trying out AstrovoxAI</p>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> 10 AI queries/day</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Basic agents</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Community support</li>
+                </ul>
+                <button onclick="window.location.href='/auth/register'" class="w-full py-3 px-4 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                    Get Started
+                </button>
+            </div>
+
+            <!-- Pro Tier -->
+            <div class="bg-indigo-900 rounded-2xl p-8 border-2 border-indigo-500 relative">
+                <div class="absolute top-0 right-0 bg-indigo-500 text-white px-3 py-1 rounded-bl-lg rounded-tr-lg text-sm">
+                    POPULAR
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Pro</h3>
+                <div class="text-4xl font-bold mb-4">$29<span class="text-lg text-gray-400">/mo</span></div>
+                <p class="text-gray-300 mb-6">For serious learners and educators</p>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Unlimited queries</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> All agents unlocked</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Priority support</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Advanced analytics</li>
+                </ul>
+                <button onclick="window.location.href='/billing/checkout'" class="w-full py-3 px-4 rounded-lg bg-indigo-500 hover:bg-indigo-400 transition animate-breathe">
+                    Start Pro Trial
+                </button>
+            </div>
+
+            <!-- Team Tier -->
+            <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700">
+                <h3 class="text-2xl font-bold mb-2">Team</h3>
+                <div class="text-4xl font-bold mb-4">$99<span class="text-lg text-gray-400">/mo</span></div>
+                <p class="text-gray-400 mb-6">For schools and organizations</p>
+                <ul class="space-y-3 mb-8">
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Everything in Pro</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Up to 50 users</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> Admin dashboard</li>
+                    <li class="flex items-center"><span class="text-green-400 mr-2">✓</span> SSO & integrations</li>
+                </ul>
+                <button onclick="window.location.href='/billing/checkout'" class="w-full py-3 px-4 rounded-lg bg-gray-700 hover:bg-gray-600 transition">
+                    Contact Sales
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-16 text-center">
+            <h2 class="text-2xl font-bold mb-4">Premium Actions</h2>
+            <p class="text-gray-400 mb-8">One-time purchases for high-value tasks</p>
+            <div class="inline-block bg-gray-800 rounded-2xl p-8 border border-gray-700">
+                <div class="text-3xl font-bold mb-2">$29</div>
+                <div class="text-gray-400 mb-4">Full Campaign Sequence Generation</div>
+                <button onclick="window.location.href='/billing/checkout/premium-action'" class="py-3 px-6 rounded-lg bg-indigo-500 hover:bg-indigo-400 transition">
+                    Purchase Premium Action
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="border-t border-gray-800 mt-20">
+        <div class="max-w-7xl mx-auto px-4 py-8 text-center text-gray-400">
+            <p> AstrovoxAI. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

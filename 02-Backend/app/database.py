@@ -3,6 +3,7 @@ import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "")  # PostgreSQL URL
 
 TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
@@ -42,11 +43,12 @@ CREATE TABLE IF NOT EXISTS enterprise_audit_logs (id TEXT PRIMARY KEY, user_id T
 CREATE TABLE IF NOT EXISTS audit_logs (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, action TEXT NOT NULL, metadata TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS slas (id TEXT PRIMARY KEY, account_id TEXT NOT NULL, tier TEXT NOT NULL, uptime_guarantee REAL NOT NULL, response_time_hours INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS custom_models (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, config TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS verticals (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, config TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-CREATE TABLE IF NOT EXISTS regions (id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL, config TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS verticals (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, description TEXT, config TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS regions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, code TEXT NOT NULL, config TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS sdk_keys (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, key_hash TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS ma_targets (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL, description TEXT, valuation REAL NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS interactions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, prompt TEXT NOT NULL, response TEXT NOT NULL, model TEXT NOT NULL, tokens INTEGER NOT NULL, cost REAL NOT NULL, latency_ms INTEGER, rating INTEGER, correction TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS interaction_labels (id TEXT PRIMARY KEY, interaction_id TEXT NOT NULL, label TEXT NOT NULL, notes TEXT, labeled_by TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 """
 
 INDEXES = [
@@ -90,24 +92,30 @@ INDEXES = [
 ]
 
 
-def init_db():
+@contextmanager
+def get_db():
     conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA busy_timeout=5000")
-    stmts = [x.strip() for x in TABLES_SQL.split(";") if x.strip()]
-    for stmt in stmts:
-        try:
-            conn.execute(stmt)
-        except sqlite3.OperationalError as e:
-            print(f"table skipped: {e}", flush=True)
-    conn.commit()
-    for stmt in INDEXES:
-        try:
-            conn.execute(stmt)
-        except sqlite3.OperationalError as e:
-            print(f"index skipped: {e}", flush=True)
-    conn.commit()
-    conn.close()
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
+def init_db():
+    if DATABASE_URL:
+        # PostgreSQL path - use Alembic for migrations
+        return
+    with get_db() as conn:
+        conn.executescript(TABLES_SQL)
+        for idx in INDEXES:
+            try:
+                conn.execute(idx)
+            except Exception:
+                pass
+        conn.commit()
 
 
 @contextmanager

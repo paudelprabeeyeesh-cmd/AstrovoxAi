@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from fastapi.staticfiles import StaticFiles
 
 from .ab_runner import get_variant
 from .ab_runner import record_result as record_ab_result
@@ -15,7 +16,7 @@ from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
                    register_user, require_admin)
 from .billing import (cancel_subscription, create_checkout_session,
-                      handle_stripe_webhook)
+                      create_premium_checkout_session, handle_stripe_webhook)
 from .campaigns import create_ad_campaign, list_campaigns
 from .case_studies import create_case_study, list_case_studies
 from .citations import create_citation, get_sources
@@ -40,7 +41,7 @@ from .knowledge import create_doc, delete_doc, list_docs, search_docs
 from .ma_targets import create_ma_target, list_ma_targets
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
-from .metrics import get_daily_cost, get_revenue, get_usage
+from .metrics import get_daily_cost, get_revenue, get_second_use_metric, get_usage
 from .posts import create_post
 from .profiles import get_profile, update_profile
 from .prompts import PromptVersionManager
@@ -86,6 +87,8 @@ app.add_middleware(
 )
 
 app.add_middleware(RateLimitMiddleware)
+
+app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 
 _db_initialized = False
 
@@ -246,6 +249,26 @@ async def healthz():
     return "ok"
 
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/terms", response_class=HTMLResponse)
+async def terms():
+    with open("../legal/terms.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy():
+    with open("../legal/privacy.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
+@app.get("/dpa", response_class=HTMLResponse)
+async def dpa():
+    with open("../legal/dpa.html", "r", encoding="utf-8") as f:
+        return HTMLResponse(content=f.read())
+
+
 from pydantic import BaseModel
 
 
@@ -285,7 +308,8 @@ async def refresh(data: RefreshRequest):
 async def metrics(user_id: str = Depends(require_admin)):
     usage = get_usage(days=30)
     revenue = get_revenue(days=30)
-    return {**usage, **revenue}
+    second_use = get_second_use_metric(days=7)
+    return {**usage, **revenue, **second_use}
 
 
 @app.get("/usage")
@@ -499,6 +523,17 @@ async def checkout(user_id: str = Depends(get_user_id)):
         ).fetchone()
         email = row["email"] if row else f"user{user_id}@example.com"
     session_url = create_checkout_session(user_id, email)
+    return {"url": session_url}
+
+
+@app.post("/billing/checkout/premium-action")
+async def checkout_premium_action(user_id: str = Depends(get_user_id)):
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT email FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        email = row["email"] if row else f"user{user_id}@example.com"
+    session_url = create_premium_checkout_session(user_id, email)
     return {"url": session_url}
 
 

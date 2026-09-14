@@ -30,4 +30,10 @@ def get_referral_stats(user_id: str) -> dict:
             "SELECT COUNT(*) as c FROM referrals WHERE user_id = ? AND signup_user_id IS NOT NULL",
             (user_id,),
         ).fetchone()
-        return {"referrals": row["c"], "revenue": row["c"] * 5.0}
+        referrals = row["c"]
+        rewards = referrals // 3
+        return {
+            "referrals": referrals,
+            "rewards_earned": rewards,
+            "revenue": referrals * 5.0,
+        }

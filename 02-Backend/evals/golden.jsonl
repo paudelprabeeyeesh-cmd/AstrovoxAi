@@ -1,10 +1,5 @@
-{"id": "1", "query": "What is Python?", "expected": "Python is a programming language"}
-{"id": "2", "query": "What is machine learning?", "expected": "Machine learning is a subset of AI"}
-{"id": "3", "query": "What is FastAPI?", "expected": "FastAPI is a Python web framework"}
-{"id": "4", "query": "What is Docker?", "expected": "Docker is a containerization platform"}
-{"id": "5", "query": "What is SQLite?", "expected": "SQLite is a database"}
-{"id": "6", "query": "What is Redis?", "expected": "Redis is an in-memory database"}
-{"id": "7", "query": "What is FastAPI used for?", "expected": "FastAPI is used for building APIs"}
-{"id": "8", "query": "What is Docker used for?", "expected": "Docker is used for containerization"}
-{"id": "9", "query": "What is SQLite used for?", "expected": "SQLite is used for data storage"}
-{"id": "10", "query": "What is Redis used for?", "expected": "Redis is used for caching"}
+{"prompt": "What is the capital of France?", "expected": "Paris"}
+{"prompt": "Explain Newton's first law of motion", "expected": "An object at rest stays at rest and an object in motion stays in motion unless acted upon by a force"}
+{"prompt": "What is 2 + 2?", "expected": "4"}
+{"prompt": "Who wrote Romeo and Juliet?", "expected": "William Shakespeare"}
+{"prompt": "What is the boiling point of water?", "expected": "100 degrees Celsius"}

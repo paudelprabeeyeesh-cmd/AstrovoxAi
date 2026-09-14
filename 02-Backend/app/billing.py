@@ -9,6 +9,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "price_pro_123")
 STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID", "price_team_123")
 STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID", "price_embed_123")
+STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_premium_action_29")
 
 
 def create_checkout_session(user_id: str, email: str, price_id: str = None) -> str:
@@ -21,6 +22,26 @@ def create_checkout_session(user_id: str, email: str, price_id: str = None) -> s
         success_url="https://astrovox.ai/success",
         cancel_url="https://astrovox.ai/cancel",
         metadata={"user_id": user_id},
+    )
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
+            (session.customer, user_id),
+        )
+        conn.commit()
+    return session.url
+
+
+def create_premium_checkout_session(user_id: str, email: str) -> str:
+    """Create checkout for one-time premium action ($29)."""
+    session = stripe.checkout.Session.create(
+        customer_email=email,
+        payment_method_types=["card"],
+        line_items=[{"price": STRIPE_PREMIUM_ACTION_PRICE_ID, "quantity": 1}],
+        mode="payment",
+        success_url="https://astrovox.ai/success?session_id={CHECKOUT_SESSION_ID}",
+        cancel_url="https://astrovox.ai/cancel",
+        metadata={"user_id": user_id, "type": "premium_action"},
     )
     with get_db() as conn:
         conn.execute(
@@ -82,6 +103,29 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
                 conn.execute(
                     "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
                     (user["id"],),
+                )
+                conn.commit()
+
+    elif event_type == "invoice.payment_succeeded":
+        customer_id = data.get("customer")
+        with get_db() as conn:
+            user = conn.execute(
+                "SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)
+            ).fetchone()
+            if user:
+                amount = data.get("amount_paid", 0) / 100
+                conn.execute(
+                    "INSERT INTO usage (id, user_id, tokens, cost, model, cached, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        str(__import__('uuid').uuid4()),
+                        user["id"],
+                        0,
+                        amount,
+                        "stripe_subscription",
+                        0,
+                        None,
+                        __import__('datetime').datetime.utcnow().isoformat(),
+                    ),
                 )
                 conn.commit()
 

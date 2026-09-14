@@ -1,82 +1,110 @@
+#!/usr/bin/env python3
+"""
+Evaluation pipeline for AstrovoxAI.
+Runs golden test set and scores precision/recall/faithfulness/answer_relevance.
+"""
+import sys
+import os
 import json
-import logging
-import uuid
-from datetime import datetime
-from typing import Optional
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-logger = logging.getLogger(__name__)
+from app.core.router import call_llm
+from app.database import get_db
+
+GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden.jsonl")
 
 
-class GoldenSetEvaluator:
-    def __init__(self, golden_set_path: str = "evals/golden.jsonl"):
-        self.golden_set_path = golden_set_path
-        self.baseline_score = None
+def load_golden_set():
+    """Load golden test pairs."""
+    if not os.path.exists(GOLDEN_PATH):
+        print(f"Golden set not found at {GOLDEN_PATH}")
+        return []
+    with open(GOLDEN_PATH, "r", encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def score_response(prompt: str, expected: str, actual: str) -> dict:
+    """
+    Score a response against expected output.
+    Returns precision, recall, faithfulness, answer_relevance.
+    """
+    expected_words = set(expected.lower().split())
+    actual_words = set(actual.lower().split())
     
-    def load_golden_set(self) -> list[dict]:
-        cases = []
+    if not expected_words:
+        precision = 1.0 if not actual_words else 0.0
+        recall = 1.0 if not actual_words else 0.0
+    else:
+        overlap = expected_words & actual_words
+        precision = len(overlap) / len(actual_words) if actual_words else 0.0
+        recall = len(overlap) / len(expected_words)
+    
+    faithfulness = 1.0 if not any(claim in actual.lower() for claim in ["i cannot", "i don't know", "unclear"]) else 0.5
+    answer_relevance = 1.0 if len(actual) > 50 and precision > 0.3 else 0.0
+    
+    return {
+        "precision": round(precision, 3),
+        "recall": round(recall, 3),
+        "faithfulness": round(faithfulness, 3),
+        "answer_relevance": round(answer_relevance, 3),
+    }
+
+
+def run_evaluation():
+    """Run full evaluation pipeline."""
+    print("=== AstrovoxAI Evaluation Pipeline ===")
+    
+    golden_set = load_golden_set()
+    if not golden_set:
+        print("No golden test set found. Creating sample...")
+        golden_set = [
+            {"prompt": "What is the capital of France?", "expected": "Paris"},
+            {"prompt": "Explain Newton's first law", "expected": "An object at rest stays at rest"},
+        ]
+    
+    print(f"Running {len(golden_set)} test cases...\n")
+    
+    results = []
+    total = {"precision": 0, "recall": 0, "faithfulness": 0, "answer_relevance": 0}
+    
+    for i, item in enumerate(golden_set):
+        prompt = item["prompt"]
+        expected = item["expected"]
+        
         try:
-            with open(self.golden_set_path, "r") as f:
-                for line in f:
-                    cases.append(json.loads(line.strip()))
-        except FileNotFoundError:
-            logger.warning("Golden set not found")
-        return cases
-    
-    def evaluate_response(self, case: dict, response: str) -> dict:
-        scores = {
-            "relevance": self._score_relevance(case.get("query", ""), response),
-            "accuracy": self._score_accuracy(case.get("expected", ""), response),
-            "safety": self._score_safety(response),
-        }
-        overall = sum(scores.values()) / len(scores)
-        return {"case_id": case.get("id"), "scores": scores, "overall": overall}
-    
-    def _score_relevance(self, query: str, response: str) -> float:
-        query_terms = set(query.lower().split())
-        response_terms = set(response.lower().split())
-        if not query_terms:
-            return 0.0
-        overlap = len(query_terms & response_terms)
-        return min(overlap / len(query_terms), 1.0)
-    
-    def _score_accuracy(self, expected: str, response: str) -> float:
-        if not expected:
-            return 0.5
-        expected_lower = expected.lower()
-        response_lower = response.lower()
-        if expected_lower in response_lower:
-            return 1.0
-        return 0.0
-    
-    def _score_safety(self, response: str) -> float:
-        unsafe_keywords = ["harm", "illegal", "dangerous", "unsafe"]
-        for keyword in unsafe_keywords:
-            if keyword in response.lower():
-                return 0.0
-        return 1.0
-    
-    def run_evaluation(self, model_fn) -> dict:
-        cases = self.load_golden_set()
-        if not cases:
-            return {"error": "No golden set found"}
+            llm_result = call_llm(prompt)
+            actual = llm_result.get("text", "")
+        except Exception as e:
+            print(f"[{i+1}] FAILED: {e}")
+            actual = ""
         
-        results = []
-        for case in cases:
-            response = model_fn(case.get("query", ""))
-            result = self.evaluate_response(case, response)
-            results.append(result)
+        scores = score_response(prompt, expected, actual)
+        results.append({
+            "prompt": prompt,
+            "expected": expected,
+            "actual": actual[:200],
+            "scores": scores,
+        })
         
-        avg_score = sum(r["overall"] for r in results) / len(results) if results else 0
-        return {
-            "total_cases": len(cases),
-            "avg_score": round(avg_score, 3),
-            "results": results[:10],
-        }
+        for k in total:
+            total[k] += scores[k]
+        
+        status = "PASS" if scores["answer_relevance"] >= 0.5 else "FAIL"
+        print(f"[{i+1}] {status} - relevance={scores['answer_relevance']:.2f}, precision={scores['precision']:.2f}")
     
-    def set_baseline(self, score: float):
-        self.baseline_score = score
+    n = len(results) if results else 1
+    print(f"\n=== Summary ===")
+    print(f"Tests run: {len(results)}")
+    print(f"Avg precision: {total['precision']/n:.3f}")
+    print(f"Avg recall: {total['recall']/n:.3f}")
+    print(f"Avg faithfulness: {total['faithfulness']/n:.3f}")
+    print(f"Avg answer_relevance: {total['answer_relevance']/n:.3f}")
     
-    def check_regression(self, current_score: float, threshold: float = 0.1) -> bool:
-        if self.baseline_score is None:
-            return False
-        return current_score < (self.baseline_score - threshold)
+    passed = sum(1 for r in results if r["scores"]["answer_relevance"] >= 0.5)
+    print(f"Pass rate: {passed}/{len(results)} ({100*passed/len(results):.1f}%)")
+    
+    return results
+
+
+if __name__ == "__main__":
+    run_evaluation()

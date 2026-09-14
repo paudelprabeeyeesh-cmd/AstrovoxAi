@@ -34,11 +34,11 @@ class LLMClient:
         result = call_llm(prompt, system=system)
         return result["text"]
 
-    def call_llm(self, prompt: str, system: str = "") -> dict:
+    def call_llm(self, prompt: str, system: str = "", min_confidence: float = None) -> dict:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "
                 "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
-        return call_llm(prompt, system=system)
+        return call_llm(prompt, system=system, min_confidence=min_confidence)
