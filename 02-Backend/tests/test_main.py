@@ -4,6 +4,7 @@ from app.main import app
 from app.database import get_db
 import uuid
 import bcrypt
+import time
 
 client = TestClient(app)
 
@@ -14,12 +15,13 @@ def test_health():
 
 def test_metrics():
     admin_id = str(uuid.uuid4())
+    email = f"metrics-admin-{int(time.time())}@test.com"
     password_hash = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
     with get_db() as conn:
         conn.execute("INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
-                     (admin_id, "metrics-admin@test.com", password_hash, "admin"))
+                     (admin_id, email, password_hash, "admin"))
         conn.commit()
-    login = client.post("/auth/login", json={"email": "metrics-admin@test.com", "password": "test"})
+    login = client.post("/auth/login", json={"email": email, "password": "test"})
     assert login.status_code == 200
     token = login.json()["access_token"]
     r = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})

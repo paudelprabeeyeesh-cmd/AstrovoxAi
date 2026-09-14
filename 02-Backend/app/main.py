@@ -553,7 +553,12 @@ async def create_comment_endpoint(
 async def create_ama_endpoint(
     title: str, description: str, scheduled_at: str, user_id: str = Depends(get_user_id)
 ):
-    return create_ama(title, description, scheduled_at)
+    return create_ama(user_id, title, description, scheduled_at)
+
+
+@app.get("/amas")
+async def list_amas_endpoint(user_id: str = Depends(get_user_id)):
+    return list_amas(user_id)
 
 
 @app.post("/campaigns")
@@ -565,7 +570,12 @@ async def create_campaign_endpoint(
     end_date: str,
     user_id: str = Depends(get_user_id),
 ):
-    return create_ad_campaign(name, platform, budget, start_date, end_date)
+    return create_ad_campaign(user_id, name, platform, budget, start_date, end_date)
+
+
+@app.get("/campaigns")
+async def list_campaigns_endpoint(user_id: str = Depends(get_user_id)):
+    return list_campaigns(user_id)
 
 
 @app.post("/affiliates")
@@ -576,8 +586,8 @@ async def create_affiliate_endpoint(
 
 
 @app.get("/affiliates")
-async def list_affiliates_endpoint():
-    return list_affiliates()
+async def list_affiliates_endpoint(user_id: str = Depends(get_user_id)):
+    return list_affiliates(user_id)
 
 
 @app.post("/enterprise/accounts")

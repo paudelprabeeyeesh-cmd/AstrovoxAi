@@ -15,10 +15,11 @@ def create_case_study(title: str, content: str, user_id: str) -> dict:
     return {"id": case_id, "title": title}
 
 
-def list_case_studies() -> list[dict]:
+def list_case_studies(user_id: str) -> list[dict]:
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, title, content, user_id, created_at FROM case_studies ORDER BY created_at DESC"
+            "SELECT id, title, content, user_id, created_at FROM case_studies WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
         ).fetchall()
         return [
             {

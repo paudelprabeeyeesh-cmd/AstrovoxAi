@@ -16,10 +16,11 @@ def create_affiliate(user_id: str, name: str, email: str) -> dict:
     return {"id": affiliate_id, "code": code}
 
 
-def list_affiliates() -> list[dict]:
+def list_affiliates(user_id: str) -> list[dict]:
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, name, email, code, created_at FROM affiliates ORDER BY created_at DESC"
+            "SELECT id, name, email, code, created_at FROM affiliates WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
         ).fetchall()
         return [
             {
