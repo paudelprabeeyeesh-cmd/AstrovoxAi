@@ -24,7 +24,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     user_id = payload.get("sub")
                 except Exception:
                     return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
-                
+
+                # Check brute-force lockout per IP
+                client_ip = request.client.host if request.client else "unknown"
+                lockout_until = None
+                with get_db() as conn:
+                    row = conn.execute("SELECT lockout_until FROM login_attempts WHERE ip = ? ORDER BY created_at DESC LIMIT 1", (client_ip,)).fetchone()
+                    if row and row["lockout_until"]:
+                        lockout_until = row["lockout_until"]
+                        if time.strftime("%Y-%m-%dT%H:%M:%S") < lockout_until:
+                            return JSONResponse(status_code=429, content={"detail": "Too many failed attempts. Try again later."})
+
                 plan = "free"
                 with get_db() as conn:
                     row = conn.execute(
@@ -46,3 +56,25 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     )
         response = await call_next(request)
         return response
+
+
+def record_failed_login(ip: str):
+    with get_db() as conn:
+        conn.execute("INSERT INTO login_attempts (id, ip, success, created_at) VALUES (?, ?, 0, ?)",
+                     (str(__import__('uuid').uuid.uuid4()), ip, time.strftime("%Y-%m-%dT%H:%M:%S")))
+        conn.commit()
+    one_hour_ago = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - 3600))
+    with get_db() as conn:
+        count = conn.execute("SELECT COUNT(*) as c FROM login_attempts WHERE ip = ? AND success = 0 AND created_at > ?", (ip, one_hour_ago)).fetchone()["c"]
+    if count >= 10:
+        lockout_until = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() + 3600))
+        with get_db() as conn:
+            conn.execute("UPDATE login_attempts SET lockout_until = ? WHERE ip = ?", (lockout_until, ip))
+            conn.commit()
+
+
+def record_successful_login(ip: str):
+    with get_db() as conn:
+        conn.execute("INSERT INTO login_attempts (id, ip, success, created_at) VALUES (?, ?, 1, ?)",
+                     (str(__import__('uuid').uuid.uuid4()), ip, time.strftime("%Y-%m-%dT%H:%M:%S")))
+        conn.commit()

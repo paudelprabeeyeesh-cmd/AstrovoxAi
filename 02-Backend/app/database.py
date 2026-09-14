@@ -72,7 +72,7 @@ def init_db():
             raise ImportError("psycopg2 is required for PostgreSQL")
 
 TABLES_SQL = """
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', plan TEXT DEFAULT 'free', stripe_customer_id TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', email_verified INTEGER DEFAULT 0, plan TEXT DEFAULT 'free', stripe_customer_id TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, embedding BLOB, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

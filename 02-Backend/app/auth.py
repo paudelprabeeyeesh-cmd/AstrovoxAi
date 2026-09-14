@@ -1,3 +1,4 @@
+import os
 import hashlib
 import uuid
 from datetime import datetime, timedelta
@@ -60,7 +61,7 @@ def register_user(email: str, password: str) -> dict:
             )
             conn.commit()
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Email already registered") from e
+        raise HTTPException(status_code=400, detail="Invalid request") from e
     return {"user_id": user_id, "email": email}
 
 
@@ -71,6 +72,8 @@ def login_user(email: str, password: str) -> dict:
         ).fetchone()
         if not row or not verify_password(password, row["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
+        if not row["email_verified"]:
+            raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox.")
     access_token = create_access_token(row["id"], row["email"])
     refresh_token = create_refresh_token(row["id"])
     return {
@@ -114,10 +117,6 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:
     token = credentials.credentials
-    import os as _os
-
-    if _os.getenv("ASTROVOX_KEY") and token == _os.getenv("ASTROVOX_KEY"):
-        return "master-user"
     try:
         payload = jwt.decode(
             token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]

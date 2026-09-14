@@ -19,15 +19,15 @@ from fastapi.staticfiles import StaticFiles
 from .ab_runner import get_variant
 from .admin_panel import router as admin_router
 from .ab_runner import record_result as record_ab_result
-from .affiliates import create_affiliate, list_affiliates
-from .amas import create_ama, list_amas
+# REMOVED
+# REMOVED
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
                    register_user, require_admin)
 from .billing import (cancel_subscription, create_checkout_session,
                       create_premium_checkout_session, handle_stripe_webhook)
-from .campaigns import create_ad_campaign, list_campaigns
-from .case_studies import create_case_study, list_case_studies
+# REMOVED
+# REMOVED
 from .citations import create_citation, get_sources
 from .comments import create_comment
 from .conversations import (add_message, create_conversation, get_messages,
@@ -50,7 +50,7 @@ from .knowledge import create_doc, delete_doc, list_docs, search_docs
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
 from .metrics import get_daily_cost, get_revenue, get_second_use_metric, get_usage
-from .posts import create_post
+# REMOVED
 from .profiles import get_profile, update_profile
 from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
@@ -330,6 +330,13 @@ async def register(data: RegisterRequest):
     user = register_user(data.email, data.password)
     return {"user": user}
 
+
+
+@app.post("/auth/verify")
+async def verify_email(token: str):
+    from app.auth import verify_email_token
+    result = verify_email_token(token)
+    return result
 
 @app.post("/auth/login")
 async def login(data: LoginRequest):
@@ -623,7 +630,7 @@ async def delete_integration_endpoint(
     return {"ok": True}
 
 
-@app.post("/posts")
+@app.post("/removed")
 async def create_post_endpoint(
     title: str, content: str, user_id: str = Depends(get_user_id)
 ):
@@ -642,72 +649,7 @@ async def create_comment_endpoint(
     return create_comment(post_id, user_id, content)
 
 
-@app.post("/amas")
-async def create_ama_endpoint(
-    title: str, description: str, scheduled_at: str, user_id: str = Depends(get_user_id)
-):
-    return create_ama(user_id, title, description, scheduled_at)
-
-
-@app.get("/amas")
-async def list_amas_endpoint(user_id: str = Depends(get_user_id)):
-    return list_amas(user_id)
-
-
-@app.post("/campaigns")
-async def create_campaign_endpoint(
-    name: str,
-    platform: str,
-    budget: float,
-    start_date: str,
-    end_date: str,
-    user_id: str = Depends(get_user_id),
-):
-    return create_ad_campaign(user_id, name, platform, budget, start_date, end_date)
-
-
-@app.get("/campaigns")
-async def list_campaigns_endpoint(user_id: str = Depends(get_user_id)):
-    return list_campaigns(user_id)
-
-
-@app.post("/affiliates")
-async def create_affiliate_endpoint(
-    name: str, email: str, user_id: str = Depends(get_user_id)
-):
-    return create_affiliate(user_id, name, email)
-
-
-@app.get("/affiliates")
-async def list_affiliates_endpoint(user_id: str = Depends(get_user_id)):
-    return list_affiliates(user_id)
-
-
-@app.post("/enterprise/accounts")
-async def create_enterprise_account_endpoint(
-    company: str, contact_email: str, user_id: str = Depends(get_user_id)
-):
-    return create_enterprise_account(user_id, company, contact_email)
-
-
-@app.get("/enterprise/accounts")
-async def list_enterprise_accounts_endpoint(user_id: str = Depends(get_user_id)):
-    return list_enterprise_accounts(user_id)
-
-
-@app.post("/case-studies")
-async def create_case_study_endpoint(
-    title: str, content: str, user_id: str = Depends(get_user_id)
-):
-    return create_case_study(user_id, title, content)
-
-
-@app.get("/case-studies")
-async def list_case_studies_endpoint(user_id: str = Depends(get_user_id)):
-    return list_case_studies(user_id)
-
-
-@app.websocket("/ws/chat/{session_id}")
+# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED@app.websocket("/ws/chat/{session_id}")
 async def ws_chat(websocket: WebSocket, session_id: str):
     await websocket.accept()
     try:
