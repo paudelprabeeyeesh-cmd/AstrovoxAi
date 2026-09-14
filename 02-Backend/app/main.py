@@ -9,6 +9,7 @@ import httpx
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 
@@ -90,6 +91,7 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(RateLimitMiddleware)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
