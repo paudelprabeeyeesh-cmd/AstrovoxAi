@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import uuid
 from contextlib import asynccontextmanager
 
 import asyncio
@@ -161,15 +162,16 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         moderated, flagged_category = check_moderation(sanitized)
         if moderated:
             return SolveResponse(
-                result="Request blocked by moderation.",
                 model="moderation",
                 cost_usd=0.0,
                 cached=False,
                 memories_used=[],
                 conversation_id=None,
                 message_id=None,
+                confidence=0.0,
+                refused=False,
+                suggestions=[],
             )
-
         redacted = redact_pii(sanitized)
         prompt_with_canary = add_canary(redacted)
 
@@ -249,7 +251,11 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             model=model,
             tokens=tokens,
             cost=cost,
+
+
         )
+        suggestion_engine = SuggestionEngine()
+        suggestions = suggestion_engine.generate(user_id, [m.key for m in memories])
 
         return SolveResponse(
             result=grounded_response,
@@ -262,7 +268,12 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             message_id=bot_msg.id,
             confidence=confidence,
             refused=refused,
+            suggestions=suggestions,
         )
+
+
+
+
 
 
 @app.get("/health")
@@ -828,4 +839,5 @@ async def ws_voice(websocket: WebSocket, session_id: str):
         logger.warning(f"WebSocket voice error: {e}")
     finally:
         await websocket.close()
-print("[astrovox] routes registered", flush=True)
+from .core.router_v2 import get_router
+from .core.suggestions import SuggestionEngine

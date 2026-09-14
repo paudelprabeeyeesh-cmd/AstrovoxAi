@@ -49,6 +49,7 @@ class SolveResponse(BaseModel):
     message_id: str | None = None
     confidence: float = 0.0
     refused: bool = False
+    suggestions: list[str] = []
 
 
 class TemplateCreate(BaseModel):
