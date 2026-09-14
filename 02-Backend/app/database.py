@@ -99,7 +99,6 @@ def init_db():
                 print(f"index skipped: {e}")
         conn.commit()
 
-@contextmanager
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -109,4 +108,3 @@ def get_db():
         yield conn
     finally:
         conn.close()
-'@ | Set-Content app\database.py -Encoding utf8; Remove-Item astrovox.db -ErrorAction SilentlyContinue; Add-Content .gitignore "`nastrovox.db`nastrovox.db-wal`nastrovox.db-shm"; git add app\database.py .gitignore; git commit -m "fix: split table and index creation, remove stale db"; git push origin main
