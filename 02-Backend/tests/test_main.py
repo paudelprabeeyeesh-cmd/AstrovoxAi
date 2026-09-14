@@ -17,9 +17,9 @@ def test_metrics():
     password_hash = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
     with get_db() as conn:
         conn.execute("INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
-                     (admin_id, "admin@test.com", password_hash, "admin"))
+                     (admin_id, "metrics-admin@test.com", password_hash, "admin"))
         conn.commit()
-    login = client.post("/auth/login", json={"email": "admin@test.com", "password": "test"})
+    login = client.post("/auth/login", json={"email": "metrics-admin@test.com", "password": "test"})
     assert login.status_code == 200
     token = login.json()["access_token"]
     r = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})

@@ -7,5 +7,10 @@ def setup_db():
     init_db()
     yield
     db_path = os.getenv("ASTROVOX_DB", "astrovox.db")
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    for ext in ["", "-shm", "-wal"]:
+        p = db_path + ext
+        if os.path.exists(p):
+            try:
+                os.remove(p)
+            except PermissionError:
+                pass

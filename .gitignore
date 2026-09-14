@@ -12,6 +12,9 @@ build/
 *.env
 .env
 *.env*
+*key*
+*.pem
+secrets*
 
 # Python
 __pycache__/
