@@ -142,3 +142,6 @@ class ConversationSearchOut(BaseModel):
     title: str | None
     created_at: datetime
     message_count: int
+class GenUIResponse(BaseModel):
+    type: str = Field(..., max_length=50)
+    data: dict[str, Any]

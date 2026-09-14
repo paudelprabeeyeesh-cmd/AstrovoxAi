@@ -56,8 +56,8 @@ from .schemas import (ConversationOut, ConversationSearchOut, FeedbackCreate,
                       FeedbackOut, KnowledgeDocCreate, KnowledgeDocOut,
                       MemoryCreate, MemoryOut, MemoryUpdate, MessageOut,
                       ScheduleCreate, ScheduleOut, SolveRequest, SolveResponse,
-                      TemplateCreate, TemplateOut, ToolCreate, ToolOut,
-                      UserProfileOut, WorkflowCreate, WorkflowOut)
+                       TemplateCreate, TemplateOut, ToolCreate, ToolOut,
+                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse)
 from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .tools import create_tool, delete_tool, list_tools
@@ -124,6 +124,29 @@ async def _debug_exception_handler(request, exc):
         },
     )
 
+
+@app.post("/genui", response_model=GenUIResponse)
+async def genui(req: SolveRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.core.router_v2 import get_router
+    router = get_router()
+    complexity = router.estimate_complexity(req.text)
+    model = router.select_tier(complexity)
+    from .core.llm import LLMClient
+    llm = LLMClient()
+    system = "You are a UI generator. Return JSON with type (chart, timeline, quiz, visualization) and data."
+    prompt = f"Generate UI JSON for: {req.text}"
+    try:
+        result = llm.call_llm(prompt, system=system)
+        text = result.get("text", "{}")
+        import json, re
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        data = json.loads(match.group(0)) if match else {"type": "visualization", "data": {}}
+        if "type" not in data:
+            data["type"] = "visualization"
+        return GenUIResponse(type=data["type"], data=data.get("data", {}))
+    except Exception as e:
+        return GenUIResponse(type="visualization", data={"error": str(e)})
 
 @app.post("/solve")
 async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
