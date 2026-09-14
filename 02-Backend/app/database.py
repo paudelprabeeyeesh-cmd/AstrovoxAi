@@ -106,9 +106,12 @@ def get_db():
 
 def init_db():
     if DATABASE_URL:
-        # PostgreSQL path - use Alembic for migrations
         return
-    with get_db() as conn:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=5000")
+    try:
         conn.executescript(TABLES_SQL)
         for idx in INDEXES:
             try:
@@ -116,6 +119,8 @@ def init_db():
             except Exception:
                 pass
         conn.commit()
+    finally:
+        conn.close()
 
 
 @contextmanager
