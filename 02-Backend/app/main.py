@@ -3,6 +3,7 @@ from .core.prometheus_middleware import PrometheusMiddleware
 from .core.cache_middleware import CacheMiddleware
 import json
 import logging
+logger = logging.getLogger(__name__)
 import os
 import uuid
 from contextlib import asynccontextmanager
@@ -69,7 +70,6 @@ from .usage import record_usage
 from .workflows import create_workflow, delete_workflow, list_workflows
 
 print("[astrovox] imports complete", flush=True)
-logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -84,9 +84,16 @@ app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
 print("[astrovox] FastAPI app created", flush=True)
 security = HTTPBearer()
 
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://astrovox.ai"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
@@ -121,14 +128,11 @@ from fastapi.responses import JSONResponse
 
 
 @app.exception_handler(Exception)
-async def _debug_exception_handler(request, exc):
+async def _global_exception_handler(request, exc):
+    logger.error("Unhandled exception", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content={
-            "error": str(exc),
-            "type": type(exc).__name__,
-            "trace": traceback.format_exc().splitlines()[-5:],
-        },
+        content={"error": "Internal server error"},
     )
 
 
@@ -144,7 +148,7 @@ async def genui(req: SolveRequest, user_id: str = Depends(get_user_id)):
     system = "You are a UI generator. Return JSON with type (chart, timeline, quiz, visualization) and data."
     prompt = f"Generate UI JSON for: {req.text}"
     try:
-        result = llm.call_llm(prompt, system=system)
+        result = llm.call_llm(prompt, system=system, timeout=30)
         text = result.get("text", "{}")
         import json, re
         match = re.search(r"\{.*\}", text, re.DOTALL)
@@ -201,7 +205,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         )
 
         try:
-            llm_result = llm_client.call_llm(full_prompt)
+            llm_result = llm_client.call_llm(full_prompt, timeout=30)
             response_text = llm_result.get("text", "")
             provider = llm_result.get("provider", "unknown")
             model = llm_result.get("model", "unknown")
@@ -257,8 +261,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             model=model,
             tokens=tokens,
             cost=cost,
-
-
+            latency_ms=0,
         )
         suggestion_engine = SuggestionEngine()
         suggestions = suggestion_engine.generate(user_id, [m.key for m in memories])
@@ -661,7 +664,7 @@ async def ws_chat(websocket: WebSocket, session_id: str):
             model = router.select_tier(complexity)
             prompt = data
             system = "You are a helpful assistant."
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(timeout=30) as client:
                 provider_url = None
                 api_key = None
                 for p_name in ["groq", "gemini", "mistral", "openrouter", "huggingface"]:
@@ -719,7 +722,7 @@ async def ws_voice(websocket: WebSocket, session_id: str):
                     complexity = router.estimate_complexity(transcript)
                     model = router.select_tier(complexity)
                     await websocket.send_json({"transcript": transcript, "model": model.name})
-                    async with httpx.AsyncClient() as client:
+                    async with httpx.AsyncClient(timeout=30) as client:
                         key = os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
                         base = "https://api.groq.com/openai/v1"
                         payload = {"model": model.model_id, "messages": [{"role": "user", "content": transcript}], "stream": True}
