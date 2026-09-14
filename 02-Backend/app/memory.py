@@ -1,4 +1,4 @@
-import uuid
+﻿import uuid
 from datetime import datetime
 
 from .database import get_db
@@ -31,11 +31,11 @@ def get_memory(memory_id: str) -> MemoryOut:
         )
 
 
-def list_memories(user_id: str) -> list[MemoryOut]:
+def list_memories(user_id: str, limit: int = 100) -> list[MemoryOut]:
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, key, value, created_at FROM memories WHERE user_id = ? ORDER BY created_at DESC",
-            (user_id,),
+            "SELECT id, key, value, created_at FROM memories WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+            (user_id, limit),
         ).fetchall()
         return [
             MemoryOut(
