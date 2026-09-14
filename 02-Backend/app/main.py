@@ -62,9 +62,18 @@ import uuid
 import json
 import time
 
+print("[astrovox] imports complete", flush=True)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AstrovoxAi", version="0.5.0")
+@asynccontextmanager
+async def lifespan(app):
+    print("[astrovox] lifespan startup", flush=True)
+    yield
+    print("[astrovox] lifespan shutdown", flush=True)
+
+print("[astrovox] creating FastAPI app", flush=True)
+app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
+print("[astrovox] FastAPI app created", flush=True)
 security = HTTPBearer()
 
 app.add_middleware(
@@ -84,12 +93,6 @@ def _ensure_db():
     if not _db_initialized:
         init_db()
         _db_initialized = True
-
-@asynccontextmanager
-async def lifespan(app):
-    yield
-
-app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
 
 def get_user_id(user_id: str = Depends(get_current_user)) -> str:
     return user_id
@@ -200,6 +203,10 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+@app.get("/healthz")
+async def healthz():
+    return "ok"
 
 from pydantic import BaseModel
 
@@ -458,3 +465,5 @@ async def create_enterprise_account_endpoint(company: str, contact_email: str, u
 @app.get("/enterprise/accounts")
 async def list_enterprise_accounts_endpoint():
     return list_enterprise_accounts()
+
+print("[astrovox] routes registered", flush=True)

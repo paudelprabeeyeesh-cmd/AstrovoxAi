@@ -2,7 +2,7 @@ import sqlite3
 import os
 from contextlib import contextmanager
 
-DB_PATH = os.getenv("ASTROVOX_DB", "astrovox.db")
+DB_PATH = os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
 
 TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
