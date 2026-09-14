@@ -7,22 +7,7 @@
 **React + Vite frontend · FastAPI backend · Supabase (PostgreSQL + Auth) · OpenAI-powered intelligence**
  
 <br/>
-[![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-Build%20Tool-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-Styling-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
-[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
-[![OpenAI](https://img.shields.io/badge/OpenAI-AI%20Engine-412991?style=for-the-badge&logo=openai&logoColor=white)](https://openai.com)
- 
-<br/>
-[![Status](https://img.shields.io/badge/Status-Active%20Development-22C55E?style=for-the-badge)](https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi)
-[![License: MIT](https://img.shields.io/badge/License-MIT-A855F7?style=for-the-badge)](LICENSE)
-[![Repo](https://img.shields.io/badge/Repository-AstrovoxAi-EC4899?style=for-the-badge&logo=github&logoColor=white)](https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi)
- 
-<br/>
-[**Overview**](#-overview) · [**Features**](#-features) · [**Architecture**](#-architecture) · [**Tech Stack**](#-tech-stack) · [**Project Structure**](#-project-structure) · [**Getting Started**](#-getting-started) · [**Dashboard**](#-the-dashboard) · [**AI Memory**](#-ai-memory-system) · [**API**](#-api-documentation) · [**Roadmap**](#-roadmap) · [**Contributing**](#-contributing) · [**Authors**](#-authors) · [**License**](#-license)
- 
+
 </div>
 ---
  
