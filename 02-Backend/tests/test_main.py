@@ -3,9 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.database import get_db
 import uuid
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 client = TestClient(app)
 
@@ -16,7 +14,7 @@ def test_health():
 
 def test_metrics():
     admin_id = str(uuid.uuid4())
-    password_hash = pwd_context.hash("test")
+    password_hash = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
     with get_db() as conn:
         conn.execute("INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
                      (admin_id, "admin@test.com", password_hash, "admin"))

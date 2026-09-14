@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      
+      - name: Install dependencies
+        run: |
+          cd 02-Backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests
+        run: |
+          cd 02-Backend
+          python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./02-Backend/coverage.xml
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      
+      - name: Install dependencies
+        run: |
+          cd 02-Backend
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run flake8
+        run: |
+          cd 02-Backend
+          python -m flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+          python -m flake8 app/ --count --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Check formatting with black
+        run: |
+          cd 02-Backend
+          python -m black --check app/ tests/
