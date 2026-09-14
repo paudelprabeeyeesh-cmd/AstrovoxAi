@@ -36,3 +36,42 @@ It is not a wrapper. It is not a demo. It is an engineered system built from fir
 ---
 
 ## 🧠 Core Architecture
+
+
+---
+
+## 👨‍💻 Founder & CEO
+
+### Prabeesh Paudel
+
+**Founder • CEO • AI Developer • Backend Engineer • Product Architect • Technical Lead • AI Systems Engineer • API Developer • Cloud Enthusiast • Product Designer • Open Source Contributor • Startup Builder**
+
+Prabeesh Paudel is the Founder and Chief Executive Officer (CEO) of AstrovoxAI, where he leads the company's product vision, technical strategy, and engineering direction. He is responsible for designing and developing AI-powered applications, backend systems, cloud deployment, API architecture, and the long-term roadmap of the platform.
+
+He works across multiple areas of software engineering, including artificial intelligence, large language models (LLMs), agentic AI systems, retrieval-augmented generation (RAG), backend development, authentication systems, cloud infrastructure, system design, and developer tooling.
+
+### Current Responsibilities
+- 🧠 Founder & CEO
+- 🤖 AI Developer
+- ⚙️ Backend Engineer
+- 🏗️ Product Architect
+- 💡 Technical Lead
+- 🔌 API Engineer
+- ☁️ Cloud Infrastructure Developer
+- 🚀 Startup Builder
+
+### Technical Interests
+- Artificial Intelligence
+- Large Language Models (LLMs)
+- Agentic AI Systems
+- Retrieval-Augmented Generation (RAG)
+- Cloud Computing
+- Distributed Systems
+- Software Architecture
+- Cybersecurity
+- Developer Tools
+- Automation
+- Open Source
+
+### Mission
+Build practical AI products that solve real-world problems through reliable engineering, continuous learning, and long-term thinking.
