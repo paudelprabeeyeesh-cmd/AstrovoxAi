@@ -1,5 +1,4 @@
 import tiktoken
-from typing import Optional
 
 MODEL_TOKENIZERS = {
     "gpt-4o-mini-2024-07-18": "o200k_base",

@@ -1,6 +1,8 @@
-import os
 import logging
+import os
+
 from openai import OpenAI
+
 from .providers import get_active_providers
 
 logger = logging.getLogger(__name__)
@@ -33,7 +35,9 @@ def call_llm(prompt: str, system: str = "") -> dict:
             )
             text = response.choices[0].message.content or ""
             tokens = getattr(response.usage, "total_tokens", len(prompt.split()))
-            logger.info(f"LLM call succeeded via {provider.name} using {provider.default_model}")
+            logger.info(
+                f"LLM call succeeded via {provider.name} using {provider.default_model}"
+            )
             return {
                 "text": text,
                 "provider": provider.name,

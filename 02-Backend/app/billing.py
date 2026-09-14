@@ -1,6 +1,7 @@
-import stripe
 import os
-from datetime import datetime
+
+import stripe
+
 from .database import get_db
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
@@ -22,17 +23,24 @@ def create_checkout_session(user_id: str, email: str, price_id: str = None) -> s
         metadata={"user_id": user_id},
     )
     with get_db() as conn:
-        conn.execute("UPDATE users SET stripe_customer_id = ? WHERE id = ?", (session.customer, user_id))
+        conn.execute(
+            "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
+            (session.customer, user_id),
+        )
         conn.commit()
     return session.url
 
 
 def cancel_subscription(user_id: str):
     with get_db() as conn:
-        row = conn.execute("SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)).fetchone()
+        row = conn.execute(
+            "SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
         if not row or not row["stripe_customer_id"]:
             return
-        subs = stripe.Subscription.list(customer=row["stripe_customer_id"], status="active")
+        subs = stripe.Subscription.list(
+            customer=row["stripe_customer_id"], status="active"
+        )
         for sub in subs:
             stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
         conn.execute("UPDATE users SET plan = 'free' WHERE id = ?", (user_id,))
@@ -45,25 +53,36 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception as e:
         raise ValueError(f"Invalid webhook signature: {e}")
-    
+
     event_type = event["type"]
     data = event["data"]["object"]
-    
+
     if event_type == "checkout.session.completed":
         customer_id = data.get("customer")
         user_id = data.get("metadata", {}).get("user_id")
         if user_id:
             with get_db() as conn:
-                conn.execute("UPDATE users SET stripe_customer_id = ? WHERE id = ?", (customer_id, user_id))
-                conn.execute("UPDATE subscriptions SET plan = 'pro', status = 'active' WHERE user_id = ?", (user_id,))
+                conn.execute(
+                    "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
+                    (customer_id, user_id),
+                )
+                conn.execute(
+                    "UPDATE subscriptions SET plan = 'pro', status = 'active' WHERE user_id = ?",
+                    (user_id,),
+                )
                 conn.commit()
-    
+
     elif event_type == "customer.subscription.deleted":
         customer_id = data.get("customer")
         with get_db() as conn:
-            user = conn.execute("SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)).fetchone()
+            user = conn.execute(
+                "SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)
+            ).fetchone()
             if user:
-                conn.execute("UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?", (user["id"],))
+                conn.execute(
+                    "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
+                    (user["id"],),
+                )
                 conn.commit()
-    
+
     return {"status": "processed", "type": event_type}

@@ -1,9 +1,15 @@
-import os
 import smtplib
-from email.mime.text import MIMEText
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 
-def send_daily_digest(user_email: str, user_id: str, yesterday_actions: list, pending: list, suggestion: str):
+
+def send_daily_digest(
+    user_email: str,
+    user_id: str,
+    yesterday_actions: list,
+    pending: list,
+    suggestion: str,
+):
     body = f"""Hi there,
 
 Here is your daily digest from AstrovoxAI.

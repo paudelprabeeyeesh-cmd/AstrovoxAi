@@ -1,5 +1,6 @@
 import tiktoken
 
+
 def count_tokens(text, model="gpt-4o"):
     try:
         enc = tiktoken.encoding_for_model(model)

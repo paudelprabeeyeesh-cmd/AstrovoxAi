@@ -1,7 +1,9 @@
 import json
 import uuid
 from datetime import datetime
+
 from .database import get_db
+
 
 def create_sdk_key(user_id: str, name: str) -> dict:
     key = f"astrovox-sdk-{uuid.uuid4().hex}"

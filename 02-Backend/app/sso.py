@@ -1,17 +1,32 @@
-import json
 import uuid
 from datetime import datetime
+
 from .database import get_db
+
 
 def create_sso_connection(user_id: str, provider: str, config: str) -> dict:
     conn_id = str(uuid.uuid4())
     with get_db() as conn:
-        conn.execute("INSERT INTO sso_connections (id, user_id, provider, config, created_at) VALUES (?, ?, ?, ?, ?)",
-                     (conn_id, user_id, provider, config, datetime.utcnow().isoformat()))
+        conn.execute(
+            "INSERT INTO sso_connections (id, user_id, provider, config, created_at) VALUES (?, ?, ?, ?, ?)",
+            (conn_id, user_id, provider, config, datetime.utcnow().isoformat()),
+        )
         conn.commit()
     return {"id": conn_id, "provider": provider}
 
+
 def list_sso_connections(user_id: str) -> list[dict]:
     with get_db() as conn:
-        rows = conn.execute("SELECT id, provider, config, created_at FROM sso_connections WHERE user_id = ?", (user_id,)).fetchall()
-        return [{"id": r["id"], "provider": r["provider"], "config": r["config"], "created_at": r["created_at"]} for r in rows]
+        rows = conn.execute(
+            "SELECT id, provider, config, created_at FROM sso_connections WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "provider": r["provider"],
+                "config": r["config"],
+                "created_at": r["created_at"],
+            }
+            for r in rows
+        ]

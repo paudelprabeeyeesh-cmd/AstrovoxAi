@@ -1,13 +1,16 @@
-from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime
-from typing import Optional, List
+
+from pydantic import BaseModel, EmailStr, Field
+
 
 class MemoryCreate(BaseModel):
     key: str = Field(..., max_length=200)
     value: str = Field(..., max_length=4000)
 
+
 class MemoryUpdate(BaseModel):
     value: str = Field(..., max_length=4000)
+
 
 class MemoryOut(BaseModel):
     id: str
@@ -15,10 +18,12 @@ class MemoryOut(BaseModel):
     value: str
     created_at: datetime
 
+
 class ConversationOut(BaseModel):
     id: str
-    title: Optional[str]
+    title: str | None
     created_at: datetime
+
 
 class MessageOut(BaseModel):
     id: str
@@ -26,10 +31,12 @@ class MessageOut(BaseModel):
     content: str
     created_at: datetime
 
+
 class SolveRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=10000)
     user_id: str = Field(..., min_length=1)
-    conversation_id: Optional[str] = None
+    conversation_id: str | None = None
+
 
 class SolveResponse(BaseModel):
     result: str
@@ -37,56 +44,65 @@ class SolveResponse(BaseModel):
     model: str
     cost_usd: float
     cached: bool
-    memories_used: List[str] = []
-    conversation_id: Optional[str] = None
-    message_id: Optional[str] = None
+    memories_used: list[str] = []
+    conversation_id: str | None = None
+    message_id: str | None = None
     confidence: float = 0.0
     refused: bool = False
+
 
 class TemplateCreate(BaseModel):
     name: str = Field(..., max_length=200)
     prompt: str = Field(..., max_length=10000)
-    variables: Optional[str] = None
+    variables: str | None = None
+
 
 class TemplateOut(BaseModel):
     id: str
     name: str
     prompt: str
-    variables: Optional[str]
+    variables: str | None
     created_at: datetime
 
+
 class ScheduleCreate(BaseModel):
-    template_id: Optional[str] = None
+    template_id: str | None = None
     cron: str = Field(..., max_length=100)
     email: EmailStr
 
+
 class ScheduleOut(BaseModel):
     id: str
-    template_id: Optional[str]
+    template_id: str | None
     cron: str
     email: str
-    last_run: Optional[datetime]
+    last_run: datetime | None
     active: bool
     created_at: datetime
 
+
 class KnowledgeDocCreate(BaseModel):
-    title: Optional[str] = None
+    title: str | None = None
     content: str = Field(..., max_length=50000)
+
 
 class KnowledgeDocOut(BaseModel):
     id: str
-    title: Optional[str]
+    title: str | None
     content: str
     created_at: datetime
 
+
 class UserProfileOut(BaseModel):
     user_id: str
-    style_json: Optional[str]
+    style_json: str | None
     updated_at: datetime
+
 
 class WorkflowCreate(BaseModel):
     name: str = Field(..., max_length=200)
     steps: str = Field(..., max_length=50000)
+
 
 class WorkflowOut(BaseModel):
     id: str
@@ -94,9 +110,11 @@ class WorkflowOut(BaseModel):
     steps: str
     created_at: datetime
 
+
 class ToolCreate(BaseModel):
     type: str = Field(..., max_length=50)
     config: str = Field(..., max_length=4000)
+
 
 class ToolOut(BaseModel):
     id: str
@@ -104,20 +122,23 @@ class ToolOut(BaseModel):
     config: str
     created_at: datetime
 
+
 class FeedbackCreate(BaseModel):
-    request_id: Optional[str] = None
+    request_id: str | None = None
     rating: int = Field(..., ge=1, le=5)
-    comment: Optional[str] = None
+    comment: str | None = None
+
 
 class FeedbackOut(BaseModel):
     id: str
-    request_id: Optional[str]
+    request_id: str | None
     rating: int
-    comment: Optional[str]
+    comment: str | None
     created_at: datetime
+
 
 class ConversationSearchOut(BaseModel):
     id: str
-    title: Optional[str]
+    title: str | None
     created_at: datetime
     message_count: int

@@ -1,7 +1,6 @@
-from dataclasses import dataclass
-from typing import List, Optional
-import os
 import logging
+import os
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,7 @@ class Provider:
     priority: int
 
 
-PROVIDERS: List[Provider] = [
+PROVIDERS: list[Provider] = [
     Provider(
         name="groq",
         base_url="https://api.groq.com/openai/v1",
@@ -54,7 +53,7 @@ PROVIDERS: List[Provider] = [
 ]
 
 
-def get_active_providers() -> List[Provider]:
+def get_active_providers() -> list[Provider]:
     active = []
     for p in PROVIDERS:
         key = os.getenv(p.env_key)

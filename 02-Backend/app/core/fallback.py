@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -8,10 +7,11 @@ class OSSFallback:
     def __init__(self, model_name: str = "ollama/llama2"):
         self.model_name = model_name
         self.available = False
-    
-    def generate(self, prompt: str) -> Optional[str]:
+
+    def generate(self, prompt: str) -> str | None:
         try:
             import requests
+
             response = requests.post(
                 "http://localhost:11434/api/generate",
                 json={"model": self.model_name, "prompt": prompt, "stream": False},
@@ -29,7 +29,7 @@ class GracefulDegradationChain:
         self.primary = primary_client
         self.oss = oss_fallback
         self.cache = cache_client
-    
+
     def generate(self, prompt: str, user_id: str) -> tuple[str, str]:
         try:
             response = self.primary.generate(prompt)
@@ -37,17 +37,17 @@ class GracefulDegradationChain:
                 return response, "primary"
         except Exception as e:
             logger.warning(f"Primary LLM failed: {e}")
-        
+
         try:
             response = self.oss.generate(prompt)
             if response:
                 return response, "oss"
         except Exception as e:
             logger.warning(f"OSS fallback failed: {e}")
-        
+
         if self.cache:
             cached = self.cache.get(user_id, prompt, "fallback")
             if cached:
                 return cached.get("response", ""), "cache"
-        
+
         return "Service temporarily unavailable. Please try again later.", "queue"

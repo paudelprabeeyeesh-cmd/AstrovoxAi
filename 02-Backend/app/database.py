@@ -1,5 +1,5 @@
-﻿import sqlite3
 import os
+import sqlite3
 from contextlib import contextmanager
 
 DB_PATH = os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
@@ -85,6 +85,7 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_ma_targets_name ON ma_targets(name)",
     "CREATE INDEX IF NOT EXISTS idx_ipo_metrics_name ON ipo_metrics(name)",
 ]
+
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)

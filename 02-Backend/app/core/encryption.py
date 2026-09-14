@@ -1,8 +1,10 @@
-import os
 import base64
+import os
+
 from cryptography.fernet import Fernet
 
 _fernet = None
+
 
 def get_fernet():
     global _fernet
@@ -13,10 +15,12 @@ def get_fernet():
         _fernet = Fernet(key.encode() if isinstance(key, str) else key)
     return _fernet
 
+
 def encrypt(text: str) -> str:
     if not text:
         return text
     return get_fernet().encrypt(text.encode()).decode()
+
 
 def decrypt(token: str) -> str:
     if not token:

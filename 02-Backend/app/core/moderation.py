@@ -1,21 +1,26 @@
 import logging
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 MODERATION_CATEGORIES = [
-    "hate", "hate/threatening", "self-harm", "sexual", "sexual/minors",
-    "violence", "violence/graphic"
+    "hate",
+    "hate/threatening",
+    "self-harm",
+    "sexual",
+    "sexual/minors",
+    "violence",
+    "violence/graphic",
 ]
 
 
-def check_moderation(text: str) -> tuple[bool, Optional[str]]:
+def check_moderation(text: str) -> tuple[bool, str | None]:
     try:
         import openai
+
         client = openai.OpenAI()
         response = client.moderations.create(input=text)
         result = response.results[0]
-        
+
         for category in MODERATION_CATEGORIES:
             if getattr(result.categories, category.replace("/", "_"), False):
                 flagged = category.replace("_", "/")

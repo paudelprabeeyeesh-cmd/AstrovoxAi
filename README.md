@@ -1,25 +1,34 @@
 # AstrovoxAI
 
-AstrovoxAI helps solopreneurs and small teams ship AI-powered products fast.
+FastAPI backend for AstrovoxAI. Multi-provider LLM router with Groq, Gemini, Mistral, OpenRouter, and HuggingFace.
 
-## Problem
-Building AI features is slow, expensive, and requires infra expertise.
+## Setup
 
-## Solution
-One API endpoint. Built-in cost tracking, caching, memory, and auth. Deploy in minutes.
-
-## Quick Start
-```bash
-cd 02-Backend
+```powershell
+cd C:\AstrovoxAi\02-Backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+```
+
+## Run
+
+```powershell
 uvicorn app.main:app --reload
 ```
 
 ## Deploy
-Push to Render free tier. See DEPLOY.md.
 
-## Cost
-~$0.001 per request with caching. Free tier covers 10 requests/day.
+Render free tier. Set env vars in dashboard:
+- `ASTROVOX_DB` = `/tmp/astrovox.db`
+- `GROQ_API_KEY`
+- `GEMINI_API_KEY`
+- `MISTRAL_API_KEY`
+- `OPENROUTER_API_KEY`
+- `HF_API_KEY`
 
-## API Key
-Contact prabeesh@astrovox.ai for a key.
+## Tests
+
+```powershell
+pytest tests/ -v
+```

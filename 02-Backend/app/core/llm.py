@@ -1,6 +1,4 @@
-import os
 import logging
-from typing import Optional, Dict
 
 from .router import call_llm
 
@@ -13,6 +11,7 @@ class LLMClient:
 
     def _check_providers(self) -> list[str]:
         from .providers import get_active_providers
+
         active = get_active_providers()
         if active:
             names = [p.name for p in active]
@@ -35,7 +34,7 @@ class LLMClient:
         result = call_llm(prompt, system=system)
         return result["text"]
 
-    def call_llm(self, prompt: str, system: str = "") -> Dict:
+    def call_llm(self, prompt: str, system: str = "") -> dict:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "

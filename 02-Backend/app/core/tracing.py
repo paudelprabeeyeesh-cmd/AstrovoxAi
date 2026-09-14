@@ -1,22 +1,19 @@
 import contextlib
 import logging
-import time
 import uuid
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 try:
     from opentelemetry import trace
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import \
+        OTLPSpanExporter
+    from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-    from opentelemetry.sdk.resources import Resource
-    
+
     trace.set_tracer_provider(
-        TracerProvider(
-            resource=Resource.create({"service.name": "astrovoxai"})
-        )
+        TracerProvider(resource=Resource.create({"service.name": "astrovoxai"}))
     )
     tracer = trace.get_tracer(__name__)
     OPENTELEMETRY_AVAILABLE = True
@@ -42,7 +39,14 @@ def start_trace(name: str, user_id: str, attributes: dict = None):
     return span
 
 
-def log_llm_call(prompt_hash: str, model: str, tokens: int, cost: float, latency_ms: float, cached: bool = False):
+def log_llm_call(
+    prompt_hash: str,
+    model: str,
+    tokens: int,
+    cost: float,
+    latency_ms: float,
+    cached: bool = False,
+):
     logger.info(
         f"LLM_CALL: prompt_hash={prompt_hash}, model={model}, tokens={tokens}, "
         f"cost={cost}, latency_ms={latency_ms}, cached={cached}"
@@ -51,4 +55,5 @@ def log_llm_call(prompt_hash: str, model: str, tokens: int, cost: float, latency
 
 def get_prompt_hash(prompt: str) -> str:
     import hashlib
+
     return hashlib.sha256(prompt.encode()).hexdigest()[:16]

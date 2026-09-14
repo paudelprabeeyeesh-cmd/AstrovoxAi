@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
+
 from .database import get_db
+
 
 def create_api_key(user_id: str, name: str = None) -> str:
     key = f"astrovox-{uuid.uuid4().hex}"
