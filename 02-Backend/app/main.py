@@ -101,6 +101,16 @@ llm_client = LLMClient()
 context_manager = ContextManager()
 prompt_manager = PromptVersionManager()
 
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def _debug_exception_handler(request, exc):
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "type": type(exc).__name__, "trace": traceback.format_exc().splitlines()[-5:]}
+    )
+
 @app.post("/solve")
 async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
     _ensure_db()
