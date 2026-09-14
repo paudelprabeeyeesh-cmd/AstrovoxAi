@@ -89,10 +89,7 @@ app.add_middleware(RateLimitMiddleware)
 _db_initialized = False
 
 def _ensure_db():
-    global _db_initialized
-    if not _db_initialized:
-        init_db()
-        _db_initialized = True
+    init_db()
 
 def get_user_id(user_id: str = Depends(get_current_user)) -> str:
     return user_id
