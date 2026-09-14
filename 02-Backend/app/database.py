@@ -99,6 +99,7 @@ def init_db():
                 print(f"index skipped: {e}")
         conn.commit()
 
+@contextmanager
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
