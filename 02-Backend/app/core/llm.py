@@ -1,6 +1,6 @@
 import logging
 
-from .router import call_llm
+from .router import call_llm, call_llm_stream
 
 logger = logging.getLogger(__name__)
 
@@ -42,3 +42,8 @@ class LLMClient:
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
         return call_llm(prompt, system=system, min_confidence=min_confidence, timeout=timeout)
+
+
+    async def stream_llm(self, prompt: str, system: str = "", timeout: float = 30):
+        async for item in call_llm_stream(prompt, system=system, timeout=timeout):
+            yield item

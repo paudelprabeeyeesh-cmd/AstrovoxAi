@@ -83,7 +83,9 @@ def list_tools(user_id: str) -> list[ToolOut]:
 
 def delete_tool(tool_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM tools WHERE id = ? AND user_id = ?", (tool_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Tool not found")

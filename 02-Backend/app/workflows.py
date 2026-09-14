@@ -53,7 +53,9 @@ def list_workflows(user_id: str) -> list[WorkflowOut]:
 
 def delete_workflow(wf_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM workflows WHERE id = ? AND user_id = ?", (wf_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Workflow not found")

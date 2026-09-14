@@ -73,7 +73,9 @@ def search_docs(user_id: str, query: str, limit: int = 5) -> list[KnowledgeDocOu
 
 def delete_doc(doc_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM knowledge_docs WHERE id = ? AND user_id = ?", (doc_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Document not found")

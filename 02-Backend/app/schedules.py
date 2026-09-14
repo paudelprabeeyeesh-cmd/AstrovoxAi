@@ -36,7 +36,7 @@ def run_schedule(schedule_id: str):
         user_id, template_id, email = row["user_id"], row["template_id"], row["email"]
         prompt = "Daily summary"
         if template_id:
-            tpl = get_template(template_id)
+            tpl = get_template(template_id, user_id)
             prompt = tpl.prompt
         send_email(email, "AstrovoxAI Daily", f"Result for {user_id}:\n\n{prompt}")
         conn.execute(
@@ -64,14 +64,14 @@ def create_schedule(user_id: str, data: ScheduleCreate) -> ScheduleOut:
         )
     except Exception:
         pass
-    return get_schedule(schedule_id)
+    return get_schedule(schedule_id, user_id)
 
 
-def get_schedule(schedule_id: str) -> ScheduleOut:
+def get_schedule(schedule_id: str, user_id: str) -> ScheduleOut:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, template_id, cron, email, last_run, active, created_at FROM schedules WHERE id = ?",
-            (schedule_id,),
+            "SELECT id, template_id, cron, email, last_run, active, created_at FROM schedules WHERE id = ? AND user_id = ?",
+            (schedule_id, user_id),
         ).fetchone()
         if not row:
             raise ValueError("Schedule not found")
@@ -112,10 +112,12 @@ def list_schedules(user_id: str) -> list[ScheduleOut]:
 
 def delete_schedule(schedule_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM schedules WHERE id = ? AND user_id = ?", (schedule_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Schedule not found")
     try:
         scheduler.remove_job(schedule_id)
     except Exception:

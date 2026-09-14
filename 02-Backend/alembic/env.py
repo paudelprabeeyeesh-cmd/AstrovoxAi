@@ -11,7 +11,7 @@ target_metadata = None
 
 db_url = os.getenv("DATABASE_URL")
 if not db_url:
-    raise RuntimeError("DATABASE_URL environment variable is not set. Please set it to your PostgreSQL connection string.")
+    raise RuntimeError("DATABASE_URL environment variable is required for Alembic migrations")
 config.set_main_option("sqlalchemy.url", db_url)
 
 

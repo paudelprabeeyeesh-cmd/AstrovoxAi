@@ -13,14 +13,14 @@ def create_template(user_id: str, data: TemplateCreate) -> TemplateOut:
             (tpl_id, user_id, data.name, data.prompt, data.variables),
         )
         conn.commit()
-    return get_template(tpl_id)
+    return get_template(tpl_id, user_id)
 
 
-def get_template(tpl_id: str) -> TemplateOut:
+def get_template(tpl_id: str, user_id: str) -> TemplateOut:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, name, prompt, variables, created_at FROM templates WHERE id = ?",
-            (tpl_id,),
+            "SELECT id, name, prompt, variables, created_at FROM templates WHERE id = ? AND user_id = ?",
+            (tpl_id, user_id),
         ).fetchone()
         if not row:
             raise ValueError("Template not found")
@@ -58,12 +58,14 @@ def update_template(tpl_id: str, user_id: str, data: TemplateCreate) -> Template
             (data.name, data.prompt, data.variables, tpl_id, user_id),
         )
         conn.commit()
-    return get_template(tpl_id)
+    return get_template(tpl_id, user_id)
 
 
 def delete_template(tpl_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM templates WHERE id = ? AND user_id = ?", (tpl_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Template not found")

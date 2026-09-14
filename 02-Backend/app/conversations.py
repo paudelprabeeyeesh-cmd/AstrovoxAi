@@ -74,9 +74,15 @@ def search_conversations(user_id: str, query: str) -> list[ConversationSearchOut
         ]
 
 
-def add_message(conversation_id: str, role: str, content: str) -> MessageOut:
-    msg_id = str(uuid.uuid4())
+def add_message(conversation_id: str, role: str, content: str, user_id: str) -> MessageOut:
     with get_db() as conn:
+        row = conn.execute(
+            "SELECT id FROM conversations WHERE id = ? AND user_id = ?",
+            (conversation_id, user_id),
+        ).fetchone()
+        if not row:
+            raise ValueError("Conversation not found")
+        msg_id = str(uuid.uuid4())
         conn.execute(
             "INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)",
             (msg_id, conversation_id, role, content),
@@ -89,6 +95,12 @@ def add_message(conversation_id: str, role: str, content: str) -> MessageOut:
 
 def get_messages(conversation_id: str, user_id: str) -> list[MessageOut]:
     with get_db() as conn:
+        row = conn.execute(
+            "SELECT id FROM conversations WHERE id = ? AND user_id = ?",
+            (conversation_id, user_id),
+        ).fetchone()
+        if not row:
+            raise ValueError("Conversation not found")
         rows = conn.execute(
             """
             SELECT m.id, m.role, m.content, m.created_at

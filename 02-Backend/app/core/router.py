@@ -92,3 +92,47 @@ def call_llm(prompt: str, system: str = "", min_confidence: float = None, timeou
         return last_result
     
     raise RuntimeError(f"All LLM providers failed: {errors}")
+
+
+async def call_llm_stream(
+    prompt: str,
+    system: str = "",
+    timeout: float = 30,
+):
+    providers = get_active_providers()
+    if not providers:
+        raise RuntimeError(
+            "No AI provider configured. Set at least one of: "
+            "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
+            "OPENROUTER_API_KEY, HF_API_KEY."
+        )
+    errors = []
+    for provider in providers:
+        api_key = os.getenv(provider.env_key)
+        if not api_key:
+            continue
+        try:
+            client = OpenAI(base_url=provider.base_url, api_key=api_key)
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            stream = client.chat.completions.create(
+                model=provider.default_model,
+                messages=messages,
+                stream=True,
+                timeout=timeout,
+            )
+            async for chunk in stream:
+                delta = chunk.choices[0].delta.content if chunk.choices else None
+                if delta:
+                    yield {
+                        "token": delta,
+                        "provider": provider.name,
+                        "model": provider.default_model,
+                    }
+            return
+        except Exception as e:
+            logger.warning(f"Provider {provider.name} streaming failed: {e}")
+            errors.append(f"{provider.name}: {e}")
+    raise RuntimeError(f"All LLM providers failed: {errors}")

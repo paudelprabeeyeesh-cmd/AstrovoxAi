@@ -22,6 +22,16 @@ def create_feedback(user_id: str, data: FeedbackCreate) -> FeedbackOut:
     )
 
 
+def delete_feedback(fb_id: str, user_id: str):
+    with get_db() as conn:
+        cursor = conn.execute(
+            "DELETE FROM feedback WHERE id = ? AND user_id = ?", (fb_id, user_id)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Feedback not found")
+
+
 def list_feedback(user_id: str) -> list[FeedbackOut]:
     with get_db() as conn:
         rows = conn.execute(

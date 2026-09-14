@@ -13,13 +13,14 @@ def create_memory(user_id: str, data: MemoryCreate) -> MemoryOut:
             (memory_id, user_id, data.key, data.value),
         )
         conn.commit()
-    return get_memory(memory_id)
+    return get_memory(memory_id, user_id)
 
 
-def get_memory(memory_id: str) -> MemoryOut:
+def get_memory(memory_id: str, user_id: str) -> MemoryOut:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, key, value, created_at FROM memories WHERE id = ?", (memory_id,)
+            "SELECT id, key, value, created_at FROM memories WHERE id = ? AND user_id = ?",
+            (memory_id, user_id),
         ).fetchone()
         if not row:
             raise ValueError("Memory not found")
@@ -55,15 +56,17 @@ def update_memory(memory_id: str, user_id: str, data: MemoryUpdate) -> MemoryOut
             (data.value, memory_id, user_id),
         )
         conn.commit()
-    return get_memory(memory_id)
+    return get_memory(memory_id, user_id)
 
 
 def delete_memory(memory_id: str, user_id: str):
     with get_db() as conn:
-        conn.execute(
+        cursor = conn.execute(
             "DELETE FROM memories WHERE id = ? AND user_id = ?", (memory_id, user_id)
         )
         conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Memory not found")
 
 
 def search_memories(user_id: str, query: str, limit: int = 5) -> list[MemoryOut]:

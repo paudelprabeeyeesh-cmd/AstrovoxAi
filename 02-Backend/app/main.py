@@ -43,7 +43,7 @@ from .core.pii import redact_pii
 from .core.tracing import get_prompt_hash, log_llm_call, start_trace
 from .cost import count_tokens
 from .database import init_db
-from .feedback import create_feedback, list_feedback
+from .feedback import create_feedback, delete_feedback, list_feedback
 from .integrations import (create_integration, delete_integration,
                            list_integrations)
 from .interactions import create_interaction
@@ -126,7 +126,7 @@ prompt_manager = PromptVersionManager()
 
 import traceback
 
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 
 @app.exception_handler(Exception)
@@ -230,8 +230,8 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             conv = create_conversation(user_id, title=req.text[:50])
             conversation_id = conv.id
 
-        add_message(conversation_id, "user", req.text)
-        bot_msg = add_message(conversation_id, "assistant", grounded_response)
+        add_message(conversation_id, "user", req.text, user_id)
+        bot_msg = add_message(conversation_id, "assistant", grounded_response, user_id)
 
         tokens = count_tokens(full_prompt, model=model)
         cost = round(tokens * 0.00001, 6)
@@ -281,6 +281,71 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
             refused=refused,
             suggestions=suggestions,
         )
+
+
+@app.post("/solve/stream")
+async def solve_stream(req: SolveRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    sanitized, injection_detected = sanitize_input(req.text)
+    if injection_detected:
+        log_action(
+            user_id, "injection_attempt", json.dumps({"query": req.text[:100]})
+        )
+
+    moderated, flagged_category = check_moderation(sanitized)
+    if moderated:
+        payload = json.dumps({
+            "token": "",
+            "error": "moderated",
+            "flagged_category": flagged_category,
+        })
+        async def _gen():
+            yield f"data: {payload}\n\n"
+            yield f"data: [DONE]\n\n"
+        return StreamingResponse(_gen(), media_type="text/event-stream")
+
+    redacted = redact_pii(sanitized)
+    prompt_with_canary = add_canary(redacted)
+
+    memories = search_memories(user_id, req.text, limit=3)
+    docs = search_docs(user_id, req.text, limit=3)
+
+    context_parts = []
+    if memories:
+        memory_context = "\n".join([f"- {m.key}: {m.value}" for m in memories])
+        context_parts.append(f"Memories:\n{memory_context}")
+    if docs:
+        doc_context = "\n".join(
+            [f"[{d.title or 'doc'}]: {d.content[:500]}" for d in docs]
+        )
+        context_parts.append(f"Knowledge:\n{doc_context}")
+
+    full_prompt = (
+        "\n\n".join(context_parts + [f"User: {prompt_with_canary}"])
+        if context_parts
+        else prompt_with_canary
+    )
+
+    async def event_generator():
+        try:
+            async for item in llm_client.stream_llm(full_prompt, timeout=60):
+                token = item.get("token", "")
+                provider = item.get("provider", "unknown")
+                model = item.get("model", "unknown")
+                payload = json.dumps({
+                    "token": token,
+                    "provider": provider,
+                    "model": model,
+                })
+                yield f"data: {payload}\n\n"
+        except Exception as e:
+            logger.error(f"Streaming LLM call failed: {e}")
+            payload = json.dumps({"token": "", "error": str(e)})
+            yield f"data: {payload}\n\n"
+        finally:
+            yield f"data: [DONE]\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/health")
@@ -397,7 +462,10 @@ async def update_memory_endpoint(
 
 @app.delete("/memory/{memory_id}")
 async def delete_memory_endpoint(memory_id: str, user_id: str = Depends(get_user_id)):
-    delete_memory(memory_id, user_id)
+    try:
+        delete_memory(memory_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Memory not found")
     return {"ok": True}
 
 
@@ -457,7 +525,10 @@ async def update_template_endpoint(
 
 @app.delete("/templates/{tpl_id}")
 async def delete_template_endpoint(tpl_id: str, user_id: str = Depends(get_user_id)):
-    delete_template(tpl_id, user_id)
+    try:
+        delete_template(tpl_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Template not found")
     return {"ok": True}
 
 
@@ -477,7 +548,10 @@ async def list_schedules_endpoint(user_id: str = Depends(get_user_id)):
 async def delete_schedule_endpoint(
     schedule_id: str, user_id: str = Depends(get_user_id)
 ):
-    delete_schedule(schedule_id, user_id)
+    try:
+        delete_schedule(schedule_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Schedule not found")
     return {"ok": True}
 
 
@@ -500,7 +574,10 @@ async def search_docs_endpoint(user_id: str = Depends(get_user_id), q: str = "")
 
 @app.delete("/knowledge/{doc_id}")
 async def delete_doc_endpoint(doc_id: str, user_id: str = Depends(get_user_id)):
-    delete_doc(doc_id, user_id)
+    try:
+        delete_doc(doc_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Document not found")
     return {"ok": True}
 
 
@@ -529,7 +606,10 @@ async def list_workflows_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.delete("/workflows/{wf_id}")
 async def delete_workflow_endpoint(wf_id: str, user_id: str = Depends(get_user_id)):
-    delete_workflow(wf_id, user_id)
+    try:
+        delete_workflow(wf_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Workflow not found")
     return {"ok": True}
 
 
@@ -545,7 +625,10 @@ async def list_tools_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.delete("/tools/{tool_id}")
 async def delete_tool_endpoint(tool_id: str, user_id: str = Depends(get_user_id)):
-    delete_tool(tool_id, user_id)
+    try:
+        delete_tool(tool_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Tool not found")
     return {"ok": True}
 
 
@@ -559,6 +642,15 @@ async def create_feedback_endpoint(
 @app.get("/feedback", response_model=list[FeedbackOut])
 async def list_feedback_endpoint(user_id: str = Depends(get_user_id)):
     return list_feedback(user_id)
+
+
+@app.delete("/feedback/{fb_id}")
+async def delete_feedback_endpoint(fb_id: str, user_id: str = Depends(get_user_id)):
+    try:
+        delete_feedback(fb_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Feedback not found")
+    return {"ok": True}
 
 
 @app.get("/cost/daily")
