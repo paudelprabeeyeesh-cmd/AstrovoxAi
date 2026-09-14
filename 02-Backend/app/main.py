@@ -10,13 +10,14 @@ from fastapi.security import HTTPBearer
 from .ab_runner import get_variant
 from .ab_runner import record_result as record_ab_result
 from .affiliates import create_affiliate, list_affiliates
-from .amas import create_ama
+from .amas import create_ama, list_amas
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
                    register_user, require_admin)
 from .billing import (cancel_subscription, create_checkout_session,
                       handle_stripe_webhook)
-from .campaigns import create_ad_campaign
+from .campaigns import create_ad_campaign, list_campaigns
+from .case_studies import create_case_study, list_case_studies
 from .citations import create_citation, get_sources
 from .comments import create_comment
 from .conversations import (add_message, create_conversation, get_messages,
@@ -34,7 +35,9 @@ from .database import init_db
 from .feedback import create_feedback, list_feedback
 from .integrations import (create_integration, delete_integration,
                            list_integrations)
+from .interactions import create_interaction
 from .knowledge import create_doc, delete_doc, list_docs, search_docs
+from .ma_targets import create_ma_target, list_ma_targets
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
 from .metrics import get_daily_cost, get_revenue, get_usage
@@ -43,6 +46,7 @@ from .profiles import get_profile, update_profile
 from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
 from .referrals import create_referral, get_referral_stats
+from .regions import create_region, list_regions
 from .schedules import create_schedule, delete_schedule, list_schedules
 from .schemas import (ConversationOut, ConversationSearchOut, FeedbackCreate,
                       FeedbackOut, KnowledgeDocCreate, KnowledgeDocOut,
@@ -54,6 +58,7 @@ from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .tools import create_tool, delete_tool, list_tools
 from .usage import record_usage
+from .verticals import create_vertical, list_verticals
 from .workflows import create_workflow, delete_workflow, list_workflows
 
 print("[astrovox] imports complete", flush=True)
@@ -207,6 +212,15 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         )
 
         cost_circuit_breaker.record_cost(user_id, cost)
+
+        create_interaction(
+            user_id=user_id,
+            prompt=req.text,
+            response=grounded_response,
+            model=model,
+            tokens=tokens,
+            cost=cost,
+        )
 
         return SolveResponse(
             result=grounded_response,
@@ -539,7 +553,12 @@ async def delete_integration_endpoint(
 async def create_post_endpoint(
     title: str, content: str, user_id: str = Depends(get_user_id)
 ):
-    return create_post(title, content, user_id)
+    return create_post(user_id, title, content)
+
+
+@app.get("/posts")
+async def list_posts_endpoint(user_id: str = Depends(get_user_id)):
+    return list_posts(user_id)
 
 
 @app.post("/posts/{post_id}/comments")
@@ -594,12 +613,72 @@ async def list_affiliates_endpoint(user_id: str = Depends(get_user_id)):
 async def create_enterprise_account_endpoint(
     company: str, contact_email: str, user_id: str = Depends(get_user_id)
 ):
-    return create_enterprise_account(company, contact_email)
+    return create_enterprise_account(user_id, company, contact_email)
 
 
 @app.get("/enterprise/accounts")
-async def list_enterprise_accounts_endpoint():
-    return list_enterprise_accounts()
+async def list_enterprise_accounts_endpoint(user_id: str = Depends(get_user_id)):
+    return list_enterprise_accounts(user_id)
+
+
+@app.post("/ma-targets")
+async def create_ma_target_endpoint(
+    name: str, description: str, valuation: float, user_id: str = Depends(get_user_id)
+):
+    return create_ma_target(user_id, name, description, valuation)
+
+
+@app.get("/ma-targets")
+async def list_ma_targets_endpoint(user_id: str = Depends(get_user_id)):
+    return list_ma_targets(user_id)
+
+
+@app.post("/ipo-metrics")
+async def create_ipo_metric_endpoint(
+    name: str, target: str, current: str, user_id: str = Depends(get_user_id)
+):
+    return create_ipo_metric(user_id, name, target, current)
+
+
+@app.get("/ipo-metrics")
+async def list_ipo_metrics_endpoint(user_id: str = Depends(get_user_id)):
+    return list_ipo_metrics(user_id)
+
+
+@app.post("/regions")
+async def create_region_endpoint(
+    name: str, code: str, config: str, user_id: str = Depends(get_user_id)
+):
+    return create_region(user_id, name, code, config)
+
+
+@app.get("/regions")
+async def list_regions_endpoint(user_id: str = Depends(get_user_id)):
+    return list_regions(user_id)
+
+
+@app.post("/verticals")
+async def create_vertical_endpoint(
+    name: str, description: str, config: str, user_id: str = Depends(get_user_id)
+):
+    return create_vertical(user_id, name, description, config)
+
+
+@app.get("/verticals")
+async def list_verticals_endpoint(user_id: str = Depends(get_user_id)):
+    return list_verticals(user_id)
+
+
+@app.post("/case-studies")
+async def create_case_study_endpoint(
+    title: str, content: str, user_id: str = Depends(get_user_id)
+):
+    return create_case_study(user_id, title, content)
+
+
+@app.get("/case-studies")
+async def list_case_studies_endpoint(user_id: str = Depends(get_user_id)):
+    return list_case_studies(user_id)
 
 
 print("[astrovox] routes registered", flush=True)

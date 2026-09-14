@@ -4,21 +4,22 @@ from datetime import datetime
 from .database import get_db
 
 
-def create_post(title: str, content: str, author: str = "founder") -> dict:
+def create_post(user_id: str, title: str, content: str, author: str = "founder") -> dict:
     post_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO posts (id, title, content, author, created_at) VALUES (?, ?, ?, ?, ?)",
-            (post_id, title, content, author, datetime.utcnow().isoformat()),
+            "INSERT INTO posts (id, user_id, title, content, author, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (post_id, user_id, title, content, author, datetime.utcnow().isoformat()),
         )
         conn.commit()
     return {"id": post_id, "title": title}
 
 
-def list_posts() -> list[dict]:
+def list_posts(user_id: str) -> list[dict]:
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, title, author, created_at FROM posts ORDER BY created_at DESC"
+            "SELECT id, title, content, author, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
         ).fetchall()
         return [
             {

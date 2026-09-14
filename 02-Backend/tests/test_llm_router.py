@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 from app.core.router import call_llm
 
 
-def make_response(text="hello", model="llama-3.1-8b-instant", tokens=10):
+def make_response(text="hello", model="llama-3.3-70b-versatile", tokens=10):
     mock = MagicMock()
     mock.choices[0].message.content = text
     mock.usage.total_tokens = tokens
@@ -19,7 +19,7 @@ def test_call_llm_first_provider_success():
             result = call_llm("test prompt")
             assert result["text"] == "hello"
             assert result["provider"] == "groq"
-            assert result["model"] == "llama-3.1-8b-instant"
+            assert result["model"] == "llama-3.3-70b-versatile"
             assert result["tokens"] == 10
 
 
@@ -29,13 +29,13 @@ def test_call_llm_fallback_to_second_provider():
             mock_client = MagicMock()
             mock_client.chat.completions.create.side_effect = [
                 Exception("groq down"),
-                make_response(text="gemini response", model="gemini-2.0-flash"),
+                make_response(text="gemini response", model="gemini-2.5-flash"),
             ]
             MockOpenAI.return_value = mock_client
             result = call_llm("test prompt")
             assert result["text"] == "gemini response"
             assert result["provider"] == "gemini"
-            assert result["model"] == "gemini-2.0-flash"
+            assert result["model"] == "gemini-2.5-flash"
 
 
 def test_call_llm_all_providers_fail():

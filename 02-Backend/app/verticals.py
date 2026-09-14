@@ -4,21 +4,22 @@ from datetime import datetime
 from .database import get_db
 
 
-def create_vertical(name: str, description: str, config: str) -> dict:
+def create_vertical(user_id: str, name: str, description: str, config: str) -> dict:
     vertical_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO verticals (id, name, description, config, created_at) VALUES (?, ?, ?, ?, ?)",
-            (vertical_id, name, description, config, datetime.utcnow().isoformat()),
+            "INSERT INTO verticals (id, user_id, name, description, config, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (vertical_id, user_id, name, description, config, datetime.utcnow().isoformat()),
         )
         conn.commit()
     return {"id": vertical_id, "name": name}
 
 
-def list_verticals() -> list[dict]:
+def list_verticals(user_id: str) -> list[dict]:
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, name, description, config, created_at FROM verticals ORDER BY created_at DESC"
+            "SELECT id, name, description, config, created_at FROM verticals WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
         ).fetchall()
         return [
             {

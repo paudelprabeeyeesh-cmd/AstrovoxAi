@@ -1,3 +1,4 @@
+import time
 import pytest
 from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
@@ -19,13 +20,14 @@ def test_solve_returns_provider_and_model():
         with patch.object(main_module.llm_client, "call_llm", return_value={
             "text": "mocked answer",
             "provider": "groq",
-            "model": "llama-3.1-8b-instant",
+            "model": "llama-3.3-70b-versatile",
             "tokens": 5,
         }):
             client = TestClient(main_module.app)
-            r = client.post("/auth/register", json={"email": "solve-test@test.com", "password": "test123"})
+            email = f"solve-test-{int(time.time())}@test.com"
+            r = client.post("/auth/register", json={"email": email, "password": "test123"})
             assert r.status_code == 200, r.text
-            login = client.post("/auth/login", json={"email": "solve-test@test.com", "password": "test123"})
+            login = client.post("/auth/login", json={"email": email, "password": "test123"})
             assert login.status_code == 200
             token = login.json()["access_token"]
             user_id = login.json()["user_id"]
