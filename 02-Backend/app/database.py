@@ -1,4 +1,3 @@
-cd C:\AstrovoxAi\02-Backend; @'
 import sqlite3
 import os
 from contextlib import contextmanager
