@@ -4,7 +4,7 @@ import os
 class Settings:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///astrovox.db")
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
 
     MODEL_ALIASES: dict = {
         "cheap": "gpt-4o-mini-2024-07-18",

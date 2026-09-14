@@ -57,11 +57,13 @@ def register_user(email: str, password: str) -> dict:
         with get_db() as conn:
             conn.execute(
                 "INSERT INTO users (id, email, password_hash, email_verified) VALUES (?, ?, ?, ?)",
-                (user_id, email, password_hash, 1),
+                (user_id, email, password_hash, 0),
             )
             conn.commit()
     except Exception as e:
         raise HTTPException(status_code=400, detail="Invalid request") from e
+    token = create_verification_token(user_id, email)
+    send_verification_email(email, token)
     return {"user_id": user_id, "email": email}
 
 

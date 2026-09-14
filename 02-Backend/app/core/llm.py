@@ -24,21 +24,21 @@ class LLMClient:
         )
         return []
 
-    def generate(self, prompt: str, system: str = "") -> str:
+    def generate(self, prompt: str, system: str = "", timeout: float = 30) -> str:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "
                 "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
-        result = call_llm(prompt, system=system)
+        result = call_llm(prompt, system=system, timeout=timeout)
         return result["text"]
 
-    def call_llm(self, prompt: str, system: str = "", min_confidence: float = None) -> dict:
+    def call_llm(self, prompt: str, system: str = "", min_confidence: float = None, timeout: float = 30) -> dict:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "
                 "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
-        return call_llm(prompt, system=system, min_confidence=min_confidence)
+        return call_llm(prompt, system=system, min_confidence=min_confidence, timeout=timeout)

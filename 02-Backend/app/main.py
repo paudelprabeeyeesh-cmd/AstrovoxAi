@@ -68,6 +68,8 @@ from .templates import (create_template, delete_template, list_templates,
 from .tools import create_tool, delete_tool, list_tools
 from .usage import record_usage
 from .workflows import create_workflow, delete_workflow, list_workflows
+from jose import JWTError, jwt
+from .config import settings
 
 print("[astrovox] imports complete", flush=True)
 
@@ -652,9 +654,42 @@ async def create_comment_endpoint(
     return create_comment(post_id, user_id, content)
 
 
+async def _authenticate_ws(websocket: WebSocket) -> str:
+    token = websocket.query_params.get('token')
+    if not token:
+        try:
+            first_message = await websocket.receive_text()
+            try:
+                data = json.loads(first_message)
+                token = data.get('token')
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    if not token:
+        await websocket.close(code=4001, reason='Unauthorized')
+        return None
+
+    try:
+        payload = jwt.decode(
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        )
+        if payload.get('type') != 'access':
+            await websocket.close(code=4001, reason='Unauthorized')
+            return None
+        return payload.get('sub')
+    except JWTError:
+        await websocket.close(code=4001, reason='Unauthorized')
+        return None
+
+
 # REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED@app.websocket("/ws/chat/{session_id}")
 async def ws_chat(websocket: WebSocket, session_id: str):
     await websocket.accept()
+    user_id = await _authenticate_ws(websocket)
+    if user_id is None:
+        return
     try:
         while True:
             data = await websocket.receive_text()
@@ -706,6 +741,9 @@ async def ws_chat(websocket: WebSocket, session_id: str):
 @app.websocket("/ws/voice/{session_id}")
 async def ws_voice(websocket: WebSocket, session_id: str):
     await websocket.accept()
+    user_id = await _authenticate_ws(websocket)
+    if user_id is None:
+        return
     audio_buffer = bytearray()
     try:
         while True:

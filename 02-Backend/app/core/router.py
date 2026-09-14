@@ -27,7 +27,7 @@ def estimate_confidence(text: str, prompt: str) -> float:
     return max(0.0, min(1.0, score))
 
 
-def call_llm(prompt: str, system: str = "", min_confidence: float = None) -> dict:
+def call_llm(prompt: str, system: str = "", min_confidence: float = None, timeout: float = 30) -> dict:
     if min_confidence is None:
         min_confidence = CONFIDENCE_THRESHOLD
 
@@ -55,7 +55,7 @@ def call_llm(prompt: str, system: str = "", min_confidence: float = None) -> dic
             response = client.chat.completions.create(
                 model=provider.default_model,
                 messages=messages,
-                timeout=15,
+                timeout=timeout,
             )
             text = response.choices[0].message.content or ""
             tokens = getattr(response.usage, "total_tokens", len(prompt.split()))
