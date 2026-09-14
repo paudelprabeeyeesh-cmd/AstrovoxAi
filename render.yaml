@@ -1,14 +1,17 @@
 services:
   - type: web
     name: astrovox-api
-    runtime: docker
+    runtime: python
     plan: free
     branch: main
-    dockerfilePath: Dockerfile
+    buildCommand: pip install --upgrade pip setuptools wheel && pip install --prefer-binary -r 02-Backend/requirements.txt
+    startCommand: cd 02-Backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: ASTROVOX_DB
-        value: /data/astrovox.db
+        value: /tmp/astrovox.db
       - key: REDIS_URL
         value: redis://localhost:6379
+      - key: PYTHON_VERSION
+        value: 3.12.0
