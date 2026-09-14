@@ -68,7 +68,7 @@ def register_user(email: str, password: str) -> dict:
 def login_user(email: str, password: str) -> dict:
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, email, password_hash FROM users WHERE email = ?", (email,)
+            "SELECT id, email, password_hash, email_verified FROM users WHERE email = ?", (email,)
         ).fetchone()
         if not row or not verify_password(password, row["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
