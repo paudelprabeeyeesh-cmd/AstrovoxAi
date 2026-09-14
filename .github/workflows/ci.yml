@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -10,7 +10,21 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: astrovox
+          POSTGRES_PASSWORD: astrovox
+          POSTGRES_DB: astrovox
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://astrovox:astrovox@localhost:5432/astrovox
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,13 +44,12 @@ jobs:
       - name: Run tests
         run: |
           cd 02-Backend
-          python -m pytest tests/ -v --tb=short --cov=app --cov-report=xml
+          python -m pytest tests/ -q
       
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          files: ./02-Backend/coverage.xml
-          fail_ci_if_error: false
+      - name: Run security scan
+        run: |
+          pip install bandit
+          bandit -r 02-Backend/app -ll
 
   lint:
     name: Lint
@@ -68,3 +81,9 @@ jobs:
         run: |
           cd 02-Backend
           python -m black --check app/ tests/
+      
+      - name: Type check with mypy
+        run: |
+          cd 02-Backend
+          python -m mypy app/ --ignore-missing-imports
+        continue-on-error: true
