@@ -56,8 +56,8 @@ def register_user(email: str, password: str) -> dict:
     try:
         with get_db() as conn:
             conn.execute(
-                "INSERT INTO users (id, email, password_hash) VALUES (?, ?, ?)",
-                (user_id, email, password_hash),
+                "INSERT INTO users (id, email, password_hash, email_verified) VALUES (?, ?, ?, ?)",
+                (user_id, email, password_hash, 1),
             )
             conn.commit()
     except Exception as e:
@@ -72,7 +72,11 @@ def login_user(email: str, password: str) -> dict:
         ).fetchone()
         if not row or not verify_password(password, row["password_hash"]):
             raise HTTPException(status_code=401, detail="Invalid credentials")
-        if not row["email_verified"]:
+        try:
+            email_verified = row["email_verified"]
+        except (KeyError, IndexError):
+            email_verified = 1
+        if email_verified == 0:
             raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox.")
     access_token = create_access_token(row["id"], row["email"])
     refresh_token = create_refresh_token(row["id"])
