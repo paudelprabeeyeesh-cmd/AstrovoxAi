@@ -1,4 +1,4 @@
-import json
+﻿import json
 import random
 import uuid
 
@@ -45,3 +45,32 @@ def assign_variant(test_id: str, user_id: str) -> str:
         )
         conn.commit()
         return chosen
+
+
+def record_result(test_id: str, variant: str, metric: str, value: float):
+    with get_db() as conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS ab_test_results (id TEXT PRIMARY KEY, test_id TEXT NOT NULL, variant TEXT NOT NULL, metric TEXT NOT NULL, value REAL NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+        )
+        conn.execute(
+            "INSERT INTO ab_test_results (id, test_id, variant, metric, value) VALUES (?, ?, ?, ?, ?)",
+            (str(uuid.uuid4()), test_id, variant, metric, value),
+        )
+        conn.commit()
+
+
+def select_winner(test_id: str, metric: str = "conversion") -> str | None:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) as cnt FROM ab_test_results WHERE test_id = ?", (test_id,)
+        ).fetchone()
+        if not row or row["cnt"] < 100:
+            return None
+        rows = conn.execute(
+            "SELECT variant, AVG(value) as avg_value FROM ab_test_results WHERE test_id = ? AND metric = ? GROUP BY variant",
+            (test_id, metric),
+        ).fetchall()
+        if not rows:
+            return None
+        best = max(rows, key=lambda r: r["avg_value"])
+        return best["variant"]
