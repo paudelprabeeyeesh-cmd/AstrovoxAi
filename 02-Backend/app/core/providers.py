@@ -20,14 +20,14 @@ PROVIDERS = [
         name="groq",
         base_url="https://api.groq.com/openai/v1",
         env_key="GROQ_API_KEY",
-        default_model="llama-3.1-8b-instant",
+        default_model="llama-3.3-70b-versatile",
         priority=1,
     ),
     Provider(
         name="gemini",
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         env_key="GEMINI_API_KEY",
-        default_model="gemini-2.0-flash",
+        default_model="gemini-2.5-flash",
         priority=2,
     ),
     Provider(
@@ -41,7 +41,7 @@ PROVIDERS = [
         name="openrouter",
         base_url="https://openrouter.ai/api/v1",
         env_key="OPENROUTER_API_KEY",
-        default_model="meta-llama/llama-3.1-8b-instruct:free",
+        default_model="meta-llama/llama-3.3-70b-instruct:free",
         priority=4,
     ),
     Provider(
