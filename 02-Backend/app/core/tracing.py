@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import time
 import uuid
@@ -24,10 +25,15 @@ except ImportError:
     OPENTELEMETRY_AVAILABLE = False
 
 
+@contextlib.contextmanager
+def _noop_span():
+    yield None
+
+
 def start_trace(name: str, user_id: str, attributes: dict = None):
-    if not OPENTELEMETRY_AVAILABLE:
-        return None
-    span = tracer.start_as_current_editor(name)
+    if not OPENTELEMETRY_AVAILABLE or tracer is None:
+        return _noop_span()
+    span = tracer.start_as_current_span(name)
     span.set_attribute("user_id", user_id)
     span.set_attribute("request_id", str(uuid.uuid4()))
     if attributes:

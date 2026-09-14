@@ -33,12 +33,15 @@ class SolveRequest(BaseModel):
 
 class SolveResponse(BaseModel):
     result: str
+    provider: str
     model: str
     cost_usd: float
     cached: bool
     memories_used: List[str] = []
     conversation_id: Optional[str] = None
     message_id: Optional[str] = None
+    confidence: float = 0.0
+    refused: bool = False
 
 class TemplateCreate(BaseModel):
     name: str = Field(..., max_length=200)

@@ -1,42 +1,45 @@
 import os
 import logging
-from typing import Optional
+from typing import Optional, Dict
+
+from .router import call_llm
 
 logger = logging.getLogger(__name__)
 
 
-class OpenAIClient:
-    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-4o-mini-2024-07-18"):
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY", "")
-        self.model = model
-        self._client = None
-    
-    def _get_client(self):
-        if self._client is None:
-            try:
-                import openai
-                self._client = openai.OpenAI(api_key=self.api_key)
-            except Exception as e:
-                logger.error(f"Failed to initialize OpenAI client: {e}")
-                raise
-        return self._client
-    
-    def generate(self, prompt: str) -> str:
-        if not self.api_key:
-            raise ValueError("OPENAI_API_KEY is not configured")
-        client = self._get_client()
-        response = client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1024,
-            temperature=0.7,
+class LLMClient:
+    def __init__(self):
+        self._active_providers = self._check_providers()
+
+    def _check_providers(self) -> list[str]:
+        from .providers import get_active_providers
+        active = get_active_providers()
+        if active:
+            names = [p.name for p in active]
+            logger.info(f"Active LLM providers: {names}")
+            return names
+        logger.error(
+            "No AI provider configured. Set at least one of: "
+            "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
+            "OPENROUTER_API_KEY, HF_API_KEY."
         )
-        return response.choices[0].message.content or ""
+        return []
 
+    def generate(self, prompt: str, system: str = "") -> str:
+        if not self._active_providers:
+            raise RuntimeError(
+                "No AI provider configured. Set at least one of: "
+                "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
+                "OPENROUTER_API_KEY, HF_API_KEY."
+            )
+        result = call_llm(prompt, system=system)
+        return result["text"]
 
-class MockLLMClient:
-    def __init__(self, model: str = "mock"):
-        self.model = model
-    
-    def generate(self, prompt: str) -> str:
-        return f"[MOCK RESPONSE to: {prompt[:50]}...]"
+    def call_llm(self, prompt: str, system: str = "") -> Dict:
+        if not self._active_providers:
+            raise RuntimeError(
+                "No AI provider configured. Set at least one of: "
+                "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
+                "OPENROUTER_API_KEY, HF_API_KEY."
+            )
+        return call_llm(prompt, system=system)

@@ -43,8 +43,7 @@ from .teams import create_team, add_member, list_teams, get_team
 from .marketplace import create_prompt, list_prompts, get_prompt, increment_downloads
 from .addons import create_addon, list_addons, get_addon_cost
 from .audit import log_action, get_audit_logs
-from .api.solve import Solver
-from .core.llm import OpenAIClient, MockLLMClient
+from .core.llm import LLMClient
 from .core.guardrails import sanitize_input, validate_output, add_canary
 from .core.pii import redact_pii, restore_pii
 from .core.moderation import check_moderation
@@ -57,9 +56,12 @@ from .core.budget import cost_circuit_breaker
 from .core.circuit_breaker import CircuitBreaker
 from .auth import get_current_user, require_admin, register_user, login_user, refresh_access_token
 import os
+import logging
 import uuid
 import json
 import time
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AstrovoxAi", version="0.5.0")
 security = HTTPBearer()
@@ -81,9 +83,7 @@ def startup():
 def get_user_id(user_id: str = Depends(get_current_user)) -> str:
     return user_id
 
-api_key = os.getenv("OPENAI_API_KEY", "")
-llm_client = OpenAIClient(api_key=api_key) if api_key else MockLLMClient()
-solver = Solver(llm_client=llm_client)
+llm_client = LLMClient()
 context_manager = ContextManager()
 prompt_manager = PromptVersionManager()
 
@@ -123,17 +123,17 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         full_prompt = "\n\n".join(context_parts + [f"User: {prompt_with_canary}"]) if context_parts else prompt_with_canary
         
         try:
-            solver_result = solver.solve(user_id, full_prompt, contexts=[{"content": d.content, "title": d.title} for d in docs])
-            response_text = solver_result.get("result", "")
-            model = solver_result.get("model", "unknown")
-            confidence = solver_result.get("confidence", 0.0)
-            refused = solver_result.get("refused", False)
+            llm_result = llm_client.call_llm(full_prompt)
+            response_text = llm_result.get("text", "")
+            provider = llm_result.get("provider", "unknown")
+            model = llm_result.get("model", "unknown")
+            tokens = llm_result.get("tokens", count_tokens(full_prompt, model=model))
         except Exception as e:
-            logger.error(f"Solver failed: {e}")
+            logger.error(f"LLM call failed: {e}")
             response_text = "I encountered an error processing your request."
+            provider = "error"
             model = "error"
-            confidence = 0.0
-            refused = False
+            tokens = 0
         
         cleaned_response, canary_detected = validate_output(response_text)
         
@@ -174,6 +174,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         
         return SolveResponse(
             result=grounded_response,
+            provider=provider,
             model=model,
             cost_usd=cost,
             cached=False,
