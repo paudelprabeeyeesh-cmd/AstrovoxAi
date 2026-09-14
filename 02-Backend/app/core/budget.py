@@ -1,3 +1,4 @@
+﻿from typing import Optional, Tuple, List
 import logging
 from app.config import settings
 
@@ -37,3 +38,4 @@ class CostCircuitBreaker:
 
 
 cost_circuit_breaker = CostCircuitBreaker()
+
