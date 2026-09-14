@@ -3,6 +3,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 
 from .database import get_db
+from .auth import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -13,7 +14,7 @@ ADMIN_USER_IDS = {
 
 
 def require_admin(
-    user_id: str = Depends(get_user_id),
+    user_id: str = Depends(get_current_user),
 ):  # get_user_id = your real JWT dependency from Task 1.1
     if user_id not in ADMIN_USER_IDS:
         raise HTTPException(status_code=403, detail="Forbidden")

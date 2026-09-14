@@ -34,7 +34,7 @@ class MessageOut(BaseModel):
 
 class SolveRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=10000)
-    user_id: str = Field(..., min_length=1)
+    user_id: str | None = Field(None, min_length=1)
     conversation_id: str | None = None
 
 

@@ -5,7 +5,7 @@ import stripe
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
 PRICES = {
-    "free": {"requests": 10, "amount": 0},
+    "free": {"requests": 3, "amount": 0},
     "pro": {"requests": 1000, "amount": 9},
     "team": {"requests": 10000, "amount": 25},
 }

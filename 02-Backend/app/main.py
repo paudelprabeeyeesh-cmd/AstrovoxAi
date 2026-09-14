@@ -1,3 +1,6 @@
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from .core.prometheus_middleware import PrometheusMiddleware
+from .core.cache_middleware import CacheMiddleware
 import json
 import logging
 import os
@@ -14,6 +17,7 @@ from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
 
 from .ab_runner import get_variant
+from .admin_panel import router as admin_router
 from .ab_runner import record_result as record_ab_result
 from .affiliates import create_affiliate, list_affiliates
 from .amas import create_ama, list_amas
@@ -43,7 +47,6 @@ from .integrations import (create_integration, delete_integration,
                            list_integrations)
 from .interactions import create_interaction
 from .knowledge import create_doc, delete_doc, list_docs, search_docs
-from .ma_targets import create_ma_target, list_ma_targets
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
 from .metrics import get_daily_cost, get_revenue, get_second_use_metric, get_usage
@@ -52,7 +55,6 @@ from .profiles import get_profile, update_profile
 from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
 from .referrals import create_referral, get_referral_stats
-from .regions import create_region, list_regions
 from .schedules import create_schedule, delete_schedule, list_schedules
 from .schemas import (ConversationOut, ConversationSearchOut, FeedbackCreate,
                       FeedbackOut, KnowledgeDocCreate, KnowledgeDocOut,
@@ -64,7 +66,6 @@ from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .tools import create_tool, delete_tool, list_tools
 from .usage import record_usage
-from .verticals import create_vertical, list_verticals
 from .workflows import create_workflow, delete_workflow, list_workflows
 
 print("[astrovox] imports complete", flush=True)
@@ -92,7 +93,10 @@ app.add_middleware(
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+app.add_middleware(CacheMiddleware)
+app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RateLimitMiddleware)
+app.include_router(admin_router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 
@@ -274,10 +278,6 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
         )
 
 
-
-
-
-
 @app.get("/health")
 async def health():
     return {"status": "ok"}
@@ -288,7 +288,7 @@ async def healthz():
     return "ok"
 
 
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 @app.get("/terms", response_class=HTMLResponse)
 async def terms():
@@ -344,7 +344,7 @@ async def refresh(data: RefreshRequest):
 
 
 @app.get("/metrics")
-async def metrics(user_id: str = Depends(require_admin)):
+async def prometheus_metrics(user_id: str = Depends(require_admin)):
     usage = get_usage(days=30)
     revenue = get_revenue(days=30)
     second_use = get_second_use_metric(days=7)
@@ -695,54 +695,6 @@ async def list_enterprise_accounts_endpoint(user_id: str = Depends(get_user_id))
     return list_enterprise_accounts(user_id)
 
 
-@app.post("/ma-targets")
-async def create_ma_target_endpoint(
-    name: str, description: str, valuation: float, user_id: str = Depends(get_user_id)
-):
-    return create_ma_target(user_id, name, description, valuation)
-
-
-@app.get("/ma-targets")
-async def list_ma_targets_endpoint(user_id: str = Depends(get_user_id)):
-    return list_ma_targets(user_id)
-
-
-@app.post("/ipo-metrics")
-async def create_ipo_metric_endpoint(
-    name: str, target: str, current: str, user_id: str = Depends(get_user_id)
-):
-    return create_ipo_metric(user_id, name, target, current)
-
-
-@app.get("/ipo-metrics")
-async def list_ipo_metrics_endpoint(user_id: str = Depends(get_user_id)):
-    return list_ipo_metrics(user_id)
-
-
-@app.post("/regions")
-async def create_region_endpoint(
-    name: str, code: str, config: str, user_id: str = Depends(get_user_id)
-):
-    return create_region(user_id, name, code, config)
-
-
-@app.get("/regions")
-async def list_regions_endpoint(user_id: str = Depends(get_user_id)):
-    return list_regions(user_id)
-
-
-@app.post("/verticals")
-async def create_vertical_endpoint(
-    name: str, description: str, config: str, user_id: str = Depends(get_user_id)
-):
-    return create_vertical(user_id, name, description, config)
-
-
-@app.get("/verticals")
-async def list_verticals_endpoint(user_id: str = Depends(get_user_id)):
-    return list_verticals(user_id)
-
-
 @app.post("/case-studies")
 async def create_case_study_endpoint(
     title: str, content: str, user_id: str = Depends(get_user_id)
@@ -843,3 +795,49 @@ async def ws_voice(websocket: WebSocket, session_id: str):
         await websocket.close()
 from .core.router_v2 import get_router
 from .core.suggestions import SuggestionEngine
+
+
+@app.post("/billing/portal")
+async def billing_portal(user_id: str = Depends(get_user_id)):
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+        if not row or not row["stripe_customer_id"]:
+            raise HTTPException(status_code=400, detail="No subscription found")
+        session = stripe.billing_portal.Session.create(
+            customer=row["stripe_customer_id"],
+            return_url="https://astrovox.ai/settings",
+        )
+    return {"url": session.url}
+
+@app.get("/ready")
+async def ready():
+    checks = {}
+    try:
+        from app.database import get_db
+        with get_db() as conn:
+            conn.execute("SELECT 1")
+        checks["database"] = "ok"
+    except Exception as e:
+        checks["database"] = f"error: {e}"
+    
+    checks["redis"] = "not configured"
+    if hasattr(app.state, "redis") and app.state.redis:
+        try:
+            app.state.redis.ping()
+            checks["redis"] = "ok"
+        except Exception as e:
+            checks["redis"] = f"error: {e}"
+    
+    status = 200 if all(v == "ok" for v in checks.values()) else 503
+    return JSONResponse(status_code=status, content=checks)
+
+@app.get("/live")
+async def live():
+    return {"status": "alive"}
+
+
+@app.get("/metrics")
+async def prometheus_metrics():
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

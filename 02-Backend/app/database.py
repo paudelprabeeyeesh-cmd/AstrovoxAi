@@ -1,12 +1,78 @@
 import os
-import sqlite3
 from contextlib import contextmanager
+import sqlite3
 
+DATABASE_URL = os.getenv("DATABASE_URL", "")
 DB_PATH = os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
-DATABASE_URL = os.getenv("DATABASE_URL", "")  # PostgreSQL URL
+
+def _is_sqlite(url):
+    return not url or url.startswith("sqlite")
+
+def _get_connection(db_url):
+    if _is_sqlite(db_url):
+        db_path = db_url.replace("sqlite:///", "") if db_url.startswith("sqlite:///") else os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=5000")
+        return conn
+    else:
+        try:
+            import psycopg2
+            from psycopg2.extras import RealDictCursor
+            conn = psycopg2.connect(db_url)
+            conn.cursor_factory = RealDictCursor
+            return conn
+        except ImportError:
+            raise ImportError("psycopg2 is required for PostgreSQL")
+
+@contextmanager
+def get_db():
+    conn = _get_connection(DATABASE_URL)
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+def init_db():
+    if _is_sqlite(DATABASE_URL):
+        db_path = DATABASE_URL.replace("sqlite:///", "") if DATABASE_URL.startswith("sqlite:///") else os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        conn.executescript(TABLES_SQL)
+        for idx in INDEXES:
+            try:
+                conn.execute(idx)
+            except Exception:
+                pass
+        conn.commit()
+        conn.close()
+    else:
+        try:
+            import psycopg2
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.autocommit = True
+            cursor = conn.cursor()
+            for stmt in TABLES_SQL.split(";"):
+                stmt = stmt.strip()
+                if stmt:
+                    try:
+                        cursor.execute(stmt)
+                    except Exception as e:
+                        if "already exists" not in str(e):
+                            print(f"Table creation warning: {e}")
+            for idx in INDEXES:
+                try:
+                    cursor.execute(idx)
+                except Exception as e:
+                    if "already exists" not in str(e):
+                        print(f"Index creation warning: {e}")
+            conn.close()
+        except ImportError:
+            raise ImportError("psycopg2 is required for PostgreSQL")
 
 TABLES_SQL = """
-CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', plan TEXT DEFAULT 'free', stripe_customer_id TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, embedding BLOB, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
@@ -90,46 +156,3 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_interactions_user ON interactions(user_id)",
     "CREATE INDEX IF NOT EXISTS idx_posts_user ON posts(user_id)",
 ]
-
-
-@contextmanager
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    try:
-        yield conn
-    finally:
-        conn.close()
-
-
-def init_db():
-    if DATABASE_URL:
-        return
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    try:
-        conn.executescript(TABLES_SQL)
-        for idx in INDEXES:
-            try:
-                conn.execute(idx)
-            except Exception:
-                pass
-        conn.commit()
-    finally:
-        conn.close()
-
-
-@contextmanager
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=5000")
-    try:
-        yield conn
-    finally:
-        conn.close()

@@ -19,3 +19,7 @@ apscheduler==3.10.4
 slowapi==0.1.9
 prometheus-client==0.21.0
 structlog==24.4.0
+
+psycopg2-binary==2.9.9
+alembic==1.13.2
+sqlalchemy==2.0.35

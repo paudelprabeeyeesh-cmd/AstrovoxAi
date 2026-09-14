@@ -135,3 +135,57 @@ def require_admin(user_id: str = Depends(get_current_user)) -> str:
         if not row or row["role"] != "admin":
             raise HTTPException(status_code=403, detail="Admin access required")
     return user_id
+
+
+import smtplib
+from email.mime.text import MIMEText
+from datetime import datetime, timedelta
+
+VERIFICATION_TOKEN_EXPIRE_HOURS = 24
+
+def create_verification_token(user_id: str, email: str) -> str:
+    expire = datetime.utcnow() + timedelta(hours=VERIFICATION_TOKEN_EXPIRE_HOURS)
+    payload = {"sub": user_id, "email": email, "exp": expire, "type": "verification"}
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+def send_verification_email(email: str, token: str):
+    verification_url = f"https://astrovox.ai/verify?token={token}"
+    msg = MIMEText(f"Click to verify: {verification_url}")
+    msg["Subject"] = "Verify your AstrovoxAI account"
+    msg["From"] = os.getenv("EMAIL_FROM", "noreply@astrovox.ai")
+    msg["To"] = email
+    try:
+        with smtplib.SMTP(os.getenv("SMTP_HOST", "localhost"), int(os.getenv("SMTP_PORT", "25"))) as server:
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Email send failed: {e}")
+
+def verify_email_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        if payload.get("type") != "verification":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        with get_db() as conn:
+            conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (payload.get("sub"),))
+            conn.commit()
+        return {"status": "verified"}
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+def create_password_reset_token(user_id: str, email: str) -> str:
+    expire = datetime.utcnow() + timedelta(hours=1)
+    payload = {"sub": user_id, "email": email, "exp": expire, "type": "password_reset"}
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+def reset_password(token: str, new_password: str) -> dict:
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        if payload.get("type") != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        password_hash = hash_password(new_password)
+        with get_db() as conn:
+            conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, payload.get("sub")))
+            conn.commit()
+        return {"status": "reset"}
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")

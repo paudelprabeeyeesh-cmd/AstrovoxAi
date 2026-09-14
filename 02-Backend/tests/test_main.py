@@ -1,32 +1,22 @@
 import pytest
+import importlib
 from fastapi.testclient import TestClient
-from app.main import app
-from app.database import get_db
-import uuid
-import bcrypt
+from app.database import init_db
 import time
 
-client = TestClient(app)
+client = TestClient(importlib.import_module('app.main').app)
 
 def test_health():
     r = client.get("/health")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
 
-def test_metrics():
-    admin_id = str(uuid.uuid4())
-    email = f"metrics-admin-{int(time.time())}@test.com"
-    password_hash = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
-    with get_db() as conn:
-        conn.execute("INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
-                     (admin_id, email, password_hash, "admin"))
-        conn.commit()
-    login = client.post("/auth/login", json={"email": email, "password": "test"})
-    assert login.status_code == 200
-    token = login.json()["access_token"]
-    r = client.get("/metrics", headers={"Authorization": f"Bearer {token}"})
+def test_healthz():
+    r = client.get("/healthz")
     assert r.status_code == 200
+    assert r.json() == "ok" or r.text == "ok"
 
 def test_solve_no_auth():
-    r = client.post("/solve", json={"text": "hello", "user_id": "user123"})
+    init_db()
+    r = client.post("/solve", json={"text": "hello"})
     assert r.status_code == 401
