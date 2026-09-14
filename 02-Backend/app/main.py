@@ -1,9 +1,12 @@
 import json
 import logging
-import uuid
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+import asyncio
+import httpx
+
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
 from fastapi.staticfiles import StaticFiles
@@ -716,4 +719,90 @@ async def list_case_studies_endpoint(user_id: str = Depends(get_user_id)):
     return list_case_studies(user_id)
 
 
+@app.websocket("/ws/chat/{session_id}")
+async def ws_chat(websocket: WebSocket, session_id: str):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            from app.core.router_v2 import get_router
+            router = get_router()
+            complexity = router.estimate_complexity(data)
+            model = router.select_tier(complexity)
+            prompt = data
+            system = "You are a helpful assistant."
+            async with httpx.AsyncClient() as client:
+                provider_url = None
+                api_key = None
+                for p_name in ["groq", "gemini", "mistral", "openrouter", "huggingface"]:
+                    key = os.getenv(f"{p_name.upper()}_API_KEY")
+                    if key:
+                        api_key = key
+                        if p_name == "groq":
+                            provider_url = "https://api.groq.com/openai/v1"
+                        elif p_name == "gemini":
+                            provider_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+                        elif p_name == "mistral":
+                            provider_url = "https://api.mistral.ai/v1"
+                        elif p_name == "openrouter":
+                            provider_url = "https://openrouter.ai/api/v1"
+                        else:
+                            provider_url = "https://router.huggingface.co/v1"
+                        break
+                if not provider_url:
+                    await websocket.send_json({"error": "no_provider"})
+                    continue
+                payload = {
+                    "model": model.model_id,
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": prompt},
+                    ],
+                    "stream": True,
+                }
+                async with client.stream("POST", f"{provider_url}/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"}, timeout=30) as response:
+                    async for chunk in response.aiter_text():
+                        if chunk.strip():
+                            await websocket.send_text(chunk)
+    except Exception as e:
+        logger.warning(f"WebSocket chat error: {e}")
+    finally:
+        await websocket.close()
+
+
+@app.websocket("/ws/voice/{session_id}")
+async def ws_voice(websocket: WebSocket, session_id: str):
+    await websocket.accept()
+    audio_buffer = bytearray()
+    try:
+        while True:
+            message = await websocket.receive()
+            if "text" in message:
+                text = message["text"]
+                if text == "__END__":
+                    transcript = f"[transcript for {session_id}]"
+                    if audio_buffer:
+                        transcript = f"[audio {len(audio_buffer)} bytes transcribed]"
+                    audio_buffer.clear()
+                    from app.core.router_v2 import get_router
+                    router = get_router()
+                    complexity = router.estimate_complexity(transcript)
+                    model = router.select_tier(complexity)
+                    await websocket.send_json({"transcript": transcript, "model": model.name})
+                    async with httpx.AsyncClient() as client:
+                        key = os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+                        base = "https://api.groq.com/openai/v1"
+                        payload = {"model": model.model_id, "messages": [{"role": "user", "content": transcript}], "stream": True}
+                        async with client.stream("POST", f"{base}/chat/completions", json=payload, headers={"Authorization": f"Bearer {key}"}, timeout=30) as response:
+                            async for chunk in response.aiter_text():
+                                if chunk.strip():
+                                    await websocket.send_text(chunk)
+                else:
+                    audio_buffer.extend(text.encode("utf-8"))
+            elif "bytes" in message:
+                audio_buffer.extend(message["bytes"])
+    except Exception as e:
+        logger.warning(f"WebSocket voice error: {e}")
+    finally:
+        await websocket.close()
 print("[astrovox] routes registered", flush=True)
