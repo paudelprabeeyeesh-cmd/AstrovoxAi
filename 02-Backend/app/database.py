@@ -34,6 +34,22 @@ def get_db():
     finally:
         conn.close()
 
+
+def run_migrations(conn):
+    """Run migrations to add missing columns."""
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER DEFAULT 0")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN stripe_customer_id TEXT")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'")
+    except Exception:
+        pass
+
 def init_db():
     if _is_sqlite(DATABASE_URL):
         db_path = DATABASE_URL.replace("sqlite:///", "") if DATABASE_URL.startswith("sqlite:///") else os.getenv("ASTROVOX_DB", "/tmp/astrovox.db")
@@ -45,6 +61,7 @@ def init_db():
                 conn.execute(idx)
             except Exception:
                 pass
+        run_migrations(conn)
         conn.commit()
         conn.close()
     else:
@@ -73,6 +90,7 @@ def init_db():
 
 TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, email TEXT UNIQUE, password_hash TEXT NOT NULL, role TEXT DEFAULT 'user', email_verified INTEGER DEFAULT 0, plan TEXT DEFAULT 'free', stripe_customer_id TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS login_attempts (id TEXT PRIMARY KEY, ip TEXT NOT NULL, success INTEGER DEFAULT 0, lockout_until TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS refresh_tokens (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, token_hash TEXT NOT NULL, expires_at TIMESTAMP NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS memories (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, key TEXT NOT NULL, value TEXT NOT NULL, embedding BLOB, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, title TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);

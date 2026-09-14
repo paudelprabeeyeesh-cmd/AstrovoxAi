@@ -49,8 +49,8 @@ def test_admin_requires_admin_role():
     email = f"admin-{int(time.time())}@test.com"
     password_hash = bcrypt.hashpw(b"test", bcrypt.gensalt()).decode()
     with get_db() as conn:
-        conn.execute("INSERT INTO users (id, email, password_hash, role) VALUES (?, ?, ?, ?)",
-                     (admin_id, email, password_hash, "admin"))
+        conn.execute("INSERT INTO users (id, email, password_hash, role, email_verified) VALUES (?, ?, ?, ?, ?)",
+                     (admin_id, email, password_hash, "admin", 1))
         conn.commit()
     login = client.post("/auth/login", json={"email": email, "password": "test"})
     token = login.json()["access_token"]
