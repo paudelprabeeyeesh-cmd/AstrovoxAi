@@ -14,11 +14,17 @@ interface ComposerProps {
 
 export function Composer({ onSend, isLoading, onStop, selectedModel, onModelChange }: ComposerProps) {
   const [value, setValue] = useState('')
+  const [isSending, setIsSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const handleSubmit = () => {
-    if (!value.trim() || isLoading) return
-    onSend(value.trim())
+  const handleSubmit = async () => {
+    if (!value.trim() || isLoading || isSending) return
+    setIsSending(true)
+    try {
+      await onSend(value.trim())
+    } finally {
+      setIsSending(false)
+    }
     setValue('')
   }
 
@@ -49,6 +55,7 @@ export function Composer({ onSend, isLoading, onStop, selectedModel, onModelChan
             placeholder="Send a message..."
             className="flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm focus:outline-none focus:ring-0 min-h-[40px] max-h-[200px]"
             rows={1}
+            disabled={isLoading || isSending}
           />
           <button
             onClick={isLoading ? onStop : handleSubmit}

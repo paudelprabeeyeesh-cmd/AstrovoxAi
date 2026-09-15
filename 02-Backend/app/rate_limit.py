@@ -1,6 +1,7 @@
 import time
+from collections import defaultdict
 
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -10,8 +11,61 @@ from .auth import get_current_user
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app):
+        super().__init__(app)
+        self._minute_windows = defaultdict(list)
+
     async def dispatch(self, request: Request, call_next):
-        if request.url.path not in ["/health", "/metrics", "/docs", "/openapi.json", "/ready", "/live"]:
+        path = request.url.path
+
+        if path == "/auth/login":
+            client_ip = request.client.host if request.client else "unknown"
+            if self._is_rate_limited(f"login:{client_ip}", 5, 60):
+                return JSONResponse(status_code=429, content={"detail": "Too many login attempts. Try again later."})
+
+        elif path == "/auth/register":
+            client_ip = request.client.host if request.client else "unknown"
+            if self._is_rate_limited(f"register:{client_ip}", 3, 60):
+                return JSONResponse(status_code=429, content={"detail": "Too many registration attempts. Try again later."})
+
+        elif path == "/solve":
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                token = auth.replace("Bearer ", "")
+                try:
+                    from jose import jwt
+                    from app.config import settings
+                    payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+                    if payload.get("type") == "access":
+                        user_id = payload.get("sub")
+                        plan = "free"
+                        with get_db() as conn:
+                            row = conn.execute("SELECT plan FROM users WHERE id = ?", (user_id,)).fetchone()
+                            if row:
+                                plan = row["plan"]
+                        limits = get_plan_limits(plan)
+                        solve_limit = limits.get("solve_per_minute", 20)
+                        if self._is_rate_limited(f"solve:{user_id}", solve_limit, 60):
+                            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Upgrade to continue."})
+                except Exception:
+                    pass
+
+        elif path == "/solve/stream":
+            auth = request.headers.get("authorization", "")
+            if auth.startswith("Bearer "):
+                token = auth.replace("Bearer ", "")
+                try:
+                    from jose import jwt
+                    from app.config import settings
+                    payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+                    if payload.get("type") == "access":
+                        user_id = payload.get("sub")
+                        if self._is_rate_limited(f"solve_stream:{user_id}", 10, 60):
+                            return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Try again later."})
+                except Exception:
+                    pass
+
+        if path not in ["/health", "/metrics", "/docs", "/openapi.json", "/ready", "/live"]:
             auth = request.headers.get("authorization", "")
             if auth.startswith("Bearer "):
                 token = auth.replace("Bearer ", "")
@@ -25,7 +79,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 except Exception:
                     return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
 
-                # Check brute-force lockout per IP
                 client_ip = request.client.host if request.client else "unknown"
                 lockout_until = None
                 with get_db() as conn:
@@ -56,6 +109,17 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     )
         response = await call_next(request)
         return response
+
+    def _is_rate_limited(self, key: str, limit: int, window_seconds: int) -> bool:
+        now = time.time()
+        window_start = now - window_seconds
+        self._minute_windows[key] = [
+            t for t in self._minute_windows[key] if t > window_start
+        ]
+        if len(self._minute_windows[key]) >= limit:
+            return True
+        self._minute_windows[key].append(now)
+        return False
 
 
 def record_failed_login(ip: str):

@@ -51,21 +51,33 @@ def _find_similar_cached_response(redis, embedding, threshold=0.95):
     return None
 
 
+def _set_cache_headers(response, path: str):
+    if path in ("/health", "/healthz"):
+        response.headers["Cache-Control"] = "max-age=0, no-cache"
+    elif path == "/metrics":
+        response.headers["Cache-Control"] = "max-age=10"
+    elif path.startswith("/landing"):
+        response.headers["Cache-Control"] = "max-age=3600"
+
+
 class CacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         cache_key = hashlib.md5(f"{request.url.path}:{request.url.query}".encode()).hexdigest()
         if request.method != "GET":
-            return await call_next(request)
+            response = await call_next(request)
+            return response
         redis = getattr(request.app.state, "redis", None)
         if redis:
             cached = redis.get(cache_key)
             if cached:
                 from fastapi.responses import JSONResponse
-                return JSONResponse(
+                response = JSONResponse(
                     status_code=200,
                     content=json.loads(cached),
                     headers={"X-Cache": "HIT"}
                 )
+                _set_cache_headers(response, request.url.path)
+                return response
             query_text = request.query_params.get("q") or request.query_params.get("query") or request.query_params.get("prompt")
             if not query_text:
                 query_text = str(request.url.query) if request.url.query else None
@@ -76,11 +88,13 @@ class CacheMiddleware(BaseHTTPMiddleware):
                     similar_body = _find_similar_cached_response(redis, embedding)
                     if similar_body:
                         from fastapi.responses import JSONResponse
-                        return JSONResponse(
+                        response = JSONResponse(
                             status_code=200,
                             content=json.loads(similar_body),
                             headers={"X-Cache": "HIT"}
                         )
+                        _set_cache_headers(response, request.url.path)
+                        return response
         response = await call_next(request)
         if response.status_code == 200 and redis:
             if hasattr(response, "body"):
@@ -102,4 +116,5 @@ class CacheMiddleware(BaseHTTPMiddleware):
                         }
                         redis.set(f"cache_emb:{cache_key}", json.dumps(semantic_data), ex=300)
         response.headers["X-Cache"] = "MISS"
+        _set_cache_headers(response, request.url.path)
         return response

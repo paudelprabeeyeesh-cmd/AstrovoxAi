@@ -9,6 +9,12 @@ export default function NewChatPage() {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoadingHistory(false), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
@@ -58,11 +64,17 @@ export default function NewChatPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <ChatContainer
-        messages={messages}
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-      />
+      {isLoadingHistory ? (
+        <div className="flex flex-1 items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      ) : (
+        <ChatContainer
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          isLoading={isLoading}
+        />
+      )}
     </div>
   );
 }

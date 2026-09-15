@@ -122,7 +122,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -136,6 +136,11 @@ app.add_middleware(APIVersionMiddleware)
 app.include_router(admin_router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
+
+@app.options("/{path:path}")
+async def options_handler(request: Request, path: str):
+    return JSONResponse(status_code=204, content={})
+
 
 _db_initialized = False
 
