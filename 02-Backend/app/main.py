@@ -17,6 +17,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
+from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from .ab_runner import get_variant
@@ -26,7 +27,7 @@ from .ab_runner import record_result as record_ab_result
 # REMOVED
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
-                   register_user, require_admin)
+                   register_user, require_admin, require_verified_email)
 from .billing import (cancel_subscription, create_checkout_session,
                       create_premium_checkout_session, handle_stripe_webhook)
 # REMOVED
@@ -46,6 +47,7 @@ from .core.tracing import get_prompt_hash, init_tracing, log_llm_call, start_tra
 from .cost import count_tokens
 from .database import init_db
 from .feedback import create_feedback, delete_feedback, list_feedback
+from .compliance import delete_user_data, export_user_data, record_consent
 from .integrations import (create_integration, delete_integration,
                            list_integrations)
 from .interactions import create_interaction
@@ -59,12 +61,12 @@ from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
 from .referrals import create_referral, get_referral_stats
 from .schedules import create_schedule, delete_schedule, list_schedules
-from .schemas import (ConversationOut, ConversationSearchOut, FeedbackCreate,
+from .schemas import (AnalyticsEventCreate, AnalyticsAggregateOut, RAGEvalCreate, ExperimentCreate, ExperimentOut, ExperimentResultOut, ConversationOut, ConversationSearchOut, FeedbackCreate,
                       FeedbackOut, KnowledgeDocCreate, KnowledgeDocOut,
                       MemoryCreate, MemoryOut, MemoryUpdate, MessageOut,
                       ScheduleCreate, ScheduleOut, SolveRequest, SolveResponse,
                        TemplateCreate, TemplateOut, ToolCreate, ToolOut,
-                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse)
+                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord)
 from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .tools import create_tool, delete_tool, list_tools
@@ -83,6 +85,14 @@ async def lifespan(app):
     yield
     print("[astrovox] lifespan shutdown", flush=True)
 
+
+
+
+class APIVersionMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-API-Version"] = "1.0.0"
+        return response
 
 configure_logging()
 
@@ -111,6 +121,7 @@ app.add_middleware(CacheMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(StructuredLoggingMiddleware)
+app.add_middleware(APIVersionMiddleware)
 
 app.include_router(admin_router)
 
@@ -146,7 +157,7 @@ async def _global_exception_handler(request, exc):
 
 
 @app.post("/genui", response_model=GenUIResponse)
-async def genui(req: SolveRequest, user_id: str = Depends(get_user_id)):
+async def genui(req: SolveRequest, user_id: str = Depends(require_verified_email)):
     _ensure_db()
     from app.core.router_v2 import get_router
     router = get_router()
@@ -169,7 +180,7 @@ async def genui(req: SolveRequest, user_id: str = Depends(get_user_id)):
         return GenUIResponse(type="visualization", data={"error": str(e)})
 
 @app.post("/solve")
-async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
+async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email)):
     _ensure_db()
     with start_trace("solve", user_id, {"query_length": len(req.text)}):
         sanitized, injection_detected = sanitize_input(req.text)
@@ -291,7 +302,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(get_user_id)):
 
 
 @app.post("/solve/stream")
-async def solve_stream(req: SolveRequest, user_id: str = Depends(get_user_id)):
+async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verified_email)):
     _ensure_db()
     sanitized, injection_detected = sanitize_input(req.text)
     if injection_detected:
@@ -366,6 +377,12 @@ async def healthz():
 
 
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+
+
+@app.get("/version")
+async def version():
+    return {"version": "1.0.0", "name": "AstrovoxAI"}
+
 
 @app.get("/terms", response_class=HTMLResponse)
 async def terms():
@@ -442,7 +459,7 @@ async def usage(user_id: str = Depends(get_user_id)):
 
 @app.post("/memory", response_model=MemoryOut)
 async def create_memory_endpoint(
-    data: MemoryCreate, user_id: str = Depends(get_user_id)
+    data: MemoryCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_memory(user_id, data)
 
@@ -459,7 +476,7 @@ async def search_memories_endpoint(user_id: str = Depends(get_user_id), q: str =
 
 @app.put("/memory/{memory_id}", response_model=MemoryOut)
 async def update_memory_endpoint(
-    memory_id: str, data: MemoryUpdate, user_id: str = Depends(get_user_id)
+    memory_id: str, data: MemoryUpdate, user_id: str = Depends(require_verified_email)
 ):
     try:
         return update_memory(memory_id, user_id, data)
@@ -468,7 +485,7 @@ async def update_memory_endpoint(
 
 
 @app.delete("/memory/{memory_id}")
-async def delete_memory_endpoint(memory_id: str, user_id: str = Depends(get_user_id)):
+async def delete_memory_endpoint(memory_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_memory(memory_id, user_id)
     except ValueError:
@@ -483,7 +500,7 @@ async def export_memories_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.post("/conversations", response_model=ConversationOut)
 async def create_conversation_endpoint(
-    title: str = None, user_id: str = Depends(get_user_id)
+    title: str = None, user_id: str = Depends(require_verified_email)
 ):
     return create_conversation(user_id, title)
 
@@ -510,7 +527,7 @@ async def get_messages_endpoint(conv_id: str, user_id: str = Depends(get_user_id
 
 @app.post("/templates", response_model=TemplateOut)
 async def create_template_endpoint(
-    data: TemplateCreate, user_id: str = Depends(get_user_id)
+    data: TemplateCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_template(user_id, data)
 
@@ -522,7 +539,7 @@ async def list_templates_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.put("/templates/{tpl_id}", response_model=TemplateOut)
 async def update_template_endpoint(
-    tpl_id: str, data: TemplateCreate, user_id: str = Depends(get_user_id)
+    tpl_id: str, data: TemplateCreate, user_id: str = Depends(require_verified_email)
 ):
     try:
         return update_template(tpl_id, user_id, data)
@@ -531,7 +548,7 @@ async def update_template_endpoint(
 
 
 @app.delete("/templates/{tpl_id}")
-async def delete_template_endpoint(tpl_id: str, user_id: str = Depends(get_user_id)):
+async def delete_template_endpoint(tpl_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_template(tpl_id, user_id)
     except ValueError:
@@ -541,7 +558,7 @@ async def delete_template_endpoint(tpl_id: str, user_id: str = Depends(get_user_
 
 @app.post("/schedules", response_model=ScheduleOut)
 async def create_schedule_endpoint(
-    data: ScheduleCreate, user_id: str = Depends(get_user_id)
+    data: ScheduleCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_schedule(user_id, data)
 
@@ -553,7 +570,7 @@ async def list_schedules_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.delete("/schedules/{schedule_id}")
 async def delete_schedule_endpoint(
-    schedule_id: str, user_id: str = Depends(get_user_id)
+    schedule_id: str, user_id: str = Depends(require_verified_email)
 ):
     try:
         delete_schedule(schedule_id, user_id)
@@ -564,7 +581,7 @@ async def delete_schedule_endpoint(
 
 @app.post("/knowledge", response_model=KnowledgeDocOut)
 async def create_doc_endpoint(
-    data: KnowledgeDocCreate, user_id: str = Depends(get_user_id)
+    data: KnowledgeDocCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_doc(user_id, data)
 
@@ -580,7 +597,7 @@ async def search_docs_endpoint(user_id: str = Depends(get_user_id), q: str = "")
 
 
 @app.delete("/knowledge/{doc_id}")
-async def delete_doc_endpoint(doc_id: str, user_id: str = Depends(get_user_id)):
+async def delete_doc_endpoint(doc_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_doc(doc_id, user_id)
     except ValueError:
@@ -594,14 +611,34 @@ async def get_profile_endpoint(user_id: str = Depends(get_user_id)):
 
 
 @app.post("/profile")
-async def update_profile_endpoint(style_json: str, user_id: str = Depends(get_user_id)):
+async def update_profile_endpoint(style_json: str, user_id: str = Depends(require_verified_email)):
     update_profile(user_id, style_json)
     return {"ok": True}
+
+@app.delete("/users/me")
+async def delete_user_endpoint(user_id: str = Depends(get_user_id)):
+    delete_user_data(user_id)
+    return {"deleted": True}
+
+
+@app.get("/users/me/export")
+async def export_user_endpoint(user_id: str = Depends(get_user_id)):
+    data = export_user_data(user_id)
+    return JSONResponse(content=data)
+
+
+@app.post("/users/me/consent")
+async def record_consent_endpoint(
+    data: ConsentRecord, user_id: str = Depends(get_user_id)
+):
+    record_consent(user_id, data.consent_type, data.granted)
+    return {"recorded": True}
+
 
 
 @app.post("/workflows", response_model=WorkflowOut)
 async def create_workflow_endpoint(
-    data: WorkflowCreate, user_id: str = Depends(get_user_id)
+    data: WorkflowCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_workflow(user_id, data)
 
@@ -612,7 +649,7 @@ async def list_workflows_endpoint(user_id: str = Depends(get_user_id)):
 
 
 @app.delete("/workflows/{wf_id}")
-async def delete_workflow_endpoint(wf_id: str, user_id: str = Depends(get_user_id)):
+async def delete_workflow_endpoint(wf_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_workflow(wf_id, user_id)
     except ValueError:
@@ -621,7 +658,7 @@ async def delete_workflow_endpoint(wf_id: str, user_id: str = Depends(get_user_i
 
 
 @app.post("/tools", response_model=ToolOut)
-async def create_tool_endpoint(data: ToolCreate, user_id: str = Depends(get_user_id)):
+async def create_tool_endpoint(data: ToolCreate, user_id: str = Depends(require_verified_email)):
     return create_tool(user_id, data)
 
 
@@ -631,7 +668,7 @@ async def list_tools_endpoint(user_id: str = Depends(get_user_id)):
 
 
 @app.delete("/tools/{tool_id}")
-async def delete_tool_endpoint(tool_id: str, user_id: str = Depends(get_user_id)):
+async def delete_tool_endpoint(tool_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_tool(tool_id, user_id)
     except ValueError:
@@ -641,7 +678,7 @@ async def delete_tool_endpoint(tool_id: str, user_id: str = Depends(get_user_id)
 
 @app.post("/feedback", response_model=FeedbackOut)
 async def create_feedback_endpoint(
-    data: FeedbackCreate, user_id: str = Depends(get_user_id)
+    data: FeedbackCreate, user_id: str = Depends(require_verified_email)
 ):
     return create_feedback(user_id, data)
 
@@ -652,7 +689,7 @@ async def list_feedback_endpoint(user_id: str = Depends(get_user_id)):
 
 
 @app.delete("/feedback/{fb_id}")
-async def delete_feedback_endpoint(fb_id: str, user_id: str = Depends(get_user_id)):
+async def delete_feedback_endpoint(fb_id: str, user_id: str = Depends(require_verified_email)):
     try:
         delete_feedback(fb_id, user_id)
     except ValueError:
@@ -666,7 +703,7 @@ async def daily_cost(user_id: str = Depends(require_admin)):
 
 
 @app.post("/billing/checkout")
-async def checkout(user_id: str = Depends(get_user_id)):
+async def checkout(user_id: str = Depends(require_verified_email)):
     with get_db() as conn:
         row = conn.execute(
             "SELECT email FROM users WHERE id = ?", (user_id,)
@@ -677,7 +714,7 @@ async def checkout(user_id: str = Depends(get_user_id)):
 
 
 @app.post("/billing/checkout/premium-action")
-async def checkout_premium_action(user_id: str = Depends(get_user_id)):
+async def checkout_premium_action(user_id: str = Depends(require_verified_email)):
     with get_db() as conn:
         row = conn.execute(
             "SELECT email FROM users WHERE id = ?", (user_id,)
@@ -699,13 +736,13 @@ async def stripe_webhook(request: Request):
 
 
 @app.post("/billing/cancel")
-async def cancel_billing(user_id: str = Depends(get_user_id)):
+async def cancel_billing(user_id: str = Depends(require_verified_email)):
     cancel_subscription(user_id)
     return {"ok": True}
 
 
 @app.post("/referrals")
-async def create_referral_endpoint(email: str, user_id: str = Depends(get_user_id)):
+async def create_referral_endpoint(email: str, user_id: str = Depends(require_verified_email)):
     return create_referral(user_id, email)
 
 
@@ -716,7 +753,7 @@ async def get_referral_stats_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.post("/integrations")
 async def create_integration_endpoint(
-    type: str, config: str, user_id: str = Depends(get_user_id)
+    type: str, config: str, user_id: str = Depends(require_verified_email)
 ):
     return create_integration(user_id, type, config)
 
@@ -728,7 +765,7 @@ async def list_integrations_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.delete("/integrations/{integration_id}")
 async def delete_integration_endpoint(
-    integration_id: str, user_id: str = Depends(get_user_id)
+    integration_id: str, user_id: str = Depends(require_verified_email)
 ):
     delete_integration(integration_id, user_id)
     return {"ok": True}
@@ -736,7 +773,7 @@ async def delete_integration_endpoint(
 
 @app.post("/removed")
 async def create_post_endpoint(
-    title: str, content: str, user_id: str = Depends(get_user_id)
+    title: str, content: str, user_id: str = Depends(require_verified_email)
 ):
     return create_post(user_id, title, content)
 
@@ -748,7 +785,7 @@ async def list_posts_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.post("/posts/{post_id}/comments")
 async def create_comment_endpoint(
-    post_id: str, content: str, user_id: str = Depends(get_user_id)
+    post_id: str, content: str, user_id: str = Depends(require_verified_email)
 ):
     return create_comment(post_id, user_id, content)
 
@@ -880,7 +917,7 @@ from .core.suggestions import SuggestionEngine
 
 
 @app.post("/billing/portal")
-async def billing_portal(user_id: str = Depends(get_user_id)):
+async def billing_portal(user_id: str = Depends(require_verified_email)):
     with get_db() as conn:
         row = conn.execute(
             "SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)
@@ -924,5 +961,89 @@ async def live():
 async def prometheus_metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
+
+
+
+from .analytics import record_event, get_aggregate_metrics, get_top_models, get_cost_trend
+from .rag_eval import create_evaluation, get_aggregate_metrics as get_rag_aggregate_metrics
+from .experiments import create_experiment, assign_variant, record_win, get_winner, list_experiments
+
+@app.post("/analytics/event")
+async def record_analytics_event(
+        data: AnalyticsEventCreate, user_id: str = Depends(require_verified_email)
+    ):
+    record_event(data.event_type, data.properties)
+    return {"ok": True}
+
+
+@app.get("/analytics/aggregate", response_model=AnalyticsAggregateOut)
+async def analytics_aggregate(days: int = 7, user_id: str = Depends(require_admin)):
+    metrics = get_aggregate_metrics(days=days)
+    models = get_top_models(days=days)
+    cost = get_cost_trend(days=days)
+    return {**metrics, "top_models": models, "cost_trend": cost}
+
+
+@app.post("/rag/eval")
+async def rag_evaluate(
+        data: RAGEvalCreate, user_id: str = Depends(require_verified_email)
+    ):
+    result = create_evaluation(
+        query=data.query,
+        retrieved_ids=data.retrieved_ids,
+        golden_ids=data.golden_ids,
+        faithfulness_score=data.faithfulness_score,
+        metadata=data.metadata,
+    )
+    return result
+
+
+@app.get("/rag/metrics")
+async def rag_metrics(days: int = 7, user_id: str = Depends(require_admin)):
+    return get_rag_aggregate_metrics(days=days)
+
+
+@app.post("/experiments", response_model=ExperimentOut)
+async def create_experiment_endpoint(
+        data: ExperimentCreate, user_id: str = Depends(require_verified_email)
+    ):
+    return create_experiment(
+        name=data.name,
+        hypothesis=data.hypothesis,
+        variants=data.variants,
+        traffic_split=data.traffic_split,
+        owner_id=user_id,
+    )
+
+
+@app.post("/experiments/{experiment_id}/assign")
+async def assign_experiment_variant(
+        experiment_id: str, user_id: str = Depends(get_user_id)
+    ):
+    variant = assign_variant(experiment_id, user_id)
+    return {"experiment_id": experiment_id, "variant": variant}
+
+
+@app.post("/experiments/{experiment_id}/record")
+async def record_experiment_win(
+        experiment_id: str, variant: str, metric: str, value: float, user_id: str = Depends(get_user_id)
+    ):
+    record_win(experiment_id, variant, metric, value, user_id=user_id)
+    return {"ok": True}
+
+
+@app.get("/experiments/{experiment_id}/winner", response_model=ExperimentResultOut | None)
+async def get_experiment_winner(
+        experiment_id: str, metric: str = "conversion", user_id: str = Depends(require_admin)
+    ):
+    winner = get_winner(experiment_id, metric=metric)
+    if not winner:
+        return JSONResponse(status_code=404, content={"detail": "Not enough data"})
+    return winner
+
+
+@app.get("/experiments", response_model=list[ExperimentOut])
+async def list_experiments_endpoint(user_id: str = Depends(get_user_id)):
+    return list_experiments(user_id)
 
 

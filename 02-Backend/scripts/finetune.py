@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """
 Weekly fine-tune script for AstrovoxAI.
-Pulls high-rated interactions, formats as JSONL, and uploads for fine-tuning.
+Pulls high-rated interactions, formats as JSONL, and triggers fine-tuning API.
 """
 import sys
 import os
 import json
+import argparse
+import urllib.request
+import urllib.error
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import get_db
@@ -54,31 +57,74 @@ def validate_jsonl(path):
     return count
 
 
+def trigger_fine_tune(
+        file_path: str, model: str = "gpt-4o-mini", api_key: str | None = None
+    ):
+    """Trigger fine-tuning via provider API."""
+    api_key = api_key or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("OPENAI_API_KEY not set. Skipping API call.")
+        return None
+    url = "https://api.openai.com/v1/files"
+    boundary = "----FormBoundary7MA4YWxkTrZu0gW"
+    with open(file_path, "rb") as f:
+        file_data = f.read()
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="file"; filename="{os.path.basename(file_path)}"\r\n'
+        f"Content-Type: application/jsonl\r\n\r\n"
+    ).encode("utf-8") + file_data + f"\r\n--{boundary}--\r\n".encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req) as resp:
+            result = json.loads(resp.read().decode("utf-8"))
+            print(f"Uploaded file ID: {result.get('id')}")
+            return result
+    except urllib.error.HTTPError as e:
+        print(f"Upload failed: {e.code} {e.read().decode('utf-8')}")
+        return None
+
+
 def main():
+    parser = argparse.ArgumentParser(description="Fine-tune pipeline")
+    parser.add_argument("--trigger-api", action="store_true", help="Trigger fine-tuning API call")
+    parser.add_argument("--model", default="gpt-4o-mini", help="Base model for fine-tuning")
+    args = parser.parse_args()
+
     print("=== AstrovoxAI Fine-Tune Pipeline ===")
-    
-    # 1. Pull high-quality interactions
+
     interactions = get_high_quality_interactions()
     if not interactions:
         print("No high-quality interactions found for fine-tuning.")
         return
-    
+
     print(f"Found {len(interactions)} high-quality interactions")
-    
-    # 2. Export to JSONL
+
     date_str = datetime.utcnow().strftime("%Y%m%d")
     output_path = f"/tmp/finetune_{date_str}.jsonl"
     export_jsonl(interactions, output_path)
-    
-    # 3. Validate
+
     count = validate_jsonl(output_path)
-    print(f"\nReady for fine-tuning:")
+    print("\nReady for fine-tuning:")
     print(f"  File: {output_path}")
     print(f"  Entries: {count}")
-    print(f"\nNext steps:")
-    print(f"  1. Upload to provider: openai tools fine_tunes.prepare_data -f {output_path}")
-    print(f"  2. Create fine-tune job: openai api fine_tunes.create -t {output_path} -m gpt-4o-mini")
-    print(f"  3. Or use Together AI: together fine-tune --file {output_path} --model meta-llama/Llama-3.1-8B-Instruct")
+
+    if args.trigger_api:
+        print("\nTriggering fine-tuning API...")
+        trigger_fine_tune(output_path, model=args.model)
+    else:
+        print("\nNext steps:")
+        print(f"  1. Upload to provider: openai tools fine_tunes.prepare_data -f {output_path}")
+        print(f"  2. Create fine-tune job: openai api fine_tunes.create -t {output_path} -m {args.model}")
+        print(f"  3. Or use Together AI: together fine-tune --file {output_path} --model meta-llama/Llama-3.1-8B-Instruct")
 
 
 if __name__ == "__main__":

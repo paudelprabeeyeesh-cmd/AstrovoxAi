@@ -11,6 +11,58 @@ STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID", "price_team_123")
 STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID", "price_embed_123")
 STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_premium_action_29")
 
+MAX_CONSECUTIVE_FAILURES = 3
+
+
+def _get_user_by_customer_id(customer_id: str):
+    with get_db() as conn:
+        return conn.execute(
+            "SELECT id, email, plan FROM users WHERE stripe_customer_id = ?",
+            (customer_id,),
+        ).fetchone()
+
+
+def _increment_failed_payment_count(user_id: str) -> int:
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET failed_payment_count = COALESCE(failed_payment_count, 0) + 1 WHERE id = ?",
+            (user_id,),
+        )
+        row = conn.execute(
+            "SELECT failed_payment_count FROM users WHERE id = ?",
+            (user_id,),
+        ).fetchone()
+        conn.commit()
+        return row["failed_payment_count"] if row else 0
+
+
+def _reset_failed_payment_count(user_id: str):
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE users SET failed_payment_count = 0 WHERE id = ?",
+            (user_id,),
+        )
+        conn.commit()
+
+
+def _downgrade_to_free(user_id: str, customer_id: str):
+    with get_db() as conn:
+        conn.execute("UPDATE users SET plan = 'free' WHERE id = ?", (user_id,))
+        subs = stripe.Subscription.list(
+            customer=customer_id, status="active"
+        )
+        for sub in subs:
+            stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
+        conn.execute(
+            "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
+            (user_id,),
+        )
+        conn.commit()
+
+
+def _log_notification(user_id: str, message: str):
+    print(f"[NOTIFICATION] user={user_id} {message}")
+
 
 def create_checkout_session(user_id: str, email: str, price_id: str = None) -> str:
     price_id = price_id or STRIPE_PRO_PRICE_ID
@@ -113,6 +165,7 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
                 "SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)
             ).fetchone()
             if user:
+                _reset_failed_payment_count(user["id"])
                 amount = data.get("amount_paid", 0) / 100
                 conn.execute(
                     "INSERT INTO usage (id, user_id, tokens, cost, model, cached, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -128,5 +181,30 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
                     ),
                 )
                 conn.commit()
+
+    elif event_type == "invoice.payment_failed":
+        customer_id = data.get("customer")
+        user = _get_user_by_customer_id(customer_id)
+        if user:
+            failed_count = _increment_failed_payment_count(user["id"])
+            _log_notification(
+                user["id"],
+                f"Payment failed ({failed_count}/{MAX_CONSECUTIVE_FAILURES}).",
+            )
+            if failed_count >= MAX_CONSECUTIVE_FAILURES:
+                _downgrade_to_free(user["id"], customer_id)
+                _log_notification(
+                    user["id"],
+                    "Downgraded to free plan after repeated payment failures.",
+                )
+
+    elif event_type == "invoice.payment_requires_action":
+        customer_id = data.get("customer")
+        user = _get_user_by_customer_id(customer_id)
+        if user:
+            _log_notification(
+                user["id"],
+                "Payment requires authentication (3D Secure).",
+            )
 
     return {"status": "processed", "type": event_type}

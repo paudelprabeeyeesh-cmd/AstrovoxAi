@@ -119,6 +119,14 @@ def refresh_access_token(refresh_token: str) -> dict:
     return {"access_token": access_token}
 
 
+
+def require_verified_email(user_id: str = Depends(get_current_user)) -> str:
+    with get_db() as conn:
+        row = conn.execute("SELECT email_verified FROM users WHERE id = ?", (user_id,)).fetchone()
+        if not row or row["email_verified"] == 0:
+            raise HTTPException(status_code=403, detail="Email not verified")
+    return user_id
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> str:

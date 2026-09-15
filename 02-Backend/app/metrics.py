@@ -14,7 +14,7 @@ def get_usage(user_id: str = None, days: int = 30) -> dict:
             where += " AND user_id = ?"
             params.append(user_id)
         rows = conn.execute(
-            f"SELECT COUNT(*) as total_requests, SUM(tokens) as total_tokens, SUM(cost) as total_cost FROM usage {where}",
+            f"SELECT COUNT(*) as total_requests, SUM(tokens) as total_tokens, SUM(cost) as total_cost FROM interactions {where}",
             params,
         ).fetchone()
         return {
@@ -31,7 +31,7 @@ def get_daily_cost(days: int = 7) -> list[dict]:
         rows = conn.execute(
             """
             SELECT date(created_at) as day, SUM(cost) as cost, COUNT(*) as requests
-            FROM usage
+            FROM interactions
             WHERE created_at >= ?
             GROUP BY date(created_at)
             ORDER BY day DESC

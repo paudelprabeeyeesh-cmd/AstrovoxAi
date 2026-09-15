@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -143,6 +144,63 @@ class ConversationSearchOut(BaseModel):
     title: str | None
     created_at: datetime
     message_count: int
+
+
+class ConsentRecord(BaseModel):
+    consent_type: str
+    granted: bool
+
+
 class GenUIResponse(BaseModel):
     type: str = Field(..., max_length=50)
     data: dict[str, Any]
+
+
+class AnalyticsEventCreate(BaseModel):
+    event_type: str = Field(..., max_length=100)
+    properties: dict[str, Any] = {}
+
+
+class AnalyticsAggregateOut(BaseModel):
+    window_days: int
+    generated_at: str
+    events: list[dict[str, Any]]
+
+
+class RAGEvalCreate(BaseModel):
+    query: str = Field(..., max_length=10000)
+    retrieved_ids: list[str] = []
+    golden_ids: list[str] = []
+    faithfulness_score: float = Field(..., ge=0.0, le=1.0)
+    metadata: dict[str, Any] | None = None
+
+
+class RAGEvalOut(BaseModel):
+    id: str
+    query: str
+    recall_at_5: float
+    faithfulness_score: float
+    created_at: datetime
+
+
+class ExperimentCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    hypothesis: str = Field(..., max_length=500)
+    variants: list[str] = Field(..., max_length=10)
+    traffic_split: list[float] = Field(..., max_length=10)
+
+
+class ExperimentOut(BaseModel):
+    id: str
+    name: str
+    hypothesis: str
+    variants: list[str]
+    status: str
+    created_at: datetime
+
+
+class ExperimentResultOut(BaseModel):
+    variant: str
+    metric: str
+    avg_value: float
+    samples: int
