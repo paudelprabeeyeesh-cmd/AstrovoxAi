@@ -1,5 +1,7 @@
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from .core.prometheus_middleware import PrometheusMiddleware
+from .core.structured_logging import configure_logging, StructuredLoggingMiddleware
+
 from .core.cache_middleware import CacheMiddleware
 import json
 import logging
@@ -40,7 +42,7 @@ from .core.guardrails import add_canary, sanitize_input, validate_output
 from .core.llm import LLMClient
 from .core.moderation import check_moderation
 from .core.pii import redact_pii
-from .core.tracing import get_prompt_hash, log_llm_call, start_trace
+from .core.tracing import get_prompt_hash, init_tracing, log_llm_call, start_trace
 from .cost import count_tokens
 from .database import init_db
 from .feedback import create_feedback, delete_feedback, list_feedback
@@ -77,9 +79,12 @@ print("[astrovox] imports complete", flush=True)
 @asynccontextmanager
 async def lifespan(app):
     print("[astrovox] lifespan startup", flush=True)
+    init_tracing(app=app)
     yield
     print("[astrovox] lifespan shutdown", flush=True)
 
+
+configure_logging()
 
 print("[astrovox] creating FastAPI app", flush=True)
 app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
@@ -105,6 +110,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CacheMiddleware)
 app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RateLimitMiddleware)
+app.add_middleware(StructuredLoggingMiddleware)
+
 app.include_router(admin_router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
@@ -916,3 +923,6 @@ async def live():
 @app.get("/metrics")
 async def prometheus_metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+
