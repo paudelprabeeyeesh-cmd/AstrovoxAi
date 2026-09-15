@@ -103,3 +103,11 @@ storage/
 *.pyc
 .ruff_cache
 astrovox_test.db
+
+# Next.js
+.next/
+.vercel/
+out/
+
+# Local env files
+.env*.local
