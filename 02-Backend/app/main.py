@@ -8,6 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import uuid
+import time
 from contextlib import asynccontextmanager
 
 import asyncio
@@ -94,6 +95,31 @@ async def lifespan(app):
     init_tracing(app=app)
     yield
     print("[astrovox] lifespan shutdown", flush=True)
+    logger.info("Shutting down AstrovoxAI")
+
+    try:
+        from app.database import _pool
+        if _pool is not None:
+            _pool.closeall()
+            logger.info("Database connections closed")
+    except Exception as e:
+        logger.error(f"Error closing database connections: {e}")
+
+    try:
+        logging.shutdown()
+        logger.info("Logs flushed")
+    except Exception as e:
+        logger.error(f"Error flushing logs: {e}")
+
+    try:
+        if hasattr(app.state, "redis") and app.state.redis:
+            await app.state.redis.close()
+            logger.info("Redis connections closed")
+    except Exception as e:
+        logger.error(f"Error closing Redis connections: {e}")
+
+    from datetime import datetime, timezone
+    logger.info(f"Shutdown timestamp: {datetime.now(timezone.utc).isoformat()}")
 
 
 
@@ -121,6 +147,28 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         return response
+
+
+class TimeoutMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, timeout: int = 30):
+        super().__init__(app)
+        self.timeout = timeout
+
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+        try:
+            response = await asyncio.wait_for(call_next(request), timeout=self.timeout)
+            elapsed = time.time() - start_time
+            if elapsed > 5:
+                logger.info(f"Slow request: {request.method} {request.url} took {elapsed:.2f}s")
+            return response
+        except asyncio.TimeoutError:
+            logger.error(f"Request timeout: {request.method} {request.url} exceeded {self.timeout}s")
+            return JSONResponse(
+                status_code=504,
+                content={"error": "Gateway Timeout", "detail": f"Request exceeded {self.timeout} seconds"},
+            )
+
 
 configure_logging()
 
@@ -151,6 +199,7 @@ app.add_middleware(RateLimitMiddleware)
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(APIVersionMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(TimeoutMiddleware)
 
 app.include_router(admin_router)
 

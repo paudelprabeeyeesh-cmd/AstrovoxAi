@@ -1,5 +1,6 @@
 import logging
 import re
+import html
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,11 @@ def check_canary(response: str) -> bool:
 def sanitize_input(text: str) -> tuple[str, bool]:
     injection_detected = detect_injection(text) is not None
     sanitized = redact_injection(text)
+    sanitized = re.sub(r'<[^>]+>', '', sanitized)
+    sanitized = html.escape(sanitized, quote=True)
+    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
+    if len(sanitized) > 10000:
+        sanitized = sanitized[:10000]
     return sanitized, injection_detected
 
 

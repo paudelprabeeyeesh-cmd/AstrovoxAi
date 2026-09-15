@@ -20,6 +20,21 @@ interface LoginFormProps extends React.HTMLAttributes<HTMLFormElement> {
   onSuccess?: () => void
 }
 
+
+function getPasswordStrength(pwd: string) {
+  if (!pwd) return { strength: 0, label: "" }
+  let strength = 0
+  if (pwd.length >= 8) strength += 25
+  if (/[A-Z]/.test(pwd)) strength += 25
+  if (/[0-9]/.test(pwd)) strength += 25
+  if (/[^A-Za-z0-9]/.test(pwd)) strength += 25
+  let label = "Weak"
+  if (strength === 100) label = "Strong"
+  else if (strength >= 75) label = "Good"
+  else if (strength >= 50) label = "Fair"
+  return { strength, label }
+}
+
 function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -28,6 +43,9 @@ function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   })
+
+  const password = form.watch("password")
+  const { strength, label } = getPasswordStrength(password)
 
   async function onSubmit(data: LoginFormData) {
     setIsLoading(true)
@@ -63,6 +81,17 @@ function LoginForm({ className, onSuccess, ...props }: LoginFormProps) {
           <Label htmlFor="password">Password</Label>
           <Input id="password" type="password" disabled={isLoading} {...form.register("password")} />
           {form.formState.errors.password && <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>}
+          {password && (
+            <div className="space-y-1">
+              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary transition-all"
+                  style={{ width: (strength) + "%" }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">{label}</p>
+            </div>
+          )}
         </div>
         {error && <p className="text-sm text-destructive">{error}</p>}
         <Button type="submit" className="w-full" disabled={isLoading}>

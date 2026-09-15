@@ -1,5 +1,10 @@
 import os
+import time
+import logging
 from contextlib import contextmanager
+from fastapi import HTTPException
+
+logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
@@ -28,13 +33,31 @@ def _create_pool():
 
 @contextmanager
 def get_db():
-    if _pool is None:
-        _create_pool()
-    conn = _pool.getconn()
-    try:
-        yield conn
-    finally:
-        _pool.putconn(conn)
+    global _pool
+    max_retries = 3
+    base_delay = 1
+
+    for attempt in range(max_retries):
+        try:
+            if _pool is None:
+                _create_pool()
+            conn = _pool.getconn()
+        except Exception as e:
+            logger.error(f"Database connection attempt {attempt + 1}/{max_retries} failed: {e}")
+            if attempt < max_retries - 1:
+                delay = base_delay * (2 ** attempt)
+                logger.info(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                logger.error("All database connection retries failed")
+                raise HTTPException(status_code=503, detail="Service Unavailable: Database connection failed") from e
+            continue
+
+        try:
+            yield conn
+        finally:
+            _pool.putconn(conn)
+        return
 
 
 def init_db():
