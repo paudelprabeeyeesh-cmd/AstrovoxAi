@@ -1,4 +1,4 @@
-# Dependencies
+﻿# Dependencies
 node_modules/
 
 # Build output
@@ -15,6 +15,40 @@ build/
 *key*
 *.pem
 secrets*
+*.secret
+*.credentials
+credentials.json
+service-account*.json
+*gcloud*.json
+*firebase*.json
+*.p12
+*.pfx
+*.der
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+*.ppk
+*.kubeconfig
+kubeconfig*
+known_hosts
+*.srl
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+*.cer
+config/credentials
+config/keys
+secrets/
+private/
+*.private*
+*.token*
+*.access
+*.apikey
+api_key*
+API_KEY*
 
 # Python
 __pycache__/
@@ -64,6 +98,7 @@ Backend/
 astrovox-ai/
 01-Frontend/
 storage/
+02-Backend/
 
 *.pyc
 .ruff_cache
