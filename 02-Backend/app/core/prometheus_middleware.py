@@ -13,6 +13,13 @@ REQUEST_LATENCY = Histogram(
     "HTTP request latency",
     ["method", "endpoint"],
 )
+REQUEST_DURATION_BY_ENDPOINT = Histogram(
+    "http_request_duration_by_endpoint_seconds",
+    "HTTP request duration by endpoint in seconds",
+    ["endpoint"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+)
+
 ERROR_COUNT = Counter(
     "http_errors_total",
     "Total HTTP errors",
@@ -83,6 +90,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             method=request.method,
             endpoint=endpoint,
         ).observe(duration)
+        REQUEST_DURATION_BY_ENDPOINT.labels(endpoint=endpoint).observe(duration)
 
         if response.status_code >= 400:
             ERROR_COUNT.labels(

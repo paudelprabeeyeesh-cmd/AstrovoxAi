@@ -82,7 +82,7 @@ def get_logger(name: str) -> logging.Logger:
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        request.state.request_id = str(uuid.uuid4())
+        request.state.request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
         _request_id.set(request.state.request_id)
         _endpoint.set(f"{request.method} {request.url.path}")
 
@@ -91,7 +91,19 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         _latency_ms.set(round((time.perf_counter() - start) * 1000, 2))
 
         response.headers["X-Request-ID"] = request.state.request_id
+        logger.info(
+            "request_completed",
+            extra={
+                "request_id": request.state.request_id,
+                "method": request.method,
+                "path": request.url.path,
+                "status_code": response.status_code,
+                "latency_ms": _latency_ms.get(None),
+                "user_id": _user_id.get(None),
+            },
+        )
         return response
+
 
 
 def inject_request_id(request_id: str):

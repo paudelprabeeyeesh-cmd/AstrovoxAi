@@ -75,6 +75,16 @@ from .workflows import create_workflow, delete_workflow, list_workflows
 from jose import JWTError, jwt
 from .config import settings
 
+
+import sentry_sdk
+if os.getenv("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.getenv("SENTRY_DSN"),
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
+        environment=os.getenv("ENVIRONMENT", "development"),
+    )
+
 print("[astrovox] imports complete", flush=True)
 
 
@@ -369,6 +379,35 @@ async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verifie
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get('/health/detailed')
+async def health_detailed():
+    from datetime import datetime, timezone
+    checks = {}
+    db_status = 'disconnected'
+    redis_status = 'disconnected'
+    try:
+        from app.database import get_db
+        with get_db() as conn:
+            conn.execute('SELECT 1')
+        db_status = 'connected'
+    except Exception as e:
+        db_status = f'disconnected ({e})'
+    if hasattr(app.state, 'redis') and app.state.redis:
+        try:
+            app.state.redis.ping()
+            redis_status = 'connected'
+        except Exception as e:
+            redis_status = f'disconnected ({e})'
+    status = 'healthy' if db_status == 'connected' else 'degraded'
+    return {
+        'status': status,
+        'database': db_status,
+        'redis': redis_status,
+        'version': '0.5.0',
+        'timestamp': datetime.now(timezone.utc).isoformat(),
+    }
 
 
 @app.get("/healthz")
@@ -1047,3 +1086,8 @@ async def list_experiments_endpoint(user_id: str = Depends(get_user_id)):
     return list_experiments(user_id)
 
 
+@app.get("/sentry-debug")
+async def sentry_debug():
+    import sentry_sdk
+    sentry_sdk.capture_message("Sentry test message")
+    return {"ok": True}

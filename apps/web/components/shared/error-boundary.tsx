@@ -1,4 +1,4 @@
-﻿'use client';
+"use client";
 
 import { Component, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: ReactNode;
+  onError?: (error: Error, errorInfo: { componentStack: string }) => void;
 }
 
 interface ErrorBoundaryState {
@@ -28,6 +29,9 @@ export class ErrorBoundary extends Component<
 
   componentDidCatch(error: Error, errorInfo: { componentStack: string }) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
   }
 
   handleReset = () => {
