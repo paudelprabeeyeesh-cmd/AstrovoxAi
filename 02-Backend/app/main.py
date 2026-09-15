@@ -104,6 +104,24 @@ class APIVersionMiddleware(BaseHTTPMiddleware):
         response.headers["X-API-Version"] = "1.0.0"
         return response
 
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        csp = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self' data:; "
+            "connect-src 'self' https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.groq.com https://openrouter.ai https://router.huggingface.co; "
+        )
+        response.headers["Content-Security-Policy"] = csp
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        return response
+
 configure_logging()
 
 print("[astrovox] creating FastAPI app", flush=True)
@@ -132,6 +150,7 @@ app.add_middleware(PrometheusMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(APIVersionMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.include_router(admin_router)
 
@@ -463,6 +482,21 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class TrackEventRequest(BaseModel):
+    event_name: str
+    properties: dict = {}
+    user_id: Optional[str] = None
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
 @app.post("/auth/register")
 async def register(data: RegisterRequest):
     user = register_user(data.email, data.password)
@@ -476,9 +510,25 @@ async def verify_email(token: str):
     result = verify_email_token(token)
     return result
 
+
+@app.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    from app.auth import forgot_password as forgot_password_func
+    result = forgot_password_func(data.email)
+    return result
+
+
 @app.post("/auth/login")
 async def login(data: LoginRequest):
     result = login_user(data.email, data.password)
+    return result
+
+
+
+@app.post("/auth/reset-password")
+async def reset_password_endpoint(data: ResetPasswordRequest):
+    from app.auth import reset_password as reset_password_func
+    result = reset_password_func(data.token, data.new_password)
     return result
 
 
@@ -494,6 +544,31 @@ async def prometheus_metrics(user_id: str = Depends(require_admin)):
     revenue = get_revenue(days=30)
     second_use = get_second_use_metric(days=7)
     return {**usage, **revenue, **second_use}
+
+
+
+@app.get("/billing/current")
+async def get_billing_current(user_id: str = Depends(get_user_id)):
+    with get_db() as conn:
+        user = conn.execute(
+            "SELECT plan, stripe_customer_id FROM users WHERE id = ?",
+            (user_id,)
+        ).fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        plan_name = user["plan"] or "free"
+        limits = get_plan_limits(plan_name)
+        usage_row = conn.execute(
+            "SELECT SUM(tokens) as total_tokens FROM usage WHERE user_id = ? AND created_at >= datetime('now', '-30 days')",
+            (user_id,)
+        ).fetchone()
+        current_usage = usage_row["total_tokens"] or 0 if usage_row else 0
+        return {
+            "plan": plan_name,
+            "status": "active" if user["stripe_customer_id"] else "inactive",
+            "current_usage": int(current_usage),
+            "limit": limits["requests"],
+        }
 
 
 @app.get("/usage")
@@ -785,6 +860,25 @@ async def cancel_billing(user_id: str = Depends(require_verified_email)):
     return {"ok": True}
 
 
+
+@app.get("/billing/invoices")
+async def get_billing_invoices(user_id: str = Depends(get_user_id)):
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, amount, status, created_at FROM usage WHERE user_id = ? AND model = 'stripe_subscription' ORDER BY created_at DESC LIMIT 20",
+            (user_id,)
+        ).fetchall()
+        return [
+            {
+                "id": r["id"],
+                "amount": float(r["amount"]),
+                "status": r["status"] or "paid",
+                "date": r["created_at"],
+            }
+            for r in rows
+        ]
+
+
 @app.post("/referrals")
 async def create_referral_endpoint(email: str, user_id: str = Depends(require_verified_email)):
     return create_referral(user_id, email)
@@ -1011,6 +1105,15 @@ async def prometheus_metrics():
 from .analytics import record_event, get_aggregate_metrics, get_top_models, get_cost_trend
 from .rag_eval import create_evaluation, get_aggregate_metrics as get_rag_aggregate_metrics
 from .experiments import create_experiment, assign_variant, record_win, get_winner, list_experiments
+
+
+
+@app.post("/analytics/track")
+async def track_analytics_endpoint(data: TrackEventRequest):
+    _ensure_db()
+    track_event(data.event_name, data.properties, data.user_id)
+    return {"ok": True}
+
 
 @app.post("/analytics/event")
 async def record_analytics_event(

@@ -66,4 +66,14 @@ export const api = {
   patch: <T>(endpoint: string, data: unknown) =>
     request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(data) }),
   delete: (endpoint: string) => request<void>(endpoint, { method: 'DELETE' }),
+  logError: (error: Error, context?: Record<string, unknown>) =>
+    request<void>('/errors', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+        ...context,
+      }),
+    }),
 }

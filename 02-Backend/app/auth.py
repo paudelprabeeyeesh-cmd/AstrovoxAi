@@ -190,6 +190,26 @@ def create_password_reset_token(user_id: str, email: str) -> str:
     payload = {"sub": user_id, "email": email, "exp": expire, "type": "password_reset"}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
+
+
+def forgot_password(email: str) -> dict:
+    with get_db() as conn:
+        row = conn.execute("SELECT id, email FROM users WHERE email = ?", (email,)).fetchone()
+        if not row:
+            return {"ok": True}
+    token = create_password_reset_token(row["id"], row["email"])
+    reset_url = f"https://astrovox.ai/reset-password?token={token}"
+    msg = MIMEText(f"Click to reset your password: {reset_url}")
+    msg["Subject"] = "Reset your AstrovoxAI password"
+    msg["From"] = os.getenv("EMAIL_FROM", "noreply@astrovox.ai")
+    msg["To"] = email
+    try:
+        with smtplib.SMTP(os.getenv("SMTP_HOST", "localhost"), int(os.getenv("SMTP_PORT", "25"))) as server:
+            server.send_message(msg)
+    except Exception as e:
+        print(f"Email send failed: {e}")
+    return {"ok": True}
+
 def reset_password(token: str, new_password: str) -> dict:
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])

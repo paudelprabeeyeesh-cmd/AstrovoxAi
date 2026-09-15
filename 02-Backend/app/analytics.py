@@ -17,6 +17,21 @@ def record_event(event_type: str, properties: dict):
     return event_id
 
 
+def track_event(event_name: str, properties: dict, user_id: str = None):
+    event_id = str(uuid.uuid4())
+    enriched = dict(properties or {})
+    if user_id:
+        enriched["user_id"] = user_id
+    payload = json.dumps(enriched)
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO analytics_events (id, event_type, properties, created_at) VALUES (?, ?, ?, ?)",
+            (event_id, event_name, payload, datetime.utcnow().isoformat()),
+        )
+        conn.commit()
+    return event_id
+
+
 def get_aggregate_metrics(days: int = 7) -> dict:
     cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
     with get_db() as conn:

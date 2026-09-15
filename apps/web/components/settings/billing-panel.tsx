@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -26,6 +26,7 @@ interface BillingPanelProps {
   plan?: PlanInfo;
   invoices?: Invoice[];
   onUpgrade?: () => void;
+  onDowngrade?: () => void;
   onManageSubscription?: () => void;
   onDownloadInvoice?: (invoiceId: string) => Promise<void>;
 }
@@ -40,11 +41,12 @@ export function BillingPanel({
   plan,
   invoices = [],
   onUpgrade,
+  onDowngrade,
   onManageSubscription,
   onDownloadInvoice,
 }: BillingPanelProps) {
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-    const usagePercentage = plan ? Math.min((plan.currentUsage / plan.limit) * 100, 100) : 0;
+  const usagePercentage = plan ? Math.min((plan.currentUsage / plan.limit) * 100, 100) : 0;
 
   const handleDownload = async (invoice: Invoice) => {
     setDownloadingId(invoice.id);
@@ -74,13 +76,18 @@ export function BillingPanel({
             <div>
               <h4 className="text-xl font-bold">{plan.name} Plan</h4>
               <p className="mt-1 text-3xl font-bold">
-                
+                ${plan.price}
                 <span className="text-lg font-normal text-muted-foreground">
                   /{plan.interval === 'month' ? 'mo' : 'yr'}
                 </span>
               </p>
             </div>
             <div className="flex gap-2">
+              {plan.name !== 'free' && (
+                <Button variant="outline" onClick={onDowngrade}>
+                  Downgrade
+                </Button>
+              )}
               <Button variant="outline" onClick={onManageSubscription}>
                 Manage
               </Button>
@@ -145,7 +152,7 @@ export function BillingPanel({
                       {invoice.status}
                     </span>
                     <span className="text-sm font-medium">
-                      
+                      ${invoice.amount.toFixed(2)}
                     </span>
                     <Button
                       variant="ghost"
