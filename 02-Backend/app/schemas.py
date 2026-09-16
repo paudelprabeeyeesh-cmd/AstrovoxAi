@@ -5,6 +5,12 @@ from pydantic import BaseModel, EmailStr, Field
 from enum import Enum
 
 
+class MemoryType(str, Enum):
+    SHORT_TERM = "short_term"
+    CONVERSATION = "conversation"
+    LONG_TERM = "long_term"
+    PROJECT = "project"
+
 class MemoryCreate(BaseModel):
     key: str = Field(..., max_length=200)
     value: str = Field(..., max_length=4000)
@@ -19,12 +25,16 @@ class MemoryOut(BaseModel):
     key: str
     value: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ConversationOut(BaseModel):
     id: str
     title: str | None
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class MessageOut(BaseModel):
@@ -32,6 +42,8 @@ class MessageOut(BaseModel):
     role: str
     content: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class SolveRequest(BaseModel):
@@ -66,6 +78,8 @@ class TemplateOut(BaseModel):
     prompt: str
     variables: str | None
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ScheduleCreate(BaseModel):
@@ -82,6 +96,8 @@ class ScheduleOut(BaseModel):
     last_run: datetime | None
     active: bool
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class KnowledgeDocCreate(BaseModel):
@@ -94,6 +110,8 @@ class KnowledgeDocOut(BaseModel):
     title: str | None
     content: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class UserProfileOut(BaseModel):
@@ -112,6 +130,8 @@ class WorkflowOut(BaseModel):
     name: str
     steps: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ToolCreate(BaseModel):
@@ -124,6 +144,8 @@ class ToolOut(BaseModel):
     type: str
     config: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class FeedbackCreate(BaseModel):
@@ -138,12 +160,16 @@ class FeedbackOut(BaseModel):
     rating: int
     comment: str | None
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ConversationSearchOut(BaseModel):
     id: str
     title: str | None
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
     message_count: int
 
 
@@ -182,6 +208,8 @@ class RAGEvalOut(BaseModel):
     recall_at_5: float
     faithfulness_score: float
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ExperimentCreate(BaseModel):
@@ -198,6 +226,8 @@ class ExperimentOut(BaseModel):
     variants: list[str]
     status: str
     created_at: datetime
+    memory_type: str | None = None
+    importance_score: float = 0.5
 
 
 class ExperimentResultOut(BaseModel):
@@ -205,3 +235,51 @@ class ExperimentResultOut(BaseModel):
     metric: str
     avg_value: float
     samples: int
+
+class DocumentOut(BaseModel):
+    id: str
+    user_id: str
+    filename: str
+    content_type: str
+    size: int
+    created_at: datetime
+
+
+class DocumentChunkOut(BaseModel):
+    id: str
+    document_id: str
+    content: str
+    metadata: dict[str, Any] | None = None
+    created_at: datetime
+
+
+class RAGSearchResult(BaseModel):
+    chunk_id: str
+    document_id: str
+    content: str
+    filename: str
+    metadata: dict[str, Any] | None = None
+    score: float
+
+
+class RAGIngestResponse(BaseModel):
+    doc_id: str
+    chunks: int
+
+
+class RAGIngestRequest(BaseModel):
+    url: str = Field(..., max_length=2000)
+    user_id: str | None = None
+
+
+class RAGGithubRequest(BaseModel):
+    repo_url: str = Field(..., max_length=500)
+    user_id: str | None = None
+
+class ToolExecuteRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=10000)
+    max_iterations: int = Field(5, ge=1, le=10)
+
+
+class ToolExecuteResponse(BaseModel):
+    result: str

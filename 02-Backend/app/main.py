@@ -39,6 +39,7 @@ from .conversations import (add_message, create_conversation, get_messages,
                             list_conversations, search_conversations)
 from .core.budget import cost_circuit_breaker
 from .core.context import ContextManager
+from .context_builder import ContextBuilder
 from .core.grounding import ground_answer
 from .core.guardrails import add_canary, sanitize_input, validate_output
 from .core.llm import LLMClient
@@ -223,6 +224,7 @@ def get_user_id(user_id: str = Depends(get_current_user)) -> str:
 
 llm_client = LLMClient()
 context_manager = ContextManager()
+context_builder = ContextBuilder()
 prompt_manager = PromptVersionManager()
 
 import traceback
@@ -291,21 +293,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
         memories = search_memories(user_id, req.text, limit=3)
         docs = search_docs(user_id, req.text, limit=3)
 
-        context_parts = []
-        if memories:
-            memory_context = "\n".join([f"- {m.key}: {m.value}" for m in memories])
-            context_parts.append(f"Memories:\n{memory_context}")
-        if docs:
-            doc_context = "\n".join(
-                [f"[{d.title or 'doc'}]: {d.content[:500]}" for d in docs]
-            )
-            context_parts.append(f"Knowledge:\n{doc_context}")
-
-        full_prompt = (
-            "\n\n".join(context_parts + [f"User: {prompt_with_canary}"])
-            if context_parts
-            else prompt_with_canary
-        )
+        full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
 
         try:
             llm_result = llm_client.call_llm(full_prompt, timeout=30)
@@ -411,21 +399,7 @@ async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verifie
     memories = search_memories(user_id, req.text, limit=3)
     docs = search_docs(user_id, req.text, limit=3)
 
-    context_parts = []
-    if memories:
-        memory_context = "\n".join([f"- {m.key}: {m.value}" for m in memories])
-        context_parts.append(f"Memories:\n{memory_context}")
-    if docs:
-        doc_context = "\n".join(
-            [f"[{d.title or 'doc'}]: {d.content[:500]}" for d in docs]
-        )
-        context_parts.append(f"Knowledge:\n{doc_context}")
-
-    full_prompt = (
-        "\n\n".join(context_parts + [f"User: {prompt_with_canary}"])
-        if context_parts
-        else prompt_with_canary
-    )
+    full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
 
     async def event_generator():
         try:
@@ -1214,6 +1188,79 @@ async def rag_evaluate(
 @app.get("/rag/metrics")
 async def rag_metrics(days: int = 7, user_id: str = Depends(require_admin)):
     return get_rag_aggregate_metrics(days=days)
+
+from fastapi import UploadFile, File
+from app.rag_engine import RAGEngine
+from app.schemas import (
+    DocumentOut, DocumentChunkOut, RAGSearchResult,
+    RAGIngestResponse, RAGIngestRequest, RAGGithubRequest
+)
+
+rag_engine = RAGEngine()
+
+@app.post("/rag/ingest", response_model=RAGIngestResponse)
+async def rag_ingest(file: UploadFile = File(...), user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    import tempfile
+    suffix = "".join(c for c in file.filename if c in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
+    try:
+        if file.content_type == "application/pdf" or suffix.endswith(".pdf"):
+            result = rag_engine.ingest_pdf(tmp_path, user_id)
+        elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" or suffix.endswith(".docx"):
+            result = rag_engine.ingest_docx(tmp_path, user_id)
+        elif suffix.endswith(".txt"):
+            result = rag_engine.ingest_txt(tmp_path, user_id)
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported file type")
+        if not result:
+            raise HTTPException(status_code=400, detail="Failed to ingest document")
+        return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
+    finally:
+        os.unlink(tmp_path)
+
+@app.post("/rag/ingest/website", response_model=RAGIngestResponse)
+async def rag_ingest_website(data: RAGIngestRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    result = rag_engine.ingest_website(data.url, user_id)
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to ingest website")
+    return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
+
+@app.post("/rag/ingest/github", response_model=RAGIngestResponse)
+async def rag_ingest_github(data: RAGGithubRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    result = rag_engine.ingest_github_repo(data.repo_url, user_id)
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to ingest GitHub repo")
+    return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
+
+@app.post("/rag/search", response_model=list[RAGSearchResult])
+async def rag_search(data: dict, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    query = data.get("query", "")
+    top_k = data.get("top_k", 5)
+    return rag_engine.search(query, user_id, top_k)
+
+@app.get("/rag/documents", response_model=list[DocumentOut])
+async def rag_list_documents(user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    docs = list_documents(user_id)
+    return [DocumentOut(**d) for d in docs]
+
+@app.delete("/rag/documents/{doc_id}")
+async def rag_delete_document(doc_id: str, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    try:
+        get_document(doc_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Document not found")
+    delete_document_chunks(doc_id)
+    if not delete_document(doc_id, user_id):
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"ok": True}
 
 
 @app.post("/experiments", response_model=ExperimentOut)

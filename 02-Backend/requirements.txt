@@ -31,3 +31,8 @@ opentelemetry-instrumentation-httpx==0.43b0
 opentelemetry-instrumentation-psycopg2==0.43b0
 
 sentry-sdk==2.14.0
+
+pypdf==4.2.0
+python-docx==1.1.2
+beautifulsoup4==4.12.3
+requests==2.32.3

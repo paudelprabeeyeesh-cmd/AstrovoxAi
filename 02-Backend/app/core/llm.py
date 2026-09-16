@@ -24,26 +24,27 @@ class LLMClient:
         )
         return []
 
-    def generate(self, prompt: str, system: str = "", timeout: float = 30) -> str:
+    def generate(self, prompt: str, system: str = "", timeout: float = 30, tools: list = None, messages: list = None) -> str:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "
                 "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
-        result = call_llm(prompt, system=system, timeout=timeout)
+        result = call_llm(prompt, system=system, timeout=timeout, tools=tools, messages=messages)
         return result["text"]
 
-    def call_llm(self, prompt: str, system: str = "", min_confidence: float = None, timeout: float = 30) -> dict:
+    def call_llm(self, prompt: str, system: str = "", min_confidence: float = None, timeout: float = 30, tools: list = None, messages: list = None) -> dict:
         if not self._active_providers:
             raise RuntimeError(
                 "No AI provider configured. Set at least one of: "
                 "GROQ_API_KEY, GEMINI_API_KEY, MISTRAL_API_KEY, "
                 "OPENROUTER_API_KEY, HF_API_KEY."
             )
-        return call_llm(prompt, system=system, min_confidence=min_confidence, timeout=timeout)
+        return call_llm(prompt, system=system, min_confidence=min_confidence, timeout=timeout, tools=tools, messages=messages)
 
 
-    async def stream_llm(self, prompt: str, system: str = "", timeout: float = 30):
-        async for item in call_llm_stream(prompt, system=system, timeout=timeout):
+    async def stream_llm(self, prompt: str, system: str = "", timeout: float = 30, tools: list = None):
+        async for item in call_llm_stream(prompt, system=system, timeout=timeout, tools=tools):
             yield item
+

@@ -17,7 +17,7 @@ _pool = None
 def _create_pool():
     global _pool
     import psycopg2
-    from psycopg2.extras import RealDictCursor
+    from psycopg2.extras import RealDictCursor, register_vector
 
     class RealDictConnection(psycopg2.extensions.connection):
         def cursor(self, *args, **kwargs):
@@ -54,6 +54,7 @@ def get_db():
             continue
 
         try:
+            register_vector(conn)
             yield conn
         finally:
             _pool.putconn(conn)

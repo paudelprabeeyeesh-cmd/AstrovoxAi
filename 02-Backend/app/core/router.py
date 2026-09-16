@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -27,7 +28,14 @@ def estimate_confidence(text: str, prompt: str) -> float:
     return max(0.0, min(1.0, score))
 
 
-def call_llm(prompt: str, system: str = "", min_confidence: float = None, timeout: float = 30) -> dict:
+def call_llm(
+    prompt: str = None,
+    system: str = "",
+    min_confidence: float = None,
+    timeout: float = 30,
+    tools: list = None,
+    messages: list = None,
+) -> dict:
     if min_confidence is None:
         min_confidence = CONFIDENCE_THRESHOLD
 
@@ -41,48 +49,65 @@ def call_llm(prompt: str, system: str = "", min_confidence: float = None, timeou
 
     errors = []
     last_result = None
-    
+
     for provider in providers:
         api_key = os.getenv(provider.env_key)
         if not api_key:
             continue
         try:
             client = OpenAI(base_url=provider.base_url, api_key=api_key)
-            messages = []
-            if system:
-                messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
+            if messages is None:
+                messages = []
+                if system:
+                    messages.append({"role": "system", "content": system})
+                if prompt:
+                    messages.append({"role": "user", "content": prompt})
+
             response = client.chat.completions.create(
                 model=provider.default_model,
                 messages=messages,
                 timeout=timeout,
+                tools=tools,
             )
-            text = response.choices[0].message.content or ""
-            tokens = getattr(response.usage, "total_tokens", len(prompt.split()))
-            confidence = estimate_confidence(text, prompt)
-            
+
+            message = response.choices[0].message
+            text = message.content or ""
+            tokens = getattr(response.usage, "total_tokens", len((prompt or json.dumps(messages)).split()))
+            confidence = estimate_confidence(text, prompt or "")
+
             logger.info(
                 f"LLM call via {provider.name} ({provider.default_model}) "
                 f"confidence={confidence:.2f}"
             )
-            
-            last_result = {
+
+            result = {
                 "text": text,
                 "provider": provider.name,
                 "model": provider.default_model,
                 "tokens": tokens,
                 "confidence": confidence,
             }
-            
-            if confidence >= min_confidence:
-                return last_result
-            
+
+            tool_calls = getattr(message, "tool_calls", None)
+            if tool_calls:
+                result["tool_calls"] = [
+                    {
+                        "id": tc.id,
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    }
+                    for tc in tool_calls
+                ]
+
+            if confidence >= min_confidence or tool_calls:
+                return result
+
             logger.warning(
                 f"Confidence {confidence:.2f} below threshold {min_confidence}, "
                 f"trying next provider"
             )
             errors.append(f"{provider.name}: confidence {confidence:.2f} below threshold")
-            
+
         except Exception as e:
             logger.warning(f"Provider {provider.name} failed: {e}")
             errors.append(f"{provider.name}: {e}")
@@ -90,7 +115,7 @@ def call_llm(prompt: str, system: str = "", min_confidence: float = None, timeou
     if last_result:
         logger.warning(f"Returning low-confidence result from {last_result['provider']}")
         return last_result
-    
+
     raise RuntimeError(f"All LLM providers failed: {errors}")
 
 
@@ -98,6 +123,7 @@ async def call_llm_stream(
     prompt: str,
     system: str = "",
     timeout: float = 30,
+    tools: list = None,
 ):
     providers = get_active_providers()
     if not providers:
@@ -122,6 +148,7 @@ async def call_llm_stream(
                 messages=messages,
                 stream=True,
                 timeout=timeout,
+                tools=tools,
             )
             async for chunk in stream:
                 delta = chunk.choices[0].delta.content if chunk.choices else None
@@ -136,3 +163,5 @@ async def call_llm_stream(
             logger.warning(f"Provider {provider.name} streaming failed: {e}")
             errors.append(f"{provider.name}: {e}")
     raise RuntimeError(f"All LLM providers failed: {errors}")
+
+

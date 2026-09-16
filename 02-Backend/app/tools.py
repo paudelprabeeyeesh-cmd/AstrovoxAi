@@ -89,3 +89,152 @@ def delete_tool(tool_id: str, user_id: str):
         conn.commit()
         if cursor.rowcount == 0:
             raise ValueError("Tool not found")
+
+from dataclasses import dataclass, field
+from typing import Any, Callable
+
+
+@dataclass
+class ToolDefinition:
+    name: str
+    description: str
+    parameters: dict[str, Any]
+    function: Callable
+
+    def to_openai_schema(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": self.parameters,
+            },
+        }
+
+
+def _safe_calculate(expression: str) -> str:
+    import math
+    safe_env = {k: getattr(math, k) for k in dir(math) if not k.startswith("_")}
+    try:
+        result = eval(expression, {"__builtins__": {}}, safe_env)
+        return str(result)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def search_web(query: str) -> str:
+    return f"[web search result for: {query}]"
+
+
+def calculate(expression: str) -> str:
+    return _safe_calculate(expression)
+
+
+def get_current_time() -> str:
+    from datetime import datetime
+    return datetime.utcnow().isoformat()
+
+
+def get_weather(location: str) -> str:
+    return f"[weather for {location}: 72F, clear]"
+
+
+def search_documents(query: str, user_id: str) -> str:
+    from .knowledge import search_docs
+    docs = search_docs(user_id, query, limit=3)
+    return "\n".join([d.content[:500] for d in docs]) if docs else "No documents found."
+
+
+def create_memory(content: str, user_id: str) -> str:
+    from .memory import create_memory as _create_memory
+    from .schemas import MemoryCreate
+    mem = _create_memory(user_id, MemoryCreate(key="tool_memory", value=content))
+    return f"Memory created: {mem.id}"
+
+
+def send_email(to: str, subject: str, body: str) -> str:
+    return f"Email sent to {to}: {subject}"
+
+
+BUILTIN_TOOLS: list[ToolDefinition] = [
+    ToolDefinition(
+        name="search_web",
+        description="Search the web for information",
+        parameters={
+            "type": "object",
+            "properties": {"query": {"type": "string", "description": "Search query"}},
+            "required": ["query"],
+        },
+        function=search_web,
+    ),
+    ToolDefinition(
+        name="calculate",
+        description="Evaluate a mathematical expression",
+        parameters={
+            "type": "object",
+            "properties": {"expression": {"type": "string", "description": "Math expression"}},
+            "required": ["expression"],
+        },
+        function=calculate,
+    ),
+    ToolDefinition(
+        name="get_current_time",
+        description="Get the current UTC time",
+        parameters={"type": "object", "properties": {}},
+        function=get_current_time,
+    ),
+    ToolDefinition(
+        name="get_weather",
+        description="Get current weather for a location",
+        parameters={
+            "type": "object",
+            "properties": {"location": {"type": "string", "description": "City name"}},
+            "required": ["location"],
+        },
+        function=get_weather,
+    ),
+    ToolDefinition(
+        name="search_documents",
+        description="Search user documents",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Search query"},
+                "user_id": {"type": "string", "description": "User ID"},
+            },
+            "required": ["query", "user_id"],
+        },
+        function=search_documents,
+    ),
+    ToolDefinition(
+        name="create_memory",
+        description="Create a memory for the user",
+        parameters={
+            "type": "object",
+            "properties": {
+                "content": {"type": "string", "description": "Memory content"},
+                "user_id": {"type": "string", "description": "User ID"},
+            },
+            "required": ["content", "user_id"],
+        },
+        function=create_memory,
+    ),
+    ToolDefinition(
+        name="send_email",
+        description="Send an email",
+        parameters={
+            "type": "object",
+            "properties": {
+                "to": {"type": "string", "description": "Recipient email"},
+                "subject": {"type": "string", "description": "Email subject"},
+                "body": {"type": "string", "description": "Email body"},
+            },
+            "required": ["to", "subject", "body"],
+        },
+        function=send_email,
+    ),
+]
+
+
+def get_builtin_tools() -> list[ToolDefinition]:
+    return BUILTIN_TOOLS
