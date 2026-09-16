@@ -548,6 +548,23 @@ class ResetPasswordRequest(BaseModel):
 
 @app.post("/auth/register")
 async def register(data: RegisterRequest):
+    """
+    Register a new user.
+
+    Example request:
+        {
+            "email": "user@example.com",
+            "password": "securepassword123"
+        }
+
+    Example response:
+        {
+            "user": {
+                "id": "uuid",
+                "email": "user@example.com"
+            }
+        }
+    """
     user = register_user(data.email, data.password)
     return {"user": user}
 
