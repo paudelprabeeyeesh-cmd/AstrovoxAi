@@ -54,3 +54,6 @@ pillow
 pytesseract
 elevenlabs
 replicate
+detoxify
+langdetect
+azure-ai-textanalytics

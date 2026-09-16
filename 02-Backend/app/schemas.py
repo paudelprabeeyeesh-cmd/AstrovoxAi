@@ -302,3 +302,55 @@ class MemoryClassifyResponse(BaseModel):
 
 class ToolExecuteResponse(BaseModel):
     result: str
+
+
+class SecurityScanPromptRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=10000)
+
+
+class SecurityScanPromptResponse(BaseModel):
+    injected: bool
+    confidence: float
+
+
+class SecurityScanSecretsRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=50000)
+
+
+class SecurityScanSecretsResponse(BaseModel):
+    secrets_found: int
+    findings: list[dict]
+
+
+class AuditLogRequest(BaseModel):
+    action: str
+    resource: str = ""
+    details: dict | None = None
+
+
+class AuditLogResponse(BaseModel):
+    success: bool
+    entry_id: str
+
+
+class AuditLogsResponse(BaseModel):
+    logs: list[dict]
+    total: int
+
+
+class ApiKeyCreateRequest(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    scopes: str = "read"
+
+
+class ApiKeyCreateResponse(BaseModel):
+    id: str
+    name: str
+    key: str
+    scopes: str
+    created_at: datetime
+
+
+class ApiKeyRevokeRequest(BaseModel):
+    key_id: str
+

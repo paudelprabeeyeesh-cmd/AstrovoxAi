@@ -69,12 +69,17 @@ from .schemas import (AnalyticsEventCreate, AnalyticsAggregateOut, RAGEvalCreate
                       MemoryCreate, MemoryOut, MemoryUpdate, MessageOut,
                       ScheduleCreate, ScheduleOut, SolveRequest, SolveResponse,
                        TemplateCreate, TemplateOut, ToolCreate, ToolOut,
-                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord)
+                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord,
+                       SecurityScanPromptRequest, SecurityScanPromptResponse, SecurityScanSecretsRequest, SecurityScanSecretsResponse,
+                       AuditLogRequest, AuditLogResponse, AuditLogsResponse,
+                       ApiKeyCreateRequest, ApiKeyCreateResponse, ApiKeyRevokeRequest)
 from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .tools import create_tool, delete_tool, list_tools
 from .usage import record_usage
 from .workflows import create_workflow, delete_workflow, list_workflows
+from .security import PromptInjectionDetector, SecretScanner, InputSanitizer, EncryptionService
+from .api_keys import create_api_key, revoke_api_key, list_api_keys, APIKey
 from jose import JWTError, jwt
 from .config import settings
 
@@ -1567,3 +1572,79 @@ async def image_edit(data: ImageEditRequest, user_id: str = Depends(get_user_id)
     generator = ImageGenerator()
     url = generator.edit_image(data.image_url, data.prompt)
     return {"url": url}
+
+
+injection_detector = PromptInjectionDetector()
+secret_scanner = SecretScanner()
+input_sanitizer = InputSanitizer()
+encryption_service = EncryptionService()
+
+
+@app.post("/security/scan-prompt", response_model=SecurityScanPromptResponse)
+async def security_scan_prompt(data: SecurityScanPromptRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    injected = injection_detector.detect(data.prompt)
+    return SecurityScanPromptResponse(injected=injected, confidence=1.0 if injected else 0.0)
+
+
+@app.post("/security/scan-secrets", response_model=SecurityScanSecretsResponse)
+async def security_scan_secrets(data: SecurityScanSecretsRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    findings = secret_scanner.scan(data.text)
+    return SecurityScanSecretsResponse(secrets_found=len(findings), findings=findings)
+
+
+@app.post("/audit/log", response_model=AuditLogResponse)
+async def audit_log(data: AuditLogRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from .audit import log_action
+    log_action(user_id, data.action, data.resource, data.details)
+    return AuditLogResponse(success=True, entry_id=str(uuid.uuid4()))
+
+
+@app.get("/audit/logs", response_model=AuditLogsResponse)
+async def audit_logs(user_id: str = Depends(get_user_id), limit: int = 100):
+    _ensure_db()
+    from .audit import get_audit_log
+    logs = get_audit_log(user_id, limit)
+    return AuditLogsResponse(logs=logs, total=len(logs))
+
+
+@app.post("/api-keys", response_model=ApiKeyCreateResponse)
+async def create_key(data: ApiKeyCreateRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    key = create_api_key(user_id, data.name, data.scopes)
+    return ApiKeyCreateResponse(
+        id=key.id,
+        name=key.name,
+        key=key.key,
+        scopes=key.scopes,
+        created_at=key.created_at,
+    )
+
+
+@app.get("/api-keys")
+async def list_keys(user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    keys = list_api_keys(user_id)
+    return {
+        "keys": [
+            {
+                "id": k.id,
+                "name": k.name,
+                "scopes": k.scopes,
+                "last_used": k.last_used,
+                "created_at": k.created_at,
+            }
+            for k in keys
+        ]
+    }
+
+
+@app.delete("/api-keys/{key_id}")
+async def revoke_key(key_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    success = revoke_api_key(user_id, key_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="API key not found")
+    return {"success": True}

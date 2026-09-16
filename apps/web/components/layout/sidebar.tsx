@@ -113,6 +113,7 @@ export function Sidebar({ open, setOpen, collapsed, setCollapsed }: SidebarProps
             <NavItem href="/documents" icon={FileText} label="Documents" />
             <NavItem href="/knowledge" icon={Network} label="Knowledge" />
             <NavItem href="/tools" icon={Wrench} label="Tools" />
+            <NavItem href="/security" icon={Shield} label="Security" />
             <NavItem href="/admin" icon={Shield} label="Admin" />
           </div>
         )}
