@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_ama(user_id: str, title: str, description: str, scheduled_at: str) ->
     with get_db() as conn:
         conn.execute(
             "INSERT INTO amas (id, user_id, title, description, scheduled_at, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (ama_id, user_id, title, description, scheduled_at, datetime.utcnow().isoformat()),
+            (ama_id, user_id, title, description, scheduled_at, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": ama_id, "title": title}

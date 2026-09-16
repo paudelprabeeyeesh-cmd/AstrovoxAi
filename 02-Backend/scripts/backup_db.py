@@ -4,13 +4,13 @@ import logging
 import argparse
 import subprocess
 import glob
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 
 def rotate_backups(backup_dir: str, keep_days: int = 7) -> None:
-    cutoff = datetime.utcnow().timestamp() - (keep_days * 24 * 3600)
+    cutoff = datetime.now(timezone.utc).timestamp() - (keep_days * 24 * 3600)
     for f in glob.glob(os.path.join(backup_dir, "astrovox_backup_*.sql.gz")):
         if os.path.getmtime(f) < cutoff:
             os.remove(f)
@@ -25,7 +25,7 @@ def backup_postgres(dry_run: bool = False) -> str:
     backup_dir = os.getenv("BACKUP_DIR", "/tmp/backups")
     os.makedirs(backup_dir, exist_ok=True)
     
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     backup_file = os.path.join(backup_dir, f"astrovox_backup_{timestamp}.sql.gz")
     
     if dry_run:

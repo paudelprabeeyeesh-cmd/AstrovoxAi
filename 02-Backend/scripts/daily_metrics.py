@@ -1,10 +1,10 @@
 import csv
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from .database import get_db
 
 def append_daily_metrics():
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     yesterday = today - timedelta(days=1)
     with get_db() as conn:
         users = conn.execute("SELECT COUNT(*) as c FROM users WHERE date(created_at) <= ?", (today.isoformat(),)).fetchone()["c"]

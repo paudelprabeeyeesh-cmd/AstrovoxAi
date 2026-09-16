@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -17,7 +17,7 @@ def create_sla(
                 tier,
                 uptime_guarantee,
                 response_time_hours,
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()

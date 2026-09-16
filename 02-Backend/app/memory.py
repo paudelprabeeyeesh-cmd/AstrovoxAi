@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 from .schemas import MemoryCreate, MemoryOut, MemoryUpdate
@@ -91,6 +91,6 @@ def export_memories(user_id: str) -> dict:
     memories = list_memories(user_id)
     return {
         "user_id": user_id,
-        "exported_at": datetime.utcnow().isoformat(),
+        "exported_at": datetime.now(timezone.utc).isoformat(),
         "memories": [m.dict() for m in memories],
     }

@@ -1,5 +1,5 @@
 import smtplib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
 
 
@@ -14,7 +14,7 @@ def send_daily_digest(
 
 Here is your daily digest from AstrovoxAI.
 
-Yesterday ({datetime.utcnow().date() - timedelta(days=1)}):
+Yesterday ({datetime.now(timezone.utc).date() - timedelta(days=1)}):
 """
     for action in yesterday_actions[:5]:
         body += f"- {action}\n"

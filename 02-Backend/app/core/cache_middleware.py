@@ -18,36 +18,23 @@ def _cosine_similarity(a, b):
     return dot / (norm_a * norm_b)
 
 
-def _get_embedding(text):
+async def _get_embedding(text):
     if not settings.OPENAI_API_KEY:
         return None
     try:
-        from openai import OpenAI
-        client = OpenAI(api_key=settings.OPENAI_API_KEY)
-        response = client.embeddings.create(input=text, model="text-embedding-3-small")
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        response = await client.embeddings.create(input=text, model="text-embedding-3-small")
         return response.data[0].embedding
     except Exception as e:
         logger.warning(f"Embedding lookup failed: {e}")
         return None
 
 
-def _find_similar_cached_response(redis, embedding, threshold=0.95):
+async def _find_similar_cached_response(redis, embedding, threshold=0.95):
     if not redis or not embedding:
         return None
-    try:
-        for key in redis.scan_iter(match="cache_emb:*"):
-            data = redis.get(key)
-            if not data:
-                continue
-            try:
-                entry = json.loads(data)
-                cached_embedding = entry.get("embedding")
-                if cached_embedding and _cosine_similarity(embedding, cached_embedding) > threshold:
-                    return entry.get("body")
-            except Exception:
-                continue
-    except Exception as e:
-        logger.warning(f"Semantic cache scan failed: {e}")
+    # Semantic cache disabled temporarily
     return None
 
 
@@ -60,9 +47,32 @@ def _set_cache_headers(response, path: str):
         response.headers["Cache-Control"] = "max-age=3600"
 
 
+def _get_user_id(request):
+    user_id = getattr(request.state, "user_id", None)
+    if user_id:
+        return str(user_id)
+    auth = request.headers.get("authorization", "")
+    if auth.startswith("Bearer "):
+        token = auth.replace("Bearer ", "")
+        try:
+            from jose import jwt
+            from app.config import settings
+            payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+            if payload.get("type") == "access":
+                return str(payload.get("sub", "anonymous"))
+        except Exception:
+            pass
+    return "anonymous"
+
+
 class CacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
-        cache_key = hashlib.md5(f"{request.url.path}:{request.url.query}".encode()).hexdigest()
+        user_id = _get_user_id(request)
+        path = request.url.path
+        query = request.url.query
+        cache_version = getattr(settings, "CACHE_VERSION", "v1")
+        cache_key = f"{user_id}:{request.method}:{path}:{query}"
+        cache_key = f"cache:{cache_version}:{hashlib.md5(cache_key.encode()).hexdigest()}"
         if request.method != "GET":
             response = await call_next(request)
             return response
@@ -76,25 +86,12 @@ class CacheMiddleware(BaseHTTPMiddleware):
                     content=json.loads(cached),
                     headers={"X-Cache": "HIT"}
                 )
-                _set_cache_headers(response, request.url.path)
+                _set_cache_headers(response, path)
                 return response
             query_text = request.query_params.get("q") or request.query_params.get("query") or request.query_params.get("prompt")
             if not query_text:
                 query_text = str(request.url.query) if request.url.query else None
-            embedding = None
-            if query_text:
-                embedding = _get_embedding(query_text)
-                if embedding:
-                    similar_body = _find_similar_cached_response(redis, embedding)
-                    if similar_body:
-                        from fastapi.responses import JSONResponse
-                        response = JSONResponse(
-                            status_code=200,
-                            content=json.loads(similar_body),
-                            headers={"X-Cache": "HIT"}
-                        )
-                        _set_cache_headers(response, request.url.path)
-                        return response
+            # Semantic cache disabled temporarily
         response = await call_next(request)
         if response.status_code == 200 and redis:
             if hasattr(response, "body"):
@@ -102,19 +99,6 @@ class CacheMiddleware(BaseHTTPMiddleware):
                 if isinstance(body, bytes):
                     body = body.decode("utf-8")
                 redis.set(cache_key, body, ex=300)
-                query_text = request.query_params.get("q") or request.query_params.get("query") or request.query_params.get("prompt")
-                if not query_text:
-                    query_text = str(request.url.query) if request.url.query else None
-                if query_text:
-                    if not embedding:
-                        embedding = _get_embedding(query_text)
-                    if embedding:
-                        semantic_data = {
-                            "body": body,
-                            "embedding": embedding,
-                            "url": str(request.url)
-                        }
-                        redis.set(f"cache_emb:{cache_key}", json.dumps(semantic_data), ex=300)
         response.headers["X-Cache"] = "MISS"
-        _set_cache_headers(response, request.url.path)
+        _set_cache_headers(response, path)
         return response

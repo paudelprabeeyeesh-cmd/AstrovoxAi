@@ -1,6 +1,6 @@
 import hashlib
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 from .schemas import KnowledgeDocCreate, KnowledgeDocOut
@@ -16,7 +16,7 @@ def create_doc(user_id: str, data: KnowledgeDocCreate) -> KnowledgeDocOut:
         )
         conn.commit()
     return KnowledgeDocOut(
-        id=doc_id, title=data.title, content=data.content, created_at=datetime.utcnow()
+        id=doc_id, title=data.title, content=data.content, created_at=datetime.now(timezone.utc)
     )
 
 

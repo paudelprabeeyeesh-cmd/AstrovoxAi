@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_comment(post_id: str, user_id: str, content: str) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO comments (id, post_id, user_id, content, created_at) VALUES (?, ?, ?, ?, ?)",
-            (comment_id, post_id, user_id, content, datetime.utcnow().isoformat()),
+            (comment_id, post_id, user_id, content, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": comment_id, "post_id": post_id}

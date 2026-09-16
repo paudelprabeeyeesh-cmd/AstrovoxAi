@@ -57,15 +57,15 @@ class ModelTier:
 
 
 TIER_MODELS = [
-    ModelTier("mimo-v2-flash", "groq", "mimo-v2-flash", (0.0, 100.0), 0.0, 8192),
-    ModelTier("glm-4-9b", "openrouter", "THUDM/glm-4-9b", (100.0, 500.0), 0.0, 8192),
-    ModelTier("deepseek-v3.2", "groq", "deepseek-r1-distill-llama-70b", (100.0, 500.0), 0.0, 8192),
+    ModelTier("llama-3.3-70b-versatile", "groq", "llama-3.3-70b-versatile", (0.0, 100.0), 0.0, 8192),
+    ModelTier("mixtral-8x7b-32768", "groq", "mixtral-8x7b-32768", (0.0, 100.0), 0.0, 32768),
     ModelTier("gemini-2.5-flash", "gemini", "gemini-2.5-flash", (500.0, 2000.0), 0.0001, 8192),
-    ModelTier("qwen3-max", "mistral", "qwen3-max", (2000.0, 5000.0), 0.0002, 8192),
+    ModelTier("mistral-medium", "mistral", "mistral-medium", (1000.0, 3000.0), 0.0002, 8192),
+    ModelTier("mistral-large-latest", "mistral", "mistral-large-latest", (2000.0, 5000.0), 0.0003, 8192),
+    ModelTier("deepseek-chat", "openrouter", "deepseek/deepseek-chat", (2000.0, 5000.0), 0.0, 8192),
     ModelTier("claude-3.5-sonnet", "openrouter", "anthropic/claude-3.5-sonnet", (2000.0, 5000.0), 0.003, 4096),
     ModelTier("gpt-4o", "openrouter", "openai/gpt-4o", (2000.0, 5000.0), 0.005, 4096),
     ModelTier("o1-preview", "openrouter", "openai/o1-preview", (5000.0, 30000.0), 0.015, 4096),
-    ModelTier("llama-3.1-8b-instruct", "huggingface", "meta-llama/Llama-3.1-8B-Instruct", (5000.0, 30000.0), 0.0, 4096),
 ]
 
 
@@ -116,9 +116,15 @@ class IntelligentRouter:
         for tier_num in range(preferred_tier, 7):
             for model in candidates:
                 low, high = model.latency_ms
-                if low <= latency_target <= high if latency_target else (tier_num - 1) * 5000 <= model.latency_ms[0]:
-                    if self._under_budget(model):
-                        return model
+                if latency_target is not None:
+                    if low <= latency_target <= high:
+                        if self._under_budget(model):
+                            return model
+                else:
+                    max_allowed = tier_num * 2000
+                    if model.latency_ms[1] <= max_allowed:
+                        if self._under_budget(model):
+                            return model
 
         for model in candidates:
             if model.cost_per_1k_tokens == 0.0 and self._under_budget(model):
@@ -135,17 +141,16 @@ class IntelligentRouter:
         projected = self.daily_spend + (model.cost_per_1k_tokens * 0.01)
         return projected <= self.daily_budget
 
-    def record(self, model_name: str, latency_ms: float, error: bool = False, cost: float = 0.0):
+    def record(self, model_name: str, tokens: int = 0, latency_ms: float = 0.0, cached: bool = False):
         model = self.tiers.get(model_name)
         if not model:
             return
         with self._lock:
             model.record_latency(latency_ms)
-            if error:
-                model.record_error()
-            else:
-                model.record_success()
-            self.daily_spend += cost
+            model.record_success()
+            if not cached:
+                cost = model.cost_per_1k_tokens * tokens / 1000.0
+                self.daily_spend += cost
 
     def get_status(self) -> dict[str, Any]:
         self._reset_daily_if_needed()

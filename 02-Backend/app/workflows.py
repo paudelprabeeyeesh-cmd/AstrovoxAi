@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 from .schemas import WorkflowCreate, WorkflowOut
@@ -14,7 +14,7 @@ def create_workflow(user_id: str, data: WorkflowCreate) -> WorkflowOut:
         )
         conn.commit()
     return WorkflowOut(
-        id=wf_id, name=data.name, steps=data.steps, created_at=datetime.utcnow()
+        id=wf_id, name=data.name, steps=data.steps, created_at=datetime.now(timezone.utc)
     )
 
 

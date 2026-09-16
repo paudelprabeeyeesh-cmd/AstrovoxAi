@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -11,7 +11,7 @@ def create_enterprise_account(
     with get_db() as conn:
         conn.execute(
             "INSERT INTO enterprise_accounts (id, user_id, company, contact_email, plan, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (account_id, user_id, company, contact_email, plan, datetime.utcnow().isoformat()),
+            (account_id, user_id, company, contact_email, plan, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": account_id, "company": company, "plan": plan}

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .core.encryption import encrypt, decrypt
 from .database import get_db
@@ -11,7 +11,7 @@ def create_sso_connection(user_id: str, provider: str, config: str) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO sso_connections (id, user_id, provider, config, created_at) VALUES (?, ?, ?, ?, ?)",
-            (conn_id, user_id, provider, encrypted_config, datetime.utcnow().isoformat()),
+            (conn_id, user_id, provider, encrypted_config, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": conn_id, "provider": provider}

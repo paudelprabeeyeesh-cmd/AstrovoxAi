@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_audit_log(user_id: str, action: str, metadata: str = None) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO enterprise_audit_logs (id, user_id, action, metadata, created_at) VALUES (?, ?, ?, ?, ?)",
-            (log_id, user_id, action, metadata, datetime.utcnow().isoformat()),
+            (log_id, user_id, action, metadata, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": log_id, "action": action}

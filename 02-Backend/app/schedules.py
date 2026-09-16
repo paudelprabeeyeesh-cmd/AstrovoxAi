@@ -1,6 +1,6 @@
 import smtplib
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.text import MIMEText
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -41,7 +41,7 @@ def run_schedule(schedule_id: str):
         send_email(email, "AstrovoxAI Daily", f"Result for {user_id}:\n\n{prompt}")
         conn.execute(
             "UPDATE schedules SET last_run = ? WHERE id = ?",
-            (datetime.utcnow().isoformat(), schedule_id),
+            (datetime.now(timezone.utc).isoformat(), schedule_id),
         )
         conn.commit()
 

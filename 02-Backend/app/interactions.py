@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -26,7 +26,7 @@ def create_interaction(
                 tokens,
                 cost,
                 latency_ms,
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()

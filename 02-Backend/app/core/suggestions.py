@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class SuggestionEngine:
 
     def generate(self, user_id: str, recent_topics: list[str], hour: int | None = None) -> list[str]:
         if hour is None:
-            hour = datetime.utcnow().hour
+            hour = datetime.now(timezone.utc).hour
         suggestions = []
         for topic in recent_topics[:3]:
             import random

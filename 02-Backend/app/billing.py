@@ -1,15 +1,21 @@
 import os
+import logging
 
 import stripe
 
 from .database import get_db
 
+logger = logging.getLogger(__name__)
+
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
 
-STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID", "price_pro_123")
-STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID", "price_team_123")
-STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID", "price_embed_123")
-STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_premium_action_29")
+STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
+STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID")
+STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID")
+STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID")
+
+if not all([STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, STRIPE_PREMIUM_ACTION_PRICE_ID]):
+    raise RuntimeError("STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, and STRIPE_PREMIUM_ACTION_PRICE_ID must be set")
 
 MAX_CONSECUTIVE_FAILURES = 3
 
@@ -61,7 +67,7 @@ def _downgrade_to_free(user_id: str, customer_id: str):
 
 
 def _log_notification(user_id: str, message: str):
-    print(f"[NOTIFICATION] user={user_id} {message}")
+    logger.info(f"[NOTIFICATION] user={user_id} {message}")
 
 
 def create_checkout_session(user_id: str, email: str, price_id: str = None) -> str:
@@ -143,6 +149,10 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
                     "UPDATE subscriptions SET plan = 'pro', status = 'active' WHERE user_id = ?",
                     (user_id,),
                 )
+                conn.execute(
+                    "UPDATE users SET plan = 'pro' WHERE id = ?",
+                    (user_id,),
+                )
                 conn.commit()
 
     elif event_type == "customer.subscription.deleted":
@@ -154,6 +164,10 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
             if user:
                 conn.execute(
                     "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
+                    (user["id"],),
+                )
+                conn.execute(
+                    "UPDATE users SET plan = 'free' WHERE id = ?",
                     (user["id"],),
                 )
                 conn.commit()
@@ -177,7 +191,7 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
                         "stripe_subscription",
                         0,
                         None,
-                        __import__('datetime').datetime.utcnow().isoformat(),
+                        __import__('datetime').datetime.now(timezone.utc).isoformat(),
                     ),
                 )
                 conn.commit()

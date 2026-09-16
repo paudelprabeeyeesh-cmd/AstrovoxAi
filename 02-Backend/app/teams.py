@@ -1,6 +1,6 @@
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from .database import get_db
 
 def create_team(owner_id: str, name: str) -> str:
@@ -20,7 +20,7 @@ def invite_member(team_id: str, email: str, inviter_id: str) -> dict:
     invite_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute("INSERT INTO team_invitations (id, team_id, email, inviter_id, created_at) VALUES (?, ?, ?, ?, ?)",
-            (invite_id, team_id, email, inviter_id, datetime.utcnow().isoformat()))
+            (invite_id, team_id, email, inviter_id, datetime.now(timezone.utc).isoformat()))
         conn.commit()
     return {"invite_id": invite_id, "team_id": team_id, "email": email}
 

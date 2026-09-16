@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_custom_model(user_id: str, name: str, config: str) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO custom_models (id, user_id, name, config, created_at) VALUES (?, ?, ?, ?, ?)",
-            (model_id, user_id, name, config, datetime.utcnow().isoformat()),
+            (model_id, user_id, name, config, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": model_id, "name": name}

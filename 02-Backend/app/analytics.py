@@ -1,6 +1,6 @@
 import uuid
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .database import get_db
 
@@ -11,7 +11,7 @@ def record_event(event_type: str, properties: dict):
     with get_db() as conn:
         conn.execute(
             "INSERT INTO analytics_events (id, event_type, properties, created_at) VALUES (?, ?, ?, ?)",
-            (event_id, event_type, payload, datetime.utcnow().isoformat()),
+            (event_id, event_type, payload, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return event_id
@@ -26,14 +26,14 @@ def track_event(event_name: str, properties: dict, user_id: str = None):
     with get_db() as conn:
         conn.execute(
             "INSERT INTO analytics_events (id, event_type, properties, created_at) VALUES (?, ?, ?, ?)",
-            (event_id, event_name, payload, datetime.utcnow().isoformat()),
+            (event_id, event_name, payload, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return event_id
 
 
 def get_aggregate_metrics(days: int = 7) -> dict:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with get_db() as conn:
         rows = conn.execute(
             """
@@ -47,7 +47,7 @@ def get_aggregate_metrics(days: int = 7) -> dict:
         ).fetchall()
         return {
             "window_days": days,
-            "generated_at": datetime.utcnow().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "events": [
                 {
                     "event_type": r["event_type"],
@@ -61,7 +61,7 @@ def get_aggregate_metrics(days: int = 7) -> dict:
 
 
 def get_top_models(days: int = 7, limit: int = 10) -> list[dict]:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with get_db() as conn:
         rows = conn.execute(
             """
@@ -78,7 +78,7 @@ def get_top_models(days: int = 7, limit: int = 10) -> list[dict]:
 
 
 def get_cost_trend(days: int = 7) -> list[dict]:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with get_db() as conn:
         rows = conn.execute(
             """

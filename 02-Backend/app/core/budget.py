@@ -33,9 +33,9 @@ class CostCircuitBreaker:
         self.global_cost_today += cost
 
     def _get_today(self) -> str:
-        from datetime import datetime
+        from datetime import datetime, timezone
 
-        return datetime.utcnow().date().isoformat()
+        return datetime.now(timezone.utc).date().isoformat()
 
 
 cost_circuit_breaker = CostCircuitBreaker()

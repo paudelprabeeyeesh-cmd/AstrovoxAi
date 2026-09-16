@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -60,7 +60,7 @@ def record_result(test_id: str, variant: str, metric: str, value: float):
                 variant,
                 metric,
                 value,
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()

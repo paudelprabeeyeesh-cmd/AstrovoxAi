@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 import asyncio
 import httpx
 
-from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket
+from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.security import HTTPBearer
@@ -35,7 +35,6 @@ from .billing import (cancel_subscription, create_checkout_session,
 # REMOVED
 # REMOVED
 from .citations import create_citation, get_sources
-from .comments import create_comment
 from .conversations import (add_message, create_conversation, get_messages,
                             list_conversations, search_conversations)
 from .core.budget import cost_circuit_breaker
@@ -968,25 +967,6 @@ async def delete_integration_endpoint(
     return {"ok": True}
 
 
-@app.post("/removed")
-async def create_post_endpoint(
-    title: str, content: str, user_id: str = Depends(require_verified_email)
-):
-    return create_post(user_id, title, content)
-
-
-@app.get("/posts")
-async def list_posts_endpoint(user_id: str = Depends(get_user_id)):
-    return list_posts(user_id)
-
-
-@app.post("/posts/{post_id}/comments")
-async def create_comment_endpoint(
-    post_id: str, content: str, user_id: str = Depends(require_verified_email)
-):
-    return create_comment(post_id, user_id, content)
-
-
 async def _authenticate_ws(websocket: WebSocket) -> str:
     token = websocket.query_params.get('token')
     if not token:
@@ -1019,10 +999,39 @@ async def _authenticate_ws(websocket: WebSocket) -> str:
 
 # REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED@app.websocket("/ws/chat/{session_id}")
 async def ws_chat(websocket: WebSocket, session_id: str):
-    await websocket.accept()
-    user_id = await _authenticate_ws(websocket)
-    if user_id is None:
-        return
+    token = websocket.query_params.get("token")
+    user_id = None
+    if token:
+        try:
+            payload = jwt.decode(
+                token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+            )
+            if payload.get("type") == "access":
+                user_id = payload.get("sub")
+        except JWTError:
+            pass
+    if not user_id:
+        await websocket.accept()
+        try:
+            first_message = await websocket.receive_text()
+            try:
+                data = json.loads(first_message)
+                token = data.get("token")
+                if token:
+                    payload = jwt.decode(
+                        token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+                    )
+                    if payload.get("type") == "access":
+                        user_id = payload.get("sub")
+            except Exception:
+                pass
+        except Exception:
+            pass
+        if not user_id:
+            await websocket.close(code=4001, reason="Unauthorized")
+            return
+    else:
+        await websocket.accept()
     try:
         while True:
             data = await websocket.receive_text()
@@ -1061,14 +1070,34 @@ async def ws_chat(websocket: WebSocket, session_id: str):
                     ],
                     "stream": True,
                 }
+                full_text = ""
+                start_time = time.time()
                 async with client.stream("POST", f"{provider_url}/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"}, timeout=30) as response:
                     async for chunk in response.aiter_text():
-                        if chunk.strip():
-                            await websocket.send_text(chunk)
+                        for line in chunk.splitlines():
+                            line = line.strip()
+                            if not line.startswith("data:"):
+                                continue
+                            data_str = line[len("data:"):].strip()
+                            if data_str == "[DONE]":
+                                await websocket.send_json({"type": "done"})
+                                continue
+                            try:
+                                parsed = json.loads(data_str)
+                                delta = parsed.get("choices", [{}])[0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    full_text += content
+                                    await websocket.send_json({"type": "token", "content": content})
+                            except json.JSONDecodeError:
+                                pass
+                latency = time.time() - start_time
+                tokens = len(full_text.split())
+                router.record(model.model_id, tokens=tokens, latency_ms=latency, cached=False)
+    except WebSocketDisconnect:
+        pass
     except Exception as e:
         logger.warning(f"WebSocket chat error: {e}")
-    finally:
-        await websocket.close()
 
 
 @app.websocket("/ws/voice/{session_id}")
@@ -1097,18 +1126,40 @@ async def ws_voice(websocket: WebSocket, session_id: str):
                         key = os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
                         base = "https://api.groq.com/openai/v1"
                         payload = {"model": model.model_id, "messages": [{"role": "user", "content": transcript}], "stream": True}
+                        full_text = ""
+                        start_time = time.time()
                         async with client.stream("POST", f"{base}/chat/completions", json=payload, headers={"Authorization": f"Bearer {key}"}, timeout=30) as response:
                             async for chunk in response.aiter_text():
-                                if chunk.strip():
-                                    await websocket.send_text(chunk)
+                                for line in chunk.splitlines():
+                                    line = line.strip()
+                                    if not line.startswith("data:"):
+                                        continue
+                                    data_str = line[len("data:"):].strip()
+                                    if data_str == "[DONE]":
+                                        await websocket.send_json({"type": "done"})
+                                        continue
+                                    try:
+                                        parsed = json.loads(data_str)
+                                        delta = parsed.get("choices", [{}])[0].get("delta", {})
+                                        content = delta.get("content", "")
+                                        if content:
+                                            full_text += content
+                                            await websocket.send_json({"type": "token", "content": content})
+                                    except json.JSONDecodeError:
+                                        pass
+                        latency = time.time() - start_time
+                        tokens = len(full_text.split())
+                        router.record(model.model_id, tokens=tokens, latency_ms=latency, cached=False)
                 else:
                     audio_buffer.extend(text.encode("utf-8"))
             elif "bytes" in message:
                 audio_buffer.extend(message["bytes"])
+    except WebSocketDisconnect:
+        pass
     except Exception as e:
         logger.warning(f"WebSocket voice error: {e}")
-    finally:
-        await websocket.close()
+
+
 from .core.router_v2 import get_router
 from .core.suggestions import SuggestionEngine
 

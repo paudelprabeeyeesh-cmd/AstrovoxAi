@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_post(user_id: str, title: str, content: str, author: str = "founder")
     with get_db() as conn:
         conn.execute(
             "INSERT INTO posts (id, user_id, title, content, author, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (post_id, user_id, title, content, author, datetime.utcnow().isoformat()),
+            (post_id, user_id, title, content, author, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": post_id, "title": title}

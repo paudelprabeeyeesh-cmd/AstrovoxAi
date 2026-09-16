@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -52,14 +52,14 @@ class ContextManager:
         return prompt, context
 
     def prune_memories(self, memories: list[Any], query: str = "") -> list[Any]:
-        cutoff = datetime.utcnow() - timedelta(days=self.memory_ttl_days)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=self.memory_ttl_days)
         recent = [m for m in memories if getattr(m, "created_at", None) and m.created_at >= cutoff]
         scored = []
         query_terms = set(query.lower().split())
         for m in recent:
             text = f"{m.key} {m.value}".lower()
             overlap = len(query_terms & set(text.split()))
-            age_days = (datetime.utcnow() - m.created_at).days if m.created_at else 0
+            age_days = (datetime.now(timezone.utc) - m.created_at).days if m.created_at else 0
             score = overlap * 10 - age_days * 0.1
             scored.append((score, m))
         scored.sort(key=lambda x: x[0], reverse=True)

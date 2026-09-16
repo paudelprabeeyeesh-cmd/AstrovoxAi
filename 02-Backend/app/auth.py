@@ -1,7 +1,7 @@
 import os
 import hashlib
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -27,7 +27,7 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def create_access_token(user_id: str, email: str) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": user_id, "email": email, "exp": expire, "type": "access"}
     return jwt.encode(
         payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
@@ -35,7 +35,7 @@ def create_access_token(user_id: str, email: str) -> str:
 
 
 def create_refresh_token(user_id: str) -> str:
-    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {"sub": user_id, "exp": expire, "type": "refresh"}
     token = jwt.encode(
         payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
@@ -68,11 +68,27 @@ def register_user(email: str, password: str) -> dict:
 
 
 def login_user(email: str, password: str) -> dict:
+    from .cache import _get_redis
+    r = _get_redis()
+    if r:
+        key = f"login_attempts:{email}"
+        attempts = r.get(key)
+        if attempts and int(attempts) >= 5:
+            ttl = r.ttl(key)
+            if ttl is None or ttl < 0:
+                r.setex(key, 900, "5")
+                ttl = 900
+            raise HTTPException(status_code=429, detail=f"Too many failed login attempts. Try again in {ttl} seconds.")
+
     with get_db() as conn:
         row = conn.execute(
             "SELECT id, email, password_hash, email_verified FROM users WHERE email = ?", (email,)
         ).fetchone()
         if not row or not verify_password(password, row["password_hash"]):
+            if r:
+                key = f"login_attempts:{email}"
+                r.incr(key)
+                r.expire(key, 900)
             raise HTTPException(status_code=401, detail="Invalid credentials")
         try:
             email_verified = row["email_verified"]
@@ -80,6 +96,10 @@ def login_user(email: str, password: str) -> dict:
             email_verified = 1
         if email_verified == 0:
             raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox.")
+
+    if r:
+        r.delete(f"login_attempts:{email}")
+
     access_token = create_access_token(row["id"], row["email"])
     refresh_token = create_refresh_token(row["id"])
     return {
@@ -104,7 +124,7 @@ def refresh_access_token(refresh_token: str) -> dict:
     with get_db() as conn:
         row = conn.execute(
             "SELECT user_id FROM refresh_tokens WHERE token_hash = ? AND expires_at > ?",
-            (token_hash, datetime.utcnow().isoformat()),
+            (token_hash, datetime.now(timezone.utc).isoformat()),
         ).fetchone()
         if not row:
             raise HTTPException(
@@ -152,12 +172,12 @@ def require_admin(user_id: str = Depends(get_current_user)) -> str:
 
 import smtplib
 from email.mime.text import MIMEText
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 VERIFICATION_TOKEN_EXPIRE_HOURS = 24
 
 def create_verification_token(user_id: str, email: str) -> str:
-    expire = datetime.utcnow() + timedelta(hours=VERIFICATION_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(timezone.utc) + timedelta(hours=VERIFICATION_TOKEN_EXPIRE_HOURS)
     payload = {"sub": user_id, "email": email, "exp": expire, "type": "verification"}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
@@ -186,7 +206,7 @@ def verify_email_token(token: str) -> dict:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
 def create_password_reset_token(user_id: str, email: str) -> str:
-    expire = datetime.utcnow() + timedelta(hours=1)
+    expire = datetime.now(timezone.utc) + timedelta(hours=1)
     payload = {"sub": user_id, "email": email, "exp": expire, "type": "password_reset"}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 

@@ -1,6 +1,6 @@
 import uuid
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .database import get_db
 
@@ -28,7 +28,7 @@ def create_evaluation(
                 recall_at_5,
                 faithfulness_score,
                 json.dumps(metadata or {}),
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()
@@ -37,7 +37,7 @@ def create_evaluation(
         "query": query,
         "recall_at_5": recall_at_5,
         "faithfulness_score": faithfulness_score,
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -64,7 +64,7 @@ def compute_faithfulness(answer: str, contexts: list[str]) -> float:
 
 
 def get_aggregate_metrics(days: int = 7) -> dict:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with get_db() as conn:
         row = conn.execute(
             """

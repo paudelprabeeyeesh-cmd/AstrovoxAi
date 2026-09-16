@@ -29,7 +29,7 @@ def label_interaction(interaction_id: str, label: str, notes: str = None):
     with get_db() as conn:
         conn.execute(
             "INSERT INTO interaction_labels (id, interaction_id, label, notes, labeled_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (label_id, interaction_id, label, notes, "cli", __import__('datetime').datetime.utcnow().isoformat())
+            (label_id, interaction_id, label, notes, "cli", __import__('datetime').datetime.now(timezone.utc).isoformat())
         )
         conn.commit()
     print(f"Labeled {interaction_id} as '{label}'")

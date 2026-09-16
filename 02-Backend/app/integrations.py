@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .core.encryption import decrypt, encrypt
 from .database import get_db
@@ -16,7 +16,7 @@ def create_integration(user_id: str, type_: str, config: str) -> dict:
                 user_id,
                 type_,
                 encrypted_config,
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()

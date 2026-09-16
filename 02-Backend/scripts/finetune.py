@@ -12,12 +12,12 @@ import urllib.error
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import get_db
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def get_high_quality_interactions(min_rating=4, days=7, limit=5000):
     """Pull high-rated interactions from the last N days."""
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with get_db() as conn:
         rows = conn.execute("""
             SELECT prompt, response, model, metadata
@@ -108,7 +108,7 @@ def main():
 
     print(f"Found {len(interactions)} high-quality interactions")
 
-    date_str = datetime.utcnow().strftime("%Y%m%d")
+    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
     output_path = f"/tmp/finetune_{date_str}.jsonl"
     export_jsonl(interactions, output_path)
 

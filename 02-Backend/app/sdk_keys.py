@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -10,7 +10,7 @@ def create_sdk_key(user_id: str, name: str) -> dict:
     key_hash = __import__('hashlib').sha256(key.encode()).hexdigest()
     with get_db() as conn:
         conn.execute("INSERT INTO sdk_keys (id, user_id, name, key_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-                     (str(uuid.uuid4()), user_id, name, key_hash, datetime.utcnow().isoformat()))
+                     (str(uuid.uuid4()), user_id, name, key_hash, datetime.now(timezone.utc).isoformat()))
         conn.commit()
     return {"key": key, "name": name}
 

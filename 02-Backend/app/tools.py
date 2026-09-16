@@ -1,7 +1,7 @@
 import base64
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .core.encryption import decrypt, encrypt
 from .database import get_db
@@ -26,7 +26,7 @@ def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
         )
         conn.commit()
     return ToolOut(
-        id=tool_id, type=data.type, config=config, created_at=datetime.utcnow()
+        id=tool_id, type=data.type, config=config, created_at=datetime.now(timezone.utc)
     )
 
 
@@ -131,8 +131,8 @@ def calculate(expression: str) -> str:
 
 
 def get_current_time() -> str:
-    from datetime import datetime
-    return datetime.utcnow().isoformat()
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()
 
 
 def get_weather(location: str) -> str:

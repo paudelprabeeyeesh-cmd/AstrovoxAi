@@ -32,8 +32,6 @@ def set_plan(user_id: str, plan: str, admin: str = Depends(require_admin)):
 
 @router.delete("/users/{user_id}")  # remove a user + all their data
 def delete_user(user_id: str, admin: str = Depends(require_admin)):
-    if user_id in ADMIN_USER_IDS:
-        raise HTTPException(status_code=400, detail="cannot delete an admin")
     with get_db() as conn:
         for table in (
             "users",

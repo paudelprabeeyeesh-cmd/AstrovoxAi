@@ -1,13 +1,13 @@
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from .database import get_db
 
 def configure_sso(user_id: str, provider: str, config: str) -> dict:
     conn_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute("INSERT INTO sso_connections (id, user_id, provider, config, created_at) VALUES (?, ?, ?, ?, ?)",
-            (conn_id, user_id, provider, config, datetime.utcnow().isoformat()))
+            (conn_id, user_id, provider, config, datetime.now(timezone.utc).isoformat()))
         conn.commit()
     return {"id": conn_id, "provider": provider}
 
@@ -20,7 +20,7 @@ def log_audit_action(user_id: str, action: str, metadata: str = None) -> dict:
     log_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute("INSERT INTO enterprise_audit_logs (id, user_id, action, metadata, created_at) VALUES (?, ?, ?, ?, ?)",
-            (log_id, user_id, action, metadata, datetime.utcnow().isoformat()))
+            (log_id, user_id, action, metadata, datetime.now(timezone.utc).isoformat()))
         conn.commit()
     return {"id": log_id, "action": action}
 
@@ -28,6 +28,6 @@ def create_sla(account_id: str, tier: str, uptime_guarantee: float, response_tim
     sla_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute("INSERT INTO slas (id, account_id, tier, uptime_guarantee, response_time_hours, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (sla_id, account_id, tier, uptime_guarantee, response_time_hours, datetime.utcnow().isoformat()))
+            (sla_id, account_id, tier, uptime_guarantee, response_time_hours, datetime.now(timezone.utc).isoformat()))
         conn.commit()
     return {"id": sla_id, "tier": tier}

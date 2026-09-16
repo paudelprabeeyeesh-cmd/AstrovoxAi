@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 from .schemas import FeedbackCreate, FeedbackOut
@@ -18,7 +18,7 @@ def create_feedback(user_id: str, data: FeedbackCreate) -> FeedbackOut:
         request_id=data.request_id,
         rating=data.rating,
         comment=data.comment,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
 

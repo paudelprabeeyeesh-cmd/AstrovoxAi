@@ -1,6 +1,6 @@
 import logging
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -12,7 +12,7 @@ class ProductionAuditor:
     
     def audit_health(self) -> dict:
         return {
-            "audit_time": datetime.utcnow().isoformat(),
+            "audit_time": datetime.now(timezone.utc).isoformat(),
             "items": [],
         }
     

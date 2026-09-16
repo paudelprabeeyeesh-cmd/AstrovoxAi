@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_ma_target(user_id: str, name: str, description: str, valuation: float
     with get_db() as conn:
         conn.execute(
             "INSERT INTO ma_targets (id, user_id, name, description, valuation, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (target_id, user_id, name, description, valuation, datetime.utcnow().isoformat()),
+            (target_id, user_id, name, description, valuation, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": target_id, "name": name, "valuation": valuation}

@@ -1,6 +1,6 @@
 import uuid
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -21,7 +21,7 @@ def create_experiment(name: str, hypothesis: str, variants: list[str], traffic_s
                 json.dumps(traffic_split),
                 owner_id,
                 "active",
-                datetime.utcnow().isoformat(),
+                datetime.now(timezone.utc).isoformat(),
             ),
         )
         conn.commit()
@@ -30,7 +30,7 @@ def create_experiment(name: str, hypothesis: str, variants: list[str], traffic_s
         "name": name,
         "variants": variants,
         "status": "active",
-        "created_at": datetime.utcnow().isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -75,7 +75,7 @@ def record_win(experiment_id: str, variant: str, metric: str, value: float, user
             INSERT INTO experiment_results (id, experiment_id, variant, metric, value, user_id, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (win_id, experiment_id, variant, metric, value, user_id, datetime.utcnow().isoformat()),
+            (win_id, experiment_id, variant, metric, value, user_id, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
 

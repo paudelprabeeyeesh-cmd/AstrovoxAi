@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 from .schemas import ConversationOut, ConversationSearchOut, MessageOut
@@ -13,7 +13,7 @@ def create_conversation(user_id: str, title: str = None) -> ConversationOut:
             (conv_id, user_id, title),
         )
         conn.commit()
-    return ConversationOut(id=conv_id, title=title, created_at=datetime.utcnow())
+    return ConversationOut(id=conv_id, title=title, created_at=datetime.now(timezone.utc))
 
 
 def get_conversation(conv_id: str, user_id: str) -> ConversationOut:
@@ -89,7 +89,7 @@ def add_message(conversation_id: str, role: str, content: str, user_id: str) -> 
         )
         conn.commit()
     return MessageOut(
-        id=msg_id, role=role, content=content, created_at=datetime.utcnow()
+        id=msg_id, role=role, content=content, created_at=datetime.now(timezone.utc)
     )
 
 

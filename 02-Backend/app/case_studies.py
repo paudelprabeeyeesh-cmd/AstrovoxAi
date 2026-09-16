@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_case_study(title: str, content: str, user_id: str) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO case_studies (id, title, content, user_id, created_at) VALUES (?, ?, ?, ?, ?)",
-            (case_id, title, content, user_id, datetime.utcnow().isoformat()),
+            (case_id, title, content, user_id, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": case_id, "title": title}

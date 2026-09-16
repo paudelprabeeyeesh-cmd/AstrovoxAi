@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -10,7 +10,7 @@ def create_affiliate(user_id: str, name: str, email: str) -> dict:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO affiliates (id, user_id, name, email, code, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (affiliate_id, user_id, name, email, code, datetime.utcnow().isoformat()),
+            (affiliate_id, user_id, name, email, code, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": affiliate_id, "code": code}

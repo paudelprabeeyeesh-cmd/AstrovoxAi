@@ -1,11 +1,11 @@
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from .database import DB_PATH
 
 
 def get_usage(user_id: str = None, days: int = 30) -> dict:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         where = "WHERE created_at >= ?"
@@ -25,7 +25,7 @@ def get_usage(user_id: str = None, days: int = 30) -> dict:
 
 
 def get_daily_cost(days: int = 7) -> list[dict]:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         rows = conn.execute(
@@ -49,7 +49,7 @@ def get_daily_cost(days: int = 7) -> list[dict]:
 
 
 def get_revenue(days: int = 30) -> dict:
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         row = conn.execute(
@@ -68,7 +68,7 @@ def get_revenue(days: int = 30) -> dict:
 
 def get_second_use_metric(days: int = 7) -> dict:
     """Calculate % of users who called /solve twice within 7 days."""
-    cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         

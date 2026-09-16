@@ -1,6 +1,6 @@
 import uuid
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from .database import get_db
 
@@ -21,15 +21,15 @@ def create_api_key(user_id: str, name: str, scopes: str = "read") -> APIKey:
     with get_db() as conn:
         conn.execute(
             "INSERT INTO api_keys (id, user_id, key_hash, name, scopes, last_used) VALUES (?, ?, ?, ?, ?, ?)",
-            (str(uuid.uuid4()), user_id, key_hash, name, scopes, datetime.utcnow().isoformat()),
+            (str(uuid.uuid4()), user_id, key_hash, name, scopes, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return APIKey(
         id=key,
         name=name,
         scopes=scopes,
-        last_used=datetime.utcnow().isoformat(),
-        created_at=datetime.utcnow().isoformat(),
+        last_used=datetime.now(timezone.utc).isoformat(),
+        created_at=datetime.now(timezone.utc).isoformat(),
         key=key,
     )
 
@@ -44,7 +44,7 @@ def validate_api_key(key: str) -> str:
         row = conn.execute("SELECT user_id FROM api_keys WHERE key_hash = ?", (key_hash,)).fetchone()
         if not row:
             raise ValueError("Invalid API key")
-        conn.execute("UPDATE api_keys SET last_used = ? WHERE key_hash = ?", (datetime.utcnow().isoformat(), key_hash))
+        conn.execute("UPDATE api_keys SET last_used = ? WHERE key_hash = ?", (datetime.now(timezone.utc).isoformat(), key_hash))
         conn.commit()
         return row["user_id"]
 

@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from .database import get_db
 
@@ -9,7 +9,7 @@ def create_vertical(user_id: str, name: str, description: str, config: str) -> d
     with get_db() as conn:
         conn.execute(
             "INSERT INTO verticals (id, user_id, name, description, config, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (vertical_id, user_id, name, description, config, datetime.utcnow().isoformat()),
+            (vertical_id, user_id, name, description, config, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": vertical_id, "name": name}
