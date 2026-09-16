@@ -281,5 +281,24 @@ class ToolExecuteRequest(BaseModel):
     max_iterations: int = Field(5, ge=1, le=10)
 
 
+class SearchResultOut(BaseModel):
+    id: str
+    content: str
+    score: float
+    metadata: dict[str, Any] | None = None
+    source: str
+
+
+class MemoryClassifyRequest(BaseModel):
+    memory_id: str
+    categories: list[str] | None = None
+
+
+class MemoryClassifyResponse(BaseModel):
+    memory_id: str
+    category: str
+    confidence: float
+
+
 class ToolExecuteResponse(BaseModel):
     result: str

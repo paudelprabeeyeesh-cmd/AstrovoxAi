@@ -29,6 +29,7 @@ from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
                    register_user, require_admin, require_verified_email)
+from .rbac import get_user_role, ROLE_PERMISSIONS, Role
 from .billing import (cancel_subscription, create_checkout_session,
                       create_premium_checkout_session, handle_stripe_webhook)
 # REMOVED
@@ -657,6 +658,19 @@ async def export_memories_endpoint(user_id: str = Depends(get_user_id)):
     return export_memories(user_id)
 
 
+@app.post("/memory/classify", response_model=MemoryClassifyResponse)
+async def classify_memory_endpoint(data: MemoryClassifyRequest, user_id: str = Depends(require_verified_email)):
+    from app.memory_service import MemoryService
+    service = MemoryService()
+    with get_db() as conn:
+        row = conn.execute("SELECT value FROM memories WHERE id = ? AND user_id = ?", (data.memory_id, user_id)).fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Memory not found")
+        value = row["value"]
+    memory_type, score = service.classify_memory(value)
+    return MemoryClassifyResponse(memory_id=data.memory_id, category=memory_type.value, confidence=score)
+
+
 @app.post("/conversations", response_model=ConversationOut)
 async def create_conversation_endpoint(
     title: str = None, user_id: str = Depends(require_verified_email)
@@ -1191,12 +1205,15 @@ async def rag_metrics(days: int = 7, user_id: str = Depends(require_admin)):
 
 from fastapi import UploadFile, File
 from app.rag_engine import RAGEngine
+from app.search import SearchEngine
 from app.schemas import (
     DocumentOut, DocumentChunkOut, RAGSearchResult,
-    RAGIngestResponse, RAGIngestRequest, RAGGithubRequest
+    RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
+    SearchResultOut, MemoryClassifyRequest, MemoryClassifyResponse
 )
 
 rag_engine = RAGEngine()
+search_engine = SearchEngine()
 
 @app.post("/rag/ingest", response_model=RAGIngestResponse)
 async def rag_ingest(file: UploadFile = File(...), user_id: str = Depends(require_verified_email)):
@@ -1263,6 +1280,24 @@ async def rag_delete_document(doc_id: str, user_id: str = Depends(require_verifi
     return {"ok": True}
 
 
+@app.get("/search/semantic", response_model=list[SearchResultOut])
+async def search_semantic_endpoint(user_id: str = Depends(get_user_id), q: str = "", top_k: int = 10):
+    _ensure_db()
+    return search_engine.semantic_search(q, user_id, top_k)
+
+
+@app.get("/search/keyword", response_model=list[SearchResultOut])
+async def search_keyword_endpoint(user_id: str = Depends(get_user_id), q: str = "", top_k: int = 10):
+    _ensure_db()
+    return search_engine.keyword_search(q, user_id, top_k)
+
+
+@app.get("/search/hybrid", response_model=list[SearchResultOut])
+async def search_hybrid_endpoint(user_id: str = Depends(get_user_id), q: str = "", top_k: int = 10, alpha: float = 0.7):
+    _ensure_db()
+    return search_engine.hybrid_search(q, user_id, top_k, alpha)
+
+
 @app.post("/experiments", response_model=ExperimentOut)
 async def create_experiment_endpoint(
         data: ExperimentCreate, user_id: str = Depends(require_verified_email)
@@ -1312,3 +1347,47 @@ async def sentry_debug():
     import sentry_sdk
     sentry_sdk.capture_message("Sentry test message")
     return {"ok": True}
+
+
+from fastapi.responses import FileResponse
+
+@app.post("/files/upload")
+async def upload_file_endpoint(file: UploadFile = File(...), user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    file_bytes = await file.read()
+    url = storage_service.upload_file(file_bytes, file.filename, user_id, file.content_type or "application/octet-stream")
+    return {"url": url, "filename": file.filename}
+
+@app.get("/files")
+async def list_files_endpoint(user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    return storage_service.list_user_files(user_id)
+
+@app.get("/files/{file_id}")
+async def get_file_endpoint(file_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    return {"url": storage_service.get_file_url(file_id, user_id)}
+
+@app.delete("/files/{file_id}")
+async def delete_file_endpoint(file_id: str, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    if not storage_service.delete_file(file_id, user_id):
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"ok": True}
+
+@app.get("/auth/me/permissions")
+async def get_my_permissions(user_id: str = Depends(get_current_user)):
+    role = get_user_role(user_id)
+    permissions = ROLE_PERMISSIONS.get(Role(role), [])
+    return {"role": role, "permissions": [p.value for p in permissions]}
+
+@app.post("/admin/users/{user_id}/roles")
+async def assign_role_endpoint(user_id: str, role_name: str, current_user: str = Depends(require_admin)):
+    with get_db() as conn:
+        conn.execute("UPDATE users SET role = ? WHERE id = ?", (role_name, user_id))
+        conn.commit()
+    return {"ok": True}
+
+@app.get("/admin/roles")
+async def list_roles_endpoint(current_user: str = Depends(require_admin)):
+    return [r.value for r in Role]
