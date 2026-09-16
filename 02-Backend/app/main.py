@@ -1391,3 +1391,179 @@ async def assign_role_endpoint(user_id: str, role_name: str, current_user: str =
 @app.get("/admin/roles")
 async def list_roles_endpoint(current_user: str = Depends(require_admin)):
     return [r.value for r in Role]
+
+from fastapi import UploadFile, File
+from pydantic import BaseModel
+
+
+class TranscribeRequest(BaseModel):
+    audio_url: Optional[str] = None
+
+
+class SynthesizeRequest(BaseModel):
+    text: str
+    voice: str = "alloy"
+
+
+class AnalyzeRequest(BaseModel):
+    image_url: str
+    prompt: str
+
+
+class OCRRequest(BaseModel):
+    image_url: str
+
+
+class CodeExecuteRequest(BaseModel):
+    language: str
+    code: str
+    timeout: int = 10
+
+
+class BrowserNavigateRequest(BaseModel):
+    url: str
+
+
+class BrowserClickRequest(BaseModel):
+    selector: str
+
+
+class BrowserTypeRequest(BaseModel):
+    selector: str
+    text: str
+
+
+class ImageGenerateRequest(BaseModel):
+    prompt: str
+    size: str = "1024x1024"
+
+
+class ImageEditRequest(BaseModel):
+    image_url: str
+    prompt: str
+
+
+@app.post("/voice/transcribe")
+async def voice_transcribe(file: UploadFile = File(...), user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.voice import VoiceService
+    service = VoiceService()
+    audio_bytes = await file.read()
+    text = service.speech_to_text(audio_bytes, file.filename or "audio.wav")
+    return {"text": text}
+
+
+@app.post("/voice/synthesize")
+async def voice_synthesize(data: SynthesizeRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.voice import VoiceService
+    service = VoiceService()
+    audio_bytes = service.text_to_speech(data.text, data.voice)
+    from fastapi.responses import Response
+    return Response(content=audio_bytes, media_type="audio/mpeg")
+
+
+@app.post("/vision/analyze")
+async def vision_analyze(data: AnalyzeRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.vision import VisionService
+    service = VisionService()
+    result = service.analyze_image(data.image_url, data.prompt)
+    return {"result": result}
+
+
+@app.post("/vision/ocr")
+async def vision_ocr(data: OCRRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.vision import VisionService
+    service = VisionService()
+    result = service.extract_text_from_image(data.image_url)
+    return {"text": result}
+
+
+@app.post("/code/execute")
+async def code_execute(data: CodeExecuteRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    from app.code_executor import CodeExecutor
+    executor = CodeExecutor()
+    if data.language == "python":
+        result = executor.execute_python(data.code, data.timeout)
+    elif data.language == "javascript":
+        result = executor.execute_javascript(data.code, data.timeout)
+    elif data.language == "bash":
+        result = executor.execute_bash(data.code, data.timeout)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported language")
+    return {
+        "stdout": result.stdout,
+        "stderr": result.stderr,
+        "return_code": result.return_code,
+        "timed_out": result.timed_out,
+    }
+
+
+@app.post("/browser/navigate")
+async def browser_navigate(data: BrowserNavigateRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    from app.browser import BrowserAutomation
+    browser = BrowserAutomation()
+    try:
+        content = await browser.navigate(data.url)
+        return {"content": content}
+    finally:
+        await browser.close()
+
+
+@app.post("/browser/screenshot")
+async def browser_screenshot(user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    from app.browser import BrowserAutomation
+    browser = BrowserAutomation()
+    try:
+        img_bytes = await browser.screenshot()
+        from fastapi.responses import Response
+        return Response(content=img_bytes, media_type="image/png")
+    finally:
+        await browser.close()
+
+
+@app.post("/browser/click")
+async def browser_click(data: BrowserClickRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    from app.browser import BrowserAutomation
+    browser = BrowserAutomation()
+    try:
+        success = await browser.click(data.selector)
+        return {"success": success}
+    finally:
+        await browser.close()
+
+
+@app.post("/browser/type")
+async def browser_type(data: BrowserTypeRequest, user_id: str = Depends(require_verified_email)):
+    _ensure_db()
+    from app.browser import BrowserAutomation
+    browser = BrowserAutomation()
+    try:
+        success = await browser.type_text(data.selector, data.text)
+        return {"success": success}
+    finally:
+        await browser.close()
+
+
+@app.post("/images/generate")
+async def image_generate(data: ImageGenerateRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.image_gen import ImageGenerator
+    generator = ImageGenerator()
+    url = generator.generate_image(data.prompt, data.size)
+    return {"url": url}
+
+
+@app.post("/images/edit")
+async def image_edit(data: ImageEditRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    from app.image_gen import ImageGenerator
+    generator = ImageGenerator()
+    url = generator.edit_image(data.image_url, data.prompt)
+    return {"url": url}
