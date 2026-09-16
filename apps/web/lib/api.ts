@@ -76,4 +76,122 @@ export const api = {
         ...context,
       }),
     }),
+
+  searchSemantic: (query: string) =>
+    request<SearchResult[]>('/search/semantic', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }),
+
+  searchKeyword: (query: string) =>
+    request<SearchResult[]>('/search/keyword', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }),
+
+  searchHybrid: (query: string) =>
+    request<SearchResult[]>('/search/hybrid', {
+      method: 'POST',
+      body: JSON.stringify({ query }),
+    }),
+
+  uploadDocument: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request<DocumentUploadResult>('/documents/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {},
+    })
+  },
+
+  ingestWebsite: (url: string) =>
+    request<IngestionJob>('/documents/ingest-website', {
+      method: 'POST',
+      body: JSON.stringify({ url }),
+    }),
+
+  ingestGitHub: (repo: string) =>
+    request<IngestionJob>('/documents/ingest-github', {
+      method: 'POST',
+      body: JSON.stringify({ repo }),
+    }),
+
+  classifyMemory: (content: string) =>
+    request<MemoryClassification>('/memory/classify', {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    }),
+
+  getKnowledgeGraph: () =>
+    request<KnowledgeGraph>('/knowledge/graph'),
+
+  executeTool: (name: string, args: Record<string, unknown>) =>
+    request<ToolExecutionResult>('/tools/execute', {
+      method: 'POST',
+      body: JSON.stringify({ name, args }),
+    }),
+}
+
+export interface SearchResult {
+  id: string
+  title: string
+  content: string
+  score: number
+  type: string
+  createdAt: string
+  metadata?: Record<string, unknown>
+}
+
+export interface DocumentUploadResult {
+  id: string
+  filename: string
+  status: string
+  chunks: number
+  createdAt: string
+}
+
+export interface IngestionJob {
+  id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  source: string
+  progress: number
+  error?: string
+  createdAt: string
+  completedAt?: string
+}
+
+export interface MemoryClassification {
+  category: string
+  confidence: number
+  tags: string[]
+  summary: string
+}
+
+export interface KnowledgeGraph {
+  entities: KnowledgeEntity[]
+  relationships: KnowledgeRelationship[]
+}
+
+export interface KnowledgeEntity {
+  id: string
+  name: string
+  type: string
+  properties: Record<string, unknown>
+}
+
+export interface KnowledgeRelationship {
+  id: string
+  sourceId: string
+  targetId: string
+  type: string
+  properties: Record<string, unknown>
+}
+
+export interface ToolExecutionResult {
+  toolName: string
+  success: boolean
+  result: unknown
+  executionTime: number
+  error?: string
 }

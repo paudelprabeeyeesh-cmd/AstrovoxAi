@@ -12,6 +12,11 @@ import {
   Search,
   Trash2,
   MoreVertical,
+  Brain,
+  FileText,
+  Network,
+  Wrench,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,6 +24,18 @@ interface SidebarProps {
   setOpen: (open: boolean) => void;
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+}
+
+function NavItem({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) {
+  return (
+    <a
+      href={href}
+      className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+    >
+      <Icon className="size-4 shrink-0" />
+      <span className="flex-1 truncate">{label}</span>
+    </a>
+  )
 }
 
 const conversations = [
@@ -87,6 +104,18 @@ export function Sidebar({ open, setOpen, collapsed, setCollapsed }: SidebarProps
             {!collapsed && <span>New Chat</span>}
           </Button>
         </div>
+
+        {/* Navigation */}
+        {!collapsed && (
+          <div className="px-2 py-2 space-y-1">
+            <NavItem href="/memory" icon={Brain} label="Memory" />
+            <NavItem href="/search" icon={Search} label="Search" />
+            <NavItem href="/documents" icon={FileText} label="Documents" />
+            <NavItem href="/knowledge" icon={Network} label="Knowledge" />
+            <NavItem href="/tools" icon={Wrench} label="Tools" />
+            <NavItem href="/admin" icon={Shield} label="Admin" />
+          </div>
+        )}
 
         {/* Search */}
         {!collapsed && (
