@@ -1,15 +1,29 @@
+import logging
+from typing import Any
 
-import uuid
-from datetime import datetime
-from ..database import get_db
+logger = logging.getLogger(__name__)
 
-def connect_calendar(user_id: str, calendar_type: str, config: str) -> dict:
-    integration_id = str(uuid.uuid4())
-    with get_db() as conn:
-        conn.execute("INSERT INTO integrations (id, user_id, type, config, created_at) VALUES (?, ?, ?, ?, ?)",
-            (integration_id, user_id, f"calendar_{calendar_type}", config, datetime.utcnow().isoformat()))
-        conn.commit()
-    return {"id": integration_id, "type": f"calendar_{calendar_type}"}
 
-def sync_calendar_events(user_id: str, calendar_type: str) -> list[dict]:
-    return [{"event": f"Sample {calendar_type} event", "sync_status": "success"}]
+class CalendarIntegration:
+    def __init__(self, provider: str = "google"):
+        self.provider = provider
+        self.connected = False
+
+    def connect(self) -> dict[str, Any]:
+        self.connected = True
+        logger.info(f"Connected to Calendar ({self.provider})")
+        return {"status": "connected", "service": f"calendar_{self.provider}"}
+
+    def execute_action(self, action: str, params: dict[str, Any]) -> dict[str, Any]:
+        if not self.connected:
+            raise RuntimeError("Not connected to Calendar")
+        logger.info(f"Calendar action: {action}")
+        if action == "list_events":
+            return {"events": []}
+        if action == "create_event":
+            return {"event_id": "evt-123", "summary": params.get("summary", "")}
+        return {"status": "ok", "action": action}
+
+    def disconnect(self) -> None:
+        self.connected = False
+        logger.info("Disconnected from Calendar")
