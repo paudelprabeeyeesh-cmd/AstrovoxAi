@@ -61,6 +61,9 @@ def get_db():
 
 
 def init_db():
+    with get_db() as conn:
+        conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        conn.commit()
     _create_pool()
     from alembic.config import Config
     from alembic import command

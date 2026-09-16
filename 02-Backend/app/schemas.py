@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
+from enum import Enum
 
 
 class MemoryCreate(BaseModel):
