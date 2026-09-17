@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
+DB_PATH = os.getenv("ASTROVOX_DB", "astrovox.db")
+
 _pool = None
 
 

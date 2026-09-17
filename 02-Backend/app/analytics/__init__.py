@@ -7,6 +7,12 @@ from .enhanced import (
     export_analytics_json,
     get_realtime_dashboard,
 )
+from .core import (
+    record_event,
+    get_aggregate_metrics,
+    get_top_models,
+    get_cost_trend,
+)
 
 __all__ = [
     "get_organization_analytics",
@@ -15,4 +21,8 @@ __all__ = [
     "export_analytics_csv",
     "export_analytics_json",
     "get_realtime_dashboard",
+    "record_event",
+    "get_aggregate_metrics",
+    "get_top_models",
+    "get_cost_trend",
 ]

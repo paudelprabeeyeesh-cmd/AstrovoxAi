@@ -2,7 +2,10 @@
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
-from neo4j import GraphDatabase
+try:
+    from neo4j import GraphDatabase
+except ImportError:
+    GraphDatabase = None
 
 
 class Entity:
@@ -32,6 +35,8 @@ class KnowledgeGraphNeo4j:
         self._connected = False
 
     def connect(self, uri: str, auth: tuple) -> bool:
+        if GraphDatabase is None:
+            return False
         try:
             self._driver = GraphDatabase.driver(uri, auth=auth)
             with self._driver.session() as session:

@@ -59,15 +59,14 @@ from .cost import count_tokens
 from .database import init_db
 from .feedback import create_feedback, delete_feedback, list_feedback
 from .compliance import delete_user_data, export_user_data, record_consent
-from .integrations import (create_integration, delete_integration,
-                           list_integrations)
 from .interactions import create_interaction
 from .knowledge import create_doc, delete_doc, list_docs, search_docs
 from .knowledge_graph import KnowledgeGraph
 from .schemas import (
     KnowledgeEntityCreate, KnowledgeEntityOut,
     KnowledgeRelationshipCreate, KnowledgeRelationshipOut,
-    KnowledgeConnectionOut
+    KnowledgeConnectionOut,
+    MemoryClassifyRequest, MemoryClassifyResponse
 )
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
@@ -97,14 +96,17 @@ from .config import settings
 from .websocket_scaler import WebSocketScaler
 
 
-import sentry_sdk
-if os.getenv("SENTRY_DSN"):
-    sentry_sdk.init(
-        dsn=os.getenv("SENTRY_DSN"),
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
-        profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
-        environment=os.getenv("ENVIRONMENT", "development"),
-    )
+try:
+    import sentry_sdk
+    if os.getenv("SENTRY_DSN"):
+        sentry_sdk.init(
+            dsn=os.getenv("SENTRY_DSN"),
+            traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+            profiles_sample_rate=float(os.getenv("SENTRY_PROFILES_SAMPLE_RATE", "0.1")),
+            environment=os.getenv("ENVIRONMENT", "development"),
+        )
+except ImportError:
+    sentry_sdk = None
 
 print("[astrovox] imports complete", flush=True)
 
@@ -1306,7 +1308,7 @@ from app.search import SearchEngine
 from app.schemas import (
     DocumentOut, DocumentChunkOut, RAGSearchResult,
     RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
-    SearchResultOut, MemoryClassifyRequest, MemoryClassifyResponse
+    SearchResultOut
 )
 
 rag_engine = RAGEngine()
@@ -1441,8 +1443,8 @@ async def list_experiments_endpoint(user_id: str = Depends(get_user_id)):
 
 @app.get("/sentry-debug")
 async def sentry_debug():
-    import sentry_sdk
-    sentry_sdk.capture_message("Sentry test message")
+    if sentry_sdk is not None:
+        sentry_sdk.capture_message("Sentry test message")
     return {"ok": True}
 
 

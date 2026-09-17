@@ -6,11 +6,22 @@ import requests
 from datetime import datetime
 from typing import Any
 
-import openai
-from bs4 import BeautifulSoup
-
-from pypdf import PdfReader
-from docx import Document as DocxDocument
+try:
+    import openai
+except ImportError:
+    openai = None
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    BeautifulSoup = None
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+try:
+    from docx import Document as DocxDocument
+except ImportError:
+    DocxDocument = None
 
 from .documents import (
     create_document,
@@ -23,7 +34,22 @@ from .documents import (
 from .config import settings
 
 
-client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+class _LazyOpenAIClient:
+    def __init__(self):
+        self._client = None
+
+    def _get_client(self):
+        if self._client is None:
+            if openai is None:
+                raise RuntimeError("openai is not installed")
+            self._client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+        return self._client
+
+    def __getattr__(self, name):
+        return getattr(self._get_client(), name)
+
+
+client = _LazyOpenAIClient()
 
 
 class RAGEngine:

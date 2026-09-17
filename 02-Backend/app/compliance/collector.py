@@ -1,9 +1,8 @@
 
 from typing import List, Dict, Optional
 from datetime import datetime, timezone, timedelta
-from .database import get_db
-from .audit import get_audit_log
-from .analytics import get_aggregate_metrics
+from ..database import get_db
+from ..audit import get_audit_log
 
 
 class EvidenceCollector:

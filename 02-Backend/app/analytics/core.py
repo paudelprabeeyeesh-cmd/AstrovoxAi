@@ -1,8 +1,12 @@
-import uuid
-import json
-from datetime import datetime, timedelta, timezone
+"""Core analytics functions used by main.py."""
+from __future__ import annotations
 
-from .database import get_db
+import json
+import uuid
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List
+
+from ..database import get_db
 
 
 def record_event(event_type: str, properties: dict):

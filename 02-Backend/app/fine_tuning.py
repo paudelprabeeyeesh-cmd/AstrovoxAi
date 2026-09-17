@@ -12,7 +12,15 @@ logger = logging.getLogger(__name__)
 
 class FineTuningService:
     def __init__(self):
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+        self._client = None
+
+    def _get_client(self):
+        if self._client is None:
+            api_key = os.getenv("OPENAI_API_KEY")
+            if not api_key:
+                raise RuntimeError("OPENAI_API_KEY is required for fine-tuning")
+            self._client = OpenAI(api_key=api_key)
+        return self._client
 
     def export_labeled_data(self, user_id: str, limit: int = 5000) -> str:
         cutoff = (datetime.now(timezone.utc) - __import__("datetime").timedelta(days=30)).isoformat()
@@ -88,22 +96,22 @@ class FineTuningService:
         return True
 
     def create_fine_tuning_job(self, model: str, training_file: str, validation_file: str | None = None) -> str:
-        if not self.client.api_key:
+        if not self._get_client().api_key:
             raise ValueError("OPENAI_API_KEY not configured")
 
         with open(training_file, "rb") as tf:
-            training = self.client.files.create(file=tf, purpose="fine-tune")
+            training = self._get_client().files.create(file=tf, purpose="fine-tune")
 
         file_id = training.id
 
         if validation_file:
             with open(validation_file, "rb") as vf:
-                validation = self.client.files.create(file=vf, purpose="fine-tune")
+                validation = self._get_client().files.create(file=vf, purpose="fine-tune")
             validation_id = validation.id
         else:
             validation_id = None
 
-        job = self.client.fine_tuning.jobs.create(
+        job = self._get_client().fine_tuning.jobs.create(
             training_file=file_id,
             model=model,
             validation_file=validation_id,
@@ -113,7 +121,7 @@ class FineTuningService:
         return job.id
 
     def check_job_status(self, job_id: str) -> dict:
-        job = self.client.fine_tuning.jobs.retrieve(job_id)
+        job = self._get_client().fine_tuning.jobs.retrieve(job_id)
         return {
             "id": job.id,
             "status": job.status,
@@ -125,7 +133,7 @@ class FineTuningService:
         }
 
     def deploy_model(self, job_id: str) -> str:
-        job = self.client.fine_tuning.jobs.retrieve(job_id)
+        job = self._get_client().fine_tuning.jobs.retrieve(job_id)
         if job.status != "succeeded":
             raise ValueError(f"Job {job_id} not succeeded: {job.status}")
         if not job.fine_tuned_model:
