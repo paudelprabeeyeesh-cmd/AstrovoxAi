@@ -1,5 +1,7 @@
 import logging
 import re
+from contextvars import ContextVar
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,16 @@ PII_PLACEHOLDERS = {
     "ip_address": "[IP_REDACTED]",
 }
 
-PII_STORE = {}
+_pii_store_var: ContextVar[Dict[str, str]] = ContextVar("pii_store_var", default={})
+
+
+def _get_store() -> Dict[str, str]:
+    try:
+        return _pii_store_var.get()
+    except LookupError:
+        store: Dict[str, str] = {}
+        token = _pii_store_var.set(store)
+        return store
 
 
 def detect_pii(text: str) -> dict:
@@ -34,11 +45,12 @@ def detect_pii(text: str) -> dict:
 def redact_pii(text: str, store: bool = True) -> str:
     pii_found = detect_pii(text)
     redacted = text
+    active_store = _get_store() if store else {}
     for pii_type, matches in pii_found.items():
         for match in matches:
             placeholder = PII_PLACEHOLDERS[pii_type]
             if store:
-                PII_STORE[placeholder] = match
+                active_store[placeholder] = match
             redacted = redacted.replace(match, placeholder)
     if pii_found:
         logger.warning(f"PII detected and redacted: {list(pii_found.keys())}")
@@ -46,8 +58,9 @@ def redact_pii(text: str, store: bool = True) -> str:
 
 
 def restore_pii(text: str) -> str:
+    active_store = _get_store()
     restored = text
-    for placeholder, original in PII_STORE.items():
+    for placeholder, original in active_store.items():
         restored = restored.replace(placeholder, original)
     return restored
 

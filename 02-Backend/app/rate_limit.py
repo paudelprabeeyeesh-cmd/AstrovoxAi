@@ -48,7 +48,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         if self._is_rate_limited(redis_client, f"solve:{user_id}", solve_limit, 60):
                             return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Upgrade to continue."})
                 except Exception:
-                    pass
+                    return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
 
         elif path == "/solve/stream":
             auth = request.headers.get("authorization", "")
@@ -63,7 +63,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                         if self._is_rate_limited(redis_client, f"solve_stream:{user_id}", 10, 60):
                             return JSONResponse(status_code=429, content={"detail": "Rate limit exceeded. Try again later."})
                 except Exception:
-                    pass
+                    return JSONResponse(status_code=401, content={"detail": "Invalid or expired token"})
 
         if path not in ["/health", "/metrics", "/docs", "/openapi.json", "/ready", "/live"]:
             auth = request.headers.get("authorization", "")

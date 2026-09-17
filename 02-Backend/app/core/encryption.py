@@ -6,12 +6,12 @@ from cryptography.fernet import Fernet
 _fernet = None
 
 
-def get_fernet():
+def get_fernet() -> Fernet:
     global _fernet
     if _fernet is None:
         key = os.getenv("ASTROVOX_ENCRYPTION_KEY")
         if not key:
-            key = base64.urlsafe_b64encode(os.urandom(32)).decode()
+            raise RuntimeError("ASTROVOX_ENCRYPTION_KEY is required for production deployments")
         _fernet = Fernet(key.encode() if isinstance(key, str) else key)
     return _fernet
 

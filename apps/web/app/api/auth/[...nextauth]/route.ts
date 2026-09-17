@@ -21,7 +21,7 @@ export const authOptions = {
           : '/api/auth/login';
 
         try {
-          const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}, {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -55,7 +55,7 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60,
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
@@ -63,7 +63,7 @@ export const authOptions = {
       }
       return token;
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: any; token: any }) {
       session.user.id = token.sub;
       session.user.accessToken = token.accessToken;
       session.user.refreshToken = token.refreshToken;
@@ -81,5 +81,5 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions as any);
 export { handler as GET, handler as POST };

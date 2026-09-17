@@ -1,18 +1,18 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  const accessToken = session?.user?.accessToken || process.env.FASTAPI_TOKEN;
+  const session = await getServerSession(authOptions as any);
+  const accessToken = (session?.user as any)?.accessToken || process.env.FASTAPI_TOKEN;
 
   if (!accessToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const backendUrl = 'http://localhost:8000/solve/stream';
+  const backendUrl = `${process.env.NEXT_PUBLIC_API_URL}/solve/stream`;
 
   try {
     const body = await request.text();
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': request.headers.get('content-type') || 'application/json',
-        Authorization: Bearer ,
+        Authorization: `Bearer ${accessToken}`,
       },
       body,
       cache: 'no-store',

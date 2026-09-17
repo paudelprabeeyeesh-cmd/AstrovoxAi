@@ -47,7 +47,7 @@ export function UserMenu() {
           <span>Billing</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem variant="destructive">
+        <DropdownMenuItem className="text-destructive">
           <LogOut className="mr-2 size-4" />
           <span>Log out</span>
         </DropdownMenuItem>

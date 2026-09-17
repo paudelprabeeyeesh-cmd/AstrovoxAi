@@ -62,11 +62,15 @@ class CodeExecutor:
             os.unlink(tmp_path)
 
     def execute_bash(self, command: str, timeout: int = 10) -> ExecutionResult:
+        if not command or not isinstance(command, str):
+            raise ValueError("command must be a non-empty string")
+        allowed_prefixes = ("python ", "node ", "npm ", "pip ", "echo ", "ls ", "cat ", "pwd ", "date ", "whoami")
+        if not command.strip().lower().startswith(allowed_prefixes):
+            raise ValueError("Bash execution is restricted to an allowlist of safe commands")
         try:
             start = time.time()
             result = subprocess.run(
-                command,
-                shell=True,
+                ["/bin/sh", "-c", command],
                 capture_output=True,
                 text=True,
                 timeout=timeout,

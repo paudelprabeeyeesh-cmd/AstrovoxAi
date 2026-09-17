@@ -41,7 +41,7 @@ export default function MemoryPage() {
 
   const [isClearDialogOpen, setIsClearDialogOpen] = useState(false)
   const [isClassifyDialogOpen, setIsClassifyDialogOpen] = useState(false)
-  const [classifyContent, setClassifyContent] = useState('')
+  const [classifyText, setClassifyText] = useState('')
   const [classifyResult, setClassifyResult] = useState<{ category: string; confidence: number; tags: string[]; summary: string } | null>(null)
   const [classifying, setClassifying] = useState(false)
 
@@ -61,9 +61,9 @@ export default function MemoryPage() {
   }
 
   const handleClassify = async () => {
-    if (!classifyContent.trim()) return
+    if (!classifyText.trim()) return
     setClassifying(true)
-    const result = await classifyContent(classifyContent)
+    const result = await classifyContent(classifyText)
     setClassifyResult(result)
     setClassifying(false)
   }
@@ -174,8 +174,8 @@ export default function MemoryPage() {
           <div className="space-y-4">
             <Textarea
               placeholder="Enter content to classify..."
-              value={classifyContent}
-              onChange={(e) => setClassifyContent(e.target.value)}
+              value={classifyText}
+              onChange={(e) => setClassifyText(e.target.value)}
               rows={4}
             />
             {classifyResult && (
@@ -195,8 +195,8 @@ export default function MemoryPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setIsClassifyDialogOpen(false); setClassifyResult(null); setClassifyContent('') }}>Close</Button>
-            <Button onClick={handleClassify} disabled={classifying || !classifyContent.trim()}>
+            <Button variant="outline" onClick={() => { setIsClassifyDialogOpen(false); setClassifyResult(null); setClassifyText('') }}>Close</Button>
+            <Button onClick={handleClassify} disabled={classifying || !classifyText.trim()}>
               {classifying && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Classify
             </Button>

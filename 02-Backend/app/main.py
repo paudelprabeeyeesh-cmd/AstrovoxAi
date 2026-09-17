@@ -476,7 +476,7 @@ async def health():
 
 
 @app.get('/health/detailed')
-async def health_detailed():
+async def health_detailed(user_id: str = Depends(require_admin)):
     return health_service.get_overall_health()
 
 
@@ -1250,12 +1250,6 @@ async def ready():
 @app.get("/live")
 async def live():
     return {"status": "alive"}
-
-
-@app.get("/metrics")
-async def prometheus_metrics():
-    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
 
 
 

@@ -1,13 +1,15 @@
 ﻿import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
+export { authOptions };
+
 export async function getSession() {
-  return getServerSession(authOptions);
+  return getServerSession(authOptions as any);
 }
 
 export async function signIn(email: string, password: string, action = 'login') {
-  const session = await getServerSession(authOptions);
-  const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}/api/auth/, {
+  const session = await getServerSession(authOptions as any);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -19,10 +21,13 @@ export async function signIn(email: string, password: string, action = 'login') 
 }
 
 export async function signOut() {
-  const session = await getServerSession(authOptions);
-  const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout, {
+  const session = await getServerSession(authOptions as any);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
     method: 'POST',
-    headers: { Authorization: Bearer  },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(session?.user?.accessToken ? { Authorization: `Bearer ${session.user.accessToken}` } : {}),
+    },
   });
   if (!res.ok) {
     throw new Error(await res.text());
@@ -31,7 +36,7 @@ export async function signOut() {
 }
 
 export async function signUp(email: string, password: string, name?: string) {
-  const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}/api/auth/register, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password, name }),
@@ -43,7 +48,7 @@ export async function signUp(email: string, password: string, name?: string) {
 }
 
 export async function refreshToken(refreshToken: string) {
-  const res = await fetch(${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ refreshToken }),

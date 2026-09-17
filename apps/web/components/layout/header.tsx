@@ -10,7 +10,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Menu, ChevronDown } from 'lucide-react';
+import { Menu, ChevronDown, User } from 'lucide-react';
+import { UserMenu } from '@/components/layout/user-menu';
 
 interface HeaderProps {
   onMenuClick: () => void;
