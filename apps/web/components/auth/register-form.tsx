@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AuthForm } from "./auth-form"
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react"
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

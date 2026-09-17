@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff } from "lucide-react";
 
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),

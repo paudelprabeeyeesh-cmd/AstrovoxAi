@@ -1,4 +1,4 @@
-﻿{
+{
     "name": "astrovox-ai-web",
     "version": "0.1.0",
     "private": true,
@@ -28,23 +28,23 @@
         "class-variance-authority": "^0.7.x",
         "clsx": "^2.x",
         "framer-motion": "^11.x",
-        "lucide-react": "^0.x",
+        "lucide-react": "^0.577.0",
         "next": "^16.0.0",
+        "next-auth": "^4.x",
         "postcss": "^8.4.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
         "react-hook-form": "^7.x",
         "react-markdown": "^9.x",
         "recharts": "^2.x",
-        "remark-gfm": "^4.x",
         "rehype-highlight": "^7.x",
         "rehype-raw": "^7.x",
+        "remark-gfm": "^4.x",
         "tailwind-merge": "^2.x",
         "tailwindcss": "^3.4.0",
         "typescript": "^5.x",
         "zod": "^3.x",
-        "zustand": "^5.0.0",
-        "next-auth": "^4.x"
+        "zustand": "^5.0.0"
     },
     "devDependencies": {
         "@types/node": "^22.10.0",
