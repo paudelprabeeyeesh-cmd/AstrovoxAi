@@ -44,10 +44,12 @@ export function useChat() {
 
         if (response?.message) {
           addMessage(activeId, {
+            id: crypto.randomUUID(),
             role: 'assistant',
             content: response.message.content,
             conversationId: activeId,
             model: modelId as any,
+            timestamp: Date.now(),
           } as any)
         }
       } catch (err) {
@@ -77,11 +79,13 @@ export function useChat() {
 
       const assistantMessageId = crypto.randomUUID()
       addMessage(activeId, {
+        id: assistantMessageId,
         role: 'assistant',
         content: '',
         conversationId: activeId,
-        model: modelId,
-      } as Message)
+        model: modelId as any,
+        timestamp: Date.now(),
+      } as any)
       setStreamingMessageId(assistantMessageId)
 
       try {

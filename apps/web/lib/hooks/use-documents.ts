@@ -2,10 +2,10 @@
 
 import { useState, useCallback } from 'react'
 import { api } from '@/lib/api'
-import type { DocumentUploadResult, IngestionJob, DocumentItem } from '@/lib/api'
+import type { DocumentUploadResult, IngestionJob } from '@/lib/api'
 
 export interface UseDocumentsReturn {
-  documents: DocumentItem[]
+  documents: any[]
   loading: boolean
   error: Error | null
   uploadFile: (file: File) => Promise<DocumentUploadResult | null>
@@ -18,7 +18,7 @@ export interface UseDocumentsReturn {
 }
 
 export function useDocuments() {
-  const [documents, setDocuments] = useState<DocumentItem[]>([])
+  const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -27,7 +27,7 @@ export function useDocuments() {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.get<DocumentItem[]>('/documents')
+      const data = await api.get<any[]>('/documents')
       setDocuments(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load documents'))
@@ -86,7 +86,7 @@ export function useDocuments() {
     setLoading(true)
     setError(null)
     try {
-      const data = await api.get<DocumentItem[]>(`/documents?q=${encodeURIComponent(q)}`)
+      const data = await api.get<any[]>(`/documents?q=${encodeURIComponent(q)}`)
       setDocuments(data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Search failed'))

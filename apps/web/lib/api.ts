@@ -151,6 +151,14 @@ export interface DocumentUploadResult {
   createdAt: string
 }
 
+export interface DocumentItem {
+  id: string
+  filename: string
+  status: string
+  chunks: number
+  createdAt: string
+}
+
 export interface IngestionJob {
   id: string
   status: 'pending' | 'processing' | 'completed' | 'failed'
