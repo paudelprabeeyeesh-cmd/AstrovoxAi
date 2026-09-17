@@ -69,3 +69,7 @@ datasets
 peft
 trl
 vllm
+
+mlflow
+boto3
+docker
