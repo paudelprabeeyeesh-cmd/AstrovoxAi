@@ -1,4 +1,5 @@
 """Planet-scale infrastructure package."""
-from .deployments import BlueGreenDeployer, CanaryDeployer, SelfHealingDeployer, DEPLOYMENT_STRATEGIES, MULTI_REGION_CONFIG, get_primary_region, get_region, list_regions
+from .config import MULTI_REGION_CONFIG, DEPLOYMENT_STRATEGIES, get_primary_region, get_region, list_regions
+from .deployments import BlueGreenDeployer, CanaryDeployer, SelfHealingDeployer, DeploymentResult
 
-__all__ = ["BlueGreenDeployer", "CanaryDeployer", "SelfHealingDeployer", "DEPLOYMENT_STRATEGIES", "MULTI_REGION_CONFIG", "get_primary_region", "get_region", "list_regions"]
+__all__ = ["MULTI_REGION_CONFIG", "DEPLOYMENT_STRATEGIES", "get_primary_region", "get_region", "list_regions", "BlueGreenDeployer", "CanaryDeployer", "SelfHealingDeployer", "DeploymentResult"]
