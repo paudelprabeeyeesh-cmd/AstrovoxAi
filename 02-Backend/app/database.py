@@ -8,14 +8,13 @@ logger = logging.getLogger(__name__)
 
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
-if not DATABASE_URL:
-    raise RuntimeError("DATABASE_URL is required and must be a PostgreSQL connection string")
-
 _pool = None
 
 
 def _create_pool():
     global _pool
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is required and must be a PostgreSQL connection string")
     import psycopg2
     from psycopg2.extras import RealDictCursor, register_vector
 
@@ -34,6 +33,8 @@ def _create_pool():
 @contextmanager
 def get_db():
     global _pool
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is required and must be a PostgreSQL connection string")
     max_retries = 3
     base_delay = 1
 
@@ -62,6 +63,8 @@ def get_db():
 
 
 def init_db():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is required and must be a PostgreSQL connection string")
     with get_db() as conn:
         conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
         conn.commit()

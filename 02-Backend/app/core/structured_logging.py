@@ -7,9 +7,60 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from pythonjsonlogger import json as pythonjsonlogger
+try:
+    from pythonjsonlogger import json as pythonjsonlogger
+except ImportError:
+    try:
+        from pythonjsonlogger.json import JsonFormatter as _JsonFormatter
+        pythonjsonlogger = type("pythonjsonlogger", (), {"JsonFormatter": _JsonFormatter})
+    except ImportError:
+        pythonjsonlogger = None
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
+
+_request_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "request_id", default=None
+)
+_user_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "user_id", default=None
+)
+_endpoint: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "endpoint", default=None
+)
+_latency_ms: contextvars.ContextVar[Optional[float]] = contextvars.ContextVar(
+    "latency_ms", default=None
+)
+_cost: contextvars.ContextVar[Optional[float]] = contextvars.ContextVar(
+    "cost", default=None
+)
+
+
+class _FallbackFormatter(logging.Formatter):
+    def add_fields(self, log_record, record, message_dict):
+        if "levelname" in log_record:
+            log_record["level"] = log_record.pop("levelname")
+        log_record.setdefault("timestamp", getattr(record, "timestamp", None))
+        log_record.setdefault("request_id", getattr(record, "request_id", None))
+        log_record.setdefault("user_id", getattr(record, "user_id", None))
+        log_record.setdefault("endpoint", getattr(record, "endpoint", None))
+        log_record.setdefault("latency_ms", getattr(record, "latency_ms", None))
+        log_record.setdefault("cost", getattr(record, "cost", None))
+
+
+if pythonjsonlogger is not None:
+    class StructuredJsonFormatter(pythonjsonlogger.JsonFormatter):
+        def add_fields(self, log_record, record, message_dict):
+            super().add_fields(log_record, record, message_dict)
+            if "levelname" in log_record:
+                log_record["level"] = log_record.pop("levelname")
+            log_record.setdefault("timestamp", getattr(record, "timestamp", None))
+            log_record.setdefault("request_id", getattr(record, "request_id", None))
+            log_record.setdefault("user_id", getattr(record, "user_id", None))
+            log_record.setdefault("endpoint", getattr(record, "endpoint", None))
+            log_record.setdefault("latency_ms", getattr(record, "latency_ms", None))
+            log_record.setdefault("cost", getattr(record, "cost", None))
+else:
+    StructuredJsonFormatter = _FallbackFormatter
 
 _request_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "request_id", default=None
@@ -37,19 +88,6 @@ class _StructuredLogFilter(logging.Filter):
         record.latency_ms = _latency_ms.get(None)
         record.cost = _cost.get(None)
         return True
-
-
-class StructuredJsonFormatter(pythonjsonlogger.JsonFormatter):
-    def add_fields(self, log_record, record, message_dict):
-        super().add_fields(log_record, record, message_dict)
-        if "levelname" in log_record:
-            log_record["level"] = log_record.pop("levelname")
-        log_record.setdefault("timestamp", getattr(record, "timestamp", None))
-        log_record.setdefault("request_id", getattr(record, "request_id", None))
-        log_record.setdefault("user_id", getattr(record, "user_id", None))
-        log_record.setdefault("endpoint", getattr(record, "endpoint", None))
-        log_record.setdefault("latency_ms", getattr(record, "latency_ms", None))
-        log_record.setdefault("cost", getattr(record, "cost", None))
 
 
 _configured = False
