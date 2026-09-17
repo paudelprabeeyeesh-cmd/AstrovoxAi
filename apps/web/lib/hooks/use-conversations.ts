@@ -1,6 +1,7 @@
 ﻿import { useCallback, useEffect } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { api } from '@/lib/api'
+import type { Conversation } from '@/types'
 
 export function useConversations() {
   const {

@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { api } from '@/lib/api'
-import type { DocumentUploadResult, IngestionJob } from '@/lib/api'
+import type { DocumentUploadResult, IngestionJob, DocumentItem } from '@/lib/api'
 
 export interface UseDocumentsReturn {
   documents: DocumentItem[]

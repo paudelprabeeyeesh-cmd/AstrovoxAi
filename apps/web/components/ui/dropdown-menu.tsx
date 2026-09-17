@@ -69,9 +69,9 @@ const DropdownMenuContent = React.forwardRef<
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName
 
 const DropdownMenuItem = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
->(({ className, inset, ...props }, ref) => (
+  React.ElementRef<any>,
+  React.ComponentPropsWithoutRef<any>
+>(({ className, inset, ...props }: any, ref: any) => (
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
@@ -133,9 +133,9 @@ const DropdownMenuRadioItem = React.forwardRef<
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName
 
 const DropdownMenuLabel = React.forwardRef<
-  React.ElementRef<typeof DropdownMenuPrimitive.Label>,
-  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
->(({ className, inset, ...props }, ref) => (
+  React.ElementRef<any>,
+  React.ComponentPropsWithoutRef<any>
+>(({ className, inset, ...props }: any, ref: any) => (
   <DropdownMenuPrimitive.Label
     ref={ref}
     className={cn(

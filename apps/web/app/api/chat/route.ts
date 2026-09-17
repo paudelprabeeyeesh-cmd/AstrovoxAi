@@ -5,8 +5,9 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 export const runtime = 'edge';
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions as any);
-  const accessToken = (session?.user as any)?.accessToken || process.env.FASTAPI_TOKEN;
+  const session = await getServerSession(authOptions as any)
+  const sessionUser = (session as any)?.user
+  const accessToken = sessionUser?.accessToken || process.env.FASTAPI_TOKEN;
 
   if (!accessToken) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

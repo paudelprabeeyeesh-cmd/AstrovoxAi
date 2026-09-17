@@ -1,6 +1,5 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { codeToHtml } from 'shiki'
 import { Check, Copy } from 'lucide-react'
 
 interface CodeBlockProps {
@@ -13,7 +12,18 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    codeToHtml(code, { lang: language, theme: 'github-dark' }).then(setHtml)
+    let cancelled = false
+    async function highlight() {
+      try {
+        const mod = await import('shiki')
+        const result = await (mod as any).codeToHtml?.(code, { lang: language, theme: 'github-dark' })
+        if (!cancelled) setHtml(result || '')
+      } catch {
+        if (!cancelled) setHtml('')
+      }
+    }
+    highlight()
+    return () => { cancelled = true }
   }, [code, language])
 
   const handleCopy = async () => {

@@ -10,6 +10,6 @@ type ButtonSize = "default" | "sm" | "lg" | "icon"
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { variant?: ButtonVariant; size?: ButtonSize; asChild?: boolean }
 function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
   const Comp = asChild ? Slot : "button";
-  return <Comp className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+  return <Comp className={cn((buttonVariants as any)({ variant, size, className }))} {...props} />;
 }
 export { Button, buttonVariants }

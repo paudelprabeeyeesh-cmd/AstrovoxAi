@@ -21,12 +21,13 @@ export async function signIn(email: string, password: string, action = 'login') 
 }
 
 export async function signOut() {
-  const session = await getServerSession(authOptions as any);
+  const session = await getServerSession(authOptions as any)
+  const sessionUser = (session as any)?.user
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(session?.user?.accessToken ? { Authorization: `Bearer ${session.user.accessToken}` } : {}),
+      ...(sessionUser?.accessToken ? { Authorization: `Bearer ${sessionUser.accessToken}` } : {}),
     },
   });
   if (!res.ok) {

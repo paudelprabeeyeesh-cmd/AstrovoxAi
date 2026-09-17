@@ -36,19 +36,19 @@ export function useChat() {
       addMessage(activeId, userMessage)
 
       try {
-        const response = await api.post<{ message: Message }>('/chat', {
-          conversationId: activeId,
-          content: content.trim(),
-          modelId,
-        })
+      const response = await api.post<{ message: Message }>('/chat', {
+        conversationId: activeId,
+        content: content.trim(),
+        modelId: modelId as any,
+      })
 
         if (response?.message) {
           addMessage(activeId, {
             role: 'assistant',
             content: response.message.content,
             conversationId: activeId,
-            model: modelId,
-          })
+            model: modelId as any,
+          } as any)
         }
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to send message'))

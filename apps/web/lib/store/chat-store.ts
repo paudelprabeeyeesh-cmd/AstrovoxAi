@@ -37,7 +37,7 @@ export const useChatStore = create<ChatState>()(
                 id: crypto.randomUUID(),
                 conversationId,
                 timestamp: Date.now(),
-              } as Message,
+              } as any as Message,
             ],
           })),
 
