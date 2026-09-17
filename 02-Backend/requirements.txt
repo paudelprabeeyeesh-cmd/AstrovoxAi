@@ -39,7 +39,7 @@ requests==2.32.3
 
 celery==5.4.0
 arq==6.4.0
-neo4j==5.24.0
+neo4j==5.23.0
 docker==7.1.0
 google-api-python-client==2.147.0
 slack-sdk==3.32.1
@@ -57,3 +57,15 @@ replicate
 detoxify
 langdetect
 azure-ai-textanalytics
+
+pytest-cov==5.0.0
+
+# Local LLM serving and knowledge distillation
+ollama
+tenacity
+transformers
+torch
+datasets
+peft
+trl
+vllm

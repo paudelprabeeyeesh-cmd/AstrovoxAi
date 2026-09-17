@@ -1,4 +1,4 @@
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+﻿from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from .core.prometheus_middleware import PrometheusMiddleware
 from .core.structured_logging import configure_logging, StructuredLoggingMiddleware
 
@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 import os
 import uuid
 import time
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 import asyncio
@@ -54,6 +55,12 @@ from .integrations import (create_integration, delete_integration,
                            list_integrations)
 from .interactions import create_interaction
 from .knowledge import create_doc, delete_doc, list_docs, search_docs
+from .knowledge_graph import KnowledgeGraph
+from .schemas import (
+    KnowledgeEntityCreate, KnowledgeEntityOut,
+    KnowledgeRelationshipCreate, KnowledgeRelationshipOut,
+    KnowledgeConnectionOut
+)
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
 from .metrics import get_daily_cost, get_revenue, get_second_use_metric, get_usage
@@ -71,10 +78,9 @@ from .schemas import (AnalyticsEventCreate, AnalyticsAggregateOut, RAGEvalCreate
                        UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord,
                        SecurityScanPromptRequest, SecurityScanPromptResponse, SecurityScanSecretsRequest, SecurityScanSecretsResponse,
                        AuditLogRequest, AuditLogResponse, AuditLogsResponse,
-                       ApiKeyCreateRequest, ApiKeyCreateResponse, ApiKeyRevokeRequest)
+                        ApiKeyCreateRequest, ApiKeyCreateResponse, ApiKeyRevokeRequest)
 from .templates import (create_template, delete_template, list_templates,
                         update_template)
-from .tools import create_tool, delete_tool, list_tools
 from .usage import record_usage
 from .workflows import create_workflow, delete_workflow, list_workflows
 from .security import PromptInjectionDetector, SecretScanner, InputSanitizer, EncryptionService
@@ -768,7 +774,7 @@ async def list_docs_endpoint(user_id: str = Depends(get_user_id)):
     return list_docs(user_id)
 
 
-@app.get("/knowledge/search", response_model=list[KnowledgeDocOut])
+@app.get("/knowledge/graph/search", response_model=list[KnowledgeDocOut])
 async def search_docs_endpoint(user_id: str = Depends(get_user_id), q: str = ""):
     return search_docs(user_id, q)
 
@@ -782,7 +788,73 @@ async def delete_doc_endpoint(doc_id: str, user_id: str = Depends(require_verifi
     return {"ok": True}
 
 
-@app.get("/profile", response_model=UserProfileOut)
+
+
+@app.post("/knowledge/entities", response_model=KnowledgeEntityOut)
+async def create_knowledge_entity(data: KnowledgeEntityCreate, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    kg = KnowledgeGraph()
+    entity = kg.add_entity(data.entity_type, data.name, data.properties)
+    return KnowledgeEntityOut(
+        id=entity.id,
+        entity_type=entity.entity_type,
+        name=entity.name,
+        properties=entity.properties,
+        created_at=datetime.fromisoformat(entity.created_at),
+    )
+
+
+@app.post("/knowledge/relationships", response_model=KnowledgeRelationshipOut)
+async def create_knowledge_relationship(data: KnowledgeRelationshipCreate, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    kg = KnowledgeGraph()
+    rel = kg.add_relationship(data.source_name, data.target_name, data.relationship_type, data.properties)
+    return KnowledgeRelationshipOut(
+        id=rel.id,
+        source_id=rel.source_id,
+        source_name=rel.source_name,
+        target_id=rel.target_id,
+        target_name=rel.target_name,
+        relationship_type=rel.relationship_type,
+        properties=rel.properties,
+        created_at=datetime.fromisoformat(rel.created_at),
+    )
+
+
+@app.get("/knowledge/graph/search", response_model=list[KnowledgeEntityOut])
+async def search_knowledge_entities(user_id: str = Depends(get_user_id), q: str = "", limit: int = 10):
+    _ensure_db()
+    kg = KnowledgeGraph()
+    entities = kg.search(q, limit)
+    return [
+        KnowledgeEntityOut(
+            id=e.id,
+            entity_type=e.entity_type,
+            name=e.name,
+            properties=e.properties,
+            created_at=datetime.fromisoformat(e.created_at),
+        )
+        for e in entities
+    ]
+
+
+@app.get("/knowledge/entities/{name}/connections", response_model=list[KnowledgeConnectionOut])
+async def get_entity_connections(name: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    kg = KnowledgeGraph()
+    connections = kg.get_entity_connections(name)
+    return [
+        KnowledgeConnectionOut(
+            id=c["id"],
+            source_id=c["source_id"],
+            source_name=c["source_name"],
+            target_id=c["target_id"],
+            target_name=c["target_name"],
+            relationship_type=c["relationship_type"],
+            created_at=datetime.fromisoformat(c["created_at"]),
+        )
+        for c in connections
+    ]@app.get("/profile", response_model=UserProfileOut)
 async def get_profile_endpoint(user_id: str = Depends(get_user_id)):
     return get_profile(user_id)
 
@@ -1699,3 +1771,223 @@ async def revoke_key(key_id: str, user_id: str = Depends(get_user_id)):
     if not success:
         raise HTTPException(status_code=404, detail="API key not found")
     return {"success": True}
+
+from fastapi import UploadFile, File
+from app.fine_tuning import FineTuningService
+
+finetuning_service = FineTuningService()
+
+
+@app.post("/fine-tuning/export")
+async def fine_tuning_export(data: FineTuningExportRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        file_path = finetuning_service.export_labeled_data(data.user_id, limit=data.limit)
+        return {"file_path": file_path}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail="Export failed")
+
+
+@app.post("/fine-tuning/validate")
+async def fine_tuning_validate(file: UploadFile = File(...), user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    tmp_path = f"/tmp/validate_{user_id}_{file.filename}"
+    with open(tmp_path, "wb") as f:
+        f.write(await file.read())
+    is_valid = finetuning_service.validate_jsonl(tmp_path)
+    return {"valid": is_valid, "file_path": tmp_path}
+
+
+@app.post("/fine-tuning/jobs")
+async def fine_tuning_jobs_create(data: FineTuningJobCreate, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        job_id = finetuning_service.create_fine_tuning_job(
+            model=data.model,
+            training_file=data.training_file,
+            validation_file=data.validation_file,
+        )
+        return {"job_id": job_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Fine-tuning job creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Job creation failed")
+
+
+@app.get("/fine-tuning/jobs/{job_id}")
+async def fine_tuning_jobs_status(job_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        status = finetuning_service.check_job_status(job_id)
+        return status
+    except Exception as e:
+        logger.error(f"Job status check failed: {e}")
+        raise HTTPException(status_code=500, detail="Status check failed")
+
+
+@app.post("/fine-tuning/jobs/{job_id}/deploy")
+async def fine_tuning_jobs_deploy(job_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        model_id = finetuning_service.deploy_model(job_id)
+        return {"model_id": model_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Model deployment failed: {e}")
+        raise HTTPException(status_code=500, detail="Deployment failed")
+
+
+
+
+
+from fastapi import UploadFile, File
+from app.fine_tuning import FineTuningService
+from app.adapters.factory import get_adapter, health_check
+from app.schemas import LocalGenerateRequest, LocalGenerateResponse, LocalModelInfo, LocalPullRequest, LocalPullResponse
+from app.knowledge_distillation import KnowledgeDistillationService
+
+finetuning_service = FineTuningService()
+
+@app.post("/fine-tuning/export")
+async def fine_tuning_export(data: FineTuningExportRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        file_path = finetuning_service.export_labeled_data(data.user_id, limit=data.limit)
+        return {"file_path": file_path}
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Export failed: {e}")
+        raise HTTPException(status_code=500, detail="Export failed")
+
+
+@app.post("/fine-tuning/validate")
+async def fine_tuning_validate(file: UploadFile = File(...), user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    tmp_path = f"/tmp/validate_{user_id}_{file.filename}"
+    with open(tmp_path, "wb") as f:
+        f.write(await file.read())
+    is_valid = finetuning_service.validate_jsonl(tmp_path)
+    return {"valid": is_valid, "file_path": tmp_path}
+
+
+@app.post("/fine-tuning/jobs")
+async def fine_tuning_jobs_create(data: FineTuningJobCreate, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        job_id = finetuning_service.create_fine_tuning_job(
+            model=data.model,
+            training_file=data.training_file,
+            validation_file=data.validation_file,
+        )
+        return {"job_id": job_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Fine-tuning job creation failed: {e}")
+        raise HTTPException(status_code=500, detail="Job creation failed")
+
+
+@app.get("/fine-tuning/jobs/{job_id}")
+async def fine_tuning_jobs_status(job_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        status = finetuning_service.check_job_status(job_id)
+        return status
+    except Exception as e:
+        logger.error(f"Job status check failed: {e}")
+        raise HTTPException(status_code=500, detail="Status check failed")
+
+
+@app.post("/fine-tuning/jobs/{job_id}/deploy")
+async def fine_tuning_jobs_deploy(job_id: str, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        model_id = finetuning_service.deploy_model(job_id)
+        return {"model_id": model_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Model deployment failed: {e}")
+        raise HTTPException(status_code=500, detail="Deployment failed")
+
+
+
+@app.post("/local/generate", response_model=LocalGenerateResponse)
+async def local_generate(data: LocalGenerateRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        adapter = get_adapter(data.provider, data.model, host=data.host)
+        if data.stream:
+            raise HTTPException(status_code=400, detail="Use /local/stream for streaming responses.")
+        result = adapter.generate(data.prompt, system=data.system, temperature=data.temperature, max_tokens=data.max_tokens)
+        return LocalGenerateResponse(result=result, provider=data.provider, model=data.model)
+    except Exception as e:
+        logger.error(f"Local generate failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/local/stream")
+async def local_stream(data: LocalGenerateRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    async def generate():
+        try:
+            adapter = get_adapter(data.provider, data.model, host=data.host)
+            async for chunk in adapter.stream(data.prompt, system=data.system, temperature=data.temperature, max_tokens=data.max_tokens):
+                yield chunk
+        except Exception as e:
+            logger.error(f"Local stream failed: {e}")
+            yield f"[ERROR] {str(e)}"
+    return StreamingResponse(generate(), media_type="text/plain")
+
+
+@app.get("/local/models")
+async def local_models(user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    providers = ["ollama", "vllm"]
+    models = []
+    for provider in providers:
+        host = ""
+        if provider == "ollama":
+            host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        elif provider == "vllm":
+            host = os.getenv("VLLM_HOST", "http://localhost:8000")
+        try:
+            if provider == "ollama":
+                import httpx
+                with httpx.Client(timeout=5) as client:
+                    resp = client.get(f"{host}/api/tags")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        for m in data.get("models", []):
+                            models.append(LocalModelInfo(name=m.get("name", ""), provider=provider, host=host, available=True))
+            elif provider == "vllm":
+                import httpx
+                with httpx.Client(timeout=5) as client:
+                    resp = client.get(f"{host}/v1/models")
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        for m in data.get("data", []):
+                            models.append(LocalModelInfo(name=m.get("id", ""), provider=provider, host=host, available=True))
+        except Exception:
+            continue
+    return {"models": models}
+
+
+@app.post("/local/pull", response_model=LocalPullResponse)
+async def local_pull(data: LocalPullRequest, user_id: str = Depends(get_user_id)):
+    _ensure_db()
+    try:
+        from app.adapters.ollama_adapter import OllamaAdapter
+        host = data.host or os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        adapter = OllamaAdapter(host=host, model=data.model)
+        success = adapter.pull_model()
+        return LocalPullResponse(success=success, message="Pulled" if success else "Failed")
+    except Exception as e:
+        logger.error(f"Pull model failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

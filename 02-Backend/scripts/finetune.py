@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 Weekly fine-tune script for AstrovoxAI.
-Pulls high-rated interactions, formats as JSONL, and triggers fine-tuning API.
+Pulls high-rated interactions, formats as JSONL, validates, and triggers fine-tuning API.
 """
 import sys
 import os
 import json
 import argparse
-import urllib.request
-import urllib.error
+from datetime import datetime, timedelta, timezone
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import get_db
-from datetime import datetime, timedelta, timezone
+from app.training_data_validator import validate_jsonl_format, generate_validation_report
 
 
 def get_high_quality_interactions(min_rating=4, days=7, limit=5000):
@@ -65,6 +65,8 @@ def trigger_fine_tune(
     if not api_key:
         print("OPENAI_API_KEY not set. Skipping API call.")
         return None
+    import urllib.request
+    import urllib.error
     url = "https://api.openai.com/v1/files"
     boundary = "----FormBoundary7MA4YWxkTrZu0gW"
     with open(file_path, "rb") as f:
@@ -96,12 +98,17 @@ def trigger_fine_tune(
 def main():
     parser = argparse.ArgumentParser(description="Fine-tune pipeline")
     parser.add_argument("--trigger-api", action="store_true", help="Trigger fine-tuning API call")
+    parser.add_argument("--validate", action="store_true", help="Run validation and report errors")
+    parser.add_argument("--dry-run", action="store_true", help="Export and validate without triggering API")
+    parser.add_argument("--upload", action="store_true", help="Upload file to OpenAI fine-tuning endpoint")
     parser.add_argument("--model", default="gpt-4o-mini", help="Base model for fine-tuning")
+    parser.add_argument("--limit", type=int, default=5000, help="Max interactions to export")
+    parser.add_argument("--output", default=None, help="Output JSONL path")
     args = parser.parse_args()
 
     print("=== AstrovoxAI Fine-Tune Pipeline ===")
 
-    interactions = get_high_quality_interactions()
+    interactions = get_high_quality_interactions(limit=args.limit)
     if not interactions:
         print("No high-quality interactions found for fine-tuning.")
         return
@@ -109,15 +116,39 @@ def main():
     print(f"Found {len(interactions)} high-quality interactions")
 
     date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-    output_path = f"/tmp/finetune_{date_str}.jsonl"
+    output_path = args.output or f"/tmp/finetune_{date_str}.jsonl"
     export_jsonl(interactions, output_path)
 
-    count = validate_jsonl(output_path)
+    if args.validate:
+        report = generate_validation_report(output_path)
+        print("\nValidation report:")
+        print(f"  Valid: {report['valid']}")
+        print(f"  Record count: {report['record_count']}")
+        if report["errors"]:
+            print(f"  Errors ({len(report['errors'])}):")
+            for e in report["errors"][:20]:
+                print(f"    - {e}")
+        else:
+            print("  No errors found")
+        if not report["valid"]:
+            return
+    else:
+        count = validate_jsonl(output_path)
+        print(f"\nValidated {count} entries")
+
     print("\nReady for fine-tuning:")
     print(f"  File: {output_path}")
-    print(f"  Entries: {count}")
+    print(f"  Entries: {len(interactions)}")
 
-    if args.trigger_api:
+    if args.dry_run:
+        print("\nDry-run complete. Exiting without API calls.")
+        return
+
+    if args.upload:
+        print("\nUploading file...")
+        trigger_fine_tune(output_path, model=args.model)
+
+    if args.trigger_api and not args.upload:
         print("\nTriggering fine-tuning API...")
         trigger_fine_tune(output_path, model=args.model)
     else:

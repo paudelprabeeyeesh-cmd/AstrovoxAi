@@ -354,3 +354,102 @@ class ApiKeyCreateResponse(BaseModel):
 class ApiKeyRevokeRequest(BaseModel):
     key_id: str
 
+
+
+class FineTuningExportRequest(BaseModel):
+    user_id: str = Field(..., min_length=1)
+    limit: int = Field(5000, ge=1, le=50000)
+
+
+class FineTuningJobCreate(BaseModel):
+    model: str = Field("gpt-4o-mini", min_length=1)
+    training_file: str = Field(..., min_length=1)
+    validation_file: str | None = None
+
+
+class FineTuningJobStatus(BaseModel):
+    id: str
+    status: str
+    model: str
+    fine_tuned_model: str | None
+    created_at: datetime
+    finished_at: datetime | None
+    trained_tokens: int | None
+
+
+class FineTuningDeployRequest(BaseModel):
+    job_id: str = Field(..., min_length=1)
+
+class KnowledgeEntityCreate(BaseModel):
+    entity_type: str = Field(..., max_length=100)
+    name: str = Field(..., max_length=200)
+    properties: dict[str, Any] = {}
+
+
+class KnowledgeEntityOut(BaseModel):
+    id: str
+    entity_type: str
+    name: str
+    properties: dict[str, Any]
+    created_at: datetime
+
+
+class KnowledgeRelationshipCreate(BaseModel):
+    source_name: str = Field(..., max_length=200)
+    target_name: str = Field(..., max_length=200)
+    relationship_type: str = Field(..., max_length=100)
+    properties: dict[str, Any] = {}
+
+
+class KnowledgeRelationshipOut(BaseModel):
+    id: str
+    source_id: str
+    source_name: str
+    target_id: str
+    target_name: str
+    relationship_type: str
+    properties: dict[str, Any]
+    created_at: datetime
+
+
+class KnowledgeConnectionOut(BaseModel):
+    id: str
+    source_id: str
+    source_name: str
+    target_id: str
+    target_name: str
+    relationship_type: str
+    created_at: datetime
+
+class LocalGenerateRequest(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=50)
+    model: str = Field(..., min_length=1, max_length=200)
+    prompt: str = Field(..., min_length=1, max_length=10000)
+    system: str = Field("", max_length=4000)
+    temperature: float = Field(0.7, ge=0.0, le=2.0)
+    max_tokens: int = Field(2048, ge=1, le=32768)
+    stream: bool = False
+    host: str = Field("", max_length=500)
+
+
+class LocalGenerateResponse(BaseModel):
+    result: str
+    provider: str
+    model: str
+
+
+class LocalModelInfo(BaseModel):
+    name: str
+    provider: str
+    host: str
+    available: bool
+
+
+class LocalPullRequest(BaseModel):
+    model: str = Field(..., min_length=1, max_length=200)
+    host: str = Field("", max_length=500)
+
+
+class LocalPullResponse(BaseModel):
+    success: bool
+    message: str
