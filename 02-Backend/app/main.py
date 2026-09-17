@@ -1,4 +1,14 @@
 ﻿from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from .slo import SLOTracker
+from .circuit_breaker import (
+    llm_circuit_breaker,
+    db_circuit_breaker,
+    redis_circuit_breaker,
+    external_api_circuit_breaker,
+)
+from .retry import retry_with_backoff
+from .health import HealthCheckService
+from .degradation import DegradationManager
 from .core.prometheus_middleware import PrometheusMiddleware
 from .core.structured_logging import configure_logging, StructuredLoggingMiddleware
 
@@ -14,6 +24,8 @@ from contextlib import asynccontextmanager
 
 import asyncio
 import httpx
+import uuid
+from collections import defaultdict
 
 from fastapi import Depends, FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,16 +37,12 @@ from fastapi.staticfiles import StaticFiles
 from .ab_runner import get_variant
 from .admin_panel import router as admin_router
 from .ab_runner import record_result as record_ab_result
-# REMOVED
-# REMOVED
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
                    register_user, require_admin, require_verified_email)
 from .rbac import get_user_role, ROLE_PERMISSIONS, Role
 from .billing import (cancel_subscription, create_checkout_session,
                       create_premium_checkout_session, handle_stripe_webhook)
-# REMOVED
-# REMOVED
 from .citations import create_citation, get_sources
 from .conversations import (add_message, create_conversation, get_messages,
                             list_conversations, search_conversations)
@@ -64,7 +72,6 @@ from .schemas import (
 from .memory import (create_memory, delete_memory, export_memories,
                      list_memories, search_memories, update_memory)
 from .metrics import get_daily_cost, get_revenue, get_second_use_metric, get_usage
-# REMOVED
 from .profiles import get_profile, update_profile
 from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
@@ -87,6 +94,7 @@ from .security import PromptInjectionDetector, SecretScanner, InputSanitizer, En
 from .api_keys import create_api_key, revoke_api_key, list_api_keys, APIKey
 from jose import JWTError, jwt
 from .config import settings
+from .websocket_scaler import WebSocketScaler
 
 
 import sentry_sdk
@@ -182,6 +190,23 @@ class TimeoutMiddleware(BaseHTTPMiddleware):
             )
 
 
+class SLOMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        start_time = time.time()
+        response = None
+        try:
+            response = await call_next(request)
+            return response
+        finally:
+            status = response.status_code if response is not None else 500
+            latency = time.time() - start_time
+            slo_tracker.record_request(
+                endpoint=request.url.path,
+                status=status,
+                latency=latency,
+            )
+
+
 configure_logging()
 
 print("[astrovox] creating FastAPI app", flush=True)
@@ -212,6 +237,7 @@ app.add_middleware(StructuredLoggingMiddleware)
 app.add_middleware(APIVersionMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TimeoutMiddleware)
+app.add_middleware(SLOMiddleware)
 
 app.include_router(admin_router)
 
@@ -237,6 +263,12 @@ llm_client = LLMClient()
 context_manager = ContextManager()
 context_builder = ContextBuilder()
 prompt_manager = PromptVersionManager()
+ws_scaler = WebSocketScaler()
+connection_registry: dict[str, set] = defaultdict(set)
+
+slo_tracker = SLOTracker()
+degradation_manager = DegradationManager()
+health_service = HealthCheckService(app=app)
 
 import traceback
 
@@ -307,7 +339,11 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
         full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
 
         try:
-            llm_result = llm_client.call_llm(full_prompt, timeout=30)
+            llm_result = llm_circuit_breaker.call(
+                retry_with_backoff(llm_client.call_llm, max_retries=3, base_delay=1),
+                full_prompt,
+                timeout=30,
+            )
             response_text = llm_result.get("text", "")
             provider = llm_result.get("provider", "unknown")
             model = llm_result.get("model", "unknown")
@@ -441,31 +477,7 @@ async def health():
 
 @app.get('/health/detailed')
 async def health_detailed():
-    from datetime import datetime, timezone
-    checks = {}
-    db_status = 'disconnected'
-    redis_status = 'disconnected'
-    try:
-        from app.database import get_db
-        with get_db() as conn:
-            conn.execute('SELECT 1')
-        db_status = 'connected'
-    except Exception as e:
-        db_status = f'disconnected ({e})'
-    if hasattr(app.state, 'redis') and app.state.redis:
-        try:
-            app.state.redis.ping()
-            redis_status = 'connected'
-        except Exception as e:
-            redis_status = f'disconnected ({e})'
-    status = 'healthy' if db_status == 'connected' else 'degraded'
-    return {
-        'status': status,
-        'database': db_status,
-        'redis': redis_status,
-        'version': '0.5.0',
-        'timestamp': datetime.now(timezone.utc).isoformat(),
-    }
+    return health_service.get_overall_health()
 
 
 @app.get("/healthz")
@@ -1071,6 +1083,7 @@ async def _authenticate_ws(websocket: WebSocket) -> str:
 
 # REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED@app.websocket("/ws/chat/{session_id}")
 async def ws_chat(websocket: WebSocket, session_id: str):
+    await websocket.accept()
     token = websocket.query_params.get("token")
     user_id = None
     if token:
@@ -1083,7 +1096,6 @@ async def ws_chat(websocket: WebSocket, session_id: str):
         except JWTError:
             pass
     if not user_id:
-        await websocket.accept()
         try:
             first_message = await websocket.receive_text()
             try:
@@ -1102,74 +1114,22 @@ async def ws_chat(websocket: WebSocket, session_id: str):
         if not user_id:
             await websocket.close(code=4001, reason="Unauthorized")
             return
-    else:
-        await websocket.accept()
+    channel = f"chat:{session_id}:{user_id}"
+    ws_scaler.register_connection(channel, session_id)
+    connection_registry[channel].add(session_id)
+    heartbeat_task = asyncio.create_task(_heartbeat(websocket, channel, session_id))
     try:
-        while True:
-            data = await websocket.receive_text()
-            from app.core.router_v2 import get_router
-            router = get_router()
-            complexity = router.estimate_complexity(data)
-            model = router.select_tier(complexity)
-            prompt = data
-            system = "You are a helpful assistant."
-            async with httpx.AsyncClient(timeout=30) as client:
-                provider_url = None
-                api_key = None
-                for p_name in ["groq", "gemini", "mistral", "openrouter", "huggingface"]:
-                    key = os.getenv(f"{p_name.upper()}_API_KEY")
-                    if key:
-                        api_key = key
-                        if p_name == "groq":
-                            provider_url = "https://api.groq.com/openai/v1"
-                        elif p_name == "gemini":
-                            provider_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-                        elif p_name == "mistral":
-                            provider_url = "https://api.mistral.ai/v1"
-                        elif p_name == "openrouter":
-                            provider_url = "https://openrouter.ai/api/v1"
-                        else:
-                            provider_url = "https://router.huggingface.co/v1"
-                        break
-                if not provider_url:
-                    await websocket.send_json({"error": "no_provider"})
-                    continue
-                payload = {
-                    "model": model.model_id,
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "stream": True,
-                }
-                full_text = ""
-                start_time = time.time()
-                async with client.stream("POST", f"{provider_url}/chat/completions", json=payload, headers={"Authorization": f"Bearer {api_key}"}, timeout=30) as response:
-                    async for chunk in response.aiter_text():
-                        for line in chunk.splitlines():
-                            line = line.strip()
-                            if not line.startswith("data:"):
-                                continue
-                            data_str = line[len("data:"):].strip()
-                            if data_str == "[DONE]":
-                                await websocket.send_json({"type": "done"})
-                                continue
-                            try:
-                                parsed = json.loads(data_str)
-                                delta = parsed.get("choices", [{}])[0].get("delta", {})
-                                content = delta.get("content", "")
-                                if content:
-                                    full_text += content
-                                    await websocket.send_json({"type": "token", "content": content})
-                            except json.JSONDecodeError:
-                                pass
-                latency = time.time() - start_time
-                tokens = len(full_text.split())
-                router.record(model.model_id, tokens=tokens, latency_ms=latency, cached=False)
+        async for pub_message in ws_scaler.subscribe_to_channel(channel):
+            try:
+                await websocket.send_json(pub_message)
+            except Exception:
+                break
     except WebSocketDisconnect:
         pass
-    except Exception as e:
-        logger.warning(f"WebSocket chat error: {e}")
+    finally:
+        heartbeat_task.cancel()
+        ws_scaler.unregister_connection(channel, session_id)
+        connection_registry[channel].discard(session_id)
 
 
 @app.websocket("/ws/voice/{session_id}")
@@ -1178,6 +1138,10 @@ async def ws_voice(websocket: WebSocket, session_id: str):
     user_id = await _authenticate_ws(websocket)
     if user_id is None:
         return
+    channel = f"voice:{session_id}:{user_id}"
+    ws_scaler.register_connection(channel, session_id)
+    connection_registry[channel].add(session_id)
+    heartbeat_task = asyncio.create_task(_heartbeat(websocket, channel, session_id))
     audio_buffer = bytearray()
     try:
         while True:
@@ -1193,7 +1157,7 @@ async def ws_voice(websocket: WebSocket, session_id: str):
                     router = get_router()
                     complexity = router.estimate_complexity(transcript)
                     model = router.select_tier(complexity)
-                    await websocket.send_json({"transcript": transcript, "model": model.name})
+                    ws_scaler.publish_message(channel, {"transcript": transcript, "model": model.name})
                     async with httpx.AsyncClient(timeout=30) as client:
                         key = os.getenv("GROQ_API_KEY") or os.getenv("OPENROUTER_API_KEY")
                         base = "https://api.groq.com/openai/v1"
@@ -1208,7 +1172,7 @@ async def ws_voice(websocket: WebSocket, session_id: str):
                                         continue
                                     data_str = line[len("data:"):].strip()
                                     if data_str == "[DONE]":
-                                        await websocket.send_json({"type": "done"})
+                                        ws_scaler.publish_message(channel, {"type": "done"})
                                         continue
                                     try:
                                         parsed = json.loads(data_str)
@@ -1216,7 +1180,7 @@ async def ws_voice(websocket: WebSocket, session_id: str):
                                         content = delta.get("content", "")
                                         if content:
                                             full_text += content
-                                            await websocket.send_json({"type": "token", "content": content})
+                                            ws_scaler.publish_message(channel, {"type": "token", "content": content})
                                     except json.JSONDecodeError:
                                         pass
                         latency = time.time() - start_time
@@ -1230,6 +1194,28 @@ async def ws_voice(websocket: WebSocket, session_id: str):
         pass
     except Exception as e:
         logger.warning(f"WebSocket voice error: {e}")
+    finally:
+        heartbeat_task.cancel()
+        ws_scaler.unregister_connection(channel, session_id)
+        connection_registry[channel].discard(session_id)
+
+
+async def _heartbeat(websocket: WebSocket, channel: str, connection_id: str):
+    try:
+        while True:
+            await asyncio.sleep(25)
+            try:
+                await websocket.send_json({"type": "ping"})
+                pong = await asyncio.wait_for(websocket.receive_text(), timeout=5)
+                if pong == "pong":
+                    continue
+                break
+            except Exception:
+                break
+    except asyncio.CancelledError:
+        pass
+    ws_scaler.unregister_connection(channel, connection_id)
+    connection_registry[channel].discard(connection_id)
 
 
 from .core.router_v2 import get_router
@@ -1244,7 +1230,12 @@ async def billing_portal(user_id: str = Depends(require_verified_email)):
         ).fetchone()
         if not row or not row["stripe_customer_id"]:
             raise HTTPException(status_code=400, detail="No subscription found")
-        session = stripe.billing_portal.Session.create(
+        session = retry_with_backoff(
+            stripe.billing_portal.Session.create,
+            max_retries=3,
+            base_delay=1,
+            retryable_exceptions=(Exception,),
+        )(
             customer=row["stripe_customer_id"],
             return_url="https://astrovox.ai/settings",
         )
@@ -1252,25 +1243,9 @@ async def billing_portal(user_id: str = Depends(require_verified_email)):
 
 @app.get("/ready")
 async def ready():
-    checks = {}
-    try:
-        from app.database import get_db
-        with get_db() as conn:
-            conn.execute("SELECT 1")
-        checks["database"] = "ok"
-    except Exception as e:
-        checks["database"] = f"error: {e}"
-    
-    checks["redis"] = "not configured"
-    if hasattr(app.state, "redis") and app.state.redis:
-        try:
-            app.state.redis.ping()
-            checks["redis"] = "ok"
-        except Exception as e:
-            checks["redis"] = f"error: {e}"
-    
-    status = 200 if all(v == "ok" for v in checks.values()) else 503
-    return JSONResponse(status_code=status, content=checks)
+    result = health_service.get_overall_health()
+    status = 200 if result["status"] == "healthy" else 503
+    return JSONResponse(status_code=status, content=result)
 
 @app.get("/live")
 async def live():
