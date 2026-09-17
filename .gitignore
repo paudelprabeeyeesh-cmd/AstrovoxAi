@@ -93,12 +93,6 @@ supabase/
 database/
 tools/
 examples/
-Frontend/
-Backend/
-astrovox-ai/
-01-Frontend/
-storage/
-02-Backend/
 
 *.pyc
 .ruff_cache
@@ -108,6 +102,10 @@ astrovox_test.db
 .next/
 .vercel/
 out/
+*.tsbuildinfo
 
 # Local env files
 .env*.local
+
+# Browser extension (build artifact, not source-tracked)
+extension/

@@ -1,23 +1,43 @@
 import os
 import logging
+from datetime import timezone
 
-import stripe
+try:
+    import stripe
+except ImportError:
+    stripe = None
 
 from .database import get_db
 
 logger = logging.getLogger(__name__)
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+_STRIPE_CONFIGURED = False
+
+if stripe is not None:
+    secret_key = os.getenv("STRIPE_SECRET_KEY", "")
+    if secret_key:
+        stripe.api_key = secret_key
+        _STRIPE_CONFIGURED = True
 
 STRIPE_PRO_PRICE_ID = os.getenv("STRIPE_PRO_PRICE_ID")
 STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID")
 STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID")
 STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID")
 
-if not all([STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, STRIPE_PREMIUM_ACTION_PRICE_ID]):
-    raise RuntimeError("STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, and STRIPE_PREMIUM_ACTION_PRICE_ID must be set")
+if _STRIPE_CONFIGURED and not all(
+    [STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, STRIPE_PREMIUM_ACTION_PRICE_ID]
+):
+    raise RuntimeError(
+        "STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, "
+        "and STRIPE_PREMIUM_ACTION_PRICE_ID must be set when STRIPE_SECRET_KEY is configured"
+    )
 
 MAX_CONSECUTIVE_FAILURES = 3
+
+
+def _require_stripe():
+    if not _STRIPE_CONFIGURED:
+        raise RuntimeError("Stripe is not configured. Set STRIPE_SECRET_KEY to enable billing.")
 
 
 def _get_user_by_customer_id(customer_id: str):
@@ -52,11 +72,10 @@ def _reset_failed_payment_count(user_id: str):
 
 
 def _downgrade_to_free(user_id: str, customer_id: str):
+    _require_stripe()
     with get_db() as conn:
         conn.execute("UPDATE users SET plan = 'free' WHERE id = ?", (user_id,))
-        subs = stripe.Subscription.list(
-            customer=customer_id, status="active"
-        )
+        subs = stripe.Subscription.list(customer=customer_id, status="active")
         for sub in subs:
             stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
         conn.execute(
@@ -71,7 +90,10 @@ def _log_notification(user_id: str, message: str):
 
 
 def create_checkout_session(user_id: str, email: str, price_id: str = None) -> str:
+    _require_stripe()
     price_id = price_id or STRIPE_PRO_PRICE_ID
+    if not price_id:
+        raise RuntimeError("A price_id must be provided or STRIPE_PRO_PRICE_ID must be set.")
     session = stripe.checkout.Session.create(
         customer_email=email,
         payment_method_types=["card"],
@@ -91,7 +113,9 @@ def create_checkout_session(user_id: str, email: str, price_id: str = None) -> s
 
 
 def create_premium_checkout_session(user_id: str, email: str) -> str:
-    """Create checkout for one-time premium action ($29)."""
+    _require_stripe()
+    if not STRIPE_PREMIUM_ACTION_PRICE_ID:
+        raise RuntimeError("STRIPE_PREMIUM_ACTION_PRICE_ID must be set for premium checkouts.")
     session = stripe.checkout.Session.create(
         customer_email=email,
         payment_method_types=["card"],
@@ -111,6 +135,7 @@ def create_premium_checkout_session(user_id: str, email: str) -> str:
 
 
 def cancel_subscription(user_id: str):
+    _require_stripe()
     with get_db() as conn:
         row = conn.execute(
             "SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)
@@ -127,6 +152,7 @@ def cancel_subscription(user_id: str):
 
 
 def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
+    _require_stripe()
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
