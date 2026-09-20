@@ -113,21 +113,11 @@ def test_dunning_flow():
         }}}
         mock_stripe.Webhook.construct_event.return_value = mock_event
 
-        # Patch billing module's get_db (it imports from database)
-        with patch("app.billing.get_db") as mock_get_db:
-            mock_conn = MagicMock()
-            mock_get_db.return_value.__enter__.return_value = mock_conn
-            mock_conn.fetchone.side_effect = [
-                {"id": user_id, "stripe_customer_id": "cus_123"},
-                {"failed_payment_count": 1},
-                {"failed_payment_count": 2},
-                {"failed_payment_count": 3},
-            ]
-            mock_conn.execute.return_value = None
-            mock_conn.commit.return_value = None
+        with patch("app.billing._get_user_by_customer_id", return_value={"id": user_id, "stripe_customer_id": "cus_123"}) as mock_get_user, \
+             patch("app.billing._increment_failed_payment_count", side_effect=[1, 2, 3]) as mock_increment:
 
             payload = _make_webhook("invoice.payment_failed", {"customer": "cus_123"})
             for _ in range(3):
                 r = client.post("/billing/webhook", content=payload, headers={"stripe-signature": "sig"})
                 assert r.status_code == 200
-            assert mock_conn.execute.call_count >= 3
+            assert mock_increment.call_count >= 3

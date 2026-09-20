@@ -55,20 +55,16 @@ def mock_external_services():
     billing_module.stripe = mock_stripe
     billing_module._STRIPE_CONFIGURED = True
     
-    # Create a mock OpenAI client that returns proper responses
     mock_openai_client = MagicMock()
     
-    # Mock embeddings response
     mock_embedding_response = MagicMock()
     mock_embedding_response.data = [MagicMock()]
     mock_embedding_response.data[0].embedding = [0.1] * 1536
     mock_openai_client.embeddings.create.return_value = mock_embedding_response
     
-    # Mock moderation response - safe content
     mock_moderation_response = MagicMock()
     mock_moderation_result = MagicMock()
     mock_moderation_result.categories = MagicMock()
-    # Make all category checks return False
     mock_moderation_result.categories.hate = False
     mock_moderation_result.categories.hate_threatening = False
     mock_moderation_result.categories.self_harm = False
@@ -82,18 +78,19 @@ def mock_external_services():
     with patch('app.billing.stripe', mock_stripe), \
          patch.object(billing_module, '_STRIPE_CONFIGURED', True), \
          patch('openai.OpenAI', return_value=mock_openai_client), \
-         patch('app.core.router.call_llm', return_value={
+         patch('app.main.llm_client.call_llm', return_value={
              "text": "Mocked answer",
              "provider": "test",
              "model": "test-model",
              "tokens": 10,
              "confidence": 0.9,
          }), \
-         patch('app.core.router.call_llm_stream', return_value=iter([
+         patch('app.main.llm_client.stream_llm', return_value=iter([
              {"token": "Mocked", "provider": "test", "model": "test-model"},
              {"token": " answer", "provider": "test", "model": "test-model"},
          ])), \
          patch('app.core.moderation.check_moderation', return_value=(False, None)), \
+         patch('app.routers.solve.check_moderation', return_value=(False, None)), \
          patch('app.core.providers.get_active_providers', return_value=[]):
         
         yield {

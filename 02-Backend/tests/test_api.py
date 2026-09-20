@@ -25,14 +25,14 @@ def test_solve_endpoint():
     init_db()
     token, user_id = _register()
     headers = {"Authorization": f"Bearer {token}"}
-    with patch("app.core.router.call_llm", return_value={
+    with patch("app.main.llm_client.call_llm", return_value={
         "text": "Mocked answer",
         "provider": "groq",
         "model": "llama-3.3-70b-versatile",
         "tokens": 10,
         "confidence": 0.9,
     }):
-        with patch("app.core.grounding.ground_answer", return_value=("Mocked answer", False, 0.9)):
+        with patch("app.routers.solve.ground_answer", return_value=("Mocked answer", False, 0.9)):
             with patch("app.core.suggestions.SuggestionEngine") as MockSuggestion:
                 MockSuggestion.return_value.generate.return_value = []
                 r = client.post("/solve", json={"text": "Hello", "user_id": user_id}, headers=headers)
@@ -57,8 +57,8 @@ def test_streaming_endpoint():
         yield {"token": "Hello", "provider": "groq", "model": "llama-3.3-70b-versatile"}
         yield {"token": " world", "provider": "groq", "model": "llama-3.3-70b-versatile"}
 
-    with patch("app.core.router.call_llm_stream", side_effect=lambda *args, **kwargs: _fake_stream(kwargs.get("prompt", ""))):
-        with patch("app.core.grounding.ground_answer", return_value=("Hello world", False, 0.9)):
+    with patch("app.main.llm_client.stream_llm", side_effect=lambda *args, **kwargs: _fake_stream(kwargs.get("prompt", ""))):
+        with patch("app.routers.solve.ground_answer", return_value=("Hello world", False, 0.9)):
             with patch("app.core.suggestions.SuggestionEngine") as MockSuggestion:
                 MockSuggestion.return_value.generate.return_value = []
                 r = client.post("/solve/stream", json={"text": "Hello", "user_id": user_id}, headers=headers)
@@ -75,14 +75,14 @@ def test_usage_tracking():
     init_db()
     token, user_id = _register()
     headers = {"Authorization": f"Bearer {token}"}
-    with patch("app.core.router.call_llm", return_value={
+    with patch("app.main.llm_client.call_llm", return_value={
         "text": "Mocked answer",
         "provider": "groq",
         "model": "llama-3.3-70b-versatile",
         "tokens": 10,
         "confidence": 0.9,
     }):
-        with patch("app.core.grounding.ground_answer", return_value=("Mocked answer", False, 0.9)):
+        with patch("app.routers.solve.ground_answer", return_value=("Mocked answer", False, 0.9)):
             with patch("app.core.suggestions.SuggestionEngine") as MockSuggestion:
                 MockSuggestion.return_value.generate.return_value = []
                 r = client.post("/solve", json={"text": "Track usage", "user_id": user_id}, headers=headers)

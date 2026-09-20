@@ -9,14 +9,14 @@ def test_solve_returns_provider_and_model():
 
     init_db()
 
-    with patch("app.core.router.call_llm", return_value={
+    with patch("app.main.llm_client.call_llm", return_value={
         "text": "mocked answer",
         "provider": "groq",
         "model": "llama-3.3-70b-versatile",
         "tokens": 5,
         "confidence": 0.9,
     }):
-        with patch("app.core.grounding.ground_answer", return_value=("mocked answer", False, 0.9)):
+        with patch("app.routers.solve.ground_answer", return_value=("mocked answer", False, 0.9)):
             with patch("app.core.suggestions.SuggestionEngine") as MockSuggestion:
                 MockSuggestion.return_value.generate.return_value = []
                 client = TestClient(main_module.app)
