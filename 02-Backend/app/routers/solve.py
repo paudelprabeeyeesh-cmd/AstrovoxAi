@@ -27,6 +27,7 @@ from ..citations import create_citation, get_sources
 from ..core.budget import cost_circuit_breaker
 from ..audit import log_action
 from ..conversations import add_message, create_conversation
+from ..function_calling import FunctionCallingHandler
 
 logger = logging.getLogger(__name__)
 
@@ -68,18 +69,31 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
         memories = search_memories(user_id, req.text, limit=3)
         docs = search_docs(user_id, req.text, limit=3)
 
-        full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
+        context = context_builder.build_context(
+            user_id, prompt_with_canary, max_tokens=128000, include_tools=True
+        )
+        full_prompt = context["prompt"]
+        tools = context.get("tools", [])
 
         try:
-            llm_result = llm_circuit_breaker.call(
-                retry_with_backoff(llm_client.call_llm, max_retries=3, base_delay=1),
-                full_prompt,
-                timeout=30,
-            )
-            response_text = llm_result.get("text", "")
-            provider = llm_result.get("provider", "unknown")
-            model = llm_result.get("model", "unknown")
-            tokens = llm_result.get("tokens", count_tokens(full_prompt, model=model))
+            if tools:
+                handler = FunctionCallingHandler()
+                response_text = handler.handle_function_calling_loop(
+                    full_prompt, user_id, max_iterations=5
+                )
+                provider = "function-calling"
+                model = "auto"
+                tokens = count_tokens(full_prompt)
+            else:
+                llm_result = llm_circuit_breaker.call(
+                    retry_with_backoff(llm_client.call_llm, max_retries=3, base_delay=1),
+                    full_prompt,
+                    timeout=30,
+                )
+                response_text = llm_result.get("text", "")
+                provider = llm_result.get("provider", "unknown")
+                model = llm_result.get("model", "unknown")
+                tokens = llm_result.get("tokens", count_tokens(full_prompt, model=model))
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
             response_text = "I encountered an error processing your request."
@@ -101,7 +115,6 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
         add_message(conversation_id, "user", req.text, user_id)
         bot_msg = add_message(conversation_id, "assistant", grounded_response, user_id)
 
-        tokens = count_tokens(full_prompt, model=model)
         cost = round(tokens * 0.00001, 6)
         record_usage(user_id, tokens, cost, model, False)
 
@@ -181,7 +194,10 @@ async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verifie
     memories = search_memories(user_id, req.text, limit=3)
     docs = search_docs(user_id, req.text, limit=3)
 
-    full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
+    context = context_builder.build_context(
+        user_id, prompt_with_canary, max_tokens=128000, include_tools=False
+    )
+    full_prompt = context["prompt"]
 
     async def event_generator():
         try:

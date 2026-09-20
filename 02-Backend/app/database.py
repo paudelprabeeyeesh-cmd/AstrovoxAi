@@ -138,6 +138,45 @@ def init_db():
             _add_sqlite_column(conn, "memories", "memory_type", "TEXT")
             _add_sqlite_column(conn, "memories", "importance_score", "REAL DEFAULT 0.5")
             _add_sqlite_column(conn, "users", "failed_payment_count", "INTEGER DEFAULT 0")
+            conn.executescript("""
+                CREATE TABLE IF NOT EXISTS document_chunks (
+                    id TEXT PRIMARY KEY,
+                    document_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    embedding TEXT,
+                    metadata TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS tools (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL UNIQUE,
+                    description TEXT,
+                    schema_json TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS tool_calls (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT,
+                    message_id TEXT,
+                    tool_name TEXT NOT NULL,
+                    arguments_json TEXT,
+                    result TEXT,
+                    status TEXT DEFAULT 'pending',
+                    error TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS agent_runs (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT NOT NULL,
+                    user_id TEXT NOT NULL,
+                    steps INTEGER DEFAULT 0,
+                    status TEXT DEFAULT 'running',
+                    metadata TEXT,
+                    created_at TEXT,
+                    completed_at TEXT
+                );
+            """)
             conn.commit()
         finally:
             conn.close()
