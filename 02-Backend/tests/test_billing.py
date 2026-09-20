@@ -71,13 +71,6 @@ def test_stripe_webhook_idempotency():
         r2 = client.post("/billing/webhook", content=payload, headers={"stripe-signature": "sig"})
         assert r2.status_code == 200
 
-        with patch("app.database.get_db") as mock_get_db:
-            mock_conn = MagicMock()
-            mock_get_db.return_value.__enter__.return_value = mock_conn
-            mock_conn.fetchone.return_value = {"stripe_customer_id": "cus_123"}
-            subs = []
-            mock_stripe.Subscription.list.return_value = subs
-
 
 def test_subscription_lifecycle():
     user_id, email, token = _create_user()
@@ -120,7 +113,8 @@ def test_dunning_flow():
         }}}
         mock_stripe.Webhook.construct_event.return_value = mock_event
 
-        with patch("app.database.get_db") as mock_get_db:
+        # Patch billing module's get_db (it imports from database)
+        with patch("app.billing.get_db") as mock_get_db:
             mock_conn = MagicMock()
             mock_get_db.return_value.__enter__.return_value = mock_conn
             mock_conn.fetchone.side_effect = [
