@@ -111,3 +111,6 @@ out/
 
 # Browser extension (build artifact, not source-tracked)
 extension/
+
+# Test uploads
+02-Backend/storage/uploads/
