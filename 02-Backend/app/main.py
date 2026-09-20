@@ -1,4 +1,4 @@
-﻿from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 from .slo import SLOTracker
 from .circuit_breaker import (
     llm_circuit_breaker,
@@ -1254,6 +1254,13 @@ async def live():
     return {"status": "alive"}
 
 
+@app.get("/metrics/prometheus")
+async def prometheus_metrics_public():
+    from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+    from starlette.responses import Response
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
 
 from .analytics import record_event, get_aggregate_metrics, get_top_models, get_cost_trend
 from .rag_eval import create_evaluation, get_aggregate_metrics as get_rag_aggregate_metrics
@@ -1962,3 +1969,4 @@ async def local_pull(data: LocalPullRequest, user_id: str = Depends(get_user_id)
     except Exception as e:
         logger.error(f"Pull model failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+

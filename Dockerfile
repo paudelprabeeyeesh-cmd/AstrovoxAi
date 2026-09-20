@@ -1,4 +1,4 @@
-﻿FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12-slim-bookworm AS builder
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
@@ -23,4 +23,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf 
 
 HEALTHCHECK CMD curl -f http://localhost:8000/health || exit 1
 
+USER appuser
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
