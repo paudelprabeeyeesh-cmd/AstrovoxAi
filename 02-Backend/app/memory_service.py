@@ -160,10 +160,17 @@ class MemoryService:
             embedding_str = json.dumps(query_embedding)
 
             with get_db() as conn:
-                rows = conn.execute(
-                    "SELECT id, key, value, memory_type, importance_score, created_at, 1 - (embedding <=> ?::vector) as similarity FROM memories WHERE user_id = ? AND embedding IS NOT NULL ORDER BY embedding <=> ?::vector LIMIT ?",
-                    (embedding_str, user_id, embedding_str, limit),
-                ).fetchall()
+                database_url = os.getenv("DATABASE_URL", "")
+                if database_url.startswith("postgres"):
+                    rows = conn.execute(
+                        "SELECT id, key, value, memory_type, importance_score, created_at, 1 - (embedding <=> ?::vector) as similarity FROM memories WHERE user_id = ? AND embedding IS NOT NULL ORDER BY embedding <=> ?::vector LIMIT ?",
+                        (embedding_str, user_id, embedding_str, limit),
+                    ).fetchall()
+                else:
+                    rows = conn.execute(
+                        "SELECT id, key, value, memory_type, importance_score, created_at FROM memories WHERE user_id = ? AND (key LIKE ? OR value LIKE ?) ORDER BY created_at DESC LIMIT ?",
+                        (user_id, f"%{query}%", f"%{query}%", limit),
+                    ).fetchall()
                 return [
                     {
                         "id": r["id"],
@@ -172,7 +179,7 @@ class MemoryService:
                         "memory_type": r["memory_type"],
                         "importance_score": r["importance_score"],
                         "created_at": datetime.fromisoformat(r["created_at"]),
-                        "similarity": float(r["similarity"]),
+                        "similarity": float(r["similarity"]) if "similarity" in r.keys() else 1.0,
                     }
                     for r in rows
                 ]
