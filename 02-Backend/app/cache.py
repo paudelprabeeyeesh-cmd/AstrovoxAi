@@ -1,5 +1,6 @@
 import hashlib
 import json
+import socket
 
 _r = None
 
@@ -7,6 +8,12 @@ _r = None
 def _get_redis():
     global _r
     if _r is None:
+        try:
+            s = socket.create_connection(("localhost", 6379), timeout=1)
+            s.close()
+        except Exception:
+            _r = None
+            return None
         try:
             import redis
 

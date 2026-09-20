@@ -6,7 +6,7 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 from app.database import init_db, get_db
-from app.auth import register_user, login_user
+from app.auth import register_user, login_user, hash_password
 
 client = TestClient(importlib.import_module("app.main").app)
 
@@ -16,6 +16,9 @@ def _register_and_login(email=None, password="testpass123"):
         email = f"sec-{int(time.time())}-{uuid.uuid4().hex[:6]}@test.com"
     r = client.post("/auth/register", json={"email": email, "password": password})
     assert r.status_code == 200, r.text
+    with get_db() as conn:
+        conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
+        conn.commit()
     r = client.post("/auth/login", json={"email": email, "password": password})
     assert r.status_code == 200, r.text
     return r.json(), email
@@ -41,20 +44,20 @@ def test_email_verification_required():
 def test_ws_auth_valid_token():
     init_db()
     token, email = _register_and_login()
-    with client.websocket(f"/ws/chat/session-1?token={token['access_token']}") as ws:
+    with client.websocket_connect(f"/ws/chat/session-1?token={token['access_token']}") as ws:
         assert ws is not None
         ws.close()
 
 
 def test_ws_auth_invalid_token():
     init_db()
-    with client.websocket("/ws/chat/session-1?token=invalid") as ws:
+    with client.websocket_connect("/ws/chat/session-1?token=invalid") as ws:
         assert ws is not None
 
 
 def test_ws_auth_missing_token():
     init_db()
-    with client.websocket("/ws/chat/session-1") as ws:
+    with client.websocket_connect("/ws/chat/session-1") as ws:
         assert ws is not None
 
 
@@ -89,10 +92,11 @@ def test_admin_requires_admin_role():
     user_id = str(uuid.uuid4())
     os.environ["ADMIN_USER_IDS"] = user_id
     email = f"admin-{int(time.time())}@test.com"
+    password_hash = hash_password("test")
     with get_db() as conn:
         conn.execute(
             "INSERT INTO users (id, email, password_hash, role, email_verified) VALUES (?, ?, ?, ?, ?)",
-            (user_id, email, "hashed", "admin", 1),
+            (user_id, email, password_hash, "admin", 1),
         )
         conn.commit()
     r = client.post("/auth/login", json={"email": email, "password": "test"})

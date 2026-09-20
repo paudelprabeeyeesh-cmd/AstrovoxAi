@@ -7,7 +7,7 @@ client = TestClient(importlib.import_module("app.main").app)
 from app.auth import get_current_user
 
 def _mock_user():
-    return {"user_id": "test-user", "email": "test@test.com"}
+    return "test-user"
 
 @pytest.fixture(autouse=True)
 def _mock_auth():
@@ -18,7 +18,7 @@ def _mock_auth():
 
 class TestWorkflowEngine:
     def test_create_workflow(self):
-        r = client.post("/workflows", json={"name": "wf", "steps": []})
+        r = client.post("/workflows", json={"name": "wf", "steps": "step1"})
         assert r.status_code == 200
 
     def test_list_workflows(self):

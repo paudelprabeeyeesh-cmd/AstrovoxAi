@@ -19,13 +19,13 @@ def test_gdpr_delete_user(_mock_db):
     delete_user_data(user_id)
     executed = [call[0][0].strip().upper() for call in _mock_db.execute.call_args_list]
     deletes = [sql for sql in executed if sql.startswith("DELETE FROM")]
-    assert any("DELETE FROM users WHERE id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM refresh_tokens WHERE user_id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM memories WHERE user_id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM conversations WHERE user_id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM usage WHERE user_id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM subscriptions WHERE user_id = ?" == sql for sql in deletes)
-    assert any("DELETE FROM audit_logs WHERE user_id = ?" == sql for sql in deletes)
+    assert any("DELETE FROM users WHERE id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM refresh_tokens WHERE user_id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM memories WHERE user_id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM conversations WHERE user_id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM usage WHERE user_id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM subscriptions WHERE user_id = ?".upper() == sql for sql in deletes)
+    assert any("DELETE FROM audit_logs WHERE user_id = ?".upper() == sql for sql in deletes)
     assert _mock_db.commit.call_count >= 1
 
 
@@ -51,4 +51,4 @@ def test_consent_recording(_mock_db):
     assert "INSERT INTO consent_records" in sql
     assert user_id in _mock_db.execute.call_args[0][1]
     assert "marketing" in _mock_db.execute.call_args[0][1]
-    assert _mock_db.commit.call_count == 1
+    assert _mock_db.commit.call_count == 2

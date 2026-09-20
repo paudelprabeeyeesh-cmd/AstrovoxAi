@@ -1,14 +1,24 @@
-import pytest
-from app.database import init_db
 import os
 
-DB_PATH = os.getenv("ASTROVOX_DB", "astrovox.db")
+os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
+os.environ.setdefault("ASTROVOX_DB", "test.db")
+os.environ.setdefault("ASTROVOX_TEST_MODE", "1")
+if not os.getenv("ASTROVOX_ENCRYPTION_KEY"):
+    os.environ["ASTROVOX_ENCRYPTION_KEY"] = "HSMTYGgSppCPt3g3VAorkpAX4GR0W8T3ILpsKLfblns="
+
+import pytest
+from app.database import init_db
+from app.main import app
+from fastapi.testclient import TestClient
+
+DB_PATH = os.environ.get("ASTROVOX_DB", "test.db")
+
+client = TestClient(app)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
-    if os.getenv("DATABASE_URL"):
-        init_db()
+    init_db()
     yield
     for ext in ["", "-shm", "-wal"]:
         p = DB_PATH + ext

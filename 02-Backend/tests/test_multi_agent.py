@@ -7,7 +7,7 @@ client = TestClient(importlib.import_module("app.main").app)
 from app.auth import get_current_user
 
 def _mock_user():
-    return {"user_id": "test-user", "email": "test@test.com"}
+    return "test-user"
 
 @pytest.fixture(autouse=True)
 def _mock_auth():
@@ -18,9 +18,9 @@ def _mock_auth():
 
 class TestMultiAgent:
     def test_genui(self):
-        r = client.post("/genui", json={"prompt": "test"})
+        r = client.post("/genui", json={"text": "test"})
         assert r.status_code == 200
 
     def test_analytics_track(self):
-        r = client.post("/analytics/track", json={"event": "test"})
+        r = client.post("/analytics/track", json={"event_name": "test"})
         assert r.status_code in (200, 204)

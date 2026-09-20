@@ -27,6 +27,10 @@ def test_solve_returns_provider_and_model():
             email = f"solve-test-{int(time.time())}@test.com"
             r = client.post("/auth/register", json={"email": email, "password": "test123"})
             assert r.status_code == 200, r.text
+            from app.database import get_db
+            with get_db() as conn:
+                conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
+                conn.commit()
             login = client.post("/auth/login", json={"email": email, "password": "test123"})
             assert login.status_code == 200
             token = login.json()["access_token"]

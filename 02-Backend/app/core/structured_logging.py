@@ -7,6 +7,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
+logger = logging.getLogger(__name__)
+
 try:
     from pythonjsonlogger import json as pythonjsonlogger
 except ImportError:

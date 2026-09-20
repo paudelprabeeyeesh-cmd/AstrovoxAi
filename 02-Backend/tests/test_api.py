@@ -13,6 +13,9 @@ def _register():
     email = f"api-{int(time.time())}-{uuid.uuid4().hex[:6]}@test.com"
     r = client.post("/auth/register", json={"email": email, "password": "testpass123"})
     assert r.status_code == 200, r.text
+    with get_db() as conn:
+        conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
+        conn.commit()
     r = client.post("/auth/login", json={"email": email, "password": "testpass123"})
     assert r.status_code == 200, r.text
     return r.json()["access_token"], r.json()["user_id"]
@@ -85,7 +88,7 @@ def test_usage_tracking():
                 MockSuggestion.return_value.generate.return_value = []
                 r = client.post("/solve", json={"text": "Track usage", "user_id": user_id}, headers=headers)
                 assert r.status_code == 200, r.text
-    with patch("app.database.get_db") as mock_get_db:
+    with patch("app.usage.get_db") as mock_get_db:
         mock_conn = MagicMock()
         mock_get_db.return_value.__enter__.return_value = mock_conn
         mock_conn.fetchone.return_value = {"c": 1}

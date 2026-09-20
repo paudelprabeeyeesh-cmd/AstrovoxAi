@@ -76,6 +76,7 @@ from .prompts import PromptVersionManager
 from .rate_limit import RateLimitMiddleware
 from .referrals import create_referral, get_referral_stats
 from .schedules import create_schedule, delete_schedule, list_schedules
+from .tools import create_tool, delete_tool, list_tools
 from .schemas import (AnalyticsEventCreate, AnalyticsAggregateOut, RAGEvalCreate, ExperimentCreate, ExperimentOut, ExperimentResultOut, ConversationOut, ConversationSearchOut, FeedbackCreate,
                       FeedbackOut, KnowledgeDocCreate, KnowledgeDocOut,
                       MemoryCreate, MemoryOut, MemoryUpdate, MessageOut,
@@ -108,15 +109,15 @@ try:
 except ImportError:
     sentry_sdk = None
 
-print("[astrovox] imports complete", flush=True)
+logger.info("[astrovox] imports complete")
 
 
 @asynccontextmanager
 async def lifespan(app):
-    print("[astrovox] lifespan startup", flush=True)
+    logger.info("[astrovox] lifespan startup")
     init_tracing(app=app)
     yield
-    print("[astrovox] lifespan shutdown", flush=True)
+    logger.info("[astrovox] lifespan shutdown")
     logger.info("Shutting down AstrovoxAI")
 
     try:
@@ -211,9 +212,9 @@ class SLOMiddleware(BaseHTTPMiddleware):
 
 configure_logging()
 
-print("[astrovox] creating FastAPI app", flush=True)
+logger.info("[astrovox] creating FastAPI app")
 app = FastAPI(title="AstrovoxAi", version="0.5.0", lifespan=lifespan)
-print("[astrovox] FastAPI app created", flush=True)
+logger.info("[astrovox] FastAPI app created")
 security = HTTPBearer()
 
 allowed_origins = [
@@ -258,6 +259,8 @@ def _ensure_db():
 
 
 def get_user_id(user_id: str = Depends(get_current_user)) -> str:
+    if isinstance(user_id, dict):
+        user_id = user_id.get("user_id") or user_id.get("sub") or next(iter(user_id.values()))
     return user_id
 
 
@@ -1083,7 +1086,7 @@ async def _authenticate_ws(websocket: WebSocket) -> str:
         return None
 
 
-# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED# REMOVED@app.websocket("/ws/chat/{session_id}")
+@app.websocket("/ws/chat/{session_id}")
 async def ws_chat(websocket: WebSocket, session_id: str):
     await websocket.accept()
     token = websocket.query_params.get("token")
@@ -1117,21 +1120,24 @@ async def ws_chat(websocket: WebSocket, session_id: str):
             await websocket.close(code=4001, reason="Unauthorized")
             return
     channel = f"chat:{session_id}:{user_id}"
-    ws_scaler.register_connection(channel, session_id)
-    connection_registry[channel].add(session_id)
-    heartbeat_task = asyncio.create_task(_heartbeat(websocket, channel, session_id))
     try:
-        async for pub_message in ws_scaler.subscribe_to_channel(channel):
-            try:
-                await websocket.send_json(pub_message)
-            except Exception:
-                break
-    except WebSocketDisconnect:
+        ws_scaler.register_connection(channel, session_id)
+        connection_registry[channel].add(session_id)
+        heartbeat_task = asyncio.create_task(_heartbeat(websocket, channel, session_id))
+        try:
+            async for pub_message in ws_scaler.subscribe_to_channel(channel):
+                try:
+                    await websocket.send_json(pub_message)
+                except Exception:
+                    break
+        except WebSocketDisconnect:
+            pass
+        finally:
+            heartbeat_task.cancel()
+            ws_scaler.unregister_connection(channel, session_id)
+            connection_registry[channel].discard(session_id)
+    except Exception:
         pass
-    finally:
-        heartbeat_task.cancel()
-        ws_scaler.unregister_connection(channel, session_id)
-        connection_registry[channel].discard(session_id)
 
 
 @app.websocket("/ws/voice/{session_id}")

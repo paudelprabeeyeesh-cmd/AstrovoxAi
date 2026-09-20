@@ -1,29 +1,26 @@
 import uuid
-from unittest.mock import patch, MagicMock
+from fastapi.testclient import TestClient
+import importlib
 
-_mock_conn = MagicMock()
-_mock_cur = _mock_conn.cursor.return_value
-_mock_cur.lastrowid = uuid.uuid4().hex
-
-_mock_db = MagicMock()
-_mock_db.__enter__ = MagicMock(return_value=_mock_conn)
-_mock_db.__exit__ = MagicMock(return_value=False)
+client = TestClient(importlib.import_module("app.main").app)
 
 
 def _create_verified_user(prefix: str):
     email = f"{prefix}-{uuid.uuid4().hex[:8]}@test.com"
-    user_id = str(uuid.uuid4())
-    with patch("app.database.get_db") as mock_get_db:
-        mock_get_db.return_value = _mock_db
-        conn = mock_get_db().__enter__.return_value
-        cur = conn.cursor.return_value
-        cur.execute(
-            "INSERT INTO users (id, email, password_hash, email_verified) VALUES (%s, %s, %s, %s)",
-            (user_id, email, "hashed", 1),
-        )
-        conn.commit.return_value = None
-    from app.auth import create_access_token
-    token = create_access_token(user_id, email)
+    password = "testpass123"
+    r = client.post("/auth/register", json={"email": email, "password": password})
+    assert r.status_code == 200, r.text
+    user_id = r.json()["user"]["user_id"]
+
+    from app.auth import create_verification_token
+    verification_token = create_verification_token(user_id, email)
+    r = client.post("/auth/verify", params={"token": verification_token})
+    assert r.status_code == 200, r.text
+
+    r = client.post("/auth/login", json={"email": email, "password": password})
+    assert r.status_code == 200, r.text
+    token = r.json()["access_token"]
+
     return user_id, token
 
 
