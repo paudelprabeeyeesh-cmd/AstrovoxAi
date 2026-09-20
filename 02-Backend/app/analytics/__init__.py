@@ -9,6 +9,7 @@ from .enhanced import (
 )
 from .core import (
     record_event,
+    track_event,
     get_aggregate_metrics,
     get_top_models,
     get_cost_trend,
@@ -22,6 +23,7 @@ __all__ = [
     "export_analytics_json",
     "get_realtime_dashboard",
     "record_event",
+    "track_event",
     "get_aggregate_metrics",
     "get_top_models",
     "get_cost_trend",

@@ -1065,7 +1065,7 @@ async def prometheus_metrics_public():
 
 
 
-from .analytics import record_event, get_aggregate_metrics, get_top_models, get_cost_trend
+from .analytics import record_event, track_event, get_aggregate_metrics, get_top_models, get_cost_trend
 from .rag_eval import create_evaluation, get_aggregate_metrics as get_rag_aggregate_metrics
 from .experiments import create_experiment, assign_variant, record_win, get_winner, list_experiments
 

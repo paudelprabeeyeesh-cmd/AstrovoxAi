@@ -7,7 +7,7 @@ client = TestClient(importlib.import_module("app.main").app)
 from app.auth import get_current_user
 
 def _mock_user():
-    return {"user_id": "test-user", "email": "test@test.com"}
+    return "test-user"
 
 @pytest.fixture(autouse=True)
 def _mock_auth():
@@ -22,5 +22,5 @@ class TestPluginFramework:
         assert r.status_code == 200
 
     def test_create_referral(self):
-        r = client.post("/referrals", json={"email": "friend@test.com"})
+        r = client.post("/referrals?email=friend@test.com")
         assert r.status_code in (200, 400)

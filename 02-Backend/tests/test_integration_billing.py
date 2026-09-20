@@ -7,7 +7,7 @@ client = TestClient(importlib.import_module("app.main").app)
 from app.auth import get_current_user
 
 def _mock_user():
-    return {"user_id": "test-user", "email": "test@test.com"}
+    return "test-user"
 
 @pytest.fixture(autouse=True)
 def _mock_auth():
@@ -22,7 +22,7 @@ class TestIntegrationBilling:
         assert r.status_code in (200, 404)
 
     def test_create_checkout_session(self):
-        r = client.post("/billing/checkout", json={"plan": "pro"})
+        r = client.post("/billing/checkout")
         assert r.status_code in (200, 400, 500)
 
     def test_get_usage(self):

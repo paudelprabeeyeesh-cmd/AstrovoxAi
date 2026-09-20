@@ -7,6 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import app.main as main_module
+import app.billing as billing_module
 
 client = TestClient(main_module.app)
 
@@ -54,7 +55,7 @@ def _make_webhook(event_type, data_object):
 
 def test_stripe_webhook_idempotency():
     user_id, email, token = _create_user()
-    with patch("app.billing.stripe") as mock_stripe:
+    with patch.object(billing_module, "_STRIPE_CONFIGURED", True), patch("app.billing.stripe") as mock_stripe:
         mock_stripe.api_key = "sk_test"
         mock_event = {"type": "checkout.session.completed", "data": {"object": {
             "customer": "cus_123", "metadata": {"user_id": user_id}
@@ -80,7 +81,7 @@ def test_stripe_webhook_idempotency():
 
 def test_subscription_lifecycle():
     user_id, email, token = _create_user()
-    with patch("app.billing.stripe") as mock_stripe:
+    with patch.object(billing_module, "_STRIPE_CONFIGURED", True), patch("app.billing.stripe") as mock_stripe:
         mock_stripe.api_key = "sk_test"
         mock_session = MagicMock()
         mock_session.customer = "cus_123"
@@ -112,7 +113,7 @@ def test_subscription_lifecycle():
 
 def test_dunning_flow():
     user_id, email, token = _create_user()
-    with patch("app.billing.stripe") as mock_stripe:
+    with patch.object(billing_module, "_STRIPE_CONFIGURED", True), patch("app.billing.stripe") as mock_stripe:
         mock_stripe.api_key = "sk_test"
         mock_event = {"type": "invoice.payment_failed", "data": {"object": {
             "customer": "cus_123"

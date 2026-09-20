@@ -17,12 +17,13 @@ def test_solve_returns_provider_and_model():
         mock_client.chat.completions.create.return_value = mock_response
         MockOpenAI.return_value = mock_client
 
-        with patch.object(main_module.llm_client, "call_llm", return_value={
-            "text": "mocked answer",
-            "provider": "groq",
-            "model": "llama-3.3-70b-versatile",
-            "tokens": 5,
-        }):
+        with patch("app.routers.solve.llm_client") as mock_llm:
+            mock_llm.call_llm.return_value = {
+                "text": "mocked answer",
+                "provider": "groq",
+                "model": "llama-3.3-70b-versatile",
+                "tokens": 5,
+            }
             client = TestClient(main_module.app)
             email = f"solve-test-{int(time.time())}@test.com"
             r = client.post("/auth/register", json={"email": email, "password": "test123"})
