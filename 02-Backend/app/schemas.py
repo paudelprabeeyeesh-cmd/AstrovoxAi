@@ -185,7 +185,13 @@ class GenUIResponse(BaseModel):
 
 class AnalyticsEventCreate(BaseModel):
     event_type: str = Field(..., max_length=100)
-    properties: dict[str, Any] = {}
+    properties: dict[str, Any] = Field(default_factory=dict)
+
+
+class TrackEventRequest(BaseModel):
+    event_name: str
+    properties: dict[str, Any] = Field(default_factory=dict)
+    user_id: str | None = None
 
 
 class AnalyticsAggregateOut(BaseModel):

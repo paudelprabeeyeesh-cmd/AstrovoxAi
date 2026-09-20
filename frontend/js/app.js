@@ -336,8 +336,9 @@ class App {
       </div>
       <div class="chat-layout">
         <aside class="chat-sidebar">
-          <div class="chat-sidebar-header">
+          <div class="chat-sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
             <h2>Conversations</h2>
+            <button class="btn btn-sm btn-primary" id="new-chat-btn">+ New</button>
           </div>
           <div class="conversation-list" id="conversation-list">
             <div class="loading-container">

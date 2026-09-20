@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from ..core.llm import LLMClient
 from ..core.grounding import ground_answer
 from ..core.guardrails import add_canary, validate_output, sanitize_input
 from ..core.moderation import check_moderation
@@ -17,7 +16,6 @@ from ..schemas import SolveRequest, SolveResponse
 from ..auth import require_verified_email
 from ..circuit_breaker import llm_circuit_breaker
 from ..retry import retry_with_backoff
-from ..context_builder import ContextBuilder
 from ..database import get_db
 from ..memory import search_memories
 from ..knowledge import search_docs
@@ -29,19 +27,17 @@ from ..citations import create_citation, get_sources
 from ..core.budget import cost_circuit_breaker
 from ..audit import log_action
 from ..conversations import add_message, create_conversation
-from ..core.router_v2 import get_router as get_llm_router
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["solve"])
 
-llm_client = LLMClient()
-context_builder = ContextBuilder()
-
 
 @router.post("/solve", response_model=SolveResponse)
 async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email)):
+    from ..main import llm_client, context_builder
     from ..database import init_db
+
     init_db()
 
     with start_trace("solve", user_id, {"query_length": len(req.text)}):
@@ -157,7 +153,9 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
 
 @router.post("/solve/stream")
 async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verified_email)):
+    from ..main import llm_client, context_builder
     from ..database import init_db
+
     init_db()
     sanitized, injection_detected = sanitize_input(req.text)
     if injection_detected:

@@ -49,6 +49,8 @@ private/
 *.apikey
 api_key*
 API_KEY*
+.env.example
+
 
 # Python
 __pycache__/

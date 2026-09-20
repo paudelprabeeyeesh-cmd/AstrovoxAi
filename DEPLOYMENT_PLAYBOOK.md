@@ -1,4 +1,4 @@
-# AstrovoxAI — Deployment Playbook
+# AstrovoxAI  Deployment Playbook
 
 ## Pre-Flight Checklist
 - [ ] GitHub repo is up to date: https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi

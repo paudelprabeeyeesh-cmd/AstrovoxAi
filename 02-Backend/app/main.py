@@ -86,10 +86,10 @@ from .schemas import (AnalyticsEventCreate, AnalyticsAggregateOut, RAGEvalCreate
                       MemoryCreate, MemoryOut, MemoryUpdate, MessageOut,
                       ScheduleCreate, ScheduleOut, SolveRequest, SolveResponse,
                        TemplateCreate, TemplateOut, ToolCreate, ToolOut,
-                       UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord,
-                       SecurityScanPromptRequest, SecurityScanPromptResponse, SecurityScanSecretsRequest, SecurityScanSecretsResponse,
-                       AuditLogRequest, AuditLogResponse, AuditLogsResponse,
-                        ApiKeyCreateRequest, ApiKeyCreateResponse, ApiKeyRevokeRequest)
+                        UserProfileOut, WorkflowCreate, WorkflowOut, GenUIResponse, ConsentRecord,
+                        SecurityScanPromptRequest, SecurityScanPromptResponse, SecurityScanSecretsRequest, SecurityScanSecretsResponse,
+                         AuditLogRequest, AuditLogResponse, AuditLogsResponse,
+                          ApiKeyCreateRequest, ApiKeyCreateResponse, ApiKeyRevokeRequest, TrackEventRequest)
 from .templates import (create_template, delete_template, list_templates,
                         update_template)
 from .usage import record_usage
@@ -380,12 +380,6 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class TrackEventRequest(BaseModel):
-    event_name: str
-    properties: dict = {}
-    user_id: Optional[str] = None
-
-
 class ForgotPasswordRequest(BaseModel):
     email: str
 
@@ -671,7 +665,10 @@ async def get_entity_connections(name: str, user_id: str = Depends(get_user_id))
             created_at=datetime.fromisoformat(c["created_at"]),
         )
         for c in connections
-    ]@app.get("/profile", response_model=UserProfileOut)
+    ]
+
+
+@app.get("/profile", response_model=UserProfileOut)
 async def get_profile_endpoint(user_id: str = Depends(get_user_id)):
     return get_profile(user_id)
 

@@ -132,3 +132,6 @@ class StorageService:
         except Exception as e:
             logger.error(f"R2 upload failed: {e}")
             raise
+
+
+storage_service = StorageService()

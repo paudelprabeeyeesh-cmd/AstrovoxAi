@@ -41,6 +41,8 @@ def has_permission(user_id: str, permission: str, resource: str) -> bool:
 
 
 def get_user_role(user_id: str) -> str:
+    if isinstance(user_id, dict):
+        user_id = user_id.get("user_id") or user_id.get("sub") or next(iter(user_id.values()))
     with get_db() as conn:
         row = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
         if not row:
