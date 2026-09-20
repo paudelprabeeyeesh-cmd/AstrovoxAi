@@ -60,7 +60,7 @@ from .core.moderation import check_moderation
 from .core.pii import redact_pii
 from .core.tracing import get_prompt_hash, init_tracing, log_llm_call, start_trace
 from .cost import count_tokens
-from .database import init_db
+from .database import init_db, get_db
 from .feedback import create_feedback, delete_feedback, list_feedback
 from .compliance import delete_user_data, export_user_data, record_consent
 from .interactions import create_interaction
