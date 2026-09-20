@@ -185,16 +185,49 @@ class RAGEngine:
     def search(self, query, user_id, top_k=5):
         query_embedding = self.embed_chunks([query])[0]
         embedding_bytes = self._serialize_embedding(query_embedding)
-        raw_results = search_chunks(user_id, embedding_bytes, top_k)
-        results = []
-        for row in raw_results:
-            results.append({
+        dense_results = search_chunks(user_id, embedding_bytes, top_k * 2)
+        dense = []
+        for row in dense_results:
+            dense.append({
                 "chunk_id": row["id"],
                 "document_id": row["document_id"],
                 "content": row["content"],
                 "filename": row["filename"],
                 "metadata": row.get("metadata", {}),
                 "score": float(row.get("score", 0.0)),
+                "source": "dense",
+            })
+
+        sparse = self._sparse_search(query, user_id, top_k * 2)
+
+        candidates = {c["chunk_id"]: c for c in dense}
+        for s in sparse:
+            cid = s.get("chunk_id")
+            if cid in candidates:
+                candidates[cid]["score"] = max(candidates[cid]["score"], s["score"] * 0.8)
+                candidates[cid]["source"] = "hybrid"
+            else:
+                candidates[cid] = s
+                candidates[cid]["source"] = "sparse"
+
+        combined = list(candidates.values())
+        combined.sort(key=lambda x: x.get("score", 0.0), reverse=True)
+        reranked = self.rerank(query, combined[:top_k * 2], top_k=top_k)
+        return reranked
+
+    def _sparse_search(self, query, user_id, limit=10):
+        from .knowledge import search_docs
+        docs = search_docs(user_id, query, limit=limit)
+        results = []
+        for doc in docs:
+            results.append({
+                "chunk_id": doc.id,
+                "document_id": doc.id,
+                "content": doc.content,
+                "filename": doc.title,
+                "metadata": {},
+                "score": 0.5,
+                "source": "sparse",
             })
         return results
 

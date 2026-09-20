@@ -58,11 +58,13 @@ class FunctionCallingHandler:
             parts.append(f"[{r['name']} result: {r['content']}]")
         return "\n".join(parts)
 
-    def handle_function_calling_loop(self, prompt: str, user_id: str, max_iterations: int = 5) -> str:
+    def handle_function_calling_loop(self, prompt: str, user_id: str, max_iterations: int = 5) -> tuple[str, str, str]:
         from app.core.router import call_llm
 
         tools = self.executor.get_available_tools(user_id)
         messages = [{"role": "user", "content": prompt}]
+        model = "auto"
+        provider = "function-calling"
 
         for _ in range(max_iterations):
             try:
@@ -73,13 +75,15 @@ class FunctionCallingHandler:
                 )
             except Exception as e:
                 logger.error(f"LLM call failed: {e}")
-                return f"Error: {e}"
+                return f"Error: {e}", model, provider
 
             text = response.get("text", "")
             tool_calls = response.get("tool_calls", [])
+            model = response.get("model", model)
+            provider = response.get("provider", provider)
 
             if not tool_calls:
-                return text
+                return text, model, provider
 
             if response.get("choices"):
                 msg = response["choices"][0]["message"]
@@ -102,7 +106,7 @@ class FunctionCallingHandler:
                 messages=messages,
                 timeout=30,
             )
-            return final.get("text", "")
+            return final.get("text", ""), final.get("model", model), final.get("provider", provider)
         except Exception as e:
             logger.error(f"Final LLM call failed: {e}")
-            return self.format_tool_results(tool_results)
+            return self.format_tool_results(tool_results), model, provider

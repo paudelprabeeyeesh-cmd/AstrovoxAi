@@ -78,11 +78,9 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
         try:
             if tools:
                 handler = FunctionCallingHandler()
-                response_text = handler.handle_function_calling_loop(
+                response_text, model, provider = handler.handle_function_calling_loop(
                     full_prompt, user_id, max_iterations=5
                 )
-                provider = "function-calling"
-                model = "auto"
                 tokens = count_tokens(full_prompt)
             else:
                 llm_result = llm_circuit_breaker.call(

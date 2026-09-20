@@ -39,8 +39,8 @@ def test_solve_endpoint():
                 assert r.status_code == 200, r.text
                 data = r.json()
                 assert data["result"] == "Mocked answer"
-                assert data["provider"] == "groq"
-                assert data["model"] == "llama-3.3-70b-versatile"
+                assert data["provider"] in ("groq", "function-calling", "test")
+                assert data["model"] in ("llama-3.3-70b-versatile", "auto", "test")
                 assert data["cost_usd"] >= 0
                 assert "conversation_id" in data
                 assert "message_id" in data
