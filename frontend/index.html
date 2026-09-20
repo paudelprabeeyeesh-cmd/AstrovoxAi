@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AstrovoxAI - Enterprise AI Infrastructure</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      try {
+        const stored = localStorage.getItem('api_base');
+        if (stored) {
+          window.__API_BASE__ = stored;
+          return;
+        }
+      } catch {}
+      const host = window.location.host;
+      if (host && host !== 'localhost:8000') {
+        window.__API_BASE__ = 'http://' + host;
+      } else {
+        window.__API_BASE__ = 'http://localhost:8000';
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <script src="js/auth.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

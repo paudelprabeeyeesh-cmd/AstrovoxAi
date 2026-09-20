@@ -36,6 +36,10 @@ from fastapi.staticfiles import StaticFiles
 
 from .ab_runner import get_variant
 from .admin_panel import router as admin_router
+from .routers import solve as solve_router
+from .routers import memory as memory_router
+from .routers import rag as rag_router
+from .routers import files as files_router
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -243,6 +247,10 @@ app.add_middleware(TimeoutMiddleware)
 app.add_middleware(SLOMiddleware)
 
 app.include_router(admin_router)
+app.include_router(solve_router.router)
+app.include_router(memory_router.router)
+app.include_router(rag_router.router)
+app.include_router(files_router.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 
@@ -312,167 +320,6 @@ async def genui(req: SolveRequest, user_id: str = Depends(require_verified_email
     except Exception as e:
         return GenUIResponse(type="visualization", data={"error": str(e)})
 
-@app.post("/solve")
-async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    with start_trace("solve", user_id, {"query_length": len(req.text)}):
-        sanitized, injection_detected = sanitize_input(req.text)
-        if injection_detected:
-            log_action(
-                user_id, "injection_attempt", json.dumps({"query": req.text[:100]})
-            )
-
-        moderated, flagged_category = check_moderation(sanitized)
-        if moderated:
-            return SolveResponse(
-                model="moderation",
-                cost_usd=0.0,
-                cached=False,
-                memories_used=[],
-                conversation_id=None,
-                message_id=None,
-                confidence=0.0,
-                refused=False,
-                suggestions=[],
-            )
-        redacted = redact_pii(sanitized)
-        prompt_with_canary = add_canary(redacted)
-
-        memories = search_memories(user_id, req.text, limit=3)
-        docs = search_docs(user_id, req.text, limit=3)
-
-        full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
-
-        try:
-            llm_result = llm_circuit_breaker.call(
-                retry_with_backoff(llm_client.call_llm, max_retries=3, base_delay=1),
-                full_prompt,
-                timeout=30,
-            )
-            response_text = llm_result.get("text", "")
-            provider = llm_result.get("provider", "unknown")
-            model = llm_result.get("model", "unknown")
-            tokens = llm_result.get("tokens", count_tokens(full_prompt, model=model))
-        except Exception as e:
-            logger.error(f"LLM call failed: {e}")
-            response_text = "I encountered an error processing your request."
-            provider = "error"
-            model = "error"
-            tokens = 0
-
-        cleaned_response, canary_detected = validate_output(response_text)
-
-        grounded_response, refused, confidence = ground_answer(
-            cleaned_response, docs, req.text
-        )
-
-        conversation_id = req.conversation_id
-        if not conversation_id:
-            conv = create_conversation(user_id, title=req.text[:50])
-            conversation_id = conv.id
-
-        add_message(conversation_id, "user", req.text, user_id)
-        bot_msg = add_message(conversation_id, "assistant", grounded_response, user_id)
-
-        tokens = count_tokens(full_prompt, model=model)
-        cost = round(tokens * 0.00001, 6)
-        record_usage(user_id, tokens, cost, model, False)
-
-        ab_variant = get_variant("model-comparison", user_id)
-        if ab_variant:
-            record_ab_result("model-comparison", ab_variant, "cost", cost)
-
-        sources = get_sources(str(uuid.uuid4()), user_id)
-        citations = [create_citation(s, grounded_response[:200]) for s in sources]
-
-        prompt_hash = get_prompt_hash(full_prompt)
-        log_llm_call(
-            prompt_hash=prompt_hash,
-            model=model,
-            tokens=tokens,
-            cost=cost,
-            latency_ms=0,
-            cached=False,
-        )
-
-        cost_circuit_breaker.record_cost(user_id, cost)
-
-        create_interaction(
-            user_id=user_id,
-            prompt=req.text,
-            response=grounded_response,
-            model=model,
-            tokens=tokens,
-            cost=cost,
-            latency_ms=0,
-        )
-        suggestion_engine = SuggestionEngine()
-        suggestions = suggestion_engine.generate(user_id, [m.key for m in memories])
-
-        return SolveResponse(
-            result=grounded_response,
-            provider=provider,
-            model=model,
-            cost_usd=cost,
-            cached=False,
-            memories_used=[m.key for m in memories],
-            conversation_id=conversation_id,
-            message_id=bot_msg.id,
-            confidence=confidence,
-            refused=refused,
-            suggestions=suggestions,
-        )
-
-
-@app.post("/solve/stream")
-async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    sanitized, injection_detected = sanitize_input(req.text)
-    if injection_detected:
-        log_action(
-            user_id, "injection_attempt", json.dumps({"query": req.text[:100]})
-        )
-
-    moderated, flagged_category = check_moderation(sanitized)
-    if moderated:
-        payload = json.dumps({
-            "token": "",
-            "error": "moderated",
-            "flagged_category": flagged_category,
-        })
-        async def _gen():
-            yield f"data: {payload}\n\n"
-            yield f"data: [DONE]\n\n"
-        return StreamingResponse(_gen(), media_type="text/event-stream")
-
-    redacted = redact_pii(sanitized)
-    prompt_with_canary = add_canary(redacted)
-
-    memories = search_memories(user_id, req.text, limit=3)
-    docs = search_docs(user_id, req.text, limit=3)
-
-    full_prompt = context_builder.build_context(user_id, prompt_with_canary, max_tokens=128000)
-
-    async def event_generator():
-        try:
-            async for item in llm_client.stream_llm(full_prompt, timeout=60):
-                token = item.get("token", "")
-                provider = item.get("provider", "unknown")
-                model = item.get("model", "unknown")
-                payload = json.dumps({
-                    "token": token,
-                    "provider": provider,
-                    "model": model,
-                })
-                yield f"data: {payload}\n\n"
-        except Exception as e:
-            logger.error(f"Streaming LLM call failed: {e}")
-            payload = json.dumps({"token": "", "error": str(e)})
-            yield f"data: {payload}\n\n"
-        finally:
-            yield f"data: [DONE]\n\n"
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
 @app.get("/health")
@@ -644,58 +491,11 @@ async def usage(user_id: str = Depends(get_user_id)):
     return get_usage(user_id=user_id)
 
 
-@app.post("/memory", response_model=MemoryOut)
-async def create_memory_endpoint(
-    data: MemoryCreate, user_id: str = Depends(require_verified_email)
-):
-    return create_memory(user_id, data)
 
 
-@app.get("/memory", response_model=list[MemoryOut])
-async def list_memories_endpoint(user_id: str = Depends(get_user_id)):
-    return list_memories(user_id)
 
 
-@app.get("/memory/search", response_model=list[MemoryOut])
-async def search_memories_endpoint(user_id: str = Depends(get_user_id), q: str = ""):
-    return search_memories(user_id, q)
 
-
-@app.put("/memory/{memory_id}", response_model=MemoryOut)
-async def update_memory_endpoint(
-    memory_id: str, data: MemoryUpdate, user_id: str = Depends(require_verified_email)
-):
-    try:
-        return update_memory(memory_id, user_id, data)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Memory not found")
-
-
-@app.delete("/memory/{memory_id}")
-async def delete_memory_endpoint(memory_id: str, user_id: str = Depends(require_verified_email)):
-    try:
-        delete_memory(memory_id, user_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    return {"ok": True}
-
-
-@app.get("/memory/export")
-async def export_memories_endpoint(user_id: str = Depends(get_user_id)):
-    return export_memories(user_id)
-
-
-@app.post("/memory/classify", response_model=MemoryClassifyResponse)
-async def classify_memory_endpoint(data: MemoryClassifyRequest, user_id: str = Depends(require_verified_email)):
-    from app.memory_service import MemoryService
-    service = MemoryService()
-    with get_db() as conn:
-        row = conn.execute("SELECT value FROM memories WHERE id = ? AND user_id = ?", (data.memory_id, user_id)).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Memory not found")
-        value = row["value"]
-    memory_type, score = service.classify_memory(value)
-    return MemoryClassifyResponse(memory_id=data.memory_id, category=memory_type.value, confidence=score)
 
 
 @app.post("/conversations", response_model=ConversationOut)
@@ -1327,69 +1127,10 @@ from app.schemas import (
 rag_engine = RAGEngine()
 search_engine = SearchEngine()
 
-@app.post("/rag/ingest", response_model=RAGIngestResponse)
-async def rag_ingest(file: UploadFile = File(...), user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    import tempfile
-    suffix = "".join(c for c in file.filename if c in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        tmp.write(await file.read())
-        tmp_path = tmp.name
-    try:
-        if file.content_type == "application/pdf" or suffix.endswith(".pdf"):
-            result = rag_engine.ingest_pdf(tmp_path, user_id)
-        elif file.content_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" or suffix.endswith(".docx"):
-            result = rag_engine.ingest_docx(tmp_path, user_id)
-        elif suffix.endswith(".txt"):
-            result = rag_engine.ingest_txt(tmp_path, user_id)
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file type")
-        if not result:
-            raise HTTPException(status_code=400, detail="Failed to ingest document")
-        return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
-    finally:
-        os.unlink(tmp_path)
 
-@app.post("/rag/ingest/website", response_model=RAGIngestResponse)
-async def rag_ingest_website(data: RAGIngestRequest, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    result = rag_engine.ingest_website(data.url, user_id)
-    if not result:
-        raise HTTPException(status_code=400, detail="Failed to ingest website")
-    return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
 
-@app.post("/rag/ingest/github", response_model=RAGIngestResponse)
-async def rag_ingest_github(data: RAGGithubRequest, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    result = rag_engine.ingest_github_repo(data.repo_url, user_id)
-    if not result:
-        raise HTTPException(status_code=400, detail="Failed to ingest GitHub repo")
-    return RAGIngestResponse(doc_id=result[0]["doc_id"], chunks=result[0]["chunks"])
 
-@app.post("/rag/search", response_model=list[RAGSearchResult])
-async def rag_search(data: dict, user_id: str = Depends(get_user_id)):
-    _ensure_db()
-    query = data.get("query", "")
-    top_k = data.get("top_k", 5)
-    return rag_engine.search(query, user_id, top_k)
 
-@app.get("/rag/documents", response_model=list[DocumentOut])
-async def rag_list_documents(user_id: str = Depends(get_user_id)):
-    _ensure_db()
-    docs = list_documents(user_id)
-    return [DocumentOut(**d) for d in docs]
-
-@app.delete("/rag/documents/{doc_id}")
-async def rag_delete_document(doc_id: str, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    try:
-        get_document(doc_id, user_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Document not found")
-    delete_document_chunks(doc_id)
-    if not delete_document(doc_id, user_id):
-        raise HTTPException(status_code=404, detail="Document not found")
-    return {"ok": True}
 
 
 @app.get("/search/semantic", response_model=list[SearchResultOut])
@@ -1463,29 +1204,9 @@ async def sentry_debug():
 
 from fastapi.responses import FileResponse
 
-@app.post("/files/upload")
-async def upload_file_endpoint(file: UploadFile = File(...), user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    file_bytes = await file.read()
-    url = storage_service.upload_file(file_bytes, file.filename, user_id, file.content_type or "application/octet-stream")
-    return {"url": url, "filename": file.filename}
 
-@app.get("/files")
-async def list_files_endpoint(user_id: str = Depends(get_user_id)):
-    _ensure_db()
-    return storage_service.list_user_files(user_id)
 
-@app.get("/files/{file_id}")
-async def get_file_endpoint(file_id: str, user_id: str = Depends(get_user_id)):
-    _ensure_db()
-    return {"url": storage_service.get_file_url(file_id, user_id)}
 
-@app.delete("/files/{file_id}")
-async def delete_file_endpoint(file_id: str, user_id: str = Depends(require_verified_email)):
-    _ensure_db()
-    if not storage_service.delete_file(file_id, user_id):
-        raise HTTPException(status_code=404, detail="File not found")
-    return {"ok": True}
 
 @app.get("/auth/me/permissions")
 async def get_my_permissions(user_id: str = Depends(get_current_user)):
