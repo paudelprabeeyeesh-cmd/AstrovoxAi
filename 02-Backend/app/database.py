@@ -176,6 +176,40 @@ def init_db():
                     created_at TEXT,
                     completed_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS projects (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    instructions TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS project_files (
+                    id TEXT PRIMARY KEY,
+                    project_id TEXT NOT NULL,
+                    filename TEXT NOT NULL,
+                    content TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS agent_skills (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    version TEXT DEFAULT '1.0.0',
+                    tools TEXT,
+                    prompts TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS batch_jobs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    status TEXT DEFAULT 'queued',
+                    input_data TEXT,
+                    output_data TEXT,
+                    error TEXT,
+                    created_at TEXT,
+                    completed_at TEXT
+                );
             """)
             conn.commit()
         finally:

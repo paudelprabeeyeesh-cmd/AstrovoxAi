@@ -1,115 +1,16 @@
 import base64
 import json
 import uuid
+import subprocess
+import tempfile
+import os
 from datetime import datetime, timezone
+from typing import Any, Callable
+from dataclasses import dataclass
 
 from .core.encryption import decrypt, encrypt
 from .database import get_db
 from .schemas import ToolCreate, ToolOut
-
-
-def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
-    tool_id = str(uuid.uuid4())
-    config = data.config
-    if data.type == "gmail":
-        try:
-            creds = json.loads(data.config)
-            creds["token"] = base64.b64encode(creds.get("token", "").encode()).decode()
-            config = json.dumps(creds)
-        except Exception:
-            pass
-    encrypted_config = encrypt(config)
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO tools (id, user_id, type, config) VALUES (?, ?, ?, ?)",
-            (tool_id, user_id, data.type, encrypted_config),
-        )
-        conn.commit()
-    return ToolOut(
-        id=tool_id, type=data.type, config=config, created_at=datetime.now(timezone.utc)
-    )
-
-
-def get_tool(tool_id: str, user_id: str) -> ToolOut:
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT id, type, config, created_at FROM tools WHERE id = ? AND user_id = ?",
-            (tool_id, user_id),
-        ).fetchone()
-        if not row:
-            raise ValueError("Tool not found")
-        config = decrypt(row["config"])
-        if row["type"] == "gmail":
-            try:
-                creds = json.loads(config)
-                creds["token"] = base64.b64decode(creds["token"]).decode()
-                config = json.dumps(creds)
-            except Exception:
-                pass
-        return ToolOut(
-            id=row["id"],
-            type=row["type"],
-            config=config,
-            created_at=datetime.fromisoformat(row["created_at"]),
-        )
-
-
-def list_tools(user_id: str) -> list[ToolOut]:
-    with get_db() as conn:
-        rows = conn.execute(
-            "SELECT id, type, config, created_at FROM tools WHERE user_id = ?",
-            (user_id,),
-        ).fetchall()
-        result = []
-        for r in rows:
-            config = decrypt(r["config"])
-            if r["type"] == "gmail":
-                try:
-                    creds = json.loads(config)
-                    creds["token"] = base64.b64decode(creds["token"]).decode()
-                    config = json.dumps(creds)
-                except Exception:
-                    pass
-            result.append(
-                ToolOut(
-                    id=r["id"],
-                    type=r["type"],
-                    config=config,
-                    created_at=datetime.fromisoformat(r["created_at"]),
-                )
-            )
-        return result
-
-
-def delete_tool(tool_id: str, user_id: str):
-    with get_db() as conn:
-        cursor = conn.execute(
-            "DELETE FROM tools WHERE id = ? AND user_id = ?", (tool_id, user_id)
-        )
-        conn.commit()
-        if cursor.rowcount == 0:
-            raise ValueError("Tool not found")
-
-from dataclasses import dataclass, field
-from typing import Any, Callable
-
-
-@dataclass
-class ToolDefinition:
-    name: str
-    description: str
-    parameters: dict[str, Any]
-    function: Callable
-
-    def to_openai_schema(self) -> dict[str, Any]:
-        return {
-            "type": "function",
-            "function": {
-                "name": self.name,
-                "description": self.description,
-                "parameters": self.parameters,
-            },
-        }
 
 
 def _safe_calculate(expression: str) -> str:
@@ -154,6 +55,259 @@ def create_memory(content: str, user_id: str) -> str:
 
 def send_email(to: str, subject: str, body: str) -> str:
     return f"Email sent to {to}: {subject}"
+
+
+def code_execute(code: str, language: str = "python") -> str:
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
+            f.write(code)
+            temp_path = f.name
+        result = subprocess.run(
+            ["python", temp_path],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        os.unlink(temp_path)
+        output = result.stdout or result.stderr or "Code executed successfully (no output)"
+        return output[:10000]
+    except subprocess.TimeoutExpired:
+        return "Error: Code execution timed out after 30 seconds"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def bash_execute(command: str) -> str:
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        output = result.stdout or result.stderr or "Command executed successfully"
+        return output[:10000]
+    except subprocess.TimeoutExpired:
+        return "Error: Command timed out after 30 seconds"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def computer_use(action: str, x: float = 0, y: float = 0, text: str = "", direction: str = "down") -> str:
+    actions = {
+        "click": f"Clicked at coordinates ({x}, {y})",
+        "type": f"Typed text: {text[:100]}",
+        "screenshot": "Screenshot captured (virtual desktop)",
+        "scroll": f"Scrolled {direction}",
+        "move": f"Moved cursor to ({x}, {y})",
+        "double_click": f"Double-clicked at ({x}, {y})",
+        "right_click": f"Right-clicked at ({x}, {y})",
+    }
+    return actions.get(action, f"Unknown action: {action}")
+
+
+def text_editor(operation: str, file_path: str, old_string: str = "", new_string: str = "", insert_text: str = "", line_number: int = 1) -> str:
+    try:
+        if operation == "view":
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            start = max(0, line_number - 1)
+            end = min(len(lines), start + 50)
+            preview = "".join(lines[start:end])
+            return f"File: {file_path}\nLines {start+1}-{end}:\n{preview}"
+        elif operation == "insert":
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            idx = max(0, min(line_number - 1, len(lines)))
+            lines.insert(idx, insert_text + "\n")
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            return f"Inserted text at line {line_number} in {file_path}"
+        elif operation == "replace":
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+            if old_string not in content:
+                return f"Error: old_string not found in {file_path}"
+            new_content = content.replace(old_string, new_string, 1)
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(new_content)
+            return f"Replaced text in {file_path}"
+        elif operation == "delete":
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            idx = max(0, min(line_number - 1, len(lines) - 1))
+            deleted = lines.pop(idx)
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.writelines(lines)
+            return f"Deleted line {line_number} from {file_path}"
+        else:
+            return f"Unknown operation: {operation}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def pdf_read(file_path: str, pages: str = "all") -> str:
+    try:
+        from pypdf import PdfReader
+        reader = PdfReader(file_path)
+        if pages == "all":
+            text = "".join(page.extract_text() or "" for page in reader.pages)
+        else:
+            parts = pages.split("-")
+            start = int(parts[0]) - 1
+            end = int(parts[1]) if len(parts) > 1 else len(reader.pages)
+            text = "".join(page.extract_text() or "" for page in reader.pages[start:end])
+        return text[:50000] or "PDF is empty or image-based"
+    except ImportError:
+        return "Error: pypdf not installed"
+    except Exception as e:
+        return f"Error reading PDF: {e}"
+
+
+def memory_search_tool(query: str, user_id: str, limit: int = 5) -> str:
+    from .memory import search_memories
+    results = search_memories(user_id, query, limit)
+    if not results:
+        return "No memories found"
+    lines = [f"- [{r.get('memory_type', 'memory')}] {r.get('key', '')}: {r.get('value', '')[:200]}" for r in results]
+    return "\n".join(lines)
+
+
+def file_read(file_path: str, offset: int = 1, limit: int = 200) -> str:
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        start = max(0, offset - 1)
+        end = min(len(lines), start + limit)
+        return "".join(lines[start:end])
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def file_write(file_path: str, content: str, mode: str = "overwrite") -> str:
+    try:
+        if mode == "append":
+            with open(file_path, "a", encoding="utf-8") as f:
+                f.write(content)
+        else:
+            with open(file_path, "w", encoding="utf-8") as f:
+                f.write(content)
+        return f"File {'appended to' if mode == 'append' else 'written'}: {file_path}"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def voice_speak(text: str, voice: str = "default") -> str:
+    return f"[Voice output ({voice}): {text[:200]}]"
+
+
+def image_generate(prompt: str, size: str = "1024x1024") -> str:
+    return f"[Image generated for: {prompt[:100]}]"
+
+
+def image_understand(image_path: str, question: str = "") -> str:
+    try:
+        with open(image_path, "rb") as f:
+            data = f.read()
+        return f"[Image analysis: {image_path} ({len(data)} bytes) - {question[:100]}]"
+    except Exception as e:
+        return f"Error: {e}"
+
+
+def deep_research(query: str, depth: str = "medium") -> str:
+    return f"[Deep research for: {query[:200]} (depth: {depth})]"
+
+
+def web_fetch(url: str, max_length: int = 5000) -> str:
+    import requests
+    try:
+        response = requests.get(url, timeout=30)
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(response.text, "html.parser")
+        for script in soup(["script", "style"]):
+            script.decompose()
+        text = soup.get_text(separator="\n")
+        return text[:max_length]
+    except Exception as e:
+        return f"Error fetching {url}: {e}"
+
+
+def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
+    tool_id = str(uuid.uuid4())
+    config = data.config
+    if data.type == "gmail":
+        try:
+            creds = json.loads(data.config)
+            creds["token"] = base64.b64encode(creds.get("token", "").encode()).decode()
+            config = json.dumps(creds)
+        except Exception:
+            pass
+    encrypted_config = encrypt(config)
+    with get_db() as conn:
+        conn.execute(
+            "INSERT INTO tools (id, user_id, type, config) VALUES (?, ?, ?, ?)",
+            (tool_id, user_id, data.type, encrypted_config),
+        )
+        conn.commit()
+    return ToolOut(
+        id=tool_id, type=data.type, config=config, created_at=datetime.now(timezone.utc)
+    )
+
+
+def delete_tool(tool_id: str, user_id: str):
+    with get_db() as conn:
+        cursor = conn.execute(
+            "DELETE FROM tools WHERE id = ? AND user_id = ?", (tool_id, user_id)
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise ValueError("Tool not found")
+
+
+def list_tools(user_id: str) -> list[ToolOut]:
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, type, config, created_at FROM tools WHERE user_id = ?",
+            (user_id,),
+        ).fetchall()
+        result = []
+        for r in rows:
+            config = decrypt(r["config"])
+            if r["type"] == "gmail":
+                try:
+                    creds = json.loads(config)
+                    creds["token"] = base64.b64decode(creds["token"]).decode()
+                    config = json.dumps(creds)
+                except Exception:
+                    pass
+            result.append(
+                ToolOut(
+                    id=r["id"],
+                    type=r["type"],
+                    config=config,
+                    created_at=datetime.fromisoformat(r["created_at"]),
+                )
+            )
+        return result
+
+
+@dataclass
+class ToolDefinition:
+    name: str
+    description: str
+    parameters: dict[str, Any]
+    function: Callable
+
+    def to_openai_schema(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": self.parameters,
+            },
+        }
 
 
 BUILTIN_TOOLS: list[ToolDefinition] = [
@@ -358,154 +512,73 @@ BUILTIN_TOOLS: list[ToolDefinition] = [
         },
         function=file_write,
     ),
+    ToolDefinition(
+        name="voice_speak",
+        description="Convert text to speech output",
+        parameters={
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "Text to speak"},
+                "voice": {"type": "string", "description": "Voice identifier", "default": "default"},
+            },
+            "required": ["text"],
+        },
+        function=voice_speak,
+    ),
+    ToolDefinition(
+        name="image_generate",
+        description="Generate an image from a text prompt",
+        parameters={
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "Image description"},
+                "size": {"type": "string", "description": "Image size, e.g. 1024x1024", "default": "1024x1024"},
+            },
+            "required": ["prompt"],
+        },
+        function=image_generate,
+    ),
+    ToolDefinition(
+        name="image_understand",
+        description="Analyze an image and answer a question about it",
+        parameters={
+            "type": "object",
+            "properties": {
+                "image_path": {"type": "string", "description": "Path to image file"},
+                "question": {"type": "string", "description": "Question about the image", "default": ""},
+            },
+            "required": ["image_path"],
+        },
+        function=image_understand,
+    ),
+    ToolDefinition(
+        name="deep_research",
+        description="Perform deep multi-step research on a query",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Research query"},
+                "depth": {"type": "string", "description": "Research depth: quick, medium, deep", "default": "medium"},
+            },
+            "required": ["query"],
+        },
+        function=deep_research,
+    ),
+    ToolDefinition(
+        name="web_fetch",
+        description="Fetch and extract text content from a URL",
+        parameters={
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "URL to fetch"},
+                "max_length": {"type": "integer", "description": "Max characters to return", "default": 5000},
+            },
+            "required": ["url"],
+        },
+        function=web_fetch,
+    ),
 ]
 
 
 def get_builtin_tools() -> list[ToolDefinition]:
     return BUILTIN_TOOLS
-
-
-def code_execute(code: str, language: str = "python") -> str:
-    import subprocess
-    import tempfile
-    import os
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-            f.write(code)
-            temp_path = f.name
-        result = subprocess.run(
-            ["python", temp_path],
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        os.unlink(temp_path)
-        output = result.stdout or result.stderr or "Code executed successfully (no output)"
-        return output[:10000]
-    except subprocess.TimeoutExpired:
-        return "Error: Code execution timed out after 30 seconds"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-def bash_execute(command: str) -> str:
-    import subprocess
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-        output = result.stdout or result.stderr or "Command executed successfully"
-        return output[:10000]
-    except subprocess.TimeoutExpired:
-        return "Error: Command timed out after 30 seconds"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-def computer_use(action: str, x: float = 0, y: float = 0, text: str = "", direction: str = "down") -> str:
-    actions = {
-        "click": f"Clicked at coordinates ({x}, {y})",
-        "type": f"Typed text: {text[:100]}",
-        "screenshot": "Screenshot captured (virtual desktop)",
-        "scroll": f"Scrolled {direction}",
-        "move": f"Moved cursor to ({x}, {y})",
-        "double_click": f"Double-clicked at ({x}, {y})",
-        "right_click": f"Right-clicked at ({x}, {y})",
-    }
-    return actions.get(action, f"Unknown action: {action}")
-
-
-def text_editor(operation: str, file_path: str, old_string: str = "", new_string: str = "", insert_text: str = "", line_number: int = 1) -> str:
-    try:
-        if operation == "view":
-            with open(file_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            start = max(0, line_number - 1)
-            end = min(len(lines), start + 50)
-            preview = "".join(lines[start:end])
-            return f"File: {file_path}\nLines {start+1}-{end}:\n{preview}"
-        elif operation == "insert":
-            with open(file_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            idx = max(0, min(line_number - 1, len(lines)))
-            lines.insert(idx, insert_text + "\n")
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            return f"Inserted text at line {line_number} in {file_path}"
-        elif operation == "replace":
-            with open(file_path, "r", encoding="utf-8") as f:
-                content = f.read()
-            if old_string not in content:
-                return f"Error: old_string not found in {file_path}"
-            new_content = content.replace(old_string, new_string, 1)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(new_content)
-            return f"Replaced text in {file_path}"
-        elif operation == "delete":
-            with open(file_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
-            idx = max(0, min(line_number - 1, len(lines) - 1))
-            deleted = lines.pop(idx)
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.writelines(lines)
-            return f"Deleted line {line_number} from {file_path}"
-        else:
-            return f"Unknown operation: {operation}"
-    except Exception as e:
-        return f"Error: {e}"
-
-
-def pdf_read(file_path: str, pages: str = "all") -> str:
-    try:
-        from pypdf import PdfReader
-        reader = PdfReader(file_path)
-        if pages == "all":
-            text = "".join(page.extract_text() or "" for page in reader.pages)
-        else:
-            parts = pages.split("-")
-            start = int(parts[0]) - 1
-            end = int(parts[1]) if len(parts) > 1 else len(reader.pages)
-            text = "".join(page.extract_text() or "" for page in reader.pages[start:end])
-        return text[:50000] or "PDF is empty or image-based"
-    except ImportError:
-        return "Error: pypdf not installed"
-    except Exception as e:
-        return f"Error reading PDF: {e}"
-
-
-def memory_search_tool(query: str, user_id: str, limit: int = 5) -> str:
-    from .memory import search_memories
-    results = search_memories(user_id, query, limit)
-    if not results:
-        return "No memories found"
-    lines = [f"- [{r.get('memory_type', 'memory')}] {r.get('key', '')}: {r.get('value', '')[:200]}" for r in results]
-    return "\n".join(lines)
-
-
-def file_read(file_path: str, offset: int = 1, limit: int = 200) -> str:
-    try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        start = max(0, offset - 1)
-        end = min(len(lines), start + limit)
-        return "".join(lines[start:end])
-    except Exception as e:
-        return f"Error: {e}"
-
-
-def file_write(file_path: str, content: str, mode: str = "overwrite") -> str:
-    try:
-        if mode == "append":
-            with open(file_path, "a", encoding="utf-8") as f:
-                f.write(content)
-        else:
-            with open(file_path, "w", encoding="utf-8") as f:
-                f.write(content)
-        return f"File {'appended to' if mode == 'append' else 'written'}: {file_path}"
-    except Exception as e:
-        return f"Error: {e}"
-

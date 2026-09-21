@@ -459,3 +459,84 @@ class LocalPullRequest(BaseModel):
 class LocalPullResponse(BaseModel):
     success: bool
     message: str
+
+
+class BatchJobCreate(BaseModel):
+    inputs: list[dict[str, Any]]
+
+
+class BatchJobOut(BaseModel):
+    id: str
+    user_id: str
+    status: str
+    input_data: str
+    output_data: str | None
+    error: str | None
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class EmbeddingRequest(BaseModel):
+    texts: list[str] | str
+    model: str | None = "text-embedding-3-small"
+
+
+class EmbeddingResponse(BaseModel):
+    embeddings: list[list[float]]
+    model: str
+    dimensions: int
+
+
+class StructuredOutputRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=10000)
+    schema_json: dict[str, Any]
+    model: str | None = None
+
+
+class StructuredOutputResponse(BaseModel):
+    data: dict[str, Any]
+    model: str
+
+
+class CitationRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=50000)
+    sources: list[str]
+
+
+class CitationResponse(BaseModel):
+    citations: list[dict[str, Any]]
+
+
+class AgentSkillCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    description: str = Field(..., max_length=2000)
+    version: str = Field("1.0.0", max_length=50)
+    tools: list[str] = []
+    prompts: dict[str, Any] | None = None
+
+
+class AgentSkillOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    version: str
+    tools: list[str]
+    created_at: datetime
+
+
+class AdminStatsResponse(BaseModel):
+    total_users: int
+    total_conversations: int
+    total_messages: int
+    total_api_calls: int
+    total_cost_usd: float
+    active_users_24h: int
+
+
+class UsageResponse(BaseModel):
+    user_id: str
+    period: str
+    api_calls: int
+    tokens_used: int
+    cost_usd: float
+    by_model: dict[str, Any]

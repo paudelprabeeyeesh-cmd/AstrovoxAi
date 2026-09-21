@@ -40,6 +40,12 @@ from .routers import solve as solve_router
 from .routers import memory as memory_router
 from .routers import rag as rag_router
 from .routers import files as files_router
+from .routers import batch as batch_router
+from .routers import embeddings as embeddings_router
+from .routers import structured as structured_router
+from .routers import admin_api as admin_api_router
+from .routers import projects as projects_router
+from .routers import skills as skills_router
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -251,6 +257,12 @@ app.include_router(solve_router.router)
 app.include_router(memory_router.router)
 app.include_router(rag_router.router)
 app.include_router(files_router.router)
+app.include_router(batch_router.router)
+app.include_router(embeddings_router.router)
+app.include_router(structured_router.router)
+app.include_router(admin_api_router.router)
+app.include_router(projects_router.router)
+app.include_router(skills_router.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 

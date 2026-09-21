@@ -7,6 +7,7 @@ from .cost import count_tokens
 from .database import get_db
 from .core.llm import LLMClient
 from .tools import get_builtin_tools
+from .thinking import ThinkingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +19,15 @@ class ContextBuilder:
     def estimate_tokens(self, text: str) -> int:
         return count_tokens(text)
 
-    def get_system_prompt(self, user_id: str) -> str:
-        return (
+    def get_system_prompt(self, user_id: str, include_canary: bool = True) -> str:
+        base = (
             "You are AstrovoxAI, a helpful, harmless, and honest AI assistant. "
             "Be concise and accurate. Use tools when needed."
         )
+        if include_canary:
+            from .core.guardrails import add_canary
+            base = add_canary(base)
+        return base
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:
         tools = []
@@ -64,14 +69,31 @@ class ContextBuilder:
             total -= self.estimate_tokens(removed.get("content", "") or "")
         return truncated
 
+    def summarize_if_needed(self, messages: list[dict], max_tokens: int) -> list[dict]:
+        total = sum(self.estimate_tokens(m.get("content", "") or "") for m in messages)
+        if total <= max_tokens:
+            return messages
+        keep = messages[-8:]
+        summary_input = "\n".join([f"{m['role']}: {m['content'][:200]}" for m in messages[:-8]])
+        try:
+            summary_text = self.llm_client.call_llm(
+                prompt=f"Summarize this conversation history concisely:\n{summary_input}",
+                timeout=30,
+            ).get("text", summary_input[:500])
+        except Exception:
+            summary_text = summary_input[:500]
+        return [{"role": "system", "content": f"[Summary of earlier conversation: {summary_text}]"}] + keep
+
     def build_context(
         self,
         user_id: str,
         current_prompt: str,
         max_tokens: int = 128000,
         include_tools: bool = True,
+        thinking: Optional[ThinkingConfig] = None,
+        compact: bool = False,
     ) -> dict[str, Any]:
-        system_prompt = self.get_system_prompt(user_id)
+        system_prompt = self.get_system_prompt(user_id, include_canary=True)
         recent = self.get_recent_messages(user_id, limit=20)
         memories = self.get_relevant_memories(user_id, current_prompt, limit=5)
         docs = self.get_relevant_documents(user_id, current_prompt, limit=3)
@@ -79,12 +101,19 @@ class ContextBuilder:
 
         system_tokens = self.estimate_tokens(system_prompt)
         tools_tokens = self.estimate_tokens(str(tools)) if tools else 0
-        reserved = system_tokens + tools_tokens + 200
+        thinking_budget = 0
+        if thinking and thinking.enabled:
+            thinking_budget = thinking.budget_tokens or 4096
+        reserved = system_tokens + tools_tokens + thinking_budget + 200
         available = max(0, max_tokens - reserved)
 
         messages = [{"role": m["role"], "content": m["content"]} for m in recent]
         messages.append({"role": "user", "content": current_prompt})
-        truncated = self.truncate_to_fit(messages, available)
+
+        if compact:
+            messages = self.summarize_if_needed(messages, available)
+        else:
+            messages = self.truncate_to_fit(messages, available)
 
         memory_context = ""
         if memories:
@@ -101,19 +130,21 @@ class ContextBuilder:
             context_parts.append(f"Memories:\n{memory_context}")
         if doc_context:
             context_parts.append(f"Knowledge:\n{doc_context}")
-        if truncated:
-            for m in truncated:
+        if messages:
+            for m in messages:
                 context_parts.append(f"{m['role']}: {m['content']}")
 
         full_context = "\n\n".join(context_parts)
+        token_count = self.estimate_tokens(full_context) + tools_tokens + thinking_budget
 
         return {
             "prompt": full_context,
             "system_prompt": system_prompt,
-            "recent_messages": truncated,
+            "recent_messages": messages,
             "memories": memories,
             "documents": docs,
             "tools": tools,
-            "token_count": self.estimate_tokens(full_context) + tools_tokens,
+            "token_count": token_count,
             "max_tokens": max_tokens,
+            "thinking": thinking.to_anthropic_params() if thinking else {},
         }
