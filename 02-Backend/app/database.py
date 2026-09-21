@@ -210,6 +210,65 @@ def init_db():
                     created_at TEXT,
                     completed_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS voice_outputs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    text TEXT,
+                    voice TEXT DEFAULT 'default',
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS voice_transcripts (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    filename TEXT,
+                    content TEXT,
+                    transcript TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS images (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    prompt TEXT,
+                    size TEXT DEFAULT '1024x1024',
+                    url TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS image_analyses (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    filename TEXT,
+                    question TEXT,
+                    result TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS research_reports (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    query TEXT,
+                    depth TEXT DEFAULT 'medium',
+                    steps INTEGER DEFAULT 7,
+                    status TEXT DEFAULT 'running',
+                    result TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS artifacts (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    title TEXT,
+                    content TEXT,
+                    artifact_type TEXT DEFAULT 'html',
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS integration_tasks (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    integration TEXT NOT NULL,
+                    action TEXT,
+                    target TEXT,
+                    status TEXT DEFAULT 'running',
+                    result TEXT,
+                    created_at TEXT
+                );
             """)
             conn.commit()
         finally:

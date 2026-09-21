@@ -46,6 +46,12 @@ from .routers import structured as structured_router
 from .routers import admin_api as admin_api_router
 from .routers import projects as projects_router
 from .routers import skills as skills_router
+from .routers import voice as voice_router
+from .routers import images as images_router
+from .routers import research as research_router
+from .routers import artifacts as artifacts_router
+from .routers import integrations as integrations_router
+from .routers import code_agent as code_agent_router
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -263,6 +269,12 @@ app.include_router(structured_router.router)
 app.include_router(admin_api_router.router)
 app.include_router(projects_router.router)
 app.include_router(skills_router.router)
+app.include_router(voice_router.router)
+app.include_router(images_router.router)
+app.include_router(research_router.router)
+app.include_router(artifacts_router.router)
+app.include_router(integrations_router.router)
+app.include_router(code_agent_router.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 
