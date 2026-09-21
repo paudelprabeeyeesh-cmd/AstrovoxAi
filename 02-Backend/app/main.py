@@ -64,6 +64,13 @@ from .routers import api_gateway_rate_limiting as gateway_router
 from .routers import conversation_branching as branching_router
 from .routers import templates as template_router
 from .routers import workflows as workflow_router_new
+from .routers import memory_management as memory_management_router
+from .routers import rag_pipeline as rag_pipeline_router
+from .routers import models_api as models_api_router
+from .routers import paged_attention as paged_attention_router
+from .routers import moe_load_balancing as moe_load_balancing_router
+from .routers import context_extension as context_extension_router
+from .routers import model_distillation as model_distillation_router
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -299,6 +306,13 @@ app.include_router(gateway_router.router)
 app.include_router(branching_router.router)
 app.include_router(template_router.router)
 app.include_router(workflow_router_new.router)
+app.include_router(memory_management_router.router)
+app.include_router(rag_pipeline_router.router)
+app.include_router(models_api_router.router)
+app.include_router(paged_attention_router.router)
+app.include_router(moe_load_balancing_router.router)
+app.include_router(context_extension_router.router)
+app.include_router(model_distillation_router.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 

@@ -392,6 +392,79 @@ def init_db():
                     execution_time_ms REAL,
                     created_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS memory_incognito (
+                    memory_id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    created_at TEXT,
+                    expires_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS rag_documents (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    title TEXT,
+                    content TEXT,
+                    chunks_count INTEGER,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS rag_chunks (
+                    id TEXT PRIMARY KEY,
+                    doc_id TEXT,
+                    content TEXT,
+                    chunk_index INTEGER,
+                    embedding TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS model_versions (
+                    id TEXT PRIMARY KEY,
+                    name TEXT,
+                    version TEXT,
+                    provider TEXT,
+                    architecture TEXT,
+                    parameters TEXT,
+                    snapshot_id TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS model_deployments (
+                    id TEXT PRIMARY KEY,
+                    model_id TEXT,
+                    status TEXT,
+                    deployed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS moe_runs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    num_experts INTEGER,
+                    top_k INTEGER,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS moe_routing_logs (
+                    id TEXT PRIMARY KEY,
+                    run_id TEXT,
+                    token_count INTEGER,
+                    load_balance_loss REAL,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS distillation_jobs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    teacher_model TEXT,
+                    student_model TEXT,
+                    dataset_path TEXT,
+                    alpha REAL,
+                    beta REAL,
+                    temperature REAL,
+                    status TEXT,
+                    created_at TEXT,
+                    completed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS quantization_logs (
+                    id TEXT PRIMARY KEY,
+                    job_id TEXT,
+                    model TEXT,
+                    bits INTEGER,
+                    created_at TEXT
+                );
             """)
             conn.commit()
         finally:
