@@ -259,7 +259,7 @@ def init_db():
                     artifact_type TEXT DEFAULT 'html',
                     created_at TEXT
                 );
-                CREATE TABLE IF NOT EXISTS integration_tasks (
+                 CREATE TABLE IF NOT EXISTS integration_tasks (
                     id TEXT PRIMARY KEY,
                     user_id TEXT NOT NULL,
                     integration TEXT NOT NULL,
@@ -267,6 +267,129 @@ def init_db():
                     target TEXT,
                     status TEXT DEFAULT 'running',
                     result TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS finetuning_jobs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    model TEXT,
+                    training_file TEXT,
+                    validation_file TEXT,
+                    status TEXT DEFAULT 'queued',
+                    created_at TEXT,
+                    completed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS mcp_servers (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    endpoint TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS knowledge_entities (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    entity_type TEXT,
+                    name TEXT,
+                    properties TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS knowledge_relationships (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    source_id TEXT,
+                    target_id TEXT,
+                    relationship_type TEXT,
+                    properties TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS agent_orchestrations (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    main_task TEXT,
+                    num_agents INTEGER,
+                    status TEXT DEFAULT 'starting',
+                    created_at TEXT,
+                    completed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS agent_tasks (
+                    id TEXT PRIMARY KEY,
+                    orchestration_id TEXT,
+                    name TEXT,
+                    role TEXT,
+                    status TEXT DEFAULT 'queued',
+                    assigned_to TEXT,
+                    result TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS plugins (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    category TEXT,
+                    price REAL DEFAULT 0,
+                    config TEXT,
+                    enabled INTEGER DEFAULT 0,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS plugin_installs (
+                    plugin_id TEXT,
+                    user_id TEXT,
+                    installed_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS conversation_branches (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    parent_id TEXT,
+                    name TEXT,
+                    context TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS workflow_executions (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    name TEXT,
+                    steps TEXT,
+                    triggers TEXT,
+                    enabled INTEGER DEFAULT 1,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS api_requests (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    endpoint TEXT,
+                    method TEXT,
+                    status_code INTEGER,
+                    response_time_ms REAL,
+                    tokens_used INTEGER,
+                    timestamp TEXT
+                );
+                CREATE TABLE IF NOT EXISTS speculative_decoding_logs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    prompt TEXT,
+                    draft_model TEXT,
+                    target_model TEXT,
+                    num_draft_tokens INTEGER,
+                    accepted_count INTEGER,
+                    speedup_factor REAL,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS batch_decoding_logs (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    batch_size INTEGER,
+                    num_prompts INTEGER,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS tool_results (
+                    id TEXT PRIMARY KEY,
+                    tool_id TEXT,
+                    arguments_json TEXT,
+                    result TEXT,
+                    execution_time_ms REAL,
                     created_at TEXT
                 );
             """)
