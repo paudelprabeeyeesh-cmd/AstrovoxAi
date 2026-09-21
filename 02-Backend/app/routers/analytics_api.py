@@ -26,7 +26,7 @@ async def get_dashboard(user_id: str = Depends(require_verified_email)):
             (user_id,),
         ).fetchone()
         cost = conn.execute(
-            "SELECT SUM(cost_usd) as c FROM interactions WHERE user_id = ?",
+            "SELECT SUM(cost) as c FROM interactions WHERE user_id = ?",
             (user_id,),
         ).fetchone()
         models = conn.execute(

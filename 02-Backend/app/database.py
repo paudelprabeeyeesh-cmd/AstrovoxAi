@@ -138,6 +138,21 @@ def init_db():
             _add_sqlite_column(conn, "memories", "memory_type", "TEXT")
             _add_sqlite_column(conn, "memories", "importance_score", "REAL DEFAULT 0.5")
             _add_sqlite_column(conn, "users", "failed_payment_count", "INTEGER DEFAULT 0")
+            _add_sqlite_column(conn, "users", "role", "TEXT DEFAULT 'user'")
+            _add_sqlite_column(conn, "users", "plan", "TEXT DEFAULT 'free'")
+            _add_sqlite_column(conn, "knowledge_entities", "user_id", "TEXT")
+            _add_sqlite_column(conn, "knowledge_entities", "properties", "TEXT")
+            _add_sqlite_column(conn, "knowledge_relationships", "user_id", "TEXT")
+            _add_sqlite_column(conn, "knowledge_relationships", "properties", "TEXT")
+            _add_sqlite_column(conn, "templates", "description", "TEXT")
+            _add_sqlite_column(conn, "templates", "content", "TEXT")
+            _add_sqlite_column(conn, "workflows", "triggers", "TEXT")
+            _add_sqlite_column(conn, "workflows", "enabled", "INTEGER DEFAULT 1")
+            _add_sqlite_column(conn, "plugins", "install_count", "INTEGER DEFAULT 0")
+            _add_sqlite_column(conn, "plugins", "rating", "REAL DEFAULT 0.0")
+            _add_sqlite_column(conn, "plugins", "enabled", "INTEGER DEFAULT 0")
+            _add_sqlite_column(conn, "plugins", "category", "TEXT")
+            _add_sqlite_column(conn, "plugins", "publisher", "TEXT")
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS document_chunks (
                     id TEXT PRIMARY KEY,
@@ -392,11 +407,29 @@ def init_db():
                     execution_time_ms REAL,
                     created_at TEXT
                 );
+                CREATE TABLE IF NOT EXISTS mcp_tools (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    name TEXT,
+                    description TEXT,
+                    config TEXT,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS memories (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    embedding TEXT,
+                    created_at TEXT,
+                    updated_at TEXT,
+                    memory_type TEXT DEFAULT 'fact',
+                    importance_score REAL DEFAULT 0.5
+                );
                 CREATE TABLE IF NOT EXISTS memory_incognito (
                     memory_id TEXT PRIMARY KEY,
                     user_id TEXT,
                     created_at TEXT,
-                    expires_at TEXT
+                    expires_at TEXT DEFAULT '2099-12-31T23:59:59Z'
                 );
                 CREATE TABLE IF NOT EXISTS rag_documents (
                     id TEXT PRIMARY KEY,
@@ -464,6 +497,24 @@ def init_db():
                     model TEXT,
                     bits INTEGER,
                     created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS plugins (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT,
+                    name TEXT,
+                    description TEXT,
+                    category TEXT,
+                    price REAL DEFAULT 0,
+                    config TEXT,
+                    install_count INTEGER DEFAULT 0,
+                    rating REAL DEFAULT 0.0,
+                    enabled INTEGER DEFAULT 0,
+                    created_at TEXT
+                );
+                CREATE TABLE IF NOT EXISTS plugin_installs (
+                    plugin_id TEXT,
+                    user_id TEXT,
+                    installed_at TEXT
                 );
             """)
             conn.commit()

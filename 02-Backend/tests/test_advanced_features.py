@@ -255,6 +255,9 @@ def test_model_versioning():
 
 def test_model_distillation():
     token, user_id = _register()
+    with get_db() as conn:
+        conn.execute("UPDATE users SET role = 'admin' WHERE id = ?", (user_id,))
+        conn.commit()
     headers = {"Authorization": f"Bearer {token}"}
     response = client.get("/distillation/jobs", headers=headers)
     assert response.status_code == 200

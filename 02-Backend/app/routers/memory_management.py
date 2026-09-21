@@ -23,8 +23,8 @@ async def store_memory(req: dict, user_id: str = Depends(require_verified_email)
     incognito = req.get("incognito", False)
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO memories (id, user_id, content, memory_type, importance_score, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (memory_id, user_id, content, memory_type, importance, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO memories (id, user_id, key, value, memory_type, importance_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (memory_id, user_id, f"key_{memory_id}", content, memory_type, importance, datetime.now(timezone.utc).isoformat()),
         )
         if incognito:
             conn.execute(
@@ -40,16 +40,22 @@ async def search_memory(query: str, incognito_only: bool = False, user_id: str =
     with get_db() as conn:
         if incognito_only:
             rows = conn.execute(
-                "SELECT m.id, m.content, m.memory_type, m.importance_score, m.created_at FROM memories m "
-                "JOIN memory_incognito mi ON mi.memory_id = m.id WHERE m.user_id = ? AND m.content LIKE ? ORDER BY m.created_at DESC",
+                "SELECT m.id, m.key, m.value, m.memory_type, m.importance_score, m.created_at FROM memories m "
+                "JOIN memory_incognito mi ON mi.memory_id = m.id WHERE m.user_id = ? AND m.value LIKE ? ORDER BY m.created_at DESC",
                 (user_id, f"%{query}%"),
             ).fetchall()
         else:
             rows = conn.execute(
-                "SELECT id, content, memory_type, importance_score, created_at FROM memories WHERE user_id = ? AND content LIKE ? ORDER BY importance_score DESC, created_at DESC",
+                "SELECT id, key, value, memory_type, importance_score, created_at FROM memories WHERE user_id = ? AND value LIKE ? ORDER BY importance_score DESC, created_at DESC",
                 (user_id, f"%{query}%"),
             ).fetchall()
-        return [dict(r) for r in rows]
+        result = []
+        for r in rows:
+            item = dict(r)
+            item["content"] = item.pop("value")
+            item["key"] = item.pop("key")
+            result.append(item)
+        return result
 
 
 @router.get("/memory/incognito/list")

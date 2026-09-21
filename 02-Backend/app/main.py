@@ -71,6 +71,7 @@ from .routers import paged_attention as paged_attention_router
 from .routers import moe_load_balancing as moe_load_balancing_router
 from .routers import context_extension as context_extension_router
 from .routers import model_distillation as model_distillation_router
+from .routers import inference_engine_api as inference_engine_router
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -313,6 +314,7 @@ app.include_router(paged_attention_router.router)
 app.include_router(moe_load_balancing_router.router)
 app.include_router(context_extension_router.router)
 app.include_router(model_distillation_router.router)
+app.include_router(inference_engine_router.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 

@@ -18,7 +18,7 @@ router = APIRouter(tags=["mcp"])
 async def list_mcp_tools(user_id: str = Depends(require_verified_email)):
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, name, description, config, created_at FROM tools WHERE user_id = ?",
+            "SELECT id, name, description, config, created_at FROM mcp_tools WHERE user_id = ?",
             (user_id,),
         ).fetchall()
         return [dict(r) for r in rows]
@@ -32,7 +32,7 @@ async def register_mcp_tool(tool: dict, user_id: str = Depends(require_verified_
     config = json.dumps(tool.get("config", {}))
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO tools (id, user_id, name, description, config, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO mcp_tools (id, user_id, name, description, config, created_at) VALUES (?, ?, ?, ?, ?, ?)",
             (tool_id, user_id, name, description, config, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
@@ -43,7 +43,7 @@ async def register_mcp_tool(tool: dict, user_id: str = Depends(require_verified_
 async def call_mcp_tool(tool_id: str, args: dict, user_id: str = Depends(require_verified_email)):
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, name, config FROM tools WHERE id = ? AND user_id = ?",
+            "SELECT id, name, config FROM mcp_tools WHERE id = ? AND user_id = ?",
             (tool_id, user_id),
         ).fetchone()
         if not row:
