@@ -52,6 +52,18 @@ from .routers import research as research_router
 from .routers import artifacts as artifacts_router
 from .routers import integrations as integrations_router
 from .routers import code_agent as code_agent_router
+from .routers import finetuning as finetuning_router
+from .routers import mcp as mcp_router
+from .routers import knowledge_graph_api as knowledge_graph_router
+from .routers import analytics_api as analytics_api_router
+from .routers import multi_agent as multi_agent_router
+from .routers import plugin_marketplace as plugin_router
+from .routers import safety_api as safety_router
+from .routers import speculative_decoding as speculative_router
+from .routers import api_gateway_rate_limiting as gateway_router
+from .routers import conversation_branching as branching_router
+from .routers import templates as template_router
+from .routers import workflows as workflow_router_new
 from .ab_runner import record_result as record_ab_result
 from .audit import log_action
 from .auth import (get_current_user, login_user, refresh_access_token,
@@ -275,6 +287,18 @@ app.include_router(research_router.router)
 app.include_router(artifacts_router.router)
 app.include_router(integrations_router.router)
 app.include_router(code_agent_router.router)
+app.include_router(finetuning_router.router)
+app.include_router(mcp_router.router)
+app.include_router(knowledge_graph_router.router)
+app.include_router(analytics_api_router.router)
+app.include_router(multi_agent_router.router)
+app.include_router(plugin_router.router)
+app.include_router(safety_router.router)
+app.include_router(speculative_router.router)
+app.include_router(gateway_router.router)
+app.include_router(branching_router.router)
+app.include_router(template_router.router)
+app.include_router(workflow_router_new.router)
 
 app.mount("/landing", StaticFiles(directory="../landing", html=True), name="landing")
 
