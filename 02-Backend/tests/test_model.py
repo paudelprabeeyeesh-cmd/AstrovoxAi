@@ -36,9 +36,9 @@ def test_grouped_query_attention_forward():
 
 def test_swiglu_activation():
     act = SwiGLU()
-    x = torch.randn(2, 16, 64)
+    x = torch.randn(2, 16, 128)
     out = act(x)
-    assert out.shape == x.shape
+    assert out.shape == (2, 16, 64)
 
 
 def test_feed_forward():
@@ -60,7 +60,7 @@ def test_moe_load_balance_loss_changes():
     moe = MoELayer(d_model=64, d_ff=128, n_experts=4, top_k=2)
     x = torch.randn(2, 16, 64)
     moe(x)
-    loss1 = moe.load_balance_loss().item()
+    loss1 = moe.load_balance_loss.item()
     assert isinstance(loss1, float)
 
 

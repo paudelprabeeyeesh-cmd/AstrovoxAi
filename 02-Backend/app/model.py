@@ -55,8 +55,8 @@ def build_rotary_pos_emb(
     freqs = positions[:, None] * inv_freq[None, :]                            # (seq_len, dim/2)
     # Interleave to match the standard RoPE convention
     emb = torch.cat([freqs, freqs], dim=-1)                                  # (seq_len, dim)
-    cos = emb.cos().unsqueeze(0).unsqueeze(2)  # (1, seq_len, 1, dim)
-    sin = emb.sin().unsqueeze(0).unsqueeze(2)  # (1, seq_len, 1, dim)
+    cos = emb.cos().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_len, dim)
+    sin = emb.sin().unsqueeze(0).unsqueeze(0)  # (1, 1, seq_len, dim)
     return cos, sin
 
 
@@ -303,7 +303,13 @@ class MoELayer(nn.Module):
             out[rows] += expert_out * w
 
         out = out.reshape(*batch_shape, self.d_model)
+        self._aux_loss = aux_loss
         return out, aux_loss
+
+    @property
+    def load_balance_loss(self) -> torch.Tensor:
+        """Return the last computed MoE load-balancing auxiliary loss."""
+        return self._aux_loss if hasattr(self, "_aux_loss") else torch.tensor(0.0)
 
 
 # ---------------------------------------------------------------------------
