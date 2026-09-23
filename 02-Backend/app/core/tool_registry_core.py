@@ -16,6 +16,50 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ToolAnalytics:
+    tool_name: str
+    total_calls: int = 0
+    success_count: int = 0
+    failure_count: int = 0
+    avg_latency_ms: float = 0.0
+    last_used: Optional[str] = None
+
+
+class ToolAnalyticsCollector:
+    """Collects and aggregates per-tool execution analytics."""
+
+    def __init__(self):
+        self._records: Dict[str, ToolAnalytics] = {}
+
+    def record(self, tool_name: str, success: bool, latency_ms: float, timestamp: Optional[str] = None) -> None:
+        analytics = self._records.get(tool_name)
+        if analytics is None:
+            analytics = ToolAnalytics(tool_name=tool_name)
+            self._records[tool_name] = analytics
+        analytics.total_calls += 1
+        if success:
+            analytics.success_count += 1
+        else:
+            analytics.failure_count += 1
+        n = analytics.total_calls
+        analytics.avg_latency_ms = ((analytics.avg_latency_ms * (n - 1)) + latency_ms) / n
+        analytics.last_used = timestamp or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+
+    def get_stats(self, tool_name: str) -> Optional[ToolAnalytics]:
+        return self._records.get(tool_name)
+
+    def get_top_tools(self, n: int = 5, by: str = "total_calls") -> List[ToolAnalytics]:
+        key = by if by in ("total_calls", "success_count", "failure_count", "avg_latency_ms") else "total_calls"
+        return sorted(self._records.values(), key=lambda a: getattr(a, key), reverse=True)[:n]
+
+    def get_failure_rate(self, tool_name: str) -> float:
+        analytics = self._records.get(tool_name)
+        if not analytics or analytics.total_calls == 0:
+            return 0.0
+        return analytics.failure_count / analytics.total_calls
+
+
+@dataclass
 class ToolDefinition:
     name: str
     description: str
@@ -51,6 +95,7 @@ class ToolRegistry:
         self.tools: Dict[str, ToolDefinition] = {}
         self.handlers: Dict[str, Callable] = {}
         self.execution_history: List[ToolExecution] = []
+        self.analytics = ToolAnalyticsCollector()
 
     def register(self, tool_def: ToolDefinition, handler: Callable):
         """Register a tool with its definition and handler."""
@@ -98,13 +143,21 @@ class ToolRegistry:
                 latency = (time.perf_counter() - start) * 1000
                 execution = ToolExecution(tool_name=tool_name, arguments=sanitized_args, result=result, latency_ms=latency, user_id=user_id, request_id=request_id, sandboxed=tool_def.timeout_seconds > 0)
                 self.execution_history.append(execution)
+                self.analytics.record(tool_name=tool_name, success=True, latency_ms=latency)
                 return execution
             except PermissionDeniedError as e:
-                return ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(e), user_id=user_id, request_id=request_id)
+                latency = (time.perf_counter() - start) * 1000
+                execution = ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(e), latency_ms=latency, user_id=user_id, request_id=request_id)
+                self.execution_history.append(execution)
+                self.analytics.record(tool_name=tool_name, success=False, latency_ms=latency)
+                return execution
             except Exception as e:
                 if attempt == max_retries - 1:
                     latency = (time.perf_counter() - start) * 1000
-                    return ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(e), latency_ms=latency, user_id=user_id, request_id=request_id)
+                    execution = ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(e), latency_ms=latency, user_id=user_id, request_id=request_id)
+                    self.execution_history.append(execution)
+                    self.analytics.record(tool_name=tool_name, success=False, latency_ms=latency)
+                    return execution
                 time.sleep(0.1 * (2 ** attempt))
         return ToolExecution(tool_name=tool_name, arguments=sanitized_args, error="Max retries exceeded", user_id=user_id, request_id=request_id)
 

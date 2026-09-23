@@ -320,6 +320,25 @@ def test_memory_usage():
     }
 
 
+def test_benchmark_evaluation():
+    """Smoke test: runs the benchmark harness with 3 samples per benchmark and asserts accuracy > 0."""
+    from tests.benchmark import BenchmarkRunner
+
+    def mock_model(prompt: str, benchmark: str, sample: Dict[str, Any]) -> str:
+        return sample.get("answer", "")
+
+    runner = BenchmarkRunner(model_fn=mock_model, use_llm_judge=False)
+    results = runner.run_all(sample_size=3)
+
+    assert len(results) == 4
+    for name, result in results.items():
+        assert result.sample_count >= 3, f"{name} sample count too low: {result.sample_count}"
+        assert result.accuracy > 0.0, f"{name} accuracy should be > 0, got {result.accuracy}"
+        assert 0.0 <= result.hallucination_rate <= 1.0
+        assert 0.0 <= result.tool_success_rate <= 1.0
+        assert 0.0 <= result.user_satisfaction <= 1.0
+
+
 # ============================================================================
 # Run All Verifications
 # ============================================================================

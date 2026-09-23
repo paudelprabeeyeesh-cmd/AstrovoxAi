@@ -6,7 +6,8 @@ from __future__ import annotations
 
 import logging
 import math
-from dataclasses import dataclass
+import re
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -20,6 +21,30 @@ class Document:
     text: str
     embedding: Optional[np.ndarray] = None
     metadata: Dict[str, Any] = None
+
+
+_URL_RE = re.compile(r"^https?://[^\s]+$")
+
+
+@dataclass
+class Citation:
+    doc_id: str
+    text: str
+    score: float = 0.0
+    verified: bool = False
+    source_url: str = ""
+
+
+class CitationVerifier:
+    """Simple heuristic-based citation verifier."""
+
+    def verify(self, citation: Citation) -> bool:
+        if not citation.text or not citation.text.strip():
+            return False
+        if citation.source_url and not _URL_RE.match(citation.source_url):
+            return False
+        text_lower = citation.text.strip().lower()
+        return bool(text_lower)
 
 
 def _tokenize(text: str) -> List[str]:
@@ -156,14 +181,23 @@ class HybridRAG:
         sparse_score = best_sparse[0][1] if best_sparse else 0.0
         return max(dense_score, sparse_score) < self.self_rag_threshold
 
-    def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> List[Document]:
+    def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> Tuple[List[Document], List[Citation]]:
         if not self._needs_retrieval(query_text, query_embedding) and not query_embedding:
-            return []
+            return [], []
         dense_results = dense_retrieval(query_embedding, self.documents, top_k=top_k * 2) if query_embedding is not None else []
         sparse_results = bm25_score(query_text, [doc.text for doc in self.documents])
         fused = reciprocal_rank_fusion([dense_results, sparse_results])
         candidate_ids = [doc_id for doc_id, _ in fused[:top_k * 2]]
         if query_embedding is not None and candidate_ids:
             reranked_ids = self.reranker.rerank(query_embedding, self.documents, candidate_ids, top_k=top_k)
-            return [self.documents[i] for i in reranked_ids]
-        return [self.documents[i] for i in candidate_ids[:top_k]]
+            docs = [self.documents[i] for i in reranked_ids]
+        else:
+            docs = [self.documents[i] for i in candidate_ids[:top_k]]
+        verifier = CitationVerifier()
+        citations = []
+        for doc in docs:
+            source_url = doc.metadata.get("source_url", "") if doc.metadata else ""
+            citation = Citation(doc_id=doc.doc_id, text=doc.text, score=0.0, source_url=source_url)
+            citation.verified = verifier.verify(citation)
+            citations.append(citation)
+        return docs, citations

@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email, require_admin
 from ..database import get_db
+from ..core.hybrid_rag import CitationVerifier
 
 logger = logging.getLogger(__name__)
 
@@ -99,3 +100,30 @@ async def get_document_chunks(doc_id: str, user_id: str = Depends(require_verifi
             (doc_id,),
         ).fetchall()
         return [{"id": c["id"], "chunk_index": c["chunk_index"], "content": c["content"]} for c in chunks]
+
+
+@router.post("/rag/citations/verify")
+async def verify_citations(req: dict, user_id: str = Depends(require_verified_email)):
+    citations_data = req.get("citations", [])
+    verifier = CitationVerifier()
+    results = []
+    for c in citations_data:
+        citation = Citation(
+            doc_id=c.get("doc_id", ""),
+            text=c.get("text", ""),
+            score=float(c.get("score", 0.0)),
+            source_url=c.get("source_url", ""),
+        )
+        results.append({
+            "doc_id": citation.doc_id,
+            "verified": verifier.verify(citation),
+            "score": citation.score,
+            "source_url": citation.source_url,
+        })
+    verified_count = sum(1 for r in results if r["verified"])
+    return {
+        "total": len(results),
+        "verified": verified_count,
+        "failed": len(results) - verified_count,
+        "results": results,
+    }

@@ -8,6 +8,7 @@ interface ChatState {
   activeId: string | null
   isLoading: boolean
   streamingMessageId: string | null
+  searchQuery: string
   addMessage: (conversationId: string, message: Omit<Message, 'id' | 'timestamp'>) => void
   updateLastMessage: (conversationId: string, updates: Partial<Message>) => void
   updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => void
@@ -17,7 +18,11 @@ interface ChatState {
   setConversations: (conversations: Conversation[]) => void
   setLoading: (loading: boolean) => void
   setStreamingMessageId: (id: string | null) => void
+  setSearchQuery: (query: string) => void
   clearMessages: () => void
+  pinConversation: (id: string) => void
+  unpinConversation: (id: string) => void
+  moveConversationToFolder: (id: string, folder: string) => void
 }
 
 export const useChatStore = create<ChatState>()(
@@ -29,6 +34,7 @@ export const useChatStore = create<ChatState>()(
         activeId: null,
         isLoading: false,
         streamingMessageId: null,
+        searchQuery: '',
 
         addMessage: (conversationId, message) =>
           set((state) => ({
@@ -76,13 +82,36 @@ export const useChatStore = create<ChatState>()(
         setConversations: (conversations) => set({ conversations }),
         setLoading: (isLoading) => set({ isLoading }),
         setStreamingMessageId: (streamingMessageId) => set({ streamingMessageId }),
+        setSearchQuery: (searchQuery) => set({ searchQuery }),
         clearMessages: () => set({ messages: [], streamingMessageId: null }),
+
+        pinConversation: (id) =>
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c.id === id ? { ...c, pinned: true } : c
+            ),
+          })),
+
+        unpinConversation: (id) =>
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c.id === id ? { ...c, pinned: false } : c
+            ),
+          })),
+
+        moveConversationToFolder: (id, folder) =>
+          set((state) => ({
+            conversations: state.conversations.map((c) =>
+              c.id === id ? { ...c, folder } : c
+            ),
+          })),
       }),
       {
         name: 'chat-storage',
         partialize: (state) => ({
           conversations: state.conversations,
           activeId: state.activeId,
+          searchQuery: state.searchQuery,
         }),
       }
     ),
