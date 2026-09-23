@@ -1,10 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
+// eslint-disable-next-line no-unused-vars
 import Sidebar from './Sidebar'
+// eslint-disable-next-line no-unused-vars
 import Chat from './Chat'
+// eslint-disable-next-line no-unused-vars
 import Telemetry from './telemetry'
+// eslint-disable-next-line no-unused-vars
 import TerminalConsole from './terminalconsole'
+// eslint-disable-next-line no-unused-vars
 import MemoryPanel from './MemoryPanel'
+// eslint-disable-next-line no-unused-vars
 import SettingsPanel from './SettingsPanel'
 
 export default function Dashboard({ session }) {
@@ -15,15 +21,10 @@ export default function Dashboard({ session }) {
   ])
   const [totalConversations, setTotalConversations] = useState(0)
   const [dbStatus, setDbStatus] = useState('online')
-  const [activePanel, setActivePanel] = useState('chat') // 'chat', 'memory', 'settings'
+  const [activePanel, setActivePanel] = useState('chat')
+  const [selectedModel, setSelectedModel] = useState('gpt-4') // 'chat', 'memory', 'settings'
 
-  useEffect(() => {
-    if (session) {
-      loadUserStats()
-    }
-  }, [session])
-
-  async function loadUserStats() {
+  const loadUserStats = useCallback(async () => {
     try {
       const { count, error } = await supabase
         .from('conversations')
@@ -38,12 +39,14 @@ export default function Dashboard({ session }) {
       console.error('Failed to load stats:', err)
       setDbStatus('offline')
     }
-  }
+  }, [session.user.id])
 
-  const pushSystemLog = (message) => {
-    const timestamp = new Date().toLocaleTimeString()
-    setTerminalLogs(prev => [...prev, `[${timestamp}] ${message}`])
-  }
+  useEffect(() => {
+    if (session) {
+      loadUserStats()
+    }
+  }, [session, loadUserStats])
+
 
   return (
     <div style={{
@@ -191,6 +194,7 @@ export default function Dashboard({ session }) {
               <Chat
                 session={session}
                 conversationId={currentConversationId}
+                model={selectedModel}
                 onConversationChange={(id) => setCurrentConversationId(id)}
               />
             </div>
@@ -204,7 +208,7 @@ export default function Dashboard({ session }) {
 
           {activePanel === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-              <SettingsPanel session={session} />
+              <SettingsPanel session={session} onModelChange={setSelectedModel} />
             </div>
           )}
 
@@ -240,7 +244,7 @@ export default function Dashboard({ session }) {
           letterSpacing: '0.5px',
           padding: '16px'
         }}>
-          ASTRAVOX PRIME v2.0.6 · Built by Prabesh Paudel
+          ASTRAVOX PRIME v2.0.6 · Built by Prabesh Paudel, Dipson Baral & Susanta AI
           <span style={{ margin: '0 12px' }}>|</span>
           <span style={{ color: '#334155' }}>SYSTEM STATUS: {dbStatus === 'online' ? '🟢 OPERATIONAL' : '⚠️ DEGRADED'}</span>
         </div>

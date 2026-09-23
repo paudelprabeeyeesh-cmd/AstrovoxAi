@@ -1,53 +1,38 @@
 from datetime import datetime, timezone
+import time
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 from dotenv import load_dotenv
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-from slowapi.util import get_remote_address
 
 from .auth import router as auth_router
 from .chat import router as chat_router
 from .api import router as api_router
 from .memory import router as memory_router
-from .logging_config import configure_logging
+from .storage import router as storage_router
+from .telemetry import router as telemetry_router
+from .terminal import router as terminal_router
+from .embeddings_route import router as embeddings_router
+from .security_headers import SecurityHeadersMiddleware
+from .rate_limit import rate_limit_middleware
 
 load_dotenv()
-configure_logging()
 
+# Rate limiting setup
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
     title="AstrovoxAi Engine",
     version="2.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
-
-
-def _client_ip(request) -> str:
-    """Resolve the client IP for rate limiting.
-
-    Behind a reverse proxy/load balancer every request shares the proxy IP, so
-    when ``TRUST_PROXY=true`` we use the first hop in ``X-Forwarded-For``. Only
-    enable this when the proxy is trusted to set that header, otherwise clients
-    could spoof it to evade limits.
-    """
-    if os.getenv("TRUST_PROXY", "false").lower() == "true":
-        forwarded = request.headers.get("x-forwarded-for")
-        if forwarded:
-            return forwarded.split(",")[0].strip()
-    return get_remote_address(request)
-
-
-# Rate limiting (per client IP). Tune via RATE_LIMIT env var.
-limiter = Limiter(
-    key_func=_client_ip,
-    default_limits=[os.getenv("RATE_LIMIT", "120/minute")],
-)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
+
+app.middleware("http")(rate_limit_middleware)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
@@ -64,15 +49,60 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Include routers
 app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
+app.include_router(storage_router)
+app.include_router(telemetry_router)
+app.include_router(terminal_router)
+app.include_router(embeddings_router)
+
+
+# Prometheus metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Track request metrics for Prometheus."""
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+
+    try:
+        from .metrics import track_request
+        track_request(
+            method=request.method,
+            endpoint=request.url.path,
+            status=response.status_code,
+            duration=duration
+        )
+    except Exception:
+        pass
+
+    # Add performance headers
+    response.headers["X-Response-Time"] = f"{duration:.3f}s"
+    return response
+
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        from .metrics import get_metrics, CONTENT_TYPE_LATEST
+        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
+    except ImportError:
+        return Response(
+            content=b"# Prometheus client not installed\n",
+            media_type="text/plain"
+        )
 
 
 # Health check endpoints

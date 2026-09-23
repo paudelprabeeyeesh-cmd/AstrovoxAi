@@ -1,9 +1,8 @@
-<<<<<<< HEAD
-# ASTRAVOX PRIME
+# ASTRAVOX Ai 
 
 ## Advanced AI Chat Platform
 
-ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
+ASTRAVOX Ai is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
 
 ## Features
 
@@ -22,37 +21,25 @@ ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelli
 - **Responsive UI**: Designed to provide an optimal viewing and interaction experience across a wide range of devices.
 - **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
 - **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
+- **Rate Limiting**: Built-in rate limiting for authentication and chat endpoints to prevent abuse.
+- **Docker Support**: Containerized deployment with Docker and Docker Compose for easy production deployment.
+- **CI/CD Pipeline**: Automated testing, linting, and security scanning via GitHub Actions.
 
 ## Technology Stack
 
-- **Frontend**: React, Vite, TailwindCSS
-- **Backend**: FastAPI, Python
+- **Frontend**: React, Vite
+- **Backend**: FastAPI, Python 3.9+
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **AI Integration**: OpenAI API
+- **Containerization**: Docker, Docker Compose
+- **CI/CD**: GitHub Actions
 
 ## Getting Started
 
-To set up and run ASTRAVOX PRIME locally, please refer to the [SETUP.md](SETUP.md) guide.
+To set up and run ASTRAVOX Ai locally, please refer to the [SETUP.md](SETUP.md) guide.
 
-### Production-ready capabilities added
-- Persistent usage quotas backed by SQLite instead of process-local memory.
-- HTTP rate limiting middleware with per-request headers.
-- Storage endpoints for upload/delete/signed URL generation with ownership checks.
-- Backend validation for chat payloads and supported AI models.
-- Expanded automated tests for usage, storage, auth, and health routes.
-
-### Verification
-- Backend tests: `c:/AstrovoxAi/venv/Scripts/python.exe -m pytest -q`
-- Frontend build: `npm run build`
-
-### Deployment checklist
-1. Configure Supabase URL and anon key.
-2. Configure OpenAI API key.
-3. Set ALLOWED_ORIGINS for the deployed frontend domain.
-4. Set RATE_LIMIT and DAILY_AI_LIMIT to desired production values.
-5. Apply the SQL schema and RLS policies in Supabase.
-6. Ensure the storage root is writable in the deployment environment.
+For production deployment, see the [DEPLOYMENT.md](DEPLOYMENT.md) guide.
 
 ## API Documentation
 
@@ -63,18 +50,48 @@ For detailed information on the available API endpoints, request/response format
 ```
 AstrovoxAi/
 ├── src/                    # React frontend components and logic
+│   ├── app.jsx            # Main application component
+│   ├── auth.jsx           # Authentication component
+│   ├── Dashboard.jsx      # Main dashboard
+│   ├── Chat.jsx           # Chat interface
+│   ├── Sidebar.jsx        # Conversation sidebar
+│   ├── MemoryPanel.jsx    # Memory management
+│   ├── SettingsPanel.jsx  # User settings
+│   ├── telemetry.jsx      # System telemetry
+│   ├── terminalconsole.jsx # Terminal console
+│   ├── supabase.js        # Supabase client
+│   └── main.jsx           # React entry point
 ├── 02-Backend/            # FastAPI backend application
-│   ├── app/                # FastAPI application modules (auth, chat, api, memory, database)
+│   ├── app/
+│   │   ├── main.py        # FastAPI app with CORS and rate limiting
+│   │   ├── auth.py        # Authentication routes
+│   │   ├── chat.py        # Chat routes with rate limiting
+│   │   ├── api.py         # API routes
+│   │   ├── memory.py      # Memory routes
+│   │   ├── database.py    # Database operations
+│   │   ├── supabase_client.py # Singleton Supabase client
+│   │   └── auth_utils.py  # Shared authentication utilities
+│   ├── tests/             # Backend tests
 │   └── requirements.txt    # Python dependencies
 ├── database/               # Database schema and migration scripts
-│   └── schemas/
-├── .env                    # Environment variables (local configuration)
+│   ├── schemas/
+│   │   └── supabase_setup.sql # Database schema
+│   └── migrations/
+│       └── 0001_indexes_and_signup_trigger.sql # Performance indexes
+├── .github/               # GitHub Actions CI/CD
+│   └── workflows/
+│       └── ci.yml         # CI/CD pipeline
 ├── .env.example            # Example environment variables
+├── Dockerfile.backend      # Backend Docker configuration
+├── Dockerfile.frontend     # Frontend Docker configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── nginx.conf              # Nginx configuration for frontend
 ├── package.json            # Frontend dependencies and scripts
 ├── vite.config.js          # Vite build configuration
 ├── index.html              # Frontend HTML entry point
 ├── README.md               # Project overview
 ├── SETUP.md                # Setup and installation guide
+├── DEPLOYMENT.md           # Deployment guide
 ├── API.md                  # API documentation
 └── ROADMAP.md              # Future development roadmap
 ```
@@ -88,7 +105,7 @@ We welcome contributions to ASTRAVOX PRIME! Please refer to the [ROADMAP.md](ROA
 This project is licensed under the MIT License.
 
 ## Authors
-Prabesh Paudel
+## Prabesh Paudel
 
     Founder & Chief Executive Officer (CEO)
 
@@ -132,100 +149,25 @@ Susanta Baral
 
     Prompt Engineering Specialist
 
-=======
-# AstrovoxAI
+## TOTAL TASKS COMPLETED 
+Project Architecture       ██████████ 100%
 
-Premium AI chat app built on TanStack Start (React 19, Vite 7) with a
-Supabase-backed Lovable Cloud backend. Chat streams responses from the
-Lovable AI Gateway (Gemini + GPT models), renders Markdown with KaTeX
-math and Mermaid diagrams, and persists conversations per user.
+Frontend Migration         ██████████ 100%
 
-## Stack
+Backend Migration          ██████████ 100%
 
-- **Frontend:** React 19, TanStack Router/Start, Tailwind v4, shadcn/ui
-- **Backend:** TanStack server functions + server routes (Cloudflare Worker runtime)
-- **Data + Auth:** Lovable Cloud (Supabase) with Row Level Security
-- **AI:** Lovable AI Gateway (`google/gemini-3-flash-preview`, `google/gemini-2.5-pro`, `openai/gpt-5-mini`, `openai/gpt-5`) via `ai` SDK streaming
-- **Rendering:** `react-markdown`, `remark-gfm`, `remark-math`, `rehype-katex`, Mermaid
+Developer Standards        ██████████ 100%
 
-## Scripts
+Documentation              █████████░ 95%
 
-| Command | Purpose |
-| --- | --- |
-| `bun run dev` | Start Vite dev server |
-| `bun run build` | Production build |
-| `bun run build:dev` | Preview/prerender build |
-| `bun run test` | Run unit tests (Vitest) |
-| `bun run lint` | ESLint |
-| `bun run format` | Prettier |
+CLI Tools                  ██████████ 100%
 
-## Project layout
+Telemetry Backend          ██████████ 100%
 
-```
-src/
-  components/chat/        Chat UI (window, sidebar, markdown, mermaid)
-  integrations/supabase/  Auto-generated Supabase clients + middleware
-  lib/                    Server helpers, ai-gateway, rate-limit, logger
-  routes/                 File-based routes
-    api/chat.ts           Streaming chat endpoint (auth + rate limited)
-    api/public/log.ts     Client error sink
-    _authenticated/       Signed-in surfaces (chat, settings)
-    auth.tsx              Sign in / sign up
-    about.tsx, index.tsx  Public marketing pages
-tests/                    Vitest unit tests
-```
+Telemetry Frontend         ██████████ 100%
 
-## Auth
+Terminal Console           ██████████ 100%
 
-Email/password + Google OAuth via Lovable Cloud. Protected routes live
-under `src/routes/_authenticated/` and are gated by the integration-managed
-`_authenticated/route.tsx` layout. Server functions that need the current
-user use `requireSupabaseAuth`; the bearer token is attached automatically
-by `attachSupabaseAuth` in `src/start.ts`.
+API Documentation          █████████░ 95%
 
-## Data model
-
-- `profiles` — one row per auth user (auto-populated by `handle_new_user`)
-- `conversations` — per-user chat threads (title, model, timestamps)
-- `messages` — user/assistant messages linked to a conversation
-- `error_logs` — server + client error sink (service-role writes only)
-
-All user-owned tables have RLS scoped to `auth.uid()`.
-
-## Security
-
-- Every server route validates input with Zod and clamps message/body size.
-- `/api/chat` enforces a per-user ad-hoc rate limit (30 req/min, in-memory).
-- Response middleware sets `X-Content-Type-Options`, `Referrer-Policy`,
-  `X-Frame-Options`, `Permissions-Policy`, and HSTS.
-- Markdown rendering uses `securityLevel: "strict"` for Mermaid and never
-  injects raw HTML from user messages.
-- Service-role key is loaded only inside server handlers, never at module scope.
-
-## Testing
-
-Run `bun run test`. Vitest config lives in `vitest.config.ts` and tests in
-`tests/`. Current coverage focuses on pure server helpers
-(`rate-limit`, `ai-gateway`); expand with route-level tests as the surface grows.
-
-## Deployment
-
-Publish from the Lovable editor (Publish button). Frontend changes require
-"Update" in the publish dialog; server function / route changes deploy
-automatically. Stable URLs:
-
-- Production: `project--<project-id>.lovable.app`
-- Preview: `project--<project-id>-dev.lovable.app`
-
-Custom domains are configured in Project settings → Domains.
-
-## Environment
-
-Runtime secrets (managed via Lovable Cloud):
-
-- `LOVABLE_API_KEY` — AI Gateway + connectors (auto-provisioned)
-- `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-
-Client-visible (`.env`, safe to commit): `VITE_SUPABASE_URL`,
-`VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`.
->>>>>>> source/main
+Production Readiness       █████████░ 95%

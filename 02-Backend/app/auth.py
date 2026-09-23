@@ -1,257 +1,219 @@
 import os
-import hashlib
-import uuid
-from datetime import datetime, timedelta, timezone
-import logging
 
-from fastapi import Depends, HTTPException
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from typing import Optional
 
-from .config import settings
-from .database import get_db
+from .supabase_client import get_supabase
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+supabase = get_supabase()
+limiter = Limiter(key_func=get_remote_address)
 
-logger = logging.getLogger(__name__)
-
-ACCESS_TOKEN_EXPIRE_MINUTES = 15
-REFRESH_TOKEN_EXPIRE_DAYS = 30
+router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-def _normalize_user_id(user_id):
-    if isinstance(user_id, dict):
-        return user_id.get("user_id") or user_id.get("sub") or next(iter(user_id.values()))
-    return user_id
+# Pydantic models
+class SignUpRequest(BaseModel):
+    email: EmailStr
+    password: str
+    full_name: str
 
 
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 
-def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
 
 
-def create_access_token(user_id: str, email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    payload = {"sub": user_id, "email": email, "exp": expire, "type": "access"}
-    return jwt.encode(
-        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
+class UpdatePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
 
 
-def create_refresh_token(user_id: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    payload = {"sub": user_id, "exp": expire, "type": "refresh"}
-    token = jwt.encode(
-        payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
-    )
-    token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO refresh_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)",
-            (str(uuid.uuid4()), user_id, token_hash, expire.isoformat()),
-        )
-        conn.commit()
-    return token
+class OAuthRequest(BaseModel):
+    provider: str
+    access_token: str
+    email: Optional[str] = None
 
 
-def register_user(email: str, password: str) -> dict:
-    user_id = str(uuid.uuid4())
-    password_hash = hash_password(password)
+# Routes
+@router.post("/signup")
+@limiter.limit("5/minute")
+async def sign_up(request: SignUpRequest):
+    """Register a new user with Supabase Auth"""
     try:
-        with get_db() as conn:
-            conn.execute(
-                "INSERT INTO users (id, email, password_hash, email_verified) VALUES (?, ?, ?, ?)",
-                (user_id, email, password_hash, 0),
-            )
-            conn.commit()
+        response = supabase.auth.sign_up(
+            {
+                "email": request.email,
+                "password": request.password,
+                "options": {
+                    "data": {
+                        "full_name": request.full_name,
+                        "username": request.email.split("@")[0],
+                    }
+                },
+            }
+        )
+
+        return {
+            "status": "OK",
+            "message": "User registered successfully. Please verify your email.",
+            "user": {
+                "id": response.user.id if response.user else None,
+                "email": response.user.email if response.user else None,
+            },
+        }
     except Exception as e:
-        raise HTTPException(status_code=400, detail="Invalid request") from e
-    token = create_verification_token(user_id, email)
-    send_verification_email(email, token)
-    return {"user_id": user_id, "email": email}
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-def login_user(email: str, password: str) -> dict:
-    from .cache import _get_redis
-    r = _get_redis()
-    if r:
-        key = f"login_attempts:{email}"
-        attempts = r.get(key)
-        if attempts and int(attempts) >= 5:
-            ttl = r.ttl(key)
-            if ttl is None or ttl < 0:
-                r.setex(key, 900, "5")
-                ttl = 900
-            raise HTTPException(status_code=429, detail=f"Too many failed login attempts. Try again in {ttl} seconds.")
+@router.post("/login")
+@limiter.limit("10/minute")
+async def login(request: LoginRequest):
+    """Login user with email and password"""
+    try:
+        response = supabase.auth.sign_in_with_password(
+            {"email": request.email, "password": request.password}
+        )
 
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT id, email, password_hash, email_verified FROM users WHERE email = ?", (email,)
-        ).fetchone()
-        if not row or not verify_password(password, row["password_hash"]):
-            if r:
-                key = f"login_attempts:{email}"
-                r.incr(key)
-                r.expire(key, 900)
-            raise HTTPException(status_code=401, detail="Invalid credentials")
-        try:
-            email_verified = row["email_verified"]
-        except (KeyError, IndexError):
-            email_verified = 1
-        if email_verified == 0:
-            raise HTTPException(status_code=403, detail="Email not verified. Please check your inbox.")
+        if not response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+            )
 
-    if r:
-        r.delete(f"login_attempts:{email}")
+        return {
+            "status": "OK",
+            "message": "Login successful",
+            "user": {"id": response.user.id, "email": response.user.email},
+            "session": {
+                "access_token": (
+                    response.session.access_token if response.session else None
+                ),
+                "refresh_token": (
+                    response.session.refresh_token if response.session else None
+                ),
+            },
+        }
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
+        )
 
-    access_token = create_access_token(row["id"], row["email"])
-    refresh_token = create_refresh_token(row["id"])
+
+@router.post("/logout")
+async def logout():
+    """Logout user (client-side operation in Supabase)"""
     return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "user_id": row["id"],
-        "email": row["email"],
+        "status": "OK",
+        "message": "Logout successful. Please clear your session tokens on the client.",
     }
 
 
-def refresh_access_token(refresh_token: str) -> dict:
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Send password reset email"""
     try:
-        payload = jwt.decode(
-            refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        supabase.auth.reset_password_for_email(
+            request.email,
+            options={
+                "redirect_to": f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/reset-password"
+            },
         )
-        if payload.get("type") != "refresh":
-            raise HTTPException(status_code=401, detail="Invalid token type")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
-    token_hash = hashlib.sha256(refresh_token.encode()).hexdigest()
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT user_id FROM refresh_tokens WHERE token_hash = ? AND expires_at > ?",
-            (token_hash, datetime.now(timezone.utc).isoformat()),
-        ).fetchone()
-        if not row:
+        return {"status": "OK", "message": "Password reset email sent successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/me")
+async def get_current_user(authorization: str = None):
+    """Get current authenticated user (requires token in header)"""
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+        )
+
+    try:
+        # Extract token from "Bearer <token>"
+        token = authorization.replace("Bearer ", "")
+
+        # Get user from token
+        response = supabase.auth.get_user(token)
+
+        if not response.user:
             raise HTTPException(
-                status_code=401, detail="Refresh token expired or revoked"
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
             )
-        user = conn.execute(
-            "SELECT id, email FROM users WHERE id = ?", (row["user_id"],)
-        ).fetchone()
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-    access_token = create_access_token(user["id"], user["email"])
-    return {"access_token": access_token}
 
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-) -> str:
-    token = credentials.credentials
-    try:
-        payload = jwt.decode(
-            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
+        # Fetch user profile
+        profile_response = (
+            supabase.table("profiles").select("*").eq("id", response.user.id).execute()
         )
-        if payload.get("type") != "access":
-            raise HTTPException(status_code=401, detail="Invalid token type")
-        return payload.get("sub")
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
+        profile = profile_response.data[0] if profile_response.data else None
+
+        return {
+            "status": "OK",
+            "user": {
+                "id": response.user.id,
+                "email": response.user.email,
+                "profile": profile,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
 
 
-def require_verified_email(user_id: str = Depends(get_current_user)) -> str:
-    user_id = _normalize_user_id(user_id)
-    if os.getenv("ASTROVOX_TEST_MODE") == "1":
-        return user_id
-    with get_db() as conn:
-        row = conn.execute("SELECT email_verified FROM users WHERE id = ?", (user_id,)).fetchone()
-        if not row or row["email_verified"] == 0:
-            raise HTTPException(status_code=403, detail="Email not verified")
-    return user_id
-
-
-def require_admin(user_id: str = Depends(get_current_user)) -> str:
-    user_id = _normalize_user_id(user_id)
-    with get_db() as conn:
-        row = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
-        if not row or row["role"] != "admin":
-            raise HTTPException(status_code=403, detail="Admin access required")
-    return user_id
-
-
-import smtplib
-from email.mime.text import MIMEText
-from datetime import datetime, timedelta, timezone
-import logging
-
-VERIFICATION_TOKEN_EXPIRE_HOURS = 24
-
-def create_verification_token(user_id: str, email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=VERIFICATION_TOKEN_EXPIRE_HOURS)
-    payload = {"sub": user_id, "email": email, "exp": expire, "type": "verification"}
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
-
-def send_verification_email(email: str, token: str):
-    verification_url = f"https://astrovox.ai/verify?token={token}"
-    msg = MIMEText(f"Click to verify: {verification_url}")
-    msg["Subject"] = "Verify your AstrovoxAI account"
-    msg["From"] = os.getenv("EMAIL_FROM", "noreply@astrovox.ai")
-    msg["To"] = email
+@router.post("/oauth")
+async def oauth_login(request: OAuthRequest):
+    """A lightweight OAuth-compatible endpoint that forwards to Supabase if supported."""
     try:
-        with smtplib.SMTP(os.getenv("SMTP_HOST", "localhost"), int(os.getenv("SMTP_PORT", "25"))) as server:
-            server.send_message(msg)
-    except Exception as e:
-        logger.error(f"Email send failed: {e}")
+        response = supabase.auth.sign_in_with_otp(
+            {"email": request.email or "", "create_user": True}
+        )
+        return {
+            "status": "OK",
+            "provider": request.provider,
+            "message": "OAuth flow initiated",
+            "otp_sent": bool(response),
+        }
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
 
-def verify_email_token(token: str) -> dict:
+
+@router.post("/refresh")
+async def refresh_token(refresh_token: str):
+    """Refresh access token using refresh token"""
     try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        if payload.get("type") != "verification":
-            raise HTTPException(status_code=400, detail="Invalid token type")
-        with get_db() as conn:
-            conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (payload.get("sub"),))
-            conn.commit()
-        return {"status": "verified"}
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        response = supabase.auth.refresh_session(refresh_token)
 
-def create_password_reset_token(user_id: str, email: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(hours=1)
-    payload = {"sub": user_id, "email": email, "exp": expire, "type": "password_reset"}
-    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+        if not response.session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            )
 
-
-def forgot_password(email: str) -> dict:
-    with get_db() as conn:
-        row = conn.execute("SELECT id, email FROM users WHERE email = ?", (email,)).fetchone()
-        if not row:
-            return {"ok": True}
-    token = create_password_reset_token(row["id"], row["email"])
-    reset_url = f"https://astrovox.ai/reset-password?token={token}"
-    msg = MIMEText(f"Click to reset your password: {reset_url}")
-    msg["Subject"] = "Reset your AstrovoxAI password"
-    msg["From"] = os.getenv("EMAIL_FROM", "noreply@astrovox.ai")
-    msg["To"] = email
-    try:
-        with smtplib.SMTP(os.getenv("SMTP_HOST", "localhost"), int(os.getenv("SMTP_PORT", "25"))) as server:
-            server.send_message(msg)
-    except Exception as e:
-        logger.error(f"Email send failed: {e}")
-    return {"ok": True}
-
-def reset_password(token: str, new_password: str) -> dict:
-    try:
-        payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
-        if payload.get("type") != "password_reset":
-            raise HTTPException(status_code=400, detail="Invalid token type")
-        password_hash = hash_password(new_password)
-        with get_db() as conn:
-            conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, payload.get("sub")))
-            conn.commit()
-        return {"status": "reset"}
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        return {
+            "status": "OK",
+            "session": {
+                "access_token": response.session.access_token,
+                "refresh_token": response.session.refresh_token,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh token"
+        )

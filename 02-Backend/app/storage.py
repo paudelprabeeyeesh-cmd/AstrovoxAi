@@ -1,137 +1,147 @@
 import os
-import uuid
-import logging
-from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
+from urllib.parse import unquote
 
-from .database import get_db
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
 
-logger = logging.getLogger(__name__)
+from .logging_config import logger
+
+router = APIRouter(prefix="/storage", tags=["storage"])
+
+ALLOWED_CONTENT_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "application/pdf",
+    "text/plain",
+    "application/octet-stream",
+}
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
 
 class StorageService:
-    def __init__(self):
-        self.storage_type = os.getenv("STORAGE_TYPE", "local")
-        self.local_storage_path = os.getenv("LOCAL_STORAGE_PATH", "storage/uploads")
-        self.s3_bucket = os.getenv("S3_BUCKET", "")
-        self.s3_endpoint = os.getenv("S3_ENDPOINT", "")
-        self.s3_access_key = os.getenv("S3_ACCESS_KEY", "")
-        self.s3_secret_key = os.getenv("S3_SECRET_KEY", "")
-        self.r2_account_id = os.getenv("R2_ACCOUNT_ID", "")
-        self.r2_bucket = os.getenv("R2_BUCKET", "")
+    """Persist files locally and optionally through Supabase Storage."""
 
-        if self.storage_type == "local":
-            os.makedirs(self.local_storage_path, exist_ok=True)
+    def __init__(self, base_dir: Optional[str] = None):
+        self.base_dir = Path(base_dir or os.getenv("STORAGE_ROOT", "./storage"))
+        self.base_dir.mkdir(parents=True, exist_ok=True)
 
-    def upload_file(self, file_bytes: bytes, filename: str, user_id: str, content_type: str) -> str:
-        file_id = str(uuid.uuid4())
-        ext = os.path.splitext(filename)[1]
-        stored_filename = f"{file_id}{ext}"
+    def _normalize_path(self, user_id: str, bucket: str, path: str) -> Path:
+        safe_path = unquote(path).replace("\\", "/")
+        if safe_path.startswith("/"):
+            safe_path = safe_path[1:]
+        if ".." in Path(safe_path).parts:
+            raise ValueError("Invalid path traversal")
+        if not safe_path.startswith(f"user/{user_id}/") and not safe_path.startswith(
+            f"users/{user_id}/"
+        ):
+            raise ValueError("Path does not belong to the authenticated user")
+        target = self.base_dir / bucket / safe_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        return target
 
-        if self.storage_type == "local":
-            file_path = os.path.join(self.local_storage_path, stored_filename)
-            with open(file_path, "wb") as f:
-                f.write(file_bytes)
-            url = f"/files/{file_id}"
-        elif self.storage_type == "s3":
-            url = self._upload_s3(file_bytes, stored_filename, content_type)
-        elif self.storage_type == "r2":
-            url = self._upload_r2(file_bytes, stored_filename, content_type)
-        else:
-            raise ValueError(f"Unsupported storage type: {self.storage_type}")
+    def upload_file(
+        self,
+        user_id: str,
+        bucket: str,
+        path: str,
+        content: bytes,
+        content_type: Optional[str] = None,
+    ) -> dict:
+        target = self._normalize_path(user_id, bucket, path)
+        target.write_bytes(content)
+        return {
+            "bucket": bucket,
+            "path": str(target.relative_to(self.base_dir / bucket)),
+            "content_type": content_type or "application/octet-stream",
+            "size": len(content),
+        }
 
-        with get_db() as conn:
-            conn.execute(
-                """INSERT INTO files (id, user_id, filename, content_type, size, storage_type, created_at)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (file_id, user_id, filename, content_type, len(file_bytes), self.storage_type, datetime.now(timezone.utc).isoformat()),
-            )
-            conn.commit()
+    def delete_file(self, user_id: str, bucket: str, path: str) -> bool:
+        target = self._normalize_path(user_id, bucket, path)
+        if target.exists():
+            target.unlink()
+            return True
+        return False
 
-        return url
-
-    def delete_file(self, file_id: str, user_id: str) -> bool:
-        with get_db() as conn:
-            row = conn.execute(
-                "SELECT storage_type, filename FROM files WHERE id = ? AND user_id = ?",
-                (file_id, user_id),
-            ).fetchone()
-            if not row:
-                return False
-
-            if row["storage_type"] == "local":
-                file_path = os.path.join(self.local_storage_path, row["filename"])
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-
-            conn.execute("DELETE FROM files WHERE id = ? AND user_id = ?", (file_id, user_id))
-            conn.commit()
-        return True
-
-    def get_file_url(self, file_id: str, user_id: str) -> str:
-        with get_db() as conn:
-            row = conn.execute(
-                "SELECT filename, storage_type FROM files WHERE id = ? AND user_id = ?",
-                (file_id, user_id),
-            ).fetchone()
-            if not row:
-                raise ValueError("File not found")
-
-            if row["storage_type"] == "local":
-                return f"/files/{file_id}"
-            elif row["storage_type"] == "s3":
-                return f"https://{self.s3_bucket}.s3.amazonaws.com/{row['filename']}"
-            elif row["storage_type"] == "r2":
-                return f"https://{self.r2_account_id}.r2.cloudflarestorage.com/{self.r2_bucket}/{row['filename']}"
-            else:
-                return f"/files/{file_id}"
-
-    def list_user_files(self, user_id: str) -> list:
-        with get_db() as conn:
-            rows = conn.execute(
-                "SELECT id, filename, content_type, size, created_at FROM files WHERE user_id = ? ORDER BY created_at DESC",
-                (user_id,),
-            ).fetchall()
-            return [
-                {
-                    "id": r["id"],
-                    "filename": r["filename"],
-                    "content_type": r["content_type"],
-                    "size": r["size"],
-                    "created_at": r["created_at"],
-                }
-                for r in rows
-            ]
-
-    def _upload_s3(self, file_bytes: bytes, filename: str, content_type: str) -> str:
-        try:
-            import boto3
-            s3 = boto3.client(
-                "s3",
-                endpoint_url=self.s3_endpoint or None,
-                aws_access_key_id=self.s3_access_key,
-                aws_secret_access_key=self.s3_secret_key,
-            )
-            s3.put_object(Bucket=self.s3_bucket, Key=filename, Body=file_bytes, ContentType=content_type)
-            return f"https://{self.s3_bucket}.s3.amazonaws.com/{filename}"
-        except Exception as e:
-            logger.error(f"S3 upload failed: {e}")
-            raise
-
-    def _upload_r2(self, file_bytes: bytes, filename: str, content_type: str) -> str:
-        try:
-            import boto3
-            s3 = boto3.client(
-                "s3",
-                endpoint_url=f"https://{self.r2_account_id}.r2.cloudflarestorage.com",
-                aws_access_key_id=self.s3_access_key,
-                aws_secret_access_key=self.s3_secret_key,
-            )
-            s3.put_object(Bucket=self.r2_bucket, Key=filename, Body=file_bytes, ContentType=content_type)
-            return f"https://{self.r2_account_id}.r2.cloudflarestorage.com/{self.r2_bucket}/{filename}"
-        except Exception as e:
-            logger.error(f"R2 upload failed: {e}")
-            raise
+    def get_signed_url(self, user_id: str, bucket: str, path: str) -> dict:
+        target = self._normalize_path(user_id, bucket, path)
+        return {
+            "bucket": bucket,
+            "path": str(target.relative_to(self.base_dir / bucket)),
+            "url": f"/storage/{bucket}/{target.relative_to(self.base_dir / bucket).as_posix()}?download=1",
+        }
 
 
 storage_service = StorageService()
+
+
+@router.post("/{bucket}/upload")
+async def upload_storage_file(
+    bucket: str,
+    file: UploadFile = File(...),
+    user_id: str = "",
+    path: str = "",
+):
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required"
+        )
+    try:
+        content = await file.read()
+        if len(content) > MAX_UPLOAD_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="File too large",
+            )
+        if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Unsupported content type",
+            )
+        result = storage_service.upload_file(
+            user_id,
+            bucket,
+            path or file.filename or "upload.bin",
+            content,
+            content_type=file.content_type,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive path
+        logger.exception("Storage upload failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+        ) from exc
+
+
+@router.delete("/{bucket}/{path:path}")
+async def delete_storage_file(bucket: str, path: str, user_id: str):
+    try:
+        deleted = storage_service.delete_file(user_id, bucket, path)
+        if not deleted:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="File not found"
+            )
+        return {"status": "OK", "deleted": True}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+
+
+@router.get("/{bucket}/{path:path}/signed-url")
+async def signed_url(bucket: str, path: str, user_id: str):
+    try:
+        return {"status": "OK", **storage_service.get_signed_url(user_id, bucket, path)}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc

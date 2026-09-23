@@ -1,0 +1,4 @@
+﻿
+> astravox-ai@2.0.0 lint
+> eslint src --max-warnings 0
+

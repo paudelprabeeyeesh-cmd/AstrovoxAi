@@ -1,9 +1,7 @@
 import logging
-
 from .supabase_client import get_supabase
 
-logger = logging.getLogger("astravox.database")
-
+logger = logging.getLogger(__name__)
 supabase = get_supabase()
 
 
@@ -35,6 +33,7 @@ async def create_user_profile(
             )
             .execute()
         )
+        logger.info(f"Created user profile for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error creating user profile: {e}")
@@ -45,6 +44,7 @@ async def update_user_profile(user_id: str, **kwargs):
     """Update user profile"""
     try:
         response = supabase.table("profiles").update(kwargs).eq("id", user_id).execute()
+        logger.info(f"Updated user profile for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error updating user profile: {e}")
@@ -66,6 +66,7 @@ async def create_conversation(user_id: str, title: str = None, model: str = "gpt
             )
             .execute()
         )
+        logger.info(f"Created conversation for user {user_id}: {title}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error creating conversation: {e}")
@@ -84,6 +85,7 @@ async def get_conversations(user_id: str, limit: int = 50, offset: int = 0):
             .range(offset, offset + limit - 1)
             .execute()
         )
+        logger.debug(f"Fetched {len(response.data)} conversations for user {user_id}")
         return response.data
     except Exception as e:
         logger.error(f"Error fetching conversations: {e}")
@@ -112,6 +114,7 @@ async def update_conversation(conversation_id: int, **kwargs):
             .eq("id", conversation_id)
             .execute()
         )
+        logger.debug(f"Updated conversation {conversation_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error updating conversation: {e}")
@@ -124,6 +127,7 @@ async def delete_conversation(conversation_id: int):
         supabase.table("conversations").update({"is_deleted": True}).eq(
             "id", conversation_id
         ).execute()
+        logger.info(f"Deleted conversation {conversation_id}")
         return True
     except Exception as e:
         logger.error(f"Error deleting conversation: {e}")
@@ -155,6 +159,7 @@ async def create_message(
             )
             .execute()
         )
+        logger.debug(f"Created {role} message in conversation {conversation_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error creating message: {e}")
@@ -172,6 +177,9 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
             .range(offset, offset + limit - 1)
             .execute()
         )
+        logger.debug(
+            f"Fetched {len(response.data)} messages from conversation {conversation_id}"
+        )
         return response.data
     except Exception as e:
         logger.error(f"Error fetching messages: {e}")
@@ -179,19 +187,20 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
 
 
 async def get_recent_messages(conversation_id: int, limit: int = 10):
-    """Get the most recent messages for context, in chronological order."""
+    """Get recent messages for context"""
     try:
         response = (
             supabase.table("messages")
             .select("*")
             .eq("conversation_id", conversation_id)
-            .order("created_at", desc=True)
+            .order("created_at", desc=False)
             .limit(limit)
             .execute()
         )
-        # Query returns newest-first; reverse to chronological (oldest-first)
-        # so the prompt reads naturally.
-        return list(reversed(response.data)) if response.data else []
+        logger.debug(
+            f"Fetched {len(response.data)} recent messages from conversation {conversation_id}"
+        )
+        return response.data
     except Exception as e:
         logger.error(f"Error fetching recent messages: {e}")
         return []
@@ -206,6 +215,7 @@ async def save_memory(user_id: str, content: str, importance: int = 1):
             .insert({"user_id": user_id, "content": content, "importance": importance})
             .execute()
         )
+        logger.info(f"Saved memory for user {user_id} with importance {importance}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error saving memory: {e}")
@@ -224,6 +234,7 @@ async def get_user_memory(user_id: str, limit: int = 50):
             .limit(limit)
             .execute()
         )
+        logger.debug(f"Fetched {len(response.data)} memory entries for user {user_id}")
         return response.data
     except Exception as e:
         logger.error(f"Error fetching memory: {e}")
@@ -252,6 +263,7 @@ async def update_user_settings(user_id: str, **kwargs):
             .eq("user_id", user_id)
             .execute()
         )
+        logger.info(f"Updated user settings for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error updating settings: {e}")

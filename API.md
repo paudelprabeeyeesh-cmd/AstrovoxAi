@@ -194,8 +194,8 @@ Authorization: Bearer <access_token>
 Content-Type: application/json
 
 {
-  "title": "My First Chat",
-  "model": "gpt-4"
+  "title": "Casual Conversation",
+  "model": "optimus-3,5"
 }
 ```
 
@@ -206,8 +206,8 @@ Response:
   "conversation": {
     "id": 1,
     "user_id": "uuid",
-    "title": "My First Chat",
-    "model": "gpt-4",
+    "title": "Casual Conversation",
+    "model": "optimus-3,5",
     "created_at": "2024-01-01T12:00:00Z",
     "updated_at": "2024-01-01T12:00:00Z"
   }
@@ -229,8 +229,8 @@ Response:
     {
       "id": 1,
       "user_id": "uuid",
-      "title": "My First Chat",
-      "model": "gpt-4",
+      "title": "Casual conversation",
+      "model": "optimus-3,5",
       "created_at": "2024-01-01T12:00:00Z",
       "updated_at": "2024-01-01T12:00:00Z"
     }
@@ -253,8 +253,8 @@ Response:
   "conversation": {
     "id": 1,
     "user_id": "uuid",
-    "title": "My First Chat",
-    "model": "gpt-4",
+    "title": "Casual conversation",
+    "model": "optimus-3,5",
     "created_at": "2024-01-01T12:00:00Z",
     "updated_at": "2024-01-01T12:00:00Z"
   }
@@ -304,7 +304,7 @@ Content-Type: application/json
 {
   "conversation_id": 1,
   "message": "What is the capital of France?",
-  "model": "gpt-4"
+  "model": "optimus-3,5"
 }
 ```
 
@@ -426,7 +426,7 @@ Response:
 ```json
 {
   "status": "OK",
-  "service": "astravox-ai-api",
+  "service": "Astrovox-Ai-Api",
   "version": "2.0.0",
   "timestamp": "2024-01-01T12:00:00Z"
 }
@@ -473,6 +473,147 @@ Response:
     "user_tier": "free",
     "created_at": "2024-01-01T12:00:00Z"
   }
+}
+```
+
+## Telemetry Endpoints
+
+### Track Custom Event
+
+```http
+POST /telemetry/event
+Authorization: ******
+Content-Type: application/json
+
+{
+  "event_name": "feature_used",
+  "category": "feature",
+  "metadata": {
+    "feature": "memory_save",
+    "duration_ms": 250
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 123,
+  "message": "Event tracked successfully"
+}
+```
+
+### Track Page View
+
+```http
+POST /telemetry/page-view
+Authorization: ******
+Content-Type: application/json
+
+{
+  "page": "/dashboard",
+  "referrer": "/chat"
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 124,
+  "message": "Page view tracked"
+}
+```
+
+### Track Error
+
+```http
+POST /telemetry/error
+Authorization: ******
+Content-Type: application/json
+
+{
+  "error_name": "APIError",
+  "error_message": "Failed to fetch conversations",
+  "stack_trace": "Error: ...",
+  "context": {
+    "endpoint": "/chat/conversations",
+    "status_code": 500
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 125,
+  "message": "Error tracked"
+}
+```
+
+### Track User Action
+
+```http
+POST /telemetry/user-action
+Authorization: ******
+Content-Type: application/json
+
+{
+  "action": "message_sent",
+  "category": "chat",
+  "metadata": {
+    "conversation_id": 1,
+    "message_length": 42
+  }
+}
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "event_id": 126,
+  "message": "User action tracked"
+}
+```
+
+### Get Telemetry Stats
+
+```http
+GET /telemetry/stats?limit=100&offset=0
+Authorization: ******
+```
+
+Response:
+```json
+{
+  "status": "OK",
+  "user_id": "uuid",
+  "total_events": 150,
+  "event_counts": {
+    "message_sent": 45,
+    "page_view": 60,
+    "feature_used": 30,
+    "error": 15
+  },
+  "category_counts": {
+    "chat": 45,
+    "navigation": 60,
+    "feature": 30,
+    "error": 15
+  },
+  "recent_events": [
+    {
+      "id": 150,
+      "event_name": "page_view",
+      "category": "navigation",
+      "timestamp": "2024-01-01T12:05:00Z"
+    }
+  ],
+  "offset": 0,
+  "limit": 100
 }
 ```
 
@@ -540,4 +681,4 @@ Current version: **2.0.0**
 
 ## Support
 
-For API support, please refer to the GitHub repository or contact the development team.
+For API support, please contact the development team. 

@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
 import MessageContent from './MessageContent'
 
-export default function Chat({ session, conversationId, onConversationChange }) {
+export default function Chat({ session, conversationId, model = 'gpt-4' }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [typing, setTyping] = useState(false)
   const messagesEndRef = useRef(null)
-  const abortControllerRef = useRef(null)
   const lastPromptRef = useRef('')
   const [error, setError] = useState(null)
   const [editingMessageId, setEditingMessageId] = useState(null)
@@ -24,13 +23,10 @@ export default function Chat({ session, conversationId, onConversationChange }) 
   useEffect(() => {
     if (conversationId) {
       loadMessages()
-    } else {
-      setMessages([])
     }
-    return () => abortControllerRef.current?.abort()
-  }, [conversationId])
+  }, [conversationId, loadMessages])
 
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error: fetchError } = await supabase
@@ -48,7 +44,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [conversationId])
 
   async function handleSendMessage(e) {
     e.preventDefault()
@@ -82,81 +78,44 @@ export default function Chat({ session, conversationId, onConversationChange }) 
         throw new Error('No authentication token available')
       }
 
-      // Stream tokens through the backend so model credentials remain server-side.
+      // Send to backend. Set VITE_API_URL at build time for production.
+      // The "/api" fallback only works where a proxy routes /api/* to the
+      // backend (the Vite dev server, or an nginx/CDN rule in production).
       const apiBase = import.meta.env.VITE_API_URL || '/api'
-      abortControllerRef.current = new AbortController()
-      const response = await fetch(`${apiBase}/chat/stream`, {
+      const response = await fetch(`${apiBase}/chat/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        signal: abortControllerRef.current.signal,
         body: JSON.stringify({
           conversation_id: conversationId,
           message: userMessage,
-          model: 'gpt-4'
+          model: model
         })
       })
 
-      if (!response.ok || !response.body) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || 'Failed to start response stream')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.detail || 'Failed to send message')
       }
 
-      const assistantMessageId = `stream-${Date.now()}`
-      setMessages(prev => [...prev, {
-        id: assistantMessageId,
-        conversation_id: conversationId,
-        user_id: session.user.id,
-        role: 'assistant',
-        content: '',
-        created_at: new Date().toISOString()
-      }])
+      const result = await response.json()
 
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      while (true) {
-        const { done, value } = await reader.read()
-        buffer += decoder.decode(value || new Uint8Array(), { stream: !done })
-
-        const events = buffer.split('\n\n')
-        buffer = events.pop() || ''
-        for (const eventBlock of events) {
-          const event = eventBlock.match(/^event: (.+)$/m)?.[1]
-          const dataLine = eventBlock.match(/^data: (.+)$/m)?.[1]
-          if (!event || !dataLine) continue
-
-          const data = JSON.parse(dataLine)
-          if (event === 'token') {
-            setMessages(prev => prev.map(message => (
-              message.id === assistantMessageId
-                ? { ...message, content: message.content + data.content }
-                : message
-            )))
-          }
-          if (event === 'error') {
-            throw new Error(data.detail || 'The response stream ended unexpectedly')
-          }
-        }
-
-        if (done) break
+      // Add AI message
+      if (result.ai_message) {
+        setMessages(prev => [...prev, {
+          ...result.ai_message,
+          created_at: new Date(result.ai_message.created_at).toISOString()
+        }])
       }
-    } catch (err) {
-      if (err.name === 'AbortError') return
-      setError(`Error: ${err.message}`)
-      console.error(err)
-    } finally {
-      abortControllerRef.current = null
+
       setTyping(false)
+    } catch (err) {
+      setError(`Error: ${err.message}`)
+      setTyping(false)
+      console.error(err)
     }
-  }
-
-  function stopResponse() {
-    abortControllerRef.current?.abort()
-    setTyping(false)
   }
 
   function retryLastPrompt() {
@@ -386,7 +345,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleComposerKeyDown}
-          disabled={loading || typing || !conversationId}
+          disabled={loading || !conversationId}
           style={{
             flex: 1,
             padding: '12px 16px',
@@ -407,9 +366,8 @@ export default function Chat({ session, conversationId, onConversationChange }) 
           onBlur={(e) => e.target.style.borderColor = '#1e293b'}
         />
         <button
-          type={typing ? 'button' : 'submit'}
-          onClick={typing ? stopResponse : undefined}
-          disabled={loading || (!typing && (!input.trim() || !conversationId))}
+          type="submit"
+          disabled={loading || !input.trim() || !conversationId}
           style={{
             padding: '0 24px',
             backgroundColor: '#06b6d4',
@@ -424,7 +382,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
             opacity: loading || !input.trim() ? 0.5 : 1
           }}
           onMouseEnter={(e) => {
-            if (!loading && !typing && input.trim()) {
+            if (!loading && input.trim()) {
               e.target.style.transform = 'scale(1.02)'
               e.target.style.boxShadow = '0 0 20px rgba(6,182,212,0.4)'
             }
@@ -434,7 +392,7 @@ export default function Chat({ session, conversationId, onConversationChange }) 
             e.target.style.boxShadow = 'none'
           }}
         >
-          {typing ? 'STOP' : 'SEND'}
+          SEND
         </button>
       </form>
 
