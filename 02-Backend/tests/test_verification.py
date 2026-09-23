@@ -111,6 +111,7 @@ def test_checkpoint_save_load():
     """Verify model can be saved and loaded correctly."""
     device = torch.device("cpu")
     model = TinyTransformer(vocab_size=50, d_model=32, n_heads=2, n_layers=1).to(device)
+    model.eval()
     inputs, _ = create_real_dataset(size=5, seq_len=8, vocab_size=50)
     inputs = inputs.to(device)
     with torch.no_grad():
@@ -119,9 +120,10 @@ def test_checkpoint_save_load():
     torch.save(model.state_dict(), checkpoint_path)
     loaded_model = TinyTransformer(vocab_size=50, d_model=32, n_heads=2, n_layers=1).to(device)
     loaded_model.load_state_dict(torch.load(checkpoint_path, map_location=device))
+    loaded_model.eval()
     with torch.no_grad():
         loaded_output = loaded_model(inputs)
-    assert torch.allclose(original_output, loaded_output, atol=1e-5), f"Checkpoint load mismatch: max diff = {(original_output - loaded_output).abs().max().item()}"
+    assert torch.allclose(original_output, loaded_output, atol=1e-6), f"Checkpoint load mismatch: max diff = {(original_output - loaded_output).abs().max().item()}"
     return {"checkpoint_size_mb": round(os.path.getsize(checkpoint_path) / 1024, 2)}
 
 
