@@ -139,14 +139,26 @@ class CrossEncoderReranker:
 
 
 class HybridRAG:
-    """Hybrid RAG pipeline combining dense, sparse, and reranking."""
+    """Hybrid RAG pipeline combining dense, sparse, reranking, and self-retrieval."""
 
-    def __init__(self, documents: List[Document], reranker: Optional[CrossEncoderReranker] = None):
+    def __init__(self, documents: List[Document], reranker: Optional[CrossEncoderReranker] = None, self_rag_threshold: float = 0.35):
         self.documents = documents
         self.reranker = reranker or CrossEncoderReranker()
         self.doc_tokens = [_tokenize(doc.text) for doc in documents]
+        self.self_rag_threshold = self_rag_threshold
+
+    def _needs_retrieval(self, query_text: str, query_embedding: Optional[np.ndarray]) -> bool:
+        if query_embedding is None:
+            return True
+        best_dense = dense_retrieval(query_embedding, self.documents, top_k=1)
+        best_sparse = bm25_score(query_text, [doc.text for doc in self.documents])[:1]
+        dense_score = best_dense[0][1] if best_dense else 0.0
+        sparse_score = best_sparse[0][1] if best_sparse else 0.0
+        return max(dense_score, sparse_score) < self.self_rag_threshold
 
     def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> List[Document]:
+        if not self._needs_retrieval(query_text, query_embedding) and not query_embedding:
+            return []
         dense_results = dense_retrieval(query_embedding, self.documents, top_k=top_k * 2) if query_embedding is not None else []
         sparse_results = bm25_score(query_text, [doc.text for doc in self.documents])
         fused = reciprocal_rank_fusion([dense_results, sparse_results])
