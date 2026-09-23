@@ -3,6 +3,7 @@ import { Message } from './types'
 import { EmptyState } from './empty-state'
 import { MessageList } from './message-list'
 import { Composer } from './composer'
+import { ToolVisualization } from './tool-visualization'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -40,6 +41,7 @@ export function ChatContainer({
   onFeedback,
 }: ChatContainerProps) {
   const isStreamingActive = isStreaming || isLoading
+  const latestTools = messages.length > 0 ? messages[messages.length - 1].tools : undefined
 
   return (
     <div className="flex h-full flex-col">
@@ -82,6 +84,12 @@ export function ChatContainer({
               onFeedback={onFeedback}
               onStop={onStopStreaming}
             />
+
+            {latestTools && latestTools.length > 0 && (
+              <div className="mx-auto max-w-3xl px-4 pb-4">
+                <ToolVisualization tools={latestTools} />
+              </div>
+            )}
           </>
         )}
       </div>
