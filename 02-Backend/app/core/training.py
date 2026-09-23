@@ -88,14 +88,14 @@ class MixedPrecisionTrainer:
         self.config = config
         self.optimizer = AdamW(model.parameters(), lr=config.learning_rate, weight_decay=config.weight_decay)
         self.scheduler = CosineLRScheduler(self.optimizer, config)
-        self.scaler = torch.cuda.amp.GradScaler(enabled=config.use_amp)
+        self.scaler = torch.amp.GradScaler("cuda", enabled=config.use_amp and torch.cuda.is_available())
         self.global_step = 0
 
     def train_step(self, batch: dict) -> float:
         input_ids = batch["input_ids"]
         attention_mask = batch.get("attention_mask")
         labels = batch["labels"]
-        with torch.cuda.amp.autocast(enabled=self.config.use_amp):
+        with torch.amp.autocast("cuda", enabled=self.config.use_amp and torch.cuda.is_available()):
             logits = self.model(input_ids, attention_mask=attention_mask)
             shift_logits = logits[..., :-1, :].contiguous()
             shift_labels = labels[..., 1:].contiguous()
