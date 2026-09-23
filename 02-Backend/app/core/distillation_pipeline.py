@@ -37,7 +37,7 @@ class DistillationLoss(nn.Module):
             F.softmax(teacher_logits / self.temperature, dim=-1),
             reduction="batchmean",
         ) * (self.temperature ** 2)
-        hard_loss = F.cross_entropy(student_logits, labels)
+        hard_loss = F.cross_entropy(student_logits.reshape(-1, student_logits.size(-1)), labels.reshape(-1))
         return self.alpha * soft_loss + (1 - self.alpha) * hard_loss
 
 
