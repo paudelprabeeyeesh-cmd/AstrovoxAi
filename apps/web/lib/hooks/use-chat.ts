@@ -15,13 +15,16 @@ export function useChat() {
     updateLastMessage,
     setLoading,
     setStreamingMessageId,
+    updateMessage,
+    deleteMessage,
   } = useChatStore()
 
   const [error, setError] = useState<Error | null>(null)
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const sendMessage = useCallback(
-    async (content: string, modelId: ModelId) => {
+    async (content: string, modelId: ModelId, imageUrl?: string) => {
       if (!activeId || !content.trim()) return
 
       setError(null)
@@ -33,14 +36,20 @@ export function useChat() {
         content: content.trim(),
         conversationId: activeId,
       }
+
+      if (imageUrl) {
+        userMessage.content = `[Image uploaded]\n\n${content.trim()}`
+      }
+
       addMessage(activeId, userMessage)
 
       try {
-      const response = await api.post<{ message: Message }>('/chat', {
-        conversationId: activeId,
-        content: content.trim(),
-        modelId: modelId as any,
-      })
+        const response = await api.post<{ message: Message }>('/chat', {
+          conversationId: activeId,
+          content: content.trim(),
+          modelId: modelId as any,
+          imageUrl,
+        })
 
         if (response?.message) {
           addMessage(activeId, {
@@ -57,13 +66,14 @@ export function useChat() {
       } finally {
         setLoading(false)
         abortControllerRef.current = null
+        setUploadedImage(null)
       }
     },
     [activeId, addMessage, setLoading]
   )
 
   const sendMessageStream = useCallback(
-    async (content: string, modelId: ModelId) => {
+    async (content: string, modelId: ModelId, imageUrl?: string) => {
       if (!activeId || !content.trim()) return
 
       setError(null)
@@ -75,6 +85,11 @@ export function useChat() {
         content: content.trim(),
         conversationId: activeId,
       }
+
+      if (imageUrl) {
+        userMessage.content = `[Image uploaded]\n\n${content.trim()}`
+      }
+
       addMessage(activeId, userMessage)
 
       const assistantMessageId = crypto.randomUUID()
@@ -85,6 +100,7 @@ export function useChat() {
         conversationId: activeId,
         model: modelId as any,
         timestamp: Date.now(),
+        isStreaming: true,
       } as any)
       setStreamingMessageId(assistantMessageId)
 
@@ -92,11 +108,19 @@ export function useChat() {
         const response = await fetch('/api/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ conversationId: activeId, content: content.trim(), modelId }),
+          body: JSON.stringify({
+            conversationId: activeId,
+            content: content.trim(),
+            modelId,
+            imageUrl,
+          }),
           signal: abortControllerRef.current.signal,
         })
 
-        if (!response.ok) throw new Error('Streaming failed')
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Streaming failed: ${response.status} ${errorText}`)
+        }
 
         const reader = response.body?.getReader()
         const decoder = new TextDecoder()
@@ -115,11 +139,22 @@ export function useChat() {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6)
-              if (data === '[DONE]') break
+              if (data === '[DONE]') {
+                updateLastMessage(activeId, { isStreaming: false })
+                break
+              }
+
               try {
                 const parsed = JSON.parse(data)
                 if (parsed.content) {
-                  updateLastMessage(activeId, { content: parsed.content })
+                  updateLastMessage(activeId, {
+                    content: parsed.content,
+                    isStreaming: true,
+                  })
+                }
+
+                if (parsed.error) {
+                  setError(new Error(parsed.error))
                 }
               } catch {
                 updateLastMessage(activeId, { content: line })
@@ -130,11 +165,13 @@ export function useChat() {
       } catch (err) {
         if ((err as Error).name !== 'AbortError') {
           setError(err instanceof Error ? err : new Error('Streaming failed'))
+          updateLastMessage(activeId, { isStreaming: false })
         }
       } finally {
         setLoading(false)
         setStreamingMessageId(null)
         abortControllerRef.current = null
+        setUploadedImage(null)
       }
     },
     [activeId, addMessage, updateLastMessage, setLoading, setStreamingMessageId]
@@ -144,7 +181,68 @@ export function useChat() {
     abortControllerRef.current?.abort()
     setLoading(false)
     setStreamingMessageId(null)
-  }, [setLoading, setStreamingMessageId])
+
+    if (activeId) {
+      updateLastMessage(activeId, { isStreaming: false })
+    }
+  }, [setLoading, setStreamingMessageId, activeId, updateLastMessage])
+
+  const regenerateMessage = useCallback(
+    async (messageId: string) => {
+      if (!activeId) return
+
+      const messageIndex = messages.findIndex((m) => m.id === messageId)
+      if (messageIndex < 0) return
+
+      const previousMessage = messages[messageIndex - 1]
+      if (!previousMessage || previousMessage.role !== 'user') return
+
+      const messagesToDelete: string[] = []
+      for (let i = messageIndex; i < messages.length; i++) {
+        messagesToDelete.push(messages[i].id)
+      }
+
+      messagesToDelete.forEach((id) => deleteMessage(activeId, id))
+
+      const modelId = (messages[messageIndex] as any)?.model || 'gpt-4'
+      await sendMessageStream(previousMessage.content, modelId)
+    },
+    [activeId, messages, deleteMessage, sendMessageStream]
+  )
+
+  const editMessage = useCallback(
+    async (messageId: string, newContent: string) => {
+      if (!activeId) return
+
+      updateMessage(activeId, messageId, { content: newContent })
+
+      const messageIndex = messages.findIndex((m) => m.id === messageId)
+      if (messageIndex < 0) return
+
+      const messagesToDelete: string[] = []
+      for (let i = messageIndex + 1; i < messages.length; i++) {
+        messagesToDelete.push(messages[i].id)
+      }
+
+      messagesToDelete.forEach((id) => deleteMessage(activeId, id))
+
+      const modelId = (messages[messageIndex] as any)?.model || 'gpt-4'
+      await sendMessageStream(newContent, modelId)
+    },
+    [activeId, messages, updateMessage, deleteMessage, sendMessageStream]
+  )
+
+  const copyMessage = useCallback(async (content: string) => {
+    await navigator.clipboard.writeText(content)
+  }, [])
+
+  const rateMessage = useCallback(
+    (messageId: string, feedback: 'up' | 'down' | null) => {
+      if (!activeId) return
+      updateMessage(activeId, messageId, { feedback })
+    },
+    [activeId, updateMessage]
+  )
 
   useEffect(() => {
     return () => {
@@ -159,8 +257,14 @@ export function useChat() {
     isLoading,
     streamingMessageId,
     error,
+    uploadedImage,
     sendMessage,
     sendMessageStream,
     stopStreaming,
+    regenerateMessage,
+    editMessage,
+    copyMessage,
+    rateMessage,
+    setUploadedImage,
   }
 }

@@ -1,85 +1,114 @@
+"""
+Model orchestration API.
+"""
+
+from __future__ import annotations
+
 import logging
-import uuid
-import json
-from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
 
-from ..auth import require_verified_email, require_admin
-from ..database import get_db
+from ..core.model_orchestrator import ModelOrchestrator, OrchestrationRequest
+from ..core.model_router_core import ModelEndpoint
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["models"])
+router = APIRouter(prefix="/models", tags=["models"])
+
+orchestrator = ModelOrchestrator()
 
 
-@router.post("/models/register")
-async def register_model(req: dict, user_id: str = Depends(require_admin)):
-    model_id = str(uuid.uuid4())
-    name = req.get("name", "unnamed")
-    version = req.get("version", "1.0.0")
-    provider = req.get("provider", "local")
-    architecture = req.get("architecture", "transformer")
-    parameters = req.get("parameters", "7B")
-    snapshot_id = req.get("snapshot_id", f"{name}-{version}-{datetime.now().strftime('%Y%m%d')}")
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO model_versions (id, name, version, provider, architecture, parameters, snapshot_id, enabled, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (model_id, name, version, provider, architecture, parameters, snapshot_id, 1, datetime.now(timezone.utc).isoformat()),
-        )
-        conn.commit()
-    return {"id": model_id, "name": name, "version": version, "snapshot_id": snapshot_id}
+class ModelRegisterRequest(BaseModel):
+    name: str = Field(..., max_length=100)
+    provider: str = Field(..., max_length=100)
+    model_id: str = Field(..., max_length=200)
+    latency_ms: float = Field(100.0, ge=0.0)
+    error_rate: float = Field(0.0, ge=0.0, le=1.0)
+    cost_per_1k_tokens: float = Field(0.0, ge=0.0)
+    max_context: int = Field(4096, ge=1)
+    capabilities: List[str] = Field(default_factory=lambda: ["chat", "completion"])
+    priority: int = Field(1, ge=1)
 
 
-@router.get("/models")
-async def list_models(user_id: str = Depends(require_verified_email)):
-    with get_db() as conn:
-        rows = conn.execute(
-            "SELECT id, name, version, provider, architecture, parameters, snapshot_id, enabled, created_at FROM model_versions WHERE enabled = 1 ORDER BY created_at DESC",
-        ).fetchall()
-        return [dict(r) for r in rows]
+class OrchestrateRequest(BaseModel):
+    request_id: str = Field(..., max_length=100)
+    capabilities: List[str] = Field(default_factory=lambda: ["chat", "completion"])
+    max_context: int = Field(4096, ge=1)
+    budget_per_1k: Optional[float] = Field(None, ge=0.0)
+    latency_target_ms: Optional[float] = Field(None, ge=0.0)
+    quality_target: Optional[float] = Field(None, ge=0.0, le=1.0)
+    preferred_provider: Optional[str] = Field(None, max_length=100)
+    retries: int = Field(3, ge=0, le=10)
+    timeout_ms: float = Field(30000.0, ge=0.0)
 
 
-@router.get("/models/{model_id}")
-async def get_model(model_id: str, user_id: str = Depends(require_verified_email)):
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT id, name, version, provider, architecture, parameters, snapshot_id, enabled, created_at FROM model_versions WHERE id = ?",
-            (model_id,),
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Model not found")
-        return dict(row)
+class OrchestrateResponse(BaseModel):
+    request_id: str
+    provider: str
+    model: str
+    latency_ms: float
+    tokens_used: int
+    success: bool
+    error: Optional[str] = None
+    fallback_used: bool = False
 
 
-@router.post("/models/{model_id}/deploy")
-async def deploy_model(model_id: str, user_id: str = Depends(require_admin)):
-    with get_db() as conn:
-        row = conn.execute(
-            "SELECT id, name, snapshot_id FROM model_versions WHERE id = ?",
-            (model_id,),
-        ).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Model not found")
-        conn.execute(
-            "INSERT INTO model_deployments (id, model_id, status, deployed_at) VALUES (?, ?, ?, ?)",
-            (str(uuid.uuid4()), model_id, "deployed", datetime.now(timezone.utc).isoformat()),
-        )
-        conn.commit()
-    return {"model_id": model_id, "name": row["name"], "snapshot_id": row["snapshot_id"], "status": "deployed"}
+@router.post("/register")
+async def register_model(request: ModelRegisterRequest):
+    endpoint = ModelEndpoint(
+        name=request.name,
+        provider=request.provider,
+        model_id=request.model_id,
+        latency_ms=request.latency_ms,
+        error_rate=request.error_rate,
+        cost_per_1k_tokens=request.cost_per_1k_tokens,
+        max_context=request.max_context,
+        capabilities=request.capabilities,
+        priority=request.priority,
+    )
+    orchestrator.register_endpoint(endpoint)
+    return {"status": "OK", "registered": request.name}
 
 
-@router.post("/models/{model_id}/deprecate")
-async def deprecate_model(model_id: str, user_id: str = Depends(require_admin)):
-    with get_db() as conn:
-        row = conn.execute("SELECT id FROM model_versions WHERE id = ?", (model_id,)).fetchone()
-        if not row:
-            raise HTTPException(status_code=404, detail="Model not found")
-        conn.execute("UPDATE model_versions SET enabled = 0 WHERE id = ?", (model_id,))
-        conn.execute(
-            "INSERT INTO model_deployments (id, model_id, status, deployed_at) VALUES (?, ?, ?, ?)",
-            (str(uuid.uuid4()), model_id, "deprecated", datetime.now(timezone.utc).isoformat()),
-        )
-        conn.commit()
-    return {"model_id": model_id, "deprecated": True}
+@router.post("/orchestrate")
+async def orchestrate_request(request: OrchestrateRequest, user_id: str = "anonymous"):
+    def runner(endpoint: ModelEndpoint) -> Dict[str, Any]:
+        from ..core.llm import LLMClient
+        client = LLMClient()
+        return client.generate("Hello", timeout=request.timeout_ms / 1000.0)
+
+    orchestration_request = OrchestrationRequest(
+        request_id=request.request_id,
+        capabilities=request.capabilities,
+        max_context=request.max_context,
+        budget_per_1k=request.budget_per_1k,
+        latency_target_ms=request.latency_target_ms,
+        quality_target=request.quality_target,
+        preferred_provider=request.preferred_provider,
+        retries=request.retries,
+        timeout_ms=request.timeout_ms,
+    )
+    result = orchestrator.dispatch(orchestration_request, runner)
+    return OrchestrateResponse(
+        request_id=result.request_id,
+        provider=result.provider,
+        model=result.model,
+        latency_ms=result.latency_ms,
+        tokens_used=result.tokens_used,
+        success=result.success,
+        error=result.error,
+        fallback_used=result.fallback_used,
+    )
+
+
+@router.get("/stats")
+async def get_model_stats():
+    return orchestrator.get_stats()
+
+
+@router.post("/fallback-chain")
+async def set_fallback_chain(chain: List[str]):
+    orchestrator.set_fallback_chain(chain)
+    return {"status": "OK", "chain": chain}

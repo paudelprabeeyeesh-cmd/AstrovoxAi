@@ -4,77 +4,91 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChatContainer } from '@/components/chat/chat-container';
 import { Message } from '@/components/chat/types';
+import { useChat } from '@/lib/hooks/use-chat';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function NewChatPage() {
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoadingHistory(false), 300);
-    return () => clearTimeout(timer);
+    setIsClient(true);
   }, []);
 
-  const handleSendMessage = async (content: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      content,
-      createdAt: new Date(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content, history: [] }),
-      });
-
-      if (!response.ok) throw new Error('Failed to send message');
-
-      const data = await response.json();
-      const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: data.reply || data.message || 'No response',
-        createdAt: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-
-      const conversationId = data.conversationId || Date.now().toString();
-      router.push(`/chat/${conversationId}`);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        createdAt: new Date(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="flex h-full flex-col">
-      {isLoadingHistory ? (
+    <div className="flex h-full">
+      {isClient ? (
+        <EnhancedChat />
+      ) : (
         <div className="flex flex-1 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
         </div>
-      ) : (
-        <ChatContainer
-          messages={messages}
-          onSendMessage={handleSendMessage}
-          isLoading={isLoading}
-        />
       )}
     </div>
+  );
+}
+
+function EnhancedChat() {
+  const router = useRouter();
+  const {
+    messages,
+    activeId,
+    isLoading,
+    streamingMessageId,
+    error,
+    sendMessageStream,
+    stopStreaming,
+    regenerateMessage,
+    editMessage,
+    copyMessage,
+    rateMessage,
+  } = useChat();
+
+  const handleSendMessage = async (content: string, options?: { imageUrl?: string; files?: File[] }) => {
+    if (!activeId) {
+      const newId = crypto.randomUUID();
+      router.push(`/chat/${newId}`);
+      setTimeout(() => sendMessageStream(content, 'gpt-4', options?.imageUrl), 100);
+      return
+    }
+    sendMessageStream(content, 'gpt-4', options?.imageUrl);
+  };
+
+  const handleStopStreaming = () => {
+    stopStreaming();
+  };
+
+  const handleRegenerate = (messageId: string) => {
+    regenerateMessage(messageId);
+  };
+
+  const handleEdit = (messageId: string, content: string) => {
+    editMessage(messageId, content);
+  };
+
+  const handleCopy = async (content: string) => {
+    await copyMessage(content);
+  };
+
+  const handleFeedback = (messageId: string, feedback: 'up' | 'down' | null) => {
+    rateMessage(messageId, feedback);
+  };
+
+  return (
+    <ChatContainer
+      messages={messages}
+      onSendMessage={handleSendMessage}
+      isLoading={isLoading}
+      isStreaming={isLoading}
+      streamingMessageId={streamingMessageId}
+      onStopStreaming={handleStopStreaming}
+      onRegenerate={handleRegenerate}
+      onEdit={handleEdit}
+      onCopy={handleCopy}
+      onFeedback={handleFeedback}
+      error={error}
+      selectedModel="gpt-4"
+      onModelChange={(model) => console.log('Model changed:', model)}
+    />
   );
 }

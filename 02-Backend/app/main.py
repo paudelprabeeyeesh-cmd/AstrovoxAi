@@ -17,6 +17,9 @@ from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
 from .embeddings_route import router as embeddings_router
+from .routers.models_api import router as models_api_router
+from .routers.memory_controls import router as memory_controls_router
+from .routers.safety_api import router as safety_api_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
 
@@ -65,6 +68,9 @@ app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
 app.include_router(embeddings_router)
+app.include_router(models_api_router)
+app.include_router(memory_controls_router)
+app.include_router(safety_api_router)
 
 
 # Prometheus metrics middleware

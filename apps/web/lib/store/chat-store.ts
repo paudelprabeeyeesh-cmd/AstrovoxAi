@@ -10,6 +10,8 @@ interface ChatState {
   streamingMessageId: string | null
   addMessage: (conversationId: string, message: Omit<Message, 'id' | 'timestamp'>) => void
   updateLastMessage: (conversationId: string, updates: Partial<Message>) => void
+  updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => void
+  deleteMessage: (conversationId: string, messageId: string) => void
   setActiveConversation: (id: string | null) => void
   setMessages: (conversationId: string, messages: Message[]) => void
   setConversations: (conversations: Conversation[]) => void
@@ -47,6 +49,22 @@ export const useChatStore = create<ChatState>()(
               idx === state.messages.length - 1 && msg.conversationId === conversationId
                 ? { ...msg, ...updates }
                 : msg
+            ),
+          })),
+
+        updateMessage: (conversationId, messageId, updates) =>
+          set((state) => ({
+            messages: state.messages.map((msg) =>
+              msg.id === messageId && msg.conversationId === conversationId
+                ? { ...msg, ...updates }
+                : msg
+            ),
+          })),
+
+        deleteMessage: (conversationId, messageId) =>
+          set((state) => ({
+            messages: state.messages.filter(
+              (msg) => !(msg.id === messageId && msg.conversationId === conversationId)
             ),
           })),
 
