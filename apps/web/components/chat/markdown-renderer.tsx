@@ -2,7 +2,6 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
-import rehypeSanitize from 'rehype-sanitize'
 import { CodeBlock } from './code-block'
 import { useState } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -20,7 +19,7 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
     <div className="markdown-body text-sm leading-relaxed">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeSanitize]}
+        rehypePlugins={[rehypeRaw]}
         components={{
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')

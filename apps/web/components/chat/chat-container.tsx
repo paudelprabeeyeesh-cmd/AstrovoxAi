@@ -75,6 +75,12 @@ export function ChatContainer({
             <MessageList
               messages={messages}
               isTyping={isStreamingActive && !streamingMessageId}
+              streamingMessageId={streamingMessageId}
+              onRegenerate={onRegenerate}
+              onEdit={onEdit}
+              onCopy={onCopy}
+              onFeedback={onFeedback}
+              onStop={onStopStreaming}
             />
           </>
         )}
