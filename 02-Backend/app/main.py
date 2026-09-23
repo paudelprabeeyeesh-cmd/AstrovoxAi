@@ -2,21 +2,21 @@ from datetime import datetime, timezone
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
-import os
-from dotenv import load_dotenv
 
 from .auth import router as auth_router
 from .chat import router as chat_router
 from .api import router as api_router
-from .memory_router import router as memory_router
-from .intelligence_router import router as intelligence_router
-from .security import RequestIDMiddleware, SecurityHeadersMiddleware
+from .memory import router as memory_router
+from .logging_config import configure_logging
 
 load_dotenv()
+configure_logging()
 
 app = FastAPI(
     title="AstrovoxAi Engine",
@@ -24,15 +24,30 @@ app = FastAPI(
     description="Production-grade asynchronous stateless backend for AI chat",
 )
 
-# Keep rate limiting at the API edge. Redis storage should replace the in-memory
-# default before running multiple workers or replicas in production.
-rate_limit = os.getenv("RATE_LIMIT", "120/minute")
-limiter = Limiter(key_func=get_remote_address, default_limits=[rate_limit])
+
+def _client_ip(request) -> str:
+    """Resolve the client IP for rate limiting.
+
+    Behind a reverse proxy/load balancer every request shares the proxy IP, so
+    when ``TRUST_PROXY=true`` we use the first hop in ``X-Forwarded-For``. Only
+    enable this when the proxy is trusted to set that header, otherwise clients
+    could spoof it to evade limits.
+    """
+    if os.getenv("TRUST_PROXY", "false").lower() == "true":
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return get_remote_address(request)
+
+
+# Rate limiting (per client IP). Tune via RATE_LIMIT env var.
+limiter = Limiter(
+    key_func=_client_ip,
+    default_limits=[os.getenv("RATE_LIMIT", "120/minute")],
+)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
-app.add_middleware(RequestIDMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
 
 # CORS Middleware
 # Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
@@ -49,7 +64,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
 
@@ -58,7 +73,6 @@ app.include_router(auth_router)
 app.include_router(chat_router)
 app.include_router(api_router)
 app.include_router(memory_router)
-app.include_router(intelligence_router)
 
 
 # Health check endpoints

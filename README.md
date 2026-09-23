@@ -1,23 +1,15 @@
-# Astravox AI
+# ASTRAVOX PRIME
 
-## AI Workspace Platform
+## Advanced AI Chat Platform
 
-Astravox AI is evolving from an AI chat application into a trusted workspace for
-conversation, knowledge, memory, projects, and supervised agent execution. It
-uses a React/Vite frontend, a FastAPI backend, and Supabase/PostgreSQL.
+ASTRAVOX PRIME is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
 
-The delivery plan intentionally prioritizes a reliable ChatGPT-quality chat
-workspace, followed by a visible Devin-style project workbench and organized
-Gemini-style knowledge workflows. See [ROADMAP.md](ROADMAP.md) for the full
-scope, dependency order, acceptance gates, and definition of completion.
-
-## Current capabilities
+## Features
 
 - **User Authentication**: Secure sign-up, login, logout, and password reset functionalities powered by Supabase Auth.
 - **Persistent Sessions**: Users remain logged in across sessions, providing a continuous experience.
 - **Protected Routes**: Ensures that only authenticated users can access sensitive parts of the application.
 - **AI Chat Interface**: A dynamic chat environment where users can interact with an AI, create new conversations, and review past interactions.
-- **Streaming AI Responses**: Authenticated Server-Sent Events deliver response tokens progressively while completed responses remain persisted in conversation history.
 - **Conversation History**: All messages and conversations are saved and can be loaded for future reference.
 - **AI Memory System**: An intelligent memory system that stores important information from conversations, allowing the AI to provide more personalized and context-aware responses.
 - **Dashboard**: A comprehensive dashboard featuring:
@@ -29,31 +21,50 @@ scope, dependency order, acceptance gates, and definition of completion.
 - **Responsive UI**: Designed to provide an optimal viewing and interaction experience across a wide range of devices.
 - **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
 - **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
-- **API Protection**: Request rate limiting and baseline browser-facing security headers are enabled at the FastAPI boundary.
-- **Request Correlation**: Every API response includes a safe `X-Request-ID` for tracing frontend and backend activity.
-- **Demo-ready conversation flow**: New accounts automatically open a conversation, and users can stop an in-flight response or retry the last prompt.
-- **Safer rich chat**: Messages render code blocks without injecting model HTML; users can copy messages and edit their own prompts.
-- **Launch evidence**: The three-day release and rehearsal plan is documented in [DEMO_LAUNCH_CHECKLIST.md](DEMO_LAUNCH_CHECKLIST.md).
 
 ## Technology Stack
 
-- **Frontend**: React, Vite, TailwindCSS
-- **Backend**: FastAPI, Python
+- **Frontend**: React 18, Vite 5
+- **Backend**: FastAPI, Python 3.11+
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
 - **AI Integration**: OpenAI API
-
-## Product roadmap
-
-The current product baseline is documented above; planned capabilities must not
-be mistaken for released features. The complete product roadmap describes the
-target conversation workspace, project workbench, retrieval/memory platform,
-agent controls, enterprise requirements, and release gates:
-[ROADMAP.md](ROADMAP.md).
+- **Rate limiting**: slowapi (per-client-IP)
 
 ## Getting Started
 
-To set up and run Astravox AI locally, please refer to the [SETUP.md](SETUP.md) guide.
+### Prerequisites
+- Node.js 20+
+- Python 3.11+
+- A Supabase project and an OpenAI API key
+
+### Setup
+```bash
+# 1. Configure environment
+cp .env.example .env   # fill in Supabase + OpenAI values
+
+# 2. Frontend
+npm ci
+npm run dev            # Vite dev server on http://localhost:5173
+
+# 3. Backend (separate terminal)
+pip install -r 02-Backend/requirements.txt
+npm run backend        # uvicorn app.main:app on http://localhost:8000
+```
+
+### Database
+Apply the schema and migrations in your Supabase SQL editor (in order):
+1. `database/schemas/supabase_setup.sql`
+2. `database/migrations/0001_indexes_and_signup_trigger.sql` (idempotent — safe to re-run)
+
+### Quality checks
+```bash
+npm run build                                   # frontend production build
+(cd 02-Backend && python -m flake8 app tests)   # backend lint
+(cd 02-Backend && python -m pytest -q)          # backend tests
+```
+
+For deployment, see [DEPLOYMENT.md](DEPLOYMENT.md). For more detail, refer to [SETUP.md](SETUP.md).
 
 ## API Documentation
 
@@ -68,8 +79,9 @@ AstrovoxAi/
 │   ├── app/                # FastAPI application modules (auth, chat, api, memory, database)
 │   └── requirements.txt    # Python dependencies
 ├── database/               # Database schema and migration scripts
-│   └── schemas/
-├── .env                    # Environment variables (local configuration)
+│   ├── schemas/            # supabase_setup.sql (tables, RLS, policies)
+│   └── migrations/         # idempotent migrations (indexes, signup trigger)
+├── .github/workflows/      # CI: frontend build, backend lint/tests, secret scan
 ├── .env.example            # Example environment variables
 ├── package.json            # Frontend dependencies and scripts
 ├── vite.config.js          # Vite build configuration
@@ -80,9 +92,16 @@ AstrovoxAi/
 └── ROADMAP.md              # Future development roadmap
 ```
 
+## Continuous Integration
+
+GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request to `main`:
+- **Frontend build** — `npm ci` + `npm run build`
+- **Backend lint & tests** — `flake8` + `pytest`
+- **Secret scan** — gitleaks
+
 ## Contributing
 
-We welcome contributions to Astravox AI. Please refer to the [ROADMAP.md](ROADMAP.md) for planned features and consider opening an issue or pull request for any enhancements or bug fixes.
+We welcome contributions to ASTRAVOX PRIME! Please refer to the [ROADMAP.md](ROADMAP.md) for planned features and consider opening an issue or pull request for any enhancements or bug fixes.
 
 ## License
 
@@ -91,3 +110,5 @@ This project is licensed under the MIT License.
 ## Authors
 
 - Prabesh Paudel
+- Dipson Baral
+- Susanta AI

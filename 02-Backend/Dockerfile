@@ -1,28 +1,25 @@
-FROM python:3.12-slim
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
+# Install dependencies first to leverage Docker layer caching.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code.
 COPY app ./app
-COPY alembic.ini .
-COPY alembic ./alembic
-COPY scripts ./scripts
-COPY tests ./tests
 
-ENV DATABASE_URL=postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
-ENV REDIS_URL=redis://redis:6379
-ENV NEO4J_URI=bolt://neo4j:7687
-ENV NEO4J_USER=neo4j
-ENV NEO4J_PASSWORD=neo4j_password
-ENV JAEGER_URL=http://jaeger:14268/api/traces
+# Run as a non-root user.
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
 
 EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health/liveness').status==200 else sys.exit(1)"
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,60 +1,66 @@
 # Changelog
 
-## Unreleased — demo readiness
-
-- Automatically select or create a conversation after authentication.
-- Add stop/cancel and retry controls for streamed chat responses.
-- Add safe code-block rendering, message copy controls, user-message editing, and multiline chat composition.
-- Support both legacy Supabase anon keys and current Supabase publishable-key configuration.
-- Remove stale `.gitignore` conflict markers and document the three-day demo launch checklist.
-- Update product attribution to Prabesh Paudel.
-
 All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
-## [Unreleased]
-
-- Added request ID middleware with safe propagation for API observability.
-- Added regression coverage for request ID generation and sanitization.
-- Added GitHub Actions CI for backend tests and frontend production builds.
-
-### Changed
-- Standardized the public product name as **Astravox AI** in the README and
-  roadmap, and listed **Prabesh Paudel** as the sole public author.
-- Expanded the technical roadmap into a phased product plan covering premium
-  chat, projects, cited knowledge and memory, model routing, supervised agents,
-  developer tooling, multimodal AI, enterprise controls, reliability, and
-  domain-specific expert modes. The roadmap now includes exit criteria and
-  measurable success metrics for each investment area.
-- Replaced the generic feature list with a delivery-gated Astravox AI product
-  roadmap. It defines the AI Workspace Foundation, conversation workspace,
-  project workbench, trusted knowledge/memory, supervised agent runtime,
-  enterprise platform, and the measurable definition of 100% completion.
-- Updated the README to distinguish current capabilities from planned work and
-  link the delivery roadmap.
+## [Unreleased] — Production hardening pass (builds on PR #3)
 
 ### Added
-- Added the authenticated `POST /chat/stream` Server-Sent Events endpoint and
-  live-token chat UI integration. The existing JSON chat endpoint remains
-  compatible, while both transports now use the same persisted context builder.
+- **CI/CD** — `.github/workflows/ci.yml` runs on push/PR to `main`: frontend
+  build (`npm ci` + `npm run build`), backend lint + tests (`flake8` + `pytest`),
+  and a **gitleaks** secret scan.
+- **Rate limiting** — `slowapi` per-client-IP limiter on all endpoints, default
+  `120/minute`, configurable via `RATE_LIMIT`. Returns HTTP 429 when exceeded.
+- **Structured logging** — `app/logging_config.py` (`configure_logging`, level via
+  `LOG_LEVEL`). Replaced all 15 `print(...)` error statements in `database.py`
+  with a module `logger`.
+- **Input validation** — pydantic `Field` constraints: chat `message`
+  (1–8000 chars), `model`/`title` length caps, memory `content` (1–4000) and
+  `importance` (1–5). Invalid bodies now return 422 instead of failing deeper.
+- **Deployment** — `02-Backend/Dockerfile` (non-root user, healthcheck) +
+  `.dockerignore`; new `DEPLOYMENT.md` (env vars, DB, Docker, frontend, CI,
+  security checklist).
+- **Tests** — `tests/test_validation.py` (4 cases). Suite now **9 tests pass**.
 
 ### Fixed
-- Made backend logging safe on a clean checkout by creating the configured log
-  directory before initializing the rotating file handler.
-- Declared NumPy, which is required by the loaded vector-memory implementation,
-  as a backend dependency.
-- Fixed the missing `Tuple` type import that prevented the memory package from
-  loading during application startup.
-- Resolved the `app.memory` module/package collision by moving the HTTP router
-  to `memory_router.py`; memory endpoints now load alongside the layered memory
-  domain package.
+- **Exception-swallowing bug** in `memory.auto_extract_memory`: a generic
+  `except Exception` re-wrapped the "OpenAI not configured" `HTTPException` as a
+  500. Added `except HTTPException: raise`.
+- **Rate limiting behind a proxy** (review): `key_func` now reads the first
+  `X-Forwarded-For` hop when `TRUST_PROXY=true`, so users aren't collapsed into
+  one bucket behind a load balancer. Defaults to the direct client IP.
+- **CORS missing DELETE** (review): `allow_methods` now includes `DELETE`; the
+  `DELETE /chat/conversations/{id}` endpoint previously failed browser preflight.
+- **`get_recent_messages` returned the *oldest* messages** (review): it ordered
+  ascending then took the first N. Now orders newest-first, limits, and reverses
+  to chronological order — fixing AI context quality and memory extraction.
+- **User message duplicated in the OpenAI prompt** (review): history is now
+  fetched *before* the new message is persisted, so the current turn isn't both
+  pulled from history and appended again.
 
-### Security
-- Added API-wide rate limiting and baseline security headers, with regression
-  coverage for the response headers and limiter configuration.
+### Changed
+- `README.md` corrected (removed non-existent TailwindCSS; added setup, DB,
+  CI, deployment sections). `.env.example` dropped unused `USE_MOCK_AI` /
+  `SECRET_KEY` and documented `LOG_LEVEL` / `RATE_LIMIT`.
 
-## [2.0.0] — Production-readiness pass
+### Deferred (documented, not safe to apply)
+- **esbuild dev-server advisory (GHSA-67mh-4wv8-2f99, moderate).** Only affects
+  the Vite dev server, never production builds. The npm-proposed fix upgrades
+  Vite 5 → 8 (rolldown), which **breaks `npm run build`** (verified — reverted).
+  Tracked for a deliberate framework-upgrade PR.
+
+### Verification (this pass)
+- `npm run build` → ✅ (81 modules, exit 0)
+- `python -m flake8 app tests` → ✅ clean
+- `python -m pytest -q` → ✅ 9 passed
+- backend boot + live `/health`, `/`, `/api/me` (401), `/docs` → ✅
+- `npm audit` → 2 advisories remain (Vite/esbuild dev-server only; see Deferred)
+- `docker build` of the new Dockerfile → **NOT VERIFIED** (no Docker in this environment)
+
+---
+
+## [Unreleased] — Production-readiness pass
 
 ### Fixed
 - **Backend could not start (P0).** `app/main.py` used top-level imports
