@@ -8,7 +8,7 @@ from app.core.artifacts_core import artifact_manager, ArtifactType
 from app.core.conversation_history import conversation_history, ConversationHistoryManager
 from app.core.slash_commands import slash_command_registry, SlashCommandRegistry
 from app.core.custom_instructions import instruction_manager, preferences_manager, CustomInstructionManager, UserPreferencesManager
-from app.core.feedback_system import feedback_collector, typing_indicator_manager, FeedbackCollector, TypingIndicatorManager
+from app.core.feedback_system import feedback_collector, typing_indicator_manager, FeedbackCollector, TypingIndicatorManager, FeedbackType, FeedbackCategory
 
 
 class TestStreaming:
@@ -39,7 +39,7 @@ class TestCodeExecution:
         assert result.error == "Timeout"
 
     def test_validate_blocked_import(self):
-        warnings = code_sandbox.validate_python_code("import os")
+        warnings = code_sandbox.validate_python_code("import subprocess")
         assert len(warnings) > 0
 
 
