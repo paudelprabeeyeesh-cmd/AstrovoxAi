@@ -47,9 +47,23 @@ class CodeExecutionSandbox:
                     for alias in node.names:
                         if alias.name in self.blocked_modules:
                             warnings.append(f"Blocked import: {alias.name}")
+                        elif alias.name not in self.allowed_imports:
+                            warnings.append(f"Import not in allowlist: {alias.name}")
                 elif isinstance(node, ast.ImportFrom):
                     if node.module and any(m in self.blocked_modules for m in [node.module] if node.module):
                         warnings.append(f"Blocked import from: {node.module}")
+                    elif node.module and node.module not in self.allowed_imports:
+                        warnings.append(f"Import from not in allowlist: {node.module}")
+                elif isinstance(node, ast.Call):
+                    func = node.func
+                    if isinstance(func, ast.Name):
+                        if func.id in {"exec", "eval", "compile", "__import__", "open", "input", "breakpoint", "exit", "quit"}:
+                            warnings.append(f"Blocked function call: {func.id}")
+                    elif isinstance(func, ast.Attribute):
+                        if isinstance(func.value, ast.Name):
+                            if func.value.id in {"os", "sys", "subprocess", "socket", "shutil"} or func.value.id not in self.allowed_imports:
+                                if func.attr in {"system", "popen", "run", "call", "check_output", "remove", "rmtree", "unlink", "chmod", "chown", "kill", "system"}:
+                                    warnings.append(f"Blocked method call: {func.value.id}.{func.attr}")
         except SyntaxError as e:
             warnings.append(f"Syntax error: {e}")
         return warnings
