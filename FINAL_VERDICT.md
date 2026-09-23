@@ -1,6 +1,6 @@
 # Final Verdict — AstrovoxAI Architecture Review
 
-## Overall Score: 58/100
+## Overall Score:  60/100
 
 ### Scorecard
 
