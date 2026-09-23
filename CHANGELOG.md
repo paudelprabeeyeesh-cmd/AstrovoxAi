@@ -1,41 +1,106 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+## Unreleased — demo readiness
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+- Automatically select or create a conversation after authentication.
+- Add stop/cancel and retry controls for streamed chat responses.
+- Add safe code-block rendering, message copy controls, user-message editing, and multiline chat composition.
+- Support both legacy Supabase anon keys and current Supabase publishable-key configuration.
+- Remove stale `.gitignore` conflict markers and document the three-day demo launch checklist.
+- Update product attribution to Prabesh Paudel.
+
+All notable changes from the production-readiness pass. This builds on the
+earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
+purged ~360 junk files, and added the first DB migration.
 
 ## [Unreleased]
 
-### Added
-- Phase 1 production hardening: load testing, chaos testing, security audit, incident runbook
-- Phase 2 engineering excellence: ADRs, coding standards, contribution guide, release strategy
-- Phase 3-7 artifacts: benchmarking lab, AI research modules, SRE tooling, enterprise features, open source scaffolding
+- Added request ID middleware with safe propagation for API observability.
+- Added regression coverage for request ID generation and sanitization.
+- Added GitHub Actions CI for backend tests and frontend production builds.
 
 ### Changed
-- Removed duplicate unauthenticated `/metrics` endpoint
-- Restricted `execute_bash` to allowlist with `shell=False`
-- Made `ASTROVOX_ENCRYPTION_KEY` required at boot
-- Fixed frontend chat proxy to use `NEXT_PUBLIC_API_URL`
-- Replaced global `PII_STORE` with per-request contextvar
-- Fixed rate-limit bypass via explicit 401 returns
-
-### Fixed
-- Frontend `Authorization` header malformed on sign-out
-- `/health/detailed` now requires admin authentication
-
-## [1.0.0] - 2026-09-17
+- Standardized the public product name as **Astravox AI** in the README and
+  roadmap, and listed **Prabesh Paudel** as the sole public author.
+- Expanded the technical roadmap into a phased product plan covering premium
+  chat, projects, cited knowledge and memory, model routing, supervised agents,
+  developer tooling, multimodal AI, enterprise controls, reliability, and
+  domain-specific expert modes. The roadmap now includes exit criteria and
+  measurable success metrics for each investment area.
+- Replaced the generic feature list with a delivery-gated Astravox AI product
+  roadmap. It defines the AI Workspace Foundation, conversation workspace,
+  project workbench, trusted knowledge/memory, supervised agent runtime,
+  enterprise platform, and the measurable definition of 100% completion.
+- Updated the README to distinguish current capabilities from planned work and
+  link the delivery roadmap.
 
 ### Added
-- Initial production release
-- FastAPI backend with 120+ endpoints
-- Next.js 16 frontend with 23 pages
-- Multi-provider LLM routing (7 providers)
-- RAG engine with PDF/DOCX/TXT support
-- GraphRAG with Neo4j
-- Agent system with 6 specialized agents
-- WebSocket streaming
-- Voice I/O, vision, OCR, code execution
-- Kubernetes deployment manifests
-- CI/CD pipeline with security scanning
-- SOC 2 compliance documentation
+- Added the authenticated `POST /chat/stream` Server-Sent Events endpoint and
+  live-token chat UI integration. The existing JSON chat endpoint remains
+  compatible, while both transports now use the same persisted context builder.
+
+### Fixed
+- Made backend logging safe on a clean checkout by creating the configured log
+  directory before initializing the rotating file handler.
+- Declared NumPy, which is required by the loaded vector-memory implementation,
+  as a backend dependency.
+- Fixed the missing `Tuple` type import that prevented the memory package from
+  loading during application startup.
+- Resolved the `app.memory` module/package collision by moving the HTTP router
+  to `memory_router.py`; memory endpoints now load alongside the layered memory
+  domain package.
+
+### Security
+- Added API-wide rate limiting and baseline security headers, with regression
+  coverage for the response headers and limiter configuration.
+
+## [2.0.0] — Production-readiness pass
+
+### Fixed
+- **Backend could not start (P0).** `app/main.py` used top-level imports
+  (`from auth import …`) that fail under the documented run command
+  `uvicorn app.main:app`. Converted all backend modules to package-relative
+  imports (`from .auth import …`) and added `app/__init__.py`. The server now
+  boots; verified `/health`, `/health/readiness`, `/health/liveness`, `/`, `/docs`.
+- **User memory was built but never used (bug).** `chat.send_message` assembled
+  `memory_context` from `ai_memory` then discarded it. It is now prepended as a
+  `system` message so stored memory actually influences AI responses.
+- **Deprecated API.** Replaced `datetime.utcnow()` (deprecated in 3.12) with
+  `datetime.now(timezone.utc)` in `main.py` and `api.py`.
+- **Lint.** Resolved all `flake8` findings (unused imports/vars, formatting);
+  repo is now `flake8`-clean under `02-Backend/setup.cfg` and `black`-formatted.
+
+### Changed
+- **Single Supabase client (performance).** Added `app/supabase_client.py`
+  (`lru_cache`d `get_supabase()`). `auth.py`, `database.py`, and the auth helper
+  now reuse one client instead of constructing a new one **per request**.
+- **Shared auth dependency (DRY).** Added `app/auth_utils.py`; removed the
+  `get_user_id_from_token` function that was duplicated verbatim in
+  `chat.py`, `api.py`, and `memory.py`.
+- Tightened broad `except Exception as e` handlers that swallowed `HTTPException`
+  (auth `/me`, `/refresh`) so specific 401 reasons are preserved.
+
+### Added
+- `02-Backend/tests/` smoke suite (`test_health.py` + `conftest.py`) covering
+  health endpoints, root, and that a protected route returns 401 without auth.
+  **5 tests pass.**
+- `02-Backend/setup.cfg` (flake8 config, `max-line-length=120`).
+- `CHANGELOG.md`, `CLEANUP_REPORT.md`; refreshed `AUDIT_REPORT.md`.
+
+### Removed
+- **337 files** of proven-unused legacy/duplicate code and broken configs
+  (full proof in `CLEANUP_REPORT.md`). Tracked files: 374 → 44.
+- Unused `google-generativeai` dependency from `requirements.txt`.
+
+### Security (unchanged — still requires owner action)
+- The Gemini API key previously committed at `AI-Integration/ai-logic/.env`
+  remains in **git history** and MUST be rotated. Removing the file does not
+  scrub history. See `AUDIT_REPORT.md`.
+
+### Verification
+- `npm run build` → ✅ (81 modules, exit 0)
+- `python -m flake8 app tests` → ✅ clean
+- `python -m pytest -q` → ✅ 5 passed
+- `uvicorn app.main:app` boot + live health checks → ✅
+- DB migration executed against a live Supabase instance → **NOT VERIFIED**
+  (no Supabase credentials in this environment; SQL is idempotent + syntax-reviewed).

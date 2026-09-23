@@ -1,75 +1,35 @@
-fastapi==0.115.0
-uvicorn[standard]==0.32.0
-pydantic==2.9.2
-python-dotenv==1.0.1
-python-multipart==0.0.12
-openai==1.54.0
-anthropic==0.39.0
-google-generativeai==0.8.3
-httpx==0.27.2
-tiktoken==0.7.0
-redis==5.1.1
-cryptography==43.0.3
-passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.3.0
-pyjwt==2.9.0
-stripe==11.1.0
-apscheduler==3.10.4
-slowapi==0.1.9
-prometheus-client==0.21.0
-structlog==24.4.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+pydantic[email]>=2.0.0
+python-dotenv>=1.0.0
+supabase>=2.0.0
+httpx>=0.25.0
+python-multipart>=0.0.6
+slowapi>=0.1.9
 
-psycopg2-binary==2.9.9
-alembic==1.13.2
-sqlalchemy==2.0.35
+# OpenAI/LLM
+openai>=1.0.0
+anthropic>=0.18.0
 
-python-json-logger==3.1.0
-opentelemetry-api==1.20.0
-opentelemetry-sdk==1.20.0
-opentelemetry-instrumentation-fastapi==0.43b0
-opentelemetry-instrumentation-httpx==0.43b0
-opentelemetry-instrumentation-psycopg2==0.43b0
+# Intelligence Engine Dependencies
+# Vector database for semantic search
+pgvector>=0.2.0
+numpy>=1.26.0
 
-sentry-sdk==2.14.0
+# PDF processing
+PyPDF2>=3.0.0
+pdfplumber>=0.10.0
 
-pypdf==4.2.0
-python-docx==1.1.2
-beautifulsoup4==4.12.3
-requests==2.32.3
+# OCR
+pytesseract>=0.3.10
+Pillow>=10.0.0
 
-celery==5.4.0
-arq==6.4.0
-neo4j==5.23.0
-docker==7.1.0
-google-api-python-client==2.147.0
-slack-sdk==3.32.1
-notion-client==2.3.0
-jira==3.5.2
-icalendar==5.0.13
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+httpx>=0.25.0
 
-openai-whisper
-pydub
-playwright
-pillow
-pytesseract
-elevenlabs
-replicate
-detoxify
-langdetect
-azure-ai-textanalytics
-
-pytest-cov==5.0.0
-
-# Local LLM serving and knowledge distillation
-ollama
-tenacity
-transformers
-torch
-datasets
-peft
-trl
-vllm
-
-mlflow
-boto3
-docker
+# Development
+black>=23.0.0
+flake8>=6.0.0

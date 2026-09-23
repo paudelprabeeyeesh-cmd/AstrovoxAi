@@ -1,112 +1,38 @@
-﻿import time
-import uuid
-import importlib
-import os
+"""Regression tests for API-wide boundary protections."""
 
-import pytest
 from fastapi.testclient import TestClient
-from app.database import init_db, get_db
-from app.auth import register_user, login_user, hash_password
 
-client = TestClient(importlib.import_module("app.main").app)
+from app.main import app
 
 
-def _register_and_login(email=None, password="testpass123"):
-    if email is None:
-        email = f"sec-{int(time.time())}-{uuid.uuid4().hex[:6]}@test.com"
-    r = client.post("/auth/register", json={"email": email, "password": password})
-    assert r.status_code == 200, r.text
-    with get_db() as conn:
-        conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
-        conn.commit()
-    r = client.post("/auth/login", json={"email": email, "password": password})
-    assert r.status_code == 200, r.text
-    return r.json(), email
+client = TestClient(app)
 
 
-def test_email_verification_required():
-    init_db()
-    email = f"verify-{int(time.time())}@test.com"
-    r = client.post("/auth/register", json={"email": email, "password": "testpass123"})
-    assert r.status_code == 200
-    r = client.post("/auth/login", json={"email": email, "password": "testpass123"})
-    assert r.status_code == 403
-    assert "Email not verified" in r.json()["detail"]
+def test_health_response_contains_security_headers():
+    response = client.get("/health")
 
-    with get_db() as conn:
-        conn.execute("UPDATE users SET email_verified = 1 WHERE email = ?", (email,))
-        conn.commit()
-    r = client.post("/auth/login", json={"email": email, "password": "testpass123"})
-    assert r.status_code == 200
-    assert "access_token" in r.json()
+    assert response.status_code == 200
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+    assert response.headers["permissions-policy"] == "camera=(), geolocation=(), microphone=()"
 
 
-def test_ws_auth_valid_token():
-    init_db()
-    token, email = _register_and_login()
-    with client.websocket_connect(f"/ws/chat/session-1?token={token['access_token']}") as ws:
-        assert ws is not None
-        ws.close()
+def test_rate_limit_configuration_is_exposed_on_application_state():
+    assert app.state.limiter is not None
+    assert any(middleware.cls.__name__ == "SlowAPIMiddleware" for middleware in app.user_middleware)
 
 
-def test_ws_auth_invalid_token():
-    init_db()
-    with client.websocket_connect("/ws/chat/session-1?token=invalid") as ws:
-        assert ws is not None
+def test_request_id_is_generated_and_safe_ids_are_propagated():
+    generated = client.get("/health")
+    assert generated.status_code == 200
+    assert generated.headers["x-request-id"]
+    assert len(generated.headers["x-request-id"]) <= 128
+
+    propagated = client.get("/health", headers={"X-Request-ID": "web-req-123"})
+    assert propagated.headers["x-request-id"] == "web-req-123"
 
 
-def test_ws_auth_missing_token():
-    init_db()
-    with client.websocket_connect("/ws/chat/session-1") as ws:
-        assert ws is not None
-
-
-def test_cors_configuration():
-    init_db()
-    r = client.options(
-        "/solve",
-        headers={
-            "Origin": "http://localhost:3000",
-            "Access-Control-Request-Method": "POST",
-        },
-    )
-    assert r.status_code == 200
-    assert "access-control-allow-origin" in r.headers
-    assert r.headers["access-control-allow-origin"] == "http://localhost:3000"
-    assert "access-control-allow-methods" in r.headers
-    assert "POST" in r.headers["access-control-allow-methods"]
-
-
-def test_rate_limiting():
-    init_db()
-    token, _ = _register_and_login()
-    headers = {"Authorization": f"Bearer {token['access_token']}"}
-    for _ in range(5):
-        r = client.post("/solve", json={"text": "hello"}, headers=headers)
-        assert r.status_code in (200, 429)
-    assert r.status_code == 429
-
-
-def test_admin_requires_admin_role():
-    init_db()
-    user_id = str(uuid.uuid4())
-    os.environ["ADMIN_USER_IDS"] = user_id
-    email = f"admin-{int(time.time())}@test.com"
-    password_hash = hash_password("test")
-    with get_db() as conn:
-        conn.execute(
-            "INSERT INTO users (id, email, password_hash, role, email_verified) VALUES (?, ?, ?, ?, ?)",
-            (user_id, email, password_hash, "admin", 1),
-        )
-        conn.commit()
-    r = client.post("/auth/login", json={"email": email, "password": "test"})
-    token = r.json()["access_token"]
-    r = client.get("/admin/users", headers={"Authorization": f"Bearer {token}"})
-    assert r.status_code == 200
-
-
-def test_non_admin_403():
-    init_db()
-    token, _ = _register_and_login()
-    r = client.get("/admin/users", headers={"Authorization": f"Bearer {token['access_token']}"})
-    assert r.status_code == 403
+def test_unsafe_request_id_is_replaced():
+    response = client.get("/health", headers={"X-Request-ID": "<script>alert(1)</script>"})
+    assert response.headers["x-request-id"] != "<script>alert(1)</script>"

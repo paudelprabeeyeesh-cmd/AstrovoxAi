@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 
 # Build output
@@ -10,47 +10,6 @@ build/
 .env.*
 !.env.example
 *.env
-.env
-*.env*
-*key*
-*.pem
-secrets*
-*.secret
-*.credentials
-credentials.json
-service-account*.json
-*gcloud*.json
-*firebase*.json
-*.p12
-*.pfx
-*.der
-id_rsa
-id_dsa
-id_ecdsa
-id_ed25519
-*.ppk
-*.kubeconfig
-kubeconfig*
-known_hosts
-*.srl
-*.crt
-*.key
-*.pem
-*.p12
-*.pfx
-*.cer
-config/credentials
-config/keys
-secrets/
-private/
-*.private*
-*.token*
-*.access
-*.apikey
-api_key*
-API_KEY*
-.env.example
-
 
 # Python
 __pycache__/
@@ -58,13 +17,11 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
-.pytest_cache/
 
 # Databases / local data
 *.db
 *.sqlite
 *.sqlite3
-usage.db
 
 # OS / editor junk
 .DS_Store
@@ -78,39 +35,4 @@ logs/*.log
 # Backup / temp files
 *~
 *.bak
-
-# Scratch / output files
-build_output.txt
-lint_output.txt
-typecheck_output.txt
-vitest_*.txt
-
-# Project noise
-.packagejsonbyai/
 .aider*
-charts/
-infrastructure/
-monitoring/
-supabase/
-database/
-tools/
-examples/
-
-*.pyc
-.ruff_cache
-astrovox_test.db
-
-# Next.js
-.next/
-.vercel/
-out/
-*.tsbuildinfo
-
-# Local env files
-.env*.local
-
-# Browser extension (build artifact, not source-tracked)
-extension/
-
-# Test uploads
-02-Backend/storage/uploads/

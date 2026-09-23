@@ -1,71 +1,93 @@
-﻿# AstrovoxAI
+# Astravox AI
 
-## Elevator Pitch
+## AI Workspace Platform
 
-AstrovoxAI is an AI-native workspace that automates the most time-consuming parts of B2B SaaS sales development — research, personalization, and follow-up sequencing — for teams of 5–50 employees. By replacing the 15+ hours per week that SDRs spend on manual outreach prep with an intelligent, context-aware platform, we help small teams sell like enterprises at a fraction of the cost.
+Astravox AI is evolving from an AI chat application into a trusted workspace for
+conversation, knowledge, memory, projects, and supervised agent execution. It
+uses a React/Vite frontend, a FastAPI backend, and Supabase/PostgreSQL.
 
-## Problem
+The delivery plan intentionally prioritizes a reliable ChatGPT-quality chat
+workspace, followed by a visible Devin-style project workbench and organized
+Gemini-style knowledge workflows. See [ROADMAP.md](ROADMAP.md) for the full
+scope, dependency order, acceptance gates, and definition of completion.
 
-- **15+ hours wasted weekly** — B2B SaaS SDRs spend the majority of their week on manual prospect research and email personalization instead of selling.
-- **Tooling gap** — Existing solutions are either generic (lacking niche context) or priced out of reach ($500+/month) for small teams.
-- **Scaling bottleneck** — Without automation, small sales teams cannot run multi-channel outbound at the cadence required to compete.
+## Current capabilities
 
-## Solution
+- **User Authentication**: Secure sign-up, login, logout, and password reset functionalities powered by Supabase Auth.
+- **Persistent Sessions**: Users remain logged in across sessions, providing a continuous experience.
+- **Protected Routes**: Ensures that only authenticated users can access sensitive parts of the application.
+- **AI Chat Interface**: A dynamic chat environment where users can interact with an AI, create new conversations, and review past interactions.
+- **Streaming AI Responses**: Authenticated Server-Sent Events deliver response tokens progressively while completed responses remain persisted in conversation history.
+- **Conversation History**: All messages and conversations are saved and can be loaded for future reference.
+- **AI Memory System**: An intelligent memory system that stores important information from conversations, allowing the AI to provide more personalized and context-aware responses.
+- **Dashboard**: A comprehensive dashboard featuring:
+    - **Sidebar**: For managing and navigating between conversations.
+    - **Telemetry**: Real-time system diagnostics and statistics.
+    - **Terminal Console**: An interactive command-line interface for system interactions.
+    - **Memory Panel**: To view and manage AI memory entries.
+    - **Settings Panel**: For user-specific configurations, including AI model preferences and theme settings.
+- **Responsive UI**: Designed to provide an optimal viewing and interaction experience across a wide range of devices.
+- **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
+- **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
+- **API Protection**: Request rate limiting and baseline browser-facing security headers are enabled at the FastAPI boundary.
+- **Request Correlation**: Every API response includes a safe `X-Request-ID` for tracing frontend and backend activity.
+- **Demo-ready conversation flow**: New accounts automatically open a conversation, and users can stop an in-flight response or retry the last prompt.
+- **Safer rich chat**: Messages render code blocks without injecting model HTML; users can copy messages and edit their own prompts.
+- **Launch evidence**: The three-day release and rehearsal plan is documented in [DEMO_LAUNCH_CHECKLIST.md](DEMO_LAUNCH_CHECKLIST.md).
 
-- **AI-powered research assistant** — Automatically enriches prospect data with company-specific signals and ICP context.
-- **Dynamic personalization engine** — Generates tailored outreach copy at scale while maintaining a human-like tone.
-- **Unified sequence manager** — Orchestrates multi-touch campaigns across email and LinkedIn from a single interface.
+## Technology Stack
 
-## Market
+- **Frontend**: React, Vite, TailwindCSS
+- **Backend**: FastAPI, Python
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **AI Integration**: OpenAI API
 
-- **TAM**: $7.2B global sales enablement market.
-- **SAM**: $1.1B SMB sales engagement segment (5–50 employee B2B SaaS companies).
-- **SOM**: $12M addressable within North American SMB SaaS verticals by Year 3.
+## Product roadmap
 
-## Product
+The current product baseline is documented above; planned capabilities must not
+be mistaken for released features. The complete product roadmap describes the
+target conversation workspace, project workbench, retrieval/memory platform,
+agent controls, enterprise requirements, and release gates:
+[ROADMAP.md](ROADMAP.md).
 
-- **Prospect Research** — Real-time company and contact enrichment.
-- **Personalization Studio** — AI-generated email variants with intent scoring.
-- **Campaign Sequencer** — Multi-channel outreach with conditional logic.
-- **Analytics Dashboard** — Open rates, reply rates, and pipeline attribution.
-- **CRM Sync** — Bi-directional integration with leading CRM platforms.
+## Getting Started
 
-## Technology
+To set up and run Astravox AI locally, please refer to the [SETUP.md](SETUP.md) guide.
 
-- **Frontend**: React + Vite, TailwindCSS.
-- **Backend**: FastAPI with modular architecture (`auth`, `chat`, `api`, `memory`, `database`).
-- **Data Layer**: Supabase (PostgreSQL + Auth + Realtime).
-- **AI Engine**: OpenAI API with retrieval-augmented generation (RAG) for context-aware responses.
-- **Deployment**: Containerized with Docker, ready for Render/AWS.
+## API Documentation
 
-## Business Model
+For detailed information on the available API endpoints, request/response formats, and authentication mechanisms, please consult the [API.md](API.md) documentation.
 
-- **Starter**: $49/user/month (up to 5 seats).
-- **Growth**: $99/user/month (up to 20 seats).
-- **Scale**: Custom pricing for 20+ seats with advanced integrations.
-- **Professional Services**: Onboarding and custom model fine-tuning.
+## Project Structure
 
-## Traction
+```
+AstrovoxAi/
+├── src/                    # React frontend components and logic
+├── 02-Backend/            # FastAPI backend application
+│   ├── app/                # FastAPI application modules (auth, chat, api, memory, database)
+│   └── requirements.txt    # Python dependencies
+├── database/               # Database schema and migration scripts
+│   └── schemas/
+├── .env                    # Environment variables (local configuration)
+├── .env.example            # Example environment variables
+├── package.json            # Frontend dependencies and scripts
+├── vite.config.js          # Vite build configuration
+├── index.html              # Frontend HTML entry point
+├── README.md               # Project overview
+├── SETUP.md                # Setup and installation guide
+├── API.md                  # API documentation
+└── ROADMAP.md              # Future development roadmap
+```
 
-- **Product**: Full-stack MVP deployed and functional.
-- **Architecture**: Modular backend and production-ready infrastructure in place.
-- **Cost structure**: Optimized per-user cost at $0.00/month in early development phase.
-- **Validation**: Early problem validation through customer discovery interviews.
+## Contributing
 
-## Team
+We welcome contributions to Astravox AI. Please refer to the [ROADMAP.md](ROADMAP.md) for planned features and consider opening an issue or pull request for any enhancements or bug fixes.
 
-**Prabeesh Paudel** — Founder & CEO
+## License
 
-Full-stack engineer and AI systems developer with expertise in LLM integration, RAG, backend architecture, and cloud infrastructure. Previously led end-to-end development of production AI applications. Technical focus on building practical AI products that solve real-world problems through reliable engineering.
+This project is licensed under the MIT License.
 
-## Roadmap
+## Authors
 
-- **Q1 2027**: Beta launch with 10 pilot customers; close seed round.
-- **Q2 2027**: Launch public SaaS; integrate with HubSpot and Salesforce.
-- **Q3 2027**: Reach 500 MRR; hire first sales hire.
-- **Q4 2027**: Expand to 1,000 users; introduce enterprise tier.
-
-## Contact
-
-- **Email**: contact@astrovoxai.com
-- **Website**: https://astrovoxai.com
+- Prabesh Paudel
