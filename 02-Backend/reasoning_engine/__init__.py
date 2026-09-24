@@ -5,6 +5,10 @@ from .self_refine import SelfRefine  # noqa: F401
 from .reflexion import ReflexionMemory  # noqa: F401
 from .graph_of_thoughts import GraphOfThoughts, ThoughtNode  # noqa: F401
 from .pal import PAL, SandboxExecutor  # noqa: F401
+from .deductive_reasoner import DeductiveReasoner  # noqa: F401
+from .inductive_reasoner import InductiveReasoner  # noqa: F401
+from .abductive_reasoner import AbductiveReasoner  # noqa: F401
+from .analogical_reasoner import AnalogicalReasoner  # noqa: F401
 
 __all__ = [
     "MCTSNode",
@@ -17,4 +21,8 @@ __all__ = [
     "ThoughtNode",
     "PAL",
     "SandboxExecutor",
+    "DeductiveReasoner",
+    "InductiveReasoner",
+    "AbductiveReasoner",
+    "AnalogicalReasoner",
 ]
