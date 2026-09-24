@@ -1,5 +1,4 @@
-import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 from enum import Enum
 
@@ -120,7 +119,7 @@ class CorrigibleAgent:
         for hook in self._shutdown_hooks:
             try:
                 hook()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass
 
     def _now(self) -> float:

@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 from unittest.mock import patch, MagicMock
 
 backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))

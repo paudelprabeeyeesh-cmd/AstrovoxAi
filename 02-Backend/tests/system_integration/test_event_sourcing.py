@@ -1,4 +1,3 @@
-import pytest
 from system_integration.event_sourcing import Event, EventStore, EventProjection
 
 

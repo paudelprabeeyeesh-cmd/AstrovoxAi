@@ -28,13 +28,13 @@ class KnowledgeDistillationService:
                     )
                     content = response.choices[0].message.content
                     training_data.append({"prompt": prompt, "completion": content})
-                except Exception as e:
-                    logger.error(f"Failed to generate training sample: {e}")
+                except Exception as _e:  # noqa: BLE001
+                    logger.error(f"Failed to generate training sample: {_e}")
                     continue
         return training_data
 
     def train_student_model(self, teacher_model: str, student_model: str, training_data: List[Dict[str, Any]]) -> str:
-        model_id = f"distilled-{student_model.replace('/', '-')}"
+        f"distilled-{student_model.replace('/', '-')}"
         logger.info(f"Training student model {student_model} with {len(training_data)} samples from {teacher_model}")
         try:
             from app.fine_tuning import FineTuningService
@@ -47,8 +47,8 @@ class KnowledgeDistillationService:
             job_id = service.create_fine_tuning_job(model=student_model, training_file=tmp_path)
             logger.info(f"Created fine-tuning job {job_id} for distilled model")
             return job_id
-        except Exception as e:
-            logger.error(f"Failed to train student model: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Failed to train student model: {_e}")
             raise
 
     def evaluate_distillation(self, student_model: str, test_set: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -66,8 +66,8 @@ class KnowledgeDistillationService:
                 predicted = response.choices[0].message.content
                 reference = item.get("completion", "")
                 results.append({"prompt": item["prompt"], "predicted": predicted, "reference": reference})
-            except Exception as e:
-                logger.error(f"Evaluation failed for prompt: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Evaluation failed for prompt: {_e}")
                 continue
         total = len(results)
         if total == 0:

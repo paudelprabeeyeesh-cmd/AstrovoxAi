@@ -41,7 +41,7 @@ class EvaluationSuite:
                 else:
                     failed += 1
                 total_latency += latency
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 failed += 1
                 results.append({
                     "prompt": prompt,
@@ -50,7 +50,7 @@ class EvaluationSuite:
                     "score": 0.0,
                     "latency_ms": 0,
                     "passed": False,
-                    "error": str(e),
+                    "error": str(_e),
                 })
         return {
             "suite": name,

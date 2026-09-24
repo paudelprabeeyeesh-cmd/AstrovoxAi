@@ -1,5 +1,4 @@
-import numpy as np
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Tuple, Optional
 from datetime import datetime, timedelta
 
 

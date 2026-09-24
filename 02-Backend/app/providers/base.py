@@ -5,8 +5,10 @@ All providers return a consistent ChatResponse format.
 """
 
 from abc import ABC, abstractmethod
+import asyncio
 from dataclasses import dataclass, field
-from typing import Optional, AsyncIterator, Any
+import re
+from typing import Optional, AsyncIterator
 
 
 @dataclass
@@ -113,9 +115,9 @@ class AIProvider(ABC):
                 return await self.chat(
                     messages, model, temperature, max_tokens, system_prompt
                 )
-            except Exception as e:
-                last_error = e
-                error_str = str(e).lower()
+            except Exception as _e:  # noqa: BLE001
+                last_error = _e
+                error_str = str(_e).lower()
                 is_transient = any(
                     kw in error_str
                     for kw in [

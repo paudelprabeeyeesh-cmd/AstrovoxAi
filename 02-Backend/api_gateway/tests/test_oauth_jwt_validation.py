@@ -4,7 +4,6 @@ import numpy as np
 from api_gateway.oauth_jwt_validation import (
     JWTValidator,
     KeyRotationManager,
-    TokenPayload,
     KeyStatus,
 )
 
@@ -159,7 +158,7 @@ class TestJWTValidator:
             try:
                 tok, _ = validator.create_token(f"u{i}", {"read"})
                 results.append(validator.validate_token(tok))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(e)
 
         threads = [threading.Thread(target=worker, args=(i,)) for i in range(50)]

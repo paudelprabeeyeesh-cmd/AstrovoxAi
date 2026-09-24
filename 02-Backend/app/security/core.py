@@ -4,9 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-import secrets
 import hashlib
-from typing import Optional
 
 from cryptography.fernet import Fernet
 

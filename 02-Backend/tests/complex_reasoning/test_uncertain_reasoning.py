@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from complex_reasoning.uncertain_reasoning import BayesNet, ProbabilisticInference, UncertaintyEngine, InferenceEngine
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -131,7 +131,7 @@ class AdvancedLifelongLearner:
         h, logits = self._forward(x_sample)
         probs = self._softmax(logits)
         for i in range(len(x_sample)):
-            loss = -np.sum(np.log(probs[i] + 1e-12))
+            -np.sum(np.log(probs[i] + 1e-12))
             h_i = h[i:i+1]
             dW2 = h_i.T @ (probs[i:i+1])
             db2 = np.sum(probs[i:i+1], axis=0)

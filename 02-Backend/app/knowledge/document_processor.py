@@ -139,10 +139,10 @@ class DocumentProcessor:
                     "has_tables": False,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.PDF.value,
             }
     
@@ -163,10 +163,10 @@ class DocumentProcessor:
                     "has_images": False,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.WORD.value,
             }
     
@@ -186,10 +186,10 @@ class DocumentProcessor:
                     "has_notes": False,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.POWERPOINT.value,
             }
     
@@ -209,10 +209,10 @@ class DocumentProcessor:
                     "line_count": len(text.splitlines()),
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.TEXT.value,
             }
     
@@ -235,10 +235,10 @@ class DocumentProcessor:
                     "links": text.count('['),
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.MARKDOWN.value,
             }
     
@@ -259,10 +259,10 @@ class DocumentProcessor:
                     "has_header": True,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.CSV.value,
             }
     
@@ -282,10 +282,10 @@ class DocumentProcessor:
                     "has_formulas": False,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.EXCEL.value,
             }
     
@@ -305,10 +305,10 @@ class DocumentProcessor:
                     "ocr_performed": True,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.IMAGE.value,
             }
     
@@ -332,10 +332,10 @@ class DocumentProcessor:
                     "images": html_content.count('<img'),
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.HTML.value,
             }
     
@@ -359,10 +359,10 @@ class DocumentProcessor:
                     "functions": code.count('def ') if language == 'py' else 0,
                 },
             }
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "document_type": DocumentType.CODE.value,
             }
     

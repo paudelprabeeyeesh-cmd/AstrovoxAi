@@ -8,7 +8,7 @@ import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -68,7 +68,7 @@ class SystemBus:
         for handler in handlers:
             try:
                 handler(message)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
 
     def history(self, topic: Optional[str] = None) -> List[Message]:

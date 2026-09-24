@@ -115,8 +115,8 @@ class LoadBalancer:
                 healthy = checker(node)
                 self.health_check(node_id, healthy)
                 results[node_id] = healthy
-            except Exception as exc:
-                logger.error("health check failed for %s: %s", node_id, exc)
+            except Exception as _e:  # noqa: BLE001
+                logger.error("health check failed for %s: %s", node_id, _e)
                 self.health_check(node_id, False)
                 results[node_id] = False
         return results

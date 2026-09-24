@@ -29,5 +29,5 @@ Yesterday ({datetime.now(timezone.utc).date() - timedelta(days=1)}):
     try:
         with smtplib.SMTP("localhost", 25) as server:
             server.send_message(msg)
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         pass

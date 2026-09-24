@@ -92,8 +92,8 @@ class LoadTestSuite:
                 success = 200 <= resp.status < 400
                 if not success:
                     error = f"HTTP {resp.status}"
-        except Exception as exc:  # pragma: no cover - network failures in tests
-            error = str(exc)
+        except Exception as _e:  # noqa: BLE001
+            error = str(_e)
         latency_ms = (time.perf_counter() - start) * 1000
         return success, latency_ms, error
 

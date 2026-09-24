@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from safety_moderation.streaming_moderation import StreamingModerator, StreamModerationResult
 
 

@@ -10,7 +10,7 @@ import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 
 @dataclass
@@ -69,7 +69,7 @@ class MessageBus:
         for handler in handlers:
             try:
                 handler(message)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
         self._last_delivered[message.topic] = message.timestamp
 

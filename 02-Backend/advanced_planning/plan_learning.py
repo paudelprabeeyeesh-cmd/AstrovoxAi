@@ -1,6 +1,6 @@
 
 import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 
 class Demonstrator:
@@ -33,7 +33,7 @@ class PlanLearner:
         if not demonstrations:
             return {"error": "no demonstrations"}
         state_encoder = state_encoder or self._default_encoder
-        encoded_states = [state_encoder(d["initial_state"]) for d in demonstrations]
+        [state_encoder(d["initial_state"]) for d in demonstrations]
         action_sequences = [d["actions"] for d in demonstrations]
         outcomes = [d["outcome"] for d in demonstrations]
         max_len = max(len(seq) for seq in action_sequences)

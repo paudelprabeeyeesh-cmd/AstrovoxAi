@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agentic_loop.tool_search import ToolSearchRegistry, ToolMetadata
 
 

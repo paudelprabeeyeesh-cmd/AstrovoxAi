@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from app.config import settings
 
@@ -47,7 +46,7 @@ class ReflectionReasoning:
                 max_tokens=256,
             )
             return result.choices[0].message.content or ""
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Reflection critique failed: %s", exc)
             return ""
 
@@ -64,7 +63,7 @@ class ReflectionReasoning:
                 max_tokens=1024,
             )
             return result.choices[0].message.content or response
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Reflection improvement failed: %s", exc)
             return response
 

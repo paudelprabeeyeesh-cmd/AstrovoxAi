@@ -1,4 +1,3 @@
-import pytest
 from final_system.analytics_engine import AnalyticsEngine, Metric
 
 

@@ -18,9 +18,9 @@ class ToolExecutor:
             if tool_name in ("search_documents", "create_memory"):
                 return func(user_id=user_id, **arguments)
             return func(**arguments)
-        except Exception as e:
-            logger.error(f"Tool execution error: {e}")
-            return f"Error executing {tool_name}: {e}"
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Tool execution error: {_e}")
+            return f"Error executing {tool_name}: {_e}"
 
     def validate_arguments(self, tool_name: str, arguments: dict[str, Any]) -> bool:
         func = self._tools.get(tool_name)

@@ -19,8 +19,8 @@ def _safe_calculate(expression: str) -> str:
     try:
         result = eval(expression, {"__builtins__": {}}, safe_env)
         return str(result)
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def search_web(query: str) -> str:
@@ -73,8 +73,8 @@ def code_execute(code: str, language: str = "python") -> str:
         return output[:10000]
     except subprocess.TimeoutExpired:
         return "Error: Code execution timed out after 30 seconds"
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def bash_execute(command: str) -> str:
@@ -90,8 +90,8 @@ def bash_execute(command: str) -> str:
         return output[:10000]
     except subprocess.TimeoutExpired:
         return "Error: Command timed out after 30 seconds"
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def computer_use(action: str, x: float = 0, y: float = 0, text: str = "", direction: str = "down") -> str:
@@ -137,14 +137,14 @@ def text_editor(operation: str, file_path: str, old_string: str = "", new_string
             with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             idx = max(0, min(line_number - 1, len(lines) - 1))
-            deleted = lines.pop(idx)
+            lines.pop(idx)
             with open(file_path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
             return f"Deleted line {line_number} from {file_path}"
         else:
             return f"Unknown operation: {operation}"
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def pdf_read(file_path: str, pages: str = "all") -> str:
@@ -161,8 +161,8 @@ def pdf_read(file_path: str, pages: str = "all") -> str:
         return text[:50000] or "PDF is empty or image-based"
     except ImportError:
         return "Error: pypdf not installed"
-    except Exception as e:
-        return f"Error reading PDF: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error reading PDF: {_e}"
 
 
 def memory_search_tool(query: str, user_id: str, limit: int = 5) -> str:
@@ -181,8 +181,8 @@ def file_read(file_path: str, offset: int = 1, limit: int = 200) -> str:
         start = max(0, offset - 1)
         end = min(len(lines), start + limit)
         return "".join(lines[start:end])
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def file_write(file_path: str, content: str, mode: str = "overwrite") -> str:
@@ -194,8 +194,8 @@ def file_write(file_path: str, content: str, mode: str = "overwrite") -> str:
             with open(file_path, "w", encoding="utf-8") as f:
                 f.write(content)
         return f"File {'appended to' if mode == 'append' else 'written'}: {file_path}"
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def voice_speak(text: str, voice: str = "default") -> str:
@@ -211,8 +211,8 @@ def image_understand(image_path: str, question: str = "") -> str:
         with open(image_path, "rb") as f:
             data = f.read()
         return f"[Image analysis: {image_path} ({len(data)} bytes) - {question[:100]}]"
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error: {_e}"
 
 
 def deep_research(query: str, depth: str = "medium") -> str:
@@ -229,8 +229,8 @@ def web_fetch(url: str, max_length: int = 5000) -> str:
             script.decompose()
         text = soup.get_text(separator="\n")
         return text[:max_length]
-    except Exception as e:
-        return f"Error fetching {url}: {e}"
+    except Exception as _e:  # noqa: BLE001
+        return f"Error fetching {url}: {_e}"
 
 
 def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
@@ -241,7 +241,7 @@ def create_tool(user_id: str, data: ToolCreate) -> ToolOut:
             creds = json.loads(data.config)
             creds["token"] = base64.b64encode(creds.get("token", "").encode()).decode()
             config = json.dumps(creds)
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
     encrypted_config = encrypt(config)
     with get_db() as conn:
@@ -279,7 +279,7 @@ def list_tools(user_id: str) -> list[ToolOut]:
                     creds = json.loads(config)
                     creds["token"] = base64.b64decode(creds["token"]).decode()
                     config = json.dumps(creds)
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     pass
             result.append(
                 ToolOut(

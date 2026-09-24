@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_learning.few_shot_advanced import PrototypicalNetwork, FewShotConfig
 
 

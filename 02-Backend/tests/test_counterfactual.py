@@ -1,5 +1,4 @@
-import pytest
-from world_model.counterfactual import CounterfactualEngine, CounterfactualScenario
+from world_model.counterfactual import CounterfactualEngine
 
 
 class TestCounterfactualEngine:

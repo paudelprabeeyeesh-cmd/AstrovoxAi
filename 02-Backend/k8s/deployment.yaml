@@ -1,10 +1,9 @@
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: astrovox-backend
 spec:
-  replicas: 3
+  replicas: 2
   selector:
     matchLabels:
       app: astrovox-backend
@@ -23,15 +22,20 @@ spec:
             memory: "512Mi"
             cpu: "500m"
           limits:
-            memory: "2Gi"
-            cpu: "2000m"
+            memory: "1Gi"
+            cpu: "1000m"
+        envFrom:
+        - configMapRef:
+            name: astrovox-backend-config
+        - secretRef:
+            name: astrovox-backend-secret
         livenessProbe:
           httpGet:
-            path: /healthz
+            path: /health/liveness
             port: 8000
           periodSeconds: 10
         readinessProbe:
           httpGet:
-            path: /healthz
+            path: /health/readiness
             port: 8000
           periodSeconds: 10

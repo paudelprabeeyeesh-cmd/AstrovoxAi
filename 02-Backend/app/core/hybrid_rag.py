@@ -7,8 +7,8 @@ from __future__ import annotations
 import logging
 import math
 import re
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -182,7 +182,7 @@ class HybridRAG:
         return max(dense_score, sparse_score) < self.self_rag_threshold
 
     def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> Tuple[List[Document], List[Citation]]:
-        if not self._needs_retrieval(query_text, query_embedding) and not query_embedding:
+        if not self._needs_retrieval(query_text, query_embedding) and query_embedding is None:
             return [], []
         dense_results = dense_retrieval(query_embedding, self.documents, top_k=top_k * 2) if query_embedding is not None else []
         sparse_results = bm25_score(query_text, [doc.text for doc in self.documents])

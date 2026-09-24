@@ -18,7 +18,7 @@ Safeguards:
 - Cite authoritative sources where possible
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any, Optional
 from .expert_base import ExpertBase, ExpertProfile, ExpertCapabilities, ExpertCategory
 
 

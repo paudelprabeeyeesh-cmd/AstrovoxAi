@@ -1,6 +1,6 @@
 import httpx
 import json
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 
 class MCPClient:
@@ -13,7 +13,7 @@ class MCPClient:
             self.server_url = server_url.rstrip("/")
             response = self._client.get(f"{self.server_url}/health")
             return response.status_code == 200
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     def list_tools(self) -> List[Dict[str, Any]]:
@@ -39,6 +39,6 @@ class MCPClient:
     def disconnect(self):
         try:
             self._client.close()
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
         self.server_url = ""

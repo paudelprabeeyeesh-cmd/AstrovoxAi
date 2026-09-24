@@ -1,6 +1,3 @@
-import time
-import numpy as np
-import pytest
 from agi_safety.corrigibility import (
     CorrigibleAgent,
     ShutdownResult,

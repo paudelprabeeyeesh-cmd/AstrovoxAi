@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..self_improvement import SelfImprovement, Capability
 
 

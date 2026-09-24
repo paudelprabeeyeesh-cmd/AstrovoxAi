@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..rotary_position_embedding import RoPE, precompute_rope, apply_rope
 
 
@@ -14,7 +13,7 @@ class TestRotaryPositionEmbedding:
         k = np.random.randn(B, T, H, D)
         sin, cos = precompute_rope(dim=D, max_seq_len=T)
         q_rot = apply_rope(q, sin, cos)
-        k_rot = apply_rope(k, sin, cos)
+        apply_rope(k, sin, cos)
         assert q_rot.shape == (B, T, H, D)
 
     def test_position_sensitivity(self):

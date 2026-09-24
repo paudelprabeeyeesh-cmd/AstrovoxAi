@@ -138,19 +138,58 @@
         ]
       },
       {
-        "id": 8,
-        "title": "Memory Usage",
+        "id": 9,
+        "title": "AI Request P95 Latency",
         "type": "graph",
         "targets": [
           {
-            "expr": "process_resident_memory_bytes{job=\"astravox-backend\"}",
-            "legendFormat": "resident memory"
+            "expr": "histogram_quantile(0.95, sum(rate(ai_request_duration_seconds_bucket[5m])) by (le, model))",
+            "legendFormat": "{{model}}"
           }
         ],
         "yaxes": [
           {
-            "format": "bytes",
-            "label": "Memory"
+            "format": "s",
+            "label": "Seconds"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "WebSocket Connection Events",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(websocket_connections_total[1m])) by (event)",
+            "legendFormat": "{{event}}"
+          }
+        ],
+        "yaxes": [
+          {
+            "format": "rps",
+            "label": "Events/sec"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Active Connections",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "active_connections",
+            "legendFormat": "active connections"
+          }
+        ]
+      },
+      {
+        "id": 12,
+        "title": "Auth Attempts",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(auth_attempts_total[5m])) by (provider, status)",
+            "legendFormat": "{{provider}} - {{status}}"
           }
         ]
       }

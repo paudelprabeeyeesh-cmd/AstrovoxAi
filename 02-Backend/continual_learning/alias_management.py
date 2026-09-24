@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, List, Optional, Any
-from .snapshot_versioning import SnapshotVersioning, ModelSnapshot
+from .snapshot_versioning import SnapshotVersioning
 
 
 class AliasManagement:

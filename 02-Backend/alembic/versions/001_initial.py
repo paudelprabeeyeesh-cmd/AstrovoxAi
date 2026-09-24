@@ -342,15 +342,6 @@ def upgrade() -> None:
         )
     """)
     op.execute("""
-        CREATE TABLE IF NOT EXISTS sso_connections (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            provider TEXT NOT NULL,
-            config TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    op.execute("""
         CREATE TABLE IF NOT EXISTS enterprise_audit_logs (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -478,7 +469,6 @@ def upgrade() -> None:
     op.execute("CREATE INDEX IF NOT EXISTS idx_outreach_user ON outreach(user_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_campaigns_dates ON ad_campaigns(start_date, end_date)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_affiliates_code ON affiliates(code)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_sso_user ON sso_connections(user_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_enterprise_audit_user ON enterprise_audit_logs(user_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_slas_account ON slas(account_id)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_custom_models_user ON custom_models(user_id)")
@@ -502,7 +492,6 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS idx_custom_models_user")
     op.execute("DROP INDEX IF EXISTS idx_slas_account")
     op.execute("DROP INDEX IF EXISTS idx_enterprise_audit_user")
-    op.execute("DROP INDEX IF EXISTS idx_sso_user")
     op.execute("DROP INDEX IF EXISTS idx_affiliates_code")
     op.execute("DROP INDEX IF EXISTS idx_campaigns_dates")
     op.execute("DROP INDEX IF EXISTS idx_outreach_user")
@@ -539,7 +528,6 @@ def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS slas")
     op.execute("DROP TABLE IF EXISTS audit_logs")
     op.execute("DROP TABLE IF EXISTS enterprise_audit_logs")
-    op.execute("DROP TABLE IF EXISTS sso_connections")
     op.execute("DROP TABLE IF EXISTS enterprise_accounts")
     op.execute("DROP TABLE IF EXISTS affiliates")
     op.execute("DROP TABLE IF EXISTS ad_campaigns")

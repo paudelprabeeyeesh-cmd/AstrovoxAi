@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from ai_core.reasoning_engine import ReasoningEngine, KnowledgeBase, ProbabilisticInference
+from ai_core.reasoning_engine import ReasoningEngine, ProbabilisticInference
 
 
 def test_forward_chain_basic():

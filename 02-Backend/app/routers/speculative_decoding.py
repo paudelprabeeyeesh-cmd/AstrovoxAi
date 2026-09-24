@@ -1,10 +1,8 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth import require_verified_email
 from ..database import get_db
@@ -32,8 +30,8 @@ async def speculative_decode(req: dict, user_id: str = Depends(require_verified_
     draft_model = req.get("draft_model", "haiku-1b")
     target_model = req.get("target_model", "haiku")
     num_draft_tokens = req.get("num_draft_tokens", 5)
-    temperature = req.get("temperature", 0.7)
-    top_p = req.get("top_p", 0.95)
+    req.get("temperature", 0.7)
+    req.get("top_p", 0.95)
     with get_db() as conn:
         log_id = str(uuid.uuid4())
         conn.execute(

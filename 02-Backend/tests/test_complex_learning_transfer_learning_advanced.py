@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from complex_learning.transfer_learning_advanced import AdvancedTransferLearning
 
 

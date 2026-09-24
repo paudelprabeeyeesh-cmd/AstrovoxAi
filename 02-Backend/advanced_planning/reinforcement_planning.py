@@ -1,6 +1,6 @@
 
 import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import List
 
 
 class QTable:

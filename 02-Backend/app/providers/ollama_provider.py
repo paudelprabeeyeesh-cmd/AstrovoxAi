@@ -41,7 +41,7 @@ class OllamaProvider(AIProvider):
             async with httpx.AsyncClient(timeout=5) as client:
                 resp = await client.get(f"{self.config.base_url}/api/tags")
                 return resp.status_code == 200
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     async def chat(
@@ -156,6 +156,6 @@ class OllamaProvider(AIProvider):
                 if resp.status_code == 200:
                     data = resp.json()
                     return [m["name"] for m in data.get("models", [])]
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
         return []

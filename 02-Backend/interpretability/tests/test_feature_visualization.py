@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-import torch
 import torch.nn as nn
 
 from ..feature_visualization import visualize_feature

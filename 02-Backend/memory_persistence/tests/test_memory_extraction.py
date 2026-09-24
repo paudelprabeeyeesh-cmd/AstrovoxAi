@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import numpy as np
 
 from memory_persistence.memory_extraction import MemoryExtractor
 

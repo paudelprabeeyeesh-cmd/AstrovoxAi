@@ -216,8 +216,8 @@ class TestMCPConnectorsThreadSafety:
             try:
                 for i in range(20):
                     registry.register(MCPConnector(name=f"c{i}", endpoint=""))
-            except Exception as e:
-                errors.append(e)
+            except Exception as _e:  # noqa: BLE001
+                errors.append(_e)
 
         threads = [threading.Thread(target=register_many) for _ in range(4)]
         for t in threads:

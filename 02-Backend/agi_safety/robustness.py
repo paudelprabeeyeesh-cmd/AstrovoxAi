@@ -1,6 +1,6 @@
 import numpy as np
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 
 @dataclass
@@ -44,7 +44,7 @@ class AdversarialDefense:
     def pgd_attack(self, x: np.ndarray, steps: int = 7, step_size: float = 0.02) -> np.ndarray:
         x_adv = x.copy().astype(np.float64)
         for _ in range(steps):
-            logits = x_adv @ self.weights + self.bias
+            x_adv @ self.weights + self.bias
             probs = self.predict_proba(x_adv)
             labels = np.argmax(probs, axis=1)
             one_hot = np.zeros_like(probs)

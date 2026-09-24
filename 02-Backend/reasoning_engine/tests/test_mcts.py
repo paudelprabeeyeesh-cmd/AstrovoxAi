@@ -1,7 +1,4 @@
 import random
-import math
-import numpy as np
-import pytest
 from reasoning_engine.mcts import MCTSNode, MCTS
 
 

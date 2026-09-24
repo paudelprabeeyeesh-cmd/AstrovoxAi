@@ -1,6 +1,5 @@
 
 import numpy as np
-import pytest
 from advanced_planning.multi_objective import MultiObjectiveEvaluator, NSGAII
 
 

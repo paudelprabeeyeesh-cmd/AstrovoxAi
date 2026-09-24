@@ -1,6 +1,5 @@
 import numpy as np
-from typing import Callable, Optional
-from .quantum_circuits import QuantumCircuit
+from typing import Callable
 
 
 class QuantumGradientDescent:

@@ -90,7 +90,7 @@ class ContinuousAntColony:
     def construct_solution(self):
         solution = np.zeros(self.n_dimensions)
         for j in range(self.n_dimensions):
-            prob = self.pheromone[j] ** self.alpha
+            self.pheromone[j] ** self.alpha
             solution[j] = np.random.uniform(self.bounds[0], self.bounds[1], 1)[0]
         return solution
 

@@ -1,4 +1,3 @@
-import numpy as np
 from typing import List, Tuple, Optional, Dict, Set
 
 
@@ -32,25 +31,25 @@ class Clause:
         new_lits = []
         found_self = False
         found_other = False
-        for l in self.literals:
-            if l.name == lit_name and not found_self:
+        for lit in self.literals:
+            if lit.name == lit_name and not found_self:
                 found_self = True
             else:
-                new_lits.append(l)
-        for l in other.literals:
-            if l.name == lit_name and not found_other:
+                new_lits.append(lit)
+        for lit in other.literals:
+            if lit.name == lit_name and not found_other:
                 found_other = True
             else:
-                new_lits.append(l)
+                new_lits.append(lit)
         if not (found_self and found_other):
             return None
         unique = []
         seen = set()
-        for l in new_lits:
-            key = hash(l)
+        for lit in new_lits:
+            key = hash(lit)
             if key not in seen:
                 seen.add(key)
-                unique.append(l)
+                unique.append(lit)
         return Clause(unique)
 
     def is_empty(self) -> bool:
@@ -81,10 +80,10 @@ class KnowledgeBase:
         while changed:
             changed = False
             for ants, cons in self.rules:
-                if all(not l.negated and l.name in derived for l in ants.literals):
-                    for l in cons.literals:
-                        if not l.negated and l.name not in derived:
-                            derived.add(l.name)
+                if all(not lit.negated and lit.name in derived for lit in ants.literals):
+                    for lit in cons.literals:
+                        if not lit.negated and lit.name not in derived:
+                            derived.add(lit.name)
                             changed = True
         return derived
 
@@ -98,8 +97,8 @@ class KnowledgeBase:
                 return True
             proven.add(g)
             for ants, cons in self.rules:
-                for l in cons.literals:
-                    if l.name == g and not l.negated:
+                for lit in cons.literals:
+                    if lit.name == g and not lit.negated:
                         if all(prove(a.name) for a in ants.literals if not a.negated):
                             return True
             return False
@@ -109,7 +108,7 @@ class KnowledgeBase:
     def resolution(self, goal_clause: Clause, max_iterations: int = 1000) -> bool:
         new = list(self.clauses)
         new.extend([Clause([Literal(g)]) for g in self.facts])
-        negations = [Clause([Literal(l.negated and l.name or l.name, negated=not l.negated)]) for c in [goal_clause] for l in c.literals]
+        negations = [Clause([Literal(lit.negated and lit.name or lit.name, negated=not lit.negated)]) for c in [goal_clause] for lit in c.literals]
         new.extend(negations)
         for _ in range(max_iterations):
             resolvents = []
@@ -117,8 +116,8 @@ class KnowledgeBase:
             found_empty = False
             for i in range(n):
                 for j in range(i + 1, n):
-                    for l in new[i].literals:
-                        resolved = new[i].resolve(new[j], l.name)
+                    for lit in new[i].literals:
+                        resolved = new[i].resolve(new[j], lit.name)
                     if resolved is not None:
                         if resolved.is_empty():
                             found_empty = True
@@ -129,7 +128,7 @@ class KnowledgeBase:
             unique = []
             seen = set()
             for c in resolvents:
-                key = tuple(hash(l) for l in c.literals)
+                key = tuple(hash(lit) for lit in c.literals)
                 if key not in seen:
                     seen.add(key)
                     unique.append(c)

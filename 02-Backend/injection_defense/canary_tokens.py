@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import hmac
-import os
 import re
 import secrets
 import time
@@ -65,7 +62,7 @@ class CanaryRegistry:
         return False
 
     def cleanup_expired(self) -> int:
-        now = time.time()
+        time.time()
         expired_keys = [k for k, v in self._tokens.items() if v.is_expired()]
         for k in expired_keys:
             del self._tokens[k]

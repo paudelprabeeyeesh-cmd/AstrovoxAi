@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ai_core.consciousness_engine import ConsciousnessEngine, GlobalWorkspace, IntegratedInformationCalculator, ContentElement
 
 

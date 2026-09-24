@@ -1,4 +1,3 @@
-import base64
 import os
 
 from cryptography.fernet import Fernet
@@ -27,5 +26,5 @@ def decrypt(token: str) -> str:
         return token
     try:
         return get_fernet().decrypt(token.encode()).decode()
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         return token

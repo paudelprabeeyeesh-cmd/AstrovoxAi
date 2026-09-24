@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from multimodal.audio_language import (
     AudioFeatures,

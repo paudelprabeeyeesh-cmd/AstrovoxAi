@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Tuple, Optional
+from typing import Dict, List, Optional
 
 
 class SpatialRelation:

@@ -22,9 +22,6 @@ from injection_defense import (
 )
 from injection_defense.canary_tokens import get_global_registry
 from injection_defense.defense_in_depth import DefenseResult
-from injection_defense.heuristic_detection import InjectionMatch
-from injection_defense.model_detection import FeatureVector
-from injection_defense.privilege_separation import PrivilegedContent as PC
 from injection_defense.role_reassertion import (
     ConversationBuffer,
     ReAssertionConfig,
@@ -84,7 +81,7 @@ class TestEndToEndWorkflow:
         assert isinstance(result, DefenseResult)
 
     def test_canary_end_to_end(self):
-        token = create_canary(ttl_seconds=300)
+        create_canary(ttl_seconds=300)
         text = embed_canary("Some response text")
         assert check_canary(text) is True
 
@@ -117,7 +114,7 @@ class TestNumpyAcrossModules:
             TrustLevel.UNTRUSTED: 1, TrustLevel.TOOL_OUTPUT: 1,
         }
         levels = list(TrustLevel)
-        ranks = np.array([order_map[l] for l in levels])
+        ranks = np.array([order_map[level] for level in levels])
         assert ranks.dtype in (np.int64, np.int32)
         assert np.all(ranks > 0)
 

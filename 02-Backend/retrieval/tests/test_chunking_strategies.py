@@ -7,7 +7,6 @@ from retrieval.chunking_strategies import (
     hierarchical_chunk,
     Chunker,
 )
-import numpy as np
 
 
 def test_fixed_size_chunk():

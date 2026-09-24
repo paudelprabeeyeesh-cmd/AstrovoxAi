@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from memory_persistence.incognito_mode import IncognitoMode, IncognitoSession
+from memory_persistence.incognito_mode import IncognitoMode
 
 
 @pytest.fixture

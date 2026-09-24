@@ -1,6 +1,5 @@
 """Tests for Structured Pruning (attention heads, layers, MoE experts)."""
 
-import numpy as np
 import pytest
 import torch
 import torch.nn as nn

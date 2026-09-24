@@ -13,7 +13,6 @@ Instead of repeating instructions, Astrovox can execute stored procedures.
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
 from enum import Enum
-import json
 
 
 class ProcedureStatus(Enum):
@@ -96,11 +95,11 @@ class Procedure:
                     "success": True,
                     "result": result,
                 })
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 results.append({
                     "step_id": step.step_id,
                     "success": False,
-                    "error": str(e),
+                    "error": str(_e),
                 })
         
         self.usage_count += 1

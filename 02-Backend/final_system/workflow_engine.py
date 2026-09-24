@@ -66,8 +66,8 @@ class WorkflowEngine:
             try:
                 output = stage.fn(**dict(stage.params, name=stage.name))
                 results[stage.name] = StageResult(name=stage.name, status=StageStatus.COMPLETED, output=output)
-            except Exception as exc:
-                results[stage.name] = StageResult(name=stage.name, status=StageStatus.FAILED, error=str(exc))
+            except Exception as _e:  # noqa: BLE001
+                results[stage.name] = StageResult(name=stage.name, status=StageStatus.FAILED, error=str(_e))
                 break
         with self._lock:
             self._results[name] = results

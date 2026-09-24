@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from complex_reasoning.spatial_reasoning import SpatialObject, SpatialScene, SpatialRelation
+from complex_reasoning.spatial_reasoning import SpatialObject, SpatialScene
 
 
 class TestSpatialObject:

@@ -1,4 +1,3 @@
-import pytest
 from world_model.mental_simulation import TheoryOfMind, MentalSimulator
 
 

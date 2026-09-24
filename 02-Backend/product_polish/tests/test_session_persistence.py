@@ -6,7 +6,6 @@ Uses only stdlib (tempfile) — no pytest plugins or external deps.
 
 import os
 import sys
-import threading
 
 import pytest
 

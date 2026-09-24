@@ -104,10 +104,10 @@ class DAGExecutor:
                     self._status[name] = TaskStatus.COMPLETED
                     self._results[name] = TaskResult(status=TaskStatus.COMPLETED, output=output)
                     return
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     if attempt < task.retries:
                         time.sleep(task.backoff * (attempt + 1))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 if attempt < task.retries:
                     time.sleep(task.backoff * (attempt + 1))
         self._status[name] = TaskStatus.FAILED

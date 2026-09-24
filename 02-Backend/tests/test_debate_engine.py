@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from advanced_reasoning.debate_engine import DebateEngine, Perspective
 
 

@@ -30,12 +30,12 @@ class Benchmark:
                     score=score,
                     details={"task": task, "output_length": len(result.output)},
                 ))
-            except Exception as e:
-                logger.error(f"Benchmark error: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Benchmark error: {_e}")
                 results.append(BenchmarkResult(
                     benchmark_name=self.name,
                     passed=False,
                     score=0.0,
-                    details={"error": str(e)},
+                    details={"error": str(_e)},
                 ))
         return results

@@ -1,9 +1,6 @@
 import logging
 import os
 import subprocess
-import tempfile
-import time
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ class CodeAgent:
                         self.symbol_index[rel] = self._extract_symbols(content, fpath)
                         symbols_found += len(self.symbol_index[rel])
                         files_indexed += 1
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         logger.warning(f"Failed to index {fpath}: {e}")
         return {
             "repo_path": self.repo_path,
@@ -78,7 +75,7 @@ class CodeAgent:
             start = max(0, offset - 1)
             end = min(len(lines), start + limit)
             return "".join(lines[start:end])
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return f"Error: {e}"
 
     def edit_file(self, file_path: str, old_string: str, new_string: str) -> dict:
@@ -92,7 +89,7 @@ class CodeAgent:
             with open(full_path, "w", encoding="utf-8") as f:
                 f.write(new_content)
             return {"success": True, "file": file_path}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e)}
 
     def run_command(self, command: str, timeout: int = 30) -> dict:
@@ -113,7 +110,7 @@ class CodeAgent:
             }
         except subprocess.TimeoutExpired:
             return {"success": False, "error": f"Command timed out after {timeout}s"}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e)}
 
     def run_tests(self, test_path: str = "tests") -> dict:
@@ -146,7 +143,7 @@ class CodeAgent:
                 return {"success": True, "file": file_path, "status": "unknown_format_skipped"}
         except SyntaxError as e:
             return {"success": False, "file": file_path, "error": f"Syntax error: {e}"}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "file": file_path, "error": str(e)}
 
     def create_checkpoint(self, message: str) -> dict:

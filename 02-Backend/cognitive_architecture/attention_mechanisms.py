@@ -100,7 +100,7 @@ class AttentionMechanisms:
                positions: Optional[np.ndarray] = None) -> Dict[str, Any]:
         if item_vectors.ndim == 1:
             item_vectors = item_vectors.reshape(1, -1)
-        batch_size = item_vectors.shape[0]
+        item_vectors.shape[0]
         effective_n_items = item_vectors.shape[1]
         if self.network.n_items != effective_n_items:
             saved_w_q = self.network.w_q

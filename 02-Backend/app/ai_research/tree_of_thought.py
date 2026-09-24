@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
 
 from app.config import settings
 
@@ -63,7 +62,7 @@ class TreeOfThought:
             )
             text = result.choices[0].message.content or ""
             return [line.strip("- ") for line in text.splitlines() if line.strip()][:n]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("ToT thought generation failed: %s", exc)
             return [f"Consider alternative approach {i+1}" for i in range(n)]
 
@@ -80,7 +79,7 @@ class TreeOfThought:
                 max_tokens=512,
             )
             return result.choices[0].message.content or thought
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("ToT synthesis failed: %s", exc)
             return thought
 

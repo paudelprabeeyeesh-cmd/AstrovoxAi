@@ -1,5 +1,4 @@
 
-import copy
 import random
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
@@ -101,7 +100,7 @@ class Replanner:
         return plan
 
     def _astar_search(self, start: Any, max_actions: int) -> Optional[Plan]:
-        state_key = str(hash(str(start)))
+        str(hash(str(start)))
         frontier: List[Tuple[float, int, Any, List[Any]]] = [(0.0, 0, start, [])]
         visited: Set[str] = set()
         counter = 0
@@ -118,7 +117,7 @@ class Replanner:
             for action in self.get_actions_fn(state):
                 try:
                     new_state = self.apply_fn(state, action)
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     continue
                 g = len(actions) + 1
                 h = self.heuristic_fn(new_state)

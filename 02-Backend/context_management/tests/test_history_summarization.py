@@ -74,8 +74,8 @@ class TestHistorySummarizer:
                 turns.append({"role": "user" if i % 2 == 0 else "assistant", "content": content})
             result = summarizer.summarize(turns)
             lengths.append(len(result))
-        assert all(l >= 3 for l in lengths)
-        assert all(l <= num_turns for l in lengths)
+        assert all(length >= 3 for length in lengths)
+        assert all(length <= num_turns for length in lengths)
 
     def test_empty_turns(self):
         summarizer = HistorySummarizer(recent_threshold=2)

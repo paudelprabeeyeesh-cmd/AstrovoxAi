@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from training_engine.gradient_clipping import clip_grad_norm
 
 

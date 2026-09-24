@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.few_shot_learning import PrototypicalNetworks, MatchingNetworks, Episode
 
 

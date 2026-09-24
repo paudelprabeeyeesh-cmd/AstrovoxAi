@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 
 from reasoning_scaffolds.chain_of_thought import chain_of_thought, _build_prompt
 

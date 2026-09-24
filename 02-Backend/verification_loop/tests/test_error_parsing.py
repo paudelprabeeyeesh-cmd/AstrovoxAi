@@ -1,5 +1,4 @@
-import numpy as np
-from verification_loop.error_parsing import ErrorParser, ParseResult
+from verification_loop.error_parsing import ErrorParser
 
 
 TSV_OUTPUT = "src/app.ts(10,5): error TS2322: Type 'string' is not assignable to type 'number'. [ts(2322)]"

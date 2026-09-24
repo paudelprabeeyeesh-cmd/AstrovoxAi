@@ -1,6 +1,4 @@
 
-import numpy as np
-import pytest
 from advanced_planning.plan_optimization import PlanOptimizer
 
 

@@ -1,6 +1,6 @@
 import numpy as np
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, Tuple
+from dataclasses import dataclass
+from typing import Dict, Any
 
 
 @dataclass
@@ -95,7 +95,7 @@ class AudioLanguageModel:
 
     def transcribe(self, audio_features: AudioFeatures) -> str:
         energy = np.mean(np.abs(audio_features.waveform))
-        mfcc_mean = audio_features.mfcc.mean(axis=1)
+        audio_features.mfcc.mean(axis=1)
         if energy < 0.01:
             return "[silence]"
         text = self._greedy_decode(audio_features.mfcc)

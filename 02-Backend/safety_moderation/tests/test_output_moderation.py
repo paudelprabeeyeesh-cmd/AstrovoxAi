@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from safety_moderation.output_moderation import OutputModerationScanner, OutputScanResult
 
 

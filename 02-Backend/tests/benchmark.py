@@ -7,17 +7,11 @@ fallback through app.core.llm.
 
 from __future__ import annotations
 
-import ast
-import json
 import logging
-import os
 import re
-import sys
-import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -220,7 +214,7 @@ class BenchmarkRunner:
             try:
                 from app.core.llm import LLMClient
                 self._llm_client = LLMClient()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 self._llm_client = False
         return self._llm_client if self._llm_client else None
 
@@ -229,7 +223,7 @@ class BenchmarkRunner:
         if client:
             try:
                 return client.generate(prompt, timeout=10)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass
         return ""
 
@@ -248,7 +242,7 @@ class BenchmarkRunner:
             match = re.search(r"0\.\d+|1\.0", result)
             if match:
                 return float(match.group())
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
         return self._heuristic_similarity(reference, candidate)
 
@@ -328,7 +322,7 @@ class BenchmarkRunner:
                 exec(code, namespace)
                 exec(sample["test"], namespace)
                 is_correct = True
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 ref = sample.get("answer", "").strip()
                 if ref and ref in candidate:
                     is_correct = True

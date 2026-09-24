@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.derivative_free import (
     nelder_ead,
     pattern_search,

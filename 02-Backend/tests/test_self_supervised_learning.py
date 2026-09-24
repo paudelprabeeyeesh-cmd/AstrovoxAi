@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.self_supervised_learning import SelfSupervisedLearner
 
 

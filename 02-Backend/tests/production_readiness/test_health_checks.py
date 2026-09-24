@@ -1,6 +1,4 @@
-import time
-import pytest
-from production_readiness.health_checks import DeepHealthChecker, HealthCheckRegistry, HealthCheck
+from production_readiness.health_checks import DeepHealthChecker, HealthCheck
 
 
 class SimpleChecker:

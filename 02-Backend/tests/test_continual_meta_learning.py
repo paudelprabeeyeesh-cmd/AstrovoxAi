@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.continual_meta_learning import ContinualMetaLearner, TaskBatch
 
 

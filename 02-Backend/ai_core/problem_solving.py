@@ -1,6 +1,5 @@
-import numpy as np
 from typing import Any, Callable, Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import heapq
 
 
@@ -127,7 +126,7 @@ class AnalogyEngine:
         if not self.mapping:
             return 0.0
         mapped_source_keys = set(self.mapping.keys())
-        mapped_target_keys = set(self.mapping.values())
+        set(self.mapping.values())
         return len(mapped_source_keys) / max(len(self.source_domain), 1)
 
 

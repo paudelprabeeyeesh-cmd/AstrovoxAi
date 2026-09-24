@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 
 from reasoning_scaffolds.graph_of_thought import ThoughtGraph
 
@@ -19,8 +18,8 @@ def fake_score(thought: str) -> float:
 
 def test_thought_graph_add_and_best():
     g = ThoughtGraph("problem")
-    idx0 = g.add_thought("idea-a", 1.0)
-    idx1 = g.add_thought("idea-b", 2.0)
+    g.add_thought("idea-a", 1.0)
+    g.add_thought("idea-b", 2.0)
     assert g.best_thought() == "idea-b"
 
 

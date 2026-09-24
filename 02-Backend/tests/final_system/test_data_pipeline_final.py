@@ -1,5 +1,4 @@
-import pytest
-from final_system.data_pipeline_final import DataPipeline, ETLJob, PipelineResult
+from final_system.data_pipeline_final import DataPipeline, ETLJob
 
 
 def test_etl_run_success():

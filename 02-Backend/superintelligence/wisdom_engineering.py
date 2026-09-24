@@ -1,6 +1,6 @@
 import numpy as np
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from typing import List, Dict, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -36,7 +36,7 @@ class WisdomEngineer:
             weights, _, _, _ = lstsq(A, b, rcond=None)
             weights = np.abs(weights)
             return weights / (weights.sum() + 1e-8)
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return np.ones(4) / 4.0
 
     def render_judgment(self, context_vector: np.ndarray, options: List[np.ndarray], horizon: int = 10) -> WisdomJudgment:

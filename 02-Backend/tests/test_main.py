@@ -1,8 +1,6 @@
-import pytest
 import importlib
 from fastapi.testclient import TestClient
 from app.database import init_db
-import time
 
 client = TestClient(importlib.import_module('app.main').app)
 

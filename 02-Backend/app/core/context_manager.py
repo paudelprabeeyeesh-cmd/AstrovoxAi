@@ -4,12 +4,10 @@ Context manager for long-context windows, sliding window, and compression.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-import numpy as np
 
 logger = logging.getLogger(__name__)
 

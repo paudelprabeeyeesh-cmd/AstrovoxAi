@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from .memory_pipeline import get_relevant_memories
 from .knowledge import search_docs
@@ -80,7 +80,7 @@ class ContextBuilder:
                 prompt=f"Summarize this conversation history concisely:\n{summary_input}",
                 timeout=30,
             ).get("text", summary_input[:500])
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             summary_text = summary_input[:500]
         return [{"role": "system", "content": f"[Summary of earlier conversation: {summary_text}]"}] + keep
 

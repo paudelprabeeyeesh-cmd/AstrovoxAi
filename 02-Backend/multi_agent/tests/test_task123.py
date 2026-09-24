@@ -1,13 +1,10 @@
-import threading
 import time
 import numpy as np
-import pytest
 from multi_agent.task123_parallel import ParallelOrchestrator
 
 
 class TestParallelOrchestrator:
     def test_run_parallel(self):
-        results_list = []
 
         def task_a():
             time.sleep(0.01)

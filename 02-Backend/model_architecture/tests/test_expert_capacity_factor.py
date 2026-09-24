@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..expert_capacity_factor import ExpertCapacityFactor
 
 

@@ -64,14 +64,14 @@ class DeepHealthChecker:
             result.status = "healthy"
             logger.info("health check passed: %s", name)
             return result
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             latency = (time.time() - start) * 1000
-            logger.error("health check failed: %s -> %s", name, exc)
+            logger.error("health check failed: %s -> %s", name, _e)
             return HealthCheck(
                 name=name,
                 status="unhealthy",
                 latency_ms=latency,
-                details={"error": str(exc)},
+                details={"error": str(_e)},
             )
 
     def run_all(self) -> Dict[str, Any]:

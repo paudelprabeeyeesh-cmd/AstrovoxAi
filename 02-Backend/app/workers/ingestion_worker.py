@@ -1,8 +1,6 @@
 
 import asyncio
 import logging
-import uuid
-from typing import Any
 
 from app.inference_queue import InferenceQueue
 from app.core.cache_enhanced import get_redis_client
@@ -43,8 +41,8 @@ class IngestionWorker:
                     await asyncio.sleep(0.1)
             except asyncio.CancelledError:
                 break
-            except Exception as exc:
-                logger.error("Ingestion worker loop error: %s", exc)
+            except Exception as _e:  # noqa: BLE001
+                logger.error("Ingestion worker loop error: %s", _e)
                 await asyncio.sleep(1.0)
 
     async def process_ingestion_job(self, job_data: dict) -> bool:
@@ -63,8 +61,8 @@ class IngestionWorker:
                 redis_client.setex(f"ingestion:{job_id}", 3600, str(len(chunks)))
             logger.debug("Ingested job %s, chunks=%d", job_id, len(chunks))
             return True
-        except Exception as exc:
-            logger.error("Ingestion job %s error: %s", job_id, exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Ingestion job %s error: %s", job_id, _e)
             return False
 
     def _chunk_text(self, text: str) -> list[str]:
@@ -85,6 +83,6 @@ class IngestionWorker:
         try:
             enc = tiktoken.encoding_for_model(model or "text-embedding-3-small")
             enc.encode(text)
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
         return [0.0] * 1536

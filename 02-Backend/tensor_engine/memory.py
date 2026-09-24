@@ -18,6 +18,8 @@ class StridedMemoryBuffer:
         self.offset = int(offset)
         self.ndim = len(self.shape)
         self.itemsize = self.flat.itemsize
+        self._size = int(np.prod(self.shape))
+        self._c_contiguous_strides = None
 
         if strides is None:
             strides = []
@@ -32,10 +34,12 @@ class StridedMemoryBuffer:
 
     @property
     def size(self):
-        return int(np.prod(self.shape))
+        return self._size
 
     def c_contiguous_strides(self, shape=None):
         if shape is None:
+            if self._c_contiguous_strides is not None:
+                return self._c_contiguous_strides
             shape = self.shape
         strides = []
         for i in range(len(shape)):
@@ -43,7 +47,10 @@ class StridedMemoryBuffer:
             for j in range(i + 1, len(shape)):
                 stride *= shape[j]
             strides.append(stride)
-        return tuple(strides)
+        result = tuple(strides)
+        if shape is self.shape:
+            self._c_contiguous_strides = result
+        return result
 
     def as_array(self):
         base = self.flat[self.offset:] if self.offset > 0 else self.flat
@@ -111,7 +118,7 @@ class StridedMemoryBuffer:
     def contiguous(self):
         if self.strides == self.c_contiguous_strides():
             return self
-        return StridedMemoryBuffer(self.as_array(), shape=self.shape)
+        return StridedMemoryBuffer(self.as_array(), shape=self.shape, strides=self.c_contiguous_strides())
 
     def _apply_index(self, key):
         if not isinstance(key, tuple):
@@ -122,7 +129,7 @@ class StridedMemoryBuffer:
 
         new_offset = self.offset
         remaining_shape = list(self.shape)
-        remaining_strides = list(self.strides)
+        list(self.strides)
         squeeze_axes = []
 
         for i, k in enumerate(key):

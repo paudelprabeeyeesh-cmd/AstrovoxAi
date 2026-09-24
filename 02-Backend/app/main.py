@@ -9,48 +9,53 @@ from slowapi.errors import RateLimitExceeded
 import os
 from dotenv import load_dotenv
 
+from .core.logging_config import configure_logging, RequestLoggingMiddleware
+
 from .auth import router as auth_router
 from .audit import router as audit_router
 from .chat import router as chat_router
-from .api import Solver
 from .secrets import router as secrets_router
 from .routers.models_api import router as models_api_router
 from .routers.memory_controls import router as memory_controls_router
 from .routers.safety_api import router as safety_api_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
+from .health import health_service
+from .dashboard import get_dashboard
 
 try:
     from .memory import router as memory_router
-except Exception:
+except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     memory_router = APIRouter()
 
 try:
     from .storage import router as storage_router
-except Exception:
+except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     storage_router = APIRouter()
 
 try:
     from .telemetry import router as telemetry_router
-except Exception:
+except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     telemetry_router = APIRouter()
 
 try:
     from .terminal import router as terminal_router
-except Exception:
+except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     terminal_router = APIRouter()
 
 try:
     from .embeddings_route import router as embeddings_router
-except Exception:
+except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     embeddings_router = APIRouter()
 
 load_dotenv()
+
+configure_logging()
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
@@ -85,6 +90,7 @@ app.add_middleware(
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
 app.include_router(auth_router)
@@ -117,7 +123,7 @@ async def metrics_middleware(request: Request, call_next):
             status=response.status_code,
             duration=duration
         )
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         pass
 
     # Add performance headers
@@ -142,19 +148,78 @@ async def metrics():
 # Health check endpoints
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "astravox-ai-backend", "version": "2.0.0"}
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] == "healthy" else 503
+    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
+
+
+@app.get("/healthz")
+async def healthz():
+    return "ok"
 
 
 @app.get("/health/readiness")
 async def readiness_check():
-    """Kubernetes readiness probe"""
-    return {"status": "ready", "timestamp": datetime.now(timezone.utc).isoformat()}
+    """Kubernetes readiness probe - checks dependencies."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] in ("healthy", "degraded") else 503
+    payload = {
+        "status": result["status"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
 
 
 @app.get("/health/liveness")
 async def liveness_check():
-    """Kubernetes liveness probe"""
-    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+    """Kubernetes liveness probe - process is alive."""
+    return {
+        "status": "alive",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/startup")
+async def startup_check():
+    """Kubernetes startup probe - application has finished initializing."""
+    health_service.app = app
+    is_healthy = health_service.is_healthy()
+    status_code = 200 if is_healthy else 503
+    payload = {
+        "status": "started" if is_healthy else "starting",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/components")
+async def components_health():
+    """Detailed per-component health breakdown."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    return result
+
+
+@app.get("/health/history")
+async def health_history():
+    """Recent health check history."""
+    return {
+        "history": health_service.history()[-20:],
+        "count": len(health_service.history()),
+    }
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Monitoring dashboard payload with panels, health, and metrics."""
+    import json as _json
+    payload = get_dashboard(app=app)
+    return Response(
+        content=_json.dumps(payload, default=str),
+        media_type="application/json",
+    )
 
 
 @app.get("/")
@@ -164,7 +229,8 @@ async def root():
         "status": "operational",
         "endpoints": {
             "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
-            "health": "/health, /health/readiness, /health/liveness",
+            "health": "/health, /health/readiness, /health/liveness, /health/startup, /health/components, /health/history",
+            "dashboard": "/dashboard",
             "docs": "/docs",
         },
     }

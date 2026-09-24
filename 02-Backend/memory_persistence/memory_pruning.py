@@ -107,7 +107,7 @@ class MemoryPruner:
         for memory in self._memories.values():
             if memory.is_deleted:
                 continue
-            age_score = (now - memory.created_at).total_seconds() / 86400.0
+            (now - memory.created_at).total_seconds() / 86400.0
             access_score = memory.access_count
             if memory.created_at < cutoff and access_score < 2:
                 memory.is_deleted = True

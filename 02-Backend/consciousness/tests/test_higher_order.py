@@ -1,7 +1,6 @@
 import numpy as np
-import pytest
 
-from consciousness.higher_order import FirstOrderState, MetacognitiveMonitor
+from consciousness.higher_order import MetacognitiveMonitor
 
 
 def test_monitor_returns_first_order():

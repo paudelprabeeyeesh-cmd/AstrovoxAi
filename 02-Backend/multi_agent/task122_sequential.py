@@ -18,9 +18,9 @@ class SequentialOrchestrator:
                 result = func()
                 self.results.append(result)
                 self.errors.append(None)
-            except Exception as exc:
+            except Exception as _e:  # noqa: BLE001
                 self.results.append(None)
-                self.errors.append(str(exc))
+                self.errors.append(str(_e))
                 if propagate_errors:
                     for j in range(idx + 1, len(self.tasks)):
                         self.tasks[j] = self._wrap_with_error_context(

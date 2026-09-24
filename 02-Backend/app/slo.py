@@ -2,7 +2,7 @@ import logging
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from prometheus_client import Counter, Gauge, Histogram
 

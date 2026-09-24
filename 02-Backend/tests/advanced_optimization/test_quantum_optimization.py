@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.quantum_optimization import (
     simulated_quantum_annealing,
     quantum_inspired_population,

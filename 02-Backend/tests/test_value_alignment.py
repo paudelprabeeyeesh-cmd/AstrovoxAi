@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.value_alignment import ValueAligner
 
 

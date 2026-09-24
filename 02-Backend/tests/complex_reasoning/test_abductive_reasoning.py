@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from complex_reasoning.abductive_reasoning import Hypothesis, AbductiveEngine
 
 

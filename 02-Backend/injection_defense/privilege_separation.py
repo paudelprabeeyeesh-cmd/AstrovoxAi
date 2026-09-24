@@ -70,7 +70,7 @@ def build_framed_prompt(segments: Sequence[PrivilegedContent]) -> str:
 
 
 def enforce_boundary(content: str, trust: TrustLevel) -> str:
-    escaped = re.escape(content)
+    re.escape(content)
     marker = TRUSTED_PREFIXES[trust]
     patterns = [
         rf"(?i)(ignore\s+previous\s+{marker.lower()})",

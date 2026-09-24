@@ -10,7 +10,6 @@ import os
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -129,8 +128,8 @@ class ConversationHistoryManager:
                 data[cid] = {"conversation_id": conv.conversation_id, "title": conv.title, "user_id": conv.user_id, "messages": [{"role": m.role, "content": m.content, "timestamp": m.timestamp, "metadata": m.metadata} for m in conv.messages], "created_at": conv.created_at, "updated_at": conv.updated_at, "pinned": conv.pinned, "archived": conv.archived}
             with open(self.storage_path, "w") as f:
                 json.dump(data, f, indent=2)
-        except Exception as e:
-            logger.warning(f"Failed to save conversation history: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to save conversation history: {_e}")
 
     def _load_from_disk(self):
         try:
@@ -145,8 +144,8 @@ class ConversationHistoryManager:
                     conv.messages.append(msg)
                 self.conversations[cid] = conv
                 self.user_conversations[conv.user_id].append(cid)
-        except Exception as e:
-            logger.warning(f"Failed to load conversation history: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to load conversation history: {_e}")
 
 
 conversation_history = ConversationHistoryManager()

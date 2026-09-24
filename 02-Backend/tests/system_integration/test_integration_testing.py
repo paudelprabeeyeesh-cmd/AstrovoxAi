@@ -1,8 +1,6 @@
-import pytest
 from system_integration.integration_testing import (
     E2ERunner,
     IntegrationTester,
-    TestResult,
     TestScenario,
 )
 

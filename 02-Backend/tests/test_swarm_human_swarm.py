@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from swarm_intelligence.human_swarm import HumanSwarmIntelligence
 
 

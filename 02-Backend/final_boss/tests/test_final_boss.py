@@ -212,7 +212,7 @@ class TestAlignmentPipeline:
         pipeline = AlignmentPipeline()
         x = np.random.randn(2, 128)
         y = np.random.randn(2, 512)
-        loss = pipeline.stage_loss(x, y, "pretrain")
+        pipeline.stage_loss(x, y, "pretrain")
         assert len(pipeline.losses) == 1
         assert pipeline.losses[0][0] == "pretrain"
 

@@ -1,5 +1,4 @@
 
-import pytest
 import numpy as np
 
 from inference_engine.multi_token_prediction import (

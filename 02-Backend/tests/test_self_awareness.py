@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.self_awareness import SelfAwarenessEngine
 
 

@@ -1,7 +1,6 @@
 
 import json
 import logging
-import uuid
 from typing import AsyncGenerator
 
 import redis
@@ -25,8 +24,8 @@ class WebSocketScaler:
             result = self._redis.publish(self._channel_key(channel), payload)
             logger.debug("Published message to %s, receivers=%s", channel, result)
             return result > 0
-        except Exception as exc:
-            logger.error("Failed to publish message to %s: %s", channel, exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Failed to publish message to %s: %s", channel, _e)
             return False
 
     def subscribe_to_channel(self, channel: str) -> AsyncGenerator[dict, None]:
@@ -75,5 +74,5 @@ class WebSocketScaler:
         try:
             self._pubsub.close()
             self._redis.close()
-        except Exception as exc:
-            logger.error("Error closing WebSocketScaler: %s", exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Error closing WebSocketScaler: %s", _e)

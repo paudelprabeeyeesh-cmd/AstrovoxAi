@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 
 from observability.cost_attribution import CostAttribution

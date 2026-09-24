@@ -1,5 +1,4 @@
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 
@@ -135,8 +134,8 @@ class GraphPlan:
     def bfs_find_plan(self, max_depth: int = 20) -> Optional[List[Action]]:
         if self.problem.is_goal(self.problem.initial_state):
             return []
-        initial = tuple(sorted(self.problem.initial_state, key=str))
-        goal_frozenset = frozenset(self.problem.initial_state)
+        tuple(sorted(self.problem.initial_state, key=str))
+        frozenset(self.problem.initial_state)
         goal = frozenset(self.problem.goal_state)
 
         def state_key(state_set):
@@ -191,7 +190,7 @@ class HeuristicPlanner:
 
     def _heuristic(self, state: Set[Predicate], action: Action) -> float:
         remaining = self.problem.goal_state - state
-        new_state = (state - action.del_effects) | action.add_effects
+        (state - action.del_effects) | action.add_effects
         achieved = len(remaining & action.add_effects)
         uncovered = len((remaining - action.add_effects))
         return achieved - 0.5 * uncovered - 0.01 * action.cost

@@ -13,10 +13,9 @@ Retrieval pipeline:
 The AI should retrieve only the most relevant memories to avoid unnecessary context.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 from enum import Enum
-import re
 
 
 class RetrievalMethod(Enum):
@@ -165,9 +164,9 @@ class RetrievalEngine:
                 # Generic retrieval
                 matches = self._retrieve_generic(store, query, method)
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             # Log error but continue with other stores
-            print(f"Error retrieving from {memory_type}: {e}")
+            print(f"Error retrieving from {memory_type}: {_e}")
         
         return matches
     
@@ -299,7 +298,7 @@ class RetrievalEngine:
             return matches
         
         search_results = store.search_workspace(workspace_id, query)
-        query_lower = query.lower()
+        query.lower()
         
         # Search in notes
         for note in search_results.get('notes', []):

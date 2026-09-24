@@ -162,15 +162,14 @@ class TestThreadSafety:
         import threading
         errors = []
         lock = threading.Lock()
-        counter = [0]
 
         def register_many(prefix):
             for i in range(20):
                 try:
                     sc.register_theme(StyleTheme(id=f"t-{prefix}-{i}", name="N"))
-                except Exception as e:
+                except Exception as _e:  # noqa: BLE001
                     with lock:
-                        errors.append(e)
+                        errors.append(_e)
 
         threads = [threading.Thread(target=register_many, args=(j,)) for j in range(4)]
         for t in threads:

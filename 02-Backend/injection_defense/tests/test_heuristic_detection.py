@@ -1,10 +1,8 @@
 """Tests for Task 112: Heuristic Injection Detection."""
 
 import numpy as np
-import pytest
 
 from injection_defense.heuristic_detection import (
-    InjectionMatch,
     detect_injection,
     is_injection,
 )

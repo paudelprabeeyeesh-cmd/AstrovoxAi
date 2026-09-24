@@ -1,6 +1,4 @@
 import time
-import asyncio
-import random
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set
 from datetime import datetime
@@ -88,5 +86,5 @@ class ParallelToolExecutor:
                 return ToolResult(call.tool_name, None, f"Unknown tool: {call.tool_name}", time.time() - start)
             result = self.tools[call.tool_name](**call.arguments)
             return ToolResult(call.tool_name, result, None, time.time() - start)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return ToolResult(call.tool_name, None, str(e), time.time() - start)

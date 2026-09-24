@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class AdaptiveRetrieval:
             engine = RAGEngine()
             results = engine.search(query, top_k=depth)
             return [r.get("chunk_id", r.get("id", "")) for r in results], [float(r.get("score", 0.0)) for r in results]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Adaptive retrieval failed: %s", exc)
             return [], []
 

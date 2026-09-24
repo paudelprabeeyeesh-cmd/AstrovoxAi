@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, Optional
+from typing import Dict, List, Tuple
 
 
 class NoiseModel:
@@ -37,7 +37,7 @@ class NoiseModel:
         return error_matrix, error_matrix.T
 
     def apply_noise_to_state(self, state: np.ndarray) -> np.ndarray:
-        num_qubits = int(np.log2(len(state)))
+        int(np.log2(len(state)))
         rho = np.outer(state, np.conj(state))
         for _ in range(self.num_qubits):
             rho = self.depolarizing_channel(rho, self.p_depolarizing)

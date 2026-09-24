@@ -39,7 +39,7 @@ class TestSnapshotVersioning:
     def test_verify_snapshot(self):
         sv = SnapshotVersioning()
         state = {"layer1": np.array([1.0, 2.0, 3.0])}
-        snapshot = sv.create_snapshot("v1", state)
+        sv.create_snapshot("v1", state)
         assert sv.verify_snapshot("v1") is True
 
     def test_ancestry_with_parent(self):

@@ -44,11 +44,11 @@ async def generate_embeddings(request: EmbedRequest):
             "model": request.model or embedding_service.model,
             "count": len(results),
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Embedding generation failed: {str(e)}",
-        )
+            detail=f"Embedding generation failed: {str(_e)}",
+        ) from None
 
 
 @router.post("/one", response_model=EmbedResponse)
@@ -70,11 +70,11 @@ async def generate_one_embedding(request: EmbedOneRequest):
             "model": request.model or embedding_service.model,
             "count": 1,
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Embedding generation failed: {str(e)}",
-        )
+            detail=f"Embedding generation failed: {str(_e)}",
+        ) from None
 
 
 @router.get("/status")

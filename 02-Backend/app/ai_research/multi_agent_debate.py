@@ -2,8 +2,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from app.config import settings
 
@@ -64,7 +63,7 @@ class MultiAgentDebate:
                 max_tokens=256,
             )
             return result.choices[0].message.content or ""
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Debate argument failed for %s: %s", agent, exc)
             return ""
 

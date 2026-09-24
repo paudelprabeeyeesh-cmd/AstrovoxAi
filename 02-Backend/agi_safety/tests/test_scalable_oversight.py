@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from agi_safety.scalable_oversight import DebateFramework, RecursiveRewardModel, DebateRound, RRMResult
 
 

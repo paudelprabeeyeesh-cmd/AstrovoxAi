@@ -1,6 +1,4 @@
-import pytest
-import numpy as np
-from agi_core.ethical_reasoning import EthicalReasoner, MoralPrinciple
+from agi_core.ethical_reasoning import EthicalReasoner
 
 
 class TestEthicalReasoner:

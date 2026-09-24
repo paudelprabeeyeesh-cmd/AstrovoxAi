@@ -79,18 +79,18 @@ class ChaosEngineer:
             raise ValueError(f"unknown experiment {experiment_id}")
         experiment.status = "running"
         experiment.started = time.time()
-        start = time.time()
+        time.time()
         try:
             result = self._inject_fault(experiment, func, *args, **kwargs)
             experiment.status = "completed"
             experiment.completed = time.time()
             experiment.result = {"success": True, "duration": experiment.completed - experiment.started}
             return result
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             experiment.status = "failed"
             experiment.completed = time.time()
-            experiment.result = {"success": False, "error": str(exc), "duration": experiment.completed - experiment.started}
-            raise exc
+            experiment.result = {"success": False, "error": str(_e), "duration": experiment.completed - experiment.started}
+            raise _e
 
     def resilience_test(self, func: Callable[..., Any], iterations: int, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         results = []
@@ -99,8 +99,8 @@ class ChaosEngineer:
             try:
                 result = self.run_experiment(experiment.id, func, *args, **kwargs)
                 results.append({"status": "success", "result": result})
-            except Exception as exc:
-                results.append({"status": "failed", "error": str(exc)})
+            except Exception as _e:  # noqa: BLE001
+                results.append({"status": "failed", "error": str(_e)})
         passed = sum(1 for r in results if r["status"] == "success")
         return {"total": len(results), "passed": passed, "resilience": passed / max(len(results), 1), "results": results}
 

@@ -5,9 +5,9 @@ Notification system with channels, alerts, and subscriptions.
 from __future__ import annotations
 
 import threading
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List
 
 
 @dataclass
@@ -47,14 +47,14 @@ class NotificationSystem:
         for handler in handlers:
             try:
                 handler(notification)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
         for topic in topics:
             for target_handler in self._channels.get(topic, []):
                 if target_handler not in handlers:
                     try:
                         target_handler(notification)
-                    except Exception:
+                    except Exception as _e:  # noqa: BLE001
                         continue
 
     def list_channels(self) -> List[str]:

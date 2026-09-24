@@ -4,9 +4,7 @@ import numpy as np
 import pytest
 
 from security_audit.compliance_checking import (
-    AuditEntry,
     ComplianceChecker,
-    ComplianceResult,
     PolicyRule,
 )
 

@@ -1,5 +1,4 @@
-import pytest
-from final_system.scripting_engine import Script, ScriptingEngine, ScriptResult
+from final_system.scripting_engine import Script, ScriptingEngine
 
 
 def test_register_and_run():

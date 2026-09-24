@@ -125,7 +125,7 @@ class RegionalRouter:
             )
 
             chosen = candidates[0]
-            fallback = candidates[1] if len(candidates) > 1 else None
+            candidates[1] if len(candidates) > 1 else None
             return RoutingDecision(
                 cluster_id=chosen.cluster_id,
                 region=chosen.region,

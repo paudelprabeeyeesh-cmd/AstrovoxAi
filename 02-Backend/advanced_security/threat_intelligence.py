@@ -1,10 +1,9 @@
 import hashlib
 import hmac
 import json
-import os
 import random
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 
 class TLP:

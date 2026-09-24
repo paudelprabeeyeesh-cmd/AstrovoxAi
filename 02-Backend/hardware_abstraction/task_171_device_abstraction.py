@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional
 
 
 class DeviceType(str, Enum):
@@ -126,15 +125,14 @@ class TPUDevice(AbstractDevice):
 class DeviceManager:
     def __init__(self) -> None:
         self.devices: List[AbstractDevice] = []
+        self._device_by_id: Dict[str, AbstractDevice] = {}
 
     def register_device(self, device: AbstractDevice) -> None:
         self.devices.append(device)
+        self._device_by_id[device.device_id] = device
 
     def get_device(self, device_id: str) -> Optional[AbstractDevice]:
-        for device in self.devices:
-            if device.device_id == device_id:
-                return device
-        return None
+        return self._device_by_id.get(device_id)
 
     def get_devices_by_type(self, device_type: DeviceType) -> List[AbstractDevice]:
         return [d for d in self.devices if d.device_type == device_type]

@@ -32,7 +32,7 @@ class MemoryService:
                     decode_responses=True,
                 )
                 self._redis.exists("test")
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 self._redis = None
         return self._redis
 
@@ -79,8 +79,8 @@ class MemoryService:
                 input=value, model="text-embedding-3-small"
             )
             embedding = response.data[0].embedding
-        except Exception as e:
-            logger.error(f"Embedding generation failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Embedding generation failed: {_e}")
 
         memory_id = str(uuid.uuid4())
         with get_db() as conn:
@@ -115,7 +115,7 @@ class MemoryService:
                         }
                     ),
                 )
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass
 
         return {
@@ -183,8 +183,8 @@ class MemoryService:
                     }
                     for r in rows
                 ]
-        except Exception as e:
-            logger.error(f"pgvector search failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"pgvector search failed: {_e}")
             return self.search_memories(user_id, query, limit)
 
 

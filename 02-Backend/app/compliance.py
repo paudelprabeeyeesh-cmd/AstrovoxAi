@@ -1,5 +1,4 @@
 import uuid
-import json
 from datetime import datetime
 from .database import get_db
 
@@ -92,7 +91,7 @@ def export_user_data(user_id: str) -> dict:
                 else:
                     rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (user_id,)).fetchall()
                 data[table] = [dict(r) for r in rows]
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 data[table] = []
     def _serialize(obj):
         if isinstance(obj, dict):

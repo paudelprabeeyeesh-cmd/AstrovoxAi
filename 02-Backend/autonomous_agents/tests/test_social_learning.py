@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from ..social_learning import SocialLearning
 
 

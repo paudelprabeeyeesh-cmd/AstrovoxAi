@@ -10,5 +10,13 @@
   "02-Backend/tests/test_persistence_and_storage.py::test_storage_service_uploads_and_enforces_owner_paths",
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id",
   "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_blocks_excess_requests",
-  "tests/load_test.py::test_load_test_concurrency"
+  "tests/load_test.py::test_load_test_concurrency",
+  "tests/test_backup.py::test_backup_directory_creates_archive",
+  "tests/test_backup.py::test_backup_directory_missing_source",
+  "tests/test_backup.py::test_backup_file_creates_copy",
+  "tests/test_backup.py::test_backup_file_missing_source",
+  "tests/test_backup.py::test_backup_file_rejects_directories",
+  "tests/test_backup.py::test_restore_directory_extracts_archive",
+  "tests/test_backup.py::test_restore_file_copies_back",
+  "tests/test_backup.py::test_rotate_backups_removes_oldest"
 ]

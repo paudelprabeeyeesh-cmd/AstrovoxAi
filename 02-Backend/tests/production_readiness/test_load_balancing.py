@@ -1,4 +1,3 @@
-import pytest
 from production_readiness.load_balancing import (
     LoadBalancer,
     LoadBalancingStrategy,

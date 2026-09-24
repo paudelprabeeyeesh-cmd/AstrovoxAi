@@ -1,7 +1,6 @@
 
 import uuid
 import json
-import time
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from urllib.parse import urlencode
@@ -9,7 +8,6 @@ from urllib.parse import urlencode
 import httpx
 from .database import get_db
 from .auth import hash_password
-from .audit import log_action
 
 
 class SSOProviderType:
@@ -143,7 +141,7 @@ class SSOService:
                         "INSERT INTO users (id, email, password_hash, email_verified, role, plan) VALUES (?, ?, ?, ?, ?, ?)",
                         (user_id, email, password_hash, 1, "user", "enterprise"),
                     )
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     row2 = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
                     if row2:
                         user_id = row2["id"]

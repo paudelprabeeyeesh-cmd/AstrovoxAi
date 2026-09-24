@@ -5,7 +5,7 @@ Memory controls API.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
@@ -65,8 +65,8 @@ async def add_memory(request: MemoryCreateRequest):
         else:
             context_manager.add_memory(request.user_id, ContextChunk(text=request.content, token_count=len(request.content.split()), importance=0.5, metadata=request.metadata))
         return {"status": "OK", "memory_type": request.memory_type}
-    except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    except Exception as _e:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(_e)) from None
 
 
 @router.post("/search")
@@ -75,8 +75,8 @@ async def search_memory(request: MemorySearchRequest):
         import asyncio
         matches = asyncio.run(memory_manager.retrieve_relevant_memory(query=request.query, user_id=int(request.user_id), limit=request.limit))
         return {"status": "OK", "results": matches}
-    except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    except Exception as _e:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(_e)) from None
 
 
 @router.get("/summary/{user_id}")
@@ -84,5 +84,5 @@ async def get_memory_summary(user_id: str):
     try:
         summary = memory_manager.get_memory_summary(int(user_id))
         return {"status": "OK", "summary": summary}
-    except Exception as exc:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    except Exception as _e:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(_e)) from None

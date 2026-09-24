@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Sequence
+from typing import Callable, Sequence
 
-from injection_defense.canary_tokens import CanaryRegistry, check_canary, create_canary
-from injection_defense.heuristic_detection import detect_injection, is_injection
+from injection_defense.canary_tokens import CanaryRegistry, check_canary
+from injection_defense.heuristic_detection import is_injection
 from injection_defense.model_detection import InjectionClassifier
 from injection_defense.privilege_separation import (
     PrivilegedContent,
     TrustLevel,
     build_framed_prompt,
     enforce_boundary,
-    validate_trust_level,
 )
 from injection_defense.role_reassertion import (
     ReAssertionConfig,
@@ -74,7 +73,7 @@ class DefenseInDepth:
 
     def register_layer(self, layer: DefenseLayer) -> None:
         self._layers.append(layer)
-        self._layers.sort(key=lambda l: l.priority)
+        self._layers.sort(key=lambda layer: layer.priority)
 
     def analyze(self, text: str) -> DefenseResult:
         layers_triggered: list[str] = []

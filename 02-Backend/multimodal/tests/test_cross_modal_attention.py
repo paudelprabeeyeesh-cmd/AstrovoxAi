@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from multimodal.cross_modal_attention import (
     CrossModalAttention,

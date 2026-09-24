@@ -178,9 +178,9 @@ class ReliabilitySafeguards:
                     "operation": operation_name,
                 }
             
-            except Exception as e:
-                last_error = str(e)
-                error_message = str(e)
+            except Exception as _e:  # noqa: BLE001
+                last_error = str(_e)
+                error_message = str(_e)
                 
                 # Log the failure
                 self._log_failure(

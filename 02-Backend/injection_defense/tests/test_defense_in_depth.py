@@ -1,6 +1,5 @@
 """Tests for Task 114: Defense in Depth."""
 
-import time
 
 import numpy as np
 import pytest
@@ -11,13 +10,7 @@ from injection_defense.defense_in_depth import (
     DefenseResult,
 )
 from injection_defense.privilege_separation import (
-    PrivilegedContent,
     TrustLevel,
-    build_framed_prompt,
-)
-from injection_defense.role_reassertion import (
-    ConversationBuffer,
-    ReAssertionConfig,
 )
 
 
@@ -34,7 +27,6 @@ class TestDefenseLayer:
         assert layer.priority == 1
 
     def test_layer_disabled(self):
-        triggered = False
 
         def check(_text):
             return True
@@ -86,10 +78,10 @@ class TestDefenseInDepth:
     def test_register_custom_layer(self, defense):
         layer = DefenseLayer(name="custom_layer", priority=5)
         defense.register_layer(layer)
-        assert any(l.name == "custom_layer" for l in defense._layers)
+        assert any(layer.name == "custom_layer" for layer in defense._layers)
 
     def test_layers_sorted_by_priority(self, defense):
-        assert defense._layers == sorted(defense._layers, key=lambda l: l.priority)
+        assert defense._layers == sorted(defense._layers, key=lambda layer: layer.priority)
 
     def test_clean_text_safe(self, defense):
         result = defense.analyze("What is the weather today?")

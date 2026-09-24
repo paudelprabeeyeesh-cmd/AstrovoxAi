@@ -1,13 +1,9 @@
 import logging
 import uuid
-import json
-from datetime import datetime, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth import require_verified_email
-from ..database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +24,7 @@ async def allocate_kv_cache(req: dict, user_id: str = Depends(require_verified_e
     total_pages_needed = num_pages
     used_memory = 0
     page_size_bytes = 512 * 1024
-    total_memory_needed = total_pages_needed * page_size_bytes
+    total_pages_needed * page_size_bytes
     for i in range(num_pages):
         page_id = str(uuid.uuid4())
         page_table[i] = {
@@ -70,7 +66,7 @@ async def continuous_batch_schedule(req: dict, user_id: str = Depends(require_ve
 async def continuous_batching(req: dict, user_id: str = Depends(require_verified_email)):
     batch_size = req.get("batch_size", 32)
     max_seq_len = req.get("max_seq_len", 4096)
-    num_layers = req.get("num_layers", 32)
+    req.get("num_layers", 32)
     num_heads = req.get("num_heads", 32)
     hidden_size = req.get("hidden_size", 4096)
     kv_cache_per_token = 4 * num_heads * hidden_size // num_heads

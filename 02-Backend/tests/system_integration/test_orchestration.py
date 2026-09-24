@@ -1,16 +1,13 @@
-import pytest
 from system_integration.orchestration import (
     DAG,
     DAGExecutor,
     Task,
-    TaskResult,
     TaskStatus,
     WorkflowEngine,
 )
 
 
 def test_dag_topological_sort():
-    results = []
     def job(name): return name
     dag = DAG(tasks=[
         Task(name="a", fn=job, deps=[]),

@@ -6,7 +6,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Sequence
 
-import numpy as np
 
 
 @dataclass

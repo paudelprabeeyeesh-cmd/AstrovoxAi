@@ -1,8 +1,6 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
@@ -25,9 +23,9 @@ async def voice_speak_endpoint(text: str, voice: str = "default", user_id: str =
             )
             conn.commit()
         return {"id": speech_id, "text": text[:200], "voice": voice, "status": "generated"}
-    except Exception as e:
-        logger.error(f"Voice synthesis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Voice synthesis failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.post("/voice/transcribe")
@@ -42,6 +40,6 @@ async def voice_transcribe_endpoint(file: UploadFile = File(...), user_id: str =
             )
             conn.commit()
         return {"id": transcript_id, "filename": file.filename, "transcript": "[transcript placeholder]"}
-    except Exception as e:
-        logger.error(f"Voice transcription failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Voice transcription failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None

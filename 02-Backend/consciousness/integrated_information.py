@@ -1,5 +1,6 @@
 import itertools
 import numpy as np
+from typing import Dict, Optional
 
 
 def _info(system: np.ndarray, partition: np.ndarray) -> float:

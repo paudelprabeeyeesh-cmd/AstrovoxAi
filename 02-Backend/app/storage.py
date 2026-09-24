@@ -115,11 +115,11 @@ async def upload_storage_file(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
         ) from exc
-    except Exception as exc:  # pragma: no cover - defensive path
+    except Exception as _e:  # noqa: BLE001
         logger.exception("Storage upload failed")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
-        ) from exc
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(_e)
+        ) from _e
 
 
 @router.delete("/{bucket}/{path:path}")

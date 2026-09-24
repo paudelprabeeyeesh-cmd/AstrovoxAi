@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional
 
-import pytest
 
 from reasoning_scaffolds.program_aided import CodeProgram, program_aided
 

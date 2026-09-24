@@ -5,7 +5,6 @@ import pytest
 from advanced_backend.fault_tolerance import (
     Bulkhead,
     CircuitBreaker,
-    TimeoutPolicy,
 )
 
 

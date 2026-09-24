@@ -16,7 +16,7 @@ class LearnedOptimizer:
     def _update(self, params, grads, lr=1e-3):
         self.t += 1
         x = np.concatenate([p.flatten() for p in params])
-        g = np.concatenate([gr.flatten() for gr in grads])
+        np.concatenate([gr.flatten() for gr in grads])
         h1 = np.maximum(0, x @ self.w1 + self.b1)
         update = h1 @ self.w2 + self.b2
         for i, (p, gr) in enumerate(zip(params, grads)):
@@ -43,7 +43,7 @@ class SimpleLSTMOptimizer:
 
     def step(self, params, grads):
         x = np.concatenate([p.flatten() for p in params])
-        g = np.concatenate([gr.flatten() for gr in grads])
+        np.concatenate([gr.flatten() for gr in grads])
         combined = np.concatenate([x, self.h])
         f = 1 / (1 + np.exp(-(combined @ self.wf)))
         i = 1 / (1 + np.exp(-(combined @ self.wi)))

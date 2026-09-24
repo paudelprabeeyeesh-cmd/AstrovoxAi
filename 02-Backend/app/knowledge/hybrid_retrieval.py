@@ -12,9 +12,9 @@ Combines multiple retrieval methods:
 This gives better results for technical and factual questions.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class RetrievalMethod(Enum):

@@ -1,6 +1,5 @@
 
-import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 
 class PlanOptimizer:

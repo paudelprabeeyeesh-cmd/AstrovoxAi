@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.common_sense import CommonSenseEngine
 
 
@@ -17,7 +15,7 @@ class TestCommonSenseEngine:
 
     def test_register_default(self):
         engine = CommonSenseEngine()
-        da = engine.register_default("weather", "sunny", 0.8)
+        engine.register_default("weather", "sunny", 0.8)
         assert engine.apply_default("weather") == "sunny"
 
     def test_detect_exception(self):

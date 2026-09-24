@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from ..audio_codec_encoder import AudioCodecEncoder, mel_spectrogram_to_log, vector_quantize
+from ..audio_codec_encoder import AudioCodecEncoder, mel_spectrogram_to_log
 
 
 class TestAudioCodecEncoder:

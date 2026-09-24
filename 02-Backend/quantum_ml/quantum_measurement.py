@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Dict
+from typing import Dict
 from .quantum_circuits import QuantumCircuit
 
 

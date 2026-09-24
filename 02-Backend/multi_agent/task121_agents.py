@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 
 class SubTask:
@@ -51,8 +51,8 @@ class MainAgent:
             task.result = agent.execute(task)
             agent.completed_tasks.append(task.name)
             return task.result
-        except Exception as exc:
-            task.error = str(exc)
+        except Exception as _e:  # noqa: BLE001
+            task.error = str(_e)
             raise
 
     def delegate_batch(self, tasks: List[SubTask]) -> List[Any]:
@@ -60,6 +60,6 @@ class MainAgent:
         for task in tasks:
             try:
                 results.append(self.delegate(task))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 results.append(None)
         return results

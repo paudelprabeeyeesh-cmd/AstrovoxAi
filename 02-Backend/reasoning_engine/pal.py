@@ -1,5 +1,4 @@
 from typing import Any, Callable, Optional
-import numpy as np
 
 
 class SandboxExecutor:
@@ -11,8 +10,8 @@ class SandboxExecutor:
         local_vars = {}
         try:
             exec(code, allowed_names, local_vars)
-        except Exception as e:
-            return {"error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"error": str(_e)}
         result = local_vars.get("result")
         if result is None and "print" not in code:
             return local_vars
@@ -26,9 +25,9 @@ class SandboxExecutor:
             result = self.execute(code, inputs)
             trace["result"] = result
             trace["error"] = None
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             trace["result"] = None
-            trace["error"] = str(e)
+            trace["error"] = str(_e)
         return trace
 
 

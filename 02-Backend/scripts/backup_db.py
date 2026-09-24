@@ -59,8 +59,8 @@ def backup_postgres(dry_run: bool = False) -> str:
         size = os.path.getsize(backup_file)
         logger.info(f"PostgreSQL backup created at {backup_file} (size: {size} bytes, timestamp: {timestamp})")
         return backup_file
-    except Exception as e:
-        logger.error(f"PostgreSQL backup failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"PostgreSQL backup failed: {_e}")
         if os.path.exists(backup_file):
             os.remove(backup_file)
         raise
@@ -74,8 +74,8 @@ def main():
     try:
         backup_postgres(dry_run=args.dry_run)
         sys.exit(0)
-    except Exception as e:
-        logger.error(f"Backup failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Backup failed: {_e}")
         sys.exit(1)
 
 

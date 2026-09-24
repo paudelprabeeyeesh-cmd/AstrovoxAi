@@ -13,14 +13,12 @@ class PreImageValidator:
         old_lines = old_text.splitlines()
         file_lines = current_file.splitlines()
         max_match_ratio = 0.0
-        best_start = 0
         for i in range(len(file_lines) - len(old_lines) + 1):
             window = file_lines[i : i + len(old_lines)]
             matches = sum(1 for a, b in zip(old_lines, window) if a == b)
             ratio = matches / max(len(old_lines), 1)
             if ratio > max_match_ratio:
                 max_match_ratio = ratio
-                best_start = i
         return max_match_ratio >= threshold
 
     @staticmethod

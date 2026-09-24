@@ -25,7 +25,7 @@ def test_policy_context() -> None:
 
 
 def test_splunk_integration() -> None:
-    orchestrator = SecurityOrchestrator()
+    SecurityOrchestrator()
     integrator = SplunkIntegration()
     incidents = [{"id": "i1"}]
     results = integrator.transform(incidents)

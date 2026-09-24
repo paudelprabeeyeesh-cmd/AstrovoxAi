@@ -1,6 +1,5 @@
 
 from retrieval.cross_encoder_reranking import CrossEncoderReranker, Document
-import numpy as np
 
 
 def test_reranker_empty():

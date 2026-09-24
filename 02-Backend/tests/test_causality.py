@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from causality.causal_engine import CausalEngine, CausalNode, CausalEdge
 
 

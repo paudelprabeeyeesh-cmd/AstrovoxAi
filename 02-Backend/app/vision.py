@@ -1,11 +1,9 @@
 import os
 import openai
-import re
 import requests
 from PIL import Image
 import pytesseract
 import io
-from typing import Optional
 
 
 class VisionService:

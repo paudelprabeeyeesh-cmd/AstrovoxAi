@@ -1,5 +1,5 @@
 
-from datetime import datetime, timezone
+from datetime import datetime
 from .reporter import ComplianceReporter
 from .collector import EvidenceCollector
 

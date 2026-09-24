@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from reasoning_engine.self_consistency import SelfConsistency
 
 

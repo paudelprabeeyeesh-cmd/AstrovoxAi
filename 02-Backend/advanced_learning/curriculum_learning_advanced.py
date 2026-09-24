@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -47,7 +47,7 @@ class AdvancedCurriculumLearner:
             return np.mean((logits - y) ** 2, axis=1)
         elif self.config.difficulty_metric == "gradient_norm":
             logits = self._forward(x, self.params)
-            loss = np.mean((logits - y) ** 2)
+            np.mean((logits - y) ** 2)
             grad = 2.0 * (logits - y) / x.shape[0]
             h = self._relu(x @ self.params['W1'] + self.params['b1'])
             dh = grad @ self.params['W2'].T * self._relu_grad(h)

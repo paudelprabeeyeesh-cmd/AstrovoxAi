@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from agi_safety.impact_regularization import ImpactRegularizer, ImpactPenalty
 
 

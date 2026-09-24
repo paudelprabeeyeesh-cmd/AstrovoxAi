@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from emergent_abilities.code_generation import CodeEmergenceModel, ProgramSynthesisAnalyzer, CodeGenerationResult
 
 
@@ -29,7 +28,7 @@ class TestCodeEmergenceModel:
         model = CodeEmergenceModel(vocab_size=256, hidden_dim=16, max_length=16)
         code = "print(1)"
         tokens = model.tokenize(code)
-        reconstructed = model.detokenize(tokens)
+        model.detokenize(tokens)
         assert len(tokens) == len(code)
 
     def test_empty_prompt(self):

@@ -1,4 +1,3 @@
-import math
 from advanced_security.adversarial_defense import (
     AdversarialDefense,
     AdversarialTrainer,

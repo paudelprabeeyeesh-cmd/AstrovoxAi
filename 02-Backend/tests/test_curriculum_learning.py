@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.curriculum_learning import CurriculumScheduler, CurriculumConfig, KnowledgeDistiller
 
 
@@ -13,7 +12,7 @@ class TestCurriculumScheduler:
     def test_step_linear(self):
         cs = CurriculumScheduler(CurriculumConfig(start_difficulty=0.0, end_difficulty=1.0, warmup_epochs=2))
         for _ in range(5):
-            d = cs.step()
+            cs.step()
         assert cs.current_difficulty > 0.0
         assert len(cs.difficulty_history) == 5
 

@@ -22,7 +22,7 @@ class CacheManager:
             import redis
             self._redis = redis.from_url(REDIS_URL, decode_responses=True)
             self._redis.ping()
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             self._redis = None
 
     @property
@@ -36,7 +36,7 @@ class CacheManager:
                 data = self._redis.get(key)
                 return json.loads(data) if data else None
             return None
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return None
 
     async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
@@ -46,7 +46,7 @@ class CacheManager:
                 self._redis.setex(key, ttl, json.dumps(value, default=str))
                 return True
             return False
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     async def delete(self, key: str) -> bool:
@@ -56,7 +56,7 @@ class CacheManager:
                 self._redis.delete(key)
                 return True
             return False
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     async def increment(self, key: str, amount: int = 1) -> int:
@@ -65,7 +65,7 @@ class CacheManager:
             if self._redis:
                 return self._redis.incrby(key, amount)
             return 0
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return 0
 
     async def expire(self, key: str, ttl: int) -> bool:
@@ -74,7 +74,7 @@ class CacheManager:
             if self._redis:
                 return self._redis.expire(key, ttl)
             return False
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
 

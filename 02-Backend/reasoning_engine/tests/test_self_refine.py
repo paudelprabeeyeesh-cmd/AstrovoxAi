@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from reasoning_engine.self_refine import SelfRefine
 
 
@@ -78,7 +76,7 @@ def test_self_refine_early_stop():
         max_iterations=10,
         improvement_threshold=100.0,
     )
-    result = pipeline.run("task")
+    pipeline.run("task")
     assert len(iterations) == 1
 
 

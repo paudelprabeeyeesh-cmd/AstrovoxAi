@@ -10,7 +10,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 
 class HealthState(Enum):
@@ -97,7 +97,7 @@ class SystemMonitor:
             ok = False
             try:
                 ok = check.check()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 ok = False
             if ok:
                 check.consecutive_failures = 0
@@ -109,7 +109,7 @@ class SystemMonitor:
                     for handler in self._alerts:
                         try:
                             handler(check.name, "CRITICAL")
-                        except Exception:
+                        except Exception as _e:  # noqa: BLE001
                             continue
                 else:
                     check.last_status = HealthState.WARNING

@@ -5,9 +5,9 @@ Web search integration for real-time information retrieval.
 from __future__ import annotations
 
 import logging
-import time
+import os
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import httpx
 
@@ -55,9 +55,9 @@ class WebSearchEngine:
             for item in data.get("items", []):
                 results.append(SearchResult(title=item.get("title", ""), url=item.get("link", ""), snippet=item.get("snippet", ""), score=item.get("score", 0.0), source="google"))
             return results
-        except Exception as e:
-            logger.error(f"Web search failed: {e}")
-            return [SearchResult(title="Search error", url="", snippet=str(e), score=0.0, source="error")]
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Web search failed: {_e}")
+            return [SearchResult(title="Search error", url="", snippet=str(_e), score=0.0, source="error")]
 
     def search_and_format(self, query: str, max_results: int = 5) -> str:
         """Search and format results as text."""

@@ -1,5 +1,4 @@
 import hashlib
-from typing import Any
 
 import numpy as np
 

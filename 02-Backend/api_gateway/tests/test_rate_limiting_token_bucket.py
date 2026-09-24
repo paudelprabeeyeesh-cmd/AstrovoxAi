@@ -69,7 +69,7 @@ class TestTokenBucketRateLimiter:
             try:
                 for _ in range(20):
                     results.append(limiter.check("shared"))
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 errors.append(e)
 
         threads = [threading.Thread(target=worker) for _ in range(10)]

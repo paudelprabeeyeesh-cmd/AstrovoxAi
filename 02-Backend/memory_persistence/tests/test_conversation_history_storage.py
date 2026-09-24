@@ -3,9 +3,7 @@ from __future__ import annotations
 import pytest
 
 from memory_persistence.conversation_history_storage import (
-    Conversation,
     ConversationHistoryStorage,
-    Message,
 )
 
 
@@ -49,7 +47,7 @@ def test_soft_delete_message(storage):
 
 def test_get_user_conversations(storage):
     c1 = storage.create_conversation(user_id="u1", title="A")
-    c2 = storage.create_conversation(user_id="u2", title="B")
+    storage.create_conversation(user_id="u2", title="B")
     c3 = storage.create_conversation(user_id="u1", title="C")
     convs = storage.get_user_conversations("u1")
     assert len(convs) == 2

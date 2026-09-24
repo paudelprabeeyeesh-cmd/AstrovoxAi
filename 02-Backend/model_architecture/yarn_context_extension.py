@@ -1,5 +1,4 @@
 import numpy as np
-from .rotary_position_embedding import RoPE
 
 
 class YaRNContextExtension:
@@ -11,7 +10,7 @@ class YaRNContextExtension:
         self.head_dim = d_model // num_heads
 
         self.scale = (extended_max_seq_len / original_max_seq_len) ** (1.0 / self.alpha)
-        scaled_dim = self.head_dim / self.scale
+        self.head_dim / self.scale
 
         theta = base ** (-np.arange(0, self.head_dim, 2) / self.scale)
         positions = np.arange(extended_max_seq_len)

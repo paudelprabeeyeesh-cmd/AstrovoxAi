@@ -1,6 +1,4 @@
 
-import pytest
-import numpy as np
 
 from inference_engine.continuous_batching import (
     ContinuousBatchScheduler, ScheduledRequest

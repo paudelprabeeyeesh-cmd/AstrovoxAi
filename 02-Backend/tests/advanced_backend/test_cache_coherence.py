@@ -1,5 +1,4 @@
 import time
-import pytest
 from advanced_backend.cache_coherence import ConsistencyProtocol
 
 

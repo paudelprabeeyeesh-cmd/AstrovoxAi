@@ -1,6 +1,4 @@
 import logging
-from .supabase_client import get_supabase
-from database.database import get_db
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()
@@ -12,8 +10,8 @@ async def get_user_profile(user_id: str):
     try:
         response = supabase.table("profiles").select("*").eq("id", user_id).execute()
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error fetching user profile: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching user profile: {_e}")
         return None
 
 
@@ -36,8 +34,8 @@ async def create_user_profile(
         )
         logger.info(f"Created user profile for {user_id}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error creating user profile: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error creating user profile: {_e}")
         return None
 
 
@@ -47,8 +45,8 @@ async def update_user_profile(user_id: str, **kwargs):
         response = supabase.table("profiles").update(kwargs).eq("id", user_id).execute()
         logger.info(f"Updated user profile for {user_id}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error updating user profile: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error updating user profile: {_e}")
         return None
 
 
@@ -69,8 +67,8 @@ async def create_conversation(user_id: str, title: str = None, model: str = "gpt
         )
         logger.info(f"Created conversation for user {user_id}: {title}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error creating conversation: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error creating conversation: {_e}")
         return None
 
 
@@ -88,8 +86,8 @@ async def get_conversations(user_id: str, limit: int = 50, offset: int = 0):
         )
         logger.debug(f"Fetched {len(response.data)} conversations for user {user_id}")
         return response.data
-    except Exception as e:
-        logger.error(f"Error fetching conversations: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching conversations: {_e}")
         return []
 
 
@@ -101,8 +99,8 @@ async def get_conversation(conversation_id: int, user_id: str = None):
             query = query.eq("user_id", user_id)
         response = query.execute()
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error fetching conversation: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching conversation: {_e}")
         return None
 
 
@@ -117,8 +115,8 @@ async def update_conversation(conversation_id: int, **kwargs):
         )
         logger.debug(f"Updated conversation {conversation_id}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error updating conversation: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error updating conversation: {_e}")
         return None
 
 
@@ -130,8 +128,8 @@ async def delete_conversation(conversation_id: int):
         ).execute()
         logger.info(f"Deleted conversation {conversation_id}")
         return True
-    except Exception as e:
-        logger.error(f"Error deleting conversation: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error deleting conversation: {_e}")
         return False
 
 
@@ -162,8 +160,8 @@ async def create_message(
         )
         logger.debug(f"Created {role} message in conversation {conversation_id}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error creating message: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error creating message: {_e}")
         return None
 
 
@@ -182,8 +180,8 @@ async def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
             f"Fetched {len(response.data)} messages from conversation {conversation_id}"
         )
         return response.data
-    except Exception as e:
-        logger.error(f"Error fetching messages: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching messages: {_e}")
         return []
 
 
@@ -202,8 +200,8 @@ async def get_recent_messages(conversation_id: int, limit: int = 10):
             f"Fetched {len(response.data)} recent messages from conversation {conversation_id}"
         )
         return response.data
-    except Exception as e:
-        logger.error(f"Error fetching recent messages: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching recent messages: {_e}")
         return []
 
 
@@ -218,8 +216,8 @@ async def save_memory(user_id: str, content: str, importance: int = 1):
         )
         logger.info(f"Saved memory for user {user_id} with importance {importance}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error saving memory: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error saving memory: {_e}")
         return None
 
 
@@ -237,8 +235,8 @@ async def get_user_memory(user_id: str, limit: int = 50):
         )
         logger.debug(f"Fetched {len(response.data)} memory entries for user {user_id}")
         return response.data
-    except Exception as e:
-        logger.error(f"Error fetching memory: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching memory: {_e}")
         return []
 
 
@@ -250,8 +248,8 @@ async def get_user_settings(user_id: str):
             supabase.table("user_settings").select("*").eq("user_id", user_id).execute()
         )
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error fetching settings: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error fetching settings: {_e}")
         return None
 
 
@@ -266,6 +264,6 @@ async def update_user_settings(user_id: str, **kwargs):
         )
         logger.info(f"Updated user settings for {user_id}")
         return response.data[0] if response.data else None
-    except Exception as e:
-        logger.error(f"Error updating settings: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Error updating settings: {_e}")
         return None

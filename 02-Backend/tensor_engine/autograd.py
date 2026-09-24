@@ -1,5 +1,4 @@
 import numpy as np
-from collections import deque
 
 
 class Tensor:
@@ -54,7 +53,7 @@ class Tensor:
                     if inp is not None and inp.requires_grad and g is not None:
                         if inp.grad is None:
                             inp.grad = np.zeros_like(inp.data, dtype=np.float64)
-                        inp.grad = inp.grad + g
+                        inp.grad += g
 
     def __add__(self, other):
         other = _to_tensor(other)
@@ -431,7 +430,7 @@ class Softmax(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        a = ctx.inputs[0]
+        ctx.inputs[0]
         dim = ctx.dim
         s = ctx.output
         return (grad_output - np.sum(grad_output * s, axis=dim, keepdims=True)) * s,
@@ -467,7 +466,7 @@ class LayerNorm(Function):
         ndim = len(a.shape)
         axis = tuple(range(ndim - len(normalized_shape), ndim))
         
-        n = np.prod([a.shape[d] for d in axis])
+        np.prod([a.shape[d] for d in axis])
         
         grad = inv_std * (grad_output - np.mean(grad_output, axis=axis, keepdims=True) - 
                          (a - mean) * inv_std ** 2 * np.mean(grad_output * (a - mean), axis=axis, keepdims=True))
@@ -498,7 +497,7 @@ class RMSNorm(Function):
         ndim = len(a.shape)
         axis = tuple(range(ndim - len(normalized_shape), ndim))
         
-        n = np.prod([a.shape[d] for d in axis])
+        np.prod([a.shape[d] for d in axis])
         
         grad = (rms * grad_output - a * np.mean(grad_output * a, axis=axis, keepdims=True) / (rms ** 2)) / (rms ** 2)
         return grad,

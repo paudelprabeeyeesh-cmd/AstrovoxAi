@@ -6,7 +6,7 @@ import json
 import threading
 import secrets
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Set
+from typing import Optional, Dict, Set
 from enum import Enum
 
 

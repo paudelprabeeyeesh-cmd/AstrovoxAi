@@ -49,8 +49,8 @@ class InferenceQueue:
             self._redis.expire(f"{self._job_prefix}:{job_id}", 3600)
             logger.debug("Enqueued job %s with priority %s", job_id, priority)
             return job_id
-        except Exception as exc:
-            logger.error("Failed to enqueue job: %s", exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Failed to enqueue job: %s", _e)
             raise
 
     def dequeue_job(self, consumer_name: str = "worker-1", timeout_ms: int = 5000) -> dict | None:

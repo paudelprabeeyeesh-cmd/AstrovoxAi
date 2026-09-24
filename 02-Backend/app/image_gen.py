@@ -2,7 +2,6 @@ import os
 import io
 import openai
 import requests
-from typing import Optional
 
 
 class ImageGenerator:

@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Any
 
 from app.config import settings
 
@@ -64,7 +63,7 @@ class SelfImprovingPromptOptimizer:
                 max_tokens=512,
             )
             improved = result.choices[0].message.content or template
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Prompt optimization failed: %s", exc)
             improved = template
         return self.register(f"{prompt_id}:optimized:{len(self.variants.get(prompt_id, []))}", improved)

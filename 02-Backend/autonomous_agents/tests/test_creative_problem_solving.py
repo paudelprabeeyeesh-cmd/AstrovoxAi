@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from ..creative_problem_solving import CreativeProblemSolving
 
 

@@ -1,4 +1,3 @@
-import json
 import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
@@ -31,7 +30,7 @@ class EventStream:
             for handler in list(self._subscribers.get(event.topic, [])):
                 try:
                     handler(event)
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     pass
 
     def subscribe(self, topic: str, handler: Callable[[Event], None]) -> None:

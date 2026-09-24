@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from reasoning_engine.graph_of_thoughts import GraphOfThoughts, ThoughtNode
 
 

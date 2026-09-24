@@ -1,10 +1,8 @@
 import pytest
-import numpy as np
 from agentic_loop.parallel_tool_execution import (
     ParallelToolExecutor,
     DependencyGraph,
     ToolCall,
-    ToolResult,
 )
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 from typing import List, Optional, Dict, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

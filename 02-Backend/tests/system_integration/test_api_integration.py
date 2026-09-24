@@ -2,11 +2,9 @@ import time
 import pytest
 from system_integration.api_integration import (
     APIGateway,
-    APIClient,
     APIProvider,
     CircuitBreaker,
     CircuitState,
-    ProviderStatus,
     Request,
     Response,
 )
@@ -75,7 +73,7 @@ def test_gateway_circuit_open_raises():
     for _ in range(2):
         try:
             gateway.request("p", req)
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
     with pytest.raises(Exception):
         gateway.request("p", req)

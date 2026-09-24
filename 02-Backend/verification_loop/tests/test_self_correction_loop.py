@@ -1,7 +1,5 @@
-import numpy as np
 from verification_loop.self_correction_loop import (
     CorrectionConfig,
-    CorrectionResult,
     SelfCorrectionLoop,
 )
 

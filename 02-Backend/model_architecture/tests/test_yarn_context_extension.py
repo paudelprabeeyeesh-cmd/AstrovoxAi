@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..yarn_context_extension import YaRNContextExtension
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_learning.lifelong_learning_advanced import AdvancedLifelongLearner, LifelongConfig
 
 

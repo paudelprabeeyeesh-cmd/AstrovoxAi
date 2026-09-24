@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from security_audit.security_monitoring import (
-    Alert,
     AlertRule,
     SecurityEvent,
     SecurityMonitor,

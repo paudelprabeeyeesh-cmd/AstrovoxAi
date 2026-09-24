@@ -1,5 +1,3 @@
-import time
-import pytest
 from production_readiness.session_management import SessionStore, SessionManager
 
 
@@ -35,7 +33,7 @@ def test_session_destroy():
 
 def test_session_cleanup():
     manager = SessionManager()
-    session = manager.create_session("user-1")
+    manager.create_session("user-1")
     removed = manager.cleanup(0.1)
     assert removed == 0
 
@@ -49,7 +47,7 @@ def test_session_count():
 
 def test_session_sticky():
     manager = SessionManager()
-    session = manager.create_session("user-1", sticky=True)
+    manager.create_session("user-1", sticky=True)
     sticky = manager.sticky_sessions()
     assert sticky[0].sticky is True
 

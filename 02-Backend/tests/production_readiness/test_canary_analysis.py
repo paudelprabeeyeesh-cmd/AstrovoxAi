@@ -1,5 +1,4 @@
-import pytest
-from production_readiness.canary_analysis import CanaryAnalysis, CanaryRegistry, CanaryDeployment
+from production_readiness.canary_analysis import CanaryAnalysis
 
 
 def test_canary_deploy():

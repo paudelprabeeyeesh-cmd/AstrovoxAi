@@ -231,8 +231,8 @@ class TestProjectsThreadSafety:
             try:
                 for i in range(10):
                     project_store.add_file(p.id, f"f{i}.py", "")
-            except Exception as e:
-                errors.append(e)
+            except Exception as _e:  # noqa: BLE001
+                errors.append(_e)
 
         threads = [threading.Thread(target=adder) for _ in range(4)]
         for t in threads:

@@ -1,6 +1,6 @@
 import ast
 import json
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict
 from dataclasses import dataclass
 
 
@@ -23,7 +23,7 @@ class ProgrammaticToolCaller:
         try:
             data = json.loads(response)
             return CodeCall(code=data.get("code", ""), tool_name=data.get("tool_name", ""), arguments=data.get("arguments", {}))
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return CodeCall(code="", tool_name="", arguments={})
 
     def execute_call(self, call: CodeCall) -> Any:
@@ -32,5 +32,5 @@ class ProgrammaticToolCaller:
         try:
             ast.parse(call.code)
         except SyntaxError as e:
-            raise ValueError(f"Syntax error in generated code: {e}")
+            raise ValueError(f"Syntax error in generated code: {e}") from None
         return self.tools[call.tool_name](**call.arguments)

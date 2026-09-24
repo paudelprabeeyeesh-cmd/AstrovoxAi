@@ -1,9 +1,8 @@
 
-import pytest
 import numpy as np
 
 from inference_engine.chunked_prefill import (
-    ChunkedPrefill, Chunk, ChunkConfig
+    ChunkedPrefill
 )
 
 

@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from complex_reasoning.deductive_reasoning import Literal, Clause, KnowledgeBase, DeductiveEngine
 
 

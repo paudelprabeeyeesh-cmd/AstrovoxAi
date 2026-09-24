@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Generator, List, Optional, Tuple
+from typing import Generator, List, Optional
 from dataclasses import dataclass
 
 

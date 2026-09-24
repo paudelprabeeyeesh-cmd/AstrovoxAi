@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..goal_management import GoalManagement, Goal
 
 
@@ -33,7 +32,7 @@ class TestGoalManagement:
 
     def test_get_next_goal(self):
         gm = GoalManagement()
-        low = gm.create_goal("low", priority=0.1)
+        gm.create_goal("low", priority=0.1)
         high = gm.create_goal("high", priority=0.9)
         next_goal = gm.get_next_goal()
         assert next_goal.id == high.id

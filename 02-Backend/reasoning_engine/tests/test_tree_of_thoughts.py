@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 from reasoning_engine.tree_of_thoughts import ToTSearch, ThoughtState
 

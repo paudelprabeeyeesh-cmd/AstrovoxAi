@@ -1,11 +1,8 @@
 import hashlib
-import heapq
-import json
 import random
 import threading
 import time
-import zlib
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
@@ -113,7 +110,7 @@ class DistributedExecutor:
                     self._processing.pop(task.task_id, None)
             except IndexError:
                 time.sleep(0.01)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 time.sleep(0.01)
 
     def metrics(self) -> Dict[str, Any]:

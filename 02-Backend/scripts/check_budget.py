@@ -2,7 +2,6 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.metrics import get_daily_cost
-from app.subscriptions import get_plan_limits
 
 DAILY_BUDGET_USD = float(os.getenv("DAILY_BUDGET_USD", "10.0"))
 

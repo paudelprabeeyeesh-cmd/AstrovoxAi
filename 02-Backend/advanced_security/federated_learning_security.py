@@ -1,9 +1,7 @@
 import hashlib
 import hmac
 import json
-import math
 import os
-import struct
 from typing import Any, Dict, List, Optional, Tuple
 
 

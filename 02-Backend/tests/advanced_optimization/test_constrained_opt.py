@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.constrained_opt import (
     projected_gradient_descent,
     penalty_method,

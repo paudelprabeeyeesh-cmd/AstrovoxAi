@@ -5,7 +5,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, TypeVar
+from typing import Any, Callable, Dict, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -144,9 +144,9 @@ class GracefulDegradation:
             result = func(*args, **kwargs)
             breaker.record_success()
             return result
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             breaker.record_failure()
-            raise exc
+            raise _e
 
     def status(self) -> Dict[str, Any]:
         return {name: breaker.to_dict() for name, breaker in self.breakers.all().items()}

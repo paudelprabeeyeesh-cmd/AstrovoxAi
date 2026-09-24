@@ -1,10 +1,8 @@
 """Tests for Task 113: Model-Based Injection Detection."""
 
 import numpy as np
-import pytest
 
 from injection_defense.model_detection import (
-    FeatureVector,
     InjectionClassifier,
     _character_entropy,
     _repetition_score,

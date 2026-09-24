@@ -7,10 +7,9 @@ Records events, supports event replay, and materializes read projections.
 from __future__ import annotations
 
 import hashlib
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List
 
 
 @dataclass
@@ -57,7 +56,7 @@ class EventStore:
         for sub in self._subscribers:
             try:
                 sub(event)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
 
     def subscribe(self, handler: Callable[[Event], None]) -> None:

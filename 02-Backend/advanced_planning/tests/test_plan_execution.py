@@ -1,5 +1,4 @@
 
-import pytest
 from advanced_planning.plan_execution import ExecutionMonitor, ContingencyHandler
 
 
@@ -31,7 +30,7 @@ def test_execution_monitor_progress():
 
 def test_execution_monitor_contingency():
     monitor = ExecutionMonitor(["fail", "go"], _apply_fn, _goal_fn)
-    result = monitor.execute({"step": 0})
+    monitor.execute({"step": 0})
     assert monitor.has_contingency()
     assert len(monitor.contingencies_triggered) == 1
     assert monitor.current_index == 0

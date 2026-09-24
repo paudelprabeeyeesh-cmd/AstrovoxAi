@@ -1,4 +1,3 @@
-import pytest
 from final_system.system_bus import Message, SystemBus
 
 

@@ -1,5 +1,4 @@
 
-import pytest
 import numpy as np
 
 from inference_engine.speculative_decoding import (

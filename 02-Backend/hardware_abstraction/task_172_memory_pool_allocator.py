@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import bisect
+from dataclasses import dataclass
 from typing import Dict, List, Optional
 
 
@@ -25,6 +26,12 @@ class MemoryPoolAllocator:
         self.next_pointer = total_size
         self._next_block_id = 0
 
+    def _block_sort_key(self, block: Block) -> int:
+        return block.pointer
+
+    def _insert_sorted(self, block: Block) -> None:
+        bisect.insort(self.blocks, block, key=self._block_sort_key)
+
     def _allocate_block(self, size: int) -> Block:
         pointer = 0
         free_pointer = self.total_size - size
@@ -37,12 +44,10 @@ class MemoryPoolAllocator:
             raise MemoryError("Insufficient memory for allocation")
 
         used_block = Block(pointer=pointer, size=size, free=False, block_id=self._new_block_id())
-        self.blocks.append(used_block)
-        self.blocks.sort(key=lambda block: block.pointer)
+        self._insert_sorted(used_block)
         return used_block
 
     def _coalesce(self) -> None:
-        self.blocks.sort(key=lambda block: block.pointer)
         coalesced: List[Block] = []
         for block in self.blocks:
             if not coalesced:
@@ -69,15 +74,15 @@ class MemoryPoolAllocator:
     def allocate(self, size: int) -> Optional[str]:
         if size <= 0:
             return None
-        for block in self.blocks:
+        for idx, block in enumerate(self.blocks):
             if block.free and block.size >= size:
                 used_block = Block(pointer=block.pointer, size=size, free=False, block_id=self._new_block_id())
-                self.blocks.append(used_block)
                 if block.size > size:
                     free_block = Block(pointer=block.pointer + size, size=block.size - size, free=True)
-                    self.blocks.append(free_block)
-                self.blocks.remove(block)
-                self.blocks.sort(key=lambda block: block.pointer)
+                    self.blocks[idx] = free_block
+                    self._insert_sorted(used_block)
+                else:
+                    self.blocks[idx] = used_block
                 self.block_map[used_block.block_id] = used_block
                 return used_block.block_id
         return None

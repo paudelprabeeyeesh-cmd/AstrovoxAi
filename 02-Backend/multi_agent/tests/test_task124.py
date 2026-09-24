@@ -1,4 +1,3 @@
-import numpy as np
 import pytest
 from multi_agent.task124_hierarchical import HierarchicalAgent
 

@@ -12,7 +12,6 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 import torch
-import torch.nn.functional as F
 
 from app.model import AstroVoxModel
 

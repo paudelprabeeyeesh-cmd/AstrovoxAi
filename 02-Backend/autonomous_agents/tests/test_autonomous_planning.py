@@ -1,6 +1,4 @@
-import numpy as np
-import pytest
-from ..autonomous_planning import AutonomousPlanning, Plan
+from ..autonomous_planning import AutonomousPlanning
 
 
 class TestAutonomousPlanning:

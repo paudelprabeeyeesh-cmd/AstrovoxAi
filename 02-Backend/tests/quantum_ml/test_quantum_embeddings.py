@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from quantum_ml.quantum_embeddings import QuantumEmbedding
 from quantum_ml.quantum_circuits import QuantumCircuit
 

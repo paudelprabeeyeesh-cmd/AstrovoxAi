@@ -1,6 +1,5 @@
 import time
 import pytest
-import numpy as np
 from agentic_loop.recursion_limits import (
     RecursionLimiter,
     BudgetConfig,

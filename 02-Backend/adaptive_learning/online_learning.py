@@ -1,6 +1,5 @@
 import numpy as np
-from typing import Dict, List, Optional, Any
-from dataclasses import dataclass
+from typing import Dict, List, Optional, Any, Tuple
 
 
 class OnlineLearner:

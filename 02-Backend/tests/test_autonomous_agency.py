@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.autonomous_agency import AutonomousAgency
 
 

@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
-import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,8 +34,8 @@ class PenTestHarness:
                 findings = [{"endpoint": "/health/detailed", "requires_auth": True}]
             elif category == "ssrf":
                 findings = [{"outbound_urls_restricted": True}]
-        except Exception as exc:
-            logger.error("Pen test probe failed: %s", exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Pen test probe failed: %s", _e)
         return PenTestResult(service=target_url, passed=all(f.get("blocked", False) or f.get("requires_auth", False) or f.get("outbound_urls_restricted", False) for f in findings), findings=findings)
 
 
@@ -86,8 +84,8 @@ class SBOMGenerator:
             import json
             packages = json.loads(result)
             return {"format": "cyclonedx", "components": packages}
-        except Exception as exc:
-            logger.error("SBOM generation failed: %s", exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("SBOM generation failed: %s", _e)
             return {"format": "cyclonedx", "components": []}
 
 

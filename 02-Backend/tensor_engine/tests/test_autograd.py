@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from tensor_engine.autograd import Tensor
 
 

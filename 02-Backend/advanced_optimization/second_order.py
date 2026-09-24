@@ -51,9 +51,9 @@ def damped_newton(params, grad_fn, hess_fn, alpha=1.0, beta=0.5, max_iter=100):
 
 def bfgs_update(H, s, y):
     rho = 1.0 / (y @ s)
-    I = np.eye(H.shape[0])
-    Hy = H @ y
-    H = (I - rho * np.outer(s, y)) @ H @ (I - rho * np.outer(y, s)) + rho * np.outer(s, s)
+    identity_mat = np.eye(H.shape[0])
+    H @ y
+    H = (identity_mat - rho * np.outer(s, y)) @ H @ (identity_mat - rho * np.outer(y, s)) + rho * np.outer(s, s)
     return H
 
 

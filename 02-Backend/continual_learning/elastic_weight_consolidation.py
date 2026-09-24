@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
 from .catastrophic_forgetting_prevention import EWCMemory
 

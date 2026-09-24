@@ -91,7 +91,7 @@ class CodeExecutionSandbox:
             mem_limit = self.max_memory_mb * 1024 * 1024
             resource_module.setrlimit(resource_module.RLIMIT_CPU, (cpu_limit, cpu_limit))
             resource_module.setrlimit(resource_module.RLIMIT_AS, (mem_limit, mem_limit))
-        except (ValueError, Exception) as exc:
+        except (ValueError, Exception) as exc:  # noqa: BLE001
             logger.warning("Failed to apply resource limits: %s", exc)
 
     def _build_env(self) -> Dict[str, str]:
@@ -167,8 +167,8 @@ class CodeExecutionSandbox:
             )
         except subprocess.TimeoutExpired:
             return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Execution timed out after {timeout}s", execution_time_ms=timeout * 1000, files_created=[], error="Timeout")
-        except Exception as e:
-            return CodeExecutionResult(exit_code=-1, stdout="", stderr=str(e), execution_time_ms=0, files_created=[], error=str(e))
+        except Exception as _e:  # noqa: BLE001
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr=str(_e), execution_time_ms=0, files_created=[], error=str(_e))
         finally:
             try:
                 os.unlink(temp_path)
@@ -210,8 +210,8 @@ class CodeExecutionSandbox:
             )
         except subprocess.TimeoutExpired:
             return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Shell timed out after {timeout}s", execution_time_ms=timeout * 1000, files_created=[], error="Timeout")
-        except Exception as e:
-            return CodeExecutionResult(exit_code=-1, stdout="", stderr=str(e), execution_time_ms=0, files_created=[], error=str(e))
+        except Exception as _e:  # noqa: BLE001
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr=str(_e), execution_time_ms=0, files_created=[], error=str(_e))
 
 
 code_sandbox = CodeExecutionSandbox()

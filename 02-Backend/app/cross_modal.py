@@ -25,8 +25,8 @@ class CrossModalRetriever:
             client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
             response = client.embeddings.create(input=text, model=self._text_model)
             return response.data[0].embedding
-        except Exception as e:
-            logger.error(f"Text embedding failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Text embedding failed: {_e}")
             return self._fallback_embed(text)
 
     def embed_image(self, image: str) -> list[float]:
@@ -41,8 +41,8 @@ class CrossModalRetriever:
             arr = np.array(img, dtype=np.float32) / 255.0
             vec = arr.mean(axis=(0, 1)).tolist()
             return self._pad_vector(vec)
-        except Exception as e:
-            logger.error(f"Image embedding failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Image embedding failed: {_e}")
             return self._fallback_embed("image")
 
     def embed_audio(self, audio: str) -> list[float]:
@@ -64,8 +64,8 @@ class CrossModalRetriever:
                 float(samples.min()),
             ]
             return self._pad_vector(mfcc_like)
-        except Exception as e:
-            logger.error(f"Audio embedding failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Audio embedding failed: {_e}")
             return self._fallback_embed("audio")
 
     def search_cross_modal(self, query: str, modality: str = "text", limit: int = 10) -> list[dict[str, Any]]:

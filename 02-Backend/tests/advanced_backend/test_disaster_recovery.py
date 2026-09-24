@@ -1,5 +1,4 @@
-import pytest
-from advanced_backend.disaster_recovery import DisasterRecoveryManager, Region, RegionState
+from advanced_backend.disaster_recovery import DisasterRecoveryManager, Region
 
 
 def test_failover():

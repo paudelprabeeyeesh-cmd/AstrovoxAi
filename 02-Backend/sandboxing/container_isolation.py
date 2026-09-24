@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
@@ -43,4 +44,4 @@ class ContainerConfig:
         try:
             return json.loads(self.seccomp_profile)
         except json.JSONDecodeError:
-            raise ValueError("invalid seccomp profile")
+            raise ValueError("invalid seccomp profile") from None

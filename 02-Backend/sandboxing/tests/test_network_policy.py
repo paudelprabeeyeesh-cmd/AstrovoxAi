@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from sandboxing.network_policy import NetworkPolicy
 

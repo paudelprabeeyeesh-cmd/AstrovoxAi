@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass
@@ -61,7 +61,7 @@ class OnlineMAML:
         params = {k: v.copy() for k, v in self.params.items()}
         for _ in range(steps):
             h, logits = self._forward(x, params)
-            loss = self._compute_loss(logits, y)
+            self._compute_loss(logits, y)
             probs = self._softmax(logits)
             y_int = y.astype(int)
             grad = probs.copy()

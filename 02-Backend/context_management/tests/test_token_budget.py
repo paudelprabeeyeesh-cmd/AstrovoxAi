@@ -2,7 +2,6 @@ import pytest
 import numpy as np
 from context_management.token_budget import (
     TokenBudgetAccountant,
-    ContextComponent,
     PRIORITY_SYSTEM,
     PRIORITY_TOOLS,
     PRIORITY_CURRENT,
@@ -49,7 +48,7 @@ class TestTokenBudgetAccountant:
         accountant.add_component("system", 10, PRIORITY_SYSTEM)
         accountant.add_component("tools", 15, PRIORITY_TOOLS)
         accountant.add_component("old", 20, PRIORITY_OLD)
-        removed = accountant.trim()
+        accountant.trim()
         kept_names = {c.name for c in accountant.components}
         assert "system" in kept_names
         assert "tools" in kept_names

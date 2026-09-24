@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_learning.zero_shot_learning import ZeroShotLearner, CLIPConfig
 
 

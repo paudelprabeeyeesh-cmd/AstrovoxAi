@@ -1,5 +1,4 @@
 
-import pytest
 import numpy as np
 
 from inference_engine.prefix_caching import PrefixCache

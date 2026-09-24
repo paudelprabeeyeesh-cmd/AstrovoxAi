@@ -7,7 +7,6 @@ Profiles components, detects bottlenecks, and applies optimization strategies.
 from __future__ import annotations
 
 import threading
-import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
@@ -123,7 +122,7 @@ class BatchProcessor:
         for item in batch:
             try:
                 self._process(item)
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
 
     def _process(self, item: Any) -> None:

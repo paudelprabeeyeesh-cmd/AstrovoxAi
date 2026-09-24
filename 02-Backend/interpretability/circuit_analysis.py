@@ -31,12 +31,12 @@ def circuit_analysis(model: nn.Module, prompt_ids: torch.Tensor, target_token_id
             logits = model(prompt_ids)
         if logits.dim() == 3:
             target_logits = logits[0, -1, :]
-            target_prob = float(torch.softmax(target_logits, dim=-1)[target_token_id])
+            float(torch.softmax(target_logits, dim=-1)[target_token_id])
         elif logits.dim() == 2:
             target_logits = logits[0, :]
-            target_prob = float(torch.softmax(target_logits, dim=-1)[target_token_id])
+            float(torch.softmax(target_logits, dim=-1)[target_token_id])
         else:
-            target_prob = 0.0
+            pass
         for layer_idx, activation in activations.items():
             patch = ActivationPatch(layer=layer_idx, position=prompt_ids.shape[1] - 1, original_activation=activation)
             patches.append(patch)

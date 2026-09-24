@@ -1,8 +1,6 @@
 import logging
 import uuid
-import base64
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
@@ -25,15 +23,15 @@ async def generate_image(prompt: str, size: str = "1024x1024", user_id: str = De
             )
             conn.commit()
         return {"id": image_id, "prompt": prompt[:200], "size": size, "url": f"/images/{image_id}"}
-    except Exception as e:
-        logger.error(f"Image generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Image generation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.post("/images/understand")
 async def understand_image(file: UploadFile = File(...), question: str = "", user_id: str = Depends(require_verified_email)):
     try:
-        content = await file.read()
+        await file.read()
         analysis_id = str(uuid.uuid4())
         with get_db() as conn:
             conn.execute(
@@ -42,9 +40,9 @@ async def understand_image(file: UploadFile = File(...), question: str = "", use
             )
             conn.commit()
         return {"id": analysis_id, "filename": file.filename, "question": question, "result": "[analysis placeholder]"}
-    except Exception as e:
-        logger.error(f"Image understanding failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Image understanding failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/images/{image_id}")

@@ -1,104 +1,197 @@
 """Prometheus metrics for AstrovoxAI backend."""
 
 import time
-import os
 from functools import wraps
 
 # Prometheus availability flag
 PROMETHEUS_AVAILABLE = False
 try:
-    from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+    from prometheus_client import (
+        Counter,
+        Histogram,
+        Gauge,
+        generate_latest,
+    )
     PROMETHEUS_AVAILABLE = True
 except ImportError:
     pass
 
-# Metrics
 if PROMETHEUS_AVAILABLE:
     http_requests_total = Counter(
         "http_requests_total",
         "Total HTTP requests",
-        ["method", "endpoint", "status"]
+        ["method", "endpoint", "status"],
     )
 
     http_request_duration = Histogram(
         "http_request_duration_seconds",
         "HTTP request duration in seconds",
         ["method", "endpoint"],
-        buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+        buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0],
+    )
+
+    http_errors_total = Counter(
+        "http_errors_total",
+        "Total HTTP error responses (5xx)",
+        ["method", "endpoint", "status"],
+    )
+
+    active_connections = Gauge(
+        "active_connections",
+        "Number of currently active HTTP connections",
+    )
+
+    websocket_connections_total = Counter(
+        "websocket_connections_total",
+        "Total WebSocket connection events",
+        ["event"],
     )
 
     active_users = Gauge(
         "active_users",
-        "Number of active users in the last 5 minutes"
+        "Number of active users in the last 5 minutes",
     )
 
     ai_requests_total = Counter(
         "ai_requests_total",
         "Total AI API requests",
-        ["model", "status"]
+        ["model", "status"],
     )
 
     ai_tokens_total = Counter(
         "ai_tokens_total",
         "Total AI tokens consumed",
-        ["model"]
+        ["model"],
+    )
+
+    ai_request_duration_seconds = Histogram(
+        "ai_request_duration_seconds",
+        "AI API request duration in seconds",
+        ["model"],
+        buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
     )
 
     cache_hits_total = Counter(
         "cache_hits_total",
         "Total cache hits",
-        ["backend_type"]
+        ["backend_type"],
     )
 
     cache_misses_total = Counter(
         "cache_misses_total",
         "Total cache misses",
-        ["backend_type"]
+        ["backend_type"],
     )
 
     db_query_duration = Histogram(
         "db_query_duration_seconds",
         "Database query duration in seconds",
         ["operation"],
-        buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
+        buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0],
+    )
+
+    auth_attempts_total = Counter(
+        "auth_attempts_total",
+        "Total authentication attempts",
+        ["provider", "status"],
     )
 
 
 def track_request(method: str, endpoint: str, status: int, duration: float):
-    """Track an HTTP request."""
-    if PROMETHEUS_AVAILABLE:
-        http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
-        http_request_duration.labels(method=method, endpoint=endpoint).observe(duration)
+    if not PROMETHEUS_AVAILABLE:
+        return
+    http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
+    http_request_duration.labels(method=method, endpoint=endpoint).observe(duration)
+    if status >= 500:
+        http_errors_total.labels(
+            method=method, endpoint=endpoint, status=status
+        ).inc()
 
 
 def track_ai_request(model: str, status: str, tokens: int = 0):
-    """Track an AI API request."""
-    if PROMETHEUS_AVAILABLE:
-        ai_requests_total.labels(model=model, status=status).inc()
-        if tokens > 0:
-            ai_tokens_total.labels(model=model).inc(tokens)
+    if not PROMETHEUS_AVAILABLE:
+        return
+    ai_requests_total.labels(model=model, status=status).inc()
+    if tokens > 0:
+        ai_tokens_total.labels(model=model).inc(tokens)
+
+
+def track_ai_duration(model: str, duration: float):
+    if not PROMETHEUS_AVAILABLE:
+        return
+    ai_request_duration_seconds.labels(model=model).observe(duration)
 
 
 def track_cache_hit(backend_type: str):
-    """Track a cache hit."""
-    if PROMETHEUS_AVAILABLE:
-        cache_hits_total.labels(backend_type=backend_type).inc()
+    if not PROMETHEUS_AVAILABLE:
+        return
+    cache_hits_total.labels(backend_type=backend_type).inc()
 
 
 def track_cache_miss(backend_type: str):
-    """Track a cache miss."""
-    if PROMETHEUS_AVAILABLE:
-        cache_misses_total.labels(backend_type=backend_type).inc()
+    if not PROMETHEUS_AVAILABLE:
+        return
+    cache_misses_total.labels(backend_type=backend_type).inc()
 
 
 def track_db_query(operation: str, duration: float):
-    """Track a database query."""
-    if PROMETHEUS_AVAILABLE:
-        db_query_duration.labels(operation=operation).observe(duration)
+    if not PROMETHEUS_AVAILABLE:
+        return
+    db_query_duration.labels(operation=operation).observe(duration)
+
+
+def track_auth_attempt(provider: str, status: str):
+    if not PROMETHEUS_AVAILABLE:
+        return
+    auth_attempts_total.labels(provider=provider, status=status).inc()
+
+
+def inc_connections():
+    if not PROMETHEUS_AVAILABLE:
+        return
+    active_connections.inc()
+
+
+def dec_connections():
+    if not PROMETHEUS_AVAILABLE:
+        return
+    active_connections.dec()
+
+
+def track_websocket_event(event: str):
+    if not PROMETHEUS_AVAILABLE:
+        return
+    websocket_connections_total.labels(event=event).inc()
+
+
+def track_error(method: str, endpoint: str, status: int):
+    if not PROMETHEUS_AVAILABLE:
+        return
+    http_errors_total.labels(method=method, endpoint=endpoint, status=status).inc()
 
 
 def get_metrics():
-    """Get Prometheus-formatted metrics."""
     if PROMETHEUS_AVAILABLE:
         return generate_latest()
     return b"# Prometheus client not available\n"
+
+
+def track_request_decorator(endpoint: str):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            request = kwargs.get("request")
+            method = request.method if request else "UNKNOWN"
+            start = time.time()
+            try:
+                response = await func(*args, **kwargs)
+                duration = time.time() - start
+                status = response.status_code if hasattr(response, "status_code") else 200
+                track_request(method, endpoint, status, duration)
+                return response
+            except Exception as _e:  # noqa: BLE001
+                duration = time.time() - start
+                track_request(method, endpoint, 500, duration)
+                raise
+        return wrapper
+    return decorator

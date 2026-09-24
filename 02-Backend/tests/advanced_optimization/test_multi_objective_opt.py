@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.multi_objective_opt import NSGA2, pareto_front, dominates
 
 

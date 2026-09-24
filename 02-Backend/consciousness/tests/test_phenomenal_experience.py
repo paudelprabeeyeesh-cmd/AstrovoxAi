@@ -1,7 +1,6 @@
 import numpy as np
-import pytest
 
-from consciousness.phenomenal_experience import ExperienceSpace, Qualia
+from consciousness.phenomenal_experience import ExperienceSpace
 
 
 def test_add_experience_creates_qualia():

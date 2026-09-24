@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from ai_core.decision_making import DecisionMaker, UtilityFunction, Outcome, MarkovDecisionProcess, DecisionTree
+from ai_core.decision_making import DecisionMaker, UtilityFunction, Outcome, MarkovDecisionProcess
 
 
 def test_utility_evaluate_expected():

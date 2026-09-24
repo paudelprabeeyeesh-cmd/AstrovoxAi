@@ -7,11 +7,11 @@ from .researcher import ResearcherAgent
 from .writer import WriterAgent
 from .reviewer import ReviewerAgent
 from .debugger import DebuggerAgent
-from .base import AgentResult, Plan, Review
+from .base import AgentResult
 from ..planning import PlanningEngine
-from ..decomposition import TaskDecomposer, TaskNode
+from ..decomposition import TaskDecomposer
 from ..debate import DebateEngine
-from ..self_eval import SelfEvaluator, Evaluation
+from ..self_eval import SelfEvaluator
 from ..memory_conflict import MemoryConflictDetector, Conflict
 
 logger = logging.getLogger(__name__)

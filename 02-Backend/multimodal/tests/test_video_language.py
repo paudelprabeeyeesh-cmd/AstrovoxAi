@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from multimodal.video_language import (
     VideoFeatures,

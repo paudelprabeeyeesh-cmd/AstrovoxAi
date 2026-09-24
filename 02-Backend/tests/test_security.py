@@ -1,7 +1,6 @@
 """Regression tests for API-wide boundary protections."""
 
 import os
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 

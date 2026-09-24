@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List
 
 import numpy as np
 
@@ -38,10 +38,10 @@ class VerificationLadder:
             details = checker()
             passed = details.get("passed", True)
             error_count = details.get("error_count", 0)
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             passed = False
             error_count = 1
-            details = {"exception": str(exc)}
+            details = {"exception": str(_e)}
         duration = (__import__("time").perf_counter() - start) * 1000
         return StageResult(
             stage=stage,

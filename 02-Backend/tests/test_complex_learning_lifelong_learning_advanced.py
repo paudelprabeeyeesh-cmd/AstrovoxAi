@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from complex_learning.lifelong_learning_advanced import AdvancedLifelongLearner, TaskBatch
 
 

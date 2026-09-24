@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from itertools import groupby
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 
 @dataclass

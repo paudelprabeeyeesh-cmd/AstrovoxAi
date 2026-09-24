@@ -1,5 +1,4 @@
 import logging
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -32,9 +31,9 @@ async def get_admin_stats(_: str = Depends(require_admin)):
             total_cost_usd=float(cost["c"]) if cost and cost["c"] else 0.0,
             active_users_24h=active["c"] if active else 0,
         )
-    except Exception as e:
-        logger.error(f"Admin stats failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Admin stats failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/admin/usage/{user_id}", response_model=UsageResponse)
@@ -57,9 +56,9 @@ async def get_user_usage(user_id: str, _: str = Depends(require_admin)):
         )
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"User usage failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"User usage failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/admin/users")

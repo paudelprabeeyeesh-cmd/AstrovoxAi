@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_learning.self_supervised_advanced import AdvancedSelfSupervisedLearner, SSLConfig
 
 

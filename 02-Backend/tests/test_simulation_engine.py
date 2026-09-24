@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from world_model.simulation_engine import SimulationEngine, Scenario
 
 

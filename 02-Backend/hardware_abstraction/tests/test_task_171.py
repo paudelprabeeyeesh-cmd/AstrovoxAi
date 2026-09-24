@@ -170,7 +170,7 @@ class TestDeviceManager:
         assert "tpu-0" in ids
 
     def test_cross_device_numerical_consistency(self, device_manager):
-        cpu_device = device_manager.get_device("cpu-0")
+        device_manager.get_device("cpu-0")
         gpu_device = device_manager.get_device("gpu-0")
         cpu_tensor = np.array([1.0, 2.0, 3.0], dtype=np.float32)
         gpu_tensor = gpu_device.transfer_to(cpu_tensor.tolist(), 0)

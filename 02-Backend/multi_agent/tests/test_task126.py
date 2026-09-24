@@ -1,4 +1,3 @@
-import pytest
 from multi_agent.task126_deadlock import WaitForGraph
 
 

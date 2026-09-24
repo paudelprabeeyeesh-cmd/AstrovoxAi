@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 import sys
 import os
 import time
@@ -12,7 +10,6 @@ from cognitive_architecture.cognitive_biases import (
     AnchoringBias,
     AvailabilityHeuristic,
     DebiasingStrategy,
-    BiasInstance,
 )
 
 

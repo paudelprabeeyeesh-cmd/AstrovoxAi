@@ -3,7 +3,6 @@ import sys
 import tempfile
 
 import numpy as np
-import pytest
 
 sys.path.insert(0, r"C:\AstrovoxAi\02-Backend")
 
@@ -11,23 +10,18 @@ from code_aware_retrieval.ast_structural_search import (
     ASTPattern,
     ASTStructuralSearch,
     _node_matches,
-    _search,
 )
-from code_aware_retrieval.call_graph import CallGraph, FunctionDef
+from code_aware_retrieval.call_graph import CallGraph
 from code_aware_retrieval.context_packing import ContextItem, ContextPacking
-from code_aware_retrieval.dependency_graph import DependencyGraph, ModuleNode
+from code_aware_retrieval.dependency_graph import DependencyGraph
 from code_aware_retrieval.index_maintenance import FileEvent, IndexMaintenance
 from code_aware_retrieval.lsp_integration import (
     Diagnostic,
-    HoverResult,
     LSPIntegration,
-    Location,
 )
 from code_aware_retrieval.symbol_graph import SymbolDef, SymbolGraph
 from code_aware_retrieval.tree_sitter_integration import (
     ASTNode,
-    Scope,
-    Symbol,
     TreeSitterIntegration,
 )
 

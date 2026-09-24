@@ -1,8 +1,6 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -25,9 +23,9 @@ async def create_artifact(title: str, content: str, artifact_type: str = "html",
             )
             conn.commit()
         return {"id": artifact_id, "title": title, "type": artifact_type, "url": f"/artifacts/{artifact_id}"}
-    except Exception as e:
-        logger.error(f"Artifact creation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Artifact creation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/artifacts")

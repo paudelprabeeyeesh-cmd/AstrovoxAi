@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ..swiglu_activation import SwiGLUActivation
 
 
@@ -13,12 +12,12 @@ class TestSwiGLUActivation:
 
     def test_swish_positive(self):
         model = SwiGLUActivation(d_model=32)
-        x = np.array([[1.0]])
+        np.array([[1.0]])
         s = model.swish(1.0)
         assert s > 0
 
     def test_swish_negative(self):
         model = SwiGLUActivation(d_model=32)
-        x = np.array([[-1.0]])
+        np.array([[-1.0]])
         s = model.swish(-1.0)
         assert -1.0 < s < 0.0

@@ -4,7 +4,6 @@ Currently supports Google Gemini Embedding API with batch processing,
 retry handling, and timeout support.
 """
 
-import os
 import asyncio
 import logging
 from typing import Optional
@@ -112,9 +111,9 @@ class EmbeddingService:
         for attempt in range(max_retries + 1):
             try:
                 return await self.embed(texts, model=model)
-            except Exception as e:
-                last_error = e
-                error_str = str(e).lower()
+            except Exception as _e:  # noqa: BLE001
+                last_error = _e
+                error_str = str(_e).lower()
                 is_transient = any(
                     kw in error_str
                     for kw in [
@@ -135,7 +134,7 @@ class EmbeddingService:
                         attempt + 1,
                         max_retries + 1,
                         wait,
-                        str(e),
+                        str(_e),
                     )
                     await asyncio.sleep(wait)
                     continue

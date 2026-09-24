@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ai_core.learning_engine import LearningEngine, GradientLearner, EpisodicMemory, AdaptationEngine
 
 

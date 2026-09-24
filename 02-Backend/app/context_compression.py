@@ -36,8 +36,8 @@ class ContextCompressor:
                 temperature=0.0,
             )
             return response.choices[0].message.content or context
-        except Exception as e:
-            logger.error(f"LLM extraction failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"LLM extraction failed: {_e}")
             return self._heuristic_extract(context, query)
 
     def estimate_tokens(self, text: str) -> int:
@@ -45,7 +45,7 @@ class ContextCompressor:
             import tiktoken
             encoding = tiktoken.get_encoding("cl100k_base")
             return len(encoding.encode(text))
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return max(1, len(text) // 4)
 
     def _llm_compress(self, context: str, max_tokens: int) -> str:
@@ -61,8 +61,8 @@ class ContextCompressor:
                 temperature=0.0,
             )
             return response.choices[0].message.content or context
-        except Exception as e:
-            logger.error(f"LLM compression failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"LLM compression failed: {_e}")
             return self._heuristic_compress(context, max_tokens)
 
     def _heuristic_extract(self, context: str, query: str) -> str:

@@ -12,6 +12,7 @@ Vector search should be combined with keyword search, not used alone.
 """
 
 from typing import Dict, List, Any, Optional, Tuple
+from datetime import datetime
 from enum import Enum
 import numpy as np
 

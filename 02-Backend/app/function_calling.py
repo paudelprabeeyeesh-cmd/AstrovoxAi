@@ -73,9 +73,9 @@ class FunctionCallingHandler:
                     tools=tools,
                     timeout=30,
                 )
-            except Exception as e:
-                logger.error(f"LLM call failed: {e}")
-                return f"Error: {e}", model, provider
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"LLM call failed: {_e}")
+                return f"Error: {_e}", model, provider
 
             text = response.get("text", "")
             tool_calls = response.get("tool_calls", [])
@@ -107,6 +107,6 @@ class FunctionCallingHandler:
                 timeout=30,
             )
             return final.get("text", ""), final.get("model", model), final.get("provider", provider)
-        except Exception as e:
-            logger.error(f"Final LLM call failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Final LLM call failed: {_e}")
             return self.format_tool_results(tool_results), model, provider

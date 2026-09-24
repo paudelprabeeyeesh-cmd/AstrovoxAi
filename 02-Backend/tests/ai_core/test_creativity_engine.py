@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from ai_core.creativity_engine import CreativityEngine, CreativeOutput, NoveltySearch, StyleTransferEngine
+from ai_core.creativity_engine import CreativityEngine, CreativeOutput, NoveltySearch
 
 
 def test_creative_generation():

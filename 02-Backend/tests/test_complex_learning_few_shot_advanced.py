@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from complex_learning.few_shot_advanced import AdvancedPrototypicalNetworks, RelationNetwork, Episode
 
 

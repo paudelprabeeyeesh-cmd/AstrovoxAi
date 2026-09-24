@@ -1,8 +1,5 @@
-import pytest
-import numpy as np
 from agentic_loop.observation_normalization import (
     ObservationNormalizer,
-    NormalizedObservation,
 )
 
 

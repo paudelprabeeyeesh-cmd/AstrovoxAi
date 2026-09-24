@@ -1,4 +1,4 @@
-from evaluation.regression_suites import RegressionSuite, RegressionRecord, BenchmarkResult, BenchmarkRegistry
+from evaluation.regression_suites import RegressionSuite, RegressionRecord, BenchmarkRegistry
 
 
 def test_regression_suite_check_no_baseline():

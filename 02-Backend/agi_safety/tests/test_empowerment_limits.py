@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from agi_safety.empowerment_limits import (
     CapabilityBudget,
     CapabilityController,

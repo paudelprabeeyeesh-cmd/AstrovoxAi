@@ -3,6 +3,8 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass, field
 import time
 
+from .emotional_processing import EmotionState
+
 
 @dataclass
 class MentalState:

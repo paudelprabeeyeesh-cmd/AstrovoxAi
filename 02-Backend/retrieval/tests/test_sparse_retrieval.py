@@ -1,6 +1,5 @@
 
 from retrieval.sparse_retrieval import BM25Retriever, InvertedIndex, Document
-import math
 
 
 def test_bm25_empty():

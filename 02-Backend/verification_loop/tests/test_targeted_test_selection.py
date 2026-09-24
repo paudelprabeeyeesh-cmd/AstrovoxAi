@@ -1,7 +1,6 @@
 import numpy as np
 from verification_loop.targeted_test_selection import (
     ChangedFile,
-    CoverageEntry,
     TargetedTestSelector,
 )
 

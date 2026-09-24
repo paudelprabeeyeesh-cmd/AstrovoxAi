@@ -1,4 +1,3 @@
-import pytest
 from system_integration.message_bus import Message, MessageBus
 
 
@@ -28,7 +27,7 @@ def test_subscribe_unsubscribe():
 
 def test_last_delivered():
     bus = MessageBus()
-    msg = Message(topic="topic", payload=1)
+    Message(topic="topic", payload=1)
     bus._last_delivered["topic"] = "ts"
     assert bus.last_delivered("topic") == "ts"
 

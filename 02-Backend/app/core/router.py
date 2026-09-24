@@ -108,9 +108,9 @@ def call_llm(
             )
             errors.append(f"{provider.name}: confidence {confidence:.2f} below threshold")
 
-        except Exception as e:
-            logger.warning(f"Provider {provider.name} failed: {e}")
-            errors.append(f"{provider.name}: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Provider {provider.name} failed: {_e}")
+            errors.append(f"{provider.name}: {_e}")
 
     if last_result:
         logger.warning(f"Returning low-confidence result from {last_result['provider']}")
@@ -159,9 +159,9 @@ async def call_llm_stream(
                         "model": provider.default_model,
                     }
             return
-        except Exception as e:
-            logger.warning(f"Provider {provider.name} streaming failed: {e}")
-            errors.append(f"{provider.name}: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Provider {provider.name} streaming failed: {_e}")
+            errors.append(f"{provider.name}: {_e}")
     raise RuntimeError(f"All LLM providers failed: {errors}")
 
 

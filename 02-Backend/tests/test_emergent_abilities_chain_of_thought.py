@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from emergent_abilities.chain_of_thought import ChainOfThoughtModel, ReasoningScalingAnalyzer
 
 

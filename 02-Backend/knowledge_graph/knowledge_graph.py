@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Set
-import numpy as np
 
 
 @dataclass

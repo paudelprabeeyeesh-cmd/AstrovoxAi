@@ -1,5 +1,4 @@
 
-import numpy as np
 import pytest
 from advanced_planning.plan_transfer import DomainMapping, PlanTransfer
 

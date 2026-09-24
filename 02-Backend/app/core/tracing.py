@@ -3,7 +3,6 @@ import functools
 import logging
 import os
 import uuid
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -121,26 +120,26 @@ def init_tracing(service_name: str = "astrovoxai", app=None):
             try:
                 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
                 FastAPIInstrumentor().instrument(app)
-            except Exception as e:
-                logger.warning(f"Failed to instrument FastAPI: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.warning(f"Failed to instrument FastAPI: {_e}")
 
         try:
             from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
             HTTPXClientInstrumentor().instrument()
-        except Exception as e:
-            logger.warning(f"Failed to instrument httpx: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to instrument httpx: {_e}")
 
         try:
             from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
             Psycopg2Instrumentor().instrument()
-        except Exception as e:
-            logger.warning(f"Failed to instrument psycopg2: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to instrument psycopg2: {_e}")
 
         logger.info("OpenTelemetry tracing initialized")
         return tracer
 
-    except Exception as e:
-        logger.error(f"Failed to initialize OpenTelemetry: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to initialize OpenTelemetry: {_e}")
         OPENTELEMETRY_AVAILABLE = False
         tracer = None
         return None

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.proximal_algorithms import (
     proximal_gradient,
     ista,

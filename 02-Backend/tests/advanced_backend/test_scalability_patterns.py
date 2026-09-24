@@ -1,4 +1,3 @@
-import pytest
 from advanced_backend.scalability_patterns import Partitioner, ReplicaSet, Sharder
 
 

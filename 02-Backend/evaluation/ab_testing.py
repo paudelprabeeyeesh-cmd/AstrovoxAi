@@ -2,7 +2,6 @@ import math
 import logging
 from typing import Any
 from dataclasses import dataclass, field
-from statistics import mean, variance
 
 import numpy as np
 
@@ -142,7 +141,7 @@ class ABTest:
         if se == 0:
             return 0.0, 1.0
         t = (m1 - m2) / se
-        df = (v1 / n1 + v2 / n2) ** 2 / ((v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1))
+        (v1 / n1 + v2 / n2) ** 2 / ((v1 / n1) ** 2 / (n1 - 1) + (v2 / n2) ** 2 / (n2 - 1))
         p = 2 * (1 - self._normal_cdf(abs(t)))
         return t, p
 

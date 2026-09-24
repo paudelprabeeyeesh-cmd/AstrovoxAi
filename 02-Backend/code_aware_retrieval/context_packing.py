@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List
 
 import numpy as np
 
@@ -26,7 +26,7 @@ class ContextPacking:
         items = list(self._items.values())
         if not items:
             return []
-        ids = np.array([i.id for i in items])
+        np.array([i.id for i in items])
         rec = np.array([i.recency for i in items], dtype=np.float64)
         dist = np.array([i.graph_distance for i in items], dtype=np.int32)
         anchor = np.array([1.0 if i.is_anchor else 0.0 for i in items], dtype=np.float64)

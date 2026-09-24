@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from emergent_abilities.in_context_learning import InContextLearningModel, TaskIdentifier, ICLDynamicsAnalyzer
 
 

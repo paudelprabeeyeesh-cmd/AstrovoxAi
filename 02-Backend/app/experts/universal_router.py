@@ -14,8 +14,9 @@ Supports both automatic routing (Mode A) and manual selection (Mode B).
 from typing import Dict, List, Any, Optional
 from enum import Enum
 from dataclasses import dataclass
+from datetime import datetime
 
-from .expert_base import ExpertBase, ExpertProfile, ExpertCategory
+from .expert_base import ExpertBase
 
 
 class RoutingMode(Enum):

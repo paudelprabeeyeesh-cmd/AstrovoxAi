@@ -1,6 +1,5 @@
 import logging
 import json
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -33,13 +32,13 @@ async def generate_structured(req: StructuredOutputRequest, user_id: str = Depen
             if match:
                 data = json.loads(match.group())
             else:
-                raise HTTPException(status_code=422, detail=f"Model did not return valid JSON: {text[:200]}")
+                raise HTTPException(status_code=422, detail=f"Model did not return valid JSON: {text[:200]}") from None
         return StructuredOutputResponse(data=data, model=result.get("model", "unknown"))
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Structured generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Structured generation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.post("/structured/citations", response_model=CitationResponse)
@@ -54,6 +53,6 @@ async def generate_citations(req: CitationRequest, user_id: str = Depends(requir
                 "confidence": 0.95,
             })
         return CitationResponse(citations=citations)
-    except Exception as e:
-        logger.error(f"Citation generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Citation generation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None

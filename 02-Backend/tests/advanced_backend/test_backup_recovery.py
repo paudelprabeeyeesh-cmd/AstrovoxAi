@@ -1,5 +1,4 @@
 import time
-import pytest
 from advanced_backend.backup_recovery import BackupStore
 
 
@@ -23,7 +22,7 @@ def test_point_in_time():
     store = BackupStore()
     store.snapshot(b"old", label="old")
     time.sleep(0.01)
-    mid = store.snapshot(b"new", label="new")
+    store.snapshot(b"new", label="new")
     target = store.point_in_time(store._manifests[1].timestamp - 0.001)
     assert target is not None
     assert target.backup_id == store._manifests[0].backup_id

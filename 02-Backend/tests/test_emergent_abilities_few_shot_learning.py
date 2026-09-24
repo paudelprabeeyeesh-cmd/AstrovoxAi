@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from emergent_abilities.few_shot_learning import FewShotLearner, FewShotAdaptationCurve
 
 

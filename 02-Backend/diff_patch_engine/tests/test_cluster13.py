@@ -8,7 +8,7 @@ from diff_patch_engine.structured_tool_call import StructuredToolCall
 from diff_patch_engine.pre_image_validation import PreImageValidator
 from diff_patch_engine.uniqueness_enforcement import UniquenessEnforcer
 from diff_patch_engine.syntactic_validity_check import SyntacticValidityChecker
-from diff_patch_engine.atomic_multi_file_transaction import AtomicMultiFileTransaction, PatchResult
+from diff_patch_engine.atomic_multi_file_transaction import AtomicMultiFileTransaction
 from diff_patch_engine.inline_diff_ui import InlineDiffUI
 
 
@@ -37,7 +37,7 @@ def test_full_file_rewrite_apply():
 def test_full_file_rewrite_numpy_line_comparison():
     original = "a\nb\nc\nd\ne\n"
     rewritten = "a\nb_mod\nc\nd\ne\n"
-    engine = FullFileRewrite()
+    FullFileRewrite()
     orig_lines = np.array(original.splitlines())
     new_lines = np.array(rewritten.splitlines())
     diff_lines = np.where(orig_lines != new_lines)[0]
@@ -107,7 +107,6 @@ def test_search_replace_get_position():
 
 def test_search_replace_numpy_uniqueness():
     content = "a b c a d e"
-    pattern = "a"
     occurrences = np.sum(np.array(list(content)) == "a")
     assert occurrences == 2
 
@@ -346,8 +345,8 @@ def test_inline_diff_ui_stream_diff():
     ui.flush()
     lines = ui.get_diff_lines()
     assert len(lines) >= 2
-    assert any(l["type"] == "removed" for l in lines)
-    assert any(l["type"] == "added" for l in lines)
+    assert any(entry["type"] == "removed" for entry in lines)
+    assert any(entry["type"] == "added" for entry in lines)
 
 
 def test_inline_diff_ui_generate_decorations():
@@ -411,6 +410,6 @@ def test_integration_unified_diff_and_validation():
 def test_numpy_hash_consistency():
     original = "hello world\n"
     engine = FullFileRewrite()
-    diff = engine.generate(original, original)
+    engine.generate(original, original)
     orig_lines = np.array(original.splitlines())
     assert np.all(orig_lines == np.array(original.splitlines()))

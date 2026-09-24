@@ -5,7 +5,6 @@ the API router and the layered memory domain can coexist without import shadowin
 """
 
 import os
-from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, status
 from openai import OpenAI
@@ -112,5 +111,5 @@ async def auto_extract_memory(conversation_id: int, authorization: str = Header(
         extracted_text = response.choices[0].message.content or ""
         memory = await save_memory(user_id, extracted_text, importance=3)
         return {"status": "OK", "extracted": extracted_text, "memory": memory}
-    except Exception as error:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Memory extraction failed") from error
+    except Exception as _e:  # noqa: BLE001
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Memory extraction failed") from _e

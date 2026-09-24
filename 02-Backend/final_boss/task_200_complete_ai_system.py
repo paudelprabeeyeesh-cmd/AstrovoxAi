@@ -1,4 +1,3 @@
-import numpy as np
 from .task_189_training_run import TrainingRun
 from .task_190_loss_spike_recovery import LossSpikeRecovery
 from .task_191_checkpoint_consistency import AsyncCheckpoint

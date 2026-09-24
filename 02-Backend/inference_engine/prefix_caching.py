@@ -2,7 +2,7 @@
 import numpy as np
 import hashlib
 from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

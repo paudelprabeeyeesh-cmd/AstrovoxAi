@@ -119,7 +119,7 @@ class TestPrivilegeSeparationNumpy:
             TrustLevel.SYSTEM: 3, TrustLevel.TRUSTED: 2,
             TrustLevel.UNTRUSTED: 1, TrustLevel.TOOL_OUTPUT: 1,
         }
-        ranks = np.array([order_map[l] for l in levels])
+        ranks = np.array([order_map[level] for level in levels])
         assert np.all(np.diff(ranks) <= 0)
 
     def test_framed_prompt_entropy(self):

@@ -38,7 +38,7 @@ class SocialReasoner:
         }
 
     def perspective_take(self, actor: str, context: SocialContext, self_beliefs: List[str]) -> PerspectiveInsight:
-        norms = self.relationship_norms.get(context.relationship, self.default_norms)
+        self.relationship_norms.get(context.relationship, self.default_norms)
         beliefs = self._infer_beliefs(actor, context, self_beliefs)
         emotions = self._estimate_emotions(actor, context, beliefs)
         intentions = self._infer_intentions(actor, beliefs, emotions)

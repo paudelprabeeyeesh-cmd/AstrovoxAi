@@ -1,9 +1,8 @@
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from ..core.grounding import ground_answer
@@ -16,7 +15,6 @@ from ..schemas import SolveRequest, SolveResponse
 from ..auth import require_verified_email
 from ..circuit_breaker import llm_circuit_breaker
 from ..retry import retry_with_backoff
-from ..database import get_db
 from ..memory import search_memories
 from ..knowledge import search_docs
 from ..interactions import create_interaction
@@ -92,8 +90,8 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
                 provider = llm_result.get("provider", "unknown")
                 model = llm_result.get("model", "unknown")
                 tokens = llm_result.get("tokens", count_tokens(full_prompt, model=model))
-        except Exception as e:
-            logger.error(f"LLM call failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"LLM call failed: {_e}")
             response_text = "I encountered an error processing your request."
             provider = "error"
             model = "error"
@@ -121,7 +119,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
             record_ab_result("model-comparison", ab_variant, "cost", cost)
 
         sources = get_sources(str(uuid.uuid4()), user_id)
-        citations = [create_citation(s, grounded_response[:200]) for s in sources]
+        [create_citation(s, grounded_response[:200]) for s in sources]
 
         prompt_hash = get_prompt_hash(full_prompt)
         log_llm_call(
@@ -189,8 +187,8 @@ async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verifie
     redacted = redact_pii(sanitized)
     prompt_with_canary = add_canary(redacted)
 
-    memories = search_memories(user_id, req.text, limit=3)
-    docs = search_docs(user_id, req.text, limit=3)
+    search_memories(user_id, req.text, limit=3)
+    search_docs(user_id, req.text, limit=3)
 
     context = context_builder.build_context(
         user_id, prompt_with_canary, max_tokens=128000, include_tools=False
@@ -209,9 +207,9 @@ async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verifie
                     "model": model,
                 })
                 yield f"data: {payload}\n\n"
-        except Exception as e:
-            logger.error(f"Streaming LLM call failed: {e}")
-            payload = json.dumps({"token": "", "error": str(e)})
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Streaming LLM call failed: {_e}")
+            payload = json.dumps({"token": "", "error": str(_e)})
             yield f"data: {payload}\n\n"
         finally:
             yield f"data: [DONE]\n\n"

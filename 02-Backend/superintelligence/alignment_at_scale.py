@@ -1,6 +1,6 @@
 import numpy as np
-from typing import List, Dict, Any, Optional
-from dataclasses import dataclass, field
+from typing import List, Dict, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -44,7 +44,7 @@ class AlignmentAtScale:
             for w, vv in zip(weights, self.value_vectors):
                 combined += w * vv.values
             overseer_outputs.append(combined)
-        overseer_array = np.stack(overseer_outputs)
+        np.stack(overseer_outputs)
         alignment_scores = []
         for ov in overseer_outputs:
             sim = float(np.dot(system_output, ov) / (np.linalg.norm(system_output) * np.linalg.norm(ov) + 1e-8))

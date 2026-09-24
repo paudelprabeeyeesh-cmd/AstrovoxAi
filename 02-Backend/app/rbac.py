@@ -1,6 +1,4 @@
-import uuid
 from enum import Enum
-from typing import List
 from fastapi import Depends, HTTPException
 
 from .auth import get_current_user

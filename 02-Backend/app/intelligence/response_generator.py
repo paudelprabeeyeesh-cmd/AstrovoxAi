@@ -113,7 +113,7 @@ class ResponseGenerator:
             "def ", "function ", "class ", "import ", "from ",
             "const ", "let ", "var ", "=>", "{", "}",
         ]
-        content_lower = content.lower()
+        content.lower()
         return any(indicator in content for indicator in code_indicators)
     
     def _detect_table(self, content: str) -> bool:

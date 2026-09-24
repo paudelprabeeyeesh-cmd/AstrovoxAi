@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.recursive_self_improvement import RecursiveSelfImprovement
 
 

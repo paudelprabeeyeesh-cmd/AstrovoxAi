@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 
 @dataclass
@@ -53,8 +53,8 @@ class DataPipeline:
             transformed = job.transform(extracted, **job.transform_params)
             loaded = job.load(transformed, **job.load_params)
             result = PipelineResult(job_name=name, extracted=extracted, transformed=transformed, loaded=loaded, success=True)
-        except Exception as exc:
-            result = PipelineResult(job_name=name, error=str(exc))
+        except Exception as _e:  # noqa: BLE001
+            result = PipelineResult(job_name=name, error=str(_e))
         with self._lock:
             self._results[name] = result
         return result

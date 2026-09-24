@@ -1,7 +1,6 @@
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
-import copy
+from dataclasses import dataclass
 
 
 @dataclass
@@ -49,7 +48,7 @@ class AdvancedMetaLearner:
         lr = self.config.inner_lr
         for _ in range(self.config.num_inner_steps):
             logits = self._forward(x, adapted)
-            loss = float(np.mean((logits - y) ** 2))
+            float(np.mean((logits - y) ** 2))
             grad = 2.0 * (logits - y) / x.shape[0]
             h = self._relu(x @ adapted['W1'] + adapted['b1'])
             db2 = np.sum(grad, axis=0)

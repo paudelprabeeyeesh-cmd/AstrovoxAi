@@ -1,5 +1,5 @@
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional
 
 
@@ -53,12 +53,12 @@ class SafeExplorer:
         risk = self.compute_risk(state, action)
         allowed = risk < self.risk_threshold
         if transition_fn is not None:
-            next_state = transition_fn(state, action)
+            transition_fn(state, action)
             reward = float(np.random.rand()) if allowed else -1.0
             state_idx = int(np.mean(state)) % self.q_table.shape[0]
             self.q_table[state_idx, action] += 0.1 * (reward - self.q_table[state_idx, action])
         else:
-            next_state = state.copy()
+            state.copy()
             reward = 0.0
         step = ExplorationStep(
             state=state.copy(),

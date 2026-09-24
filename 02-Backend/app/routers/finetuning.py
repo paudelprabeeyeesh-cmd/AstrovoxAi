@@ -1,8 +1,6 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -28,9 +26,9 @@ async def create_finetuning_job(req: dict, user_id: str = Depends(require_verifi
             )
             conn.commit()
         return {"id": job_id, "model": model, "status": "queued"}
-    except Exception as e:
-        logger.error(f"Finetuning job creation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Finetuning job creation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/finetuning/jobs")

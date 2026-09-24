@@ -1,14 +1,12 @@
 """Real multi-model benchmarking lab."""
 from __future__ import annotations
 
-import asyncio
 import logging
 import time
 from dataclasses import dataclass, field
 from typing import Any
 
 from app.adapters.factory import get_adapter
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +52,9 @@ class BenchmarkSuite:
                 success=True,
                 metrics=response.get("metrics", {}),
             )
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             latency_ms = (time.perf_counter() - start) * 1000
-            logger.error("Benchmark failed for %s: %s", provider, exc)
+            logger.error("Benchmark failed for %s: %s", provider, _e)
             return BenchmarkResult(
                 provider=provider,
                 model="unknown",
@@ -64,7 +62,7 @@ class BenchmarkSuite:
                 tokens_used=0,
                 cost_usd=0.0,
                 success=False,
-                error=str(exc),
+                error=str(_e),
             )
 
     def compare(self, results: list[BenchmarkResult]) -> dict[str, Any]:

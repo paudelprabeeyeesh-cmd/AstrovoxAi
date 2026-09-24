@@ -1,5 +1,3 @@
-import time
-import pytest
 from production_readiness.chaos_engineering import ChaosEngineer, ChaosRegistry, ChaosExperiment
 
 

@@ -117,7 +117,7 @@ class TestFastAdaptationModel:
         }
         x = np.random.randn(4, 8).astype(np.float64)
         y = np.array([0, 1, 2, 0])
-        adapted = fam.adapt(x, y)
+        fam.adapt(x, y)
         assert len(fam.loss_history) == 10
 
     def test_predict(self):

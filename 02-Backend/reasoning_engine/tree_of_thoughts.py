@@ -1,6 +1,5 @@
-from typing import Any, List, Optional, Callable, Dict
+from typing import List, Optional, Callable
 from collections import deque
-import numpy as np
 
 
 class ThoughtState:

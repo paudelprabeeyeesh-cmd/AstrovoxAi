@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_learning.contrastive_learning import SimCLR, SimCLRConfig
 
 

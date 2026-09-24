@@ -1,8 +1,8 @@
 
 import numpy as np
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from collections import deque
+from dataclasses import dataclass
+from typing import Dict, Optional, Tuple
 
 
 @dataclass

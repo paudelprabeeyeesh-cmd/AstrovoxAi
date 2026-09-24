@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from complex_learning.weakly_supervised import WeaklySupervisedLearner
 
 

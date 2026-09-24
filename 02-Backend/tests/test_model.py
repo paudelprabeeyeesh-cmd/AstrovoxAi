@@ -11,7 +11,6 @@ from app.model import (
     build_rotary_pos_emb,
     apply_rotary_pos_emb,
     create_model,
-    DEFAULT_CONFIG,
 )
 
 

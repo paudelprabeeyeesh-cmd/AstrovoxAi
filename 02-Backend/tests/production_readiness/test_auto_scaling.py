@@ -1,4 +1,3 @@
-import pytest
 from production_readiness.auto_scaling import AutoScaler, ScalingPolicy, MetricsCollector, ScalingMetrics
 
 

@@ -1,5 +1,4 @@
-import numpy as np
-from verification_loop.regression_guarding import Edit, RegressionGuard, RegressionResult
+from verification_loop.regression_guarding import Edit, RegressionGuard
 
 
 def test_regression_guard_passes_when_improved():

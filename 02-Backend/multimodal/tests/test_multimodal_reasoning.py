@@ -1,9 +1,7 @@
 import numpy as np
-import pytest
 
 from multimodal.multimodal_reasoning import (
     MultimodalReasoner,
-    Evidence,
 )
 
 

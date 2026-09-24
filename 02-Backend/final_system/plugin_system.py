@@ -8,7 +8,7 @@ import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional
 
 
 class PluginStatus(Enum):
@@ -73,7 +73,7 @@ class PluginManager:
         for handler in handlers:
             try:
                 results.append(handler(*args, **kwargs))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
         return results
 

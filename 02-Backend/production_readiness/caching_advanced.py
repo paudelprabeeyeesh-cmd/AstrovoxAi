@@ -107,8 +107,8 @@ class CacheWarming:
                     for key, value, ttl in strategy():
                         self._cache.set(key, value, ttl)
                         warmed += 1
-                except Exception as exc:
-                    logger.error("cache warming strategy failed: %s", exc)
+                except Exception as _e:  # noqa: BLE001
+                    logger.error("cache warming strategy failed: %s", _e)
                     errors += 1
         return {"warmed": warmed, "errors": errors}
 

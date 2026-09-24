@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-import os
 from training_engine.fault_tolerance import FaultTolerantTrainer, CheckpointManager
 
 

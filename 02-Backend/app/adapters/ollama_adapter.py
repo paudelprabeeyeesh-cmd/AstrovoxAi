@@ -1,6 +1,5 @@
 import json
 import logging
-import time
 from typing import AsyncGenerator
 
 import httpx
@@ -29,7 +28,7 @@ class OllamaAdapter(BaseLLMAdapter):
             with httpx.Client(timeout=5) as client:
                 response = client.get(f"{self._base_url}/api/tags")
                 return response.status_code == 200
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
     def pull_model(self) -> bool:
@@ -42,7 +41,7 @@ class OllamaAdapter(BaseLLMAdapter):
                 )
                 response.raise_for_status()
                 return True
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             logger.error(f"Failed to pull model {self._model}: {e}")
             return False
 
@@ -99,5 +98,5 @@ class OllamaAdapter(BaseLLMAdapter):
                             data = json.loads(line)
                             if "message" in data and "content" in data["message"]:
                                 yield data["message"]["content"]
-                        except Exception:
+                        except Exception:  # noqa: BLE001
                             continue

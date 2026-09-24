@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 import traceback
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 
 class CodeProgram:
@@ -18,7 +18,7 @@ class CodeProgram:
             compiled = compile(self.code, "<string>", "exec")
             exec(compiled, globals_dict, locals_dict)  # noqa: S102
             self.output = locals_dict.get("result", None)
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             self.error = traceback.format_exc()
 
     def is_syntax_valid(self) -> bool:

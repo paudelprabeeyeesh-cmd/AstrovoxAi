@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from safety_moderation.adversarial_robustness import AdversarialRobustnessTester, AdversarialExample
 
 

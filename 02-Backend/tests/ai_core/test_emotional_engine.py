@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from ai_core.emotional_engine import EmotionalEngine, EmotionRecognizer, EmpathyModel, EmotionalStimulus, EmotionState
 
 

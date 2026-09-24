@@ -63,7 +63,7 @@ class Scheduler:
                     if job.next_run is None or job.next_run <= datetime.utcnow().isoformat():
                         try:
                             self.run_job(job.name)
-                        except Exception:
+                        except Exception as _e:  # noqa: BLE001
                             continue
             threading.Event().wait(timeout=1.0)
 

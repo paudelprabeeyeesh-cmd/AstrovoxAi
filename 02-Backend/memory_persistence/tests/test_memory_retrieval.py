@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import math
 import pytest
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from memory_persistence.memory_retrieval import Memory, MemoryRetrieval
 

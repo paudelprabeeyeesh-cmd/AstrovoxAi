@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -193,7 +193,6 @@ class Scheduler:
         self.max_preempted = max_preempted
 
     def submit(self, request: dict) -> str:
-        import uuid
         batch_id = request.get("batch_id", "default")
         if batch_id not in self.batches:
             self.batches[batch_id] = ContinuousBatch(batch_id=batch_id, max_batch_size=self.max_batch_size)

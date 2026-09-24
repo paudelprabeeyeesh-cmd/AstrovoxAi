@@ -1,7 +1,6 @@
 """Tests for Knowledge Distillation with KL divergence."""
 
 import numpy as np
-import pytest
 import torch
 import torch.nn as nn
 
@@ -94,6 +93,6 @@ class TestKnowledgeDistillationTrainer:
         teacher = DummyTeacher()
         student = DummyStudent()
         config = DistillationConfig()
-        trainer = KnowledgeDistillationTrainer(teacher, student, config)
+        KnowledgeDistillationTrainer(teacher, student, config)
         assert not teacher.training
         assert student.training

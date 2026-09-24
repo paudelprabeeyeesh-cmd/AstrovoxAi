@@ -1,10 +1,8 @@
 import numpy as np
-import pytest
 
 from multimodal.multimodal_retrieval import (
     UnifiedEmbeddingSpace,
     CrossModalRetriever,
-    RetrievalResult,
 )
 
 

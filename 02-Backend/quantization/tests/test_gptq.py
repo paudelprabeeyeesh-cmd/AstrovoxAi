@@ -1,10 +1,8 @@
 """Tests for GPTQ (layer-wise quantization with Hessian-based error compensation)."""
 
-import numpy as np
-import pytest
 import torch
 
-from quantization.gptq import gptq_quantize, quantize_weight_int4
+from quantization.gptq import gptq_quantize
 
 
 class TestGptqQuantize:

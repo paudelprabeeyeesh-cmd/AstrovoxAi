@@ -1,4 +1,3 @@
-import pytest
 from app.memory import create_memory, list_memories, search_memories, delete_memory
 
 class DummyMemory:

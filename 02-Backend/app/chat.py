@@ -70,7 +70,7 @@ async def create_new_conversation(
     try:
         conversation = await create_conversation(user_id, request.title, request.model)
         return {"status": "OK", "conversation": conversation}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create conversation: {str(e)}",
@@ -91,7 +91,7 @@ async def list_conversations(
             "conversations": conversations,
             "count": len(conversations),
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch conversations: {str(e)}",
@@ -115,7 +115,7 @@ async def get_conversation_detail(
         return {"status": "OK", "conversation": conversation}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch conversation: {str(e)}",
@@ -143,7 +143,7 @@ async def get_conversation_messages(
         return {"status": "OK", "messages": messages, "count": len(messages)}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch messages: {str(e)}",
@@ -248,7 +248,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                     )
                     await update_conversation(request.conversation_id, last_message_at="now()")
                     track_ai_request(model=actual_model, status="success")
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     track_ai_request(model=actual_model, status="error")
                     sanitized = provider.sanitize_error(e)
                     yield f"data: Error: {sanitized}\n\n"
@@ -264,7 +264,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
                 system_prompt=system_prompt,
             )
             track_ai_request(model=actual_model, status="success", tokens=response.tokens_used or 0)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             track_ai_request(model=actual_model, status="error")
             sanitized = provider.sanitize_error(e)
             raise HTTPException(
@@ -299,7 +299,7 @@ async def send_message(request: SendMessageRequest, authorization: str = Header(
         }
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process message: {str(e)}",
@@ -344,7 +344,7 @@ async def update_conversation_title(
         return {"status": "OK", "conversation": updated}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update conversation: {str(e)}",
@@ -370,7 +370,7 @@ async def delete_conversation_route(
         return {"status": "OK", "message": "Conversation deleted successfully"}
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete conversation: {str(e)}",

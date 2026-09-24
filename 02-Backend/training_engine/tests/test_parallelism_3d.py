@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from training_engine.parallelism_3d import DataParallel, TensorParallel, PipelineParallel
 
 

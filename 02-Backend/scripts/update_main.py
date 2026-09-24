@@ -1,5 +1,4 @@
 import re
-import os
 
 main_path = r'C:\AstrovoxAi\02-Backend\app\main.py'
 

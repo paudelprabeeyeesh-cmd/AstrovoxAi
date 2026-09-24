@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.gradient_descent_advanced import SGD, MomentumSGD, NesterovSGD, Adam
 
 

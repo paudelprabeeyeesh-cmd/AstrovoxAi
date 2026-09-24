@@ -6,7 +6,6 @@ import pytest
 from security_audit.risk_assessment import (
     RiskControl,
     RiskEngine,
-    RiskScore,
     Threat,
 )
 

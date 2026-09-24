@@ -1,4 +1,3 @@
-import pytest
 from final_system.notification_system import Notification, NotificationSystem
 
 

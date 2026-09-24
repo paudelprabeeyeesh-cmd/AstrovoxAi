@@ -29,7 +29,7 @@ def _get_store() -> Dict[str, str]:
         return _pii_store_var.get()
     except LookupError:
         store: Dict[str, str] = {}
-        token = _pii_store_var.set(store)
+        _pii_store_var.set(store)
         return store
 
 

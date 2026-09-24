@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from sandboxing.command_scrubbing import CommandScrubber
 

@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class HierarchicalAgent:
@@ -37,6 +37,6 @@ class HierarchicalAgent:
 
     def execute(self, context: Any, depth: int = 0) -> Any:
         self.context = context
-        window = self.context_window_at_depth(depth)
+        self.context_window_at_depth(depth)
         self.context = self.compress_for_depth(context, depth)
         return self.context

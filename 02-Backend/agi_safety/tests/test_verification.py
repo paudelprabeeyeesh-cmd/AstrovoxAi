@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from agi_safety.verification import SimpleTheoremProver, ProofResult, verify_invariant
 
 

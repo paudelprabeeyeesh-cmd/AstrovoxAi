@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.stochastic_opt import spsa, stochastic_approximation, KieferWolfowitz
 
 

@@ -23,8 +23,8 @@ def check_postgres() -> bool:
             conn.execute("SELECT 1")
         logger.info("PostgreSQL: OK")
         return True
-    except Exception as exc:
-        logger.error("PostgreSQL: FAIL - %s", exc)
+    except Exception as _e:  # noqa: BLE001
+        logger.error("PostgreSQL: FAIL - %s", _e)
         return False
 
 
@@ -34,8 +34,8 @@ def check_redis() -> bool:
         client.ping()
         logger.info("Redis: OK")
         return True
-    except Exception as exc:
-        logger.error("Redis: FAIL - %s", exc)
+    except Exception as _e:  # noqa: BLE001
+        logger.error("Redis: FAIL - %s", _e)
         return False
 
 

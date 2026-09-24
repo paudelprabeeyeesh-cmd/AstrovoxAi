@@ -1,6 +1,5 @@
 import logging
 import asyncio
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +27,8 @@ class SummarizationWorker:
                 await self._process_conversations()
             except asyncio.CancelledError:
                 break
-            except Exception as e:
-                logger.error(f"Summarization worker error: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Summarization worker error: {_e}")
             await asyncio.sleep(self.interval)
 
     async def _process_conversations(self):

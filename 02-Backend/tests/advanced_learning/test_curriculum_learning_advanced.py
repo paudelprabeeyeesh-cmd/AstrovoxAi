@@ -33,7 +33,7 @@ class TestAdvancedCurriculumLearner:
         config = CurriculumConfig(input_dim=32, output_dim=4, pacing_epochs=5)
         cl = AdvancedCurriculumLearner(config)
         x = np.random.randn(16, 32).astype(np.float64)
-        y = np.random.randn(16, 4).astype(np.float64)
+        np.random.randn(16, 4).astype(np.float64)
         mask = cl.update_mask(x, epoch=0)
         assert mask.shape == (16,)
         assert isinstance(mask, np.ndarray)

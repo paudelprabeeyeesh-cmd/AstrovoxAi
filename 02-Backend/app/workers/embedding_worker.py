@@ -1,8 +1,6 @@
 
 import logging
 import asyncio
-import time
-from typing import Any
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from app.inference_queue import InferenceQueue
@@ -44,8 +42,8 @@ class EmbeddingWorker:
                     await asyncio.sleep(0.1)
             except asyncio.CancelledError:
                 break
-            except Exception as exc:
-                logger.error("Embedding worker loop error: %s", exc)
+            except Exception as _e:  # noqa: BLE001
+                logger.error("Embedding worker loop error: %s", _e)
                 await asyncio.sleep(1.0)
 
     @retry(
@@ -61,9 +59,9 @@ class EmbeddingWorker:
                 self.queue.mark_completed(job["job_id"])
             else:
                 self.queue.mark_failed(job["job_id"], "Processing returned False")
-        except Exception as exc:
-            logger.error("Job %s failed after retries: %s", job.get("job_id"), exc)
-            self.queue.mark_failed(job["job_id"], str(exc))
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Job %s failed after retries: %s", job.get("job_id"), _e)
+            self.queue.mark_failed(job["job_id"], str(_e))
 
     async def process_embedding_job(self, job_data: dict) -> bool:
         job_id = job_data.get("job_id")
@@ -80,8 +78,8 @@ class EmbeddingWorker:
                 redis_client.setex(f"embedding:{job_id}", 3600, ",".join(str(v) for v in embedding))
             logger.debug("Generated embedding for job %s, tokens=%d", job_id, len(tokens))
             return True
-        except Exception as exc:
-            logger.error("Embedding job %s processing error: %s", job_id, exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Embedding job %s processing error: %s", job_id, _e)
             return False
 
     async def process_batch(self, jobs: list[dict]) -> list[bool]:

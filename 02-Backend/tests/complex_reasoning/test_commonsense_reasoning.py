@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from complex_reasoning.commonsense_reasoning import CommonsenseFact, DefaultRule, CommonsenseKnowledgeBase, CommonsenseEngine
 
 

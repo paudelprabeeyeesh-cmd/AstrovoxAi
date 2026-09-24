@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 import string
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Sequence
 
 import numpy as np

@@ -1,9 +1,7 @@
 import numpy as np
-import pytest
 from ..catastrophic_forgetting_prevention import (
     EWCMemory,
-    ReplayBuffer,
-    CatastrophicForgettingPrevention
+    ReplayBuffer
 )
 
 
@@ -18,7 +16,7 @@ class TestEWCMemory:
         state = {"layer1": np.array([1.0, 2.0, 3.0]), "layer2": np.array([4.0, 5.0])}
         gradients = {"layer1": np.array([0.1, 0.2, 0.3]), "layer2": np.array([0.4, 0.5])}
 
-        result = ewc.update(state, "task1", gradients=gradients)
+        ewc.update(state, "task1", gradients=gradients)
 
         assert ewc.task_count == 1
         assert np.array_equal(ewc.optimal_params["layer1"], np.array([1.0, 2.0, 3.0]))

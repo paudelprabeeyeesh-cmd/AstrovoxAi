@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import Callable, Optional, Tuple
+from typing import Tuple
 
 
 def visualize_feature(model: nn.Module, feature_idx: int, layer_idx: int,

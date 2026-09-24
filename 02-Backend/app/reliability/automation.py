@@ -29,7 +29,7 @@ class SoakTestRunner:
             try:
                 requests += 1
                 time.sleep(max(0, 1.0 / target_rps))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 errors += 1
             if int(time.time() - start) % 3600 == 0:
                 memory_samples.append(self._sample_memory())
@@ -45,7 +45,7 @@ class SoakTestRunner:
         try:
             import psutil
             return psutil.Process().memory_info().rss / 1024 / 1024
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return 0.0
 
     def _growth(self, samples: list[float]) -> float:

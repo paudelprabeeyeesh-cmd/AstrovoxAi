@@ -1,5 +1,4 @@
 import time
-import pytest
 from advanced_backend.performance_optimization import QueryOptimizer, MaterializedView
 
 

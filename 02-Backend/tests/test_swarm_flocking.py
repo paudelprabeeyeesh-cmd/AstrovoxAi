@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from swarm_intelligence.flocking import Boid, FlockingSimulation
 
 

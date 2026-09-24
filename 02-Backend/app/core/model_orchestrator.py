@@ -142,9 +142,9 @@ class ModelOrchestrator:
                     success=True,
                     fallback_used=attempts > 1,
                 )
-            except Exception as exc:
+            except Exception as _e:  # noqa: BLE001
                 latency = (time.perf_counter() - start) * 1000.0
-                last_error = str(exc)
+                last_error = str(_e)
                 self.circuit_breaker.record_failure(current_endpoint.name)
                 self.router.record_request(current_endpoint.name, False, latency)
                 fallback = self.router.get_fallback(current_endpoint.name)

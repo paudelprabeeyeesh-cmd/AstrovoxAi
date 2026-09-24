@@ -35,9 +35,9 @@ class AgentDebate:
                     temperature=0.4,
                 )
                 self.rounds.append({"agent": agent, "content": response.choices[0].message.content or ""})
-            except Exception as e:
-                logger.error(f"Debate round failed for {agent}: {e}")
-                self.rounds.append({"agent": agent, "content": "", "error": str(e)})
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Debate round failed for {agent}: {_e}")
+                self.rounds.append({"agent": agent, "content": "", "error": str(_e)})
         return {"proposal_id": self.proposal.id, "rounds": self.rounds}
 
     def _get_openai(self):
@@ -77,8 +77,8 @@ class DebateEngine:
                         temperature=0.2,
                     )
                     votes[agent][p.id] = response.choices[0].message.content or ""
-                except Exception as e:
-                    logger.error(f"Voting failed for {agent} on {p.id}: {e}")
+                except Exception as _e:  # noqa: BLE001
+                    logger.error(f"Voting failed for {agent} on {p.id}: {_e}")
                     votes[agent][p.id] = ""
         return votes
 

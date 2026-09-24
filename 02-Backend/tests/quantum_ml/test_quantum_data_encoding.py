@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from quantum_ml.quantum_data_encoding import ClassicalToQuantum
 from quantum_ml.quantum_circuits import QuantumCircuit
 

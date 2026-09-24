@@ -1,4 +1,3 @@
-import numpy as np
 
 
 def all_reduce(data, world_size):

@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -26,9 +25,9 @@ async def create_embedding(req: EmbeddingRequest, user_id: str = Depends(require
             model=req.model or "text-embedding-3-small",
             dimensions=len(embeddings[0]) if embeddings else 0,
         )
-    except Exception as e:
-        logger.error(f"Embedding generation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Embedding generation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/embeddings/models")

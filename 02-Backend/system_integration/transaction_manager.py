@@ -10,9 +10,8 @@ import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from .command_query import datetime_iso
 
 
 class TransactionState(Enum):
@@ -71,10 +70,10 @@ class TransactionManager:
                     action()
                 tx.state = TransactionState.COMMITTED
                 return True
-            except Exception as exc:
+            except Exception as _e:  # noqa: BLE001
                 self._rollback(tx)
                 tx.state = TransactionState.FAILED
-                tx.metadata["error"] = str(exc)
+                tx.metadata["error"] = str(_e)
                 return False
 
     def _rollback(self, tx: DistributedTransaction) -> None:
@@ -83,7 +82,7 @@ class TransactionManager:
             if comp:
                 try:
                     comp()
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     continue
 
     def rollback(self, tx_id: str) -> None:
@@ -144,7 +143,7 @@ class SagaOrchestrator:
         for attempt in range(step.retries):
             try:
                 return step.execute()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 time.sleep(step.backoff * (attempt + 1))
         return None
 
@@ -155,7 +154,7 @@ class SagaOrchestrator:
                 try:
                     step.compensate()
                     saga.compensated.append(step.name)
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     continue
         saga.state = SagaState.ROLLED_BACK
 

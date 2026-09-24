@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from advanced_reasoning.self_evaluation import SelfEvaluator
 
 

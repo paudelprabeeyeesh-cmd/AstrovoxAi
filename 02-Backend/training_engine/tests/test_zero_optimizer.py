@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from training_engine.zero_optimizer import ZeROOptimizer
 
 

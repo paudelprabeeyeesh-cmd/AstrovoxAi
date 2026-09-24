@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
 
-from app.providers.base import EmbeddingVector, ProviderConfig
+from app.providers.base import EmbeddingVector
 
 
 # ============================================================================

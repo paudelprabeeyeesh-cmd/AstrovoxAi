@@ -1,7 +1,6 @@
 ﻿import json
 import os
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,7 @@ def validate_token_counts(records: list[dict], max_tokens: int = 8192) -> list[s
     try:
         import tiktoken
         enc = tiktoken.encoding_for_model("gpt-4o")
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         return ["tiktoken not available for token counting"]
 
     for idx, record in enumerate(records, 1):

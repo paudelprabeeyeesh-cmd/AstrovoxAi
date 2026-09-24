@@ -1,7 +1,7 @@
 import os
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Header, status
+from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -48,7 +48,7 @@ def get_user_id_from_token_with_roles(authorization: Optional[str] = Header(None
         return {"user_id": user.id, "roles": roles}
     except HTTPException:
         raise
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -64,6 +64,14 @@ def role_required(role: str):
             )
         return info["user_id"]
     return _dependency
+
+
+require_admin = role_required("admin")
+
+
+def require_verified_email(authorization: Optional[str] = Header(None)):
+    info = get_user_id_from_token_with_roles(authorization)
+    return info["user_id"]
 
 
 class SignUpRequest(BaseModel):
@@ -116,7 +124,7 @@ async def sign_up(request: SignUpRequest):
                 "email": response.user.email if response.user else None,
             },
         }
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -144,7 +152,7 @@ async def login(request: LoginRequest):
                 ),
             },
         }
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
@@ -168,7 +176,7 @@ async def reset_password(request: ResetPasswordRequest):
             },
         )
         return {"status": "OK", "message": "Password reset email sent successfully"}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -201,7 +209,7 @@ async def get_current_user(authorization: str = None):
         }
     except HTTPException:
         raise
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
@@ -225,7 +233,7 @@ async def oauth_login(request: OAuthRequest):
             "message": "OAuth flow initiated",
             "otp_sent": bool(response),
         }
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
         ) from exc
@@ -248,7 +256,7 @@ async def refresh_token(refresh_token: str):
         }
     except HTTPException:
         raise
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh token"
         )

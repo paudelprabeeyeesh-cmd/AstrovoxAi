@@ -1,6 +1,5 @@
 import time
-import pytest
-from production_readiness.caching_advanced import MultiTierCache, CacheLevel, CacheEntry, CacheWarming
+from production_readiness.caching_advanced import MultiTierCache, CacheWarming
 
 
 def test_multi_tier_cache_set_get():
@@ -30,7 +29,6 @@ def test_multi_tier_cache_stats():
 
 
 def test_cache_entry_expired():
-    import pytest
     from production_readiness.caching_advanced import CacheEntry
     entry = CacheEntry(key="k", value="v", ttl=0.1)
     assert entry.expired() is False

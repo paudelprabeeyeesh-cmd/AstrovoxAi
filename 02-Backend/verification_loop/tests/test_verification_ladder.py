@@ -1,4 +1,3 @@
-import numpy as np
 from verification_loop.verification_ladder import LadderStage, StageResult, VerificationLadder
 
 

@@ -1,13 +1,9 @@
-import pytest
 from system_integration.command_query import (
     Command,
     CommandBus,
-    CommandResult,
     CommandStatus,
     Query,
     QueryBus,
-    QueryResult,
-    QueryStatus,
     ReadModel,
     EventualConsistencySync,
 )

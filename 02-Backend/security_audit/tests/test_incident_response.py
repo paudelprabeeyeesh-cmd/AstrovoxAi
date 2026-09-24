@@ -4,9 +4,7 @@ import numpy as np
 import pytest
 
 from security_audit.incident_response import (
-    Incident,
     IncidentResponseSystem,
-    Playbook,
     PlaybookStep,
 )
 

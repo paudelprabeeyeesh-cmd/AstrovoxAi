@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from security_audit.security_hardening import (
-    HardeningResult,
     HardeningRule,
     SecurityHardener,
 )

@@ -1,4 +1,5 @@
 """Chaos testing framework for resilience validation."""
+import aiohttp
 import asyncio
 import logging
 import time
@@ -46,11 +47,11 @@ class RedisKillScenario(ChaosScenario):
             return
         try:
             await self.redis_client.ping()
-        except Exception:
+        except Exception:  # noqa: BLE001
             await asyncio.sleep(1)
             try:
                 await self.redis_client.ping()
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 raise RuntimeError(f"Redis recovery failed: {exc}") from exc
 
     async def verify(self) -> bool:
@@ -59,7 +60,7 @@ class RedisKillScenario(ChaosScenario):
         try:
             await self.redis_client.ping()
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
 
@@ -73,7 +74,7 @@ class PostgresKillScenario(ChaosScenario):
         connection = self.db_factory()
         try:
             connection.close()
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
     async def recover(self) -> None:
@@ -84,7 +85,7 @@ class PostgresKillScenario(ChaosScenario):
                 with self.db_factory() as connection:
                     connection.execute("SELECT 1")
                 return
-            except Exception:
+            except Exception:  # noqa: BLE001
                 await asyncio.sleep(1)
         raise RuntimeError("PostgreSQL recovery failed")
 
@@ -95,7 +96,7 @@ class PostgresKillScenario(ChaosScenario):
             with self.db_factory() as connection:
                 connection.execute("SELECT 1")
             return True
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
 
@@ -117,7 +118,7 @@ class NetworkPartitionScenario(ChaosScenario):
         try:
             async with self.http_client.get(f"{self.base_url}/health", timeout=aiohttp.ClientTimeout(total=5)) as resp:
                 return resp.status == 200
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
 
@@ -141,7 +142,7 @@ class ChaosRunner:
                 success=ok,
                 recovery_seconds=time.perf_counter() - start,
             )
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             return ChaosResult(
                 name=name,
                 success=False,

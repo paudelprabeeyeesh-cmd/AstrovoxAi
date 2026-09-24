@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from knowledge_graph.knowledge_graph import KnowledgeGraph, Entity, Relation
 
 

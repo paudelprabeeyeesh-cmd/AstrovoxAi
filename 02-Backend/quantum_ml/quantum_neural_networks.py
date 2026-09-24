@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Callable, List, Tuple
+from typing import Optional
 from .quantum_circuits import QuantumCircuit
 
 

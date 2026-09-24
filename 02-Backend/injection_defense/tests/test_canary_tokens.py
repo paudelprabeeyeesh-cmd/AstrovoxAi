@@ -46,7 +46,7 @@ class TestCanaryToken:
         assert not token.is_expired()
 
     def test_token_expired_with_ttl(self):
-        registry = CanaryRegistry()
+        CanaryRegistry()
         token = CanaryToken(value="TEST-TOKEN", expires_at=time.time() - 1.0)
         assert token.is_expired()
 

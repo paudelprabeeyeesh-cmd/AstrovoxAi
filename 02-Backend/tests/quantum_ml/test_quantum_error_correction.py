@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from quantum_ml.quantum_error_correction import NoiseModel, ErrorMitigation
 
 

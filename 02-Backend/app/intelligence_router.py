@@ -78,17 +78,17 @@ async def process_intelligent_request(
     
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Intelligence processing failed: {str(e)}",
-        )
+            detail=f"Intelligence processing failed: {str(_e)}",
+        ) from None
 
 
 @router.get("/models")
 async def list_models(authorization: str = Header(None)):
     """List all available AI models"""
-    user_id = get_user_id_from_token(authorization)
+    get_user_id_from_token(authorization)
     
     try:
         models = intelligence_core.get_available_models()
@@ -97,17 +97,17 @@ async def list_models(authorization: str = Header(None)):
             "models": models,
             "count": len(models),
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list models: {str(e)}",
-        )
+            detail=f"Failed to list models: {str(_e)}",
+        ) from None
 
 
 @router.get("/tools")
 async def list_tools(authorization: str = Header(None)):
     """List all available tools"""
-    user_id = get_user_id_from_token(authorization)
+    get_user_id_from_token(authorization)
     
     try:
         tools = intelligence_core.get_available_tools()
@@ -116,11 +116,11 @@ async def list_tools(authorization: str = Header(None)):
             "tools": tools,
             "count": len(tools),
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list tools: {str(e)}",
-        )
+            detail=f"Failed to list tools: {str(_e)}",
+        ) from None
 
 
 @router.get("/trace/{request_id}")
@@ -129,7 +129,7 @@ async def get_execution_trace(
     authorization: str = Header(None),
 ):
     """Get execution trace for a specific request"""
-    user_id = get_user_id_from_token(authorization)
+    get_user_id_from_token(authorization)
     
     try:
         trace = intelligence_core.get_execution_trace(request_id)
@@ -145,11 +145,11 @@ async def get_execution_trace(
         }
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get trace: {str(e)}",
-        )
+            detail=f"Failed to get trace: {str(_e)}",
+        ) from None
 
 
 @router.get("/costs")
@@ -163,11 +163,11 @@ async def get_cost_summary(authorization: str = Header(None)):
             "status": "OK",
             "summary": summary,
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get cost summary: {str(e)}",
-        )
+            detail=f"Failed to get cost summary: {str(_e)}",
+        ) from None
 
 
 @router.get("/optimizations")
@@ -181,11 +181,11 @@ async def get_optimization_suggestions(authorization: str = Header(None)):
             "status": "OK",
             "suggestions": suggestions,
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get optimization suggestions: {str(e)}",
-        )
+            detail=f"Failed to get optimization suggestions: {str(_e)}",
+        ) from None
 
 
 @router.post("/preferences/model")
@@ -202,11 +202,11 @@ async def set_model_preference(
             "status": "OK",
             "message": f"Model preference set to {request.model_name}",
         }
-    except Exception as e:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set model preference: {str(e)}",
-        )
+            detail=f"Failed to set model preference: {str(_e)}",
+        ) from None
 
 
 @router.get("/status")

@@ -1,7 +1,7 @@
-import json
 import logging
-from datetime import datetime
-from typing import Optional
+import os
+from typing import Optional  # noqa: F401
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,6 @@ class PromptVersionManager:
         self._load_versions()
 
     def _load_versions(self):
-        import os
-
         if not os.path.exists(self.prompts_dir):
             os.makedirs(self.prompts_dir, exist_ok=True)
             return
@@ -23,7 +21,6 @@ class PromptVersionManager:
             if filename.endswith(".py"):
                 prompt_name = filename[:-3]
                 self.versions[prompt_name] = {"version": "1.0.0", "changelog": []}
-
     def get_prompt(self, name: str, version: str = None) -> str:
         if name not in self.versions:
             return ""
@@ -33,8 +30,8 @@ class PromptVersionManager:
             with open(prompt_file, "r") as f:
                 content = f.read()
             return content
-        except Exception as e:
-            logger.error(f"Failed to load prompt {name}: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Failed to load prompt {name}: {_e}")
             return ""
 
     def log_prompt_version(self, prompt_name: str, version: str, request_id: str):

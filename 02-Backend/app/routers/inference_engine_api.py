@@ -1,8 +1,8 @@
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from ..auth import require_verified_email
-from ..inference_engine import InferenceAdapter, SpeculativeDecoder, ContextAssembler, AgenticLoop, MoERouter, KVCache
+from ..inference_engine import InferenceAdapter, ContextAssembler, AgenticLoop, KVCache
 
 logger = logging.getLogger(__name__)
 

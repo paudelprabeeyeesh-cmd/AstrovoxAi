@@ -38,8 +38,8 @@ class RAGService:
                 limit=top_k,
             )
             return results
-        except Exception as e:
-            logger.error(f"Vector search failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Vector search failed: {_e}")
             return []
 
     def _keyword_search(self, query: str, user_id: str, top_k: int = 10) -> list[dict]:
@@ -54,8 +54,8 @@ class RAGService:
                 {"id": r[0], "title": r[1], "content": r[2], "score": r[3] or 0.5}
                 for r in cursor.fetchall()
             ]
-        except Exception as e:
-            logger.error(f"Keyword search failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Keyword search failed: {_e}")
             return []
 
     def _embed(self, text: str) -> list[float]:
@@ -67,7 +67,7 @@ class RAGService:
                 input=text, model="text-embedding-3-small"
             )
             return response.data[0].embedding
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return [0.0] * 1536
 
     def rerank(self, query: str, results: list[dict], top_k: int = 5) -> list[dict]:
@@ -83,8 +83,8 @@ class RAGService:
             if response.status_code == 200:
                 reranked = response.json().get("results", [])
                 return [results[i] for i in reranked if i < len(results)]
-        except Exception as e:
-            logger.warning(f"Rerank failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Rerank failed: {_e}")
         return results[:top_k]
 
     def chunk_document(

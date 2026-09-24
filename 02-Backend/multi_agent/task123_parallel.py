@@ -43,8 +43,8 @@ class ParallelOrchestrator:
                 idx = futures[future]
                 try:
                     self.results[idx] = future.result()
-                except Exception as exc:
-                    self.results[idx] = exc
+                except Exception as _e:  # noqa: BLE001
+                    self.results[idx] = _e
         if self.barrier is not None:
             try:
                 self.barrier.wait(timeout=1)

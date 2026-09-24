@@ -1,6 +1,5 @@
 import unittest
 
-import numpy as np
 
 from data_pipeline.toxicity_filter import ToxicityFilter
 

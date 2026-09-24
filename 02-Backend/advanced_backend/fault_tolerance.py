@@ -2,7 +2,7 @@ import time
 import threading
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict
 
 
 class CircuitState(Enum):
@@ -39,7 +39,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self._on_failure()
             raise exc
 

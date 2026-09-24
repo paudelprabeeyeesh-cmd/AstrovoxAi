@@ -52,7 +52,7 @@ class ToolExecutor:
                         continue
                     return ToolResult(tool_name=tool_name, success=False, error=last_error, latency_ms=latency, retries=attempts)
                 return ToolResult(tool_name=tool_name, success=True, result=execution.result, latency_ms=latency, retries=attempts)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 last_error = str(exc)
                 if attempts < max_retries:
                     time.sleep(0.1 * (2 ** attempts))

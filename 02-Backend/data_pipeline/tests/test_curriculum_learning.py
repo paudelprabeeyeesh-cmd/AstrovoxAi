@@ -1,6 +1,5 @@
 import unittest
 
-import numpy as np
 
 from data_pipeline.curriculum_learning import CurriculumLearner
 

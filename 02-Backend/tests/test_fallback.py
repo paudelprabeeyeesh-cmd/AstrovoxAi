@@ -1,4 +1,3 @@
-import pytest
 from app.fallback import safe_answer
 
 def test_safe_answer():

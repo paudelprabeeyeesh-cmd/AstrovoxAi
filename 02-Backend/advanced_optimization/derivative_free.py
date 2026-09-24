@@ -3,7 +3,7 @@ import numpy as np
 
 def nelder_ead(f, x0, alpha=1.0, gamma=2.0, rho=0.5, sigma=0.5, max_iter=1000, tol=1e-6):
     simplex = np.array([np.copy(xi) for xi in x0])
-    n = simplex.shape[1]
+    simplex.shape[1]
     values = np.array([f(xi) for xi in simplex])
     for _ in range(max_iter):
         idx_sorted = np.argsort(values)

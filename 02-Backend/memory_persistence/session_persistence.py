@@ -116,7 +116,7 @@ class SessionPersistence:
                 self._states[session_id] = session_state
                 return session_state
                 
-            except (json.JSONDecodeError, KeyError, ValueError) as e:
+            except (json.JSONDecodeError, KeyError, ValueError):
                 return None
 
     def resume_session(self, session_id: str) -> Optional[Dict[str, Any]]:

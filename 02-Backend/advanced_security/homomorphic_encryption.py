@@ -123,5 +123,5 @@ class PaillierKeyPair:
         return (c1 * c2) % (self._n * self._n)
 
     def decrypt(self, ciphertext: int) -> int:
-        l = self._L(self._modpow(ciphertext, self._lam, self._n * self._n))
-        return (l * self._mu) % self._n
+        plaintext = self._L(self._modpow(ciphertext, self._lam, self._n * self._n))
+        return (plaintext * self._mu) % self._n

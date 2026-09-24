@@ -1,6 +1,6 @@
 import bisect
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 
 class QueryOptimizer:

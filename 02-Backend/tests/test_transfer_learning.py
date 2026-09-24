@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.transfer_learning import TransferLearner
 
 

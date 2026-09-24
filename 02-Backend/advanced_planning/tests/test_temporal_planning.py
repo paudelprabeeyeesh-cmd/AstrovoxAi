@@ -1,4 +1,3 @@
-import pytest
 from advanced_planning.temporal_planning import TemporalEvent, TemporalConstraint, TemporalPlanner, CPM, Scheduler
 
 

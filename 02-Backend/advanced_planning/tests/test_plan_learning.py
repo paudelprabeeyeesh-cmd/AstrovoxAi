@@ -1,6 +1,4 @@
 
-import numpy as np
-import pytest
 from advanced_planning.plan_learning import Demonstrator, PlanLearner
 
 

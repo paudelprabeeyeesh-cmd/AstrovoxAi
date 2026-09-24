@@ -1,5 +1,4 @@
 import hashlib
-import hmac
 import json
 import time
 from dataclasses import dataclass, field

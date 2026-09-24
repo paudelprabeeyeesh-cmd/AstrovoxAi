@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from creativity.creative_generator import CreativeGenerator, CreativeOutput
 
 

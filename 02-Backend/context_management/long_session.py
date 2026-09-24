@@ -1,5 +1,4 @@
-from typing import List, Dict, Optional
-from .sliding_window import SlidingWindow
+from typing import List, Optional
 
 
 class ToolCall:

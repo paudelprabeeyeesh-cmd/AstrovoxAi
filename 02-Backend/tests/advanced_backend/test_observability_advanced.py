@@ -1,5 +1,3 @@
-import time
-import pytest
 from advanced_backend.observability_advanced import ObservableRegistry, observability
 
 

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Tuple
 import numpy as np
 
 
@@ -51,7 +51,7 @@ class EnvironmentModel:
         self.learned_transitions.append((prev_state.copy(), action.copy(), next_state.copy()))
         if len(self.learned_transitions) >= 2:
             states = np.array([t[0] for t in self.learned_transitions])
-            nexts = np.array([t[2] for t in self.learned_transitions])
+            np.array([t[2] for t in self.learned_transitions])
             if states.shape[0] > 1 and states.shape[1] == self.state_dim:
                 cov = np.cov(states.T) + 1e-6 * np.eye(self.state_dim)
                 try:
@@ -63,7 +63,7 @@ class EnvironmentModel:
         state = self.state.copy()
         predictions = [state.copy()]
         for t in range(horizon):
-            action = actions[t] if actions and t < len(actions) else np.zeros(self.action_dim)
+            actions[t] if actions and t < len(actions) else np.zeros(self.action_dim)
             noise = np.random.multivariate_normal(np.zeros(self.state_dim), self.dynamics.noise_covariance)
             state = self.dynamics.transition_matrix @ state + noise[:self.state_dim]
             predictions.append(state.copy())

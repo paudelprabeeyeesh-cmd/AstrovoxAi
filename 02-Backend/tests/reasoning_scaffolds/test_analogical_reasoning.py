@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
-import pytest
 
 from reasoning_scaffolds.analogical_reasoning import (
     Analogy,

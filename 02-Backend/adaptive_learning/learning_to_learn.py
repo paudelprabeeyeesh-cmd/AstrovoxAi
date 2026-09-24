@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Tuple, Any
 from dataclasses import dataclass
 
 
@@ -52,7 +52,7 @@ class MetaLearner:
     def _compute_loss_and_grad(self, logits: np.ndarray, y: np.ndarray) -> np.ndarray:
         probs = self._softmax(logits)
         eps = 1e-12
-        loss = -np.mean(np.log(probs[np.arange(len(y)), y.astype(int)] + eps))
+        -np.mean(np.log(probs[np.arange(len(y)), y.astype(int)] + eps))
         grad = probs - np.eye(probs.shape[1])[y.astype(int)]
         grad = grad / len(y)
         return grad

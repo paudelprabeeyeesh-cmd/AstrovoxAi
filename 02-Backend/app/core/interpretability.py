@@ -89,7 +89,7 @@ def circuit_analysis(model: nn.Module, prompt_ids: torch.Tensor, target_token_id
         with torch.no_grad():
             logits = model(prompt_ids)
         target_logits = logits[0, -1, :]
-        target_prob = float(torch.softmax(target_logits, dim=-1)[target_token_id])
+        float(torch.softmax(target_logits, dim=-1)[target_token_id])
         for layer_idx, activation in activations.items():
             patch = ActivationPatch(layer=layer_idx, position=prompt_ids.shape[1] - 1, original_activation=activation)
             patches.append(patch)

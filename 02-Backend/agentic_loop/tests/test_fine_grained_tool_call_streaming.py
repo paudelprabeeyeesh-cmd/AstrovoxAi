@@ -1,9 +1,6 @@
-import pytest
-import json
 from agentic_loop.fine_grained_tool_call_streaming import (
     StreamingToolCaller,
     FineGrainedStreamingParser,
-    StreamChunk,
 )
 
 

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from quantum_ml.variational_circuits import VQE, QAOA, AnsatzDesigner
 
 

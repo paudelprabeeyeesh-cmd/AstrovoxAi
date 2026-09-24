@@ -1,9 +1,8 @@
 
-import pytest
 import numpy as np
 
 from inference_engine.paged_attention import (
-    KVCache, KVCachePage, PageTable, paged_attention_forward
+    KVCache, PageTable, paged_attention_forward
 )
 
 

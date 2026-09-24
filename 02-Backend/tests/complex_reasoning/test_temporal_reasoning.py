@@ -1,6 +1,5 @@
-import pytest
 from datetime import datetime, timedelta
-from complex_reasoning.temporal_reasoning import Fluent, Event, Action, EventCalculus, TemporalEngine
+from complex_reasoning.temporal_reasoning import Fluent, Event, EventCalculus, TemporalEngine
 
 
 class TestFluent:

@@ -1,7 +1,7 @@
 import logging
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._on_failure()
             raise e
 

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from consciousness.embodied_cognition import EmbodiedAgent
 

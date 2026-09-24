@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from emergent_abilities.cross_lingual import MultilingualEmergenceTracker, CrossLingualTransferAnalyzer
 
 

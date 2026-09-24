@@ -1,6 +1,3 @@
-import hashlib
-import math
-import re
 import time
 import urllib.parse
 import urllib.robotparser
@@ -54,7 +51,7 @@ class DistributedCrawler:
         try:
             resp = self.session.get(robots_url, timeout=self.config.timeout)
             rp.parse(resp.text.splitlines())
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return True
         return rp.can_fetch(self.config.user_agent, url)
 
@@ -67,5 +64,5 @@ class DistributedCrawler:
             resp = self.session.get(url, timeout=self.config.timeout)
             resp.raise_for_status()
             return resp.text
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return None

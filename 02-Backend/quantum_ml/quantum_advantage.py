@@ -1,8 +1,8 @@
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List, Dict
 from .quantum_circuits import QuantumCircuit
-from .quantum_kernels import QuantumKernel, QuantumSVM
-from .variational_circuits import VQE, QAOA
+from .quantum_kernels import QuantumKernel
+from .variational_circuits import VQE
 
 
 class QuantumSupremacyBenchmark:
@@ -91,10 +91,10 @@ class QuantumAdvantageTest:
         np.random.seed(42)
         X = np.random.randn(n_samples, n_features)
         start = np.datetime64('now')
-        K_classical = X @ X.T
+        X @ X.T
         classical_time = float((np.datetime64('now') - start) / np.timedelta64(1, 'ms'))
         start = np.datetime64('now')
         kernel = QuantumKernel()
-        K_quantum = kernel.kernel_matrix(X[:min(n_samples, 10)], X[:min(n_samples, 10)])
+        kernel.kernel_matrix(X[:min(n_samples, 10)], X[:min(n_samples, 10)])
         quantum_time = float((np.datetime64('now') - start) / np.timedelta64(1, 'ms'))
         return {"samples": n_samples, "classical_ms": classical_time, "quantum_ms": quantum_time}

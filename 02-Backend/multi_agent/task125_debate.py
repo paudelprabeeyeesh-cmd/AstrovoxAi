@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class Agent:

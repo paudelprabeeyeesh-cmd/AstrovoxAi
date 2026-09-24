@@ -1,4 +1,3 @@
-import numpy as np
 
 from caching.api_response_cache import APIResponseCache
 
@@ -30,7 +29,7 @@ def test_api_response_cache_invalidate_tag():
 def test_api_response_cache_invalidate_prefix():
     cache = APIResponseCache(max_entries=10)
     entry1 = cache.set("GET", "/api/v1/users", {"page": "1"}, value={}, ttl=60.0)
-    entry2 = cache.set("GET", "/api/v1/items", {"page": "1"}, value={}, ttl=60.0)
+    cache.set("GET", "/api/v1/items", {"page": "1"}, value={}, ttl=60.0)
     prefix = entry1.key[:8]
     removed = cache.invalidate_prefix(prefix)
     assert removed >= 1

@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import numpy as np
 
 
@@ -36,7 +36,7 @@ class TemporalReasoner:
         return [e for e in self.events if start_time <= e.timestamp <= end_time]
 
     def causality_score(self, event_a: str, event_b: str) -> float:
-        link = next((l for l in self.links if l.cause == event_a and l.effect == event_b), None)
+        link = next((lnk for lnk in self.links if lnk.cause == event_a and lnk.effect == event_b), None)
         return link.strength if link else 0.0
 
     def predict_next(self, window: int = 3) -> Optional[Event]:
@@ -50,7 +50,7 @@ class TemporalReasoner:
     def build_timeline(self) -> List[Dict[str, Any]]:
         timeline = []
         for event in self.events:
-            causes = [l.cause for l in self.links if l.effect == event.id]
+            causes = [lnk.cause for lnk in self.links if lnk.effect == event.id]
             timeline.append({
                 "event": event.id,
                 "time": event.timestamp,

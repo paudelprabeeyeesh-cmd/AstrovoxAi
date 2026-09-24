@@ -4,10 +4,7 @@ import numpy as np
 import pytest
 
 from security_audit.threat_detection import (
-    AnomalyEvent,
-    DetectionResult,
     IntrusionDetectionSystem,
-    IntrusionSignature,
     StatisticalAnomalyDetector,
 )
 

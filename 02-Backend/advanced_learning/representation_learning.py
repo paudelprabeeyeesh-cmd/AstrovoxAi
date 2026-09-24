@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Tuple, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -74,7 +74,7 @@ class RepresentationLearner:
         while i >= 1:
             b_key = keys[i]
             w_key = keys[i - 1]
-            b = self.decoder_params[b_key]
+            self.decoder_params[b_key]
             w = self.decoder_params[w_key]
             h_prev = dec_acts[i // 2]
             db = np.sum(grad, axis=0)
@@ -89,7 +89,7 @@ class RepresentationLearner:
         while i >= 1:
             b_key = enc_keys[i]
             w_key = enc_keys[i - 1]
-            b = self.encoder_params[b_key]
+            self.encoder_params[b_key]
             w = self.encoder_params[w_key]
             h_prev = enc_acts[i // 2]
             db = np.sum(grad, axis=0)

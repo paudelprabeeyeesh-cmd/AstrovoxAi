@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from complex_reasoning.analogical_reasoning import Attribute, Relation, Concept, StructureMapping, AnalogyEngine
 
 

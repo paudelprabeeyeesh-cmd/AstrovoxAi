@@ -73,7 +73,7 @@ class ReActLoop:
                     try:
                         result = self.tools[step.action](**(step.action_input or {}))
                         step.observation = str(result)
-                    except Exception as e:
+                    except Exception as e:  # noqa: BLE001
                         step.observation = f"Error: {str(e)}"
                         delay = self.backoff.get_delay()
                         time.sleep(delay)
@@ -81,7 +81,7 @@ class ReActLoop:
                 elif step.action:
                     step.observation = f"Unknown tool: {step.action}"
 
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 step = ReActStep(thought=f"Error during iteration {iteration}", error=str(e))
                 steps.append(step)
                 delay = self.backoff.get_delay()
@@ -113,7 +113,7 @@ class ReActLoop:
                 import json
                 try:
                     action_input = json.loads(line[len("Action Input:"):].strip())
-                except Exception:
+                except Exception:  # noqa: BLE001
                     action_input = {}
 
         return ReActStep(thought=thought or "No thought provided", action=action, action_input=action_input)

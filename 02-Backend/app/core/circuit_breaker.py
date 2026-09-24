@@ -23,9 +23,9 @@ class CircuitBreaker:
             result = func(*args, **kwargs)
             self._on_success()
             return result
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             self._on_failure()
-            raise e
+            raise _e
 
     def _on_success(self):
         self.failures = 0

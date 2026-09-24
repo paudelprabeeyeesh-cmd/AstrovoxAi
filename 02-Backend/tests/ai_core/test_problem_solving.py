@@ -1,10 +1,5 @@
-import numpy as np
-import pytest
 from ai_core.problem_solving import (
     ProblemSolver,
-    HeuristicSearch,
-    ConstraintSatisfactionProblem,
-    AnalogyEngine,
 )
 
 

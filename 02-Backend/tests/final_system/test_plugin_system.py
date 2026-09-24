@@ -1,4 +1,3 @@
-import pytest
 from final_system.plugin_system import Plugin, PluginManager, PluginStatus
 
 

@@ -1,9 +1,7 @@
-import json
 import logging
 import time
 from typing import Any
 from dataclasses import dataclass, field, asdict
-from statistics import mean
 
 logger = logging.getLogger(__name__)
 

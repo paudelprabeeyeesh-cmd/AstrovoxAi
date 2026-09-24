@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Any, List
 
-import pytest
 
-from reasoning_scaffolds.mcts import MCTSNode, mcts_search, _default_policy, _tree_policy
+from reasoning_scaffolds.mcts import MCTSNode, mcts_search
 
 
 def test_mcts_node_uct():

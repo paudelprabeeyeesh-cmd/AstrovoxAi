@@ -53,8 +53,8 @@ class TaskDecomposer:
             )
             value = float((response.choices[0].message.content or "0.5").strip())
             return max(0.0, min(1.0, value))
-        except Exception as e:
-            logger.error(f"Complexity estimation failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Complexity estimation failed: {_e}")
             return round(heuristic, 2)
 
     def identify_dependencies(self, tasks: list[SubTask]) -> dict[str, list[str]]:

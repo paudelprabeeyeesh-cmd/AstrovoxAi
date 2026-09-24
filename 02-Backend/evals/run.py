@@ -7,7 +7,7 @@ GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden.jsonl")
 BASELINE_PATH = os.path.join(os.path.dirname(__file__), "baseline.json")
 def load_golden_set():
     if not os.path.exists(GOLDEN_PATH): return []
-    with open(GOLDEN_PATH, "r", encoding="utf-8") as f: return [json.loads(l) for l in f if l.strip()]
+    with open(GOLDEN_PATH, "r", encoding="utf-8") as f: return [json.loads(line) for line in f if line.strip()]
 def score_response(prompt, expected, actual):
     ew = set(expected.lower().split()); aw = set(actual.lower().split())
     if not ew: precision = recall = 1.0 if not aw else 0.0
@@ -30,7 +30,8 @@ def run_evaluation():
     results = []; total = {"precision":0,"recall":0,"faithfulness":0,"answer_relevance":0}
     for i, item in enumerate(golden_set):
         try: actual = call_llm(item["prompt"]).get("text","")
-        except Exception as e: actual = ""
+        except Exception:  # noqa: BLE001
+            pass
         scores = score_response(item["prompt"], item["expected"], actual)
         results.append({"scores": scores})
         for k in total: total[k] += scores[k]

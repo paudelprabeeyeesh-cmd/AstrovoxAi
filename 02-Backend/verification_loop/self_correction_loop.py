@@ -1,5 +1,5 @@
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
@@ -44,9 +44,9 @@ class SelfCorrectionLoop:
             start = time.perf_counter()
             try:
                 model_output = model_fn(current_error)
-            except Exception as exc:
+            except Exception as _e:  # noqa: BLE001
                 model_output = ""
-                current_error = str(exc)
+                current_error = str(_e)
             duration = (time.perf_counter() - start) * 1000
             validation = validator_fn(model_output)
             success = validation.get("passed", False)

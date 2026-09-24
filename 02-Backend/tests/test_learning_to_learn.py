@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from adaptive_learning.learning_to_learn import MetaLearner, TaskBatch
 
 

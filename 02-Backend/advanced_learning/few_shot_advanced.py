@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -58,7 +58,6 @@ class PrototypicalNetwork:
             return np.sum((query_embeddings[:, None, :] - prototypes[None, :, :]) ** 2, axis=2)
 
     def _compute_loss(self, distances: np.ndarray, query_labels: np.ndarray) -> float:
-        num_classes = self.config.num_classes
         target = np.zeros_like(distances)
         target[np.arange(len(query_labels)), query_labels] = 1.0
         logits = -distances
@@ -75,7 +74,6 @@ class PrototypicalNetwork:
         distances = self._compute_distances(query_emb, prototypes)
         loss = self._compute_loss(distances, query_y)
         self.loss_history.append(loss)
-        num_classes = self.config.num_classes
         target = np.zeros_like(distances)
         target[np.arange(len(query_y)), query_y] = 1.0
         logits = -distances
@@ -86,7 +84,7 @@ class PrototypicalNetwork:
         grad /= len(query_y)
         d_emb = grad[:, None, :] @ prototypes[None, :, :]
         d_emb = np.sum(d_emb, axis=1)
-        h = self._relu(support_x @ self.embedding_params['W1'] + self.embedding_params['b1'])
+        self._relu(support_x @ self.embedding_params['W1'] + self.embedding_params['b1'])
         h_q = self._relu(query_x @ self.embedding_params['W1'] + self.embedding_params['b1'])
         db2_q = np.sum(d_emb, axis=0)
         dw2_q = h_q.T @ d_emb

@@ -1,5 +1,4 @@
 
-import pytest
 from advanced_planning.plan_verification import State, CTLFormula, KripkeModel, ModelChecker, PlanVerifier
 
 

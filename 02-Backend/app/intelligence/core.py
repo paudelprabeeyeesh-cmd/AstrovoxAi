@@ -16,17 +16,16 @@ into an intelligent reasoning platform.
 """
 
 from typing import Dict, List, Any, Optional
-from datetime import datetime
 import uuid
 
-from .model_orchestrator import ModelOrchestrator, TaskType
+from .model_orchestrator import ModelOrchestrator
 from .prompt_engine import PromptEngine, ContextSource
 from .reasoning_pipeline import ReasoningPipeline
 from .tool_engine import ToolEngine
 from .planning_engine import PlanningEngine
 from .response_generator import ResponseGenerator, ResponseFormat
-from .cost_optimizer import CostOptimizer, OptimizationStrategy
-from .execution_tracer import ExecutionTracer, TraceEventType
+from .cost_optimizer import CostOptimizer
+from .execution_tracer import ExecutionTracer
 from .reliability import ReliabilitySafeguards
 
 
@@ -179,7 +178,7 @@ class IntelligenceCore:
                 raise Exception(f"Safety validation failed: {prompt_result.get('reason')}")
             
             # Step 6: Execute reasoning pipeline
-            reasoning_result = await self.reasoning_pipeline.reason(
+            await self.reasoning_pipeline.reason(
                 user_message=user_message,
                 user_id=user_id,
                 context=context,
@@ -248,18 +247,18 @@ class IntelligenceCore:
                 "trace": trace.to_dict(),
             }
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             # Trace error
             self.execution_tracer.trace_error(
                 request_id,
-                str(e),
+                str(_e),
                 {"context": str(context)},
             )
             self.execution_tracer.end_trace(request_id, "")
             
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "request_id": request_id,
                 "trace": trace.to_dict(),
             }

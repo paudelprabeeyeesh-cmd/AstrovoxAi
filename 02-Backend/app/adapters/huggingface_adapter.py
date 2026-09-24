@@ -33,7 +33,7 @@ class HuggingFaceAdapter(BaseLLMAdapter):
                     headers=headers,
                 )
                 return response.status_code == 200
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     def route_model(self, task: str = "text-generation") -> str:
@@ -102,5 +102,5 @@ class HuggingFaceAdapter(BaseLLMAdapter):
                             content = delta.get("content", "")
                             if content:
                                 yield content
-                        except Exception:
+                        except Exception as _e:  # noqa: BLE001
                             continue

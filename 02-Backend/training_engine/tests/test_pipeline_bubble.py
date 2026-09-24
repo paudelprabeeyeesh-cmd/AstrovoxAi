@@ -1,5 +1,3 @@
-import numpy as np
-import pytest
 from training_engine.pipeline_bubble import PipelineScheduler
 
 

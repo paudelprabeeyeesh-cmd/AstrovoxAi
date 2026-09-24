@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from safety_moderation.red_teaming import RedTeamAtScale, JailbreakPrompt
+from safety_moderation.red_teaming import RedTeamAtScale
 
 
 class TestRedTeamAtScale:

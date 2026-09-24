@@ -6,7 +6,6 @@ Executes integration test scenarios, collects results, and reports outcomes.
 
 from __future__ import annotations
 
-import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
@@ -74,14 +73,14 @@ class IntegrationTester:
                 error = str(exc)
                 failed += 1
                 break
-            except Exception as exc:
-                error = str(exc)
+            except Exception as _e:  # noqa: BLE001
+                error = str(_e)
                 failed += 1
                 break
         for td in scenario.teardowns:
             try:
                 td()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 continue
         if error:
             return TestResult(scenario=scenario.name, passed=False, steps_passed=passed, steps_failed=failed, error=error)

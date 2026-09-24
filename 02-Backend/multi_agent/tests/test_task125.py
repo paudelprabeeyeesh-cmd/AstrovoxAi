@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from multi_agent.task125_debate import Agent, DebateOrchestrator
 
 

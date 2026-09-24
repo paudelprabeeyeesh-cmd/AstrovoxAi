@@ -18,7 +18,6 @@ Provides metrics such as:
 from typing import Dict, List, Any, Optional
 from enum import Enum
 from datetime import datetime
-import time
 
 
 class OptimizationStrategy(Enum):

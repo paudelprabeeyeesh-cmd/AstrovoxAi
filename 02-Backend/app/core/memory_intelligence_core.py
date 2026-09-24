@@ -58,7 +58,7 @@ class MemoryIntelligence:
             try:
                 from app.core.embeddings_core import EmbeddingEngine
                 self.embedding_engine = EmbeddingEngine()
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 return []
         query_emb = self.embedding_engine.embed_query(query_text)
         return self.search(query_emb, top_k=top_k)

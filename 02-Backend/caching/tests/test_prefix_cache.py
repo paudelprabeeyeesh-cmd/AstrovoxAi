@@ -1,4 +1,3 @@
-import numpy as np
 
 from caching.prefix_cache import PrefixCache
 

@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
-import subprocess
 from dataclasses import dataclass
 from typing import Any
 
@@ -36,8 +34,8 @@ class BlueGreenDeployer:
             previous = self.active
             self.active = target
             return DeploymentResult(strategy="blue_green", success=True, previous_version=previous, current_version=target)
-        except Exception as exc:
-            return DeploymentResult(strategy="blue_green", success=False, error=str(exc))
+        except Exception as _e:  # noqa: BLE001
+            return DeploymentResult(strategy="blue_green", success=False, error=str(_e))
 
     def rollback(self) -> DeploymentResult:
         target = self.blue if self.active == self.green else self.green
@@ -46,8 +44,8 @@ class BlueGreenDeployer:
             previous = self.active
             self.active = target
             return DeploymentResult(strategy="blue_green", success=True, previous_version=previous, current_version=target)
-        except Exception as exc:
-            return DeploymentResult(strategy="blue_green", success=False, error=str(exc))
+        except Exception as _e:  # noqa: BLE001
+            return DeploymentResult(strategy="blue_green", success=False, error=str(_e))
 
     def _apply(self, target: str, image: str) -> None:
         logger.info("Applying %s with image %s", target, image)
@@ -78,8 +76,8 @@ class CanaryDeployer:
                 self._apply(stage["percentage"], image)
                 self._observe(stage["duration_minutes"])
             return DeploymentResult(strategy="canary", success=True, current_version=image)
-        except Exception as exc:
-            return DeploymentResult(strategy="canary", success=False, error=str(exc))
+        except Exception as _e:  # noqa: BLE001
+            return DeploymentResult(strategy="canary", success=False, error=str(_e))
 
     def _apply(self, percentage: int, image: str) -> None:
         logger.info("Routing %s%% traffic to %s", percentage, image)

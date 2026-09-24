@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from ai_core.social_engine import SocialEngine, TheoryOfMind, CommunicationChannel, ReputationSystem
 
 
@@ -38,7 +37,7 @@ def test_social_engine_integration():
     obs[0] = 0.5
     obs[1] = 0.5
     engine.observe("agent1", obs, confidence=0.7)
-    cue = engine.send_message("alice", "bob", "greeting", confidence=0.9)
+    engine.send_message("alice", "bob", "greeting", confidence=0.9)
     engine.record_outcome("alice", 0.85, observers=["bob"])
     state = engine.get_social_state()
     assert state["interaction_count"] == 1

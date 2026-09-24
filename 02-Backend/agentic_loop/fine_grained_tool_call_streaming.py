@@ -1,5 +1,4 @@
 import json
-import re
 from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass
 
@@ -21,7 +20,7 @@ class FineGrainedStreamingParser:
         try:
             parsed = self._partial_parse()
             return StreamChunk(content=chunk, is_complete=self._is_complete(parsed), parsed_args=parsed)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return StreamChunk(content=chunk, is_complete=False, error=str(e))
 
     def _partial_parse(self) -> Optional[Dict[str, Any]]:

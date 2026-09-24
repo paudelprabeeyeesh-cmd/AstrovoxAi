@@ -1,4 +1,3 @@
-import numpy as np
 
 from caching.ttl_management import TTLManager, TTLPolicy
 

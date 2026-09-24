@@ -1,5 +1,4 @@
 
-import pytest
 from advanced_planning.automated_planning import Predicate, Action, PlanningProblem, GraphPlan, HeuristicPlanner
 
 

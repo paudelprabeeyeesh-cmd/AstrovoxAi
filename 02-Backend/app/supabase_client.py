@@ -14,7 +14,7 @@ load_dotenv()
 
 try:
     from supabase import Client, create_client
-except Exception:  # pragma: no cover - fallback for missing package
+except Exception as _e:  # noqa: BLE001
     Client = object  # type: ignore[assignment]
     create_client = None  # type: ignore[assignment]
 

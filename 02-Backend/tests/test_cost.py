@@ -1,4 +1,3 @@
-import pytest
 from app.cost import count_tokens
 
 def test_count_tokens():

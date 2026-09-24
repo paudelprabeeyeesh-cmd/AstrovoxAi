@@ -10,7 +10,7 @@ import random
 import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 
 class ProviderStatus(Enum):
@@ -127,8 +127,8 @@ class APIClient:
                 response = self._send(request)
                 self.breaker.record_success()
                 return response
-            except Exception as exc:
-                last_exc = exc
+            except Exception as _e:  # noqa: BLE001
+                last_exc = _e
                 self.breaker.record_failure()
                 attempt += 1
                 if attempt <= self.provider.retries:

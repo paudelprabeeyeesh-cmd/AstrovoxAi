@@ -1,6 +1,4 @@
-import pytest
 from datetime import datetime
-import numpy as np
 from knowledge_graph.temporal_knowledge import TemporalKnowledgeBase, TemporalFact
 from causality.causal_engine import CausalEngine, CausalNode, CausalEdge
 from metacognition.metacognitive_monitor import MetacognitiveMonitor

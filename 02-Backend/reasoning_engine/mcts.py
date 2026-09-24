@@ -1,6 +1,6 @@
 import random
 import math
-from typing import Any, Optional, List, Dict
+from typing import Any, Optional, List
 
 
 class MCTSNode:

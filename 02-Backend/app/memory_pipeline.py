@@ -13,8 +13,8 @@ def embed_text(text: str) -> Optional[list]:
             input=text, model="text-embedding-3-small"
         )
         return response.data[0].embedding
-    except Exception as e:
-        logger.error(f"Embedding failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Embedding failed: {_e}")
         return None
 
 
@@ -27,8 +27,8 @@ def store_new_memory(user_id: str, prompt: str, response: str) -> Optional[dict]
     key = prompt[:200]
     try:
         return memory_service.store_memory(user_id, key, combined)
-    except Exception as e:
-        logger.error(f"Failed to store memory: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to store memory: {_e}")
         return None
 
 
@@ -44,6 +44,6 @@ def store_conversation_memory(
         memory = memory_service.store_memory(user_id, key, combined)
         logger.info(f"Stored conversation memory for user {user_id}: {key}")
         return memory
-    except Exception as e:
-        logger.error(f"Failed to store conversation memory: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to store conversation memory: {_e}")
         return None

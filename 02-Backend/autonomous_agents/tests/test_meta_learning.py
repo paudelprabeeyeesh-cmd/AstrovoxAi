@@ -1,6 +1,5 @@
 import numpy as np
-import pytest
-from ..meta_learning import MetaLearning, Task
+from ..meta_learning import MetaLearning
 
 
 class TestMetaLearning:

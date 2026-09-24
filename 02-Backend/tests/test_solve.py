@@ -1,6 +1,5 @@
 import time
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 def test_solve_returns_provider_and_model():

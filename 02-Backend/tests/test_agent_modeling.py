@@ -1,6 +1,4 @@
-import pytest
-import numpy as np
-from world_model.agent_modeling import AgentModel, Belief, Intention
+from world_model.agent_modeling import AgentModel, Belief
 
 
 class TestBelief:

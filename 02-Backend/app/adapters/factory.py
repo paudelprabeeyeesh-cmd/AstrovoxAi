@@ -89,6 +89,6 @@ def health_check(provider: str, model: str, host: str = "") -> bool:
         if hasattr(adapter, "health_check"):
             return adapter.health_check()
         return True
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error("Health check failed for %s/%s: %s", provider, model, e)
         return False

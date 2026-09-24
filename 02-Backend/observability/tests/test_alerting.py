@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 
 from observability.alerting import Alert, AlertManager
 
@@ -71,7 +70,7 @@ def test_anomaly_alert_insufficient_history():
 
 
 def test_anomaly_z_computation():
-    mgr = AlertManager(cooldown_seconds=0)
+    AlertManager(cooldown_seconds=0)
     values = np.array([10.0, 12.0, 11.0, 100.0])
     mean = float(np.mean(values))
     std = float(np.std(values))

@@ -42,7 +42,7 @@ class HierarchicalMemory:
                     decode_responses=True,
                 )
                 self._redis.exists("test")
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 self._redis = None
         return self._redis
 
@@ -111,7 +111,7 @@ class HierarchicalMemory:
                         "created_at": memory.created_at,
                     }),
                 )
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass
 
     def _store_short_term(self, memory: MemoryRecord) -> None:
@@ -157,7 +157,7 @@ class HierarchicalMemory:
                     metadata=data.get("metadata", {}),
                     created_at=data.get("created_at"),
                 ))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass
         return records
 

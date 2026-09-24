@@ -46,8 +46,8 @@ class ScriptingEngine:
             exec(script.source, {"__builtins__": {}}, env)  # noqa: S102
             output = env.get("result")
             result = ScriptResult(success=True, output=output)
-        except Exception as exc:
-            result = ScriptResult(success=False, error=str(exc))
+        except Exception as _e:  # noqa: BLE001
+            result = ScriptResult(success=False, error=str(_e))
         with self._lock:
             self._results[name] = result
         return result

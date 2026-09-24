@@ -1,7 +1,7 @@
 
 import re
 from dataclasses import dataclass
-from typing import List, Callable
+from typing import List
 
 
 @dataclass

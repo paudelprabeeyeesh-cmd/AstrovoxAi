@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Optional, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -75,7 +75,7 @@ class AdvancedPrototypicalNetworks:
 
     def train_episode(self, episode: Episode, temperature: float = 1.0) -> Dict[str, float]:
         prototypes = self.compute_prototypes(episode.support_x, episode.support_y)
-        z = self._encode(episode.query_x, stochastic=False)
+        self._encode(episode.query_x, stochastic=False)
         dists = self._compute_distances(episode.query_x)
         log_scores = -dists / temperature
         probs = np.exp(log_scores - np.max(log_scores, axis=1, keepdims=True))
@@ -160,7 +160,7 @@ class RelationNetwork:
     def train_step(self, support_x: np.ndarray, support_y: np.ndarray, query_x: np.ndarray, query_y: np.ndarray,
                    lr: float = 0.01) -> float:
         scores = self.score_samples(support_x, support_y, query_x)
-        scores_s = scores.reshape(-1, 1)
+        scores.reshape(-1, 1)
         support_y_rep = np.repeat(support_y.reshape(-1, 1), len(query_x), axis=0).reshape(-1)
         query_y_rep = np.tile(query_y.reshape(-1, 1), len(support_x)).reshape(-1)
         y_target = (support_y_rep == query_y_rep).astype(np.float64).reshape(-1, 1)

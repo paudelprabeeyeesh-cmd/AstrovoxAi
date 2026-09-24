@@ -1,6 +1,6 @@
 import re
 from dataclasses import dataclass, field
-from typing import FrozenSet, List
+from typing import FrozenSet
 
 
 @dataclass(frozen=True)

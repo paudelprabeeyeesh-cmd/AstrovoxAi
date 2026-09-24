@@ -1,4 +1,3 @@
-import pytest
 from unittest.mock import MagicMock
 from app.core.moderation import check_moderation, is_safe, MODERATION_CATEGORIES
 

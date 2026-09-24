@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import get_db
-from app.training_data_validator import validate_jsonl_format, generate_validation_report
+from app.training_data_validator import generate_validation_report
 
 
 def get_high_quality_interactions(min_rating=4, days=7, limit=5000):

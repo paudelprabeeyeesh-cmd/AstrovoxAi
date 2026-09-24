@@ -36,8 +36,8 @@ def check_database():
             conn.execute(text('SELECT 1'))
         print('OK: Database connection successful')
         return True
-    except Exception as e:
-        print('FAIL: Database connection failed: ' + str(e))
+    except Exception as _e:  # noqa: BLE001
+        print('FAIL: Database connection failed: ' + str(_e))
         return False
 
 

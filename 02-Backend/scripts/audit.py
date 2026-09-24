@@ -1,7 +1,5 @@
 import logging
-import json
 from datetime import datetime, timezone
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from safety_moderation.refusal_behavior import RefusalBehaviorEngine, RefusalTone, RefusalResponse
 
 

@@ -1,6 +1,4 @@
-import pytest
 from system_integration.service_mesh import (
-    HealthCheckResult,
     HealthStatus,
     LoadBalancer,
     ServiceInstance,

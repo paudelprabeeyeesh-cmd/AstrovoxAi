@@ -1,4 +1,3 @@
-import pytest
 from app.core.grounding import score_confidence, has_supporting_context, ground_answer, should_refuse
 
 

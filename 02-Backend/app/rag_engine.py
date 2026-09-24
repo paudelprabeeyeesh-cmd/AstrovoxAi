@@ -1,10 +1,5 @@
 import os
-import re
-import json
-import hashlib
 import requests
-from datetime import datetime
-from typing import Any
 
 try:
     import openai
@@ -28,8 +23,6 @@ from .documents import (
     delete_document_chunks,
     create_document_chunk,
     search_chunks,
-    list_documents,
-    get_document,
 )
 from .config import settings
 
@@ -157,7 +150,7 @@ class RAGEngine:
         response = requests.get(api_url, timeout=30)
         response.raise_for_status()
         repo_data = response.json()
-        default_branch = repo_data.get("default_branch", "main")
+        repo_data.get("default_branch", "main")
         contents_url = repo_data.get("contents_url", "").replace("{/path}", "/README.md")
         response = requests.get(contents_url, timeout=30)
         if response.status_code != 200:

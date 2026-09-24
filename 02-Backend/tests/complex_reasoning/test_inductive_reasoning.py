@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from complex_reasoning.inductive_reasoning import Example, InductiveHypothesis, InductiveEngine
 
 

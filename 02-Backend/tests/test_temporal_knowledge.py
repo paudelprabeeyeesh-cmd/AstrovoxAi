@@ -1,6 +1,4 @@
-import pytest
 from datetime import datetime, timedelta
-import numpy as np
 from knowledge_graph.temporal_knowledge import TemporalKnowledgeBase, TemporalFact
 
 

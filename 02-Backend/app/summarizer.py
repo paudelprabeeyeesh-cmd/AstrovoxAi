@@ -24,7 +24,7 @@ class ConversationSummarizer:
         try:
             result = self.llm_client.call_llm(prompt, system="You are a summarization assistant.", timeout=30)
             return result.get("text", "")
-        except Exception as e:
-            logger.error(f"Summarization failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Summarization failed: {_e}")
             return ""
 

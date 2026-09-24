@@ -1,5 +1,4 @@
-import pytest
-from app.core.pii import detect_pii, redact_pii, restore_pii, has_pii
+from app.core.pii import detect_pii, redact_pii, has_pii
 
 
 def test_detect_pii_email():

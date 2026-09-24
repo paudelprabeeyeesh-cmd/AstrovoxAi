@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-import numpy as np
+from dataclasses import dataclass
+from typing import Any, Dict, List
 
 
 @dataclass

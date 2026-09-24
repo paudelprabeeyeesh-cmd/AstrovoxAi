@@ -1,4 +1,3 @@
-import pytest
 from final_system.reporting_system import Report, ReportingSystem
 
 

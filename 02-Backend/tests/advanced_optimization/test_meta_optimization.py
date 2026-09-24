@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.meta_optimization import LearnedOptimizer, SimpleLSTMOptimizer
 
 

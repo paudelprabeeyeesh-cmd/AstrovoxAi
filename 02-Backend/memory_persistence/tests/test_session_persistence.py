@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import os
 import pytest
 
-from memory_persistence.session_persistence import SessionPersistence, SessionState
+from memory_persistence.session_persistence import SessionPersistence
 
 
 @pytest.fixture

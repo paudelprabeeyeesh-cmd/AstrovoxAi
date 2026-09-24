@@ -9,7 +9,6 @@ from cognitive_architecture.attention_mechanisms import (
     AttentionNetwork,
     SpotlightModel,
     AttentionMechanisms,
-    AttentionMap,
 )
 
 
@@ -25,7 +24,7 @@ class TestAttentionNetwork:
         x = np.random.randn(8)
         target = np.random.randn(4)
         loss1 = net.train_step(x, target, lr=0.01)
-        loss2 = net.train_step(x, target, lr=0.01)
+        net.train_step(x, target, lr=0.01)
         assert isinstance(loss1, float)
         assert loss1 >= 0
 

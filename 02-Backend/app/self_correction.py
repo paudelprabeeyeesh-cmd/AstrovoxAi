@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any
 
 from app.config import settings
 
@@ -64,6 +63,6 @@ class SelfCorrectionLoop:
                     max_tokens=1024,
                 )
                 return result.choices[0].message.content or response
-            except Exception as exc:
-                logger.error("Self-correction failed: %s", exc)
+            except Exception as _e:  # noqa: BLE001
+                logger.error("Self-correction failed: %s", _e)
         return response

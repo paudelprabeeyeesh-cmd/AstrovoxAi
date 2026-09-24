@@ -5,16 +5,13 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
 from ..rag_engine import RAGEngine
 from ..documents import (
-    create_document,
     delete_document_chunks,
-    create_document_chunk,
-    search_chunks,
     list_documents,
     get_document,
     delete_document,
 )
 from ..schemas import (
-    DocumentOut, DocumentChunkOut, RAGSearchResult,
+    DocumentOut, RAGSearchResult,
     RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
 )
 from ..auth import require_verified_email, get_current_user
@@ -82,7 +79,7 @@ async def rag_delete_document(doc_id: str, user_id: str = Depends(require_verifi
     try:
         get_document(doc_id, user_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found") from None
     delete_document_chunks(doc_id)
     if not delete_document(doc_id, user_id):
         raise HTTPException(status_code=404, detail="Document not found")

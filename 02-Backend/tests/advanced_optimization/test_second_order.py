@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.second_order import (
     newton_step_1d,
     newton_step_multi,
@@ -19,7 +18,7 @@ def test_newton_step_1d_converges():
 def test_newton_step_multi_converges():
     A = np.array([[2.0, 1.0], [1.0, 3.0]])
     b = np.array([1.0, 2.0])
-    f = lambda x: 0.5 * x @ A @ x - b @ x
+    lambda x: 0.5 * x @ A @ x - b @ x
     grad = lambda x: A @ x - b
     hess = lambda x: A
     x0 = np.array([0.0, 0.0])

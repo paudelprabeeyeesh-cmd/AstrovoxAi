@@ -61,7 +61,7 @@ class NSGA2:
             b = bounds[i % len(bounds)]
             pop[i] = np.random.uniform(b[0], b[1], dim)
         for _ in range(self.max_iter):
-            objs = np.array([obj_funcs(ind) for ind in pop])
+            np.array([obj_funcs(ind) for ind in pop])
             offspring = np.array([np.random.uniform(b[0], b[1], dim) for b in bounds])
             combined = np.vstack([pop, offspring])
             combined_objs = np.array([obj_funcs(ind) for ind in combined])

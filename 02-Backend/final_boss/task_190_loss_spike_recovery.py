@@ -1,5 +1,4 @@
 import numpy as np
-from .task_189_training_run import TrainingRun
 
 
 class LossSpikeRecovery:

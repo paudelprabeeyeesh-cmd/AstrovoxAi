@@ -1,6 +1,6 @@
 import numpy as np
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, field
+from typing import Dict, List, Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -82,7 +82,7 @@ class SimCLR:
         grad /= (2 * N)
         h = self._relu(x_i @ self.params['W1'] + self.params['b1'])
         h_j = self._relu(x_j @ self.params['W1'] + self.params['b1'])
-        x_all = np.concatenate([x_i, x_j], axis=0)
+        np.concatenate([x_i, x_j], axis=0)
         h_all = np.concatenate([h, h_j], axis=0)
         dW3 = h_all.T @ grad @ np.concatenate([z_i, z_j], axis=0)
         db3 = np.sum(grad @ np.concatenate([z_i, z_j], axis=0).T, axis=0)

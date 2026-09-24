@@ -6,12 +6,10 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 from dataclasses import dataclass
 from typing import List, Optional
 
 import httpx
-import base64
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +42,8 @@ class ImageGenerationEngine:
                 return self._generate_dalle3(prompt, width, height, n)
             else:
                 return self._generate_stable_diffusion(prompt, width, height, n)
-        except Exception as e:
-            logger.error(f"Image generation failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Image generation failed: {_e}")
             return []
 
     def _generate_dalle3(self, prompt: str, width: int, height: int, n: int) -> List[GeneratedImage]:
@@ -93,9 +91,9 @@ class ImageUnderstandingEngine:
             response = self.client.post(url, json=payload, headers=headers)
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
-        except Exception as e:
-            logger.error(f"Image analysis failed: {e}")
-            return f"Error: {e}"
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Image analysis failed: {_e}")
+            return f"Error: {_e}"
 
 
 image_generation = ImageGenerationEngine()

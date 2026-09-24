@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
 
 from .auth import role_required
@@ -78,6 +78,10 @@ class AuditLogEntryResponse(BaseModel):
 
 
 router = APIRouter(tags=["audit"])
+
+
+def get_audit_log(limit: int = 100, offset: int = 0) -> List[dict]:
+    return audit_logger.get_log(limit=limit, offset=offset)
 
 
 @router.get("/audit/log", response_model=List[AuditLogEntryResponse])

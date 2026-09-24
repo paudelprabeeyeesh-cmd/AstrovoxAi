@@ -1,6 +1,5 @@
-import numpy as np
-from dataclasses import dataclass, field
-from typing import Callable, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List
 
 
 @dataclass
@@ -58,7 +57,7 @@ class CapabilityController:
         try:
             result = self._tool_registry[name](**kwargs)
             return {"success": True, "result": result}
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return {"success": False, "error": str(e)}
 
     def increase_sandbox_depth(self) -> None:

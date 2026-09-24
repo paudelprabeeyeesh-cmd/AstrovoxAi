@@ -80,6 +80,8 @@ def upgrade() -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    op.execute("ALTER TABLE sso_connections ADD COLUMN IF NOT EXISTS org_id TEXT")
+    op.execute("ALTER TABLE sso_connections ADD COLUMN IF NOT EXISTS provider_type TEXT")
     op.execute("""
         CREATE TABLE IF NOT EXISTS sso_users (
             id TEXT PRIMARY KEY,
@@ -99,7 +101,8 @@ def downgrade() -> None:
     op.execute("DROP INDEX IF EXISTS idx_sso_users_email")
     op.execute("DROP INDEX IF EXISTS idx_sso_users_org")
     op.execute("DROP TABLE IF EXISTS sso_users")
-    op.execute("DROP TABLE IF EXISTS sso_connections")
+    op.execute("ALTER TABLE sso_connections DROP COLUMN IF EXISTS provider_type")
+    op.execute("ALTER TABLE sso_connections DROP COLUMN IF EXISTS org_id")
     op.execute("DROP INDEX IF EXISTS idx_invitations_token")
     op.execute("DROP TABLE IF EXISTS invitations")
     op.execute("DROP UNIQUE INDEX IF EXISTS idx_workspace_members_unique")

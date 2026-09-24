@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 
 from reasoning_scaffolds.self_refine import self_refine, RefineStep
 

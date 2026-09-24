@@ -1,4 +1,3 @@
-import pytest
 from world_model.counterfactual_reasoning import CounterfactualReasoner
 
 

@@ -1,8 +1,5 @@
-import numpy as np
-import pytest
 import sys
 import os
-import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
@@ -11,7 +8,6 @@ from cognitive_architecture.social_cognition import (
     TheoryOfMind,
     EmpathyModel,
     MentalState,
-    SocialContext,
 )
 from cognitive_architecture.emotional_processing import EmotionState
 

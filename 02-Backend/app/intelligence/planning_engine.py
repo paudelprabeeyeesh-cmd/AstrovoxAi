@@ -10,9 +10,7 @@ This enables:
 """
 
 from typing import Dict, List, Any, Optional
-from enum import Enum
 from datetime import datetime
-import json
 
 
 class PlanStep:
@@ -472,11 +470,11 @@ class PlanningEngine:
                 "progress": plan.get_progress(),
             }
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             plan.fail()
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "plan": plan.to_dict(),
             }
     

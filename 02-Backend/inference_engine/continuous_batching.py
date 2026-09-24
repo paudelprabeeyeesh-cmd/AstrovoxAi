@@ -1,8 +1,8 @@
 
-import numpy as np
-from collections import defaultdict, deque
+import heapq
+
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 from enum import Enum
 
 
@@ -43,7 +43,8 @@ class ContinuousBatchScheduler:
         self.max_preempted = max_preempted
         self.preempt_threshold = preempt_threshold
         self.active: Dict[str, ScheduledRequest] = {}
-        self.waiting: List[ScheduledRequest] = []
+        self.waiting: Dict[str, ScheduledRequest] = {}
+        self._waiting_heap: List[tuple] = []
         self.preempted: Dict[str, ScheduledRequest] = {}
         self.completed: Dict[str, ScheduledRequest] = {}
         self.rejected: Dict[str, ScheduledRequest] = {}
@@ -55,17 +56,17 @@ class ContinuousBatchScheduler:
             self._admit(req)
             return True
         if self.max_preempted > 0 and self.active:
-            candidates = [(r.priority, r.arrival_time, r.preempted_count, r.request_id)
-                          for r in self.active.values()]
-            candidates.sort()
-            lowest_priority, _, lowest_preempted, lowest_id = candidates[0]
-            if lowest_priority < req.priority:
-                self._preempt(lowest_id)
+            lowest = min(self.active.values(),
+                         key=lambda r: (r.priority, r.arrival_time, r.preempted_count, r.request_id))
+            if lowest.priority < req.priority:
+                self._preempt(lowest.request_id)
                 self._admit(req)
                 return True
         if len(self.waiting) < self.max_queue:
             req.state = RequestState.WAITING
-            self.waiting.append(req)
+            self.waiting[req.request_id] = req
+            heapq.heappush(self._waiting_heap,
+                           (-req.priority, req.arrival_time, req.preempted_count, req.request_id))
             self._try_admit_from_queue()
             return True
         req.state = RequestState.REJECTED
@@ -85,18 +86,21 @@ class ContinuousBatchScheduler:
         self.preempted[req_id] = req
 
     def _try_admit_from_queue(self):
-        while len(self.active) < self.max_active and self.waiting:
-            candidate = self._select_next_from_queue()
-            if candidate is None:
+        while len(self.active) < self.max_active and self._waiting_heap:
+            candidate_id = self._pop_next_from_queue()
+            if candidate_id is None:
                 break
-            self.waiting.remove(candidate)
+            candidate = self.waiting.pop(candidate_id, None)
+            if candidate is None:
+                continue
             self._admit(candidate)
 
-    def _select_next_from_queue(self) -> Optional[ScheduledRequest]:
-        if not self.waiting:
-            return None
-        best = max(self.waiting, key=lambda r: (r.priority, -r.arrival_time))
-        return best
+    def _pop_next_from_queue(self) -> Optional[str]:
+        while self._waiting_heap:
+            _, arrival, preempted, req_id = heapq.heappop(self._waiting_heap)
+            if req_id in self.waiting:
+                return req_id
+        return None
 
     def step(self) -> Dict[str, List[str]]:
         self._step += 1
@@ -115,10 +119,12 @@ class ContinuousBatchScheduler:
         return events
 
     def preempt_lowest_priority(self, count: int = 1) -> List[str]:
-        candidates = sorted(self.active.values(),
-                            key=lambda r: (r.priority, r.arrival_time))
+        if not self.active:
+            return []
+        candidates = heapq.nsmallest(count, self.active.values(),
+                                     key=lambda r: (r.priority, r.arrival_time, r.preempted_count, r.request_id))
         preempted = []
-        for req in candidates[:count]:
+        for req in candidates:
             req_id = req.request_id
             req = self.active.pop(req_id)
             req.state = RequestState.PREEMPTED
@@ -132,9 +138,8 @@ class ContinuousBatchScheduler:
             return False
         if len(self.active) >= self.max_active:
             if self.max_preempted > 0 and self.active:
-                candidates = sorted(self.active.values(),
-                                    key=lambda r: (r.priority, r.arrival_time))
-                lowest = candidates[0]
+                lowest = min(self.active.values(),
+                             key=lambda r: (r.priority, r.arrival_time, r.preempted_count, r.request_id))
                 self._preempt(lowest.request_id)
             else:
                 return False

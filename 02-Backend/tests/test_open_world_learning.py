@@ -1,4 +1,3 @@
-import pytest
 import numpy as np
 from agi_core.open_world_learning import OpenWorldLearner
 

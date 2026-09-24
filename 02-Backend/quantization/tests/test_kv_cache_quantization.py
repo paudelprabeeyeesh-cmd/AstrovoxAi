@@ -1,7 +1,6 @@
 """Tests for KV Cache Quantization (INT8/INT4 with per-channel scales)."""
 
 import numpy as np
-import pytest
 import torch
 
 from quantization.kv_cache_quantization import (

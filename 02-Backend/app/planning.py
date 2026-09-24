@@ -58,8 +58,8 @@ class PlanningEngine:
             import json
             raw = json.loads(content)
             return [SubTask(**item) for item in raw if isinstance(item, dict)]
-        except Exception as e:
-            logger.error(f"LLM decomposition failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"LLM decomposition failed: {_e}")
             return [SubTask(description=task, priority=1, dependencies=[])]
 
     def validate_plan(self, plan: Plan) -> bool:
@@ -86,7 +86,7 @@ class PlanningEngine:
                 )
                 output = response.choices[0].message.content or ""
                 results.append({"subtask": subtask.description, "output": output})
-            except Exception as e:
-                logger.error(f"Subtask execution failed: {e}")
-                results.append({"subtask": subtask.description, "output": "", "error": str(e)})
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Subtask execution failed: {_e}")
+                results.append({"subtask": subtask.description, "output": "", "error": str(_e)})
         return {"success": True, "results": results, "metadata": plan.metadata}

@@ -4,7 +4,6 @@ MCP (Model Context Protocol) client for external tool servers.
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -56,8 +55,8 @@ class MCPClient:
                 self.tools[tool.name] = tool
                 tools.append(tool)
             return tools
-        except Exception as e:
-            logger.error(f"Failed to discover tools from {self.server_url}: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Failed to discover tools from {self.server_url}: {_e}")
             return []
 
     def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> MCPResponse:
@@ -76,9 +75,9 @@ class MCPClient:
         except httpx.HTTPStatusError as e:
             latency = (time.perf_counter() - start) * 1000
             return MCPResponse(tool_name=tool_name, result=None, error=f"HTTP {e.response.status_code}", latency_ms=latency)
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             latency = (time.perf_counter() - start) * 1000
-            return MCPResponse(tool_name=tool_name, result=None, error=str(e), latency_ms=latency)
+            return MCPResponse(tool_name=tool_name, result=None, error=str(_e), latency_ms=latency)
 
     def list_tools(self) -> List[MCPTool]:
         return list(self.tools.values())

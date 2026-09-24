@@ -1,5 +1,4 @@
 import numpy as np
-import pytest
 from advanced_optimization.coordinate_descent import (
     cyclic_coordinate_descent,
     gauss_southwell,

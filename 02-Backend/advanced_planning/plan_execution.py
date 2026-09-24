@@ -20,7 +20,7 @@ class ExecutionMonitor:
                 state = self.apply_fn(state, action)
                 self.execution_log.append({"step": i + 1, "state": dict(state), "action": action, "status": "success"})
                 self.current_index = i + 1
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.execution_log.append({"step": i + 1, "state": dict(state), "action": action,
                                            "status": "error", "error": str(e)})
                 self.contingencies_triggered.append({"step": i + 1, "error": str(e), "state": dict(state)})
@@ -59,8 +59,8 @@ class ContingencyHandler:
             try:
                 current = apply_fn(current, action)
                 log.append({"action": action, "status": "success", "state": dict(current)})
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 log.append({"action": action, "status": "error", "error": str(e)})
                 break
-        return {"state": current, "log": log, "success": len([l for l in log if l["status"] == "success"]) == len(
+        return {"state": current, "log": log, "success": len([entry for entry in log if entry["status"] == "success"]) == len(
             recovery_plan)}

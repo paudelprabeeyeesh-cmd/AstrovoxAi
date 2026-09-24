@@ -1,24 +1,22 @@
-import pytest
 import torch
 import torch.nn as nn
 import numpy as np
 
-from app.core.inference_server import InferenceAdapter, sample_token, beam_search, KVCache
-from app.core.tool_registry_core import ToolRegistry, ToolDefinition, PermissionDeniedError
-from app.core.safety_core import SafetyAPI, PromptInjectionDetector, CanaryTokenManager
-from app.core.vector_db import VectorDatabase, VectorRecord, HNSWIndex
+from app.core.inference_server import InferenceAdapter, sample_token
+from app.core.tool_registry_core import ToolRegistry, ToolDefinition
+from app.core.safety_core import SafetyAPI
+from app.core.vector_db import VectorDatabase, VectorRecord
 from app.core.embeddings_core import EmbeddingModel, EmbeddingEngine
 from app.core.pdf_parser import chunk_text, DocumentChunk
 from app.core.model_router_core import ModelRouter, ModelEndpoint
 from app.core.context_extension_core import ContextWindowExtension
-from app.core.api_gateway_core import APIGateway, TokenBucket, SlidingWindowCounter
-from app.core.conversation_branching_core import ConversationBranchManager, Message
-from app.core.usage_tracker import UsageTracker, CostCalculator, UsageRecord
-from app.core.multi_agent_orchestrator import MultiAgentOrchestrator, Agent, AgentMessage
-from app.core.mcp_client_core import MCPClient, MCPClientPool
-from app.core.distillation_pipeline import KnowledgeDistillationPipeline, DistillationConfig
-from app.core.memory_intelligence_core import MemoryIntelligence, MemoryEntry
-from app.core.evaluation_core import compute_perplexity, compute_accuracy, compute_bleu, BenchmarkSuite
+from app.core.api_gateway_core import APIGateway
+from app.core.conversation_branching_core import ConversationBranchManager
+from app.core.usage_tracker import UsageTracker, UsageRecord
+from app.core.multi_agent_orchestrator import MultiAgentOrchestrator, Agent
+from app.core.distillation_pipeline import KnowledgeDistillationPipeline
+from app.core.memory_intelligence_core import MemoryIntelligence
+from app.core.evaluation_core import compute_perplexity, compute_accuracy, compute_bleu
 
 
 class TinyModel(nn.Module):
@@ -197,7 +195,7 @@ class TestDistillation:
 class TestMemoryIntelligence:
     def test_add_and_search(self):
         mem = MemoryIntelligence()
-        mem_id = mem.add_memory("test content", embedding=np.random.randn(384), importance=0.8)
+        mem.add_memory("test content", embedding=np.random.randn(384), importance=0.8)
         results = mem.search(np.random.randn(384), top_k=5)
         assert isinstance(results, list)
 

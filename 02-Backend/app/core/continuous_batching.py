@@ -5,7 +5,6 @@ Continuous batching scheduler with preemption and KV cache swapping.
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 

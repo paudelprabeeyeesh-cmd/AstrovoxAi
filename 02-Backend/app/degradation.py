@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -21,16 +21,16 @@ class DegradationManager:
             result = func(*args, **kwargs)
             self._degraded_services.discard(service)
             return result
-        except Exception as e:
-            logger.warning(f"Service {service} failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Service {service} failed: {_e}")
             self._degraded_services.add(service)
             if service in self._fallbacks:
                 for fallback in self._fallbacks[service]:
                     try:
                         logger.info(f"Executing fallback for service: {service}")
                         return fallback(*args, **kwargs)
-                    except Exception as fallback_e:
-                        logger.warning(f"Fallback for {service} failed: {fallback_e}")
+                    except Exception as _e:  # noqa: BLE001
+                        logger.warning(f"Fallback for {service} failed: {_e}")
                         continue
             raise
 

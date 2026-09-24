@@ -1,4 +1,3 @@
-import pytest
 from ethical_reasoning.ethical_engine import EthicalEngine, Principle
 
 

@@ -1,10 +1,8 @@
 import numpy as np
-import pytest
 from agi_safety.cooperative_inverse import (
     CooperativeInverseRL,
     PreferenceLearning,
     ValueEstimate,
-    Preference,
 )
 
 

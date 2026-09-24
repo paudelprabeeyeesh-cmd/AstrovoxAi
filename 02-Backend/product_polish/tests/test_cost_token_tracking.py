@@ -228,8 +228,8 @@ class TestThreadSafety:
             try:
                 for i in range(20):
                     tracker.record_usage("s1", "gpt-4", 10, 5)
-            except Exception as e:
-                errors.append(e)
+            except Exception as _e:  # noqa: BLE001
+                errors.append(_e)
 
         threads = [threading.Thread(target=record_many) for _ in range(4)]
         for t in threads:

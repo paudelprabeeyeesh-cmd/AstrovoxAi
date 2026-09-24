@@ -1,5 +1,3 @@
-import pytest
-import numpy as np
 from agi_core.social_intelligence import SocialIntelligence
 
 

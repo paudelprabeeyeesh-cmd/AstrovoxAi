@@ -1,4 +1,3 @@
-import os
 import time
 import zlib
 from dataclasses import dataclass, field

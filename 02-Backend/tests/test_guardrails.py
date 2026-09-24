@@ -1,4 +1,3 @@
-import pytest
 from app.core.guardrails import detect_injection, redact_injection, check_canary, add_canary, sanitize_input, validate_output, CANARY_TOKEN
 
 

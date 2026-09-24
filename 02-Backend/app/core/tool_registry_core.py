@@ -4,7 +4,6 @@ Tool Registry with permissions, sandboxing, and execution tracking.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import time
 from dataclasses import dataclass, field
@@ -151,10 +150,10 @@ class ToolRegistry:
                 self.execution_history.append(execution)
                 self.analytics.record(tool_name=tool_name, success=False, latency_ms=latency)
                 return execution
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 if attempt == max_retries - 1:
                     latency = (time.perf_counter() - start) * 1000
-                    execution = ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(e), latency_ms=latency, user_id=user_id, request_id=request_id)
+                    execution = ToolExecution(tool_name=tool_name, arguments=sanitized_args, error=str(_e), latency_ms=latency, user_id=user_id, request_id=request_id)
                     self.execution_history.append(execution)
                     self.analytics.record(tool_name=tool_name, success=False, latency_ms=latency)
                     return execution

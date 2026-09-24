@@ -1,7 +1,7 @@
 import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-from scripts.backup_db import backup_database, restore_database, backup_to_s3
+from scripts.backup_db import backup_database, backup_to_s3
 
 if __name__ == "__main__":
     print("=== Database Backup ===")

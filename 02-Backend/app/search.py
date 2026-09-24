@@ -1,5 +1,3 @@
-import uuid
-from datetime import datetime
 from typing import Optional
 
 from .database import get_db
@@ -80,7 +78,7 @@ class SearchEngine:
     def metadata_filter_search(self, user_id: str, filters: dict) -> list:
         date_range = filters.get("date_range")
         content_type = filters.get("content_type")
-        importance_score = filters.get("importance_score")
+        filters.get("importance_score")
 
         query = "SELECT id, value, key, created_at FROM memories WHERE user_id = ?"
         params = [user_id]

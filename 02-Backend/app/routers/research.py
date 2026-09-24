@@ -1,8 +1,6 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -32,9 +30,9 @@ async def deep_research_endpoint(query: str, depth: str = "medium", user_id: str
             "steps": steps,
             "status": "running",
         }
-    except Exception as e:
-        logger.error(f"Deep research failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Deep research failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
 
 
 @router.get("/research/{research_id}")
