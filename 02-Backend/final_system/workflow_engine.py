@@ -64,7 +64,7 @@ class WorkflowEngine:
                 results[stage.name] = StageResult(name=stage.name, status=StageStatus.SKIPPED)
                 continue
             try:
-                output = stage.fn(**(stage.params))
+                output = stage.fn(**dict(stage.params, name=stage.name))
                 results[stage.name] = StageResult(name=stage.name, status=StageStatus.COMPLETED, output=output)
             except Exception as exc:
                 results[stage.name] = StageResult(name=stage.name, status=StageStatus.FAILED, error=str(exc))

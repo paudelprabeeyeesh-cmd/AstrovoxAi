@@ -32,7 +32,7 @@ class AuthenticatedEncryption:
         iv = os.urandom(16)
         salt = hashlib.sha256(iv).digest()[:16]
         keystream = self._keystream(salt, len(plaintext))
-        ciphertext = bytes(p ^ k for p, k in plaintext.encode(), keystream)
+        ciphertext = bytes(p ^ k for p, k in zip(plaintext.encode(), keystream))
         mac = hmac.new(self._key, ciphertext + iv, hashlib.sha256).digest()[:16]
         return base64.b64encode(iv + mac + ciphertext).decode()
 

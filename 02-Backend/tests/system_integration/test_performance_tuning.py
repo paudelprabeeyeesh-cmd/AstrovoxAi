@@ -2,11 +2,10 @@ import pytest
 from system_integration.performance_tuning import (
     Bottleneck,
     ConnectionPool,
+    ProfileEntry,
     Profiler,
     BatchProcessor,
     PerformanceOptimizer,
-    ProfileEntry,
-    Metric,
 )
 
 

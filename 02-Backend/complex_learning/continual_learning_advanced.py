@@ -112,10 +112,9 @@ class AdvancedContinualLearner:
             dh = dh * (h > 0)
             dW1 = batch_x.T @ dh
             db1 = np.sum(dh, axis=0)
-            self.params["W1"] -= self.lr * (dW1 - self.ewc_lambda * self.fisher.get("W1", 0.0) * (self.params["W1"] - self.prev_params.get("W1", 0.0)))
-            self.params["b1"] -= self.lr * (db1 - self.ewc_lambda * self.fisher.get("b1", 0.0) * (self.params["b1"] - self.prev_params.get("b1", 0.0)))
-            self.params["W2"] -= self.lr * (dW2 - self.ewc_lambda * self.fisher.get("W2", 0.0) * (self.params["W2"] - self.prev_params.get("W2", 0.0)))
-            self.params["b2"] -= self.lr * (db2 - self.ewc_lambda * self.fisher.get("b2", 0.0) * (self.params["b2"] - self.prev_params.get("b2", 0.0)))
+            for k in self.params:
+                g = {"W1": dW1, "b1": db1, "W2": dW2, "b2": db2}[k]
+                self.params[k] -= self.lr * (g - self.ewc_lambda * self.fisher.get(k, 0.0) * (self.params[k] - self.prev_params.get(k, 0.0)))
         self.task_logits[task.task_id] = logits
         self._update_fisher(batch_x)
         self._store_replay(task)
@@ -125,7 +124,7 @@ class AdvancedContinualLearner:
 
     def _update_fisher(self, x: np.ndarray) -> None:
         self.prev_params = {k: v.copy() for k, v in self.params.items()}
-        self.fisher = {k: np.zeros_like(v) for k, v in self.params.items()}
+        self.fisher = {k: np.zeros_like(v, dtype=np.float64) for k, v in self.params.items()}
         n = min(100, len(x))
         indices = np.random.choice(len(x), size=n, replace=False)
         x_sample = x[indices]
@@ -140,13 +139,12 @@ class AdvancedContinualLearner:
             dh = dh * (h_i > 0)
             dW1 = x_sample[i:i+1].T @ dh
             db1 = np.sum(dh, axis=0)
-            self.fisher["W1"] += dW1.flatten() ** 2
+            self.fisher["W1"] += np.sum(dW1 ** 2, axis=1)
             self.fisher["b1"] += db1 ** 2
-            self.fisher["W2"] += dW2.flatten() ** 2
+            self.fisher["W2"] += np.sum(dW2 ** 2, axis=1)
             self.fisher["b2"] += db2 ** 2
         for k in self.fisher:
-            self.fisher[k] /= n
-            self.fisher[k] = np.clip(self.fisher[k], 1e-10, None)
+            self.fisher[k] = np.clip(self.fisher[k] / n, 1e-10, None)
 
     def _store_replay(self, task: TaskBatch) -> None:
         self.replay_buffer.append(task)

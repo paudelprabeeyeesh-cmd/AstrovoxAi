@@ -37,7 +37,10 @@ def simulated_quantum_annealing(f, x0, T_init=1.0, T_final=1e-4, steps=1000):
 
 def quantum_inspired_population(f, bounds, pop_size=20, max_iter=100):
     dim = len(bounds)
-    pop = np.array([np.random.uniform(b[0], b[1], dim) for _ in range(pop_size)])
+    pop = np.zeros((pop_size, dim))
+    for i in range(pop_size):
+        b = bounds[i % len(bounds)]
+        pop[i] = np.random.uniform(b[0], b[1], dim)
     fitness = np.array([f(ind) for ind in pop])
     for _ in range(max_iter):
         for i in range(pop_size):

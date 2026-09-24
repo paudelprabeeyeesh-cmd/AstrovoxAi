@@ -21,10 +21,10 @@ class SemiSupervisedLearner:
         self._initialize_params()
 
     def _initialize_params(self) -> None:
-        self.params['W1'] = np.random.randn(self.input_dim, self.hidden_dim).astype(np.float64) * 0.1
-        self.params['b1'] = np.zeros(self.hidden_dim, dtype=np.float64)
-        self.params['W2'] = np.random.randn(self.hidden_dim, self.num_classes).astype(np.float64) * 0.1
-        self.params['b2'] = np.zeros(self.num_classes, dtype=np.float64)
+        self.params["W1"] = np.random.randn(self.input_dim, self.hidden_dim).astype(np.float64) * 0.1
+        self.params["b1"] = np.zeros(self.hidden_dim, dtype=np.float64)
+        self.params["W2"] = np.random.randn(self.hidden_dim, self.num_classes).astype(np.float64) * 0.1
+        self.params["b2"] = np.zeros(self.num_classes, dtype=np.float64)
         self.ema_params = {k: v.copy() for k, v in self.params.items()}
 
     @staticmethod
@@ -37,8 +37,8 @@ class SemiSupervisedLearner:
         return e / np.sum(e, axis=1, keepdims=True)
 
     def _forward(self, x: np.ndarray, params: Dict[str, np.ndarray]) -> np.ndarray:
-        h = self._relu(x @ params['W1'] + params['b1'])
-        return h @ params['W2'] + params['b2']
+        h = self._relu(x @ params["W1"] + params["b1"])
+        return h @ params["W2"] + params["b2"]
 
     def _compute_loss(self, logits: np.ndarray, y: np.ndarray) -> float:
         probs = self._softmax(logits)
@@ -60,17 +60,17 @@ class SemiSupervisedLearner:
         grad = probs.copy()
         grad[np.arange(len(y_int)), y_int] -= 1
         grad /= len(y_int)
-        h = self._relu(x @ self.params['W1'] + self.params['b1'])
+        h = self._relu(x @ self.params["W1"] + self.params["b1"])
         dW2 = h.T @ grad
         db2 = np.sum(grad, axis=0)
-        dh = grad @ self.params['W2'].T
+        dh = grad @ self.params["W2"].T
         dh = dh * (h > 0)
         dW1 = x.T @ dh
         db1 = np.sum(dh, axis=0)
-        self.params['W1'] -= lr * dW1
-        self.params['b1'] -= lr * db1
-        self.params['W2'] -= lr * dW2
-        self.params['b2'] -= lr * db2
+        self.params["W1"] -= lr * dW1
+        self.params["b1"] -= lr * db1
+        self.params["W2"] -= lr * dW2
+        self.params["b2"] -= lr * db2
         self._ema_update()
         return loss
 
@@ -108,10 +108,10 @@ class SemiSupervisedLearner:
         grad = probs.copy()
         grad[np.arange(len(y_int)), y_int] -= 1
         grad /= len(y_int)
-        h = self._relu(labeled_x @ self.params['W1'] + self.params['b1'])
+        h = self._relu(labeled_x @ self.params["W1"] + self.params["b1"])
         dW2 = h.T @ grad
         db2 = np.sum(grad, axis=0)
-        dh = grad @ self.params['W2'].T
+        dh = grad @ self.params["W2"].T
         dh = dh * (h > 0)
         dW1 = labeled_x.T @ dh
         db1 = np.sum(dh, axis=0)
@@ -120,25 +120,24 @@ class SemiSupervisedLearner:
         logits_u2 = self._forward(unlabeled_x_aug, self.ema_params)
         probs_u2 = self._softmax(logits_u2)
         grad_u = (probs_u1 - probs_u2) * 2 / len(unlabeled_x)
-        dh_u = grad_u @ self.params['W2'].T
-        dW2 += self._relu(unlabeled_x @ self.params['W1'] + self.params['b1']).T @ dh_u
+        dh_u = grad_u @ self.params["W2"].T
+        dW2 += self._relu(unlabeled_x @ self.params["W1"] + self.params["b1"]).T @ dh_u
         db2 += np.sum(dh_u, axis=0)
         dW1 += unlabeled_x.T @ dh_u
         db1 += np.sum(dh_u, axis=0)
-        self.params['W1'] -= lr * dW1
-        self.params['b1'] -= lr * db1
-        self.params['W2'] -= lr * dW2
-        self.params['b2'] -= lr * db2
+        self.params["W1"] -= lr * dW1
+        self.params["b1"] -= lr * db1
+        self.params["W2"] -= lr * dW2
+        self.params["b2"] -= lr * db2
         self._ema_update()
-        return {'loss': float(loss), 'supervised': float(loss_s), 'unsupervised': float(cons_loss)}
+        return {"loss": float(loss), "supervised": float(loss_s), "unsupervised": float(cons_loss)}
 
     def get_semi_sup_report(self) -> Dict[str, Any]:
         return {
-            'total_steps': len(self.loss_history),
-            'supervised_steps': len(self.supervised_losses),
-            'unsupervised_steps': len(self.unsupervised_losses),
-            'last_loss': float(self.loss_history[-1]) if self.loss_history else None,
-            'mean_supervised': float(np.mean(self.supervised_losses[-10:])) if self.supervised_losses else None,
-            'pseudo_label_generations': len(self.pseudo_labels),
+            "total_steps": len(self.loss_history),
+            "supervised_steps": len(self.supervised_losses),
+            "unsupervised_steps": len(self.unsupervised_losses),
+            "last_loss": float(self.loss_history[-1]) if self.loss_history else None,
+            "mean_supervised": float(np.mean(self.supervised_losses[-10:])) if self.supervised_losses else None,
+            "pseudo_label_generations": len(self.pseudo_labels),
         }
-

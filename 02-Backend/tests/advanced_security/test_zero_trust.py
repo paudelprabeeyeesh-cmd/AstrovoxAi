@@ -1,4 +1,5 @@
-from advanced_security.zero_trust import Identity, PBACEngine, PolicyEngine, ZeroTrustAuthenticator
+from advanced_security.access_control import Resource, Subject
+from advanced_security.zero_trust import Identity, PolicyEngine, ZeroTrustAuthenticator
 
 
 def test_identity() -> None:
@@ -42,8 +43,9 @@ def test_policy_implicit_deny() -> None:
 
 
 def test_pbac_engine() -> None:
+    from advanced_security.access_control import PBACEngine
     pbac = PBACEngine()
-    subject = Identity(subject="user", attributes={"role": "viewer"}, roles=["viewer"])
+    subject = Subject(id="u1", attributes={"role": "viewer"}, roles=["viewer"])
     resource = Resource(id="r1", type="file")
     pbac.add_policy("allow", [{"has_role": "viewer"}, {"resource_type": "file"}])
     assert pbac.evaluate(subject, resource, "read", {}) is True

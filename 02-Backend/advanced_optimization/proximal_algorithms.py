@@ -40,15 +40,15 @@ def soft_threshold(x, threshold):
     return np.sign(x) * np.maximum(np.abs(x) - threshold, 0.0)
 
 
-def admm(f, grad_f, prox, x0, z0, u0, rho=1.0, max_iter=1000, tol=1e-6):
+def admm(f, grad_f, prox, x0, z0, u0, rho=1.0, lr=1e-2, max_iter=1000, tol=1e-6):
     x = np.copy(x0)
     z = np.copy(z0)
     u = np.copy(u0)
     for _ in range(max_iter):
-        x = prox(x - (grad_f(x) + rho * (x - z + u)), 1.0 / rho)
-        z_old = z
+        g = grad_f(x) + rho * (x - z + u)
+        x = x - lr * g
         z = prox(z + u, 1.0 / rho)
         u = u + x - z
-        if np.linalg.norm(x - z) < tol and np.linalg.norm(z_old - z) < tol:
+        if np.linalg.norm(x - z) < tol and np.linalg.norm(u) < tol:
             break
     return x

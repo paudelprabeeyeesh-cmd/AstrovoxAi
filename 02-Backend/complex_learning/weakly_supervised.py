@@ -32,6 +32,8 @@ class WeaklySupervisedLearner:
 
     @staticmethod
     def _softmax(x: np.ndarray) -> np.ndarray:
+        if x.ndim == 1:
+            x = x.reshape(1, -1)
         e = np.exp(x - np.max(x, axis=1, keepdims=True))
         return e / np.sum(e, axis=1, keepdims=True)
 
@@ -47,6 +49,7 @@ class WeaklySupervisedLearner:
         else:
             scores = h @ self.attention_params["V"] + self.attention_params["b"]
             alpha = self._softmax(scores.flatten())
+            alpha = alpha.reshape(-1)
             bag_vec = np.sum(alpha[:, None] * h, axis=0)
             return bag_vec, alpha
 
@@ -67,8 +70,7 @@ class WeaklySupervisedLearner:
         self.loss_history.append(loss)
         h = self._relu(x @ self.params["W1"] + self.params["b1"])
         if self.pooling == "attention" and alpha is not None:
-            alpha = alpha.reshape(-1, 1)
-            att = np.sum(alpha * h, axis=0)
+            att = np.sum(alpha.reshape(-1, 1) * h, axis=0)
             logits = att @ self.params["W2"] + self.params["b2"]
         else:
             logits = logits.reshape(1, -1)
@@ -80,8 +82,9 @@ class WeaklySupervisedLearner:
         db2 = np.sum(grad, axis=0)
         if self.pooling == "attention" and alpha is not None:
             dalpha = h @ self.params["W2"].T @ grad.T
-            dV = (h.T @ self.attention_params["V"]) @ dalpha
-            dV = np.sum(dV, axis=1, keepdims=True)
+            dalpha = dalpha.flatten()
+            dv = (h.T @ dalpha[:, None]).flatten()
+            dV = dv.reshape(-1, 1)
             db = np.sum(dalpha)
             self.attention_params["V"] -= lr * dV
             self.attention_params["b"] -= lr * db

@@ -1,131 +1,124 @@
 
-from complex_learning.active_learning_advanced import ActiveLearner
+from complex_learning.active_learning_advanced import AdvancedActiveLearner
 import numpy as np
 
 
-class TestActiveLearner:
+class TestAdvancedActiveLearner:
     def test_initialization(self):
-        al = ActiveLearner(input_dim=8)
-        assert al.input_dim == 8
-        assert al.hidden_dim == 64
-        assert al.output_dim == 5
-        assert al.batch_size == 10
-        assert len(al.params) == 4
+        al = AdvancedActiveLearner(strategy='uncertainty', num_classes=2, acquisition='max_entropy', batch_size=1)
+        assert al.strategy == 'uncertainty'
+        assert al.num_classes == 2
+        assert al.acquisition == 'max_entropy'
+        assert al.batch_size == 1
 
-    def test_fit(self):
-        al = ActiveLearner(input_dim=8)
+    def test_initialize(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='max_entropy', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        y = np.array([0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2])
-        al.fit(x, y)
-        assert len(al.loss_history) == 5
+        initial_labels = np.full(12, -1, dtype=int)
+        initial_labels[0] = 0
+        initial_labels[1] = 1
+        al.initialize(x, initial_labels)
+        assert len(al.labeled_y) == 2
+        assert len(al.unlabeled_indices) == 10
 
-    def test_set_dataset(self):
-        al = ActiveLearner(input_dim=8)
+    def test_max_entropy(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='max_entropy', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = [0, 1, 2, 3]
-        al.set_dataset(x, labeled)
-        assert len(al.labeled_indices) == 4
-        assert len(al.unlabeled_indices) == 8
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
 
-    def test_entropy_sampling(self):
-        al = ActiveLearner(input_dim=8)
+        class MockModel:
+            def predict_proba(self, x):
+                return np.random.dirichlet(np.ones(2), size=len(x))
+
+        model = MockModel()
+        indices = al.query(model, batch_size=3)
+        assert len(indices) == 3
+
+    def test_margin(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='margin', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        scores = al.entropy_sampling(x_unlabeled)
-        assert scores.shape == (8,)
-        assert all(s >= 0.0 for s in scores)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
 
-    def test_margin_sampling(self):
-        al = ActiveLearner(input_dim=8)
+        class MockModel:
+            def predict_proba(self, x):
+                return np.random.dirichlet(np.ones(2), size=len(x))
+
+        model = MockModel()
+        indices = al.query(model, batch_size=3)
+        assert len(indices) == 3
+
+    def test_confidence(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='confidence', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        scores = al.margin_sampling(x_unlabeled)
-        assert scores.shape == (8,)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
 
-    def test_uncertainty_sampling(self):
-        al = ActiveLearner(input_dim=8)
+        class MockModel:
+            def predict_proba(self, x):
+                return np.random.dirichlet(np.ones(2), size=len(x))
+
+        model = MockModel()
+        indices = al.query(model, batch_size=3)
+        assert len(indices) == 3
+
+    def test_random(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='random', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        for method in ["entropy", "margin", "combined"]:
-            scores = al.uncertainty_sampling(x_unlabeled, method=method)
-            assert scores.shape == (8,)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
 
-    def test_expected_model_change(self):
-        al = ActiveLearner(input_dim=8)
+        class MockModel:
+            pass
+
+        model = MockModel()
+        indices = al.query(model, batch_size=3)
+        assert len(indices) == 3
+
+    def test_update_labels(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='max_entropy', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        scores = al.expected_model_change(x_unlabeled)
-        assert scores.shape == (8,)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
+        al.update_labels([5, 6], np.array([0, 1]))
+        assert al.iteration_count == 1
+        assert len(al.query_log) == 2
 
-    def test_query_by_committee(self):
-        al = ActiveLearner(input_dim=8)
+    def test_get_query_efficiency(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='max_entropy', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        scores = al.query_by_committee(x_unlabeled, num_committee=3)
-        assert scores.shape == (8,)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
+        efficiency = al.get_query_efficiency()
+        assert "labeled_count" in efficiency
+        assert "unlabeled_count" in efficiency
+        assert "queries" in efficiency
+        assert "strategy" in efficiency
+        assert "iterations" in efficiency
 
-    def test_select_samples_entropy(self):
-        al = ActiveLearner(input_dim=8)
+    def test_evaluate(self):
+        al = AdvancedActiveLearner(strategy='uncertainty', acquisition='max_entropy', num_classes=2)
         x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        selected = al.select_samples(x_unlabeled, method="entropy", k=3)
-        assert selected.shape == (3,)
-        assert all(0 <= s < 8 for s in selected)
+        al.initialize(x, np.full(12, -1, dtype=int))
+        al.labeled_x = x[:2]
+        al.labeled_y = np.array([0, 1])
 
-    def test_select_samples_core_set(self):
-        al = ActiveLearner(input_dim=8)
-        x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_labeled = x[labeled]
-        x_unlabeled = x[al.unlabeled_indices]
-        selected = al.select_samples(x_labeled, x_unlabeled, method="core_set", k=3)
-        assert selected.shape == (3,)
+        class MockModel:
+            def classify(self, x):
+                return np.random.randint(0, 2, size=len(x))
 
-    def test_select_samples_vaal(self):
-        al = ActiveLearner(input_dim=8)
-        x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_labeled = x[labeled]
-        x_unlabeled = x[al.unlabeled_indices]
-        selected = al.select_samples(x_labeled, x_unlabeled, method="vaal", k=3)
-        assert selected.shape == (3,)
-
-    def test_select_samples_committee(self):
-        al = ActiveLearner(input_dim=8)
-        x = np.random.randn(12, 8).astype(np.float64)
-        labeled = list(range(4))
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        selected = al.select_samples(x_unlabeled, method="committee", k=3)
-        assert selected.shape == (3,)
-
-    def test_get_active_report(self):
-        al = ActiveLearner(input_dim=8)
-        al.set_dataset(np.random.randn(12, 8), [0, 1])
-        report = al.get_active_report()
-        assert "num_labeled" in report
-        assert "num_unlabeled" in report
-        assert "num_steps" in report
-
-    def test_k_all(self):
-        al = ActiveLearner(input_dim=8)
-        x = np.random.randn(5, 8).astype(np.float64)
-        labeled = [0]
-        al.set_dataset(x, labeled)
-        x_unlabeled = x[al.unlabeled_indices]
-        selected = al.select_samples(x_unlabeled, method="entropy", k=10)
-        assert selected.shape == (4,)
+        model = MockModel()
+        x_test = np.random.randn(4, 8).astype(np.float64)
+        y_test = np.random.randint(0, 2, size=4)
+        result = al.evaluate(model, x_test, y_test)
+        assert "accuracy" in result
+        assert "f1" in result
+        assert "precision" in result
+        assert "recall" in result

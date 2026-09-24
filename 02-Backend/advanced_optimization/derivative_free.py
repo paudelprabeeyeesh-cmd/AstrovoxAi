@@ -61,13 +61,17 @@ def pattern_search(f, x0, step_size=1.0, reduction=0.5, max_iter=100, tol=1e-6):
 
 def differential_evolution(f, bounds, pop_size=20, F=0.8, CR=0.9, max_iter=100):
     dim = len(bounds)
-    pop = np.array([np.random.uniform(b[0], b[1], dim) for _ in range(pop_size)])
+    pop = np.array([np.random.uniform(bnd[0], bnd[1], dim) for bnd in bounds for _ in range(pop_size // len(bounds))])
+    if len(pop) < pop_size:
+        extra = np.array([np.random.uniform(bnd[0], bnd[1], dim) for bnd in bounds for _ in range(pop_size - len(pop))])
+        pop = np.vstack([pop, extra])
     fitness = np.array([f(ind) for ind in pop])
     for _ in range(max_iter):
         for i in range(pop_size):
-            a, b, c = np.random.choice(pop_size, 3, replace=False)
+            idxs = [j for j in range(pop_size) if j != i]
+            a, b, c = np.random.choice(idxs, 3, replace=False)
             mutant = pop[a] + F * (pop[b] - pop[c])
-            mutant = np.clip(mutant, [b[0] for b in bounds], [b[1] for b in bounds])
+            mutant = np.clip(mutant, [bnd[0] for bnd in bounds], [bnd[1] for bnd in bounds])
             cross = np.random.rand(dim) < CR
             if not np.any(cross):
                 cross[np.random.randint(0, dim)] = True

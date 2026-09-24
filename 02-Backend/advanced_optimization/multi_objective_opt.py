@@ -56,7 +56,10 @@ class NSGA2:
 
     def optimize(self, obj_funcs, bounds):
         dim = len(bounds)
-        pop = np.array([np.random.uniform(b[0], b[1], dim) for _ in range(self.pop_size)])
+        pop = np.zeros((self.pop_size, dim))
+        for i in range(self.pop_size):
+            b = bounds[i % len(bounds)]
+            pop[i] = np.random.uniform(b[0], b[1], dim)
         for _ in range(self.max_iter):
             objs = np.array([obj_funcs(ind) for ind in pop])
             offspring = np.array([np.random.uniform(b[0], b[1], dim) for b in bounds])

@@ -39,7 +39,7 @@ def test_dag_execute_all():
 
 
 def test_dag_skips_on_missing_dep():
-    dag = DAG(tasks=[Task(name="a", fn=lambda: None, deps=["b"])])
+    dag = DAG(tasks=[Task(name="a", fn=lambda name: None, deps=["b"])])
     ex = DAGExecutor(dag)
     ex.execute()
     assert ex._results["a"].status == TaskStatus.SKIPPED
@@ -47,7 +47,7 @@ def test_dag_skips_on_missing_dep():
 
 def test_dag_retry_on_failure():
     calls = {"n": 0}
-    def flaky(): calls["n"] += 1; raise RuntimeError("x")
+    def flaky(name): calls["n"] += 1; raise RuntimeError("x")
     dag = DAG(tasks=[Task(name="a", fn=flaky, retries=1)])
     ex = DAGExecutor(dag)
     ex.execute()
@@ -70,7 +70,7 @@ def test_workflow_engine_run():
 
 
 def test_dag_executor_status():
-    dag = DAG(tasks=[Task(name="a", fn=lambda: None, deps=[])])
+    dag = DAG(tasks=[Task(name="a", fn=lambda name: None, deps=[])])
     ex = DAGExecutor(dag)
     ex.execute()
     assert ex.status()["a"] == TaskStatus.COMPLETED

@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 @dataclass
 class Script:
     name: str
-    source: str
+    source: str = ""
     environment: Dict[str, Any] = field(default_factory=dict)
 
 

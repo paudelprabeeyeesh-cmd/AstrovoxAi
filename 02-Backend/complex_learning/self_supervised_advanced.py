@@ -19,10 +19,10 @@ class AdvancedSelfSupervisedLearner:
         self._initialize_params()
 
     def _initialize_params(self) -> None:
-        self.params['W1'] = np.random.randn(self.input_dim, self.input_dim).astype(np.float64) * 0.1
-        self.params['b1'] = np.zeros(self.input_dim, dtype=np.float64)
-        self.params['Wp'] = np.random.randn(self.input_dim, self.projection_dim).astype(np.float64) * 0.1
-        self.params['bp'] = np.zeros(self.projection_dim, dtype=np.float64)
+        self.params["W1"] = np.random.randn(self.input_dim, self.input_dim).astype(np.float64) * 0.1
+        self.params["b1"] = np.zeros(self.input_dim, dtype=np.float64)
+        self.params["Wp"] = np.random.randn(self.input_dim, self.projection_dim).astype(np.float64) * 0.1
+        self.params["bp"] = np.zeros(self.projection_dim, dtype=np.float64)
         self.momentum_params = {k: v.copy() for k, v in self.params.items()}
 
     @staticmethod
@@ -35,8 +35,8 @@ class AdvancedSelfSupervisedLearner:
         return e / np.sum(e, axis=1, keepdims=True)
 
     def _encode(self, x: np.ndarray, params: Dict[str, np.ndarray]) -> np.ndarray:
-        h = self._relu(x @ params['W1'] + params['b1'])
-        return h @ params['Wp'] + params['bp']
+        h = self._relu(x @ params["W1"] + params["b1"])
+        return h @ params["Wp"] + params["bp"]
 
     def _nt_xent_loss(self, z_i: np.ndarray, z_j: np.ndarray, queue: Optional[np.ndarray] = None) -> float:
         z_i = z_i / (np.linalg.norm(z_i, axis=1, keepdims=True) + 1e-12)
@@ -66,8 +66,8 @@ class AdvancedSelfSupervisedLearner:
         z_norm = z_i / (np.linalg.norm(z_i, axis=1, keepdims=True) + 1e-12)
         queue[:len(z_norm)] = queue[:len(z_norm)] * self.momentum + z_norm * (1.0 - self.momentum)
         lr = 0.01
-        z = self._relu(x @ self.params['W1'] + self.params['b1'])
-        z_j = self._relu(x_aug @ self.momentum_params['W1'] + self.momentum_params['b1'])
+        z = self._relu(x @ self.params["W1"] + self.params["b1"])
+        z_j = self._relu(x_aug @ self.momentum_params["W1"] + self.momentum_params["b1"])
         zj = z_j
         batch_size = len(x)
         labels = np.zeros(batch_size, dtype=int)
@@ -79,17 +79,17 @@ class AdvancedSelfSupervisedLearner:
         grad /= batch_size
         dWp = z.T @ grad[:, :1]
         dbp = np.sum(grad[:, :1], axis=0)
-        dh = grad[:, :1] @ self.params['Wp'].T
+        dh = grad[:, :1] @ self.params["Wp"].T
         dh = dh * (z > 0)
         dW1 = x.T @ dh
         db1 = np.sum(dh, axis=0)
-        self.params['Wp'] -= lr * dWp
-        self.params['bp'] -= lr * dbp
-        self.params['W1'] -= lr * dW1
-        self.params['b1'] -= lr * db1
+        self.params["Wp"] -= lr * dWp
+        self.params["bp"] -= lr * dbp
+        self.params["W1"] -= lr * dW1
+        self.params["b1"] -= lr * db1
         for k in self.momentum_params:
             self.momentum_params[k] = self.momentum * self.momentum_params[k] + (1.0 - self.momentum) * self.params[k]
-        return {'loss': loss, 'temperature': self.temperature, 'queue_len': len(self.queue)}
+        return {"loss": loss, "temperature": self.temperature, "queue_len": len(self.queue)}
 
     def mask_and_reconstruct(self, x: np.ndarray, mask_ratio: float = 0.15) -> Tuple[np.ndarray, np.ndarray]:
         mask = np.random.rand(*x.shape) < mask_ratio
@@ -109,14 +109,13 @@ class AdvancedSelfSupervisedLearner:
         neg = np.sum((z[:, None, :] - z_neg[None, :, :]) ** 2, axis=2)
         margin = 0.2
         loss = float(np.mean(np.maximum(margin + pos[:, None] - neg, 0)))
-        return {'triplet_loss': loss}
+        return {"triplet_loss": loss}
 
     def get_ssl_report(self) -> Dict[str, Any]:
         return {
-            'num_steps': len(self.loss_history),
-            'last_loss': float(self.loss_history[-1]) if self.loss_history else None,
-            'mean_loss': float(np.mean(self.loss_history[-10:])) if len(self.loss_history) >= 10 else (float(self.loss_history[-1]) if self.loss_history else None),
-            'temperature': self.temperature,
-            'queue_size': len(self.queue) if self.queue is not None else 0,
+            "num_steps": len(self.loss_history),
+            "last_loss": float(self.loss_history[-1]) if self.loss_history else None,
+            "mean_loss": float(np.mean(self.loss_history[-10:])) if len(self.loss_history) >= 10 else (float(self.loss_history[-1]) if self.loss_history else None),
+            "temperature": self.temperature,
+            "queue_size": len(self.queue) if self.queue is not None else 0,
         }
-

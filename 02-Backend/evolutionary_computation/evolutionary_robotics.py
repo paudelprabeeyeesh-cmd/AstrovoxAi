@@ -19,7 +19,7 @@ class EvolutionaryRobotics:
         selected = []
         for _ in range(self.population_size):
             indices = np.random.choice(self.population_size, tournament_size, replace=False)
-            selected.append(self.population[indices[np.argmax(self.evaluate()[indices])])
+            selected.append(self.population[indices[np.argmax(self.evaluate()[indices])]])
         return np.array(selected)
 
     def one_point_crossover(self, parent1, parent2):

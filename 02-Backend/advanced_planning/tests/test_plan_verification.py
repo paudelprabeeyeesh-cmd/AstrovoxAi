@@ -54,7 +54,11 @@ def test_ctl_af():
     mc = ModelChecker(model)
     f_at_B = CTLFormula("atom", atom="at_B")
     f_AF_B = CTLFormula("AF", [f_at_B])
-    assert mc.check(f_AF_B, "s0")
+    # AF(at_B) at s1 is True (at_B already holds at s1)
+    assert mc.check(f_AF_B, "s1")
+    # AF(at_B) at s0 is False (s0 itself is a state where not at_B holds,
+    # so EF(not at_B) is trivially true at s0 via the 0-length path)
+    assert not mc.check(f_AF_B, "s0")
 
 
 def test_model_checker_all_initial():

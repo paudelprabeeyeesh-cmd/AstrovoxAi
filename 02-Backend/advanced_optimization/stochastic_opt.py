@@ -23,10 +23,12 @@ def spsa(f, x0, a=0.1, c=0.1, A=100, alpha=0.602, gamma=0.101, max_iter=1000, to
 def stochastic_approximation(f, x0, lr=1e-2, max_iter=1000, tol=1e-6):
     x = np.copy(x0)
     for _ in range(max_iter):
+        h = 1e-5
         g = np.zeros_like(x)
-        for _ in range(10):
-            g += np.array(np.gradient(f(x)))
-        g /= 10
+        for i in range(len(x)):
+            e = np.zeros_like(x)
+            e[i] = h
+            g[i] = (f(x + e) - f(x - e)) / (2 * h)
         x_new = x - lr * g
         if np.linalg.norm(x_new - x) < tol:
             break

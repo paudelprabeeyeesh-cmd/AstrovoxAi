@@ -72,9 +72,11 @@ class IntegrationTester:
                 passed += 1
             except AssertionError as exc:
                 error = str(exc)
+                failed += 1
                 break
             except Exception as exc:
                 error = str(exc)
+                failed += 1
                 break
         for td in scenario.teardowns:
             try:

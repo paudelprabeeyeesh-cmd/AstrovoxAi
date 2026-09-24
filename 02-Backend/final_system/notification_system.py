@@ -38,25 +38,24 @@ class NotificationSystem:
 
     def subscribe(self, topic: str, channel: str) -> None:
         with self._lock:
-            self._subscriptions.setdefault(topic, []).append(channel)
+            self._subscriptions.setdefault(topic, set()).add(channel)
 
     def send(self, notification: Notification) -> None:
         with self._lock:
             handlers = list(self._channels.get(notification.channel, []))
-            topics = self._subscriptions.get(notification.channel, [])
+            topics = list(self._subscriptions.get(notification.channel, set()))
         for handler in handlers:
             try:
                 handler(notification)
             except Exception:
                 continue
         for topic in topics:
-            try:
-                handler = self._channels.get(topic)
-                if handler:
-                    for h in handler:
-                        h(notification)
-            except Exception:
-                continue
+            for target_handler in self._channels.get(topic, []):
+                if target_handler not in handlers:
+                    try:
+                        target_handler(notification)
+                    except Exception:
+                        continue
 
     def list_channels(self) -> List[str]:
         with self._lock:

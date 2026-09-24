@@ -81,7 +81,7 @@ class SecurityOrchestrator:
 
 class SplunkIntegration:
     @staticmethod
-    def transform(incidents: List[Dict[str, Any]) -> List[Dict[str, Any]]:
+    def transform(incidents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         return [{"sourcetype": "orchestrator", "raw": json.dumps(i)} for i in incidents]
 
 

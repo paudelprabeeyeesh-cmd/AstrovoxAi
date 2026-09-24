@@ -87,7 +87,7 @@ class AdvancedPrototypicalNetworks:
             if y_int[i] in class_ids:
                 target[i, class_ids.index(y_int[i])] = 1.0
             else:
-                target[i, 0] = 1.0
+                target[0, 0] = 1.0
         loss = float(-np.mean(np.sum(target * np.log(probs + 1e-12), axis=1)))
         self.loss_history.append(loss)
         preds = np.argmax(probs, axis=1)
@@ -95,14 +95,14 @@ class AdvancedPrototypicalNetworks:
         return {"loss": loss, "accuracy": acc, "n_query": len(episode.query_y)}
 
     def evaluate_episode(self, episode: Episode) -> Dict[str, Any]:
-        z = self._encode(episode.query_x, stochastic=True)
-        z_np = z
+        if not self.prototypes:
+            self.compute_prototypes(episode.support_x, episode.support_y)
         z_np = episode.query_x @ np.random.randn(episode.query_x.shape[1], self.embedding_dim).astype(np.float64) * 0.1
         z = z_np
         dists = self._compute_distances(z)
         probs = np.exp(-dists / 1.0)
         probs = probs / np.sum(probs, axis=1, keepdims=True)
-        preds = np.argmax(probs, axis=1)
+        preds = np.argmin(dists, axis=1)
         class_ids = sorted(self.prototypes.keys())
         preds = np.array([class_ids[i] for i in preds], dtype=int)
         acc = float(np.mean(preds == episode.query_y.astype(int)))
@@ -139,14 +139,11 @@ class RelationNetwork:
     def score_samples(self, support_x: np.ndarray, support_y: np.ndarray, query_x: np.ndarray) -> np.ndarray:
         f_s = self._embed(support_x)
         f_q = self._embed(query_x)
-        scores = []
+        scores = np.zeros((len(query_x), len(support_x)), dtype=np.float64)
         for qi in range(len(query_x)):
-            qi_scores = []
             for si in range(len(support_x)):
-                s = self._relation_score(f_q[qi:qi+1], f_s[si:si+1])
-                qi_scores.append(float(s))
-            scores.append(qi_scores)
-        return np.array(scores)
+                scores[qi, si] = float(self._relation_score(f_q[qi:qi+1], f_s[si:si+1]).flat[0])
+        return scores
 
     def predict(self, support_x: np.ndarray, support_y: np.ndarray, query_x: np.ndarray) -> np.ndarray:
         scores = self.score_samples(support_x, support_y, query_x)
