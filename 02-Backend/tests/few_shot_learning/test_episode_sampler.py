@@ -71,3 +71,48 @@ def test_episode_dataclass():
     assert ep.n_way == 1
     assert ep.k_shot == 1
     assert ep.query_size == 1
+
+
+def test_episode_defaults():
+    ep = Episode(support_x=[], support_y=[], query_x=[], query_y=[])
+    assert ep.n_way == 5
+    assert ep.k_shot == 1
+    assert ep.query_size == 5
+
+
+def test_sample_episode_defaults():
+    x, y = _make_data()
+    sampler = EpisodeSampler(seed=0)
+    episode = sampler.sample_episode(x, y)
+    assert episode.n_way == 5
+    assert episode.k_shot == 1
+    assert episode.query_size == 5
+
+
+def test_sample_batch_defaults():
+    x, y = _make_data()
+    sampler = EpisodeSampler(seed=0)
+    batch = sampler.sample_batch(x, y)
+    assert len(batch) == 1
+    assert len(batch[0].support_x) == 5
+
+
+def test_stratified_split_edge_ratios():
+    x, y = _make_data()
+    sampler = EpisodeSampler(seed=0)
+    s_x, s_y, q_x, q_y = sampler.stratified_split(x, y, support_ratio=0.0)
+    assert len(s_x) == 0
+    assert len(q_x) == len(x)
+    s_x, s_y, q_x, q_y = sampler.stratified_split(x, y, support_ratio=1.0)
+    assert len(q_x) == 0
+    assert len(s_x) == len(x)
+
+
+def test_sampler_determinism():
+    x, y = _make_data()
+    sampler = EpisodeSampler(seed=42)
+    ep1 = sampler.sample_episode(x, y, n_way=2, k_shot=2, query_size=2)
+    sampler2 = EpisodeSampler(seed=42)
+    ep2 = sampler2.sample_episode(x, y, n_way=2, k_shot=2, query_size=2)
+    assert ep1.support_x == ep2.support_x
+    assert ep1.query_x == ep2.query_x

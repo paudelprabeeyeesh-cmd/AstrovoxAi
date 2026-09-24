@@ -64,13 +64,17 @@ class CosineSimilarityClassifier(SimilarityClassifier):
         self.support_y: Optional[List[int]] = None
 
     def fit(self, support_x: List[List[float]], support_y: List[int]) -> None:
-        self.support_emb = [[v / _vec_norm(row) for v in row] for row in support_x]
+        self.support_emb = [
+            [v / max(_vec_norm(row), 1e-12) for v in row] for row in support_x
+        ]
         self.support_y = list(support_y)
 
     def predict(self, query_x: List[List[float]]) -> List[int]:
         if self.support_emb is None:
             return [0] * len(query_x)
-        query_emb = [[v / _vec_norm(row) for v in row] for row in query_x]
+        query_emb = [
+            [v / max(_vec_norm(row), 1e-12) for v in row] for row in query_x
+        ]
         sims = [[_vec_dot(q, s) for s in self.support_emb] for q in query_emb]
         preds = []
         for row in sims:

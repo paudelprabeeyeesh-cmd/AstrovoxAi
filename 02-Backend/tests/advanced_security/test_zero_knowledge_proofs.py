@@ -18,3 +18,20 @@ def test_proof_has_expected_fields() -> None:
     assert "commitment" in proof
     assert "challenge" in proof
     assert "response" in proof
+
+
+def test_commit_with_explicit_nonce() -> None:
+    commitment = ZeroKnowledgeProof.commit("secret", nonce="abc")
+    assert commitment.opening == "abc"
+    assert ZeroKnowledgeProof.verify(commitment.commitment, "secret", "abc") is True
+
+
+def test_commit_different_nonces_differ() -> None:
+    commitment1 = ZeroKnowledgeProof.commit("secret", nonce="nonce1")
+    commitment2 = ZeroKnowledgeProof.commit("secret", nonce="nonce2")
+    assert commitment1.commitment != commitment2.commitment
+
+
+def test_verify_wrong_nonce_returns_false() -> None:
+    commitment = ZeroKnowledgeProof.commit("secret", nonce="nonce1")
+    assert ZeroKnowledgeProof.verify(commitment.commitment, "secret", "nonce2") is False

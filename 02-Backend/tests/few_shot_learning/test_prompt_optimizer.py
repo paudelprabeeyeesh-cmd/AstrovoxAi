@@ -70,7 +70,7 @@ def test_evaluate_prompt():
 
 def test_set_template():
     optimizer = PromptOptimizer()
-    optimizer.set_template("{query} -> {label}")
+    optimizer.set_template("{query} -> {instruction}")
     optimizer.add_example("x", "y")
     prompt = optimizer.optimize_prompt("test", n_examples=1, method="random")
     assert "test" in prompt

@@ -3,6 +3,7 @@ from social_intelligence.dialogue_manager import (
     DialogueTurn,
     SpeakerRole,
     TopicStatus,
+    TopicState,
 )
 
 
@@ -61,3 +62,55 @@ class TestDialogueManager:
     def test_sentiment_neutral(self):
         turn = self.manager.add_turn(SpeakerRole.USER, "The quick brown fox")
         assert turn.sentiment == 0.0
+
+    def test_topic_state_defaults(self):
+        state = TopicState(topic="t")
+        assert state.status == TopicStatus.OPEN
+        assert state.turns == 0
+        assert state.last_sentiment == 0.0
+
+    def test_dialogue_turn_defaults(self):
+        turn = DialogueTurn(speaker=SpeakerRole.USER, text="hello")
+        assert turn.topic == "general"
+        assert turn.sentiment == 0.0
+        assert turn.metadata == {}
+
+    def test_active_topics_excludes_resolved(self):
+        self.manager.add_turn(SpeakerRole.USER, "X", topic="t1")
+        self.manager.resolve_topic("t1")
+        assert "t1" not in self.manager.get_active_topics()
+
+    def test_active_topics_excludes_deferred(self):
+        for i in range(3):
+            self.manager.add_turn(SpeakerRole.USER, f"M{i}", topic="t1")
+        assert "t1" not in self.manager.get_active_topics()
+
+    def test_summary_counts_resolved(self):
+        self.manager.add_turn(SpeakerRole.USER, "X", topic="t1")
+        self.manager.resolve_topic("t1")
+        summary = self.manager.get_summary()
+        assert summary["resolved_topics"] == 1
+
+    def test_add_turn_with_metadata(self):
+        turn = self.manager.add_turn(SpeakerRole.USER, "Hi", metadata={"key": "value"})
+        assert turn.metadata == {"key": "value"}
+
+    def test_get_topic_history_empty_topic(self):
+        assert self.manager.get_topic_history("missing") == []
+
+    def test_resolve_missing_topic_safe(self):
+        self.manager.resolve_topic("missing")
+
+    def test_system_role(self):
+        turn = self.manager.add_turn(SpeakerRole.SYSTEM, "System notice")
+        assert turn.speaker == SpeakerRole.SYSTEM
+
+    def test_summary_empty(self):
+        summary = self.manager.get_summary()
+        assert summary["total_turns"] == 0
+        assert summary["active_topics"] == 0
+        assert summary["resolved_topics"] == 0
+
+    def test_sentiment_case_insensitive(self):
+        turn = self.manager.add_turn(SpeakerRole.USER, "GREAT thanks HAPPY")
+        assert turn.sentiment > 0.0

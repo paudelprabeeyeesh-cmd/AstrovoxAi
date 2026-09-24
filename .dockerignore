@@ -5,6 +5,8 @@
 # Node
 node_modules
 npm-debug.log*
+pnpm-debug.log*
+yarn-error.log*
 
 # Python
 __pycache__
@@ -19,10 +21,17 @@ env/
 *.egg-info
 .pytest_cache
 .mypy_cache
+.ruff_cache
+*.db
+*.sqlite
+*.sqlite3
 
 # Build
 dist
 build
+.next
+out
+.turbo
 
 # IDE
 .vscode
@@ -33,21 +42,24 @@ build
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
-# Env files (keep .env.example)
+# Environment files
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
+!.env.example
 
 # Logs
 logs
 *.log
+log/
 
-# Docker
-Dockerfile*
-docker-compose*
-.docker
-
-# Documentation
-*.md
-!README.md
+# Secrets
+*.pem
+*.key
+*.crt
+*.p12

@@ -56,8 +56,24 @@ class ContextBuilder:
         return get_relevant_memories(user_id, prompt, limit)
 
     def get_relevant_documents(self, user_id: str, prompt: str, limit: int = 3) -> list[dict]:
-        docs = search_docs(user_id, prompt, limit)
-        return [{"id": d.id, "title": d.title, "content": d.content} for d in docs]
+        try:
+            from app.rag.retriever import RAGRetriever
+            import asyncio
+            retriever = RAGRetriever()
+            results = asyncio.run(retriever.retrieve(query=prompt, top_k=limit))
+            return [
+                {
+                    "id": r.chunk_id,
+                    "document_id": r.document_id,
+                    "content": r.content,
+                    "score": r.score,
+                    "source": r.source,
+                }
+                for r in results
+            ]
+        except Exception as _e:  # noqa: BLE001
+            logger.warning("Failed to retrieve relevant documents: %s", _e)
+            return []
 
     def truncate_to_fit(self, messages: list[dict], max_tokens: int) -> list[dict]:
         total = sum(self.estimate_tokens(m.get("content", "") or "") for m in messages)

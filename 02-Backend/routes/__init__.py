@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from . import auth, chat, admin, health, models
+from . import auth, chat, admin, health, models, sandbox
 
 router = APIRouter()
 
@@ -9,3 +9,4 @@ def include_routers(app):
     app.include_router(admin.router)
     app.include_router(health.router)
     app.include_router(models.router)
+    app.include_router(sandbox.router)

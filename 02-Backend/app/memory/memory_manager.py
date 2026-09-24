@@ -26,6 +26,7 @@ from .semantic_memory import SemanticMemory, FactCategory
 from .episodic_memory import EpisodicMemory, EventType
 from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory, WorkspaceType
+from .memory_consolidation import MemoryConsolidationService
 from .importance_scorer import ImportanceScorer
 from .retrieval_engine import RetrievalEngine, RetrievalMethod
 from .vector_store import VectorStore
@@ -50,6 +51,7 @@ class MemoryManager:
         self.importance_scorer = ImportanceScorer()
         self.retrieval_engine = RetrievalEngine()
         self.vector_store = VectorStore()
+        self.consolidation_service = MemoryConsolidationService()
         
         # Register memory stores with retrieval engine
         self._register_memory_stores()
@@ -409,3 +411,15 @@ class MemoryManager:
     def clear_retrieval_cache(self):
         """Clear the retrieval cache"""
         self.retrieval_engine.clear_cache()
+
+    def consolidate_memories(self, user_id: int) -> Dict[str, Any]:
+        """Run memory consolidation for a user."""
+        return self.consolidation_service.consolidate_user(user_id=str(user_id))
+
+    def get_consolidation_stats(self, user_id: int) -> Dict[str, Any]:
+        """Get consolidation statistics for a user."""
+        return self.consolidation_service.get_user_stats(user_id=str(user_id))
+
+    def get_consolidation_records(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent consolidation records."""
+        return self.consolidation_service.get_records(limit=limit)

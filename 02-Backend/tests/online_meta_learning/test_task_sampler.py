@@ -65,3 +65,26 @@ class TestTaskSampler:
         assert 'num_registered' in report
         assert report['num_registered'] == 1
         assert 'task_ids' in report
+
+    def test_sample_batch_missing_task_raises(self):
+        ts = TaskSampler()
+        ts.register_task('t1')
+        try:
+            ts.sample_batch(['t1', 'missing'])
+            assert False
+        except KeyError:
+            pass
+
+    def test_seed_reproducibility(self):
+        ts = TaskSampler()
+        ts.register_task('t1', seed=123)
+        x1, y1 = ts.sample('t1')
+        ts.register_task('t2', seed=123)
+        x2, y2 = ts.sample('t2')
+        assert np.allclose(x1, x2)
+        assert np.allclose(y1, y2)
+
+    def test_get_task_distribution_empty(self):
+        ts = TaskSampler()
+        ts.register_task('t1')
+        assert ts.get_task_distribution() == {}

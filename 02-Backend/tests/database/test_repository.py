@@ -72,3 +72,63 @@ def test_find_one_returns_single_row(tmp_path):
     repo.insert({"name": "widget", "value": 9.5})
     row = repo.find_one("SELECT * FROM items WHERE name=?", ("widget",))
     assert row["name"] == "widget"
+
+
+def test_execute_returns_cursor(tmp_path):
+    repo = _make_repo(tmp_path)
+    cur = repo.execute("INSERT INTO items (name, value) VALUES (?, ?)", ("x", 1.0))
+    assert cur.lastrowid is not None
+
+
+def test_fetchone_returns_dict_or_none(tmp_path):
+    repo = _make_repo(tmp_path)
+    assert repo.fetchone("SELECT * FROM items WHERE name=?", ("missing",)) is None
+    repo.insert({"name": "widget", "value": 9.5})
+    row = repo.fetchone("SELECT * FROM items WHERE name=?", ("widget",))
+    assert row["name"] == "widget"
+
+
+def test_fetchall_returns_list_of_dicts(tmp_path):
+    repo = _make_repo(tmp_path)
+    repo.insert({"name": "a", "value": 1.0})
+    repo.insert({"name": "b", "value": 2.0})
+    rows = repo.fetchall("SELECT * FROM items")
+    assert len(rows) == 2
+    assert all(isinstance(r, dict) for r in rows)
+
+
+def test_find_by_id_with_custom_pk_name(tmp_path):
+    repo = _make_repo(tmp_path)
+    row_id = repo.insert({"name": "widget", "value": 9.5})
+    row = repo.find_by_id(row_id, pk_name="id")
+    assert row["name"] == "widget"
+
+
+def test_update_returns_zero_when_no_match(tmp_path):
+    repo = _make_repo(tmp_path)
+    repo.insert({"name": "widget", "value": 9.5})
+    count = repo.update({"name": "gadget"}, "id=?", (999,))
+    assert count == 0
+
+
+def test_delete_returns_zero_when_no_match(tmp_path):
+    repo = _make_repo(tmp_path)
+    repo.insert({"name": "widget", "value": 9.5})
+    count = repo.delete("id=?", (999,))
+    assert count == 0
+
+
+def test_find_all_with_params(tmp_path):
+    repo = _make_repo(tmp_path)
+    repo.insert({"name": "a", "value": 1.0})
+    repo.insert({"name": "b", "value": 2.0})
+    rows = repo.find_all("SELECT * FROM items WHERE value > ?", (1.5,))
+    assert len(rows) == 1
+    assert rows[0]["name"] == "b"
+
+
+def test_insert_single_key(tmp_path):
+    repo = _make_repo(tmp_path)
+    row_id = repo.insert({"name": "only_name"})
+    assert row_id == 1
+    assert repo.find_by_id(row_id)["name"] == "only_name"

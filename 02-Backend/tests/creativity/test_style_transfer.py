@@ -36,3 +36,19 @@ class TestStyleTransfer:
         r_a = st_a.transfer("sample input text here", target_style="noir")
         r_b = st_b.transfer("sample input text here", target_style="noir")
         assert r_a.text == r_b.text
+
+    def test_formal_profile_does_not_truncate_short_text(self):
+        st = StyleTransfer()
+        result = st.transfer("short text here", target_style="formal")
+        assert len(result.text.split()) >= len("short text here".split())
+
+    def test_noir_profile_joins_with_period_or_semicolon(self):
+        st = StyleTransfer(seed=1)
+        result = st.transfer("The detective walked into the room. The shadows were long.", target_style="noir")
+        assert result.text
+
+    def test_vocabulary_replacement_for_high_richness(self):
+        st = StyleTransfer()
+        result = st.transfer("good bad big small", target_style="poetic")
+        lowered = result.text.lower()
+        assert "excellent" in lowered or "dreadful" in lowered or "vast" in lowered

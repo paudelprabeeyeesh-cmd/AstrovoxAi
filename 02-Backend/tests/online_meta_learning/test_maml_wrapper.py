@@ -54,3 +54,48 @@ class TestMAMLWrapper:
         assert 'num_meta_steps' in report
         assert report['inner_lr'] == 0.01
         assert report['meta_lr'] == 0.001
+
+    def test_relu(self):
+        x = np.array([[-1.0, 0.0, 2.0]], dtype=np.float64)
+        out = MAMLWrapper._relu(x)
+        assert np.allclose(out, [[0.0, 0.0, 2.0]])
+
+    def test_relu_grad(self):
+        x = np.array([[-1.0, 0.0, 2.0]], dtype=np.float64)
+        out = MAMLWrapper._relu_grad(x)
+        assert np.allclose(out, [[0.0, 0.0, 1.0]])
+
+    def test_forward(self):
+        config = MAMLConfig(input_dim=4, output_dim=2)
+        mw = MAMLWrapper(config)
+        x = np.random.randn(3, 4).astype(np.float64)
+        logits = mw._forward(x, mw.params)
+        assert logits.shape == (3, 2)
+
+    def test_compute_loss(self):
+        config = MAMLConfig(input_dim=4, output_dim=2)
+        mw = MAMLWrapper(config)
+        x = np.random.randn(3, 4).astype(np.float64)
+        y = np.random.randn(3, 2).astype(np.float64)
+        loss = mw._compute_loss(x, y, mw.params)
+        assert isinstance(loss, float)
+        assert loss >= 0.0
+
+    def test_adapt_returns_trajectory(self):
+        config = MAMLConfig(input_dim=4, output_dim=2, num_inner_steps=3)
+        mw = MAMLWrapper(config)
+        x = np.random.randn(5, 4).astype(np.float64)
+        y = np.random.randn(5, 2).astype(np.float64)
+        adapted, trajectory = mw._adapt(x, y, mw.params)
+        assert isinstance(adapted, dict)
+        assert isinstance(trajectory, list)
+        assert len(trajectory) == 4
+
+    def test_meta_train_step_updates_params(self):
+        np.random.seed(0)
+        config = MAMLConfig(input_dim=8, output_dim=2, num_tasks=2, num_inner_steps=1)
+        mw = MAMLWrapper(config)
+        before = {k: v.copy() for k, v in mw.params.items()}
+        mw.meta_train_step()
+        for k in mw.params:
+            assert not np.allclose(mw.params[k], before[k])

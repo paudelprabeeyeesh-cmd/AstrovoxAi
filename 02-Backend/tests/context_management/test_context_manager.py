@@ -45,9 +45,53 @@ def test_token_count():
     assert cm.token_count() == 5
 
 
-def test_truncate():
-    cm = ContextManager(max_tokens=2)
-    cm.add_turn("user", "one two three")
-    cm.add_turn("assistant", "four five")
+def test_get_context_without_system_prompt():
+    cm = ContextManager()
+    cm.add_turn("user", "hello")
+    ctx = cm.get_context()
+    assert ctx == [{"role": "user", "content": "hello"}]
+
+
+def test_get_context_empty():
+    cm = ContextManager()
+    assert cm.get_context() == []
+
+
+def test_token_count_with_system_prompt():
+    cm = ContextManager()
+    cm.set_system_prompt("system prompt")
+    cm.add_turn("user", "hello world")
+    assert cm.token_count() == 3
+
+
+def test_token_count_empty():
+    cm = ContextManager()
+    assert cm.token_count() == 0
+
+
+def test_add_turn_returns_dict():
+    cm = ContextManager()
+    turn = cm.add_turn("user", "hello")
+    assert turn == {"role": "user", "content": "hello"}
+    assert turn in cm.turns
+
+
+def test_truncate_within_limit():
+    cm = ContextManager(max_tokens=100)
+    cm.add_turn("user", "hello")
     cm.truncate()
-    assert cm.token_count() <= 2
+    assert len(cm.turns) == 1
+
+
+def test_truncate_no_infinite_loop():
+    cm = ContextManager(max_tokens=1)
+    cm.add_turn("user", "one two three")
+    cm.truncate()
+    assert cm.token_count() <= 1
+
+
+def test_clear_empty():
+    cm = ContextManager()
+    cm.clear()
+    assert cm.turns == []
+

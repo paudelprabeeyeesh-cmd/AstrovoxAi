@@ -54,3 +54,49 @@ def test_prune_below(engine):
     removed = engine.prune_below(1.1)
     assert removed == ["Low"]
     assert len(engine) == 0
+
+
+def test_invalid_candidate():
+    with pytest.raises(ValueError):
+        AttributionCandidate(actor="")
+    with pytest.raises(ValueError):
+        AttributionCandidate(actor="APT-X", score=101.0)
+
+
+def test_link_indicator_duplicate(engine):
+    engine.register("APT-X")
+    ind = Indicator(value="1.2.3.4", type="ip", confidence=0.9)
+    engine.link_indicator("APT-X", ind)
+    engine.link_indicator("APT-X", ind)
+    candidate = engine.get("APT-X")
+    assert candidate is not None
+    assert len(candidate.matched_indicators) == 1
+
+
+def test_score_from_matches_no_indicators(engine):
+    engine.register("APT-X")
+    engine.score_from_matches("APT-X", [])
+    assert engine.get("APT-X").score == 0.0
+
+
+def test_get_missing_actor(engine):
+    assert engine.get("Missing") is None
+
+
+def test_ranked_equal_scores(engine):
+    engine.register("A")
+    engine.register("B")
+    engine.link_indicator("A", Indicator(value="1.2.3.4", type="ip", confidence=0.5))
+    engine.link_indicator("B", Indicator(value="1.2.3.4", type="ip", confidence=0.5))
+    ranked = engine.ranked()
+    assert [c.actor for c in ranked] == ["A", "B"]
+
+
+def test_len(engine):
+    engine.register("X")
+    engine.register("Y")
+    assert len(engine) == 2
+
+
+def test_prune_below_empty(engine):
+    assert engine.prune_below(1.0) == []

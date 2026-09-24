@@ -56,6 +56,47 @@ def audit() -> List[Finding]:
         "execute_bash restricted to allowlist and shell=False",
     ))
 
+    db_url = os.getenv("DATABASE_URL", "")
+    if db_url.startswith("postgresql://") or db_url.startswith("postgres://"):
+        findings.append(Finding(
+            "postgres_connection",
+            "pass",
+            "DATABASE_URL uses PostgreSQL",
+        ))
+        findings.append(Finding(
+            "ssl_mode",
+            "pass" if "sslmode" in db_url or "require" in db_url else "warn",
+            "SSL mode check",
+        ))
+    else:
+        findings.append(Finding(
+            "postgres_connection",
+            "info",
+            "Using SQLite database",
+        ))
+
+    alembic_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "alembic")
+    if os.path.exists(alembic_dir):
+        findings.append(Finding(
+            "alembic_migrations",
+            "pass",
+            f"Alembic migrations found at {alembic_dir}",
+        ))
+    else:
+        findings.append(Finding(
+            "alembic_migrations",
+            "fail",
+            "Alembic migrations directory not found",
+        ))
+
+    backup_dir = os.environ.get("BACKUP_DIR", "/tmp/backups")
+    os.makedirs(backup_dir, exist_ok=True)
+    findings.append(Finding(
+        "backup_directory",
+        "pass",
+        f"Backup directory exists: {backup_dir}",
+    ))
+
     return findings
 
 

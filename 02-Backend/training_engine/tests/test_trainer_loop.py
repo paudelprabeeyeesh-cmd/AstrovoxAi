@@ -1,3 +1,5 @@
+import math
+
 from training_engine.trainer_loop import TrainerLoop, TrainConfig
 from training_engine.lr_scheduler import MockOptimizer
 
@@ -28,3 +30,13 @@ def test_trainer_loop_resume(tmp_path):
     trainer.run(max_steps=4)
     resumed_step = trainer.resume()
     assert resumed_step == 4
+
+
+def test_trainer_loop_first_step_uses_warmup_lr(tmp_path):
+    model = lambda x: x
+    opt = MockOptimizer()
+    config = TrainConfig(learning_rate=1.0, warmup_steps=2, max_steps=10)
+    trainer = TrainerLoop(model=model, optimizer=opt, loss_fn=lambda pred, target: 1.0, config=config, checkpoint_dir=str(tmp_path))
+    trainer.run(max_steps=1)
+    expected_lr = 1.0 * 1 / max(2, 1)
+    assert math.isclose(opt.lr, expected_lr)

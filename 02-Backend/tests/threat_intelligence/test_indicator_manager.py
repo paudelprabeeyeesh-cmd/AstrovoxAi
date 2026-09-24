@@ -48,3 +48,49 @@ def test_invalid_indicator():
         Indicator(value="", type="ip")
     with pytest.raises(ValueError):
         Indicator(value="1.2.3.4", type="", confidence=2.0)
+
+
+def test_list_all():
+    manager = IndicatorManager()
+    manager.add(Indicator(value="c.com", type="domain"))
+    manager.add(Indicator(value="a.com", type="domain"))
+    manager.add(Indicator(value="1.1.1.1", type="ip"))
+    ordered = manager.list_all()
+    assert [i.value for i in ordered] == ["1.1.1.1", "a.com", "c.com"]
+
+
+def test_add_updates_source():
+    manager = IndicatorManager()
+    first = Indicator(value="1.1.1.1", type="ip", confidence=0.5, source="feed-a")
+    second = Indicator(value="1.1.1.1", type="ip", confidence=0.8, source="feed-b")
+    manager.add(first)
+    manager.add(second)
+    assert manager.get("ip", "1.1.1.1").source == "feed-b"
+
+
+def test_add_case_insensitive():
+    manager = IndicatorManager()
+    manager.add(Indicator(value="EXAMPLE.COM", type="Domain", confidence=0.5))
+    assert manager.get("domain", "example.com") is not None
+    assert manager.get("DOMAIN", "EXAMPLE.COM") is not None
+
+
+def test_filter_by_type_case_insensitive():
+    manager = IndicatorManager()
+    manager.add(Indicator(value="1.1.1.1", type="IPv4", confidence=0.5))
+    assert len(manager.filter_by_type("ip")) == 1
+    assert len(manager.filter_by_type("IPV4")) == 1
+
+
+def test_filter_by_tag_case_insensitive():
+    manager = IndicatorManager()
+    manager.add(Indicator(value="1.1.1.1", type="ip", confidence=0.5, tags=["APT"]))
+    assert len(manager.filter_by_tag("apt")) == 1
+
+
+def test_filter_by_confidence_threshold():
+    manager = IndicatorManager()
+    manager.add(Indicator(value="1.1.1.1", type="ip", confidence=0.4))
+    manager.add(Indicator(value="2.2.2.2", type="ip", confidence=0.6))
+    manager.add(Indicator(value="3.3.3.3", type="ip", confidence=0.8))
+    assert len(manager.filter_by_confidence(0.6)) == 2

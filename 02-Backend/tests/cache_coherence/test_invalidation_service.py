@@ -73,3 +73,42 @@ def test_cleanup():
     cleaned = svc.cleanup(max_age=0.0)
     assert cleaned == 1
     assert svc.is_invalidated("key-1") is False
+
+
+def test_acknowledge_marks_history_acknowledged():
+    svc = _make_service()
+    svc.invalidate_with_ack("key-1", "source", {"node-b"})
+    svc.acknowledge("key-1", "node-b")
+    history = svc.history("key-1")
+    assert history[-1]["acknowledged"] is True
+
+
+def test_record_write_removes_node_from_pending_acks():
+    svc = _make_service()
+    svc.invalidate_with_ack("key-1", "source", {"node-b", "node-c"})
+    svc.record_write("key-1", "node-b")
+    pending = svc.pending_acks()
+    assert "node-b" not in pending.get("key-1", set())
+    assert "node-c" in pending.get("key-1", set())
+
+
+def test_pending_acks_excludes_empty():
+    svc = _make_service()
+    svc.invalidate_with_ack("key-1", "source", {"node-b"})
+    svc.acknowledge("key-1", "node-b")
+    assert svc.pending_acks() == {}
+
+
+def test_cleanup_does_not_remove_recent():
+    svc = _make_service()
+    svc.invalidate("key-1", "s")
+    cleaned = svc.cleanup(max_age=9999.0)
+    assert cleaned == 0
+    assert svc.is_invalidated("key-1") is True
+
+
+def test_stats_pending_acks_count():
+    svc = _make_service()
+    svc.invalidate_with_ack("key-1", "source", {"node-b", "node-c"})
+    stats = svc.stats()
+    assert stats["pending_acks"] == 2

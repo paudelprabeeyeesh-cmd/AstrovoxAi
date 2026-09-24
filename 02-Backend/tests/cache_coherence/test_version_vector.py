@@ -95,3 +95,55 @@ def test_update():
     assert vv._clock["node-a"] == 7
     vv.update("node-a", 2)
     assert vv._clock["node-a"] == 7
+
+
+def test_increment_returns_value():
+    vv = VersionVector()
+    assert vv.increment("node-a") == 1
+    assert vv.increment("node-a") == 2
+
+
+def test_merge_multiple_nodes():
+    vv1 = VersionVector()
+    vv1._clock["node-a"] = 3
+    vv1._clock["node-b"] = 1
+
+    vv2 = VersionVector()
+    vv2._clock["node-a"] = 2
+    vv2._clock["node-b"] = 5
+
+    vv1.merge(vv2)
+    assert vv1._clock["node-a"] == 3
+    assert vv1._clock["node-b"] == 5
+
+
+def test_is_concurrent_with_true():
+    vv1 = VersionVector()
+    vv1._clock["node-a"] = 5
+
+    vv2 = VersionVector()
+    vv2._clock["node-b"] = 3
+
+    assert vv1.is_concurrent_with(vv2) is True
+
+
+def test_from_dict_does_not_share_state():
+    data = {"node-a": 7}
+    vv = VersionVector.from_dict(data)
+    data["node-a"] = 99
+    assert vv._clock["node-a"] == 7
+
+
+def test_copy_does_not_share_state():
+    vv = VersionVector()
+    vv._clock["node-a"] = 4
+    vv2 = vv.copy()
+    vv2._clock["node-a"] = 99
+    assert vv._clock["node-a"] == 4
+
+
+def test_update_does_not_decrease():
+    vv = VersionVector()
+    vv._clock["node-a"] = 5
+    vv.update("node-a", 3)
+    assert vv._clock["node-a"] == 5

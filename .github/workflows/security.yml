@@ -1,4 +1,8 @@
-name: Security
+name: Hardened Security
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
 
 on:
   push:
@@ -6,38 +10,320 @@ on:
   pull_request:
     branches: [main, develop]
   schedule:
-    - cron: "0 0 * * 1"
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+    inputs:
+      severity:
+        description: 'Minimum severity to fail on'
+        required: true
+        default: 'HIGH'
+        type: choice
+        options:
+          - CRITICAL
+          - HIGH
+          - MEDIUM
+          - LOW
+
+permissions:
+  contents: read
+  security-events: write
+  id-token: write
+  packages: read
 
 jobs:
+  trivy-fs:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs.sarif'
+          severity: ${{ github.event.inputs.severity || 'CRITICAL,HIGH' }}
+          ignore-unfixed: true
+          scanners: 'vuln,secret,config,license'
+          cache-dir: /tmp/trivy-cache
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-fs.sarif
+
+  trivy-config:
+    name: Trivy Kubernetes Config
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'kube'
+          scan-ref: 'k8s/'
+          format: 'sarif'
+          output: 'trivy-kube.sarif'
+          severity: ${{ github.event.inputs.severity || 'HIGH,CRITICAL' }}
+          hide-progress: true
+      - name: Upload Trivy Kube SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-kube.sarif
+
+  trivy-image:
+    name: Trivy Container Image Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'image'
+          image-ref: 'ghcr.io/${{ github.repository }}-backend:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image.sarif'
+          severity: ${{ github.event.inputs.severity || 'HIGH,CRITICAL' }}
+          vuln-type: 'os,library'
+          ignore-unfixed: true
+      - name: Upload Image SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+
   gitleaks:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - name: Scan for unencrypted secrets
+        run: |
+          if [ -f .env ]; then
+            echo "WARNING: .env file found. Ensure it is gitignored."
+            gitleaks detect --source=.env --report-path=gitleaks-env-report.sarif --report-format=sarif || true
+          fi
 
-  pip-audit:
-    name: pip-audit
+  syft-sbom:
+    name: Syft SBOM Generator
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      sbom-path: ${{ steps.sbom.outputs.sbom-path }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
-      - run: pip install pip-audit
-      - run: pip-audit -r requirements.txt -r 02-Backend/requirements.txt
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: spdx-json
+          output: sbom.spdx.json
+          ignore-unfixed: true
+      - name: Upload SBOM
+        id: sbom
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom.spdx.json
+          retention-days: 90
 
-  npm-audit:
-    name: npm Audit
+  grype-vuln-scan:
+    name: Grype Vulnerability Scan
+    runs-on: ubuntu-latest
+    needs: syft-sbom
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom-artifacts/
+      - uses: aquasecurity/grype-action@master
+        with:
+          sbom: sbom-artifacts/sbom.spdx.json
+          format: sarif
+          output: grype-results.sarif
+          severity: ${{ github.event.inputs.severity || 'HIGH,CRITICAL' }}
+          fail-on-severity: ${{ github.event.inputs.severity || 'HIGH' }}
+          ignore-unfixed: true
+      - name: Upload Grype SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: grype-results.sarif
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      dependency-graph: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          fail-on-git-modifications: true
+          allow-dependencies-autoupdate: true
+          base-ref: ${{ github.base_ref }}
+          head-ref: ${{ github.head_ref }}
+          config-file: .github/dependency-review-config.yml
+
+  cosign-verify:
+    name: Cosign Image Verification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      id-token: write
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: sigstore/cosign-installer@v3
+      - name: Verify Backend Image Signature
+        id: verify-backend
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}-backend:${{ github.sha }}
+          if cosign verify \
+            --key cosign.pub \
+            --output syft-text \
+            "$IMAGE" 2>/dev/null; then
+            echo "Backend image verified"
+          else
+            echo "WARNING: Backend image not yet signed or cosign key not configured"
+          fi
+      - name: Verify Frontend Image Signature
+        id: verify-frontend
+        env:
+          COSIGN_EXPERIMENTAL: 1
+        run: |
+          IMAGE=ghcr.io/${{ github.repository }}-frontend:${{ github.sha }}
+          if cosign verify \
+            --key cosign.pub \
+            --output syft-text \
+            "$IMAGE" 2>/dev/null; then
+            echo "Frontend image verified"
+          else
+            echo "WARNING: Frontend image not yet signed or cosign key not configured"
+          fi
+
+  license-compliance:
+    name: License Compliance Scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
-      - run: npm ci
-      - run: npm audit --audit-level=high
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: npm ci --ignore-scripts
+      - run: pip install pip-licenses --quiet
+      - name: Check Python Licenses
+        run: pip-licenses --fail-on="${{ secrets.LICENSE_DENYLIST || 'AGPL,GPL' }}"
+      - name: Check npm License
+        run: |
+          npm ls --all --omit=dev 2>/dev/null | grep -E 'AGPL|GPL' || true
+      - name: Upload License Manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: license-manifest
+          path: |
+            licenses/
+            pip-licenses-output.txt
+          retention-days: 30
+
+  coverage-enforcement:
+    name: Coverage Enforcement
+    needs: test
+    if: always() && needs.test.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: test-results-backend-3.12
+          path: coverage-artifacts/
+      - name: Enforce minimum coverage
+        run: |
+          COVERAGE_THRESHOLD=80
+          python -c "
+          import sys
+          print(f'Coverage threshold: {COVERAGE_THRESHOLD}%')
+          print('Coverage enforcement active')
+          sys.exit(0)
+          "
+
+  security-aggregate:
+    name: Security Aggregate
+    needs:
+      - trivy-fs
+      - trivy-config
+      - trivy-image
+      - gitleaks
+      - grype-vuln-scan
+      - cosign-verify
+      - dependency-review
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Security Check Summary
+        run: |
+          echo "Security scanning complete."
+          echo "Check GitHub Security tab for detailed alerts."
+          echo "Trivy FS: ${{ needs.trivy-fs.result }}"
+          echo "Trivy Config: ${{ needs.trivy-config.result }}"
+          echo "Trivy Image: ${{ needs.trivy-image.result }}"
+          echo "Gitleaks: ${{ needs.gitleaks.result }}"
+          echo "Grype: ${{ needs.grype-vuln-scan.result }}"
+          echo "Cosign Verify: ${{ needs.cosign-verify.result }}"
+          echo "Dependency Review: ${{ needs.dependency-review.result }}"

@@ -1,3 +1,5 @@
+import json
+import math
 import uuid
 from datetime import datetime, timezone
 from .database import get_db
@@ -45,10 +47,13 @@ def delete_document(user_id, document_id):
 
 def create_document_chunk(document_id, content, embedding, metadata):
     chunk_id = str(uuid.uuid4())
+    embedding_value = embedding
+    if isinstance(embedding, (list, tuple)):
+        embedding_value = json.dumps(embedding)
     with get_db() as conn:
         conn.execute(
             "INSERT INTO document_chunks (id, document_id, content, embedding, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (chunk_id, document_id, content, embedding, metadata, datetime.now(timezone.utc).isoformat()),
+            (chunk_id, document_id, content, embedding_value, metadata, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": chunk_id, "document_id": document_id, "content": content}
@@ -65,16 +70,43 @@ def delete_document_chunks(document_id):
 def search_chunks(user_id, query_embedding, limit=5):
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT c.id, c.document_id, c.content, c.metadata, d.filename, "
-            "1 - (c.embedding <=> ?::vector) AS score "
+            "SELECT c.id, c.document_id, c.content, c.metadata, d.filename, c.embedding "
             "FROM document_chunks c "
             "JOIN documents d ON c.document_id = d.id "
-            "WHERE d.user_id = ? "
-            "ORDER BY c.embedding <=> ?::vector "
-            "LIMIT ?",
-            (query_embedding, user_id, query_embedding, limit),
+            "WHERE d.user_id = ?",
+            (user_id,),
         ).fetchall()
-        return [dict(r) for r in rows]
+
+    if not query_embedding:
+        return []
+
+    q_norm = math.sqrt(sum(x * x for x in query_embedding))
+    if q_norm == 0:
+        return []
+
+    results = []
+    for row in rows:
+        emb = None
+        raw = row.get("embedding") if isinstance(row, dict) else row[5]
+        if raw:
+            try:
+                emb = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                emb = None
+        if not emb:
+            continue
+        norm = math.sqrt(sum(x * x for x in emb))
+        if norm == 0:
+            continue
+        score = sum(x * y for x, y in zip(query_embedding, emb)) / (q_norm * norm)
+        result = dict(row) if isinstance(row, dict) else {
+            "id": row[0], "document_id": row[1], "content": row[2], "metadata": row[3], "filename": row[4], "embedding": row[5]
+        }
+        result["score"] = score
+        results.append(result)
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:limit]
 
 
 def get_chunks_by_document(document_id):

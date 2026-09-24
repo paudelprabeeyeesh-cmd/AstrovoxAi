@@ -1,13 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 
-NAMESPACE=${1:-astrovox}
-POD=${2:-postgres-0}
-BACKUP_DIR=${3:-./backups}
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+# AstrovoxAI Database Backup Script
+# Usage: ./scripts/backup-db.sh [output-dir]
 
-mkdir -p $BACKUP_DIR
-kubectl exec -n $NAMESPACE $POD -- pg_dump -U astrovox astrovox > $BACKUP_DIR/astrovox_$TIMESTAMP.sql
-gzip $BACKUP_DIR/astrovox_$TIMESTAMP.sql
+OUTPUT_DIR="${1:-./backups/postgres}"
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_FILE="$OUTPUT_DIR/astrovox_$DATE.sql.gz"
 
-echo "Backup saved to $BACKUP_DIR/astrovox_$TIMESTAMP.sql.gz"
+mkdir -p "$OUTPUT_DIR"
+
+echo "Backing up database to $BACKUP_FILE..."
+
+# Check if running in Docker or locally
+if docker compose ps postgres > /dev/null 2>&1; then
+  docker compose exec -T postgres pg_dump -U astrovox astrovox | gzip > "$BACKUP_FILE"
+elif command -v pg_dump > /dev/null 2>&1; then
+  pg_dump -U astrovox astrovox | gzip > "$BACKUP_FILE"
+else
+  echo "Error: Neither Docker nor pg_dump found"
+  exit 1
+fi
+
+echo "Backup complete: $BACKUP_FILE"
+echo "Size: $(du -h "$BACKUP_FILE" | cut -f1)"
+
+# Keep only last 30 backups
+ls -t "$OUTPUT_DIR"/astrovox_*.sql.gz 2>/dev/null | tail -n +31 | xargs -r rm --
+
+echo "Old backups cleaned up (keeping last 30)"

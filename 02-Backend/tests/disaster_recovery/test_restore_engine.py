@@ -55,3 +55,39 @@ def test_list_restore_points():
     assert len(points) == 1
     assert points[0]["backup_id"] == record.backup_id
     assert points[0]["success"] is True
+
+
+def test_restore_os_error():
+    mgr = BackupManager()
+    engine = RestoreEngine(mgr)
+    record = mgr.create_backup(b"payload")
+    result = engine.restore(record.backup_id, "/nonexistent_dir/x", b"payload")
+    assert result.success is False
+    assert result.bytes_written == 0
+
+
+def test_restore_history_accumulates():
+    mgr = BackupManager()
+    engine = RestoreEngine(mgr)
+    r1 = mgr.create_backup(b"a")
+    r2 = mgr.create_backup(b"b")
+    engine.restore(r1.backup_id, "/tmp/x1", b"a")
+    engine.restore(r2.backup_id, "/tmp/x2", b"b")
+    engine.restore("missing", "/tmp/x3", b"c")
+    points = engine.list_restore_points()
+    assert len(points) == 3
+    assert points[2]["success"] is False
+
+
+def test_restore_empty_payload():
+    mgr = BackupManager()
+    engine = RestoreEngine(mgr)
+    record = mgr.create_backup(b"")
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        dest = tmp.name
+    try:
+        result = engine.restore(record.backup_id, dest, b"")
+        assert result.success is True
+        assert result.bytes_written == 0
+    finally:
+        os.remove(dest)

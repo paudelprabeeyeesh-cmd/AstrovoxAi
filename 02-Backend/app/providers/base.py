@@ -138,3 +138,53 @@ class AIProvider(ABC):
                     continue
                 raise
         raise last_error  # Should not reach here
+
+    async def stream_with_retry(
+        self,
+        messages: list[ChatMessage],
+        model: str,
+        temperature: float = 0.7,
+        max_tokens: int = 2000,
+        system_prompt: Optional[str] = None,
+    ) -> AsyncIterator[str]:
+        """Stream with automatic retry on transient failures. Retries only at start."""
+        last_error: Optional[Exception] = None
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                async for chunk in self.stream(
+                    messages, model, temperature, max_tokens, system_prompt
+                ):
+                    yield chunk
+                return
+            except Exception as _e:  # noqa: BLE001
+                last_error = _e
+                error_str = str(_e).lower()
+                is_transient = any(
+                    kw in error_str
+                    for kw in [
+                        "timeout",
+                        "rate limit",
+                        "429",
+                        "503",
+                        "502",
+                        "504",
+                        "connection",
+                        "temporary",
+                        "overloaded",
+                    ]
+                )
+                if is_transient and attempt < self.config.max_retries:
+                    wait = 2 ** attempt
+                    logger.warning(
+                        "Stream retry %d/%d for %s after %.2fs: %s",
+                        attempt + 1,
+                        self.config.max_retries,
+                        self.name,
+                        wait,
+                        _e,
+                    )
+                    await asyncio.sleep(wait)
+                    continue
+                raise
+        if last_error is not None:
+            raise last_error

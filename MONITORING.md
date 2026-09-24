@@ -6,6 +6,8 @@ Production-ready monitoring setup for AstrovoxAI platform.
 
 This guide provides step-by-step setup for monitoring AstrovoxAI in production using industry-standard tools.
 
+**For the complete monitoring stack configuration, see [MONITORING_STACK.md](./MONITORING_STACK.md).**
+
 ## Quick Monitoring Endpoints
 
 The application exposes health check endpoints that can be monitored:
@@ -520,18 +522,27 @@ To get started immediately:
 
 ```bash
 # 1. Start Prometheus + Grafana
-docker-compose -f docker-compose.monitoring.yml up -d
+docker compose --profile monitoring up -d
 
 # 2. Access dashboards
 # Prometheus: http://localhost:9090
-# Grafana: http://localhost:3000 (admin/admin)
+# Grafana: http://localhost:3000 (admin/${GRAFANA_PASSWORD})
 
 # 3. Import Grafana dashboard
-# Use dashboard ID 1860 (Node Exporter)
+# Dashboard is auto-provisioned at startup
 
 # 4. Set up Sentry for error tracking
 # Create account and add DSN to .env
 ```
+
+## Additional Resources
+
+- **[MONITORING_STACK.md](./MONITORING_STACK.md)** - Complete monitoring stack architecture, configuration, and runbooks
+- **[monitoring/runbooks.md](./monitoring/runbooks.md)** - Operational runbooks for responding to alerts
+- **[monitoring/alertmanager.yml](./monitoring/alertmanager.yml)** - Alertmanager configuration with PagerDuty and Slack
+- **[monitoring/alerts.yml](./monitoring/alerts.yml)** - Comprehensive alert rules
+- **[monitoring/grafana-dashboard.json](./monitoring/grafana-dashboard.json)** - Production Grafana dashboard
+- **[prometheus.yml](./prometheus.yml)** - Prometheus configuration
 
 ---
 

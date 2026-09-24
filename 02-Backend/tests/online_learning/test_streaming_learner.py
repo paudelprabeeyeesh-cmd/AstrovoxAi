@@ -55,3 +55,14 @@ class TestStreamingLearner:
         loss2 = learner.partial_fit(x, y)
         assert isinstance(loss1, float)
         assert isinstance(loss2, float)
+
+    def test_predict_without_fit(self):
+        learner = StreamingLearner()
+        assert learner.predict([1.0, 2.0]) == 0.0
+
+    def test_get_drift_report_window_utilization(self):
+        learner = StreamingLearner(window_size=50)
+        for i in range(5):
+            learner.partial_fit([1.0], 1.0)
+        report = learner.get_drift_report()
+        assert 0.0 <= report["window_utilization"] <= 1.0

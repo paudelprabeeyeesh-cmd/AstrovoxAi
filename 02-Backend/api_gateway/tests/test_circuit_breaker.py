@@ -187,4 +187,4 @@ class TestCircuitBreakerProxy:
         proxy = CircuitBreakerProxy(cb)
         with pytest.raises(ValueError):
             proxy.call("k1", lambda: (_ for _ in ()).throw(ValueError("err")))
-        assert cb.get_state("k1"]["failure_count"] == 1
+        assert cb.get_state("k1")["failure_count"] == 1

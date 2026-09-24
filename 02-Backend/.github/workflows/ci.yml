@@ -9,6 +9,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "sqlite:///test.db"
+      ASTROVOX_DB: "test.db"
+      ASTROVOX_TEST_MODE: "1"
+      ASTROVOX_ENCRYPTION_KEY: "HSMTYGgSppCPt3g3VAorkpAX4GR0W8T3ILpsKLfblns="
+      GROQ_API_KEY: "gsk_dummy"
+      GEMINI_API_KEY: "AIzaSyDummy"
+      MISTRAL_API_KEY: "MISTRAL_DUMMY"
+      OPENROUTER_API_KEY: "sk-or-dummy"
+      HF_API_KEY: "hf_dummy"
+      OPENAI_API_KEY: "sk-dummy"
+      STRIPE_SECRET_KEY: "sk_test_dummy"
+      STRIPE_WEBHOOK_SECRET: "whsec_dummy"
+      STRIPE_PRICE_ID: "price_dummy"
+      STRIPE_TEAM_PRICE_ID: "price_dummy"
+      STRIPE_EMBED_PRICE_ID: "price_dummy"
+      STRIPE_PREMIUM_ACTION_PRICE_ID: "price_dummy"
+      VITE_SUPABASE_URL: "http://localhost:54321"
+      VITE_SUPABASE_ANON_KEY: "dummy-anon-key"
+      VITE_SUPABASE_SERVICE_ROLE_KEY: "dummy-service-role-key"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,12 +37,40 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pytest pytest-asyncio ruff black gitleaks
+          pip install pytest pytest-asyncio ruff black gitleaks pip-audit bandit mypy
       - name: Run ruff
         run: ruff check .
       - name: Run black
         run: black --check .
       - name: Run gitleaks
         run: gitleaks detect --source=. --report-path=gitleaks.json -v || true
+      - name: Run pip-audit
+        run: pip-audit -r requirements.txt || true
+      - name: Run bandit
+        run: bandit -r app -ll || true
+      - name: Run mypy
+        run: mypy app database alembic || true
+      - name: Run security audit
+        run: python scripts/security_audit.py
+      - name: Run database hardening audit
+        run: python scripts/database_hardening.py
       - name: Run tests
-        run: pytest tests/ -v
+        run: pytest tests/ -v --tb=short
+
+  backup-restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+      - name: Run backup
+        run: python scripts/backup_db.py
+      - name: Run backup verifier
+        run: |
+          ls -la /tmp/backups/astrovox_backup_*.sql.gz || true
+          python scripts/backup_db.py
+          python scripts/backup_verifier.py $(ls /tmp/backups/astrovox_backup_*.sql.gz | head -1)

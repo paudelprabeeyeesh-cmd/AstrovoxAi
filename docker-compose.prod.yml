@@ -1,10 +1,13 @@
 version: '3.8'
 
 services:
+  # ==========================================================================
+  # Redis — Caching, session store, rate limiting backend
+  # ==========================================================================
   redis:
     image: redis:7-alpine
     container_name: astravox-redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis-data:/data
     restart: always
@@ -16,6 +19,9 @@ services:
       timeout: 5s
       retries: 3
 
+  # ==========================================================================
+  # FastAPI Backend
+  # ==========================================================================
   backend:
     build:
       context: .
@@ -28,12 +34,13 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=redis://redis:6379/0
       - ENVIRONMENT=production
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://yourdomain.com}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://astrovox.ai,https://www.astrovox.ai}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - RATE_LIMIT=${RATE_LIMIT:-120/minute}
       - DAILY_AI_LIMIT=${DAILY_AI_LIMIT:-50}
       - STORAGE_ROOT=/app/storage
       - USAGE_DB_PATH=/app/storage/usage.db
+      - METRICS_ENABLED=true
     restart: always
     networks:
       - astravox-network
@@ -41,7 +48,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -52,17 +59,20 @@ services:
     deploy:
       resources:
         limits:
-          memory: 256M
-          cpu: 0.5
+          memory: 512M
+          cpu: "0.5"
         reservations:
-          memory: 128M
-          cpu: 0.2
+          memory: 256M
+          cpu: "0.2"
 
+  # ==========================================================================
+  # React Frontend (served via nginx)
+  # ==========================================================================
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: astravox-frontend
+    container_name: astrovox-frontend
     env_file:
       - .env
     restart: always
@@ -80,8 +90,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
-          cpu: 0.3
+          memory: 256M
+          cpu: "0.3"
     ports:
       - target: 80
         published: 80
@@ -90,10 +100,16 @@ services:
         published: 443
         protocol: tcp
 
+# ==============================================================================
+# Networks
+# ==============================================================================
 networks:
   astravox-network:
     driver: bridge
 
+# ==============================================================================
+# Volumes
+# ==============================================================================
 volumes:
   redis-data:
     driver: local

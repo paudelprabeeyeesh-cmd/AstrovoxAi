@@ -105,3 +105,17 @@ class TestSimCLRWrapper:
         x_i = np.random.randn(8, 32).astype(np.float64)
         z_i = model.projection_head.forward(x_i)
         assert z_i.shape == (8, 64)
+
+    def test_normalize_unit_norms(self):
+        model = SimCLRWrapper(input_dim=16)
+        x = np.random.randn(8, 16).astype(np.float64)
+        z = model._normalize(x)
+        norms = np.linalg.norm(z, axis=1)
+        np.testing.assert_allclose(norms, 1.0, atol=1e-12)
+
+    def test_nt_xent_loss_identical_inputs(self):
+        model = SimCLRWrapper(input_dim=16, projection_dim=64, hidden_dim=128, seed=42)
+        x = np.random.randn(8, 16).astype(np.float64)
+        z = model.projection_head.forward(x)
+        loss = model._nt_xent_loss(z, z)
+        assert loss == pytest.approx(0.0, abs=1e-12)

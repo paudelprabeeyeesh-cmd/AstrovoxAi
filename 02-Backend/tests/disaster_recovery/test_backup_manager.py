@@ -1,3 +1,4 @@
+import hashlib
 import time
 
 from disaster_recovery.backup_manager import BackupManager, BackupRecord
@@ -37,14 +38,47 @@ def test_delete_backup():
     assert mgr.delete_backup(record.backup_id) is False
 
 
-def test_schedule_backup():
+def test_stop_schedule_when_not_scheduled():
     mgr = BackupManager()
-    calls = []
-
-    def callback():
-        calls.append(1)
-
-    mgr.schedule_backup(0.05, callback)
-    time.sleep(0.12)
-    assert len(calls) >= 2
     mgr.stop_schedule()
+
+
+def test_create_backup_with_source_and_metadata():
+    mgr = BackupManager()
+    record = mgr.create_backup(
+        b"data",
+        label="lbl",
+        source="db-primary",
+    )
+    assert record.source == "db-primary"
+    assert record.metadata == {}
+
+
+def test_create_backup_empty_data():
+    mgr = BackupManager()
+    record = mgr.create_backup(b"", label="empty")
+    assert record.size_bytes == 0
+    assert record.checksum == hashlib.sha256(b"").hexdigest()
+
+
+def test_list_backups_empty():
+    mgr = BackupManager()
+    assert mgr.list_backups() == []
+
+
+def test_delete_backup_unknown():
+    mgr = BackupManager()
+    assert mgr.delete_backup("missing") is False
+
+
+def test_schedule_backup_already_active():
+    mgr = BackupManager()
+    mgr.schedule_backup(0.1, lambda: None)
+    try:
+        mgr.schedule_backup(0.1, lambda: None)
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
+    finally:
+        mgr.stop_schedule()

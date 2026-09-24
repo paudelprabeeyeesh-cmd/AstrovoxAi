@@ -64,3 +64,49 @@ def test_foreign_keys_enabled(tmp_path):
         assert fk == 1
     finally:
         conn.close()
+
+
+def test_get_connection_default_path(monkeypatch, tmp_path):
+    db_path = str(tmp_path / "default.db")
+    monkeypatch.setenv("ASTROVOX_DB_PATH", db_path)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()
+
+
+def test_init_db_idempotent(tmp_path):
+    db_path = str(tmp_path / "idempotent.db")
+    init_db(db_path)
+    init_db(db_path)
+    conn = get_connection(db_path)
+    try:
+        tables = [
+            r["name"]
+            for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        assert "users" in tables
+    finally:
+        conn.close()
+
+
+def test_get_connection_uses_default_path_without_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("ASTROVOX_DB_PATH", raising=False)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()
+
+
+def test_get_connection_creates_directory(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "nested" / "dir" / "test.db")
+    monkeypatch.setenv("ASTROVOX_DB_PATH", db_path)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()

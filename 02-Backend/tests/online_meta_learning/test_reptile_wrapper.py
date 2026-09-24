@@ -52,3 +52,38 @@ class TestReptileWrapper:
         assert 'num_steps' in report
         assert report['inner_lr'] == 0.01
         assert report['meta_lr'] == 0.001
+
+    def test_relu(self):
+        x = np.array([[-1.0, 0.0, 2.0]], dtype=np.float64)
+        out = ReptileWrapper._relu(x)
+        assert np.allclose(out, [[0.0, 0.0, 2.0]])
+
+    def test_relu_grad(self):
+        x = np.array([[-1.0, 0.0, 2.0]], dtype=np.float64)
+        out = ReptileWrapper._relu_grad(x)
+        assert np.allclose(out, [[0.0, 0.0, 1.0]])
+
+    def test_forward(self):
+        config = ReptileConfig(input_dim=4, output_dim=2)
+        rw = ReptileWrapper(config)
+        x = np.random.randn(3, 4).astype(np.float64)
+        logits = rw._forward(x, rw.params)
+        assert logits.shape == (3, 2)
+
+    def test_compute_loss(self):
+        config = ReptileConfig(input_dim=4, output_dim=2)
+        rw = ReptileWrapper(config)
+        x = np.random.randn(3, 4).astype(np.float64)
+        y = np.random.randn(3, 2).astype(np.float64)
+        loss = rw._compute_loss(x, y, rw.params)
+        assert isinstance(loss, float)
+        assert loss >= 0.0
+
+    def test_train_step_updates_params(self):
+        np.random.seed(0)
+        config = ReptileConfig(input_dim=8, output_dim=2, num_tasks=2, num_inner_steps=1)
+        rw = ReptileWrapper(config)
+        before = {k: v.copy() for k, v in rw.params.items()}
+        rw.train_step()
+        for k in rw.params:
+            assert not np.allclose(rw.params[k], before[k])

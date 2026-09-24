@@ -2,7 +2,7 @@
 # Docs: https://fly.io/docs/reference/configuration/
 
 app = "astrovox-ai"
-primary region = "iad"
+primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile.backend"
@@ -12,21 +12,36 @@ primary region = "iad"
   LOG_LEVEL = "INFO"
   RATE_LIMIT = "120/minute"
   DAILY_AI_LIMIT = "50"
+  METRICS_ENABLED = "true"
 
 [http_service]
   internal_port = 8000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ["app"]
 
-[[http_service.checks]]
-  grace_period = "10s"
-  interval = "30s"
-  method = "GET"
-  timeout = "5s"
-  path = "/health"
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/health"
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "60s"
+    method = "GET"
+    timeout = "10s"
+    path = "/health/readiness"
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/metrics"
 
 [[vm]]
   cpu_kind = "shared"
@@ -36,3 +51,7 @@ primary region = "iad"
 [mounts]
   source = "storage_data"
   destination = "/app/storage"
+
+[metrics]
+  port = 9091
+  path = "/metrics"

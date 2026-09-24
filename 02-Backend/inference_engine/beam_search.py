@@ -116,8 +116,8 @@ class Beam:
             extended = current_hypo.extend(token_id, log_prob)
             candidates.append(extended)
 
-        next_hypos = candidates
-        return next_hypos
+        self._hypos = candidates
+        return candidates
 
     def step_one_vs_n(
         self,
@@ -138,6 +138,7 @@ class Beam:
             extended = current_hypo.extend(token_id, log_prob)
             candidates.append(extended)
 
+        self._hypos = candidates
         return candidates
 
     def set_hypos(self, hypos: List[BeamHypothesis]) -> None:

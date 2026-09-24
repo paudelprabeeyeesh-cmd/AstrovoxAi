@@ -35,7 +35,35 @@ def test_compress_turns():
     assert out[0]["content"] == "one two"
 
 
-def test_compression_ratio():
+def test_compress_single_word():
+    cc = ContextCompressor(max_compression_ratio=0.5)
+    assert cc.compress("hello") == "hello"
+
+
+def test_compress_ratio_one_keeps_all():
+    cc = ContextCompressor(max_compression_ratio=1.0)
+    assert cc.compress("one two three") == "one two three"
+
+
+def test_compress_turns_empty_list():
     cc = ContextCompressor()
-    assert cc.compression_ratio("one two three", "one two") == 2.0 / 3.0
-    assert cc.compression_ratio("", "x") == 1.0
+    assert cc.compress_turns([]) == []
+
+
+def test_compress_turns_defaults_role():
+    cc = ContextCompressor(max_compression_ratio=0.5)
+    turns = [{"content": "one two three four"}]
+    out = cc.compress_turns(turns)
+    assert out[0]["role"] == "user"
+    assert out[0]["content"] == "one two"
+
+
+def test_compression_ratio_equal_strings():
+    cc = ContextCompressor()
+    assert cc.compression_ratio("one two", "one two") == 1.0
+
+
+def test_compress_preserves_at_least_one_word():
+    cc = ContextCompressor(max_compression_ratio=0.1)
+    assert cc.compress("one two three") == "one"
+

@@ -36,3 +36,19 @@ class TestConceptDriftDetector:
         for i in range(10):
             detector.update(float(i))
         assert len(detector.values) <= 5
+
+    def test_check_drift_returns_none_when_insufficient(self):
+        detector = ConceptDriftDetector(window_size=10)
+        assert detector.update(1.0) is None
+
+    def test_check_drift_returns_false_when_no_drift(self):
+        detector = ConceptDriftDetector(window_size=10)
+        for i in range(10):
+            assert detector.update(float(i)) is False
+
+    def test_get_report_window_utilization(self):
+        detector = ConceptDriftDetector(window_size=50)
+        for i in range(10):
+            detector.update(float(i))
+        report = detector.get_report()
+        assert 0.0 <= report["window_utilization"] <= 1.0

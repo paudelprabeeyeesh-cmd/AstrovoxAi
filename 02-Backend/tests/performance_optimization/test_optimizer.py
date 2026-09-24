@@ -76,7 +76,7 @@ def test_tune_with_backoff_fails():
 
 def test_optimize_returns_positive_improvement():
     registry = {}
-    counters = [0.0, 0.1, 0.11, 0.111]
+    counters = [0.0, 0.0, 0.1, 0.11, 0.111]
 
     def slow_func(x):
         return x

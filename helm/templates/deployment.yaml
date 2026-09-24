@@ -15,12 +15,23 @@ spec:
       labels:
         {{- include "astrovox.selectorLabels" . | nindent 8 }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: {{ include "astrovox.fullname" . }}
+      automountServiceAccountToken: true
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
         - containerPort: 8000
+          name: http
+          protocol: TCP
         envFrom:
         - configMapRef:
             name: {{ include "astrovox.fullname" . }}
@@ -28,15 +39,27 @@ spec:
             name: {{ include "astrovox.fullname" . }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
         livenessProbe:
           httpGet:
-            path: /health
-            port: 8000
+            path: /health/liveness
+            port: http
           initialDelaySeconds: 30
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
-            port: 8000
+            path: /health/readiness
+            port: http
           initialDelaySeconds: 5
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3

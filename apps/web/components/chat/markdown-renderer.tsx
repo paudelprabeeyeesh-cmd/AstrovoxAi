@@ -2,24 +2,117 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import rehypeHighlight from 'rehype-highlight'
 import { CodeBlock } from './code-block'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Maximize2 } from 'lucide-react'
+import { Maximize2, ChevronDown, ChevronRight, BookOpen, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface MarkdownRendererProps {
   content: string
+  showWordCount?: boolean
+  showTableOfContents?: boolean
 }
 
-export function MarkdownRenderer({ content }: MarkdownRendererProps) {
+type HeadingSlug = { id: string; text: string; level: number }
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function extractHeadings(content: string): HeadingSlug[] {
+  const headings: HeadingSlug[] = []
+  const regex = /^(#{1,3})\s+(.+)$/gm
+  let match
+  while ((match = regex.exec(content)) !== null) {
+    const level = match[1].length
+    const text = match[2].replace(/[#*`]/g, '').trim()
+    const id = slugify(text)
+    if (id && !headings.some((h) => h.id === id)) {
+      headings.push({ id, text, level })
+    }
+  }
+  return headings
+}
+
+function countWords(content: string): number {
+  const plain = content
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]+`/g, ' ')
+    .replace(/[#*_~`\[\]()!>|-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return plain ? plain.split(' ').length : 0
+}
+
+export function MarkdownRenderer({ content, showWordCount = false, showTableOfContents = false }: MarkdownRendererProps) {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null)
+  const [showToc, setShowToc] = useState(false)
+
+  const headings = useMemo(() => extractHeadings(content), [content])
+  const wordCount = useMemo(() => countWords(content), [content])
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200))
+
+  const scrollToHeading = (id: string) => {
+    const el = document.getElementById(id)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('ring-2', 'ring-primary/30', 'rounded')
+      setTimeout(() => el.classList.remove('ring-2', 'ring-primary/30', 'rounded'), 2000)
+    }
+  }
 
   return (
     <div className="markdown-body text-sm leading-relaxed">
+      <div className="mb-3 flex items-center gap-3 flex-wrap">
+        {showTableOfContents && headings.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowToc(!showToc)}
+            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <BookOpen className="h-3 w-3" />
+            Contents
+            {showToc ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          </Button>
+        )}
+        {showWordCount && (
+          <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+            <Clock className="h-3 w-3" />
+            {wordCount} words · {readingTime} min read
+          </span>
+        )}
+      </div>
+
+      {showToc && headings.length > 0 && (
+        <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3">
+          <div className="text-xs font-semibold text-muted-foreground mb-2">On this page</div>
+          <div className="space-y-1">
+            {headings.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => scrollToHeading(h.id)}
+                className={`block text-left text-xs transition-colors hover:text-foreground ${
+                  h.level === 1 ? 'font-medium text-foreground' : h.level === 2 ? 'pl-3 text-muted-foreground' : 'pl-6 text-muted-foreground/70'
+                }`}
+              >
+                {h.text}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
         components={{
           code({ className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || '')
@@ -36,6 +129,33 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
               >
                 {children}
               </code>
+            )
+          },
+          h1({ children }) {
+            const text = String(children).replace(/[#*`]/g, '').trim()
+            const id = slugify(text)
+            return (
+              <h1 id={id} className="scroll-mt-20 text-2xl font-bold mt-6 mb-4 pb-2 border-b border-border">
+                {children}
+              </h1>
+            )
+          },
+          h2({ children }) {
+            const text = String(children).replace(/[#*`]/g, '').trim()
+            const id = slugify(text)
+            return (
+              <h2 id={id} className="scroll-mt-20 text-xl font-semibold mt-5 mb-3">
+                {children}
+              </h2>
+            )
+          },
+          h3({ children }) {
+            const text = String(children).replace(/[#*`]/g, '').trim()
+            const id = slugify(text)
+            return (
+              <h3 id={id} className="scroll-mt-20 text-lg font-medium mt-4 mb-2">
+                {children}
+              </h3>
             )
           },
           table({ children }) {
@@ -135,6 +255,12 @@ export function MarkdownRenderer({ content }: MarkdownRendererProps) {
           },
           hr() {
             return <hr className="my-6 border-border" />
+          },
+          pre({ children }) {
+            return <pre className="!bg-muted/50 !p-0 !rounded-lg overflow-x-auto">{children}</pre>
+          },
+          p({ children }) {
+            return <p className="mb-3 last:mb-0">{children}</p>
           },
         }}
       >

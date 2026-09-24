@@ -3,12 +3,22 @@ import numpy as np
 from lifelong_learning_advanced.progressive_network import ProgressiveNetwork, ColumnConfig
 
 
+class TestColumnConfig:
+    def test_defaults(self):
+        cfg = ColumnConfig(input_dim=4, hidden_dim=8, output_dim=2)
+        assert cfg.lr == 0.01
+
+    def test_custom_lr(self):
+        cfg = ColumnConfig(input_dim=4, hidden_dim=8, output_dim=2, lr=0.05)
+        assert cfg.lr == 0.05
+
+
 class TestProgressiveNetwork:
-    def test_initialization(self):
-        config = ColumnConfig(input_dim=8, hidden_dim=16, output_dim=4)
+    def test_loss_history_tracks(self):
+        config = ColumnConfig(input_dim=8, hidden_dim=16, output_dim=4, lr=0.01)
         net = ProgressiveNetwork(config)
-        assert len(net.columns) == 1
-        assert "base" in net.columns
+        x = np.random.randn(8, 8).astype(np.float64)
+        y = np.random.randn(8, 4).astype(np.float64
 
     def test_add_task_column(self):
         config = ColumnConfig(input_dim=8, hidden_dim=16, output_dim=4)

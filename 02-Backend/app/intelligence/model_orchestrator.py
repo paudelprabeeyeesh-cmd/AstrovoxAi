@@ -8,15 +8,15 @@ Intelligently routes requests to the most suitable AI model based on:
 - Context size needs
 - User preferences
 - Model availability
+- Fallback chains
 """
 
 import os
-from typing import Optional, Dict, List, Any
+from typing import Dict, List, Optional, Any
 from enum import Enum
 
 
-class ModelProvider(Enum):
-    """Supported model providers"""
+class ModelProvider(str, Enum):
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
@@ -27,8 +27,7 @@ class ModelProvider(Enum):
     OLLAMA = "ollama"
 
 
-class TaskType(Enum):
-    """Types of tasks for intelligent routing"""
+class TaskType(str, Enum):
     GENERAL_CHAT = "general_chat"
     CODING = "coding"
     MATHEMATICS = "mathematics"
@@ -44,8 +43,6 @@ class TaskType(Enum):
 
 
 class ModelConfig:
-    """Configuration for a specific model"""
-    
     def __init__(
         self,
         provider: ModelProvider,
@@ -59,6 +56,7 @@ class ModelConfig:
         supports_vision: bool = False,
         supports_function_calling: bool = True,
         preferred_tasks: List[TaskType] = None,
+        fallback_chain: Optional[List[str]] = None,
     ):
         self.provider = provider
         self.model_name = model_name
@@ -71,25 +69,18 @@ class ModelConfig:
         self.supports_vision = supports_vision
         self.supports_function_calling = supports_function_calling
         self.preferred_tasks = preferred_tasks or []
+        self.fallback_chain = fallback_chain or []
 
 
 class ModelOrchestrator:
-    """
-    Orchestrates multiple AI models and intelligently routes requests
-    to the most suitable model based on task requirements and constraints.
-    """
-    
     def __init__(self):
         self.models: Dict[str, ModelConfig] = {}
         self.task_routing: Dict[TaskType, List[str]] = {}
-        self.user_preferences: Dict[int, str] = {}  # user_id -> model_name
+        self.user_preferences: Dict[int, str] = {}
         self._initialize_default_models()
         self._initialize_task_routing()
-    
+
     def _initialize_default_models(self):
-        """Initialize default model configurations"""
-        
-        # OpenAI Models
         self.models["gpt-4"] = ModelConfig(
             provider=ModelProvider.OPENAI,
             model_name="gpt-4",
@@ -99,8 +90,8 @@ class ModelOrchestrator:
             avg_latency_ms=2000,
             supports_function_calling=True,
             preferred_tasks=[TaskType.CODING, TaskType.MATHEMATICS, TaskType.GENERAL_CHAT],
+            fallback_chain=["gpt-4-turbo", "claude-3-sonnet"],
         )
-        
         self.models["gpt-4-turbo"] = ModelConfig(
             provider=ModelProvider.OPENAI,
             model_name="gpt-4-turbo-preview",
@@ -110,8 +101,8 @@ class ModelOrchestrator:
             avg_latency_ms=1500,
             supports_function_calling=True,
             preferred_tasks=[TaskType.CODING, TaskType.DOCUMENT_ANALYSIS, TaskType.RESEARCH],
+            fallback_chain=["gpt-4", "gpt-3.5-turbo"],
         )
-        
         self.models["gpt-3.5-turbo"] = ModelConfig(
             provider=ModelProvider.OPENAI,
             model_name="gpt-3.5-turbo",
@@ -121,9 +112,8 @@ class ModelOrchestrator:
             avg_latency_ms=500,
             supports_function_calling=True,
             preferred_tasks=[TaskType.GENERAL_CHAT, TaskType.TRANSLATION],
+            fallback_chain=["gemini-pro"],
         )
-        
-        # Anthropic Claude
         self.models["claude-3-opus"] = ModelConfig(
             provider=ModelProvider.ANTHROPIC,
             model_name="claude-3-opus-20240229",
@@ -133,8 +123,8 @@ class ModelOrchestrator:
             avg_latency_ms=2500,
             supports_function_calling=True,
             preferred_tasks=[TaskType.CODING, TaskType.RESEARCH, TaskType.DOCUMENT_ANALYSIS],
+            fallback_chain=["claude-3-sonnet", "gpt-4-turbo"],
         )
-        
         self.models["claude-3-sonnet"] = ModelConfig(
             provider=ModelProvider.ANTHROPIC,
             model_name="claude-3-sonnet-20240229",
@@ -144,9 +134,8 @@ class ModelOrchestrator:
             avg_latency_ms=1000,
             supports_function_calling=True,
             preferred_tasks=[TaskType.CODING, TaskType.GENERAL_CHAT, TaskType.SUMMARIZATION],
+            fallback_chain=["gpt-3.5-turbo", "gemini-pro"],
         )
-        
-        # Google Gemini
         self.models["gemini-pro"] = ModelConfig(
             provider=ModelProvider.GOOGLE,
             model_name="gemini-pro",
@@ -156,9 +145,8 @@ class ModelOrchestrator:
             avg_latency_ms=800,
             supports_function_calling=True,
             preferred_tasks=[TaskType.TRANSLATION, TaskType.GENERAL_CHAT],
+            fallback_chain=["gpt-3.5-turbo"],
         )
-        
-        # Local Ollama
         self.models["llama2"] = ModelConfig(
             provider=ModelProvider.OLLAMA,
             model_name="llama2",
@@ -169,10 +157,10 @@ class ModelOrchestrator:
             avg_latency_ms=3000,
             supports_function_calling=False,
             preferred_tasks=[TaskType.GENERAL_CHAT],
+            fallback_chain=[],
         )
-    
+
     def _initialize_task_routing(self):
-        """Initialize default task-to-model routing"""
         self.task_routing = {
             TaskType.CODING: ["claude-3-opus", "gpt-4-turbo", "gpt-4"],
             TaskType.MATHEMATICS: ["gpt-4", "claude-3-opus"],
@@ -185,92 +173,52 @@ class ModelOrchestrator:
             TaskType.BRAINSTORMING: ["claude-3-sonnet", "gpt-4"],
             TaskType.GENERAL_CHAT: ["gpt-3.5-turbo", "claude-3-sonnet", "gemini-pro"],
         }
-    
+
     def register_model(self, model_id: str, config: ModelConfig):
-        """Register a new model configuration"""
         self.models[model_id] = config
-    
+
     def set_user_preference(self, user_id: int, model_name: str):
-        """Set user's preferred model"""
         if model_name in self.models:
             self.user_preferences[user_id] = model_name
-    
+
     def detect_task_type(self, message: str, context: Dict[str, Any] = None) -> TaskType:
-        """
-        Detect the type of task based on the message and context.
-        
-        This is a simple heuristic-based detection. In production,
-        this could use a classifier or the AI itself.
-        """
         message_lower = message.lower()
-        
-        # Coding indicators
         coding_keywords = ["code", "function", "class", "debug", "fix", "implement", "programming", "python", "javascript", "api"]
         if any(keyword in message_lower for keyword in coding_keywords):
             return TaskType.CODING
-        
-        # Mathematics indicators
         math_keywords = ["calculate", "solve", "equation", "math", "formula", "compute", "statistics"]
         if any(keyword in message_lower for keyword in math_keywords):
             return TaskType.MATHEMATICS
-        
-        # Translation indicators
         translation_keywords = ["translate", "translation", "in spanish", "in french", "in german", "in nepali"]
         if any(keyword in message_lower for keyword in translation_keywords):
             return TaskType.TRANSLATION
-        
-        # Research indicators
         research_keywords = ["research", "find information", "look up", "investigate", "analyze"]
         if any(keyword in message_lower for keyword in research_keywords):
             return TaskType.RESEARCH
-        
-        # Summarization indicators
         summary_keywords = ["summarize", "summary", "brief", "condense"]
         if any(keyword in message_lower for keyword in summary_keywords):
             return TaskType.SUMMARIZATION
-        
-        # Document analysis indicators
         if context and context.get("has_document"):
             return TaskType.DOCUMENT_ANALYSIS
-        
-        # Default to general chat
         return TaskType.GENERAL_CHAT
-    
+
     def select_model(
         self,
         task_type: TaskType,
         user_id: Optional[int] = None,
-        optimize_for: str = "balanced",  # "cost", "speed", "quality", "balanced"
+        optimize_for: str = "balanced",
         max_tokens: Optional[int] = None,
         requires_vision: bool = False,
         requires_function_calling: bool = True,
     ) -> Optional[ModelConfig]:
-        """
-        Select the best model for the given task and constraints.
-        
-        Args:
-            task_type: The type of task to perform
-            user_id: Optional user ID for preference lookup
-            optimize_for: Optimization strategy
-            max_tokens: Required context window size
-            requires_vision: Whether vision capabilities are needed
-            requires_function_calling: Whether function calling is needed
-        
-        Returns:
-            Selected ModelConfig or None if no suitable model found
-        """
-        # Check user preference first
         if user_id and user_id in self.user_preferences:
             preferred_model = self.models.get(self.user_preferences[user_id])
             if preferred_model and self._meets_requirements(
                 preferred_model, max_tokens, requires_vision, requires_function_calling
             ):
                 return preferred_model
-        
-        # Get candidate models for this task
+
         candidates = self.task_routing.get(task_type, list(self.models.keys()))
-        
-        # Filter by requirements
         suitable_models = []
         for model_id in candidates:
             if model_id not in self.models:
@@ -278,26 +226,22 @@ class ModelOrchestrator:
             model = self.models[model_id]
             if self._meets_requirements(model, max_tokens, requires_vision, requires_function_calling):
                 suitable_models.append(model)
-        
+
         if not suitable_models:
-            # Fallback to any model that meets requirements
             for model in self.models.values():
                 if self._meets_requirements(model, max_tokens, requires_vision, requires_function_calling):
                     suitable_models.append(model)
-        
+
         if not suitable_models:
             return None
-        
-        # Sort based on optimization strategy
+
         if optimize_for == "cost":
             suitable_models.sort(key=lambda m: m.cost_per_1k_input + m.cost_per_1k_output)
         elif optimize_for == "speed":
             suitable_models.sort(key=lambda m: m.avg_latency_ms)
         elif optimize_for == "quality":
-            # Prefer models with higher context and function calling
             suitable_models.sort(key=lambda m: m.max_tokens, reverse=True)
-        else:  # balanced
-            # Balance cost, speed, and quality
+        else:
             suitable_models.sort(
                 key=lambda m: (
                     m.cost_per_1k_input + m.cost_per_1k_output,
@@ -305,9 +249,8 @@ class ModelOrchestrator:
                     -m.max_tokens,
                 )
             )
-        
         return suitable_models[0]
-    
+
     def _meets_requirements(
         self,
         model: ModelConfig,
@@ -315,7 +258,6 @@ class ModelOrchestrator:
         requires_vision: bool,
         requires_function_calling: bool,
     ) -> bool:
-        """Check if model meets the specified requirements"""
         if max_tokens and model.max_tokens < max_tokens:
             return False
         if requires_vision and not model.supports_vision:
@@ -323,28 +265,19 @@ class ModelOrchestrator:
         if requires_function_calling and not model.supports_function_calling:
             return False
         return True
-    
-    def estimate_cost(
-        self,
-        model_name: str,
-        input_tokens: int,
-        output_tokens: int,
-    ) -> float:
-        """Estimate the cost for a given model and token usage"""
+
+    def estimate_cost(self, model_name: str, input_tokens: int, output_tokens: int) -> float:
         model = self.models.get(model_name)
         if not model:
             return 0.0
-        
         input_cost = (input_tokens / 1000) * model.cost_per_1k_input
         output_cost = (output_tokens / 1000) * model.cost_per_1k_output
         return input_cost + output_cost
-    
+
     def get_model_info(self, model_name: str) -> Optional[Dict[str, Any]]:
-        """Get information about a specific model"""
         model = self.models.get(model_name)
         if not model:
             return None
-        
         return {
             "provider": model.provider.value,
             "model_name": model.model_name,
@@ -355,10 +288,10 @@ class ModelOrchestrator:
             "supports_vision": model.supports_vision,
             "supports_function_calling": model.supports_function_calling,
             "preferred_tasks": [t.value for t in model.preferred_tasks],
+            "fallback_chain": model.fallback_chain,
         }
-    
+
     def list_available_models(self) -> List[Dict[str, Any]]:
-        """List all available models"""
         return [
             {
                 "id": model_id,

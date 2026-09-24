@@ -55,9 +55,27 @@ class AuditLogger:
     def log_admin_action(self, actor: str, action: str, target: str = "", details: Optional[Dict[str, Any]] = None):
         return self.log("admin_action", actor, action, target, details)
 
+    def log_tool_approval(self, actor: str, action: str, target: str, approval_id: str, status: str, details: Optional[Dict[str, Any]] = None):
+        payload = {"approval_id": approval_id}
+        if details:
+            payload.update(details)
+        return self.log("tool_approval", actor, action, target, payload, status=status)
+
+    def log_tool_execution(self, actor: str, tool_name: str, status: str, duration_ms: float, details: Optional[Dict[str, Any]] = None):
+        payload = {"tool_name": tool_name, "duration_ms": duration_ms}
+        if details:
+            payload.update(details)
+        return self.log("tool_execution", actor, f"tool:{tool_name}", tool_name, payload, status=status)
+
     def get_log(self, limit: int = 100, offset: int = 0) -> List[dict]:
         entries = list(self._log.values())
         return entries[offset:offset + limit]
+
+    def get_log_by_type(self, event_type: str, limit: int = 100) -> List[dict]:
+        return [e for e in self._log.values() if e.get("event_type") == event_type][-limit:]
+
+    def get_log_by_actor(self, actor: str, limit: int = 100) -> List[dict]:
+        return [e for e in self._log.values() if e.get("actor") == actor][-limit:]
 
     def is_immutable(self) -> bool:
         return True
@@ -91,4 +109,14 @@ async def read_audit_log(
     _: str = Depends(role_required("admin")),
 ):
     entries = audit_logger.get_log(limit=limit, offset=offset)
+    return [AuditLogEntryResponse(**entry) for entry in entries]
+
+
+@router.get("/audit/log/{event_type}")
+async def read_audit_log_by_type(
+    event_type: str,
+    limit: int = Query(100, ge=1, le=1000),
+    _: str = Depends(role_required("admin")),
+):
+    entries = audit_logger.get_log_by_type(event_type, limit=limit)
     return [AuditLogEntryResponse(**entry) for entry in entries]

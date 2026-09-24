@@ -56,3 +56,30 @@ class TestNegotiationEngine:
         assert "round" in summary
         assert "offer_count" in summary
         assert "agreement" in summary
+
+    def test_propose_sets_rationale(self):
+        offer = self.engine.propose(self.state, "seller", {"price": 100.0}, rationale="final")
+        assert offer.rationale == "final"
+
+    def test_evaluate_no_matching_terms(self):
+        self.engine.propose(self.state, "seller", {"unknown": 5.0})
+        assert self.engine.evaluate(self.state, "buyer") == 0.0
+
+    def test_counteroffer_without_prior_offer(self):
+        empty_state = NegotiationState(parties=["a", "b"])
+        assert self.engine.counteroffer(empty_state, "a", {"price": 10.0}) is None
+
+    def test_concede_accumulates(self):
+        self.engine.concede(self.state, "seller", "price", 5.0)
+        self.engine.concede(self.state, "seller", "price", 3.0)
+        assert self.state.concessions["price"] == 8.0
+
+    def test_is_agreement_custom_threshold(self):
+        self.engine.propose(self.state, "seller", {"price": 100.0, "time": 1.0})
+        self.engine.propose(self.state, "buyer", {"price": 100.0, "time": 1.0})
+        assert self.engine.is_agreement(self.state, threshold=0.9)
+
+    def test_get_summary_contains_concessions(self):
+        self.engine.concede(self.state, "seller", "price", 5.0)
+        summary = self.engine.get_summary(self.state)
+        assert summary["concessions"]["price"] == 5.0

@@ -60,3 +60,23 @@ class TestPersuasionDetector:
     def test_batch_analyze_types(self):
         results = self.detector.batch_analyze(["text1", "text2"])
         assert all(isinstance(r, PersuasionFeatures) for r in results)
+
+    def test_question_count(self):
+        pf = self.detector.analyze("Is this good? Really?")
+        assert pf.question_count == 2
+
+    def test_sentence_count_without_punctuation(self):
+        pf = self.detector.analyze("Hello world")
+        assert pf.sentence_count == 1
+
+    def test_persuasion_score_no_signals_multiple_sentences(self):
+        pf = self.detector.analyze("One. Two. Three.")
+        assert pf.persuasion_score() == 0.0
+
+    def test_batch_analyze_empty(self):
+        results = self.detector.batch_analyze([])
+        assert results == []
+
+    def test_patterns_case_insensitive(self):
+        pf = self.detector.analyze("EXPERT doctor says")
+        assert pf.authority_signals >= 2

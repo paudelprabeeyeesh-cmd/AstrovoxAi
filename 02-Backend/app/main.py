@@ -10,18 +10,31 @@ import os
 from dotenv import load_dotenv
 
 from .core.logging_config import configure_logging, RequestLoggingMiddleware
+from .core.tracing import init_tracing
+from .core.prometheus_middleware import PrometheusMiddleware
+from .security_headers import SecurityHeadersMiddleware
 
 from .auth import router as auth_router
 from .audit import router as audit_router
 from .chat import router as chat_router
+from .routers.conversations import router as conversations_router
 from .secrets import router as secrets_router
 from .routers.models_api import router as models_api_router
 from .routers.memory_controls import router as memory_controls_router
 from .routers.safety_api import router as safety_api_router
-from .security_headers import SecurityHeadersMiddleware
+from .routers.sandbox import router as sandbox_router
+from .routers.tools import router as tools_router
+from .routers.finetuning import router as finetuning_router
+from .routers.admin_api import router as admin_api_router
+from .routers.training import router as training_router
+from .routers.model_registry import router as model_registry_router
+from .routers.llm_governance import router as llm_governance_router
+from .routers.ai_orchestration import router as ai_orchestration_router
+from .core.llm import LLMClient
 from .rate_limit import rate_limit_middleware
 from .health import health_service
 from .dashboard import get_dashboard
+from .metrics import get_metrics, CONTENT_TYPE_LATEST
 
 try:
     from .memory import router as memory_router
@@ -53,26 +66,41 @@ except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     embeddings_router = APIRouter()
 
+try:
+    from .rag.routes import router as rag_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_router = APIRouter()
+
+try:
+    from memory_persistence.routes import router as memory_consolidation_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    memory_consolidation_router = APIRouter()
+
 load_dotenv()
 
 configure_logging()
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="AstrovoxAi Engine",
     version="2.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
+llm_client = LLMClient()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.middleware("http")(rate_limit_middleware)
 
-# CORS Middleware
-# Origins are configurable via the ALLOWED_ORIGINS env var (comma-separated).
-# A wildcard "*" together with allow_credentials=True is rejected by browsers,
-# so we default to the local dev frontend instead.
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(PrometheusMiddleware)
+
+init_tracing(service_name="astrovoxai", app=app)
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -89,13 +117,12 @@ app.add_middleware(
 )
 
 # Add security headers middleware
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
 app.include_router(auth_router)
 app.include_router(audit_router)
 app.include_router(chat_router)
+app.include_router(conversations_router)
 app.include_router(memory_router)
 app.include_router(secrets_router)
 app.include_router(storage_router)
@@ -105,30 +132,16 @@ app.include_router(embeddings_router)
 app.include_router(models_api_router)
 app.include_router(memory_controls_router)
 app.include_router(safety_api_router)
-
-
-# Prometheus metrics middleware
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    """Track request metrics for Prometheus."""
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
-
-    try:
-        from .metrics import track_request
-        track_request(
-            method=request.method,
-            endpoint=request.url.path,
-            status=response.status_code,
-            duration=duration
-        )
-    except Exception as _e:  # noqa: BLE001
-        pass
-
-    # Add performance headers
-    response.headers["X-Response-Time"] = f"{duration:.3f}s"
-    return response
+app.include_router(sandbox_router)
+app.include_router(tools_router)
+app.include_router(rag_router)
+app.include_router(memory_consolidation_router)
+app.include_router(finetuning_router)
+app.include_router(admin_api_router)
+app.include_router(training_router)
+app.include_router(model_registry_router)
+app.include_router(llm_governance_router)
+app.include_router(ai_orchestration_router)
 
 
 # Prometheus metrics endpoint
@@ -136,11 +149,10 @@ async def metrics_middleware(request: Request, call_next):
 async def metrics():
     """Prometheus metrics endpoint."""
     try:
-        from .metrics import get_metrics, CONTENT_TYPE_LATEST
         return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
-    except ImportError:
+    except Exception as _e:  # noqa: BLE001
         return Response(
-            content=b"# Prometheus client not installed\n",
+            content=b"# Prometheus client not available\n",
             media_type="text/plain"
         )
 

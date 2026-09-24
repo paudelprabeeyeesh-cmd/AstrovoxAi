@@ -3,6 +3,8 @@ kind: StatefulSet
 metadata:
   name: postgres
   namespace: astrovox
+  labels:
+    app: postgres
 spec:
   serviceName: postgres
   replicas: 1
@@ -14,11 +16,18 @@ spec:
       labels:
         app: postgres
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      automountServiceAccountToken: false
       containers:
       - name: postgres
         image: pgvector/pgvector:pg16
         ports:
         - containerPort: 5432
+          name: postgres
         env:
         - name: POSTGRES_USER
           value: astrovox
@@ -29,6 +38,32 @@ spec:
               key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: astrovox
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - astrovox
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - astrovox
+          initialDelaySeconds: 5
+          periodSeconds: 5
         volumeMounts:
         - name: postgres-data
           mountPath: /var/lib/postgresql/data
@@ -36,7 +71,23 @@ spec:
   - metadata:
       name: postgres-data
     spec:
-      accessModes: [ReadWriteOnce]
+      accessModes: ["ReadWriteOnce"]
       resources:
         requests:
           storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: astrovox
+  labels:
+    app: postgres
+spec:
+  clusterIP: None
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres

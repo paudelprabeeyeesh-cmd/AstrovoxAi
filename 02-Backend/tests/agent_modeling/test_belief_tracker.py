@@ -76,3 +76,72 @@ def test_confidence_bounds():
     b2 = tracker.observe("p2", 1.5, "s", 1001.0)
     assert 0.0 <= b1.confidence <= 1.0
     assert 0.0 <= b2.confidence <= 1.0
+
+
+def test_entropy_all_zero():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.0, "s", 1000.0)
+    tracker.observe("p2", 0.0, "s", 1001.0)
+    state = tracker.get_belief_state()
+    assert state.entropy == 0.0
+
+
+def test_entropy_all_one():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 1.0, "s", 1000.0)
+    tracker.observe("p2", 1.0, "s", 1001.0)
+    state = tracker.get_belief_state()
+    assert state.entropy == 0.0
+
+
+def test_most_confident_top_k():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.9, "s", 1000.0)
+    tracker.observe("p2", 0.8, "s", 1001.0)
+    tracker.observe("p3", 0.7, "s", 1002.0)
+    top = tracker.most_confident(top_k=2)
+    assert len(top) == 2
+    assert top[0].proposition == "p1"
+    assert top[1].proposition == "p2"
+
+
+def test_least_confident_top_k():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.9, "s", 1000.0)
+    tracker.observe("p2", 0.8, "s", 1001.0)
+    tracker.observe("p3", 0.7, "s", 1002.0)
+    bottom = tracker.least_confident(top_k=2)
+    assert len(bottom) == 2
+    assert bottom[0].proposition == "p3"
+    assert bottom[1].proposition == "p2"
+
+
+def test_evidence_log_capped():
+    tracker = BeliefTracker(history_size=5)
+    for i in range(10):
+        tracker.observe("p1", 0.5, f"s{i % 2}", float(i))
+    assert len(tracker.evidence_log["p1"]) == 5
+
+
+def test_sources_deduplicated():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.5, "source_a", 1000.0)
+    tracker.observe("p1", 0.5, "source_a", 1001.0)
+    assert tracker.beliefs["p1"].sources.count("source_a") == 1
+
+
+def test_conflicting_beliefs_needs_multiple_evidence():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.5, "s", 1000.0)
+    tracker.observe("p2", 0.5, "s", 1001.0)
+    conflicts = tracker.conflicting_beliefs(threshold=0.3)
+    assert len(conflicts) == 0
+
+
+def test_belief_state_summary_matches_beliefs():
+    tracker = BeliefTracker()
+    tracker.observe("p1", 0.7, "s", 1000.0)
+    tracker.observe("p2", 0.3, "s", 1001.0)
+    state = tracker.get_belief_state()
+    assert state.confidence_summary["p1"] == 0.7
+    assert state.confidence_summary["p2"] == 0.3

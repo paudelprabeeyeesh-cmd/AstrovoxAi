@@ -19,8 +19,9 @@ from .episodic_memory import EpisodicMemory  # noqa: F401
 from .procedural_memory import ProceduralMemory  # noqa: F401
 from .workspace_memory import WorkspaceMemory  # noqa: F401
 from .memory_manager import MemoryManager  # noqa: F401
+from .memory_consolidation import MemoryConsolidationService  # noqa: F401
 from .importance_scorer import ImportanceScorer  # noqa: F401
-from .retrieval_engine import RetrievalEngine  # noqa: F401
+from .retrieval_engine import RetrievalEngine, RetrievalMethod  # noqa: F401
 from .vector_store import VectorStore  # noqa: F401
 from ..memory_service import memory_service
 
@@ -32,8 +33,10 @@ __all__ = [
     "ProceduralMemory",
     "WorkspaceMemory",
     "MemoryManager",
+    "MemoryConsolidationService",
     "ImportanceScorer",
     "RetrievalEngine",
+    "RetrievalMethod",
     "VectorStore",
 ]
 

@@ -30,7 +30,6 @@ class TrainerLoop:
     def train_step(self, batch: List[Any]) -> float:
         x, y = batch[0]
         loss = self.loss_fn(self.model(x), y)
-        self.optimizer.set_lr(self.scheduler.get_lr())
         self.history.append(loss)
         return loss
 
@@ -46,8 +45,8 @@ class TrainerLoop:
                     batch = next(data_iter)
                 except StopIteration:
                     batch = [(None, None)]
-            loss = self.train_step(batch)
             self.scheduler.step()
+            loss = self.train_step(batch)
             self.global_step += 1
             self.checkpoint_manager.save(self.global_step, {"loss": loss, "step": self.global_step})
         return self.history
@@ -69,4 +68,5 @@ class TrainerLoop:
             return 0
         _, state = self.checkpoint_manager.load(step)
         self.global_step = int(state.get("step", step))
+        self.scheduler.step_count = self.global_step
         return self.global_step

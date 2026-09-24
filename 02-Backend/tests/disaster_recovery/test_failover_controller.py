@@ -58,3 +58,39 @@ def test_mark_failed_blocks_failover():
         pass
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_rollback_without_previous():
+    ctrl = FailoverController(active_node_id="node-a")
+    ctrl.register_node("node-a", "a.example.com")
+    assert ctrl.rollback() is None
+
+
+def test_trigger_failover_on_failed_node():
+    ctrl = FailoverController(active_node_id="node-a")
+    ctrl.register_node("node-a", "a.example.com")
+    ctrl.register_node("node-b", "b.example.com")
+    ctrl.mark_failed("node-b")
+    try:
+        ctrl.trigger_failover("node-b")
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+
+def test_health_check_unknown_node():
+    ctrl = FailoverController(active_node_id="node-a")
+    assert ctrl.health_check("missing") is False
+
+
+def test_mark_failed_unknown_node():
+    ctrl = FailoverController(active_node_id="node-a")
+    ctrl.register_node("node-a", "a.example.com")
+    ctrl.mark_failed("missing")
+    assert ctrl.health_check("node-a") is True
+
+
+def test_get_active_node_before_operations():
+    ctrl = FailoverController(active_node_id="node-a")
+    assert ctrl.get_active_node() == "node-a"

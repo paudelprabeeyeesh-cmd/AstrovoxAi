@@ -64,3 +64,77 @@ class TestContentModerator:
         assert result.threshold == 0.99
         if result.confidence < 0.99:
             assert result.flagged is False
+
+    def test_hash_token_deterministic(self):
+        m = ContentModerator(threshold=0.5)
+        assert m._hash_token("hello") == m._hash_token("hello")
+
+    def test_text_to_embedding_zeros_for_empty(self):
+        m = ContentModerator(threshold=0.5)
+        emb = m._text_to_embedding("")
+        assert emb == [0.0] * m.embedding_dim
+
+    def test_text_to_embedding_normalized(self):
+        m = ContentModerator(threshold=0.5)
+        emb = m._text_to_embedding("hello world test")
+        norm = math.sqrt(sum(x * x for x in emb))
+        assert abs(norm - 1.0) < 1e-5
+
+    def test_raw_scores_length_matches_categories(self):
+        m = ContentModerator(threshold=0.5)
+        emb = m._text_to_embedding("some text")
+        scores = m._raw_scores(emb)
+        assert len(scores) == len(ContentModerator.CATEGORIES)
+
+    def test_calibrate_sums_to_one(self):
+        m = ContentModerator(threshold=0.5)
+        emb = m._text_to_embedding("some text")
+        raw = m._raw_scores(emb)
+        cal = m._calibrate(raw)
+        assert abs(sum(cal) - 1.0) < 1e-5
+
+    def test_batch_moderate_empty(self):
+        m = ContentModerator(threshold=0.5)
+        results = m.batch_moderate([])
+        assert results == []
+
+    def test_get_uncertainty_empty(self):
+        m = ContentModerator(threshold=0.5)
+        uncertainty = m.get_uncertainty("")
+        assert uncertainty == 0.0
+
+    def test_moderate_harmful_can_be_flagged(self):
+        m = ContentModerator(threshold=0.3)
+        result = m.moderate("Some harmful text input here")
+        assert result.category in ContentModerator.CATEGORIES
+
+    def test_result_attributes(self):
+        m = ContentModerator(threshold=0.5)
+        result = m.moderate("Hello world")
+        assert hasattr(result, "category")
+        assert hasattr(result, "confidence")
+        assert hasattr(result, "threshold")
+        assert hasattr(result, "flagged")
+        assert hasattr(result, "details")
+
+    def test_get_uncertainty_matches_moderate_entropy(self):
+        m = ContentModerator(threshold=0.5)
+        text = "some random text"
+        result = m.moderate(text)
+        uncertainty = m.get_uncertainty(text)
+        assert abs(uncertainty - result.details.get("entropy", 0.0)) < 1e-5
+
+    def test_text_to_embedding_matches_dimension(self):
+        m = ContentModerator(threshold=0.5)
+        assert len(m._text_to_embedding("hello world")) == m.embedding_dim
+
+    def test_moderate_non_empty_has_all_category_details(self):
+        m = ContentModerator(threshold=0.5)
+        result = m.moderate("hello world")
+        for cat in ContentModerator.CATEGORIES:
+            assert cat.value in result.details
+
+    def test_moderate_no_empty_input_detail_for_non_empty(self):
+        m = ContentModerator(threshold=0.5)
+        result = m.moderate("hello world")
+        assert "empty_input" not in result.details

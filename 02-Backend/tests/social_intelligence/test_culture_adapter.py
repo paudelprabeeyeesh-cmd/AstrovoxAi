@@ -48,3 +48,32 @@ class TestCultureAdapter:
         original = "Thank you for your time"
         adapted = self.adapter.adapt_message(original, "default")
         assert original in adapted
+
+    def test_adapt_message_with_intent(self):
+        adapted = self.adapter.adapt_message("hi", "high_context", intent="greeting")
+        assert "[Context: greeting]" in adapted
+
+    def test_get_profile_high_context(self):
+        profile = self.adapter.get_profile("high_context")
+        assert profile.formality == 0.7
+        assert profile.directness == 0.3
+
+    def test_register_profile_overwrites(self):
+        profile = CulturalProfile(culture="custom", formality=0.9, directness=0.2, context_richness=0.8)
+        self.adapter.register_profile(profile)
+        self.adapter.register_profile(CulturalProfile(culture="custom", formality=0.1))
+        assert self.adapter.get_profile("custom").formality == 0.1
+
+    def test_adapt_message_low_formality_no_soften(self):
+        adapted = self.adapter.adapt_message("Hello!", "high_context")
+        assert adapted.endswith("!")
+
+    def test_soften_without_exclamation(self):
+        adapted = self.adapter.adapt_message("Hello", "low_context")
+        assert adapted == "Hello"
+
+    def test_cultural_profile_with_dimensions(self):
+        dims = {CulturalDimension.INDIVIDUALISM: 0.8}
+        profile = CulturalProfile(culture="test", dimensions=dims, formality=0.5)
+        assert CulturalDimension.INDIVIDUALISM in profile.dimensions
+        assert profile.dimensions[CulturalDimension.INDIVIDUALISM] == 0.8

@@ -58,16 +58,215 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
+class SSEManager {
+  constructor(url, options = {}) {
+    this.url = url;
+    this.options = {
+      method: options.method || 'POST',
+      headers: options.headers || {},
+      body: options.body || null,
+      reconnect: options.reconnect !== false,
+      maxReconnectAttempts: options.maxReconnectAttempts || 10,
+      reconnectDelay: options.reconnectDelay || 1000,
+      maxReconnectDelay: options.maxReconnectDelay || 30000,
+      eventId: options.eventId || null,
+      lastEventId: options.lastEventId || null,
+    };
+    this.eventId = this.options.eventId;
+    this.lastEventId = this.options.lastEventId;
+    this.reconnectAttempts = 0;
+    this.abortController = null;
+    this.reader = null;
+    this.isIntentionallyClosed = false;
+    this.isConnecting = false;
+    this.handlers = {};
+    this.state = 'disconnected';
+    this._reconnectTimer = null;
+  }
+
+  get connectionState() {
+    return this.state;
+  }
+
+  on(event, handler) {
+    if (!this.handlers[event]) this.handlers[event] = [];
+    this.handlers[event].push(handler);
+    return () => {
+      this.handlers[event] = this.handlers[event].filter(h => h !== handler);
+    };
+  }
+
+  _emit(event, data) {
+    (this.handlers[event] || []).forEach(h => {
+      try { h(data); } catch (e) { console.error('SSE handler error:', e); }
+    });
+  }
+
+  _setState(state) {
+    this.state = state;
+    this._emit('state', state);
+  }
+
+  async connect() {
+    if (this.isConnecting) return;
+    this.isConnecting = true;
+    this.isIntentionallyClosed = false;
+    this.abortController = new AbortController();
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...this.options.headers,
+    };
+    const effectiveEventId = this.eventId || this.lastEventId;
+    if (effectiveEventId) {
+      headers['Last-Event-ID'] = effectiveEventId;
+    }
+
+    try {
+      this._setState('connecting');
+      const res = await fetch(this.url, {
+        method: this.options.method,
+        headers,
+        body: this.options.body ? JSON.stringify(this.options.body) : null,
+        signal: this.abortController.signal,
+      });
+
+      if (!res.ok) {
+        const err = new Error(`HTTP ${res.status}`);
+        err.status = res.status;
+        this._setState('error');
+        this._emit('error', err);
+        this._scheduleReconnect();
+        return;
+      }
+
+      this.reconnectAttempts = 0;
+      this._setState('open');
+      this._emit('open');
+
+      this.reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      try {
+        while (true) {
+          const { done, value } = await this.reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          let currentEvent = 'message';
+          let currentData = '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith(':')) continue;
+            if (trimmed.startsWith('event:')) {
+              currentEvent = trimmed.slice(6).trim();
+            } else if (trimmed.startsWith('data:')) {
+              currentData += trimmed.slice(5).trim();
+            } else if (trimmed.startsWith('id:')) {
+              this.eventId = trimmed.slice(3).trim();
+              this.lastEventId = this.eventId;
+            } else if (trimmed.startsWith('retry:')) {
+              const retryMs = parseInt(trimmed.slice(6).trim(), 10);
+              if (!isNaN(retryMs) && retryMs > 0) {
+                this.options.reconnectDelay = Math.min(retryMs, this.options.maxReconnectDelay);
+              }
+            }
+          }
+
+          if (currentData) {
+            try {
+              const data = JSON.parse(currentData);
+              this._emit(currentEvent, data);
+            } catch {
+              this._emit(currentEvent, currentData);
+            }
+          }
+        }
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          this._setState('closed');
+        } else {
+          this._setState('error');
+          this._emit('error', err);
+        }
+      } finally {
+        this._emit('close');
+        if (!this.isIntentionallyClosed) {
+          this._scheduleReconnect();
+        }
+      }
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        this._setState('closed');
+        this._emit('close');
+      } else {
+        this._setState('error');
+        this._emit('error', err);
+        this._scheduleReconnect();
+      }
+    } finally {
+      this.isConnecting = false;
+    }
+  }
+
+  _scheduleReconnect() {
+    if (this.isIntentionallyClosed) return;
+    if (!this.options.reconnect) return;
+    if (this.reconnectAttempts >= this.options.maxReconnectAttempts) {
+      this._setState('reconnect_failed');
+      this._emit('reconnect_failed');
+      return;
+    }
+
+    const baseDelay = this.options.reconnectDelay;
+    const jitter = baseDelay * 0.1 * Math.random();
+    const delay = Math.min(baseDelay * Math.pow(2, this.reconnectAttempts) + jitter, this.options.maxReconnectDelay);
+    this._setState('reconnecting');
+    this._emit('reconnecting', { attempt: this.reconnectAttempts + 1, delay: Math.round(delay) });
+    this._reconnectTimer = setTimeout(() => {
+      this.reconnectAttempts++;
+      this.connect();
+    }, delay);
+  }
+
+  close() {
+    this.isIntentionallyClosed = true;
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    if (this.reader) {
+      this.reader.cancel();
+    }
+    this.isConnecting = false;
+    this._setState('closed');
+  }
+}
+
 class ChatAPI {
-  static async solve(text, conversationId = null, onChunk = null) {
+  static async solve(text, conversationId = null, options = {}) {
     const token = getToken();
-    const res = await fetch(`${API_BASE}/solve`, {
+    const model = options.model || 'gpt-4';
+    const res = await fetch(`${API_BASE}/chat/message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify({ text, conversation_id: conversationId }),
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message: text,
+        model: model,
+        stream: false,
+      }),
     });
 
     if (!res.ok) {
@@ -75,96 +274,104 @@ class ChatAPI {
       throw new Error(err.detail || err.result || `HTTP ${res.status}`);
     }
 
-    if (onChunk && res.headers.get('content-type')?.includes('text/event-stream')) {
-      return ChatAPI._readStream(res, onChunk);
-    }
-
-    const data = await res.json();
-    return data;
+    return res.json();
   }
 
-  static async solveStream(text, conversationId = null, onChunk = null, onDone = null, onError = null) {
+  static async solveStream(text, conversationId = null, options = {}) {
     const token = getToken();
-    try {
-      const res = await fetch(`${API_BASE}/solve/stream`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ text, conversation_id: conversationId }),
+    const model = options.model || 'gpt-4';
+    const body = {
+      conversation_id: conversationId,
+      message: text,
+      model: model,
+      stream: true,
+      lastEventId: options.lastEventId || null,
+    };
+
+    const sse = new SSEManager(`${API_BASE}/chat/stream`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: body,
+      reconnect: options.reconnect !== false,
+      maxReconnectAttempts: options.maxReconnectAttempts || 5,
+      eventId: options.eventId || null,
+      lastEventId: options.lastEventId || null,
+    });
+
+    return new Promise((resolve, reject) => {
+      let fullContent = '';
+      let isDone = false;
+      let hasError = false;
+      let fallbackEmitted = false;
+      let metadataReceived = false;
+
+      const finish = (err, data) => {
+        if (hasError) return;
+        hasError = true;
+        sse.close();
+        if (err) return reject(err);
+        resolve({
+          ...data,
+          text: fullContent,
+          fallback: fallbackEmitted,
+        });
+      };
+
+      const retryableStatuses = [408, 429, 502, 503, 504];
+
+      sse.on('metadata', (data) => {
+        metadataReceived = true;
+        if (options.onMetadata) options.onMetadata(data);
       });
 
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ detail: 'Request failed' }));
-        const msg = err.detail || err.error || `HTTP ${res.status}`;
-        if (onError) onError(new Error(msg));
-        return;
-      }
+      sse.on('token', (data) => {
+        fullContent += data.content || '';
+        if (options.onChunk) options.onChunk(data);
+      });
 
-      if (!res.body) {
-        if (onError) onError(new Error('No response body'));
-        return;
-      }
+      sse.on('done', (data) => {
+        isDone = true;
+        fallbackEmitted = data.fallback || fallbackEmitted;
+        if (options.onDone) options.onDone(data);
+        finish(null, { ...data, text: fullContent });
+      });
 
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
+      sse.on('fallback', (data) => {
+        fallbackEmitted = true;
+        if (options.onFallback) options.onFallback(data);
+      });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || trimmed === 'data: [DONE]') {
-            if (trimmed === 'data: [DONE]' && onDone) onDone();
-            continue;
-          }
-          if (trimmed.startsWith('data: ')) {
-            const payload = trimmed.slice(6);
-            try {
-              const data = JSON.parse(payload);
-              if (data.error) {
-                if (onError) onError(new Error(data.error));
-                return;
-              }
-              if (onChunk) onChunk(data);
-            } catch {
-              // skip malformed JSON
-            }
-          }
+      sse.on('error', (err) => {
+        const isRetryable = err.status && retryableStatuses.includes(err.status);
+        if (options.onError) options.onError(err, isRetryable);
+        if (isRetryable && !isDone) {
+          return;
         }
-      }
+        finish(err);
+      });
 
-      if (onDone) onDone();
-    } catch (err) {
-      if (onError) onError(err);
-    }
+      sse.on('close', () => {
+        if (!isDone && !hasError) {
+          finish(new Error('Stream closed unexpectedly'));
+        }
+      });
+
+      sse.on('reconnect_failed', () => {
+        if (!isDone && !hasError) {
+          finish(new Error('Reconnection failed after maximum attempts'));
+        }
+      });
+
+      sse.on('state', (state) => {
+        if (options.onState) options.onState(state);
+      });
+
+      sse.connect();
+    });
   }
-
-  static async _readStream(res, onChunk) {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const text = decoder.decode(value, { stream: true });
-        fullText += text;
-        if (onChunk) onChunk(text);
-      }
-      return { text: fullText };
-    }
 
   static async createConversation(title) {
     const token = getToken();
-    const res = await fetch(`${API_BASE}/conversations`, {
+    const res = await fetch(`${API_BASE}/chat/conversations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -176,29 +383,32 @@ class ChatAPI {
       const err = await res.json().catch(() => ({ detail: 'Failed' }));
       throw new Error(err.detail || 'Failed to create conversation');
     }
-    return res.json();
+    const data = await res.json();
+    return data.conversation || data;
   }
 
   static async getConversations() {
     const token = getToken();
-    const res = await fetch(`${API_BASE}/conversations`, {
+    const res = await fetch(`${API_BASE}/chat/conversations`, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
     if (!res.ok) throw new Error('Failed to load conversations');
-    return res.json();
+    const data = await res.json();
+    return data.conversations || [];
   }
 
   static async getMessages(conversationId) {
     const token = getToken();
-    const res = await fetch(`${API_BASE}/conversations/${encodeURIComponent(conversationId)}/messages`, {
+    const res = await fetch(`${API_BASE}/chat/conversations/${encodeURIComponent(conversationId)}/messages`, {
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
     });
     if (!res.ok) throw new Error('Failed to load messages');
-    return res.json();
+    const data = await res.json();
+    return data.messages || [];
   }
 }
 
@@ -329,6 +539,7 @@ class ChatApp {
     this.isStreaming = false;
     this.currentStreamingMsgId = null;
     this.wsManager = null;
+    this.sseManager = null;
     this.abortController = null;
     this.selectedModel = 'gpt-4o';
 
@@ -435,7 +646,6 @@ class ChatApp {
     const streamingMsgId = 'stream-' + Date.now();
     this.currentStreamingMsgId = streamingMsgId;
     this._appendMessage({ role: 'assistant', content: '', id: streamingMsgId, isStreaming: true });
-    this.abortController = new AbortController();
 
     let conversationId = this.activeConversationId;
     if (!conversationId) {
@@ -451,51 +661,64 @@ class ChatApp {
     }
 
     try {
-      await ChatAPI.solveStream(text, conversationId,
-        (chunk) => {
+      await ChatAPI.solveStream(text, conversationId, {
+        model: this.selectedModel,
+        onMetadata: (data) => {
+          this.sseManager = window.__lastSseManager;
+        },
+        onChunk: (data) => {
           if (this.currentStreamingMsgId === streamingMsgId) {
-            this._updateStreamingMessage(streamingMsgId, chunk.result || chunk.text || '');
+            this._updateStreamingMessage(streamingMsgId, data.content || '');
           }
         },
-        () => {
+        onDone: () => {
           this._finalizeStreamingMessage(streamingMsgId);
         },
-        (err) => {
-          this._handleStreamError(streamingMsgId, err.message);
-        }
-      );
+        onFallback: (data) => {
+          showToast(`Falling back to ${data.to_provider}: ${data.reason}`, 'warning');
+        },
+        onError: (err, isRetryable) => {
+          this._handleStreamError(streamingMsgId, err.message || 'Stream error', isRetryable);
+        },
+        onState: (state) => {
+          this._updateConnectionStatus(state === 'open' ? 'connected' : state === 'connecting' ? 'connecting' : 'disconnected');
+        },
+      });
     } catch (err) {
       this._handleStreamError(streamingMsgId, err.message);
     } finally {
       this.isStreaming = false;
       this.currentStreamingMsgId = null;
-      this.abortController = null;
       this._updateUIState();
     }
   }
 
   _handleStop() {
-    if (this.abortController) {
-      this.abortController.abort();
+    if (this.sseManager) {
+      this.sseManager.close();
+      this.sseManager = null;
     }
     if (this.wsManager) {
       this.wsManager.close();
     }
     this.isStreaming = false;
+    const msgId = this.currentStreamingMsgId;
     this.currentStreamingMsgId = null;
-    this.abortController = null;
-    this._finalizeStreamingMessage(this.currentStreamingMsgId);
+    this._finalizeStreamingMessage(msgId);
     this._updateUIState();
     showToast('Generation stopped');
   }
 
-  _handleStreamError(msgId, errorMsg) {
+  _handleStreamError(msgId, errorMsg, isRetryable = false) {
     if (this.currentStreamingMsgId === msgId) {
       const msg = this.messages.find(m => m.id === msgId);
       if (msg) {
         msg.content = 'Sorry, something went wrong: ' + (errorMsg || 'Unknown error');
         msg.isStreaming = false;
         this._renderMessages();
+      }
+      if (isRetryable) {
+        showToast('Connection issue. Retrying...', 'warning');
       }
     }
   }
@@ -582,7 +805,9 @@ class ChatApp {
     if (this.sendBtnEl) this.sendBtnEl.style.display = this.isStreaming ? 'none' : 'inline-flex';
     if (this.stopBtnEl) this.stopBtnEl.style.display = this.isStreaming ? 'inline-flex' : 'none';
     if (this.messageInputEl) this.messageInputEl.disabled = this.isStreaming;
-    this._updateConnectionStatus(this.isStreaming ? 'connecting' : 'connected');
+    if (!this.isStreaming) {
+      this._updateConnectionStatus('connected');
+    }
   }
 
   _updateConnectionStatus(status) {

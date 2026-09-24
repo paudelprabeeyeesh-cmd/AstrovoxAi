@@ -1,7 +1,8 @@
 import logging
+import random
 import time
 from enum import Enum
-from typing import Callable, Tuple, Type, Any
+from typing import Callable, Dict, Tuple, Type, Any
 
 logger = logging.getLogger(__name__)
 
@@ -9,10 +10,18 @@ logger = logging.getLogger(__name__)
 class BackoffStrategy(Enum):
     FIXED = "fixed"
     EXPONENTIAL = "exponential"
+    JITTERED = "jittered"
 
 
 class RetryPolicy:
-    def __init__(self, max_retries: int = 3, backoff_strategy: BackoffStrategy = BackoffStrategy.EXPONENTIAL, base_delay: float = 1.0, max_delay: float = 60.0, retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,)):
+    def __init__(
+        self,
+        max_retries: int = 3,
+        backoff_strategy: BackoffStrategy = BackoffStrategy.JITTERED,
+        base_delay: float = 1.0,
+        max_delay: float = 60.0,
+        retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,),
+    ):
         self.max_retries = max_retries
         self.backoff_strategy = backoff_strategy
         self.base_delay = base_delay
@@ -22,6 +31,9 @@ class RetryPolicy:
     def _get_delay(self, attempt: int) -> float:
         if self.backoff_strategy == BackoffStrategy.EXPONENTIAL:
             return min(self.base_delay * (2 ** attempt), self.max_delay)
+        if self.backoff_strategy == BackoffStrategy.JITTERED:
+            delay = min(self.base_delay * (2 ** attempt), self.max_delay)
+            return delay * (0.5 + random.random())
         return self.base_delay
 
     def execute(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:

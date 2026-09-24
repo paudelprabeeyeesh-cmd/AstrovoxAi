@@ -55,3 +55,64 @@ def test_record_and_aggregate_results():
     assert aggregated["b"]["count"] == 1
     assert aggregated["b"]["min"] == 7.0
     assert aggregated["b"]["max"] == 7.0
+
+
+def test_create_experiment_with_traffic_allocation():
+    manager = ExperimentManager()
+    experiment = manager.create_experiment(
+        "traffic_test",
+        [{"id": "a", "name": "A"}, {"id": "b", "name": "B"}],
+        traffic_allocation=0.5,
+    )
+    assert experiment.traffic_allocation == 0.5
+
+
+def test_get_experiment_returns_none_for_missing():
+    manager = ExperimentManager()
+    assert manager.get_experiment("missing") is None
+
+
+def test_assign_variant_for_missing_or_non_running():
+    manager = ExperimentManager()
+    experiment = manager.create_experiment("pause", [{"id": "a", "name": "A"}], status="paused")
+    assert manager.assign_variant(experiment.id, "user_1") is None
+    assert manager.assign_variant("missing", "user_1") is None
+
+
+def test_assign_variant_returns_variant_id():
+    manager = ExperimentManager()
+    experiment = manager.create_experiment(
+        "var_test",
+        [{"id": "a", "name": "A"}, {"id": "b", "name": "B"}],
+        status="running",
+    )
+    assigned = manager.assign_variant(experiment.id, "user_1")
+    assert assigned in ("a", "b")
+
+
+def test_record_result_and_get_with_metric_filter():
+    manager = ExperimentManager()
+    experiment = manager.create_experiment(
+        "metrics",
+        [{"id": "a", "name": "A"}],
+        status="running",
+    )
+    manager.record_result(experiment.id, "a", "u1", "clicks", 4.0)
+    manager.record_result(experiment.id, "a", "u1", "clicks", 2.0)
+    manager.record_result(experiment.id, "a", "u1", "views", 1.0)
+
+    clicks = manager.get_results(experiment.id, metric="clicks")
+    assert len(clicks) == 2
+    views = manager.get_results(experiment.id, metric="views")
+    assert len(views) == 1
+
+
+def test_aggregate_results_returns_empty_for_no_results():
+    manager = ExperimentManager()
+    experiment = manager.create_experiment(
+        "empty",
+        [{"id": "a", "name": "A"}],
+        status="running",
+    )
+    aggregated = manager.aggregate_results(experiment.id, "clicks")
+    assert aggregated == {}

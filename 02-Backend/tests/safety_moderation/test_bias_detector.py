@@ -67,3 +67,62 @@ class TestBiasDetector:
     def test_score_in_range(self):
         report = self.detector.detect("Some random text with bias indicators")
         assert 0.0 <= report.bias_score <= 1.0
+
+    def test_token_count_counts_indicators(self):
+        counts = self.detector._token_count("he she man woman")
+        assert counts["gender"] == 4
+
+    def test_token_count_empty(self):
+        counts = self.detector._token_count("")
+        assert sum(counts.values()) == 0
+
+    def test_compute_metrics_densities_sum(self):
+        metrics = self.detector._compute_metrics("he she man woman")
+        total_density = sum(metrics[f"{cat}_density"] for cat in BiasDetector.CATEGORIES)
+        assert abs(total_density - 1.0) < 1e-5
+
+    def test_compute_bias_score_returns_valid_category(self):
+        metrics = self.detector._compute_metrics("he she man woman")
+        score, category = self.detector._compute_bias_score(metrics)
+        assert category in BiasDetector.CATEGORIES
+        assert score >= 0.0
+
+    def test_detect_with_bias_indicators(self):
+        report = self.detector.detect("he she man woman")
+        assert report.category in BiasDetector.CATEGORIES
+        assert 0.0 <= report.bias_score <= 1.0
+
+    def test_batch_detect_empty(self):
+        reports = self.detector.batch_detect([])
+        assert reports == []
+
+    def test_flagged_is_bool(self):
+        report = self.detector.detect("Some text")
+        assert isinstance(report.flagged, bool)
+
+    def test_aggregate_single_report(self):
+        report = self.detector.detect("he she")
+        agg = self.detector.aggregate([report])
+        assert agg["total"] == 1.0
+        assert agg["mean_bias_score"] == report.bias_score
+
+    def test_detect_flagged_with_high_threshold(self):
+        detector = BiasDetector(threshold=0.1, seed=321)
+        report = detector.detect("he she man woman")
+        assert report.flagged is True
+
+    def test_detect_race_indicators(self):
+        report = self.detector.detect("black white asian")
+        assert report.category == "race"
+        assert report.bias_score > 0.0
+
+    def test_detect_religion_indicators(self):
+        report = self.detector.detect("muslim christian jewish")
+        assert report.category == "religion"
+
+    def test_aggregate_by_category_populated(self):
+        reports = self.detector.batch_detect(["he she", "black white", "young old"])
+        agg = self.detector.aggregate(reports)
+        assert "by_category" in agg
+        assert isinstance(agg["by_category"], dict)
+        assert len(agg["by_category"]) > 0

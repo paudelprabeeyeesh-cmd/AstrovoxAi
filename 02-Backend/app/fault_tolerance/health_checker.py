@@ -9,7 +9,7 @@ class HealthStatus:
         self.name = name
         self.healthy = healthy
         self.message = message
-        self.details = details or {}
+        self.details = details if isinstance(details, dict) else {}
 
     def __repr__(self) -> str:
         return f"HealthStatus(name={self.name!r}, healthy={self.healthy})"

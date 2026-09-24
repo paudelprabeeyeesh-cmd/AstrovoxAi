@@ -95,3 +95,25 @@ class TestTripletMiner:
         loss = miner.compute_triplet_loss(embeddings, a, p, n)
         assert isinstance(loss, float)
         assert loss >= 0.0
+
+    def test_pairwise_distances_symmetry(self):
+        miner = TripletMiner()
+        embeddings = np.random.randn(6, 4).astype(np.float64)
+        dists = miner._pairwise_distances(embeddings)
+        assert dists.shape == (6, 6)
+        np.testing.assert_allclose(dists, dists.T)
+        np.testing.assert_allclose(np.diag(dists), 0.0, atol=1e-12)
+
+    def test_mine_hard_no_valid(self):
+        miner = TripletMiner(margin=0.2)
+        embeddings = np.random.randn(4, 4).astype(np.float64)
+        labels = np.array([0, 0, 0, 0])
+        mined = miner.mine_hard(embeddings, labels, num_triplets=4)
+        assert len(mined["anchors"]) == 0
+
+    def test_mine_semi_hard_no_valid(self):
+        miner = TripletMiner(margin=0.2)
+        embeddings = np.random.randn(4, 4).astype(np.float64)
+        labels = np.array([0, 0, 0, 0])
+        mined = miner.mine_semi_hard(embeddings, labels, num_triplets=4)
+        assert len(mined["anchors"]) == 0

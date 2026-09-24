@@ -7,3 +7,8 @@ data:
   APP_ENV: production
   LOG_LEVEL: info
   REDIS_URL: redis://redis-master:6379
+  METRICS_ENABLED: "true"
+  ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai
+  RATE_LIMIT: 120/minute
+  DAILY_AI_LIMIT: "50"
+  PROMETHEUS_MULTIPROC_DIR: /tmp

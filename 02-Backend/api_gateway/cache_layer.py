@@ -123,6 +123,7 @@ class CacheLayer:
     @property
     def size(self) -> int:
         with self._lock:
+            self._evict_expired()
             return len(self._cache)
 
     @property

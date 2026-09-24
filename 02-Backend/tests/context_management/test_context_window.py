@@ -36,9 +36,53 @@ def test_enforce_limit():
     assert cw.overflow_count > 0
 
 
-def test_clear():
+def test_add_with_metadata():
+    cw = ContextWindow(max_tokens=10)
+    entry = cw.add("hello", metadata={"source": "test"})
+    assert entry["text"] == "hello"
+    assert entry["source"] == "test"
+
+
+def test_total_tokens_empty():
     cw = ContextWindow()
+    assert cw.total_tokens() == 0
+
+
+def test_estimate_tokens_single_word():
+    cw = ContextWindow()
+    assert cw._estimate_tokens("hello") == 1
+
+
+def test_estimate_tokens_empty():
+    cw = ContextWindow()
+    assert cw._estimate_tokens("") == 1
+
+
+def test_get_window_returns_copy():
+    cw = ContextWindow(max_tokens=10)
     cw.add("hello")
-    cw.clear()
-    assert cw.entries == []
+    window1 = cw.get_window()
+    window1.append({"text": "extra"})
+    assert len(cw.get_window()) == 1
+
+
+def test_enforce_limit_exact_max_tokens():
+    cw = ContextWindow(max_tokens=2)
+    cw.add("one two")
+    assert cw.total_tokens() == 2
     assert cw.overflow_count == 0
+
+
+def test_overflow_count_increments():
+    cw = ContextWindow(max_tokens=1)
+    cw.add("one two")
+    cw.add("three four five")
+    assert cw.overflow_count == 2
+
+
+def test_add_empty_text():
+    cw = ContextWindow(max_tokens=10)
+    entry = cw.add("")
+    assert entry["tokens"] == 1
+    assert len(cw.entries) == 1
+

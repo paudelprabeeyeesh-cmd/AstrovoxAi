@@ -91,3 +91,45 @@ def test_get_metric_summary():
     assert "average" in summary
     assert summary["min"] == 0.5
     assert summary["max"] == 0.9
+
+
+def test_record_metric_history_limit():
+    monitor = SelfMonitor(history_size=5)
+    for i in range(10):
+        monitor.record_metric("cpu", float(i), float(i))
+    assert len(monitor.metrics["cpu"]) == 5
+
+
+def test_get_recent_unknown_metric():
+    monitor = SelfMonitor()
+    recent = monitor.get_recent("missing")
+    assert recent == []
+
+
+def test_calculate_health_score_unknown():
+    monitor = SelfMonitor()
+    assert monitor.calculate_health_score("missing") == 0.0
+
+
+def test_get_alerts_unknown_metric():
+    monitor = SelfMonitor()
+    assert monitor.get_alerts("missing") == []
+
+
+def test_generate_report_no_metrics():
+    monitor = SelfMonitor()
+    report = monitor.generate_report()
+    assert report.healthy
+    assert report.overall_score == 0.0
+
+
+def test_generate_report_multiple_metrics():
+    monitor = SelfMonitor()
+    monitor.set_baseline("cpu", 0.9)
+    monitor.set_baseline("memory", 0.8)
+    for i in range(10):
+        monitor.record_metric("cpu", 0.9, float(1000 + i))
+        monitor.record_metric("memory", 0.5, float(1000 + i))
+    report = monitor.generate_report()
+    assert "memory" in report.degraded_metrics
+    assert "cpu" not in report.degraded_metrics

@@ -37,3 +37,21 @@ class TestIdeaGenerator:
         gen = IdeaGenerator()
         ideas = gen.generate("", n=1)
         assert len(ideas) == 1
+
+    def test_ideas_sorted_by_combined_score(self):
+        gen = IdeaGenerator()
+        ideas = gen.generate("build something new", n=4)
+        scores = [idea.novelty + idea.utility + idea.feasibility for idea in ideas]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_history_appended(self):
+        gen = IdeaGenerator()
+        gen.history = ["existing idea"]
+        gen.generate("new prompt", n=1)
+        assert len(gen.history) == 2
+
+    def test_history_capped_at_100(self):
+        gen = IdeaGenerator()
+        gen.history = ["x"] * 100
+        gen.generate("prompt", n=1)
+        assert len(gen.history) == 100

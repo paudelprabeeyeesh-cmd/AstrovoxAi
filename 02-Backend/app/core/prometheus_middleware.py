@@ -78,7 +78,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         duration = time.time() - start
 
         endpoint = request.url.path
-        request_id = request.headers.get("X-Request-ID", "")
+        request_id = getattr(request.state, "request_id", "") or request.headers.get("X-Request-ID", "")
         user_id = request.headers.get("X-User-ID", "")
 
         REQUEST_COUNT.labels(

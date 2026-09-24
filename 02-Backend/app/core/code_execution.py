@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import platform
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -55,6 +56,24 @@ class LanguageWhitelist:
 class CodeExecutionSandbox:
     """Secure code execution sandbox with hardened resource and network controls."""
 
+    ALLOWED_SHELL_COMMANDS = {
+        "ls", "cat", "echo", "pwd", "whoami", "date", "uname", "hostname",
+        "python", "python3", "node", "npm", "npx",
+        "grep", "find", "wc", "head", "tail", "sort", "uniq", "diff",
+        "cp", "mv", "mkdir", "rmdir", "touch",
+        "env", "printenv", "uptime", "free", "df", "ps",
+        "which", "whereis", "file", "stat",
+        "tar", "gzip", "gunzip", "zip", "unzip",
+        "base64", "md5sum", "sha256sum",
+        "jq", "awk", "sed", "tr", "cut", "paste", "tee",
+        "xargs", "timeout", "yes", "seq", "expr", "true", "false", "sleep",
+    }
+
+    NETWORK_COMMANDS = {
+        "ping", "curl", "wget", "nc", "netcat", "nmap", "ssh", "scp", "rsync",
+        "telnet", "dig", "nslookup", "host", "traceroute", "tracepath",
+    }
+
     def __init__(
         self,
         max_execution_time: float = 30.0,
@@ -62,6 +81,7 @@ class CodeExecutionSandbox:
         network_restricted: bool = True,
         allowed_imports: Optional[List[str]] = None,
         allowed_languages: Optional[Dict[str, Any]] = None,
+        allowed_shell_commands: Optional[set] = None,
     ):
         self.max_execution_time = max_execution_time
         self.max_memory_mb = max_memory_mb
@@ -73,8 +93,10 @@ class CodeExecutionSandbox:
         self.blocked_modules = {
             "subprocess", "socket", "requests", "urllib", "http",
             "ftplib", "smtplib", "ctypes", "multiprocessing", "threading", "asyncio",
+            "pathlib", "types", "importlib",
         }
         self.allowed_languages = allowed_languages or LanguageWhitelist.SUPPORTED
+        self.allowed_shell_commands = set(allowed_shell_commands or self.ALLOWED_SHELL_COMMANDS)
 
     def _check_memory_before_execution(self, code: str, input_data: Optional[str] = None) -> Optional[str]:
         total_size = len(code.encode("utf-8")) + (len(input_data.encode("utf-8")) if input_data else 0)
@@ -155,6 +177,7 @@ class CodeExecutionSandbox:
                 env=self._build_env(),
                 cwd=tempfile.gettempdir(),
                 preexec_fn=preexec_fn,
+                start_new_session=True,
             )
             execution_time = (time.perf_counter() - start) * 1000
             return CodeExecutionResult(
@@ -177,21 +200,24 @@ class CodeExecutionSandbox:
 
     def execute_shell(self, command: str, timeout: Optional[float] = None) -> CodeExecutionResult:
         timeout = timeout or self.max_execution_time
-        if self.network_restricted:
-            blocked = {"curl", "wget", "nc", "netcat", "nmap", "ssh", "scp", "rsync"}
-            cmd_parts = command.strip().split()
-            if cmd_parts and cmd_parts[0].lower() in blocked:
-                return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Blocked command: {cmd_parts[0]}", execution_time_ms=0, files_created=[], error="Blocked command")
-        blocked_commands = {"rm", "sudo", "su", "chmod", "chown", "kill", "pkill", "shutdown", "reboot"}
-        cmd_parts = command.strip().split()
-        if cmd_parts and cmd_parts[0].lower() in blocked_commands:
-            return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Blocked command: {cmd_parts[0]}", execution_time_ms=0, files_created=[], error="Blocked command")
+        if not command or not command.strip():
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr="Empty command", execution_time_ms=0, files_created=[], error="Empty command")
+        try:
+            tokens = shlex.split(command)
+        except ValueError as exc:
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Invalid command syntax: {exc}", execution_time_ms=0, files_created=[], error="Invalid command syntax")
+        if not tokens:
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr="Empty command", execution_time_ms=0, files_created=[], error="Empty command")
+        cmd_name = os.path.basename(tokens[0]).lower()
+        if self.network_restricted and cmd_name in self.NETWORK_COMMANDS:
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Blocked command: {cmd_name}", execution_time_ms=0, files_created=[], error="Blocked command")
+        if cmd_name not in self.allowed_shell_commands:
+            return CodeExecutionResult(exit_code=-1, stdout="", stderr=f"Command not in allowlist: {cmd_name}", execution_time_ms=0, files_created=[], error="Command not in allowlist")
         start = time.perf_counter()
         try:
             preexec_fn = self._apply_resource_limits if platform.system() == "Linux" else None
             result = subprocess.run(
-                command,
-                shell=True,
+                tokens,
                 capture_output=True,
                 text=True,
                 timeout=timeout,

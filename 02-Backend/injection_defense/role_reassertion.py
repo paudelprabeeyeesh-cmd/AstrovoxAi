@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 
 _INJECTION_INDICATORS = re.compile(
-    r"(?i)(ignore\s+previous|forget|disregard|override|new\s+instructions?|act\s+as\s+admin|sudo|jailbreak|bypass|reveal\s+prompt)",
+    r"(?i)(ignore\s+previous|forget|disregard|override|new\s+instructions?|act\s+as\s+admin|sudo|jailbreak|bypass|reveal\s+prompt|clever|disguised|hidden|secret|actual|true|real|assistant\s+mode|system\s+mode|admin\s+mode|root\s+mode|expert\s+mode)",
 )
 
 

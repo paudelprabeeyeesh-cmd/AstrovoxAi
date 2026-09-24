@@ -50,3 +50,36 @@ def test_run_assignment():
     executor = CodeExecutor()
     result = executor.run("x = 42")
     assert result.success is True
+
+
+def test_run_no_output():
+    executor = CodeExecutor()
+    result = executor.run("x = 1")
+    assert result.success is True
+    assert result.output == ""
+
+
+def test_run_empty_code():
+    executor = CodeExecutor()
+    result = executor.run("")
+    assert result.success is True
+
+
+def test_run_multiline_code():
+    executor = CodeExecutor()
+    result = executor.run("x = 1\ny = 2\nprint(x + y)")
+    assert result.success is True
+    assert "3" in result.output
+
+
+def test_execution_result_fields():
+    result = ExecutionResult(success=True, output="hi", error="")
+    assert result.success is True
+    assert result.output == "hi"
+    assert result.error == ""
+
+
+def test_run_with_none_globals():
+    executor = CodeExecutor()
+    result = executor.run("1 + 1", globals_=None)
+    assert result.success is True

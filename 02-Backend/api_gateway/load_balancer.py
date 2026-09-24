@@ -2,7 +2,7 @@ import threading
 import time
 import secrets
 from typing import Dict, List, Optional, Set
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 

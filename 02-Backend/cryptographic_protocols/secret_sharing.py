@@ -68,14 +68,14 @@ class BlakleySecretSharing:
         shares = []
         for i in range(1, self.total_shares + 1):
             y = sum(c * (i**exp) for exp, c in enumerate(coeffs)) % _PRIME
-            shares.append((i,) + tuple(y.to_bytes(32, "big")))
+            shares.append((i, y))
         return shares
 
-    def reconstruct(self, shares: List[tuple]) -> bytes:
+    def reconstruct(self, shares: List[Tuple[int, int]]) -> bytes:
         if len(shares) < self.threshold:
             raise ValueError("Insufficient shares")
         selected = shares[:self.threshold]
         xs = [s[0] for s in selected]
-        ys = [int.from_bytes(s[1], "big") for s in selected]
+        ys = [s[1] for s in selected]
         secret_int = _lagrange_interpolate(0, xs, ys)
         return secret_int.to_bytes(32, "big")

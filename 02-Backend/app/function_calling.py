@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from .tool_executor import ToolExecutor
 
@@ -8,8 +8,12 @@ logger = logging.getLogger(__name__)
 
 
 class FunctionCallingHandler:
-    def __init__(self):
-        self.executor = ToolExecutor()
+    def __init__(self, circuit_breaker=None, sandbox=None, audit_logger=None):
+        self.executor = ToolExecutor(
+            circuit_breaker=circuit_breaker,
+            sandbox=sandbox,
+            audit_logger=audit_logger,
+        )
 
     def detect_function_call(self, response: dict) -> dict | None:
         if response.get("choices"):

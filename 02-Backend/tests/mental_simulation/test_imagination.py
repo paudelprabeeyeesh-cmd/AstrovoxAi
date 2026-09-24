@@ -25,3 +25,26 @@ class TestImaginationEngine:
         engine = ImaginationEngine()
         scenarios = engine.generate("act", {}, n=0)
         assert scenarios == []
+
+    def test_generate_preserves_context(self):
+        engine = ImaginationEngine()
+        scenarios = engine.generate("explore", {"setting": "forest"}, n=2)
+        for scenario in scenarios:
+            assert scenario.context == {"setting": "forest"}
+
+    def test_generate_description_format(self):
+        engine = ImaginationEngine()
+        scenarios = engine.generate("run", {"setting": "field"}, n=2)
+        assert scenarios[0].description == "run in field variant 1"
+        assert scenarios[1].description == "run in field variant 2"
+
+    def test_evaluate_returns_valid_score(self):
+        engine = ImaginationEngine()
+        scenario = Scenario(description="x", plausibility=0.7)
+        score = engine.evaluate(scenario)
+        assert score == 0.7
+
+    def test_generate_stores_in_history(self):
+        engine = ImaginationEngine()
+        engine.generate("act", {}, n=2)
+        assert len(engine.scenarios) == 2

@@ -1,4 +1,5 @@
 import os
+import sys
 
 
 class Settings:
@@ -25,3 +26,6 @@ class Settings:
 
 
 settings = Settings()
+
+if "pytest" not in sys.modules and not settings.JWT_SECRET_KEY:
+    raise RuntimeError("JWT_SECRET_KEY must be set in production")

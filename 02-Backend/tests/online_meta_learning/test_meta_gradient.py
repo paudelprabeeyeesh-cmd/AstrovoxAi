@@ -51,3 +51,12 @@ class TestMetaGradientComputer:
         assert 'num_gradients' in report
         assert 'normalize' in report
         assert 'clip_norm' in report
+
+    def test_compute_missing_adapted_key_skipped(self):
+        mgc = MetaGradientComputer(normalize=False, clip_norm=None)
+        base = {'W1': np.zeros((2, 2), dtype=np.float64), 'b1': np.zeros(2, dtype=np.float64)}
+        adapted = {'W1': np.ones((2, 2), dtype=np.float64)}
+        query_grad = {'W1': np.ones((2, 2), dtype=np.float64)}
+        result = mgc.compute(adapted, base, query_grad)
+        assert 'W1' in result
+        assert 'b1' not in result

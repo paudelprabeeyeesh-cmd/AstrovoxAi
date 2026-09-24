@@ -75,3 +75,49 @@ def test_claim_similarity_empty():
     detector = DeceptionDetector()
     sim = detector._claim_similarity("", "")
     assert sim == 1.0
+
+
+def test_history_size_cap():
+    detector = DeceptionDetector(history_size=3)
+    for i in range(5):
+        detector.record_statement(Statement(f"claim{i}", 0.9, float(i), topic="t"))
+    assert len(detector.topic_claims["t"]) == 3
+
+
+def test_check_consistency_single():
+    detector = DeceptionDetector()
+    detector.record_statement(Statement("I saw a cat", 0.9, 1000.0, topic="animals"))
+    assert detector.check_consistency("animals") == 1.0
+
+
+def test_detect_contradictions_needs_confidence_diff():
+    detector = DeceptionDetector(contradiction_threshold=0.5)
+    detector.record_statement(Statement("Apples grow on trees", 0.9, 1000.0, topic="facts"))
+    detector.record_statement(Statement("Apples grow on trees", 0.91, 1001.0, topic="facts"))
+    signals = detector.detect_contradictions("facts")
+    assert len(signals) == 0
+
+
+def test_calculate_risk_score_with_contradictions():
+    detector = DeceptionDetector(contradiction_threshold=0.1)
+    detector.record_statement(Statement("Apples grow on trees", 0.9, 1000.0, topic="facts"))
+    detector.record_statement(Statement("Cats sleep during day", 0.1, 1001.0, topic="facts"))
+    risk = detector.calculate_risk_score("facts")
+    assert 0.0 <= risk <= 1.0
+    assert risk > 0.0
+
+
+def test_topic_default():
+    detector = DeceptionDetector()
+    detector.record_statement(Statement("I saw a cat", 0.9, 1000.0))
+    assert "__default__" in detector.topic_claims
+
+
+def test_generate_report_fields():
+    detector = DeceptionDetector(contradiction_threshold=0.1)
+    detector.record_statement(Statement("Apples grow on trees", 0.9, 1000.0, topic="facts"))
+    detector.record_statement(Statement("Cats sleep during day", 0.1, 1001.0, topic="facts"))
+    report = detector.generate_report("facts")
+    assert isinstance(report, DeceptionReport)
+    assert len(report.signals) > 0
+    assert report.signals[0].signal_type == "contradiction"

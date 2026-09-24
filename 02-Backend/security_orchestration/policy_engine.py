@@ -48,12 +48,13 @@ class PolicyEngine:
         resource: Dict[str, Any],
         context: Optional[Dict[str, Any]] = None,
     ) -> List[str]:
+        context = context or {}
         actions: set = set()
         for policy in self._policies:
             if policy.effect == "deny":
                 continue
             for rule in policy.rules:
-                if self._match_rule(rule, subject, resource, "", context or {}):
+                if self._match_conditions(rule.conditions, subject, resource, "", context):
                     actions.update(rule.actions)
         return sorted(actions)
 
@@ -81,7 +82,17 @@ class PolicyEngine:
     ) -> bool:
         if rule.actions and action not in rule.actions:
             return False
-        for key, expected in rule.conditions.items():
+        return self._match_conditions(rule.conditions, subject, resource, action, context)
+
+    def _match_conditions(
+        self,
+        conditions: Dict[str, Any],
+        subject: Dict[str, Any],
+        resource: Dict[str, Any],
+        action: str,
+        context: Dict[str, Any],
+    ) -> bool:
+        for key, expected in conditions.items():
             if key == "action":
                 if expected != action:
                     return False

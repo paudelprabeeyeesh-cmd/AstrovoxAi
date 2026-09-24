@@ -56,7 +56,31 @@ class TestKeyExportImport:
         assert km2.public_key.n == km.public_key.n
         assert km2.private_key.mu == km.private_key.mu
 
-    def test_import_keys_before_generate_raises(self):
+    def test_import_keys_mismatch_raises(self):
         km = KeyManager(key_size=128)
+        km.generate_keys()
+        pub, priv = km.export_keys()
+        bad_priv = (priv[0], priv[1], priv[2] + 1)
         with pytest.raises(ValueError):
-            km.export_keys()
+            km.import_keys(pub, bad_priv)
+
+
+class TestKeyManagerHelpers:
+    def test_generate_prime_returns_prime(self):
+        km = KeyManager(key_size=128)
+        p = km._generate_prime()
+        assert km._is_prime(p)
+
+    def test_is_prime_small_numbers(self):
+        km = KeyManager(key_size=128)
+        assert km._is_prime(2)
+        assert km._is_prime(3)
+        assert not km._is_prime(1)
+        assert not km._is_prime(0)
+        assert not km._is_prime(4)
+
+    def test_random_odd_bit_length(self):
+        km = KeyManager(key_size=128)
+        candidate = km._random_odd(64)
+        assert candidate > 0
+        assert candidate & 1 == 1

@@ -1,20 +1,72 @@
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
+  external_labels:
+    cluster: astrovox
+    environment: production
 
 scrape_configs:
-  - job_name: 'astravox-backend'
-    static_configs:
-      - targets: ['backend:8000']
+  - job_name: 'astrovox-backend'
+    kubernetes_sd_configs:
+    - role: endpoints
+      namespaces:
+        names:
+        - astrovox
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_service_name]
+      action: keep
+      regex: astrovox-backend
+    - source_labels: [__meta_kubernetes_endpoint_port_name]
+      action: keep
+      regex: http
+    - source_labels: [__address__]
+      regex: '([^:]+):\d+'
+      replacement: '${1}:8000'
+      target_label: __address__
     metrics_path: '/metrics'
-    scheme: 'http'
+    scheme: http
+    scrape_interval: 15s
 
-  - job_name: 'astravox-frontend'
-    static_configs:
-      - targets: ['frontend:80']
+  - job_name: 'astrovox-frontend'
+    kubernetes_sd_configs:
+    - role: endpoints
+      namespaces:
+        names:
+        - astrovox
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_service_name]
+      action: keep
+      regex: astrovox-frontend
+    - source_labels: [__meta_kubernetes_endpoint_port_name]
+      action: keep
+      regex: http
     metrics_path: '/health'
-    scheme: 'http'
+    scheme: http
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    kubernetes_sd_configs:
+    - role: endpoints
+      namespaces:
+        names:
+        - astrovox
+    relabel_configs:
+    - source_labels: [__meta_kubernetes_service_name]
+      action: keep
+      regex: redis-master
+    - source_labels: [__meta_kubernetes_endpoint_port_name]
+      action: keep
+      regex: redis
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 30s
 
   - job_name: 'prometheus'
     static_configs:
-      - targets: ['localhost:9090']
+    - targets: ['localhost:9090']
+
+  - job_name: 'jaeger'
+    static_configs:
+    - targets: ['jaeger:14269']
+    metrics_path: '/metrics'
+    scheme: http

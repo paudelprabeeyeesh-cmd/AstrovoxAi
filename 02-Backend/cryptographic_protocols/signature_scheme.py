@@ -36,18 +36,38 @@ class MerkleSignatureScheme:
     def __init__(self, height: int = 4) -> None:
         self._height = height
         self._private_keys = [os.urandom(32) for _ in range(2**height)]
-        self._public_key = hashlib.sha256(b"".join(self._private_keys)).digest()
+        self._public_key = self._build_root()
         self._auth_paths = self._build_auth_paths()
+
+    def _build_root(self) -> bytes:
+        nodes = [hashlib.sha256(k).digest() for k in self._private_keys]
+        while len(nodes) > 1:
+            next_level = []
+            for i in range(0, len(nodes), 2):
+                left = nodes[i]
+                right = nodes[i + 1] if i + 1 < len(nodes) else nodes[i]
+                next_level.append(hashlib.sha256(left + right).digest())
+            nodes = next_level
+        return nodes[0]
 
     def _build_auth_paths(self) -> list:
         paths = []
-        for i in range(len(self._private_keys)):
+        leaf_count = len(self._private_keys)
+        for i in range(leaf_count):
             path = []
             idx = i
-            for _ in range(self._height):
-                sibling = hashlib.sha256(self._private_keys[idx ^ 1]).digest() if idx ^ 1 < len(self._private_keys) else b""
+            level_nodes = [hashlib.sha256(k).digest() for k in self._private_keys]
+            while len(level_nodes) > 1:
+                sibling_idx = idx ^ 1
+                sibling = level_nodes[sibling_idx] if sibling_idx < len(level_nodes) else level_nodes[idx]
                 path.append(sibling)
                 idx >>= 1
+                next_level = []
+                for j in range(0, len(level_nodes), 2):
+                    left = level_nodes[j]
+                    right = level_nodes[j + 1] if j + 1 < len(level_nodes) else level_nodes[j]
+                    next_level.append(hashlib.sha256(left + right).digest())
+                level_nodes = next_level
             paths.append(path)
         return paths
 

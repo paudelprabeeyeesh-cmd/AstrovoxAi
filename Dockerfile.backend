@@ -1,48 +1,55 @@
 # ============================================================================
 # AstrovoxAI Backend — Production Dockerfile
 # ============================================================================
-FROM python:3.12-slim AS base
+FROM python:3.12-slim-bookworm AS builder
 
-# Set environment variables
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    rustc \
+    cargo \
+    libssl-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY 02-Backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# ============================================================================
+# Production stage
+# ============================================================================
+FROM python:3.12-slim-bookworm
+
+WORKDIR /app
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-WORKDIR /app
+RUN groupadd -r astrovox && useradd -r -g astrovox -u 1000 astrovox && \
+    mkdir -p /app/logs /app/storage && \
+    chown -R astrovox:astrovox /app
 
-# Install system dependencies
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
+
+COPY 02-Backend/app/ ./app/
+COPY 02-Backend/scripts/ ./scripts/
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY 02-Backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY 02-Backend/app ./app
-
-# Create necessary directories
-RUN mkdir -p /app/logs /app/storage
-
-# ============================================================================
-# Production stage
-# ============================================================================
-FROM base AS production
-
-# Add non-root user
-RUN groupadd -r astrovox && useradd -r -g astrovox astrovox
-RUN chown -R astrovox:astrovox /app
-USER astrovox
-
-# Expose port
-EXPOSE 8000
-
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+USER astrovox
+
+EXPOSE 8000
+
+ENTRYPOINT ["tini", "--"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--log-level", "info"]

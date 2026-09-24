@@ -28,3 +28,16 @@ def test_gaussian_mechanism_budget():
     budget = mechanism.budget()
     assert budget.epsilon == 1.0
     assert budget.delta == 1e-5
+
+
+def test_gaussian_mechanism_initialization_different_values():
+    mechanism = GaussianMechanism(sensitivity=2.0, epsilon=0.5, delta=1e-4)
+    assert mechanism.sensitivity == 2.0
+    assert mechanism.epsilon == 0.5
+    assert mechanism.delta == 1e-4
+
+
+def test_gaussian_mechanism_sigma_different_values():
+    mechanism = GaussianMechanism(sensitivity=2.0, epsilon=0.5, delta=1e-4)
+    expected_sigma = math.sqrt(2 * math.log(1.25 / 1e-4)) * 2.0 / 0.5
+    assert abs(mechanism.sigma - expected_sigma) < 1e-10

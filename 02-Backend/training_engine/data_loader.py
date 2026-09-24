@@ -26,10 +26,10 @@ class DataLoader:
     def save(self, path: str) -> None:
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
         with open(path, "w") as f:
-            json.dump({"data": self.data, "batch_size": self.batch_size}, f)
+            json.dump({"data": self.data, "batch_size": self.batch_size, "shuffle": self.shuffle}, f)
 
     @classmethod
     def load(cls, path: str) -> "DataLoader":
         with open(path, "r") as f:
             payload = json.load(f)
-        return cls(data=payload["data"], batch_size=payload["batch_size"])
+        return cls(data=payload["data"], batch_size=payload["batch_size"], shuffle=payload.get("shuffle", False))

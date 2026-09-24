@@ -53,3 +53,27 @@ def test_execute_print_output(sandbox):
     result = sandbox.execute("print('sandboxed')")
     assert result.success is True
     assert "sandboxed" in result.output
+
+
+def test_sandbox_result_fields(sandbox):
+    result = sandbox.execute("1 + 1")
+    assert hasattr(result, "success")
+    assert hasattr(result, "output")
+    assert hasattr(result, "error")
+    assert hasattr(result, "permission_denied")
+
+
+def test_execute_permission_denied_false_on_success(sandbox):
+    result = sandbox.execute("math.sqrt(9)")
+    assert result.permission_denied is False
+
+
+def test_execute_empty_string(sandbox):
+    result = sandbox.execute("")
+    assert result.success is True
+
+
+def test_execute_multiline_code(sandbox):
+    result = sandbox.execute("x = 1\nx += 1\nprint(x)")
+    assert result.success is True
+    assert "2" in result.output

@@ -1,48 +1,232 @@
 # Alert rules for AstrovoxAI
 groups:
   - name: astravox_alerts
+    interval: 30s
     rules:
+      # ==========================================================================
+      # Availability Alerts
+      # ==========================================================================
       - alert: BackendDown
         expr: up{job="astravox-backend"} == 0
         for: 1m
         labels:
           severity: critical
+          component: backend
         annotations:
           summary: "AstrovoxAI backend is down"
           description: "Backend has been down for more than 1 minute."
 
-      - alert: HighErrorRate
-        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
-        for: 5m
+      - alert: FrontendDown
+        expr: up{job="astravox-frontend"} == 0
+        for: 1m
         labels:
-          severity: warning
+          severity: critical
+          component: frontend
         annotations:
-          summary: "High error rate detected"
-          description: "Error rate is above 5% for the last 5 minutes."
-
-      - alert: SlowResponses
-        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Slow response times"
-          description: "P95 response time is above 2 seconds."
-
-      - alert: HighMemoryUsage
-        expr: process_resident_memory_bytes{job="astrovox-backend"} > 500000000
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High memory usage"
-          description: "Backend memory usage exceeds 500MB."
+          summary: "AstrovoxAI frontend is down"
+          description: "Frontend has been down for more than 1 minute."
 
       - alert: RedisDown
         expr: redis_up == 0
         for: 1m
         labels:
           severity: critical
+          component: redis
         annotations:
           summary: "Redis is down"
           description: "Redis cache is unavailable."
+
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Database has been down for more than 1 minute."
+
+      # ==========================================================================
+      # Performance Alerts
+      # ==========================================================================
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for the last 5 minutes."
+
+      - alert: CriticalErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.15
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical error rate detected"
+          description: "Error rate is above 15% for the last 2 minutes."
+
+      - alert: SlowResponses
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 10m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "Slow response times"
+          description: "P95 response time is above 2 seconds."
+
+      - alert: VerySlowResponses
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Very slow response times"
+          description: "P99 response time is above 5 seconds."
+
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, rate(db_query_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries"
+          description: "P95 database query duration is above 1 second."
+
+      - alert: SlowLLMResponses
+        expr: histogram_quantile(0.95, rate(llm_request_duration_seconds_bucket[5m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "Slow LLM responses"
+          description: "P95 LLM request duration is above 10 seconds."
+
+      # ==========================================================================
+      # Resource Alerts
+      # ==========================================================================
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="astravox-backend"} > 500000000
+        for: 5m
+        labels:
+          severity: warning
+          component: backend
+        annotations:
+          summary: "High memory usage"
+          description: "Backend memory usage exceeds 500MB."
+
+      - alert: CriticalMemoryUsage
+        expr: process_resident_memory_bytes{job="astravox-backend"} > 1000000000
+        for: 2m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Critical memory usage"
+          description: "Backend memory usage exceeds 1GB."
+
+      - alert: HighCPUUsage
+        expr: rate(container_cpu_usage_seconds_total{container_name!=""}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "Container CPU usage is above 80%."
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: infrastructure
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is below 10%."
+
+      # ==========================================================================
+      # Kubernetes Alerts
+      # ==========================================================================
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+          component: kubernetes
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently."
+
+      - alert: PersistentVolumeUsage
+        expr: kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          component: storage
+        annotations:
+          summary: "Persistent volume usage high"
+          description: "Persistent volume {{ $labels.persistentvolumeclaim }} is over 85% full."
+
+      - alert: DeploymentReplicasMismatch
+        expr: kube_deployment_status_replicas_available != kube_deployment_spec_replicas
+        for: 5m
+        labels:
+          severity: warning
+          component: kubernetes
+        annotations:
+          summary: "Deployment replicas mismatch"
+          description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has {{ $labels.kube_deployment_status_replicas_available }} available replicas but {{ $labels.kube_deployment_spec_replicas }} desired."
+
+      # ==========================================================================
+      # AI/LLM Alerts
+      # ==========================================================================
+      - alert: HighAIErrorRate
+        expr: rate(ai_requests_total{status="error"}[5m]) / rate(ai_requests_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: ai
+        annotations:
+          summary: "High AI error rate"
+          description: "AI request error rate is above 10%."
+
+      - alert: LowCacheHitRatio
+        expr: sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m]))) < 0.5
+        for: 10m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Low cache hit ratio"
+          description: "Cache hit ratio is below 50%."
+
+      # ==========================================================================
+      # Tracing Alerts
+      # ==========================================================================
+      - alert: JaegerDown
+        expr: up{job="jaeger"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: tracing
+        annotations:
+          summary: "Jaeger tracing is down"
+          description: "Jaeger collector or query service is unreachable."
+
+      - alert: HighTraceErrorRate
+        expr: rate(traces_spanmetrics_calls_total{status_code="STATUS_CODE_ERROR"}[5m]) / rate(traces_spanmetrics_calls_total[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: tracing
+        annotations:
+          summary: "High trace error rate"
+          description: "Trace error rate is above 10%."

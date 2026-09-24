@@ -32,10 +32,6 @@ class MaskedAutoencoder:
         self._b_dec = [0.0] * dim
 
     @staticmethod
-    def _relu(x: float) -> float:
-        return max(0.0, x)
-
-    @staticmethod
     def _relu_vector(x: List[float]) -> List[float]:
         return [max(0.0, v) for v in x]
 
@@ -50,6 +46,10 @@ class MaskedAutoencoder:
     @staticmethod
     def _matmul_vec(a: List[List[float]], b: List[float]) -> List[float]:
         return [sum(a[i][j] * b[j] for j in range(len(b))) for i in range(len(a))]
+
+    @staticmethod
+    def _add_bias_vec(a: List[List[float]], b: List[float]) -> List[List[float]]:
+        return [[a[i][j] + b[j] for j in range(len(a[0]))] for i in range(len(a))]
 
     @staticmethod
     def _add_bias(m: List[List[float]], b: List[float]) -> List[List[float]]:
@@ -75,13 +75,11 @@ class MaskedAutoencoder:
     def decode(self, h: List[List[float]]) -> List[List[float]]:
         return self._add_bias(self._matmul(h, self._w_dec), self._b_dec)
 
-    def reconstruct(self, x: List[float]) -> List[List[float]:
-        indices = list(range(len(x) // self.config.input_dim * self.config.input_dim))
+    def reconstruct(self, x: List[float]) -> List[List[float]]:
         seq = [list(x[i: i + self.config.input_dim]) for i in range(0, len(x), self.config.input_dim) if i + self.config.input_dim <= len(x)]
         if not seq:
             return []
-        masked = [self.mask(row)[0] for row in seq]
-        enc = self.encode(masked)
+        enc = self.encode(seq)
         return self.decode(enc)
 
     def reconstruction_loss(self, original: List[List[float]], reconstructed: List[List[float]], mask_indices: List[List[int]]) -> float:
@@ -89,7 +87,7 @@ class MaskedAutoencoder:
         count = 0
         for i, row in enumerate(original):
             for j, v in enumerate(row):
-                if j in (mask_indices[i] if i < len(mask_indices) else []):
+                if i < len(mask_indices) and j in mask_indices[i]:
                     total += (v - reconstructed[i][j]) ** 2
                     count += 1
         return sqrt(total / count) if count else 0.0
@@ -102,11 +100,9 @@ class MaskedAutoencoder:
             dec = self.decode(enc)
             indices = [list(range(len(row))) for row in x]
             loss = self.reconstruction_loss(x, dec, indices)
-            dec_t = self._transpose(dec)
-            x_t = self._transpose(x)
-            enc_t = self._transpose(enc)
             grad = [[2.0 * (dec[i][j] - x[i][j]) / len(x) for j in range(len(x[0]))] for i in range(len(x))]
             grad_t = self._transpose(grad)
+            enc_t = self._transpose(enc)
             dw_dec = self._matmul(self._transpose(enc), grad_t)
             db_dec = [sum(grad[i][j] for i in range(len(grad))) for j in range(len(grad[0]))]
             for i in range(len(self._w_dec)):
@@ -119,13 +115,13 @@ class MaskedAutoencoder:
                     self._w_enc[i][j] -= lr * 0.01
         self._trained = True
 
-    def encode_sequence(self, x: List[List[float]) -> List[List[float]]:
+    def encode_sequence(self, x: List[List[float]]) -> List[List[float]]:
         return self.encode(x)
 
-    def decode_sequence(self, h: List[List[float]) -> List[List[float]]:
+    def decode_sequence(self, h: List[List[float]]) -> List[List[float]]:
         return self.decode(h)
 
-    def reconstruct_sequence(self, x: List[List[float]) -> List[List[float]]:
+    def reconstruct_sequence(self, x: List[List[float]]) -> List[List[float]]:
         enc = self.encode(x)
         return self.decode(enc)
 

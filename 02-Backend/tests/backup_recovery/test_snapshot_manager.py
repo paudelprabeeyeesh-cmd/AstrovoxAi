@@ -59,3 +59,33 @@ def test_snapshot_lock():
         assert False, "Should have raised RuntimeError"
     except RuntimeError as e:
         assert "already in progress" in str(e)
+
+
+def test_get_snapshot_not_found():
+    manager = SnapshotManager()
+    assert manager.get_snapshot("nonexistent") is None
+
+
+def test_point_in_time_no_match():
+    manager = SnapshotManager()
+    manager.create_snapshot(b"a", label="s1")
+    result = manager.point_in_time(0.0)
+    assert result is None
+
+
+def test_create_empty_snapshot():
+    manager = SnapshotManager()
+    snapshot = manager.create_snapshot(b"")
+    assert snapshot.size_bytes == 0
+    assert snapshot.checksum == hashlib.sha256(b"").hexdigest()
+
+
+def test_snapshot_lock_released_after_exception():
+    manager = SnapshotManager()
+    manager._lock = True
+    try:
+        manager.create_snapshot(b"a")
+    except RuntimeError:
+        pass
+    assert manager._lock is False
+    manager.create_snapshot(b"b")

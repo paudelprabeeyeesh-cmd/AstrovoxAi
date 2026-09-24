@@ -44,8 +44,6 @@ try:
     import app.billing as billing_module
 except Exception:
     billing_module = None
-except Exception:
-    billing_module = None
 
 DB_PATH = os.environ.get("ASTROVOX_DB", "test.db")
 
@@ -80,14 +78,14 @@ def mock_external_services():
     mock_stripe = MagicMock()
     billing_module.stripe = mock_stripe
     billing_module._STRIPE_CONFIGURED = True
-    
+
     mock_openai_client = MagicMock()
-    
+
     mock_embedding_response = MagicMock()
     mock_embedding_response.data = [MagicMock()]
     mock_embedding_response.data[0].embedding = [0.1] * 1536
     mock_openai_client.embeddings.create.return_value = mock_embedding_response
-    
+
     mock_moderation_response = MagicMock()
     mock_moderation_result = MagicMock()
     mock_moderation_result.categories = MagicMock()
@@ -100,7 +98,7 @@ def mock_external_services():
     mock_moderation_result.categories.violence_graphic = False
     mock_moderation_response.results = [mock_moderation_result]
     mock_openai_client.moderations.create.return_value = mock_moderation_response
-    
+
     with patch('app.billing.stripe', mock_stripe), \
          patch.object(billing_module, '_STRIPE_CONFIGURED', True), \
          patch('openai.OpenAI', return_value=mock_openai_client), \
@@ -118,12 +116,12 @@ def mock_external_services():
          patch('app.core.moderation.check_moderation', return_value=(False, None)), \
          patch('app.routers.solve.check_moderation', return_value=(False, None)), \
          patch('app.core.providers.get_active_providers', return_value=[]):
-        
+
         yield {
             'stripe': mock_stripe,
             'openai': mock_openai_client,
         }
-    
+
     if original_stripe is not None:
         billing_module.stripe = original_stripe
     else:

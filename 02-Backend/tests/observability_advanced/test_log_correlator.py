@@ -44,3 +44,33 @@ def test_load_replaces_previous_logs():
     grouped = correlator.correlate_by_request_id()
     assert len(grouped) == 1
     assert "r1" not in grouped
+
+
+def test_correlate_empty_logs():
+    correlator = LogCorrelator()
+    correlator.load([])
+    grouped = correlator.correlate_by_request_id()
+    assert grouped == {}
+
+
+def test_search_skips_none_values():
+    correlator = LogCorrelator()
+    correlator.load([
+        {"request_id": "r1", "message": None},
+        {"request_id": "r2", "message": "timeout"},
+    ])
+    results = correlator.search("timeout")
+    assert len(results) == 1
+    assert results[0]["request_id"] == "r2"
+
+
+def test_search_with_regex_pattern():
+    correlator = LogCorrelator()
+    correlator.load([
+        {"request_id": "r1", "message": "error 500"},
+        {"request_id": "r2", "message": "error 404"},
+        {"request_id": "r3", "message": "ok"},
+    ])
+    results = correlator.search(r"error \d+")
+    assert len(results) == 2
+    assert {r["request_id"] for r in results} == {"r1", "r2"}

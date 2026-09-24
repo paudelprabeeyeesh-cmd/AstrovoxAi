@@ -11,6 +11,9 @@ class TestTensorProfilerInit:
         assert p._records == []
         assert p.cache_info()["calls"] == 0
 
+    def test_init_starts_tracemalloc(self):
+        assert tracemalloc.is_tracing()
+
 
 class TestTensorProfilerProfile:
     def test_profile_basic(self):
@@ -70,6 +73,26 @@ class TestTensorProfilerProfile:
         result = p.profile("multiply", multiply, 3, b=4)
         assert result == 12
 
+    def test_profile_numpy_array(self):
+        p = TensorProfiler()
+        arr = np.random.randn(10, 10)
+        result = p.profile("matmul", np.dot, arr, arr)
+        assert result.shape == (10, 10)
+
+    def test_profile_result_shape_none_for_none(self):
+        p = TensorProfiler()
+        p.profile("none", lambda: None)
+        record = p.cache_info()["records"][0]
+        assert record["result_shape"] is None
+
+    def test_profile_memory_recorded_positive(self):
+        p = TensorProfiler()
+        def make_array():
+            return np.zeros(1000)
+        p.profile("make", make_array)
+        record = p.cache_info()["records"][0]
+        assert record["mem_delta"] >= 0
+
 
 class TestTensorProfilerReport:
     def test_report_basic(self):
@@ -102,6 +125,14 @@ class TestTensorProfilerReport:
         assert report["total_time"] == 0
         assert report["total_mem_delta"] == 0
 
+    def test_report_sums(self):
+        p = TensorProfiler()
+        p.profile("a", lambda: 1)
+        p.profile("b", lambda: 2)
+        report = p.report()
+        assert report["calls"] == 2
+        assert len(report["records"]) == 2
+
 
 class TestTensorProfilerReset:
     def test_reset(self):
@@ -126,3 +157,9 @@ class TestTensorProfilerStop:
         p = TensorProfiler()
         p.stop()
         assert p.cache_info()["calls"] == 0
+
+    def test_stop_then_profile(self):
+        p = TensorProfiler()
+        p.stop()
+        with pytest.raises(RuntimeError):
+            p.profile("fn", lambda: 42)

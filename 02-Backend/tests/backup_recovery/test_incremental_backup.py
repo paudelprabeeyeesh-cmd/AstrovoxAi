@@ -72,3 +72,35 @@ def test_backup_not_found():
         assert False, "Should have raised KeyError"
     except KeyError:
         pass
+
+
+def test_start_backup_lock():
+    manager = IncrementalBackupManager()
+    manager._lock = True
+    try:
+        manager.start_backup(label="a")
+        assert False, "Should have raised RuntimeError"
+    except RuntimeError as e:
+        assert "already in progress" in str(e)
+
+
+def test_record_empty_changes():
+    manager = IncrementalBackupManager()
+    backup_id = manager.start_backup(label="a")
+    manager.record_changes(backup_id, [])
+    backup = manager.get_backup(backup_id)
+    assert len(backup.changes) == 0
+
+
+def test_list_backups_empty():
+    manager = IncrementalBackupManager()
+    assert manager.list_backups() == []
+
+
+def test_complete_backup_not_found():
+    manager = IncrementalBackupManager()
+    try:
+        manager.complete_backup("nonexistent")
+        assert False, "Should have raised KeyError"
+    except KeyError:
+        pass

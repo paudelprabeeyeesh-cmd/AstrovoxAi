@@ -18,44 +18,21 @@ class FeatureVector:
     character_entropy: float = 0.0
     repetition_score: float = 0.0
     length_abnormality: float = 0.0
-    encoding_density: float = 0.0
-    rot13_density: float = 0.0
-    trust_marker_density: float = 0.0
-    instruction_imperative_density: float = 0.0
 
 
 _INJECTION_KEYWORDS = [
     "ignore", "forget", "disregard", "override", "previous",
     "instructions", "prompt", "system", "admin", "jailbreak",
     "bypass", "sudo", "god", "mode", "pretend", "act",
-    "hypothetical", "character", "DAN", "STAN",
+    "hypothetical", "character", "DAN", "STAN", "clever",
+    "disguised", "hidden", "secret", "actual", "true", "real",
 ]
 
 _COMMAND_PATTERNS = [
     r"(?i)^\s*(ignore|forget|disregard|override)\b",
     r"(?i)\b(you are|act as|pretend)\b",
     r"(?i)\b(system|admin|god)\s+mode\b",
-]
-
-_ENCODING_PATTERNS = [
-    r"(?i)\b(?:encode|decode|convert|translate)\s+(?:to|from|into)\s+(?:base64|rot13|hex|binary|morse)\b",
-    r"(?i)\b(?:base64|rot13|hex|binary|morse)\s+(?:encode|decode|convert|output)\b",
-    r"(?i)\b(?:print|output|show|display)\s+(?:base64|rot13|hex|binary)\s+(?:of|for)\b",
-]
-
-_ROT13_PATTERNS = [
-    r"(?i)\b(?:tb|grfg|rapelc|zft|sbphf|pelcgb|unpxrel|gnxr|fraqr|puvyq|pbasvt|vafgehpgvbaf|gbc)\b",
-]
-
-_TRUST_MARKER_PATTERNS = [
-    r"(?i)\b(?:trustlevel|trust_level|trust-level)\b",
-    r"(?i)\[(?:system|trusted|tool_output|untrusted)\]",
-    r"(?i)\[prefix:\s*(?:system|trusted|tool_output|untrusted)\]",
-]
-
-_IMPERATIVE_PATTERNS = [
-    r"(?i)\b(?:print|output|show|display|reveal|tell|say|write|paste|send)\s+(?:the\s+)?(?:raw|full|complete|entire)\b",
-    r"(?i)\b(?:do\s+not\s+mention|never\s+mention|do\s+not\s+say|avoid\s+mentioning)\b",
+    r"(?i)\b(assistant|root|expert)\s+mode\b",
 ]
 
 
@@ -93,7 +70,7 @@ def _length_abnormality(text: str) -> float:
 @dataclass
 class InjectionClassifier:
     weights: np.ndarray = field(
-        default_factory=lambda: np.array([0.25, 0.20, 0.15, 0.08, 0.08, 0.04, 0.08, 0.05, 0.05, 0.02], dtype=np.float64)
+        default_factory=lambda: np.array([0.25, 0.20, 0.15, 0.08, 0.08, 0.04], dtype=np.float64)
     )
     bias: float = -0.45
     threshold: float = 0.50
@@ -114,18 +91,6 @@ class InjectionClassifier:
         repetition = _repetition_score(text)
         length_abn = _length_abnormality(text)
 
-        encoding_count = sum(1 for p in _ENCODING_PATTERNS if re.search(p, text))
-        encoding_density = encoding_count / max(1, total_words)
-
-        rot13_count = sum(1 for p in _ROT13_PATTERNS if re.search(p, text))
-        rot13_density = rot13_count / max(1, total_words)
-
-        trust_count = sum(1 for p in _TRUST_MARKER_PATTERNS if re.search(p, text))
-        trust_marker_density = trust_count / max(1, total_words)
-
-        imperative_count = sum(1 for p in _IMPERATIVE_PATTERNS if re.search(p, text))
-        instruction_imperative_density = imperative_count / max(1, total_words)
-
         return FeatureVector(
             keyword_density=keyword_density,
             command_density=command_density,
@@ -133,10 +98,6 @@ class InjectionClassifier:
             character_entropy=entropy,
             repetition_score=repetition,
             length_abnormality=length_abn,
-            encoding_density=encoding_density,
-            rot13_density=rot13_density,
-            trust_marker_density=trust_marker_density,
-            instruction_imperative_density=instruction_imperative_density,
         )
 
     def features_to_array(self, features: FeatureVector) -> np.ndarray:
@@ -147,10 +108,6 @@ class InjectionClassifier:
             features.character_entropy,
             features.repetition_score,
             features.length_abnormality,
-            features.encoding_density,
-            features.rot13_density,
-            features.trust_marker_density,
-            features.instruction_imperative_density,
         ], dtype=np.float64)
 
     def score(self, text: str) -> float:

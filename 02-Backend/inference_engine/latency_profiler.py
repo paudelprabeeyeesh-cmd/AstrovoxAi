@@ -83,7 +83,7 @@ class LatencyProfiler:
         ctx.end_time = time()
         ctx.tokens = tokens
         event = LatencyEvent(
-            event_type=event_type,
+            event_type=ctx._event_type,
             latency_ms=ctx.elapsed_ms,
             tokens=tokens,
             metadata={**(ctx.metadata or {}), **(metadata or {})},

@@ -40,3 +40,21 @@ class TestNarrativeDesigner:
         p_b = designer_b.design("light", characters=2)
         assert p_a.title == p_b.title
         assert p_a.stages == p_b.stages
+
+    def test_specific_structure_stages(self):
+        designer = NarrativeDesigner(seed=2)
+        plot = designer.design("redemption", characters=2, structure="three_act")
+        assert plot.stages == ["setup", "confrontation", "resolution"]
+
+    def test_stages_contain_theme(self):
+        designer = NarrativeDesigner(seed=3)
+        plot = designer.design("courage", characters=3)
+        combined = " ".join(plot.stages).lower()
+        assert "courage" in combined
+
+    def test_archetypes_assigned_sequentially(self):
+        designer = NarrativeDesigner(seed=4)
+        plot = designer.design("journey", characters=4)
+        expected = ["hero", "mentor", "trickster", "shadow"]
+        found = [archetype for archetype in expected if archetype in " ".join(plot.stages)]
+        assert len(found) >= 2

@@ -58,3 +58,51 @@ def test_indicator_history(tracker):
 
 def test_missing_campaign(tracker):
     assert tracker.timeline("Missing") == []
+
+
+def test_campaign_event_defaults():
+    from threat_intelligence.campaign_tracker import CampaignEvent
+    event = CampaignEvent()
+    assert event.description == ""
+    assert event.actor is None
+    assert event.matches == []
+
+
+def test_invalid_campaign():
+    from threat_intelligence.campaign_tracker import Campaign
+    with pytest.raises(ValueError):
+        Campaign(name="")
+
+
+def test_record_event_no_matches(tracker):
+    tracker.add_campaign(Campaign(name="OpPhish"))
+    event = tracker.record_event("OpPhish", "no indicators here", description="None")
+    assert len(event.matches) == 0
+    assert len(tracker.get("OpPhish").indicators) == 0
+
+
+def test_record_event_with_actor(tracker):
+    tracker.add_campaign(Campaign(name="OpPhish"))
+    event = tracker.record_event("OpPhish", "1.2.3.4", description="Access", actor="APT-X")
+    assert tracker.get("OpPhish").actors == ["APT-X"]
+
+
+def test_link_actor_missing_campaign(tracker):
+    tracker.link_actor("Missing", "APT-X")
+    assert tracker.get("Missing") is not None
+    assert tracker.get("Missing").actors == ["APT-X"]
+
+
+def test_indicator_history_missing_campaign(tracker):
+    assert tracker.indicator_history("Missing") == []
+
+
+def test_indicator_history_empty(tracker):
+    tracker.add_campaign(Campaign(name="OpPhish"))
+    assert tracker.indicator_history("OpPhish") == []
+
+
+def test_len(tracker):
+    tracker.add_campaign(Campaign(name="A"))
+    tracker.add_campaign(Campaign(name="B"))
+    assert len(tracker) == 2

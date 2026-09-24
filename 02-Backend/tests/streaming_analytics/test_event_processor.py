@@ -96,3 +96,67 @@ class TestEventProcessor:
         assert len(retrieved) == 1
         retrieved[0]({"type": "page_view", "payload": {}})
         assert handlers == ["page_view"]
+
+    def test_handlers_for_missing_type(self):
+        processor = EventProcessor()
+        assert processor.handlers_for("missing") == []
+
+    def test_handler_return_none_excluded(self):
+        processor = EventProcessor()
+        results = []
+
+        def handler(event):
+            results.append(event["type"])
+            return None
+
+        processor.add_handler("click", handler)
+        output = processor.process({"type": "click", "payload": {}})
+        assert output == []
+        assert results == ["click"]
+
+    def test_multiple_middlewares(self):
+        processor = EventProcessor()
+
+        def add_field(event):
+            event = dict(event)
+            event["extra"] = 1
+            return event
+
+        def double_extra(event):
+            event = dict(event)
+            event["extra"] = event.get("extra", 0) * 2
+            return event
+
+        processor.add_middleware(add_field)
+        processor.add_middleware(double_extra)
+
+        def handler(event):
+            return event["extra"]
+
+        processor.add_handler("click", handler)
+        output = processor.process({"type": "click", "payload": {}})
+        assert output == [2]
+
+    def test_process_batch_empty(self):
+        processor = EventProcessor()
+        assert processor.process_batch([]) == []
+
+    def test_middleware_changes_type(self):
+        processor = EventProcessor()
+
+        def type_middleware(event):
+            event = dict(event)
+            event["type"] = "page_view"
+            return event
+
+        processor.add_middleware(type_middleware)
+        results = []
+
+        def handler(event):
+            results.append(event["type"])
+            return event["type"]
+
+        processor.add_handler("page_view", handler)
+        output = processor.process({"type": "click", "payload": {}})
+        assert output == ["page_view"]
+        assert results == ["page_view"]

@@ -55,3 +55,34 @@ def test_deduplicate_overlap():
     ]
     deduped = matcher.match_text("1.2.3.4")
     assert len(deduped) == 1
+
+
+def test_match_text_empty(manager):
+    matcher = IOCMatcher(manager)
+    assert matcher.match_text("") == []
+
+
+def test_match_values_empty(manager):
+    matcher = IOCMatcher(manager)
+    assert matcher.match_values([]) == []
+
+
+def test_match_by_type_empty(manager):
+    matcher = IOCMatcher(manager)
+    assert matcher.match_by_type("", "ip") == []
+
+
+def test_match_by_type_unknown(manager):
+    matcher = IOCMatcher(manager)
+    assert matcher.match_by_type("1.1.1.1", "url") == []
+
+
+def test_count_matches_empty(manager):
+    matcher = IOCMatcher(manager)
+    assert matcher.count_matches("") == {}
+
+
+def test_match_frozen():
+    match = Match("1.1.1.1", "ip", None, 0, 7)
+    with pytest.raises(Exception):
+        match.value = "2.2.2.2"

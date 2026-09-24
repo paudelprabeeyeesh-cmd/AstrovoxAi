@@ -64,3 +64,47 @@ def test_is_not_replicated():
 def test_nodes_for_key_empty():
     rt = _make_tracker()
     assert rt.nodes_for_key("key-1") == set()
+
+
+def test_record_write_accumulates_multiple_nodes():
+    rt = _make_tracker()
+    rt.record_write("key-1", "node-a")
+    rt.record_write("key-1", "node-b")
+    assert rt.is_replicated("key-1", "node-a") is True
+    assert rt.is_replicated("key-1", "node-b") is True
+
+
+def test_replicate_to_updates_key_nodes():
+    rt = _make_tracker()
+    rt.record_write("key-1", "node-a")
+    rt.replicate_to("key-1", "node-a", {"node-b"})
+    assert rt.is_replicated("key-1", "node-b") is True
+
+
+def test_acknowledge_replica_marks_record():
+    rt = _make_tracker()
+    rt.record_write("key-1", "node-a")
+    rt.acknowledge_replica("key-1", "node-a")
+    assert rt.incomplete_events() == []
+
+
+def test_on_invalidation_marks_source_record():
+    rt = _make_tracker()
+    rt.record_write("key-1", "node-a")
+    rt.on_invalidation("key-1", "node-a")
+    assert rt.incomplete_events() == []
+
+
+def test_incomplete_events_excludes_completed():
+    rt = _make_tracker()
+    rt.replicate_to("key-1", "node-a", {"node-b"})
+    rt.acknowledge_replica("key-1", "node-b")
+    assert rt.incomplete_events() == []
+
+
+def test_nodes_for_key_returns_copy():
+    rt = _make_tracker()
+    rt.record_write("key-1", "node-a")
+    nodes = rt.nodes_for_key("key-1")
+    nodes.add("node-z")
+    assert "node-z" not in rt.nodes_for_key("key-1")

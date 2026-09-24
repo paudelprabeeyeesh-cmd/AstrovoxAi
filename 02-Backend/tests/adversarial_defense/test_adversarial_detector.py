@@ -39,3 +39,38 @@ class TestAdversarialDetector:
         detector = AdversarialDetector()
         detector.fit([[1.0, 2.0]])
         assert isinstance(detector.is_adversarial([1.0, 2.0]), bool)
+
+    def test_init_defaults(self):
+        detector = AdversarialDetector()
+        assert detector._threshold == 0.3
+        assert detector._max_norm == 1.5
+
+    def test_fit_raises_for_empty_samples(self):
+        detector = AdversarialDetector()
+        try:
+            detector.fit([])
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Expected ValueError")
+
+    def test_detect_above_threshold(self):
+        detector = AdversarialDetector(threshold=0.5, max_norm=100.0)
+        detector.fit([[1.0, 0.0]])
+        is_adv, score = detector.detect([0.6, 0.0])
+        assert is_adv is True
+        assert score > 0.5
+
+    def test_detect_above_max_norm(self):
+        detector = AdversarialDetector(threshold=0.5, max_norm=1.0)
+        detector.fit([[10.0, 0.0]])
+        is_adv, score = detector.detect([1.5, 0.0])
+        assert is_adv is True
+        assert score <= 0.5
+
+    def test_detect_below_threshold_and_max_norm(self):
+        detector = AdversarialDetector(threshold=0.5, max_norm=1.0)
+        detector.fit([[1.0, 0.0]])
+        is_adv, score = detector.detect([0.3, 0.0])
+        assert is_adv is False
+        assert score <= 0.5

@@ -77,7 +77,13 @@ def test_get_prototype_distances():
     net = PrototypeNetwork(embedding_dim=2, distance_metric="euclidean")
     support_x = [[0.0, 0.0], [10.0, 10.0]]
     support_y = [0, 1]
-    net.compute_prototypes(support_x, support_y)
+    episode = Episode(
+        support_x=support_x,
+        support_y=support_y,
+        query_x=[[0.5, 0.5]],
+        query_y=[0],
+    )
+    net.train_episode(episode)
     dists = net.get_prototype_distances([[0.5, 0.5]])
     assert 0 in dists
     assert 1 in dists

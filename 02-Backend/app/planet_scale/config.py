@@ -6,6 +6,13 @@ from dataclasses import dataclass
 from typing import Any
 
 
+def _require_env(name: str) -> str:
+    value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Required environment variable {name} is not set")
+    return value
+
+
 @dataclass(frozen=True)
 class Region:
     name: str
@@ -21,23 +28,23 @@ MULTI_REGION_CONFIG: dict[str, Region] = {
         name="us-east-1",
         provider="aws",
         primary=True,
-        postgres_uri=os.getenv("PRIMARY_POSTGRES_URI", "postgresql://astrovox:astrovox_pass@postgres.us-east-1:5432/astrovox"),
+        postgres_uri=_require_env("PRIMARY_POSTGRES_URI"),
         redis_uri=os.getenv("PRIMARY_REDIS_URI", "redis://redis.us-east-1:6379"),
-        vector_db_uri=os.getenv("PRIMARY_VECTOR_URI", "postgresql://astrovox:astrovox_pass@pgvector.us-east-1:5432/astrovox"),
+        vector_db_uri=_require_env("PRIMARY_VECTOR_URI"),
     ),
     "eu-west-1": Region(
         name="eu-west-1",
         provider="aws",
-        postgres_uri=os.getenv("REPLICA_POSTGRES_URI_EU", "postgresql://astrovox:astrovox_pass@postgres.eu-west-1:5432/astrovox"),
+        postgres_uri=_require_env("REPLICA_POSTGRES_URI_EU"),
         redis_uri=os.getenv("REPLICA_REDIS_URI_EU", "redis://redis.eu-west-1:6379"),
-        vector_db_uri=os.getenv("REPLICA_VECTOR_URI_EU", "postgresql://astrovox:astrovox_pass@pgvector.eu-west-1:5432/astrovox"),
+        vector_db_uri=_require_env("REPLICA_VECTOR_URI_EU"),
     ),
     "ap-south-1": Region(
         name="ap-south-1",
         provider="aws",
-        postgres_uri=os.getenv("REPLICA_POSTGRES_URI_AP", "postgresql://astrovox:astrovox_pass@postgres.ap-south-1:5432/astrovox"),
+        postgres_uri=_require_env("REPLICA_POSTGRES_URI_AP"),
         redis_uri=os.getenv("REPLICA_REDIS_URI_AP", "redis://redis.ap-south-1:6379"),
-        vector_db_uri=os.getenv("REPLICA_VECTOR_URI_AP", "postgresql://astrovox:astrovox_pass@pgvector.ap-south-1:5432/astrovox"),
+        vector_db_uri=_require_env("REPLICA_VECTOR_URI_AP"),
     ),
 }
 

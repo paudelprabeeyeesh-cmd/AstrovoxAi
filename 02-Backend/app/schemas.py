@@ -32,15 +32,30 @@ class MemoryOut(BaseModel):
 class ConversationOut(BaseModel):
     id: str
     title: str | None
+    model: str = "gpt-4"
+    pinned: bool = False
+    archived: bool = False
+    folder: str | None = None
     created_at: datetime
+    updated_at: datetime
     memory_type: str | None = None
     importance_score: float = 0.5
+
+
+class ConversationUpdate(BaseModel):
+    title: str | None = None
+    model: str | None = None
+    pinned: bool | None = None
+    archived: bool | None = None
+    folder: str | None = None
 
 
 class MessageOut(BaseModel):
     id: str
     role: str
     content: str
+    model_used: str | None = None
+    tokens_used: int | None = None
     created_at: datetime
     memory_type: str | None = None
     importance_score: float = 0.5
@@ -168,6 +183,7 @@ class ConversationSearchOut(BaseModel):
     id: str
     title: str | None
     created_at: datetime
+    updated_at: datetime
     memory_type: str | None = None
     importance_score: float = 0.5
     message_count: int
@@ -540,3 +556,71 @@ class UsageResponse(BaseModel):
     tokens_used: int
     cost_usd: float
     by_model: dict[str, Any]
+
+
+class TrainingDatasetCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    file: bytes | None = None
+    filename: str | None = Field(None, max_length=500)
+    content_type: str | None = Field(None, max_length=100)
+
+
+class TrainingDatasetOut(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    filename: str
+    content_type: str
+    size: int
+    path: str
+    status: str
+    created_at: datetime
+
+
+class TrainingJobCreate(BaseModel):
+    model: str = Field(..., min_length=1)
+    training_file: str = Field(..., min_length=1)
+    validation_file: str | None = None
+    hyperparameters: dict[str, Any] | None = None
+
+
+class TrainingJobOut(BaseModel):
+    id: str
+    user_id: str
+    model: str
+    training_file: str
+    validation_file: str | None
+    status: str
+    fine_tuned_model: str | None
+    created_at: datetime
+    completed_at: datetime | None
+    trained_tokens: int | None
+
+
+class ModelRegistryEntryCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=200)
+    version: str = Field(..., min_length=1, max_length=50)
+    provider: str = Field(..., min_length=1, max_length=100)
+    model_id: str = Field(..., min_length=1, max_length=200)
+    stage: str = Field("development", max_length=50)
+    metadata: dict[str, Any] | None = None
+
+
+class ModelRegistryEntryOut(BaseModel):
+    id: str
+    name: str
+    version: str
+    provider: str
+    model_id: str
+    stage: str
+    metadata: dict[str, Any] | None
+    created_at: datetime
+
+
+class ModelDropdownItem(BaseModel):
+    id: str
+    name: str
+    provider: str
+    model_id: str
+    stage: str
+    source: str

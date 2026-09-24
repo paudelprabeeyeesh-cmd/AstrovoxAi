@@ -37,3 +37,10 @@ def test_save_and_load(tmp_path):
     loaded = DataLoader.load(str(tmp_path / "data.json"))
     assert loaded.data == loader.data
     assert loaded.batch_size == 1
+
+
+def test_save_and_load_preserves_shuffle(tmp_path):
+    loader = DataLoader(data=[1, 2, 3], batch_size=1, shuffle=True)
+    loader.save(str(tmp_path / "data.json"))
+    loaded = DataLoader.load(str(tmp_path / "data.json"))
+    assert loaded.shuffle is True

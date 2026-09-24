@@ -41,3 +41,11 @@ class TestProjectionHead:
         x = np.random.randn(3, 10).astype(np.float64)
         z = head.forward(x)
         assert z.shape[1] == 5
+
+    def test_params_attribute(self):
+        head = ProjectionHead(input_dim=8, hidden_dim=16, output_dim=4)
+        assert len(head.params) == 4
+        assert head.W1.shape == (8, 16)
+        assert head.b1.shape == (16,)
+        assert head.W2.shape == (16, 4)
+        assert head.b2.shape == (4,)

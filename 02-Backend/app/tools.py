@@ -57,7 +57,16 @@ def send_email(to: str, subject: str, body: str) -> str:
     return f"Email sent to {to}: {subject}"
 
 
-def code_execute(code: str, language: str = "python") -> str:
+def code_execute(code: str, language: str = "python", sandbox=None) -> str:
+    if sandbox is not None:
+        try:
+            from sandboxing.command_scrubbing import CommandScrubber
+            scrubber = CommandScrubber()
+            scrub_result = scrubber.scan(code)
+            if scrub_result.blocked:
+                return f"Error: code blocked by security scrubber: {scrub_result.matched_rules}"
+        except Exception:  # noqa: BLE001
+            pass
     try:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
             f.write(code)
@@ -77,7 +86,16 @@ def code_execute(code: str, language: str = "python") -> str:
         return f"Error: {_e}"
 
 
-def bash_execute(command: str) -> str:
+def bash_execute(command: str, sandbox=None) -> str:
+    if sandbox is not None:
+        try:
+            from sandboxing.command_scrubbing import CommandScrubber
+            scrubber = CommandScrubber()
+            scrub_result = scrubber.scan(command)
+            if scrub_result.blocked:
+                return f"Error: command blocked by security scrubber: {scrub_result.matched_rules}"
+        except Exception:  # noqa: BLE001
+            pass
     try:
         result = subprocess.run(
             command,
