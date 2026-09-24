@@ -38,3 +38,4 @@ class TestMentalSimulator:
         sim = MentalSimulator(tom)
         dialogue = sim.simulate_dialogue("agent1", turns=2)
         assert len(dialogue) == 2
+        assert all("speaker" in d for d in dialogue)

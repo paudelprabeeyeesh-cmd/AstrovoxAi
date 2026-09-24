@@ -1,10 +1,12 @@
 'use client'
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { MarkdownRenderer } from './markdown-renderer'
-import { Brain, Sparkles, Zap } from 'lucide-react'
+import { CodeBlock } from './code-block'
+import { Brain, Sparkles, Zap, Pause, Play, AlertCircle, Gauge } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 
 interface StreamingRendererProps {
@@ -56,10 +58,17 @@ export function StreamingRenderer({
   const bottomRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevLengthRef = useRef(0)
+  const [displayedContent, setDisplayedContent] = useState('')
   const [wordIndex, setWordIndex] = useState(0)
   const [showChainOfThought, setShowChainOfThought] = useState(false)
+  const [paused, setPaused] = useState(false)
+  const [tokenCount, setTokenCount] = useState(0)
+  const [error, setError] = useState<string | null>(null)
+  const [speed, setSpeed] = useState(speed || 1)
+  const [showSpeedControl, setShowSpeedControl] = useState(false)
 
   const words = content.split(/(\s+)/)
+  const tokenProgress = Math.min((wordIndex / words.length) * 100, 100)
 
   const smoothScrollToBottom = useCallback(() => {
     if (!containerRef.current) return
@@ -74,7 +83,7 @@ export function StreamingRenderer({
   }, [])
 
   useEffect(() => {
-    if (isStreaming && animationMode === 'word') {
+    if (isStreaming && animationMode === 'word' && !paused) {
       const interval = setInterval(() => {
         setWordIndex((prev) => {
           if (prev >= words.length) {
@@ -83,11 +92,14 @@ export function StreamingRenderer({
           }
           return prev + 1
         })
-      }, 30)
+        setTokenCount((prev) => prev + 1)
+      }, 30 / speed)
 
       return () => clearInterval(interval)
+    } else if (isStreaming) {
+      setDisplayedContent(content)
     }
-  }, [content, isStreaming, animationMode, words.length])
+  }, [content, isStreaming, animationMode, words.length, paused, speed])
 
   useEffect(() => {
     if (isStreaming && content.length > prevLengthRef.current) {
@@ -107,6 +119,10 @@ export function StreamingRenderer({
     }
   }, [showThinking, thinkingContent])
 
+  useEffect(() => {
+    setError(null)
+  }, [content])
+
   if (thinking && showChainOfThought && thinkingContent) {
     return (
       <div className="flex flex-col gap-3 rounded-2xl bg-muted/50 px-4 py-3">
@@ -116,6 +132,14 @@ export function StreamingRenderer({
           <Badge variant="outline" className="text-[10px]">
             Chain of Thought
           </Badge>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPaused(!paused)}
+            className="h-6 px-2 text-xs"
+          >
+            {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+          </Button>
         </div>
         <div className="text-xs text-muted-foreground italic pl-6 border-l-2 border-muted-foreground/30">
           {thinkingContent}
@@ -144,6 +168,15 @@ export function StreamingRenderer({
             Show reasoning
           </Button>
         )}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center gap-3 rounded-2xl bg-red-50 dark:bg-red-950 px-4 py-3">
+        <AlertCircle className="h-4 w-4 text-red-500" />
+        <span className="text-sm text-red-700 dark:text-red-300">{error}</span>
       </div>
     )
   }
@@ -190,8 +223,50 @@ export function StreamingRenderer({
         {renderContent()}
       </motion.div>
 
+      {isStreaming && (
+        <div className="flex items-center gap-2 mt-2">
+          <Progress value={tokenProgress} className="h-1 flex-1" />
+          <span className="text-[10px] text-muted-foreground font-mono">
+            {wordIndex} / {words.length} tokens
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPaused(!paused)}
+            className="h-7 gap-1.5 px-2 text-xs"
+          >
+            {paused ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
+            {paused ? 'Resume' : 'Pause'}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowSpeedControl(!showSpeedControl)}
+            className="h-7 gap-1.5 px-2 text-xs"
+          >
+            <Gauge className="h-3 w-3" />
+            {speed}x
+          </Button>
+          {showSpeedControl && (
+            <div className="flex items-center gap-1">
+              {[0.5, 1, 2, 4].map((s) => (
+                <Button
+                  key={s}
+                  variant={speed === s ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setSpeed(s)}
+                  className="h-7 w-7 p-0 text-xs"
+                >
+                  {s}x
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <AnimatePresence>
-        {isStreaming && animationMode === 'cursor' && (
+        {isStreaming && animationMode === 'cursor' && !paused && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

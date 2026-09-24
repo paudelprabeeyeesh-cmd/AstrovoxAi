@@ -3,6 +3,10 @@ import sys
 import json
 from unittest.mock import patch, MagicMock
 
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
 os.environ.setdefault("ASTROVOX_DB", "test.db")
 os.environ.setdefault("ASTROVOX_TEST_MODE", "1")
@@ -38,6 +42,8 @@ except Exception:
     TestClient = None
 try:
     import app.billing as billing_module
+except Exception:
+    billing_module = None
 except Exception:
     billing_module = None
 

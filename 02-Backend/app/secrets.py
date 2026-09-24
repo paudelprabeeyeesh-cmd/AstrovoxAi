@@ -68,15 +68,11 @@ class SecretRotationCheckResponse(BaseModel):
     source: str
 
 
-def _require_admin(user_id: str = Depends(lambda: None)):
-    pass
-
-
 router = APIRouter(tags=["admin-secrets"])
 
 
 @router.get("/admin/secrets/rotation-check", response_model=List[SecretRotationCheckResponse])
-async def rotation_check(_: str = Depends(lambda: None)):
+async def rotation_check(_: str = Depends(role_required("admin"))):
     results = []
     for name in secret_manager.list_secrets():
         entry = secret_manager._entries.get(name, {"rotated_at": None, "source": "env"})

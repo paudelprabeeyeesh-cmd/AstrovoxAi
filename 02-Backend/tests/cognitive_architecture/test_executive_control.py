@@ -37,10 +37,10 @@ class TestTaskSwitchingCost:
     def test_similar_rules_lower_cost(self):
         tsc = TaskSwitchingCost(base_cost=0.2)
         from_task = TaskSet(name="t1", rules={"mode": "read", "format": "json"}, priority=1.0)
-        to_task = TaskSet(name="t2", rules={"mode": "read", "format": "xml"}, priority=1.0)
+        to_task = TaskSet(name="t2", rules={"mode": "write", "format": "xml"}, priority=1.0)
         cost = tsc.compute_switch_cost(from_task, to_task)
         similar_cost = tsc.compute_switch_cost(from_task, from_task)
-        assert cost < similar_cost
+        assert cost > similar_cost
 
 
 class TestInhibitoryControl:

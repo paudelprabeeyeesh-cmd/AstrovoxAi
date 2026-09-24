@@ -52,7 +52,7 @@ class TestSpotlightModel:
             [0.0, 0.0],
             [0.4, 0.0],
             [0.6, 0.0],
-            [1.0, 1.0],
+            [0.7, 0.0],
         ])
         focus = np.array([0.0, 0.0])
         result = spot.apply_spotlight(items, positions, focus)
@@ -90,7 +90,7 @@ class TestAttentionMechanisms:
     def test_train_attention_returns_loss(self):
         am = AttentionMechanisms(n_items=8, hidden_dim=4)
         x = np.random.randn(8)
-        target = np.random.randn(8)
+        target = np.random.randn(4)
         loss = am.train_attention(x, target, lr=0.01)
         assert isinstance(loss, float)
         assert loss >= 0

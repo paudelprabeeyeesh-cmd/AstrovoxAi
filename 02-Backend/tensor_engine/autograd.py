@@ -426,29 +426,6 @@ class Softmax(Function):
         requires_grad = a.requires_grad
         max_val = np.max(a.data, axis=dim, keepdims=True)
         exp_data = np.exp(a.data - max_val)
-        data = exp_data / np.sum(exp_data, axis=dim, keepdims=True)
-        return Tensor(data, requires_grad=requires_grad, grad_fn=ctx if requires_grad else None, ctx=ctx)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        a = ctx.inputs[0]
-        dim = ctx.dim
-        s = a.data  # we need the softmax output; store it in ctx
-        # Actually we need to recompute or store it. Let's store it in forward.
-        pass
-
-
-# Let me rewrite Softmax properly
-class Softmax(Function):
-    @classmethod
-    def apply(cls, a, dim=-1):
-        ctx = cls()
-        a = _to_tensor(a)
-        ctx.inputs = [a]
-        ctx.dim = dim
-        requires_grad = a.requires_grad
-        max_val = np.max(a.data, axis=dim, keepdims=True)
-        exp_data = np.exp(a.data - max_val)
         ctx.output = exp_data / np.sum(exp_data, axis=dim, keepdims=True)
         return Tensor(ctx.output, requires_grad=requires_grad, grad_fn=ctx if requires_grad else None, ctx=ctx)
 

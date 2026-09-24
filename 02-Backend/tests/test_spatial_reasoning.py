@@ -59,3 +59,13 @@ class TestSpatialReasoner:
         r.register_object("b", np.array([2.0, 0.0, 0.0]))
         r.register_obstacle(np.array([5.0, 0.0, 0.0]), radius=1.0)
         assert r.line_of_sight("a", "b")
+
+    def test_navigate_returns_path(self):
+        r = SpatialReasoner()
+        r.register_object("start", np.array([0.0, 0.0, 0.0]))
+        r.register_object("mid", np.array([1.0, 0.0, 0.0]))
+        r.register_object("goal", np.array([2.0, 0.0, 0.0]))
+        r.graph.add_edge("start", "mid", 1.0)
+        r.graph.add_edge("mid", "goal", 1.0)
+        path = r.navigate("start", "goal")
+        assert path == ["start", "mid", "goal"]

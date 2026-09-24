@@ -16,8 +16,12 @@ class QueryOptimizer:
 
     def range_scan(self, table: str, column: str, lo: Any, hi: Any) -> List[Any]:
         idx = self._indexes.get(f"{table}.{column}", [])
+        if not idx:
+            return []
         left = bisect.bisect_left(idx, (lo,))
         right = bisect.bisect_right(idx, (hi,))
+        while right < len(idx) and idx[right][0] <= hi:
+            right += 1
         return [row for _, row in idx[left:right]]
 
     def explain(self, table: str, column: str, lo: Any, hi: Any) -> Dict[str, Any]:

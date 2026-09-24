@@ -61,8 +61,15 @@ def test_bulkhead_limits():
 
 def test_bulkhead_releases():
     bh = Bulkhead(max_concurrent=1)
-    bh.execute(ok)
+    gate = threading.Event()
+    def block():
+        gate.wait()
+    t = threading.Thread(target=bh.execute, args=(block,))
+    t.start()
+    time.sleep(0.1)
     assert bh.active() == 1
+    gate.set()
+    t.join(timeout=5)
     time.sleep(0.05)
     assert bh.active() == 0
 

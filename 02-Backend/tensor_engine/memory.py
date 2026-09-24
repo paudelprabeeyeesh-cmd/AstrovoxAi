@@ -144,7 +144,7 @@ class StridedMemoryBuffer:
         if not new_shape:
             base = self.flat[self.offset:] if self.offset > 0 else self.flat
             byte_strides = tuple(s * self.itemsize for s in self.strides)
-            return float(np.lib.stride_tricks.as_strided(base, shape=self.shape, strides=byte_strides)[tuple(key)])
+            return np.lib.stride_tricks.as_strided(base, shape=self.shape, strides=byte_strides)[tuple(key)].item()
 
         return StridedMemoryBuffer(
             self.flat,

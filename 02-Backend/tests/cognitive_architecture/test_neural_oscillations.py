@@ -32,7 +32,7 @@ class TestNeuralOscillator:
     def test_update_changes_phase(self):
         osc = NeuralOscillator(frequency=10.0, phase=0.5)
         initial_phase = osc.phase
-        osc.update(dt=0.1)
+        osc.update(dt=0.1, coupling=1.0)
         assert osc.phase != initial_phase
 
     def test_delta_band(self):

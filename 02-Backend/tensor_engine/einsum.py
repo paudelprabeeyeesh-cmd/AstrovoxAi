@@ -78,5 +78,5 @@ def einsum(equation, *operands, optimize="greedy"):
     eq.verify_shapes(shapes)
 
     # Use numpy's einsum for computation; our parser identifies contraction dimensions
-    result = np.einsum(equation, *operands, optimize='optimal')
+    result = np.einsum(equation, *operands, optimize=optimize)
     return result
