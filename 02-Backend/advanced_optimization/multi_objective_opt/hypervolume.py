@@ -10,10 +10,10 @@ def _hv_recursive(points):
     hv = 0.0
     points = points[np.argsort(points[:, 0])]
     prev = 0.0
-    for i, p in enumerate(points):
-        remaining = points[i + 1 :, 1:]
-        hv += (p[0] - prev) * _hv_recursive(remaining)
-        prev = p[0]
+    for i in range(len(points)):
+        remaining = points[i:, 1:]
+        hv += (points[i, 0] - prev) * _hv_recursive(remaining)
+        prev = points[i, 0]
     return hv
 
 

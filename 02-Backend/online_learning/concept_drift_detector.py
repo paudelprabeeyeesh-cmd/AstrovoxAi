@@ -38,8 +38,8 @@ class ConceptDriftDetector:
         older = self.values[:-half] if len(self.values) > half else recent
         mean_recent = self._mean(recent)
         mean_older = self._mean(older)
-        std_recent = self._std(recent) + 1e-12
-        z_score = abs(mean_recent - mean_older) / std_recent
+        std_older = self._std(older) + 1e-12
+        z_score = abs(mean_recent - mean_older) / std_older
         if z_score > self.threshold:
             self.drift_detected = True
             self.drift_points.append(self.step_count)

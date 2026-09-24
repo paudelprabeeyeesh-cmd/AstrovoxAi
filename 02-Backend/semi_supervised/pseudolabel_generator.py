@@ -1,8 +1,8 @@
 import math
-from typing import List, Tuple, Callable
+from collections.abc import Callable
 
 
-def _softmax_vector(vec: List[float], temperature: float) -> List[float]:
+def _softmax_vector(vec: list[float], temperature: float) -> list[float]:
     max_val = max(vec)
     exps = [math.exp((v - max_val) / temperature) for v in vec]
     sum_exps = sum(exps)
@@ -16,12 +16,12 @@ class PseudolabelGenerator:
 
     def generate(
         self,
-        model: Callable[[List[List[float]]], List[List[float]]],
-        unlabeled_data: List[List[float]],
-    ) -> Tuple[List[List[float]], List[int]]:
+        model: Callable[[list[list[float]]], list[list[float]]],
+        unlabeled_data: list[list[float]],
+    ) -> tuple[list[list[float]], list[int]]:
         logits = model(unlabeled_data)
-        confident: List[List[float]] = []
-        labels: List[int] = []
+        confident: list[list[float]] = []
+        labels: list[int] = []
         for logit, sample in zip(logits, unlabeled_data):
             probs = _softmax_vector(logit, self.temperature)
             max_prob = max(probs)

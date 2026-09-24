@@ -16,7 +16,7 @@ class MasteryRecord:
         self.history.append(performance)
         if performance >= threshold:
             self.successes += 1
-        alpha = 0.1
+        alpha = 0.7
         self.mastery_score = (1 - alpha) * self.mastery_score + alpha * performance
         self.mastery_score = max(0.0, min(1.0, self.mastery_score))
 

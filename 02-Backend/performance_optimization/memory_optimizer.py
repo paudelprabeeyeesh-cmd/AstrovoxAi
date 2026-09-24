@@ -75,10 +75,10 @@ def drop_references(objects: List[Any]) -> None:
 
 
 def compress_references(obj: Any) -> Optional[int]:
-    before = sum(len(item) for item in obj) if hasattr(obj, "__len__") else len(obj)
+    before = len(obj) if hasattr(obj, "__len__") else 0
     _drop_references(obj)
     gc.collect()
-    after = sum(len(item) for item in obj) if hasattr(obj, "__len__") else len(obj)
+    after = len(obj) if hasattr(obj, "__len__") else 0
     return max(0, before - after)
 
 

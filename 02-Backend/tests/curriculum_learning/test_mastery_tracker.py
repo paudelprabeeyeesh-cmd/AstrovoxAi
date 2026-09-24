@@ -1,3 +1,4 @@
+import math
 import pytest
 from curriculum_learning.mastery_tracker import MasteryTracker, MasteryRecord
 

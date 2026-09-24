@@ -14,7 +14,7 @@ def test_restore_success():
     try:
         result = engine.restore(record.backup_id, dest, b"restore me")
         assert result.success is True
-        assert result.bytes_written == 9
+        assert result.bytes_written == 10
         with open(dest, "rb") as f:
             assert f.read() == b"restore me"
     finally:

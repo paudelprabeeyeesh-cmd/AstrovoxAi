@@ -98,6 +98,7 @@ def run_optimized(
 def tune_with_backoff(
     registry: Dict[str, float], name: str, func: Callable
 ) -> Optional[Exception]:
+    last_exc = None
     for attempt in range(4):
         try:
             registry[name] = time.perf_counter()
@@ -105,8 +106,9 @@ def tune_with_backoff(
             registry[name] = time.perf_counter() - registry.get(name, 0.0)
             return None
         except Exception as exc:
+            last_exc = exc
             apply_backoff(registry, name, attempt)
-    return exc
+    return last_exc
 
 
 def optimize(
@@ -123,9 +125,9 @@ def optimize(
     report = run_optimized(registry, name, func, items)
     return OptimizationReport(
         original=original,
-        optimized=report.original,
-        improvement_ms=(original - report.original) * 1000.0,
-        improvement_share=(original - report.original) / original if original else 0.0,
+        optimized=report.optimized,
+        improvement_ms=(original - report.optimized) * 1000.0,
+        improvement_share=(original - report.optimized) / original if original else 0.0,
     )
 
 

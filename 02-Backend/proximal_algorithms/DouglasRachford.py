@@ -20,8 +20,8 @@ def _vscalar_mul(s, v):
 def douglas_rachford(prox_a, prox_b, x0, max_iter=1000, tol=1e-6):
     x = list(x0)
     for _ in range(max_iter):
-        y = _vsub(_vscalar_mul(2.0, prox_a(x)), x)
-        x_new = _vsub(_vscalar_mul(2.0, prox_b(y)), y)
+        y = _vsub(_vscalar_mul(2.0, prox_a(x, 1.0)), x)
+        x_new = _vsub(_vscalar_mul(2.0, prox_b(y, 1.0)), y)
         if _norm(_vsub(x_new, x)) < tol:
             break
         x = x_new

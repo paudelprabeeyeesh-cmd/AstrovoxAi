@@ -19,6 +19,15 @@ class BackupVerifier:
         snapshot: Snapshot,
         expected_data: bytes,
     ) -> VerificationResult:
+        if snapshot.size_bytes != len(expected_data):
+            return VerificationResult(
+                verified=False,
+                message="Snapshot size mismatch",
+                details={
+                    "expected_size": len(expected_data),
+                    "actual_size": snapshot.size_bytes,
+                },
+            )
         expected_checksum = hashlib.sha256(expected_data).hexdigest()
         if snapshot.checksum != expected_checksum:
             return VerificationResult(
@@ -27,15 +36,6 @@ class BackupVerifier:
                 details={
                     "expected_checksum": expected_checksum,
                     "actual_checksum": snapshot.checksum,
-                },
-            )
-        if snapshot.size_bytes != len(expected_data):
-            return VerificationResult(
-                verified=False,
-                message="Snapshot size mismatch",
-                details={
-                    "expected_size": len(expected_data),
-                    "actual_size": snapshot.size_bytes,
                 },
             )
         return VerificationResult(

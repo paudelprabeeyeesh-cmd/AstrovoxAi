@@ -1,3 +1,5 @@
+import pytest
+
 from lifelong_learning.skill_transfer import Skill, SkillTransfer
 
 
@@ -12,7 +14,7 @@ class TestSkillTransfer:
     def test_register_duplicate_raises(self):
         st = SkillTransfer()
         st.register_skill("s1", "python")
-        with ValueError:
+        with pytest.raises(ValueError):
             st.register_skill("s1", "python2")
 
     def test_transfer_skill(self):

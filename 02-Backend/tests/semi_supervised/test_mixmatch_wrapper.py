@@ -1,14 +1,14 @@
-import random
 import math
-from typing import List
+import random
+
 from semi_supervised.mixmatch_wrapper import MixMatchWrapper
 
 
-def _deterministic_model(x: List[List[float]]) -> List[List[float]]:
+def _deterministic_model(x: list[list[float]]) -> list[list[float]]:
     return [[math.sin(sum(sample) + i) for i in range(3)] for sample in x]
 
 
-def _augment(x: List[float]) -> List[float]:
+def _augment(x: list[float]) -> list[float]:
     return [v + 0.01 for v in x]
 
 

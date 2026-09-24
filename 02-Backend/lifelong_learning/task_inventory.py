@@ -17,10 +17,10 @@ class TaskInventory:
         self._tasks: Dict[str, Task] = {}
         self._history: List[Dict[str, Any]] = []
 
-    def register(self, task_id: str, name: str, metadata: Optional[Dict[str, Any]] = None) -> Task:
+    def register(self, task_id: str, name: str, metadata: Optional[Dict[str, Any]] = None, status: str = "pending") -> Task:
         if task_id in self._tasks:
             raise ValueError(f"Task {task_id} already registered")
-        task = Task(task_id=task_id, name=name, metadata=metadata or {})
+        task = Task(task_id=task_id, name=name, metadata=metadata or {}, status=status)
         self._tasks[task_id] = task
         self._history.append({"action": "register", "task_id": task_id, "name": name})
         return task

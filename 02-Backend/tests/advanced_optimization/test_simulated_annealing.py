@@ -1,14 +1,20 @@
-import numpy as np
+import math
 from advanced_optimization.simulated_annealing import simulated_annealing
 
 
+def _sum_sq(x, target):
+    return sum((xi - target) ** 2 for xi in x)
+
+
 def test_simulated_annealing_converges():
-    f = lambda x: np.sum((x - 3) ** 2)
-    x = simulated_annealing(f, np.array([0.0]), max_iter=1000)
-    assert np.allclose(x, 3.0, atol=0.5)
+    target = 3.0
+    f = lambda x: _sum_sq(x, target)
+    x = simulated_annealing(f, [0.0], max_iter=2000)
+    assert abs(x[0] - target) < 0.5
 
 
 def test_simulated_annealing_with_bounds():
-    f = lambda x: np.sum((x - 2) ** 2)
-    x = simulated_annealing(f, np.array([0.0]), bounds=[(-5, 5)], max_iter=1000)
-    assert np.allclose(x, 2.0, atol=0.5)
+    target = 2.0
+    f = lambda x: _sum_sq(x, target)
+    x = simulated_annealing(f, [0.0], bounds=[(-5, 5)], max_iter=2000)
+    assert abs(x[0] - target) < 0.5

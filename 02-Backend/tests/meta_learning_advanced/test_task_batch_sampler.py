@@ -1,4 +1,3 @@
-import numpy as np
 from meta_learning_advanced.task_batch_sampler import TaskBatchSampler, TaskSpec
 
 
@@ -29,7 +28,6 @@ def test_add_task_source():
 
 
 def test_sample_batch_without_replacement():
-    np.random.seed(42)
     specs = [TaskSpec(task_id=i, input_dim=4, output_dim=3, num_support=10, num_query=5) for i in range(5)]
     sampler = TaskBatchSampler(task_specs=specs, seed=42)
     batch = sampler.sample_batch(3, replacement=False)
@@ -39,7 +37,6 @@ def test_sample_batch_without_replacement():
 
 
 def test_sample_batch_with_replacement():
-    np.random.seed(42)
     specs = [TaskSpec(task_id=i, input_dim=4, output_dim=3, num_support=10, num_query=5) for i in range(3)]
     sampler = TaskBatchSampler(task_specs=specs, seed=42)
     batch = sampler.sample_batch(5, replacement=True)
@@ -73,12 +70,14 @@ def test_generate_task_data():
     spec = TaskSpec(task_id=1, input_dim=4, output_dim=3, num_support=10, num_query=5)
     sampler = TaskBatchSampler(seed=42)
     x_s, y_s, x_q, y_q = sampler.generate_task_data(spec)
-    assert x_s.shape == (10, 4)
-    assert y_s.shape == (10,)
-    assert x_q.shape == (5, 4)
-    assert y_q.shape == (5,)
-    assert set(np.unique(y_s)).issubset({0, 1, 2})
-    assert set(np.unique(y_q)).issubset({0, 1, 2})
+    assert len(x_s) == 10
+    assert all(len(row) == 4 for row in x_s)
+    assert len(y_s) == 10
+    assert len(x_q) == 5
+    assert all(len(row) == 4 for row in x_q)
+    assert len(y_q) == 5
+    assert all(v in {0, 1, 2} for v in y_s)
+    assert all(v in {0, 1, 2} for v in y_q)
 
 
 def test_history_accumulation():

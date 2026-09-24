@@ -14,10 +14,11 @@ class ResourcePool(Generic[T]):
         for _ in range(size):
             self._pool.append(factory())
 
-    def acquire(self) -> Optional[T]:
+    def acquire(self, timeout: Optional[float] = None) -> T:
         with self._cond:
             while not self._pool:
-                self._cond.wait()
+                if not self._cond.wait(timeout):
+                    raise TimeoutError("Resource pool exhausted")
             return self._pool.pop()
 
     def release(self, resource: T) -> None:

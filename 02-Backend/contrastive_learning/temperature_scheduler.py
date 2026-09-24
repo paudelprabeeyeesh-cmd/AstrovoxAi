@@ -24,27 +24,27 @@ class TemperatureScheduler:
         self.schedule = schedule.lower()
         self.step_size = step_size
         self.gamma = gamma
-        self.step = 0
+        self._step = 0
 
         valid_schedules = {"constant", "step", "exponential", "cosine"}
         if self.schedule not in valid_schedules:
             raise ValueError(f"schedule must be one of {valid_schedules}")
 
     def step(self) -> float:  # type: ignore[override]
-        self.step += 1
+        self._step += 1
 
         if self.schedule == "constant":
             pass
         elif self.schedule == "step":
-            if self.step % self.step_size == 0:
+            if self._step % self.step_size == 0:
                 self.temperature = max(self.min_temperature, self.temperature * self.gamma)
         elif self.schedule == "exponential":
             self.temperature = max(
                 self.min_temperature,
-                self.initial_temperature * (self.gamma ** (self.step / self.step_size)),
+                self.initial_temperature * (self.gamma ** (self._step / self.step_size)),
             )
         elif self.schedule == "cosine":
-            progress = min(1.0, self.step / max(self.step_size, 1))
+            progress = min(1.0, self._step / max(self.step_size, 1))
             cosine_decay = 0.5 * (1.0 + np.cos(np.pi * progress))
             self.temperature = self.min_temperature + (self.initial_temperature - self.min_temperature) * cosine_decay
             self.temperature = max(self.min_temperature, min(self.max_temperature, self.temperature))
@@ -56,4 +56,4 @@ class TemperatureScheduler:
 
     def reset(self) -> None:
         self.temperature = float(self.initial_temperature)
-        self.step = 0
+        self._step = 0

@@ -1,5 +1,6 @@
+import time
 from dataclasses import dataclass, field
-from typing import List
+from typing import List, Optional
 
 from backup_recovery.snapshot_manager import Snapshot, SnapshotManager
 from backup_recovery.incremental_backup import IncrementalBackup, IncrementalBackupManager
@@ -44,10 +45,13 @@ class RecoveryPlanner:
         backup_id: str,
         inc_manager: IncrementalBackupManager,
     ) -> RecoveryPlan:
-        backup = inc_manager.get_backup(backup_id)
+        try:
+            backup = inc_manager.get_backup(backup_id)
+        except KeyError:
+            backup = None
         plan = RecoveryPlan(
             plan_id=backup_id,
-            target_timestamp=backup.end_time or backup.start_time,
+            target_timestamp=backup.end_time if backup else time.time(),
             incremental_backup=backup,
         )
         if backup:

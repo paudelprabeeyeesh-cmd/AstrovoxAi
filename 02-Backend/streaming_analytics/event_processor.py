@@ -18,7 +18,6 @@ class EventProcessor:
 
     def process(self, event: dict) -> List[Any]:
         with self._lock:
-            handlers = list(self._handlers.get(event.get("type", ""), []))
             middlewares = list(self._middlewares)
 
         current = dict(event)
@@ -27,6 +26,9 @@ class EventProcessor:
             if result is None:
                 return []
             current = result
+
+        with self._lock:
+            handlers = list(self._handlers.get(current.get("type", ""), []))
 
         results = []
         for handler in handlers:

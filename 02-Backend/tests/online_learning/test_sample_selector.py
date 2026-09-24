@@ -1,3 +1,4 @@
+import math
 import random
 from online_learning.sample_selector import SampleSelector
 
@@ -25,7 +26,7 @@ class TestSampleSelector:
     def test_select_loss(self):
         selector = SampleSelector(strategy="loss")
         for i in range(10):
-            selector.add([float(i)], float(i), loss=float(10 - i))
+            selector.add([float(i)], float(i), loss=float(i))
         selected = selector.select(3)
         assert len(selected) == 3
         assert all(s[1] >= 7.0 for s in selected)

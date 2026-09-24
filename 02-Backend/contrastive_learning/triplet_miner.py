@@ -79,11 +79,19 @@ class TripletMiner:
 
         if not anchors:
             empty = np.empty((0,), dtype=np.int64)
-            return empty, empty, empty
+            return {
+                "anchors": empty,
+                "positives": empty,
+                "negatives": empty,
+            }
 
-        return np.array(anchors, dtype=np.int64), np.array(positives, dtype=np.int64), np.array(negatives, dtype=np.int64)
+        return {
+            "anchors": np.array(anchors, dtype=np.int64),
+            "positives": np.array(positives, dtype=np.int64),
+            "negatives": np.array(negatives, dtype=np.int64),
+        }
 
-    def mine_semi_hard(self, embeddings: np.ndarray, labels: np.ndarray, num_triplets: int = 32) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def mine_semi_hard(self, embeddings: np.ndarray, labels: np.ndarray, num_triplets: int = 32) -> Dict[str, np.ndarray]:
         dists = self._pairwise_distances(embeddings)
         n = len(embeddings)
         anchors: List[int] = []
@@ -123,18 +131,28 @@ class TripletMiner:
 
         if not anchors:
             empty = np.empty((0,), dtype=np.int64)
-            return empty, empty, empty
+            return {
+                "anchors": empty,
+                "positives": empty,
+                "negatives": empty,
+            }
 
-        return np.array(anchors, dtype=np.int64), np.array(positives, dtype=np.int64), np.array(negatives, dtype=np.int64)
+        return {
+            "anchors": np.array(anchors, dtype=np.int64),
+            "positives": np.array(positives, dtype=np.int64),
+            "negatives": np.array(negatives, dtype=np.int64),
+        }
 
     def mine(self, embeddings: np.ndarray, labels: np.ndarray, strategy: str = "random", num_triplets: int = 32) -> Dict[str, np.ndarray]:
         strategy = strategy.lower()
         if strategy == "random":
             a, p, n = self.mine_random(embeddings, labels, num_triplets)
         elif strategy == "hard":
-            a, p, n = self.mine_hard(embeddings, labels, num_triplets)
+            result = self.mine_hard(embeddings, labels, num_triplets)
+            a, p, n = result["anchors"], result["positives"], result["negatives"]
         elif strategy == "semi_hard":
-            a, p, n = self.mine_semi_hard(embeddings, labels, num_triplets)
+            result = self.mine_semi_hard(embeddings, labels, num_triplets)
+            a, p, n = result["anchors"], result["positives"], result["negatives"]
         else:
             raise ValueError(f"Unknown strategy: {strategy}")
 

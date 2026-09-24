@@ -1,8 +1,9 @@
 import math
-from typing import List, Dict, Any, Callable, Tuple
+from collections.abc import Callable
+from typing import Any
 
 
-def _softmax_vector(vec: List[float], temperature: float) -> List[float]:
+def _softmax_vector(vec: list[float], temperature: float) -> list[float]:
     max_val = max(vec)
     exps = [math.exp((v - max_val) / temperature) for v in vec]
     sum_exps = sum(exps)
@@ -17,12 +18,12 @@ class FixMatchWrapper:
 
     def pseudo_labels_from_weak(
         self,
-        model: Callable[[List[List[float]]], List[List[float]]],
-        weak_augmented_x: List[List[float]],
-    ) -> Tuple[List[int], List[float]]:
+        model: Callable[[list[list[float]]], list[list[float]]],
+        weak_augmented_x: list[list[float]],
+    ) -> tuple[list[int], list[float]]:
         logits = model(weak_augmented_x)
-        labels: List[int] = []
-        mask: List[float] = []
+        labels: list[int] = []
+        mask: list[float] = []
         for logit in logits:
             probs = _softmax_vector(logit, self.temperature)
             max_prob = max(probs)
@@ -37,13 +38,13 @@ class FixMatchWrapper:
 
     def __call__(
         self,
-        labeled_x: List[List[float]],
-        labeled_y: List[int],
-        unlabeled_x_weak: List[List[float]],
-        unlabeled_x_strong: List[List[float]],
-        model: Callable[[List[List[float]]], List[List[float]]],
-        loss_fn: Callable[[List[List[float]], List[int]], float],
-    ) -> Dict[str, Any]:
+        labeled_x: list[list[float]],
+        labeled_y: list[int],
+        unlabeled_x_weak: list[list[float]],
+        unlabeled_x_strong: list[list[float]],
+        model: Callable[[list[list[float]]], list[list[float]]],
+        loss_fn: Callable[[list[list[float]], list[int]], float],
+    ) -> dict[str, Any]:
         labeled_logits = model(labeled_x)
         labeled_loss = loss_fn(labeled_logits, labeled_y)
 

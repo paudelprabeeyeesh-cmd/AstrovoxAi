@@ -1,3 +1,5 @@
+import time
+
 from disaster_recovery.backup_manager import BackupManager, BackupRecord
 
 

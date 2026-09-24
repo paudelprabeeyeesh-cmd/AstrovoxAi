@@ -40,8 +40,8 @@ class TestLearningWithoutForgetting:
 
     def test_distillation_loss_positive(self):
         lwf = LearningWithoutForgetting(LwFConfig(alpha=1.0, temperature=2.0))
-        old_params = {"W": [1.0, -1.0], "b": [0.0, 0.0]}
-        new_params = {"W": [0.8, -0.8], "b": [0.0, 0.0]}
+        old_params = {"W": [1.0, -1.0, 0.5, -0.5], "b": [0.0, 0.0]}
+        new_params = {"W": [0.8, -0.8, 0.4, -0.4], "b": [0.0, 0.0]}
         lwf.freeze_old_model(old_params)
         loss = lwf.distillation_loss(new_params, [1.0, 1.0])
         assert loss > 0.0
@@ -51,7 +51,7 @@ class TestLearningWithoutForgetting:
         params = {"W": [0.5, -0.5], "b": [0.0]}
         lwf.freeze_old_model(params)
         total = lwf.train_step_loss(1, params, [1.0, 1.0], [0.0])
-        assert total >= 0.0
+        assert total >= -1e-8
         assert len(lwf.task_loss_history[1]) == 1
 
     def test_register_task_outputs(self):

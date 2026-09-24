@@ -9,7 +9,7 @@ class TestCompetenceEstimator:
         assert not est.is_competent()
 
     def test_update_competence(self):
-        est = CompetenceEstimator(CompetenceConfig(window_size=5))
+        est = CompetenceEstimator(CompetenceConfig(window_size=5, threshold=0.0))
         for score in [0.1, 0.2, 0.3, 0.4, 0.5]:
             est.update(score)
         assert est.get_competence() == pytest.approx(0.3)

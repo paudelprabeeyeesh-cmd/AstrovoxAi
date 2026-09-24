@@ -16,7 +16,7 @@ class PriorityScheduler(Generic[T]):
         self._queue: List[PriorityItem[T]] = []
 
     def add(self, priority: int, item: T) -> None:
-        heapq.heappush(self._queue, PriorityItem(priority, item))
+        heapq.heappush(self._queue, PriorityItem(-priority, item))
 
     def next(self) -> Optional[T]:
         if not self._queue:

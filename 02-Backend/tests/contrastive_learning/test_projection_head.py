@@ -33,8 +33,8 @@ class TestProjectionHead:
     def test_relu_activation(self):
         head = ProjectionHead(input_dim=4, hidden_dim=8, output_dim=4)
         x = np.array([[-1.0, 0.0, 1.0, 2.0]], dtype=np.float64)
-        z = head.forward(x)
-        assert np.all(z >= -1e-9)
+        hidden = head._relu(x @ head.W1 + head.b1)
+        assert np.all(hidden >= -1e-9)
 
     def test_output_dim(self):
         head = ProjectionHead(input_dim=10, hidden_dim=20, output_dim=5)

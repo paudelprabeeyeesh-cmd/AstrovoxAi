@@ -1,12 +1,12 @@
-from typing import List
+
 from semi_supervised.pseudolabel_generator import PseudolabelGenerator
 
 
-def _high_confidence_model(x: List[List[float]]) -> List[List[float]]:
+def _high_confidence_model(x: list[list[float]]) -> list[list[float]]:
     return [[10.0, 0.1, 0.1] for _ in x]
 
 
-def _low_confidence_model(x: List[List[float]]) -> List[List[float]]:
+def _low_confidence_model(x: list[list[float]]) -> list[list[float]]:
     return [[1.0, 1.0, 1.0] for _ in x]
 
 

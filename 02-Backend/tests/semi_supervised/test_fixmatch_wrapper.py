@@ -1,13 +1,13 @@
 import math
-from typing import List
+
 from semi_supervised.fixmatch_wrapper import FixMatchWrapper
 
 
-def _model(x: List[List[float]]) -> List[List[float]]:
+def _model(x: list[list[float]]) -> list[list[float]]:
     return [[math.cos(sum(sample) + i) for i in range(3)] for sample in x]
 
 
-def _cross_entropy_loss(logits: List[List[float]], labels: List[int]) -> float:
+def _cross_entropy_loss(logits: list[list[float]], labels: list[int]) -> float:
     loss = 0.0
     for logit, label in zip(logits, labels):
         max_logit = max(logit)

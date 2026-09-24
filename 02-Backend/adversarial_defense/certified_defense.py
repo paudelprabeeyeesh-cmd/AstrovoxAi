@@ -49,7 +49,7 @@ class CertifiedDefense:
             scores = [sum(w * f for w, f in zip(ws, augmented)) for ws in weights]
             predicted = max(range(len(weights)), key=lambda i: scores[i])
             votes[predicted] += 1
-        predicted = max(range(len(votes)), key lambda i: votes[i])
+        predicted = max(range(len(votes)), key=lambda i: votes[i])
         return predicted, self.radius(votes)
 
     def randomized_smoothing(self, sample: List[float]) -> List[float]:

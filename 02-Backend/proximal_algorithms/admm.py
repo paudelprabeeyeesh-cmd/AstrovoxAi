@@ -17,7 +17,7 @@ def _vscalar_mul(s, v):
     return [s * vi for vi in v]
 
 
-def admm(f, grad_f, prox, x0, z0, u0, rho=1.0, lr=1e-2, max_iter=1000, tol=1e-6):
+def admm(f, grad_f, prox, x0, z0, u0, rho=1.0, lr=0.1, max_iter=1000, tol=1e-6):
     x = list(x0)
     z = list(z0)
     u = list(u0)

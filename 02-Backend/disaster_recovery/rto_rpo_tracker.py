@@ -20,6 +20,7 @@ class RtoRpoTracker:
     def start_event(self, event_name: str) -> None:
         if self._lock:
             raise RuntimeError("Event already in progress")
+        self._lock = True
         self._events[event_name] = RecoveryEvent(event_name=event_name, start_time=time.time())
 
     def end_event(self, event_name: str) -> Optional[float]:
@@ -27,6 +28,7 @@ class RtoRpoTracker:
         if event is None or event.end_time is not None:
             return None
         event.end_time = time.time()
+        self._lock = False
         return event.end_time - event.start_time
 
     def record_recovery_point(self, event_name: str, timestamp: float) -> None:

@@ -33,9 +33,7 @@ class FailoverController:
         node = self._nodes.get(node_id)
         if node is None:
             return False
-        if node.state == NodeState.FAILED:
-            node.state = NodeState.DEGRADED
-        return node.state != NodeState.FAILED
+        return node.state == NodeState.HEALTHY
 
     def trigger_failover(self, target_node_id: str) -> Dict[str, Any]:
         with self._lock:

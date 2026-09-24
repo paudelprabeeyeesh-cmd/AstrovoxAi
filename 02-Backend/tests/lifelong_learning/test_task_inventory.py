@@ -1,3 +1,5 @@
+import pytest
+
 from lifelong_learning.task_inventory import Task, TaskInventory
 
 
@@ -12,7 +14,7 @@ class TestTaskInventory:
     def test_register_duplicate_raises(self):
         inv = TaskInventory()
         inv.register("t1", "Task 1")
-        with ValueError:
+        with pytest.raises(ValueError):
             inv.register("t1", "Task 1 again")
 
     def test_update_status(self):
@@ -24,7 +26,7 @@ class TestTaskInventory:
 
     def test_update_unknown_raises(self):
         inv = TaskInventory()
-        with KeyError:
+        with pytest.raises(KeyError):
             inv.update_status("unknown", "done")
 
     def test_list_tasks(self):
@@ -55,5 +57,5 @@ class TestTaskInventory:
 
     def test_remove_unknown_raises(self):
         inv = TaskInventory()
-        with KeyError:
+        with pytest.raises(KeyError):
             inv.remove("unknown")

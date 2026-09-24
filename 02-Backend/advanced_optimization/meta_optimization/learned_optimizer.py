@@ -6,7 +6,7 @@ class NeuralOptimizer:
         self.num_params = int(num_params)
         self.hidden_size = int(hidden_size)
         self.lr = float(lr)
-        self.w1 = np.random.randn(num_params, hidden_size) * 0.01
+        self.w1 = np.random.randn(2 * num_params, hidden_size) * 0.01
         self.w2 = np.random.randn(hidden_size, num_params) * 0.01
         self.b1 = np.zeros(hidden_size)
         self.b2 = np.zeros(num_params)
@@ -15,7 +15,8 @@ class NeuralOptimizer:
     def _update(self, params, grads):
         self.t += 1
         x = np.concatenate([p.flatten() for p in params])
-        np.concatenate([gr.flatten() for gr in grads])
+        g = np.concatenate([gr.flatten() for gr in grads])
+        x = np.concatenate([x, g])
         h1 = np.maximum(0, x @ self.w1 + self.b1)
         update = h1 @ self.w2 + self.b2
         for i, (p, gr) in enumerate(zip(params, grads)):
@@ -33,17 +34,18 @@ class LSTMOptimizer:
         self.num_params = int(num_params)
         self.hidden_size = int(hidden_size)
         self.lr = float(lr)
-        self.wf = np.random.randn(hidden_size + num_params, hidden_size) * 0.01
-        self.wi = np.random.randn(hidden_size + num_params, hidden_size) * 0.01
-        self.wo = np.random.randn(hidden_size + num_params, hidden_size) * 0.01
-        self.wg = np.random.randn(hidden_size + num_params, hidden_size) * 0.01
+        self.wf = np.random.randn(hidden_size + 2 * num_params, hidden_size) * 0.01
+        self.wi = np.random.randn(hidden_size + 2 * num_params, hidden_size) * 0.01
+        self.wo = np.random.randn(hidden_size + 2 * num_params, hidden_size) * 0.01
+        self.wg = np.random.randn(hidden_size + 2 * num_params, hidden_size) * 0.01
         self.wy = np.random.randn(hidden_size, num_params) * 0.01
         self.h = np.zeros(hidden_size)
         self.c = np.zeros(hidden_size)
 
     def step(self, params, grads):
         x = np.concatenate([p.flatten() for p in params])
-        np.concatenate([gr.flatten() for gr in grads])
+        g = np.concatenate([gr.flatten() for gr in grads])
+        x = np.concatenate([x, g])
         combined = np.concatenate([x, self.h])
         f = 1 / (1 + np.exp(-(combined @ self.wf)))
         i = 1 / (1 + np.exp(-(combined @ self.wi)))

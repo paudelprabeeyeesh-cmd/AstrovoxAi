@@ -39,7 +39,7 @@ class WarmStartStrategy:
 
     def initialize(self, target_params):
         if self.strategy == "copy":
-            return [np.copy(p) for p in target_params]
+            return [np.copy(p) for p in self.original]
         if self.strategy == "source":
             return warm_start_from_params(self.original, lambda: [p.shape for p in target_params], self.scale)
         if self.strategy == "zeros":

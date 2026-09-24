@@ -55,6 +55,8 @@ class SkillGraph:
             raise KeyError(f"Prerequisite {prerequisite_id} not found")
         if prerequisite_id not in self._dependencies[skill_id]:
             self._dependencies[skill_id].append(prerequisite_id)
+            if prerequisite_id not in self._reverse_dependencies:
+                self._reverse_dependencies[prerequisite_id] = []
             self._reverse_dependencies[prerequisite_id].append(skill_id)
 
     def remove_dependency(self, skill_id: str, prerequisite_id: str) -> None:

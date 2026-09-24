@@ -1,15 +1,14 @@
-import numpy as np
 import random
 import re
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class PromptExample:
     text: str
     label: str
-    embedding: Optional[np.ndarray] = None
+    embedding: Optional[List[float]] = None
 
 
 class PromptOptimizer:
@@ -27,7 +26,7 @@ class PromptOptimizer:
         self,
         query: str,
         n_examples: int = 3,
-        method: str = "random"
+        method: str = "random",
     ) -> List[PromptExample]:
         if method == "random":
             if n_examples >= len(self.examples):
@@ -43,7 +42,7 @@ class PromptOptimizer:
     def _diverse_selection(
         self,
         query: str,
-        n_examples: int
+        n_examples: int,
     ) -> List[PromptExample]:
         if n_examples >= len(self.examples):
             return list(self.examples)
@@ -56,7 +55,9 @@ class PromptOptimizer:
             for i, ex in enumerate(remaining):
                 ex_words = set(self._tokenize(ex.text))
                 overlap = len(query_words & ex_words)
-                diversity = sum(len(set(self._tokenize(s.text)) & ex_words) for s in selected)
+                diversity = sum(
+                    len(set(self._tokenize(s.text)) & ex_words) for s in selected
+                )
                 score = overlap + diversity * 0.5
                 if score > max_score:
                     max_score = score
@@ -67,7 +68,7 @@ class PromptOptimizer:
     def _similar_selection(
         self,
         query: str,
-        n_examples: int
+        n_examples: int,
     ) -> List[PromptExample]:
         if n_examples >= len(self.examples):
             return list(self.examples)
@@ -87,7 +88,9 @@ class PromptOptimizer:
     def format_examples(self, examples: List[PromptExample]) -> str:
         formatted = []
         for i, ex in enumerate(examples):
-            formatted.append(f"Example {i + 1}:\nQuery: {ex.text}\nLabel: {ex.label}")
+            formatted.append(
+                f"Example {i + 1}:\nQuery: {ex.text}\nLabel: {ex.label}"
+            )
         return "\n\n".join(formatted)
 
     def optimize_prompt(
@@ -95,14 +98,14 @@ class PromptOptimizer:
         query: str,
         instruction: str = "Classify the following query into one of the given labels.",
         n_examples: int = 3,
-        method: str = "similar"
+        method: str = "similar",
     ) -> str:
         examples = self.select_examples(query, n_examples, method)
         examples_text = self.format_examples(examples)
         return self.template.format(
             instruction=instruction,
             examples=examples_text,
-            query=query
+            query=query,
         )
 
     def evaluate_prompt(
@@ -110,7 +113,7 @@ class PromptOptimizer:
         query: str,
         expected_label: str,
         n_examples: int = 3,
-        method: str = "similar"
+        method: str = "similar",
     ) -> Dict[str, Any]:
         prompt = self.optimize_prompt(query, n_examples=n_examples, method=method)
         predicted = self._simple_predict(prompt, query, expected_label)
@@ -120,14 +123,14 @@ class PromptOptimizer:
             "predicted": predicted,
             "expected": expected_label,
             "correct": accuracy == 1.0,
-            "accuracy": accuracy
+            "accuracy": accuracy,
         }
 
     def _simple_predict(
         self,
         prompt: str,
         query: str,
-        expected_label: str
+        expected_label: str,
     ) -> str:
         return expected_label
 
@@ -138,6 +141,5 @@ class PromptOptimizer:
         return {
             "total_examples": len(self.examples),
             "label_distribution": label_counts,
-            "num_labels": len(label_counts)
+            "num_labels": len(label_counts),
         }
-

@@ -18,6 +18,6 @@ def test_exhaust_pool_blocks():
     a = pool.acquire()
     assert a is not None
     with pytest.raises(Exception):
-        pool.acquire()
+        pool.acquire(timeout=1)
     pool.release(a)
 

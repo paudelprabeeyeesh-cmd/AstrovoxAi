@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 
@@ -18,21 +20,22 @@ def gaussian_process(x_train, y_train, x_test, length_scale=1.0, noise=1e-6):
 
 
 def expected_improvement(mean, var, best_f):
-    std = np.sqrt(max(var, 1e-9))
-    with np.errstate(divide="ignore", invalid="ignore"):
-        z = (mean - best_f) / std
-        ei = (mean - best_f) * 0.5 * (1 + np.sign(mean - best_f) * np.tanh(z)) + std * (1 / np.sqrt(2 * np.pi)) * np.exp(-0.5 * z ** 2)
-        ei = np.where(var > 1e-9, ei, 0.0)
-    return ei
+    std = math.sqrt(max(var, 1e-9))
+    z = (best_f - mean) / std
+    cdf = 0.5 * (1 + math.erf(z / math.sqrt(2)))
+    pdf = math.exp(-0.5 * z ** 2) / math.sqrt(2 * math.pi)
+    return (best_f - mean) * cdf + std * pdf
 
 
 def bayesian_optimization(f, bounds, n_init=5, n_iter=20, length_scale=1.0):
     dim = len(bounds)
-    xs = np.array([np.random.uniform(b[0], b[1], dim) for b in bounds for _ in range(n_init)])
+    init_grid = [np.linspace(b[0], b[1], max(2, n_init)) for b in bounds]
+    xs = np.array(np.meshgrid(*init_grid)).T.reshape(-1, dim)
     ys = np.array([f(x) for x in xs])
     best_f = np.min(ys)
     for _ in range(n_iter):
-        candidates = np.array([np.random.uniform(b[0], b[1], dim) for b in bounds for _ in range(50)])
+        cand_grid = [np.linspace(b[0], b[1], 50) for b in bounds]
+        candidates = np.array(np.meshgrid(*cand_grid)).T.reshape(-1, dim)
         best_ei = -1
         best_x = None
         for x in candidates:

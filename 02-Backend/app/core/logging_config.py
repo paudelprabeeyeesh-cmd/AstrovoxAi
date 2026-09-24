@@ -10,8 +10,6 @@ from logging.handlers import RotatingFileHandler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from typing import Optional
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
 
 try:
     import structlog as _structlog
@@ -43,13 +41,22 @@ class _StructuredJsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         log_data = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "file": record.filename,
+            "line": record.lineno,
+            "process": record.processName,
+            "thread": record.threadName,
             "request_id": getattr(record, "request_id", None),
             "user_id": getattr(record, "user_id", None),
             "endpoint": getattr(record, "endpoint", None),
+            "method": getattr(record, "method", None),
+            "path": getattr(record, "path", None),
+            "status_code": getattr(record, "status_code", None),
             "latency_ms": getattr(record, "latency_ms", None),
             "cost": getattr(record, "cost", None),
         }

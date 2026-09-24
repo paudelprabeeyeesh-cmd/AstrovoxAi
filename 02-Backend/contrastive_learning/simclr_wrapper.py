@@ -52,7 +52,7 @@ class SimCLRWrapper:
         logits = sim_matrix
         max_logits = np.max(logits, axis=1, keepdims=True)
         exp_logits = np.exp(logits - max_logits)
-        log_probs = logits - np.log(np.sum(exp_logits, axis=1, keepdims=True) + 1e-12)
+        log_probs = (logits - max_logits) - np.log(np.sum(exp_logits, axis=1, keepdims=True) + 1e-12)
         loss = float(-np.mean(log_probs[np.arange(2 * N), labels]))
         return loss
 
@@ -92,7 +92,7 @@ class SimCLRWrapper:
         z_neg = self.encode(x_neg)
 
         pos = np.sum((z - z_pos) ** 2, axis=1)
-        neg = np.sum((z[:, None, :] - x_neg[None, :, :]) ** 2, axis=2)
+        neg = np.sum((z[:, None, :] - z_neg[None, :, :]) ** 2, axis=2)
         loss = float(np.mean(np.maximum(self.triplet_miner.margin + pos[:, None] - neg, 0)))
         return {"triplet_loss": loss}
 

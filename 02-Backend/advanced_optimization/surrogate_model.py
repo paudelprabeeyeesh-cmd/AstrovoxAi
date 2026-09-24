@@ -36,13 +36,26 @@ class PolynomialSurrogate:
 
     def _build_design_matrix(self, X):
         n, d = X.shape
+        exponents = []
+
+        def generate(total, dims):
+            if dims == 1:
+                for e in range(total + 1):
+                    exponents.append((e,))
+            else:
+                for e in range(total + 1):
+                    for rest in generate(total - e, dims - 1):
+                        exponents.append((e,) + rest)
+
+        for p in range(self.degree + 1):
+            generate(p, d)
+
         A = np.ones((n, 1))
-        for p in range(1, self.degree + 1):
-            for idx in np.ndindex(*(d * (p,))):
-                cols = np.ones((n, 1))
-                for dim, order in enumerate(idx):
-                    cols *= X[:, dim] ** order
-                A = np.hstack((A, cols))
+        for exp in exponents:
+            col = np.ones(n)
+            for dim, order in enumerate(exp):
+                col *= X[:, dim] ** order
+            A = np.hstack((A, col.reshape(-1, 1)))
         return A
 
     def fit(self, x_train, y_train):

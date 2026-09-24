@@ -54,7 +54,9 @@ class IncrementalBackupManager:
         backup.metadata["change_count"] = len(backup.changes)
 
     def get_backup(self, backup_id: str) -> Optional[IncrementalBackup]:
-        return self._backups.get(backup_id)
+        if backup_id not in self._backups:
+            raise KeyError(f"Backup {backup_id} not found")
+        return self._backups[backup_id]
 
     def list_backups(self) -> List[IncrementalBackup]:
         return list(self._backups.values())

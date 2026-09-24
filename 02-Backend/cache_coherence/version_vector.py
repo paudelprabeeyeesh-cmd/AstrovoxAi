@@ -1,6 +1,5 @@
-import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass
@@ -35,3 +34,12 @@ class VersionVector:
 
     def copy(self) -> "VersionVector":
         return VersionVector.from_dict(self._clock)
+
+    def is_concurrent_with(self, other: "VersionVector") -> bool:
+        self_geq = self.compare(other)
+        other_geq = other.compare(self)
+        return not self_geq and not other_geq
+
+    def update(self, node_id: str, version: int) -> None:
+        if version > self._clock.get(node_id, 0):
+            self._clock[node_id] = version
