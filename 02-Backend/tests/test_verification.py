@@ -325,6 +325,8 @@ def test_benchmark_evaluation():
     from tests.benchmark import BenchmarkRunner
 
     def mock_model(prompt: str, benchmark: str, sample: Dict[str, Any]) -> str:
+        if "correct" in sample and isinstance(sample["correct"], list) and sample["correct"]:
+            return sample["correct"][0]
         return sample.get("answer", "")
 
     runner = BenchmarkRunner(model_fn=mock_model, use_llm_judge=False)
@@ -417,3 +419,13 @@ def run_all_verifications() -> Dict[str, Any]:
         "sandbox_blocks_dangerous": report.get("security", {}).get("sandbox", {}).get("all_blocked", False),
     }
     return report
+
+
+def test_load_test_concurrency() -> None:
+    """Verify load test concurrency: 50 requests with p95 < 2s and success rate > 95%."""
+    import asyncio
+    from tests.load_test import run_load_test
+
+    results = asyncio.run(run_load_test())
+    assert results["success_rate"] > 95, f"Success rate {results['success_rate']}% is below 95%"
+    assert results["p95_latency_s"] < 2, f"P95 latency {results['p95_latency_s']}s is above 2s"

@@ -23,6 +23,8 @@ interface ChatState {
   pinConversation: (id: string) => void
   unpinConversation: (id: string) => void
   moveConversationToFolder: (id: string, folder: string) => void
+  deleteConversation: (id: string) => void
+  createFolder: (name: string) => void
 }
 
 export const useChatStore = create<ChatState>()(
@@ -104,6 +106,24 @@ export const useChatStore = create<ChatState>()(
             conversations: state.conversations.map((c) =>
               c.id === id ? { ...c, folder } : c
             ),
+          })),
+
+        deleteConversation: (id) =>
+          set((state) => ({
+            conversations: state.conversations.filter((c) => c.id !== id),
+          })),
+
+        createFolder: (name) =>
+          set((state) => ({
+            conversations: [
+              ...state.conversations,
+              {
+                id: crypto.randomUUID(),
+                title: name,
+                active: false,
+                folder: name.toLowerCase().replace(/\s+/g, '-'),
+              } as any as Conversation,
+            ],
           })),
       }),
       {

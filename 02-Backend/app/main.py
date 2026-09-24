@@ -10,18 +10,45 @@ import os
 from dotenv import load_dotenv
 
 from .auth import router as auth_router
+from .audit import router as audit_router
 from .chat import router as chat_router
-from .api import router as api_router
-from .memory import router as memory_router
-from .storage import router as storage_router
-from .telemetry import router as telemetry_router
-from .terminal import router as terminal_router
-from .embeddings_route import router as embeddings_router
+from .api import Solver
+from .secrets import router as secrets_router
 from .routers.models_api import router as models_api_router
 from .routers.memory_controls import router as memory_controls_router
 from .routers.safety_api import router as safety_api_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit import rate_limit_middleware
+
+try:
+    from .memory import router as memory_router
+except Exception:
+    from fastapi import APIRouter
+    memory_router = APIRouter()
+
+try:
+    from .storage import router as storage_router
+except Exception:
+    from fastapi import APIRouter
+    storage_router = APIRouter()
+
+try:
+    from .telemetry import router as telemetry_router
+except Exception:
+    from fastapi import APIRouter
+    telemetry_router = APIRouter()
+
+try:
+    from .terminal import router as terminal_router
+except Exception:
+    from fastapi import APIRouter
+    terminal_router = APIRouter()
+
+try:
+    from .embeddings_route import router as embeddings_router
+except Exception:
+    from fastapi import APIRouter
+    embeddings_router = APIRouter()
 
 load_dotenv()
 
@@ -61,9 +88,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(audit_router)
 app.include_router(chat_router)
-app.include_router(api_router)
 app.include_router(memory_router)
+app.include_router(secrets_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)

@@ -1,5 +1,6 @@
 import logging
 from .supabase_client import get_supabase
+from database.database import get_db
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()

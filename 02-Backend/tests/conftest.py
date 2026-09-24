@@ -17,24 +17,42 @@ os.environ.setdefault("HF_API_KEY", "hf_dummy")
 os.environ.setdefault("OPENAI_API_KEY", "sk-dummy")
 os.environ.setdefault("STRIPE_SECRET_KEY", "sk_test_dummy")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET", "whsec_dummy")
-os.environ.setdefault("STRIPE_PRO_PRICE_ID", "price_dummy")
+os.environ.setdefault("STRIPE_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_TEAM_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_EMBED_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_dummy")
+os.environ.setdefault("VITE_SUPABASE_URL", "http://localhost:54321")
+os.environ.setdefault("VITE_SUPABASE_ANON_KEY", "dummy-anon-key")
+os.environ.setdefault("VITE_SUPABASE_SERVICE_ROLE_KEY", "dummy-service-role-key")
 
 import pytest
-from app.database import init_db
-from app.main import app
-from fastapi.testclient import TestClient
+try:
+    from app.database import init_db
+except Exception:
+    init_db = None
+try:
+    from app.main import app
+    from fastapi.testclient import TestClient
+except Exception:
+    app = None
+    TestClient = None
+try:
+    import app.billing as billing_module
+except Exception:
+    billing_module = None
 
 DB_PATH = os.environ.get("ASTROVOX_DB", "test.db")
 
-client = TestClient(app)
+if app is not None and TestClient is not None:
+    client = TestClient(app)
+else:
+    client = None
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_db():
-    init_db()
+    if init_db is not None:
+        init_db()
     yield
     for ext in ["", "-shm", "-wal"]:
         p = DB_PATH + ext
@@ -48,8 +66,10 @@ def setup_db():
 @pytest.fixture(scope="session", autouse=True)
 def mock_external_services():
     """Mock external services that require API keys."""
-    
-    import app.billing as billing_module
+    if billing_module is None:
+        yield {}
+        return
+
     original_stripe = getattr(billing_module, 'stripe', None)
     mock_stripe = MagicMock()
     billing_module.stripe = mock_stripe

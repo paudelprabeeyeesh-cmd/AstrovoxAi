@@ -1,10 +1,10 @@
 import os
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, Depends, HTTPException, Header, status
+from pydantic import BaseModel
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from typing import Optional
 
 from .supabase_client import get_supabase
 
@@ -14,20 +14,71 @@ limiter = Limiter(key_func=get_remote_address)
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
 
-# Pydantic models
+class RoleResponse(BaseModel):
+    role: str
+
+
+class UserRolesResponse(BaseModel):
+    user_id: str
+    roles: List[str]
+
+
+def get_user_id_from_token_with_roles(authorization: Optional[str] = Header(None)) -> dict:
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+        )
+    try:
+        token = authorization.replace("Bearer ", "")
+        response = supabase.auth.get_user(token)
+        if not response.user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token",
+            )
+        user = response.user
+        roles: List[str] = []
+        app_metadata = getattr(user, "app_metadata", {}) or {}
+        raw_roles = app_metadata.get("roles", [])
+        if isinstance(raw_roles, list):
+            roles = [str(r) for r in raw_roles]
+        elif isinstance(raw_roles, str):
+            roles = [raw_roles]
+        return {"user_id": user.id, "roles": roles}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        )
+
+
+def role_required(role: str):
+    def _dependency(authorization: Optional[str] = Header(None)):
+        info = get_user_id_from_token_with_roles(authorization)
+        if role not in info["roles"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Role '{role}' required",
+            )
+        return info["user_id"]
+    return _dependency
+
+
 class SignUpRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
     full_name: str
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 
 class ResetPasswordRequest(BaseModel):
-    email: EmailStr
+    email: str
 
 
 class UpdatePasswordRequest(BaseModel):
@@ -41,11 +92,9 @@ class OAuthRequest(BaseModel):
     email: Optional[str] = None
 
 
-# Routes
 @router.post("/signup")
 @limiter.limit("5/minute")
 async def sign_up(request: SignUpRequest):
-    """Register a new user with Supabase Auth"""
     try:
         response = supabase.auth.sign_up(
             {
@@ -59,7 +108,6 @@ async def sign_up(request: SignUpRequest):
                 },
             }
         )
-
         return {
             "status": "OK",
             "message": "User registered successfully. Please verify your email.",
@@ -75,17 +123,14 @@ async def sign_up(request: SignUpRequest):
 @router.post("/login")
 @limiter.limit("10/minute")
 async def login(request: LoginRequest):
-    """Login user with email and password"""
     try:
         response = supabase.auth.sign_in_with_password(
             {"email": request.email, "password": request.password}
         )
-
         if not response.user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
             )
-
         return {
             "status": "OK",
             "message": "Login successful",
@@ -107,7 +152,6 @@ async def login(request: LoginRequest):
 
 @router.post("/logout")
 async def logout():
-    """Logout user (client-side operation in Supabase)"""
     return {
         "status": "OK",
         "message": "Logout successful. Please clear your session tokens on the client.",
@@ -116,7 +160,6 @@ async def logout():
 
 @router.post("/reset-password")
 async def reset_password(request: ResetPasswordRequest):
-    """Send password reset email"""
     try:
         supabase.auth.reset_password_for_email(
             request.email,
@@ -124,7 +167,6 @@ async def reset_password(request: ResetPasswordRequest):
                 "redirect_to": f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/reset-password"
             },
         )
-
         return {"status": "OK", "message": "Password reset email sent successfully"}
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -132,32 +174,23 @@ async def reset_password(request: ResetPasswordRequest):
 
 @router.get("/me")
 async def get_current_user(authorization: str = None):
-    """Get current authenticated user (requires token in header)"""
     if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authorization header required",
         )
-
     try:
-        # Extract token from "Bearer <token>"
         token = authorization.replace("Bearer ", "")
-
-        # Get user from token
         response = supabase.auth.get_user(token)
-
         if not response.user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
-
-        # Fetch user profile
         profile_response = (
             supabase.table("profiles").select("*").eq("id", response.user.id).execute()
         )
         profile = profile_response.data[0] if profile_response.data else None
-
         return {
             "status": "OK",
             "user": {
@@ -174,9 +207,14 @@ async def get_current_user(authorization: str = None):
         )
 
 
+@router.get("/me/roles", response_model=UserRolesResponse)
+async def get_current_user_roles(authorization: Optional[str] = None):
+    info = get_user_id_from_token_with_roles(authorization)
+    return UserRolesResponse(user_id=info["user_id"], roles=info["roles"])
+
+
 @router.post("/oauth")
 async def oauth_login(request: OAuthRequest):
-    """A lightweight OAuth-compatible endpoint that forwards to Supabase if supported."""
     try:
         response = supabase.auth.sign_in_with_otp(
             {"email": request.email or "", "create_user": True}
@@ -195,15 +233,12 @@ async def oauth_login(request: OAuthRequest):
 
 @router.post("/refresh")
 async def refresh_token(refresh_token: str):
-    """Refresh access token using refresh token"""
     try:
         response = supabase.auth.refresh_session(refresh_token)
-
         if not response.session:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
             )
-
         return {
             "status": "OK",
             "session": {
