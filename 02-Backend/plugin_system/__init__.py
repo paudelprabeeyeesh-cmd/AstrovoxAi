@@ -1,3 +1,3 @@
-from .core import PluginManager  # noqa: F401
+from .core import PluginSystem, Plugin, PluginManifest, PluginStatus  # noqa: F401
 
-__all__ = ["PluginManager"]
+__all__ = ["PluginSystem", "Plugin", "PluginManifest", "PluginStatus"]

@@ -158,6 +158,11 @@ def init_db(path: Optional[str] = None) -> None:
             CREATE INDEX IF NOT EXISTS idx_memories_user ON memories(user_id);
         """)
         conn.commit()
+        try:
+            from .enterprise_migrations import run_enterprise_migrations
+            run_enterprise_migrations(conn)
+        except Exception as _e:  # noqa: BLE001
+            pass
     finally:
         conn.close()
 

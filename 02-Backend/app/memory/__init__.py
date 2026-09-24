@@ -3,13 +3,15 @@ Astrovox AI Memory Architecture
 Phase 3: Memory System Implementation
 
 This module provides a structured, persistent memory system with:
-- Layered memory architecture (context, conversation, semantic, episodic, procedural, workspace)
+- Layered memory architecture (context, conversation, semantic, episodic, procedural, workspace, long-term, user)
 - Memory importance scoring
 - Vector database integration for semantic search
 - Memory retrieval and ranking engine
 - Memory lifecycle management
 - Workspace isolation
 - Privacy controls
+- Compression and sync
+- Visualization
 """
 
 from .context_memory import ContextMemory  # noqa: F401
@@ -18,8 +20,13 @@ from .semantic_memory import SemanticMemory  # noqa: F401
 from .episodic_memory import EpisodicMemory  # noqa: F401
 from .procedural_memory import ProceduralMemory  # noqa: F401
 from .workspace_memory import WorkspaceMemory  # noqa: F401
+from .long_term_memory import LongTermMemory  # noqa: F401
+from .user_memory import UserMemory  # noqa: F401
 from .memory_manager import MemoryManager  # noqa: F401
 from .memory_consolidation import MemoryConsolidationService  # noqa: F401
+from .memory_compression import MemoryCompression  # noqa: F401
+from .memory_sync import MemorySync  # noqa: F401
+from .memory_visualization import MemoryVisualization  # noqa: F401
 from .importance_scorer import ImportanceScorer  # noqa: F401
 from .retrieval_engine import RetrievalEngine, RetrievalMethod  # noqa: F401
 from .vector_store import VectorStore  # noqa: F401
@@ -32,8 +39,13 @@ __all__ = [
     "EpisodicMemory",
     "ProceduralMemory",
     "WorkspaceMemory",
+    "LongTermMemory",
+    "UserMemory",
     "MemoryManager",
     "MemoryConsolidationService",
+    "MemoryCompression",
+    "MemorySync",
+    "MemoryVisualization",
     "ImportanceScorer",
     "RetrievalEngine",
     "RetrievalMethod",

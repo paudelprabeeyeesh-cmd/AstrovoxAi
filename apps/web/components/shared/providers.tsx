@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SessionProvider } from 'next-auth/react';
 import { ThemeProvider } from '@/components/shared/theme-provider';
+import { PWAProvider } from '@/components/shared/pwa-provider';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 interface ProvidersProps {
@@ -39,6 +40,7 @@ export function Providers({ children }: ProvidersProps) {
           enableSystem
           disableTransitionOnChange
         >
+          <PWAProvider />
           {children}
         </ThemeProvider>
       </SessionProvider>

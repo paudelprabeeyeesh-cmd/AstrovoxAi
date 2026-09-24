@@ -73,10 +73,82 @@ except Exception as _e:  # noqa: BLE001
     rag_router = APIRouter()
 
 try:
+    from .routers.cloud import router as cloud_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    cloud_router = APIRouter()
+
+try:
+    from .rag.routes import router as rag_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_router = APIRouter()
+
+try:
+    from .routers.memory_extended import router as memory_extended_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    memory_extended_router = APIRouter()
+
+try:
+    from .routers.rag_extended import router as rag_extended_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_extended_router = APIRouter()
+
+try:
     from memory_persistence.routes import router as memory_consolidation_router
 except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter
     memory_consolidation_router = APIRouter()
+
+try:
+    from .routers.enterprise_api import router as enterprise_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    enterprise_api_router = APIRouter()
+
+try:
+    from .routers.support_api import router as support_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    support_api_router = APIRouter()
+
+try:
+    from .routers.white_label_api import router as white_label_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    white_label_api_router = APIRouter()
+
+try:
+    from .routers.custom_domains_api import router as custom_domains_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    custom_domains_api_router = APIRouter()
+
+try:
+    from .routers.compliance_api import router as compliance_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    compliance_api_router = APIRouter()
+
+try:
+    from .routers.security_api import router as security_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    security_api_router = APIRouter()
+
+try:
+    from .routers.quota_api import router as quota_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    quota_api_router = APIRouter()
+
+try:
+    from .routers.scim_api import router as scim_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    scim_api_router = APIRouter()
 
 load_dotenv()
 
@@ -124,6 +196,7 @@ app.include_router(audit_router)
 app.include_router(chat_router)
 app.include_router(conversations_router)
 app.include_router(memory_router)
+app.include_router(memory_extended_router)
 app.include_router(secrets_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
@@ -135,6 +208,7 @@ app.include_router(safety_api_router)
 app.include_router(sandbox_router)
 app.include_router(tools_router)
 app.include_router(rag_router)
+app.include_router(rag_extended_router)
 app.include_router(memory_consolidation_router)
 app.include_router(finetuning_router)
 app.include_router(admin_api_router)
@@ -142,6 +216,16 @@ app.include_router(training_router)
 app.include_router(model_registry_router)
 app.include_router(llm_governance_router)
 app.include_router(ai_orchestration_router)
+app.include_router(cloud_router)
+app.include_router(performance_router)
+app.include_router(enterprise_api_router)
+app.include_router(support_api_router)
+app.include_router(white_label_api_router)
+app.include_router(custom_domains_api_router)
+app.include_router(compliance_api_router)
+app.include_router(security_api_router)
+app.include_router(quota_api_router)
+app.include_router(scim_api_router)
 
 
 # Prometheus metrics endpoint

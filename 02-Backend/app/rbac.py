@@ -1,5 +1,5 @@
 from enum import Enum
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from .auth import get_current_user
 from .database import get_db
@@ -54,3 +54,16 @@ def require_permission(permission: str, resource: str):
             raise HTTPException(status_code=403, detail="Permission denied")
         return user_id
     return _checker
+
+
+router = APIRouter(tags=["rbac"])
+
+
+@router.get("/rbac/roles")
+def list_rbac_roles(user_id: str = Depends(get_current_user)):
+    return [{"name": r.value, "permissions": [p.value for p in ROLE_PERMISSIONS.get(r, [])]} for r in Role]
+
+
+@router.get("/rbac/permissions")
+def list_permissions(user_id: str = Depends(get_current_user)):
+    return [{"name": p.value, "description": p.value} for p in Permission]

@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react'
 import { Message } from './types'
 import { User, Bot, Copy, RefreshCw, Edit3, ThumbsUp, ThumbsDown, MoreHorizontal, Check, Square } from 'lucide-react'
 import { MarkdownRenderer } from './markdown-renderer'
+import { VoiceOutput } from './voice-output'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -120,7 +121,14 @@ export function MessageBubble({
           {isUser ? (
             <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <MarkdownRenderer content={message.content} />
+            <div>
+              <MarkdownRenderer content={message.content} />
+              {!isStreaming && message.role === 'assistant' && (
+                <div className="mt-2">
+                  <VoiceOutput text={message.content} />
+                </div>
+              )}
+            </div>
           )}
 
           {isStreaming && isUser === false && (

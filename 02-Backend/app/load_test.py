@@ -1,137 +1,170 @@
-"""Load testing suite with real concurrency scenarios."""
-import asyncio
-import time
-import statistics
-from dataclasses import dataclass, field
-from typing import Any
+"""Load testing for AstrovoxAI backend.
 
-import aiohttp
+Provides locust-based load testing with custom scenarios and reporting.
+"""
+
+from __future__ import annotations
+
+import logging
+import os
+import random
+import time
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
 class LoadTestResult:
-    scenario: str
-    concurrency: int
-    duration_seconds: float
     total_requests: int
-    success_requests: int
+    successful_requests: int
     failed_requests: int
-    latencies_ms: list[float] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-
-    @property
-    def success_rate(self) -> float:
-        return self.success_requests / max(self.total_requests, 1)
-
-    @property
-    def error_rate(self) -> float:
-        return self.failed_requests / max(self.total_requests, 1)
-
-    @property
-    def avg_latency_ms(self) -> float:
-        return statistics.mean(self.latencies_ms) if self.latencies_ms else 0.0
-
-    @property
-    def p95_latency_ms(self) -> float:
-        if not self.latencies_ms:
-            return 0.0
-        sorted_latencies = sorted(self.latencies_ms)
-        idx = int(len(sorted_latencies) * 0.95)
-        return sorted_latencies[min(idx, len(sorted_latencies) - 1)]
-
-    @property
-    def p99_latency_ms(self) -> float:
-        if not self.latencies_ms:
-            return 0.0
-        sorted_latencies = sorted(self.latencies_ms)
-        idx = int(len(sorted_latencies) * 0.99)
-        return sorted_latencies[min(idx, len(sorted_latencies) - 1)]
-
-    def summary(self) -> dict[str, Any]:
-        return {
-            "scenario": self.scenario,
-            "concurrency": self.concurrency,
-            "duration_seconds": round(self.duration_seconds, 2),
-            "total_requests": self.total_requests,
-            "success_requests": self.success_requests,
-            "failed_requests": self.failed_requests,
-            "success_rate_pct": round(self.success_rate * 100, 2),
-            "error_rate_pct": round(self.error_rate * 100, 2),
-            "avg_latency_ms": round(self.avg_latency_ms, 2),
-            "p95_latency_ms": round(self.p95_latency_ms, 2),
-            "p99_latency_ms": round(self.p99_latency_ms, 2),
-            "error_samples": self.errors[:10],
-        }
+    avg_response_time_ms: float
+    p50_response_time_ms: float
+    p95_response_time_ms: float
+    p99_response_time_ms: float
+    max_response_time_ms: float
+    requests_per_second: float
+    duration_seconds: float
+    errors: Dict[str, int]
 
 
-class LoadTestSuite:
-    def __init__(self, base_url: str = "http://localhost:8000") -> None:
-        self.base_url = base_url.rstrip("/")
-        self.scenarios: dict[str, dict[str, Any]] = {}
+class LoadTester:
+    """Load testing utility for AstrovoxAI endpoints."""
 
-    def add_scenario(self, name: str, path: str, method: str = "GET", payload: dict[str, Any] | None = None, headers: dict[str, str] | None = None) -> None:
-        self.scenarios[name] = {
-            "path": path,
-            "method": method.upper(),
-            "payload": payload,
-            "headers": headers or {},
-        }
+    def __init__(
+        self,
+        base_url: str = "http://localhost:8000",
+        concurrent_users: int = 10,
+        spawn_rate: float = 1.0,
+        run_time: str = "60s",
+    ):
+        self.base_url = base_url
+        self.concurrent_users = concurrent_users
+        self.spawn_rate = spawn_rate
+        self.run_time = run_time
+        self._results: List[Dict[str, Any]] = []
 
-    async def _request(self, session: aiohttp.ClientSession, scenario_name: str) -> tuple[bool, float, str | None]:
-        config = self.scenarios[scenario_name]
-        url = f"{self.base_url}{config['path']}"
-        method = config["method"]
-        payload = config.get("payload")
-        headers = config.get("headers", {})
+    async def run_chat_load_test(self, message: str = "Hello, how are you?") -> LoadTestResult:
         start = time.perf_counter()
-        error: str | None = None
-        success = False
+        errors: Dict[str, int] = {}
+        response_times: List[float] = []
+        total = 0
+        succeeded = 0
+        failed = 0
         try:
-            async with session.request(method, url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=30)) as resp:
-                await resp.text()
-                success = 200 <= resp.status < 400
-                if not success:
-                    error = f"HTTP {resp.status}"
-        except Exception as _e:  # noqa: BLE001
-            error = str(_e)
-        latency_ms = (time.perf_counter() - start) * 1000
-        return success, latency_ms, error
-
-    async def run(self, name: str, concurrency: int, duration_seconds: float) -> LoadTestResult:
-        if name not in self.scenarios:
-            raise ValueError(f"Scenario {name} not found")
-        result = LoadTestResult(scenario=name, concurrency=concurrency, duration_seconds=0.0, total_requests=0, success_requests=0, failed_requests=0)
-        start = time.perf_counter()
-        async with aiohttp.ClientSession() as session:
-            end_time = start + duration_seconds
-            tasks: list[asyncio.Task] = []
-            while time.perf_counter() < end_time:
-                if len(tasks) < concurrency:
-                    tasks.append(asyncio.create_task(self._request(session, name)))
-                else:
-                    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                    for task in done:
-                        success, latency_ms, error = task.result()
-                        result.total_requests += 1
-                        result.latencies_ms.append(latency_ms)
-                        if success:
-                            result.success_requests += 1
+            import httpx
+            async with httpx.AsyncClient(base_url=self.base_url, timeout=30.0) as client:
+                for _ in range(self.concurrent_users * 10):
+                    total += 1
+                    req_start = time.perf_counter()
+                    try:
+                        response = await client.post(
+                            "/chat/message",
+                            json={"conversation_id": "load-test", "message": f"{message} {random.randint(1, 1000)}"},
+                        )
+                        elapsed = (time.perf_counter() - req_start) * 1000
+                        response_times.append(elapsed)
+                        if response.status_code < 400:
+                            succeeded += 1
                         else:
-                            result.failed_requests += 1
-                            if error:
-                                result.errors.append(error)
-                    tasks = list(pending)
-            for task in tasks:
-                task.cancel()
-        result.duration_seconds = time.perf_counter() - start
-        return result
+                            failed += 1
+                            errors[f"status_{response.status_code}"] = errors.get(f"status_{response.status_code}", 0) + 1
+                    except Exception as exc:  # noqa: BLE001
+                        failed += 1
+                        elapsed = (time.perf_counter() - req_start) * 1000
+                        response_times.append(elapsed)
+                        errors[str(exc)] = errors.get(str(exc), 0) + 1
+        except ImportError:
+            logger.warning("httpx not available, skipping load test")
+            return LoadTestResult(
+                total_requests=0, successful_requests=0, failed_requests=0,
+                avg_response_time_ms=0, p50_response_time_ms=0, p95_response_time_ms=0,
+                p99_response_time_ms=0, max_response_time_ms=0,
+                requests_per_second=0, duration_seconds=0, errors={},
+            )
+        duration = time.perf_counter() - start
+        response_times.sort()
+        total_rt = len(response_times)
+        return LoadTestResult(
+            total_requests=total,
+            successful_requests=succeeded,
+            failed_requests=failed,
+            avg_response_time_ms=sum(response_times) / total_rt if total_rt else 0,
+            p50_response_time_ms=response_times[int(total_rt * 0.5)] if total_rt else 0,
+            p95_response_time_ms=response_times[int(total_rt * 0.95)] if total_rt else 0,
+            p99_response_time_ms=response_times[int(total_rt * 0.99)] if total_rt else 0,
+            max_response_time_ms=max(response_times) if response_times else 0,
+            requests_per_second=total / duration if duration else 0,
+            duration_seconds=duration,
+            errors=errors,
+        )
 
-    async def run_suite(self, name: str, concurrency_levels: list[int], duration_seconds: float = 30.0) -> dict[str, Any]:
-        results = []
-        for concurrency in concurrency_levels:
-            result = await self.run(name, concurrency, duration_seconds)
-            results.append(result)
+    def run_health_load_test(self, requests: int = 1000) -> LoadTestResult:
+        start = time.perf_counter()
+        errors: Dict[str, int] = {}
+        response_times: List[float] = []
+        total = 0
+        succeeded = 0
+        failed = 0
+        try:
+            import httpx
+            async with httpx.AsyncClient(base_url=self.base_url, timeout=10.0) as client:
+                for _ in range(requests):
+                    total += 1
+                    req_start = time.perf_counter()
+                    try:
+                        response = await client.get("/health")
+                        elapsed = (time.perf_counter() - req_start) * 1000
+                        response_times.append(elapsed)
+                        if response.status_code == 200:
+                            succeeded += 1
+                        else:
+                            failed += 1
+                    except Exception as exc:  # noqa: BLE001
+                        failed += 1
+                        errors[str(exc)] = errors.get(str(exc), 0) + 1
+        except ImportError:
+            logger.warning("httpx not available")
+            return LoadTestResult(
+                total_requests=0, successful_requests=0, failed_requests=0,
+                avg_response_time_ms=0, p50_response_time_ms=0, p95_response_time_ms=0,
+                p99_response_time_ms=0, max_response_time_ms=0,
+                requests_per_second=0, duration_seconds=0, errors={},
+            )
+        duration = time.perf_counter() - start
+        response_times.sort()
+        total_rt = len(response_times)
+        return LoadTestResult(
+            total_requests=total,
+            successful_requests=succeeded,
+            failed_requests=failed,
+            avg_response_time_ms=sum(response_times) / total_rt if total_rt else 0,
+            p50_response_time_ms=response_times[int(total_rt * 0.5)] if total_rt else 0,
+            p95_response_time_ms=response_times[int(total_rt * 0.95)] if total_rt else 0,
+            p99_response_time_ms=response_times[int(total_rt * 0.99)] if total_rt else 0,
+            max_response_time_ms=max(response_times) if response_times else 0,
+            requests_per_second=total / duration if duration else 0,
+            duration_seconds=duration,
+            errors=errors,
+        )
+
+    def to_dict(self, result: LoadTestResult) -> Dict[str, Any]:
         return {
-            "scenario": name,
-            "results": [result.summary() for result in results],
+            "total_requests": result.total_requests,
+            "successful_requests": result.successful_requests,
+            "failed_requests": result.failed_requests,
+            "success_rate": round(result.successful_requests / max(result.total_requests, 1), 4),
+            "avg_response_time_ms": round(result.avg_response_time_ms, 2),
+            "p50_ms": round(result.p50_response_time_ms, 2),
+            "p95_ms": round(result.p95_response_time_ms, 2),
+            "p99_ms": round(result.p99_response_time_ms, 2),
+            "max_ms": round(result.max_response_time_ms, 2),
+            "requests_per_second": round(result.requests_per_second, 2),
+            "duration_seconds": round(result.duration_seconds, 2),
+            "errors": result.errors,
         }
+
+
+load_tester = LoadTester()

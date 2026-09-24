@@ -624,3 +624,283 @@ class ModelDropdownItem(BaseModel):
     model_id: str
     stage: str
     source: str
+
+
+class LongTermMemoryCreate(BaseModel):
+    content: str = Field(..., min_length=1, max_length=10000)
+    category: str = Field("general", max_length=100)
+    importance: float = Field(0.5, ge=0.0, le=1.0)
+    metadata: dict[str, Any] | None = None
+
+
+class LongTermMemoryOut(BaseModel):
+    memory_id: str
+    user_id: str
+    content: str
+    category: str
+    importance: float
+    tier: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class MemoryCompressionRequest(BaseModel):
+    memories: list[dict[str, Any]]
+    max_length: int | None = None
+
+
+class MemoryCompressionResponse(BaseModel):
+    compressed: list[dict[str, Any]]
+    original_total_length: int
+    compressed_total_length: int
+
+
+class MemorySyncRequest(BaseModel):
+    layers: dict[str, list[dict[str, Any]]]
+
+
+class MemorySyncResponse(BaseModel):
+    results: dict[str, Any]
+
+
+class MemoryTimelineResponse(BaseModel):
+    events: list[dict[str, Any]]
+
+
+class UserMemoryProfileResponse(BaseModel):
+    user_id: str
+    preferences: dict[str, Any]
+    personal_facts: dict[str, Any]
+    workflows: dict[str, Any]
+    goals: list[dict[str, Any]]
+    last_updated: str
+
+
+class KnowledgeBaseDocumentCreate(BaseModel):
+    title: str = Field(..., max_length=500)
+    content: str = Field(..., max_length=100000)
+    doc_type: str = Field("text", max_length=50)
+    metadata: dict[str, Any] | None = None
+
+
+class KnowledgeBaseDocumentOut(BaseModel):
+    doc_id: str
+    user_id: str
+    title: str
+    content: str
+    doc_type: str
+    metadata: dict[str, Any]
+    created_at: datetime
+
+
+class IncrementalIndexStatsResponse(BaseModel):
+    version: int
+    total_documents: int
+    pending_additions: int
+    pending_deletions: int
+
+
+class SemanticRetrievalResponse(BaseModel):
+    results: list[dict[str, Any]]
+    query: str
+    total: int
+
+
+class AudioTranscriptionRequest(BaseModel):
+    file_path: str = Field(..., max_length=1000)
+    model: str = Field("base", max_length=50)
+
+
+class AudioTranscriptionResponse(BaseModel):
+    text: str
+    model: str
+    file_path: str
+
+
+class VideoCaptionRequest(BaseModel):
+    file_path: str = Field(..., max_length=1000)
+
+
+class VideoCaptionResponse(BaseModel):
+    captions: str
+    file_path: str
+
+
+class MemoryVisualizationTimelineResponse(BaseModel):
+    events: list[dict[str, Any]]
+    total: int
+
+
+class MemoryLayerDistributionResponse(BaseModel):
+    total: int
+    distribution: dict[str, dict[str, Any]]
+
+
+class MemoryHeatmapResponse(BaseModel):
+    data: list[dict[str, Any]]
+
+
+class MarketplaceListingCreate(BaseModel):
+    listing_type: str = Field("prompt", max_length=50)
+    title: str = Field(..., max_length=200)
+    description: str = Field("", max_length=2000)
+    content: dict[str, Any] = {}
+    price: float = Field(0.0, ge=0.0)
+    tags: list[str] = []
+
+
+class MarketplaceListingOut(BaseModel):
+    listing_id: str
+    listing_type: str
+    title: str
+    description: str
+    price: float
+    author_id: str
+    downloads: int
+    rating: float
+    tags: list[str]
+    created_at: datetime
+
+
+class AIAppCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    description: str = Field("", max_length=2000)
+    version: str = Field("1.0.0", max_length=50)
+    manifest: dict[str, Any] = {}
+    permissions: list[str] = []
+    tags: list[str] = []
+
+
+class AIAppOut(BaseModel):
+    app_id: str
+    name: str
+    description: str
+    version: str
+    author_id: str
+    status: str
+    install_count: int
+    rating: float
+    tags: list[str]
+    created_at: datetime
+
+
+class CollaborationSessionCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    participants: list[str] = []
+
+
+class CollaborationSessionOut(BaseModel):
+    session_id: str
+    name: str
+    participants: list[str]
+    status: str
+    created_at: datetime
+
+
+class TenantCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    plan: str = Field("free", max_length=50)
+    owner_id: str
+
+
+class TenantOut(BaseModel):
+    tenant_id: str
+    name: str
+    slug: str
+    plan: str
+    status: str
+    owner_id: str
+    created_at: datetime
+
+
+class FederatedRoundCreate(BaseModel):
+    client_ids: list[str] = []
+    global_model_version: str = Field("1.0.0", max_length=50)
+
+
+class FederatedRoundOut(BaseModel):
+    round_id: str
+    global_model_version: str
+    clients: list[str]
+    updates_received: int
+    status: str
+    created_at: datetime
+
+
+class SyntheticDatasetCreate(BaseModel):
+    schema_name: str = Field(..., max_length=200)
+    num_rows: int = Field(100, ge=1, le=100000)
+
+
+class SyntheticDatasetOut(BaseModel):
+    dataset_id: str
+    name: str
+    schema: dict[str, Any]
+    rows: list[dict[str, Any]]
+    generation_method: str
+    created_at: datetime
+
+
+class EvaluationSuiteCreate(BaseModel):
+    name: str = Field(..., max_length=200)
+    benchmarks: list[str] = []
+    metrics: list[str] = []
+
+
+class EvaluationSuiteOut(BaseModel):
+    suite_id: str
+    name: str
+    description: str
+    benchmarks: list[str]
+    metrics: list[str]
+    created_at: datetime
+
+
+class EvaluationRunCreate(BaseModel):
+    suite_id: str
+    model_id: str
+    model_version: str
+
+
+class EvaluationRunOut(BaseModel):
+    run_id: str
+    suite_id: str
+    model_id: str
+    model_version: str
+    status: str
+    results: dict[str, Any]
+    started_at: datetime | None
+    completed_at: datetime | None
+
+
+class WebhookEventCreate(BaseModel):
+    provider: str = Field(..., max_length=100)
+    event_type: str = Field(..., max_length=100)
+    payload: dict[str, Any] = {}
+    headers: dict[str, str] = {}
+
+
+class WebhookEventOut(BaseModel):
+    event_id: str
+    provider: str
+    event_type: str
+    processed: bool
+    received_at: datetime
+
+
+class EventOut(BaseModel):
+    event_id: str
+    event_type: str
+    payload: dict[str, Any]
+    priority: str
+    timestamp: datetime
+
+
+class QueuedMessageOut(BaseModel):
+    message_id: str
+    queue_name: str
+    payload: dict[str, Any]
+    status: str
+    retries: int
+    created_at: datetime
+

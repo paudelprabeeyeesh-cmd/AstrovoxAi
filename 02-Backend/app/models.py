@@ -651,6 +651,94 @@ class Document(Base):
     created_at = Column(DateTime, server_default=func.now())
 
 
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String, nullable=False)
+    expires_at = Column(String, nullable=False)
+    used = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    token_hash = Column(String, nullable=False)
+    expires_at = Column(String, nullable=False)
+    used = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class MFASecret(Base):
+    __tablename__ = "mfa_secrets"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, unique=True)
+    secret = Column(String, nullable=False)
+    enabled = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class MFABackupCode(Base):
+    __tablename__ = "mfa_backup_codes"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    code_hash = Column(String, nullable=False)
+    used = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    session_token = Column(String, nullable=False, unique=True)
+    refresh_token = Column(String, nullable=False, unique=True)
+    ip_address = Column(String)
+    user_agent = Column(String)
+    expires_at = Column(String, nullable=False)
+    last_activity_at = Column(DateTime, server_default=func.now())
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class Device(Base):
+    __tablename__ = "devices"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    name = Column(String, nullable=False)
+    device_type = Column(String, default="unknown")
+    platform = Column(String)
+    browser = Column(String)
+    fingerprint = Column(String, nullable=False)
+    last_seen_at = Column(DateTime, server_default=func.now())
+    trusted = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class MagicLink(Base):
+    __tablename__ = "magic_links"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    email = Column(String, nullable=False)
+    token_hash = Column(String, nullable=False, unique=True)
+    used = Column(Integer, default=0)
+    expires_at = Column(String, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+
+class OAuthAccount(Base):
+    __tablename__ = "oauth_accounts"
+    id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    provider = Column(String, nullable=False)
+    provider_user_id = Column(String, nullable=False)
+    access_token = Column(String)
+    refresh_token = Column(String)
+    expires_at = Column(String)
+    created_at = Column(DateTime, server_default=func.now())
+
+
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
     id = Column(String, primary_key=True)

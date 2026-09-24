@@ -122,7 +122,7 @@ function EnhancedChat({
     [createFolder]
   );
 
-  const handleSendMessage = async (content: string, options?: { imageUrl?: string; files?: File[] }) => {
+  const handleSendMessage = async (content: string, options?: { imageUrl?: string; files?: File[]; cameraImage?: string; screenShare?: boolean }) => {
     sendMessageStream(content, 'gpt-4', options?.imageUrl);
   };
 
@@ -292,4 +292,3 @@ function ConversationItem({
     </div>
   );
 }
-

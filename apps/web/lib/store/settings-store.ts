@@ -1,55 +1,40 @@
 ﻿import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { ModelId } from '@/lib/constants'
 
 interface SettingsState {
-  preferences: {
-    fontSize: 'small' | 'medium' | 'large'
-    sendOnEnter: boolean
-    showTimestamps: boolean
-    autoScroll: boolean
-    soundEnabled: boolean
-  }
-  theme: 'light' | 'dark' | 'system'
-  modelId: ModelId
-  setPreference: <K extends keyof SettingsState['preferences']>(
-    key: K,
-    value: SettingsState['preferences'][K]
-  ) => void
-  setTheme: (theme: 'light' | 'dark' | 'system') => void
-  setModelId: (modelId: ModelId) => void
-  resetPreferences: () => void
-}
-
-const defaultPreferences: SettingsState['preferences'] = {
-  fontSize: 'medium',
-  sendOnEnter: true,
-  showTimestamps: true,
-  autoScroll: true,
-  soundEnabled: true,
+  theme: string
+  codeTheme: string
+  voiceSpeed: number
+  autoPlayVoice: boolean
+  fontSize: 'small' | 'medium' | 'large'
+  compactMode: boolean
+  sendOnEnter: boolean
+  showTimestamps: boolean
+  showModelBadges: boolean
+  soundEnabled: boolean
+  updateSettings: (settings: Partial<SettingsState>) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
   devtools(
     persist(
       (set) => ({
-        preferences: { ...defaultPreferences },
         theme: 'system',
-        modelId: 'gpt-4o',
-
-        setPreference: (key, value) =>
-          set((state) => ({
-            preferences: { ...state.preferences, [key]: value },
-          })),
-
-        setTheme: (theme) => set({ theme }),
-        setModelId: (modelId) => set({ modelId }),
-        resetPreferences: () => set({ preferences: { ...defaultPreferences } }),
+        codeTheme: 'github-dark',
+        voiceSpeed: 1,
+        autoPlayVoice: false,
+        fontSize: 'medium',
+        compactMode: false,
+        sendOnEnter: true,
+        showTimestamps: true,
+        showModelBadges: true,
+        soundEnabled: true,
+        updateSettings: (newSettings) =>
+          set((state) => ({ ...state, ...newSettings })),
       }),
       {
         name: 'settings-storage',
       }
-    ),
-    { name: 'SettingsStore' }
+    )
   )
 )

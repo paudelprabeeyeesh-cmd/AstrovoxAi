@@ -26,7 +26,12 @@ from .semantic_memory import SemanticMemory, FactCategory
 from .episodic_memory import EpisodicMemory, EventType
 from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory, WorkspaceType
+from .long_term_memory import LongTermMemory
+from .user_memory import UserMemory
 from .memory_consolidation import MemoryConsolidationService
+from .memory_compression import MemoryCompression
+from .memory_sync import MemorySync
+from .memory_visualization import MemoryVisualization
 from .importance_scorer import ImportanceScorer
 from .retrieval_engine import RetrievalEngine, RetrievalMethod
 from .vector_store import VectorStore
@@ -46,12 +51,16 @@ class MemoryManager:
         self.episodic_memory = EpisodicMemory()
         self.procedural_memory = ProceduralMemory()
         self.workspace_memory = WorkspaceMemory()
+        self.long_term_memory = LongTermMemory()
         
         # Initialize supporting systems
         self.importance_scorer = ImportanceScorer()
         self.retrieval_engine = RetrievalEngine()
         self.vector_store = VectorStore()
         self.consolidation_service = MemoryConsolidationService()
+        self.compression = MemoryCompression()
+        self.sync = MemorySync()
+        self.visualization = MemoryVisualization()
         
         # Register memory stores with retrieval engine
         self._register_memory_stores()
@@ -423,3 +432,43 @@ class MemoryManager:
     def get_consolidation_records(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Get recent consolidation records."""
         return self.consolidation_service.get_records(limit=limit)
+
+    # Long-term Memory Operations
+
+    def store_long_term(self, user_id: str, content: str, category: str = "general", importance: float = 0.5, metadata: Optional[Dict[str, Any]] = None) -> str:
+        return self.long_term_memory.add_memory(user_id=user_id, content=content, category=category, importance=importance, metadata=metadata)
+
+    def get_long_term(self, memory_id: str) -> Optional[Dict[str, Any]]:
+        return self.long_term_memory.get_memory(memory_id)
+
+    def list_long_term(self, user_id: str, category: Optional[str] = None, limit: int = 100) -> List[Dict[str, Any]]:
+        return self.long_term_memory.get_user_memories(user_id=user_id, category=category, limit=limit)
+
+    # User Memory Operations
+
+    def get_user_profile(self, user_id: str) -> Dict[str, Any]:
+        if not hasattr(self, "_user_memories"):
+            self._user_memories = {}
+        if user_id not in self._user_memories:
+            from .user_memory import UserMemory
+            self._user_memories[user_id] = UserMemory(user_id=user_id)
+        return self._user_memories[user_id].get_profile()
+
+    # Compression Operations
+
+    def compress_memories(self, memories: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return self.compression.batch_compress(memories)
+
+    # Sync Operations
+
+    def sync_memories(self, layers: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+        return self.sync.full_sync(layers)
+
+    # Visualization Operations
+
+    def record_memory_event(self, event_type: str, layer: str, metadata: Optional[Dict[str, Any]] = None):
+        self.visualization.record_event(event_type=event_type, layer=layer, metadata=metadata)
+
+    def get_memory_timeline(self, user_id: str, start: Optional[str] = None, end: Optional[str] = None) -> List[Dict[str, Any]]:
+        return self.visualization.timeline(user_id=user_id, start=start, end=end)
+

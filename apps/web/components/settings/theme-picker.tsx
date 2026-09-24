@@ -1,69 +1,117 @@
-'use client';
+'use client'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Braces, Palette, Volume2 } from 'lucide-react'
+import { useSettingsStore } from '@/lib/store/settings-store'
 
-import { useTheme } from 'next-themes';
-import { Monitor, Moon, Sun } from 'lucide-react';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+const CODE_THEMES = [
+  { id: 'github-dark', name: 'GitHub Dark' },
+  { id: 'github-light', name: 'GitHub Light' },
+  { id: 'dracula', name: 'Dracula' },
+  { id: 'monokai', name: 'Monokai' },
+  { id: 'nord', name: 'Nord' },
+  { id: 'solarized-dark', name: 'Solarized Dark' },
+  { id: 'solarized-light', name: 'Solarized Light' },
+]
 
-const themes = [
-  { value: 'light', label: 'Light', icon: Sun },
-  { value: 'dark', label: 'Dark', icon: Moon },
-  { value: 'system', label: 'System', icon: Monitor },
-] as const;
+const UI_THEMES = [
+  { id: 'light', name: 'Light' },
+  { id: 'dark', name: 'Dark' },
+  { id: 'system', name: 'System' },
+]
 
-type ThemeValue = typeof themes[number]['value'];
+export function ThemePicker() {
+  const { settings, updateSettings } = useSettingsStore()
+  const [codeTheme, setCodeTheme] = useState(settings.codeTheme || 'github-dark')
 
-interface ThemePickerProps {
-  value?: ThemeValue;
-  onValueChange?: (value: ThemeValue) => void;
-}
-
-export function ThemePicker({ value, onValueChange }: ThemePickerProps) {
-  const { theme, setTheme } = useTheme();
-  const selectedTheme = value || theme || 'system';
-
-  const handleChange = (newValue: ThemeValue) => {
-    onValueChange?.(newValue);
-    setTheme(newValue);
-  };
-
-  const isSelected = (themeValue: ThemeValue) => selectedTheme === themeValue;
-  const labelClass = (themeValue: ThemeValue) =>
-    'flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 p-4 transition-colors ' +
-    (isSelected(themeValue) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted');
+  const handleCodeThemeChange = (theme: string) => {
+    setCodeTheme(theme)
+    updateSettings({ codeTheme: theme })
+  }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-medium">Appearance</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize the look and feel of the application
-        </p>
-      </div>
-      <RadioGroup
-        value={selectedTheme}
-        onValueChange={(v) => handleChange(v as ThemeValue)}
-        className="grid grid-cols-3 gap-4"
-      >
-        {themes.map((theme) => {
-          const Icon = theme.icon;
-          const id = 'theme-' + theme.value;
-          return (
-            <div key={theme.value}>
-              <RadioGroupItem value={theme.value} id={id} className="sr-only" />
-              <Label htmlFor={id} className={labelClass(theme.value)}>
-                <Icon className="mb-2 h-6 w-6" />
-                <span className="text-sm font-medium">{theme.label}</span>
-              </Label>
-            </div>
-          );
-        })}
-      </RadioGroup>
-      <p className="text-sm text-muted-foreground">
-        {selectedTheme === 'system' && 'Follows your system preference'}
-        {selectedTheme === 'light' && 'Light mode enabled'}
-        {selectedTheme === 'dark' && 'Dark mode enabled'}
-      </p>
+    <div className="space-y-6">
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Palette className="h-4 w-4" />
+          <h3 className="text-sm font-medium">UI Theme</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {UI_THEMES.map((theme) => (
+            <button
+              key={theme.id}
+              onClick={() => updateSettings({ theme: theme.id })}
+              className={`flex flex-col items-center justify-center rounded-lg border-2 p-3 text-center transition-colors ${
+                (settings.theme || 'system') === theme.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:bg-muted'
+              }`}
+            >
+              <span className="text-sm font-medium">{theme.name}</span>
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Braces className="h-4 w-4" />
+          <h3 className="text-sm font-medium">Code Syntax Theme</h3>
+        </div>
+        <Select value={codeTheme} onValueChange={handleCodeThemeChange}>
+          <SelectTrigger className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {CODE_THEMES.map((theme) => (
+              <SelectItem key={theme.id} value={theme.id}>
+                {theme.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Volume2 className="h-4 w-4" />
+          <h3 className="text-sm font-medium">Voice Output</h3>
+        </div>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label>Voice Speed</Label>
+            <Slider
+              value={[settings.voiceSpeed || 1]}
+              onValueChange={(v) => updateSettings({ voiceSpeed: v[0] })}
+              min={0.5}
+              max={2}
+              step={0.1}
+            />
+            <span className="text-xs text-muted-foreground">
+              {(settings.voiceSpeed || 1).toFixed(1)}x
+            </span>
+          </div>
+          <div className="flex items-center justify-between">
+            <Label>Auto-play responses</Label>
+            <input
+              type="checkbox"
+              checked={settings.autoPlayVoice || false}
+              onChange={(e) => updateSettings({ autoPlayVoice: e.target.checked })}
+              className="rounded"
+            />
+          </div>
+        </div>
+      </Card>
     </div>
-  );
+  )
 }

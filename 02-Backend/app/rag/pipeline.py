@@ -43,6 +43,7 @@ from retrieval.chunker import (
     hierarchical_chunk,
     Chunker,
 )
+from app.parsers.document_parsers import DocumentParsers
 
 logger = logging.getLogger(__name__)
 
@@ -63,26 +64,27 @@ class TextExtractor:
 
     @staticmethod
     def extract_txt(file_path: str) -> str:
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
+        return DocumentParsers.parse_txt(file_path)
 
     @staticmethod
     def extract_pdf(file_path: str) -> str:
-        try:
-            from pypdf import PdfReader
-            reader = PdfReader(file_path)
-            return "".join(page.extract_text() or "" for page in reader.pages)
-        except ImportError:
-            raise RuntimeError("pypdf is required for PDF ingestion. Install with: pip install pypdf")
+        return DocumentParsers.parse_pdf(file_path)
 
     @staticmethod
     def extract_docx(file_path: str) -> str:
-        try:
-            from docx import Document as DocxDocument
-            doc = DocxDocument(file_path)
-            return "\n".join(para.text for para in doc.paragraphs)
-        except ImportError:
-            raise RuntimeError("python-docx is required for DOCX ingestion. Install with: pip install python-docx")
+        return DocumentParsers.parse_docx(file_path)
+
+    @staticmethod
+    def extract_markdown(file_path: str) -> str:
+        return DocumentParsers.parse_markdown(file_path)
+
+    @staticmethod
+    def extract_html(file_path: str) -> str:
+        return DocumentParsers.parse_html(file_path)
+
+    @staticmethod
+    def extract_csv(file_path: str) -> str:
+        return DocumentParsers.parse_csv(file_path)
 
     @staticmethod
     def extract_website(url: str) -> str:
@@ -300,6 +302,10 @@ class RAGPipeline:
             ".pdf": self.text_extractor.extract_pdf,
             ".docx": self.text_extractor.extract_docx,
             ".txt": self.text_extractor.extract_txt,
+            ".md": self.text_extractor.extract_markdown,
+            ".html": self.text_extractor.extract_html,
+            ".htm": self.text_extractor.extract_html,
+            ".csv": self.text_extractor.extract_csv,
         }
         extractor = extractors.get(ext, self.text_extractor.extract_txt)
         text = extractor(file_path)
