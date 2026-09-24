@@ -1,4 +1,3 @@
-
 import logging
 import time
 from typing import Any, Callable, Optional
@@ -12,6 +11,7 @@ class ContinuousEvaluator:
         self.interval_seconds = interval_seconds
         self._history: list[dict[str, Any]] = []
         self._running = False
+        self._last_run: Optional[float] = None
 
     def start(self) -> None:
         self._running = True
@@ -33,6 +33,7 @@ class ContinuousEvaluator:
                 "details": result,
             }
             self._history.append(record)
+            self._last_run = time.time()
             logger.info("Continuous eval passed in %.2fms", record["latency_ms"])
             return record
         except Exception as exc:  # noqa: BLE001
@@ -43,6 +44,7 @@ class ContinuousEvaluator:
                 "error": str(exc),
             }
             self._history.append(record)
+            self._last_run = time.time()
             logger.error("Continuous eval failed: %s", exc)
             return record
 
@@ -53,11 +55,14 @@ class ContinuousEvaluator:
         if not self._history:
             return {"count": 0, "pass_rate": 0.0}
         passed = sum(1 for h in self._history if h["status"] == "passed")
+        avg_latency = sum(h["latency_ms"] for h in self._history if h["status"] == "passed") / max(passed, 1)
         return {
             "count": len(self._history),
             "passed": passed,
             "failed": len(self._history) - passed,
             "pass_rate": round(passed / len(self._history), 4),
+            "avg_latency_ms": round(avg_latency, 2),
+            "last_run": self._last_run,
         }
 
     def detect_regression(self, baseline_score: float, threshold: float = 0.05) -> Optional[dict[str, Any]]:

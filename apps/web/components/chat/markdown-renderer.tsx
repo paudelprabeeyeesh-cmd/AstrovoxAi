@@ -267,9 +267,13 @@ export function MarkdownRenderer({ content, showWordCount = false, showTableOfCo
             return <input type={type} {...props} />
           },
           ul({ children, ...props }) {
-            const hasCheckbox = Array.from(children as React.ReactNodeArray).some((child) =>
-              typeof child === 'object' && child !== null && 'props' in child && child.props?.type === 'checkbox'
-            )
+            const childArray = React.Children.toArray(children)
+            const hasCheckbox = childArray.some((child) => {
+              if (React.isValidElement(child)) {
+                return child.props?.type === 'checkbox'
+              }
+              return false
+            })
             if (hasCheckbox) {
               return <ul className="my-2 space-y-1">{children}</ul>
             }
@@ -295,19 +299,20 @@ export function MarkdownRenderer({ content, showWordCount = false, showTableOfCo
             )
           },
           img({ src, alt }) {
+            const imageUrl = typeof src === 'string' ? src : ''
             return (
               <div className="relative my-4 inline-block">
                 <img
-                  src={src}
+                  src={imageUrl}
                   alt={alt || 'Image'}
                   className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setLightboxImage(src || '')}
+                  onClick={() => setLightboxImage(imageUrl)}
                 />
                 <Button
                   variant="secondary"
                   size="sm"
                   className="absolute top-2 right-2 h-8 w-8 p-0 bg-black/50 hover:bg-black/70 text-white"
-                  onClick={() => setLightboxImage(src || '')}
+                  onClick={() => setLightboxImage(imageUrl)}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </Button>
