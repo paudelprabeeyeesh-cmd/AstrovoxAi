@@ -50,3 +50,29 @@ class TestRecursiveDesignImprover:
         conv = improver.measure_convergence()
         assert isinstance(conv, float)
         assert conv >= 0.0
+
+    def test_improve_stops_at_quality_threshold(self):
+        improver = RecursiveDesignImprover(max_iterations=50, quality_threshold=0.35)
+        design = DesignSpec(name="zeta", description="thresh", complexity=1.0, quality=0.3,
+                            components=["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l"])
+        result = improver.improve(design)
+        assert result.quality >= 0.35
+
+    def test_improvement_report_not_started(self):
+        improver = RecursiveDesignImprover()
+        report = improver.get_improvement_report()
+        assert report["status"] == "not_started"
+
+    def test_reduce_coupling_branch(self):
+        improver = RecursiveDesignImprover(max_iterations=20, quality_threshold=0.9)
+        design = DesignSpec(name="eta", description="coupling", complexity=1.0, quality=0.3,
+                            constraints=["c1", "c2", "c3"])
+        result = improver.improve(design)
+        assert result.quality >= design.quality
+
+    def test_eliminate_duplication_branch(self):
+        improver = RecursiveDesignImprover(max_iterations=20, quality_threshold=0.9)
+        design = DesignSpec(name="theta", description="dup", complexity=1.0, quality=0.3,
+                            components=["a", "b", "c", "a", "b"])
+        result = improver.improve(design)
+        assert result.quality >= design.quality

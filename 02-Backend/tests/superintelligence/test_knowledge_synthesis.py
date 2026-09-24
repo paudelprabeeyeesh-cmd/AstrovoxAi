@@ -50,3 +50,39 @@ class TestKnowledgeSynthesizer:
         stats = synth.get_knowledge_stats()
         assert stats["node_count"] == 2
         assert "math" in stats["domains"]
+
+    def test_add_knowledge_pads_embedding(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        node = synth.add_knowledge("n1", "math", np.random.randn(16))
+        assert node.embedding.shape == (32,)
+
+    def test_synthesize_requires_valid_nodes(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        synth.add_knowledge("n1", "math", np.random.randn(32))
+        with pytest.raises(ValueError):
+            synth.synthesize(["n1", "invalid"])
+
+    def test_synthesize_cross_domain_blend(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        synth.add_knowledge("n1", "math", np.random.randn(32))
+        synth.add_knowledge("n2", "cs", np.random.randn(32))
+        result = synth.synthesize(["n1", "n2"], synthesis_method="cross_domain_blend")
+        assert len(result["synthesized_embedding"]) == 32
+
+    def test_synthesize_concatenate(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        synth.add_knowledge("n1", "math", np.random.randn(32))
+        synth.add_knowledge("n2", "cs", np.random.randn(32))
+        result = synth.synthesize(["n1", "n2"], synthesis_method="concatenate")
+        assert len(result["synthesized_embedding"]) == 64
+
+    def test_find_analogies_missing_nodes(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        synth.add_knowledge("n1", "math", np.random.randn(32))
+        analogies = synth.find_analogies("missing", "n1")
+        assert analogies == []
+
+    def test_knowledge_stats_empty(self):
+        synth = KnowledgeSynthesizer(embedding_dim=32)
+        stats = synth.get_knowledge_stats()
+        assert stats["node_count"] == 0

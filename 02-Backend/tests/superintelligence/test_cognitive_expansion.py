@@ -49,3 +49,13 @@ class TestCognitiveExpander:
         assert "memory_capacity" in stats
         assert "processing_bandwidth" in stats
         assert stats["total_expansions"] == 1
+
+    def test_expand_memory_clamps_additional(self):
+        expander = CognitiveExpander(initial_memory=100.0)
+        result = expander.expand_memory(1e12)
+        assert result["added"] == 1000.0
+
+    def test_expand_bandwidth_clamps_additional(self):
+        expander = CognitiveExpander(initial_bandwidth=10.0)
+        result = expander.expand_bandwidth(1e12)
+        assert result["added"] == 100.0

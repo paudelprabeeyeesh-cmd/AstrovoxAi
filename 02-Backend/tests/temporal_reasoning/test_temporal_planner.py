@@ -82,3 +82,31 @@ class TestTemporalPlanner:
         assert len(schedule) == 2
         assert schedule[0]["action"] == "A"
         assert schedule[1]["action"] == "B"
+
+    def test_add_event_with_metadata(self):
+        planner = TemporalPlanner()
+        eid = planner.add_event(0.0, 5.0, action="move", metadata={"location": "room_a"})
+        assert planner.events[eid].metadata == {"location": "room_a"}
+
+    def test_get_times(self):
+        planner = TemporalPlanner()
+        eid = planner.add_event(1.0, 4.0)
+        assert planner.get_times()[eid] == (1.0, 4.0)
+
+    def test_generate_schedule_with_violations(self):
+        planner = TemporalPlanner()
+        eid = planner.add_event(0.0, 3.0, action="A")
+        eid2 = planner.add_event(3.0, 6.0, action="B")
+        planner.add_constraint(eid, eid2, "before", min_gap=2.0)
+        schedule = planner.generate_schedule()
+        assert len(schedule[0]["violations"]) == 1
+
+    def test_empty_planner(self):
+        planner = TemporalPlanner()
+        assert planner.validate() == []
+        assert planner.generate_schedule() == []
+
+    def test_constraint_max_gap_stored(self):
+        c = TemporalConstraint(constraint_id="c8", source="a", target="b", relation="before", min_gap=1.0, max_gap=3.0)
+        assert c.max_gap == 3.0
+        assert c.min_gap == 1.0

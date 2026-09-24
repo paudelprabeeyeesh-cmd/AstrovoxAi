@@ -39,7 +39,7 @@ class PersuasionDetector:
     def __init__(self):
         self.patterns = {
             "authority": re.compile(r"\b(expert|authority|official|research|study|doctor|professor|certified)\b", re.I),
-            "social_proof": re.compile(r"\b(everyone|most|majority|popular|trend|best.?sell|million|billion)\b", re.I),
+            "social_proof": re.compile(r"\b(everyone|most|majority|popular|trend|bestsell(?:ing)?|millions?|billion)\b", re.I),
             "scarcity": re.compile(r"\b(limited|rare|exclusive|only|last|hurry|deadline|sold.?out|expire)\b", re.I),
             "reciprocity": re.compile(r"\b(free|gift|bonus|extra|complimentary|included|give|offer)\b", re.I),
             "consistency": re.compile(r"\b(commit|promise|always|never|consistently|guarantee|pledge|oath)\b", re.I),

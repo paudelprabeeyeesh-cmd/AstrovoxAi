@@ -48,23 +48,23 @@ class DependencyMapper:
         return cycles
 
     def topo_sort(self) -> Optional[List[str]]:
-        in_degree = {name: 0 for name in self._modules}
+        out_degree = {name: len(self._adj.get(name, set())) for name in self._modules}
+        reverse_adj: Dict[str, Set[str]] = {name: set() for name in self._modules}
         for src, dests in self._adj.items():
             for dest in dests:
-                if dest in in_degree:
-                    in_degree[dest] += 1
+                if dest in reverse_adj:
+                    reverse_adj[dest].add(src)
 
-        queue = [name for name, deg in in_degree.items() if deg == 0]
+        queue = [name for name, deg in out_degree.items() if deg == 0]
         order: List[str] = []
         while queue:
             queue.sort()
             node = queue.pop(0)
             order.append(node)
-            for neighbor in sorted(self._adj.get(node, [])):
-                if neighbor in in_degree:
-                    in_degree[neighbor] -= 1
-                    if in_degree[neighbor] == 0:
-                        queue.append(neighbor)
+            for neighbor in reverse_adj.get(node, []):
+                out_degree[neighbor] -= 1
+                if out_degree[neighbor] == 0:
+                    queue.append(neighbor)
 
         if len(order) == len(self._modules):
             return order

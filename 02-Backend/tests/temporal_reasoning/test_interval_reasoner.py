@@ -103,3 +103,56 @@ class TestIntervalReasoner:
         ir.add_interval(0.0, 2.0)
         ir.add_interval(2.0, 4.0)
         assert ir.gaps() == []
+
+    def test_interval_order(self):
+        a = Interval(start=0.0, end=2.0)
+        b = Interval(start=1.0, end=3.0)
+        c = Interval(start=4.0, end=5.0)
+        intervals = sorted([b, a, c])
+        assert intervals == [a, b, c]
+
+    def test_query_relations_contained_by(self):
+        ir = IntervalReasoner()
+        iid1 = ir.add_interval(0.0, 5.0)
+        iid2 = ir.add_interval(1.0, 4.0)
+        relations = ir.query_relations(iid2)
+        assert iid1 in relations["contained_by"]
+
+    def test_query_relations_meets(self):
+        ir = IntervalReasoner()
+        iid1 = ir.add_interval(0.0, 2.0)
+        iid2 = ir.add_interval(2.0, 4.0)
+        relations = ir.query_relations(iid1)
+        assert iid2 in relations["meets"]
+
+    def test_query_relations_before_after(self):
+        ir = IntervalReasoner()
+        iid1 = ir.add_interval(0.0, 2.0)
+        iid2 = ir.add_interval(3.0, 5.0)
+        relations = ir.query_relations(iid1)
+        assert iid2 in relations["before"]
+        relations2 = ir.query_relations(iid2)
+        assert iid1 in relations2["after"]
+
+    def test_query_relations_missing_iid(self):
+        ir = IntervalReasoner()
+        assert ir.query_relations("missing") == {}
+
+    def test_merge_overlapping_with_meets(self):
+        ir = IntervalReasoner()
+        ir.add_interval(0.0, 2.0)
+        ir.add_interval(2.0, 4.0)
+        ir.add_interval(5.0, 6.0)
+        merged = ir.merge_overlapping()
+        assert len(merged) == 2
+        assert merged[0].start == 0.0
+        assert merged[0].end == 4.0
+
+    def test_gaps_empty(self):
+        ir = IntervalReasoner()
+        assert ir.gaps() == []
+
+    def test_equals_tolerance(self):
+        a = Interval(start=0.0, end=1.0)
+        b = Interval(start=0.0 + 1e-10, end=1.0 - 1e-10)
+        assert a.equals(b)

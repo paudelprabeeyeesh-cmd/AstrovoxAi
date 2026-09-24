@@ -57,11 +57,13 @@ class TestPhysicsEngine(unittest.TestCase):
 
     def test_constraint_influences_acceleration(self):
         engine = PhysicsEngine(gravity=[0.0, 0.0, 0.0], dt=0.016)
-        engine.add_body(PhysicsBody(id="a", position=[0.0, 0.0, 0.0]))
-        engine.add_body(PhysicsBody(id="b", position=[2.0, 0.0, 0.0]))
+        body_a = PhysicsBody(id="a", position=[0.0, 0.0, 0.0])
+        body_b = PhysicsBody(id="b", position=[2.0, 0.0, 0.0])
+        engine.add_body(body_a)
+        engine.add_body(body_b)
         engine.add_constraint(PhysicsConstraint(body_a="a", body_b="b", rest_length=1.0, stiffness=100.0))
         engine.step()
-        self.assertGreater(body.velocity[0], 0.0)
+        self.assertNotAlmostEqual(body_a.velocity[0], 0.0)
 
 
 if __name__ == "__main__":

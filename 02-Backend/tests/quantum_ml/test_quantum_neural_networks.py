@@ -1,4 +1,5 @@
 import numpy as np
+from quantum_ml.quantum_circuits import QuantumCircuit
 from quantum_ml.quantum_neural_networks import ParameterizedQuantumCircuit
 
 
@@ -52,3 +53,20 @@ class TestParameterizedQuantumCircuit:
         probs = pqc.forward(x, params)
         assert probs.shape == (4,)
         assert abs(np.sum(probs) - 1.0) < 1e-10
+
+
+class TestParameterizedQuantumCircuitMethods:
+    def test_circuit_returns_quantum_circuit(self):
+        pqc = ParameterizedQuantumCircuit(num_qubits=2, num_layers=2)
+        x = np.random.randn(2)
+        params = np.random.randn(pqc.num_params)
+        circuit = pqc.circuit(x, params)
+        assert isinstance(circuit, QuantumCircuit)
+        assert circuit.num_qubits == 2
+
+    def test_circuit_num_qubits(self):
+        pqc = ParameterizedQuantumCircuit(num_qubits=3, num_layers=2)
+        x = np.random.randn(3)
+        params = np.random.randn(pqc.num_params)
+        circuit = pqc.circuit(x, params)
+        assert circuit.num_qubits == 3

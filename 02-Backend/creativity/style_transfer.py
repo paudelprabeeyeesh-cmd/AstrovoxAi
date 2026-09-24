@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 import random
-import string
 
 
 @dataclass
@@ -22,8 +21,7 @@ class StyledText:
 
 class StyleTransfer:
     def __init__(self, seed: Optional[int] = None):
-        if seed is not None:
-            random.seed(seed)
+        self._rand = random.Random(seed)
 
     def transfer(self, text: str, target_style: str) -> StyledText:
         profile = self._profile(target_style)
@@ -58,12 +56,12 @@ class StyleTransfer:
                 words = words[:target_len]
             elif len(words) < max(3, target_len // 2):
                 filler = ["indeed", "furthermore", "moreover", "thus", "hence"]
-                words.extend(random.sample(filler, min(3, target_len - len(words))))
+                words.extend(self._rand.sample(filler, min(3, target_len - len(words))))
             if profile.punctuation_density > 0.2:
-                if random.random() < 0.3:
+                if self._rand.random() < 0.3:
                     words[0] = words[0].capitalize()
-                if random.random() < 0.2 and len(words) > 3:
-                    words.insert(random.randint(1, len(words) - 1), ";")
+                if self._rand.random() < 0.2 and len(words) > 3:
+                    words.insert(self._rand.randint(1, len(words) - 1), ";")
             if profile.vocabulary_richness > 0.7:
                 synonyms = {"good": "excellent", "bad": "dreadful", "big": "vast", "small": "minuscule", "fast": "swift", "slow": "leisurely"}
                 words = [synonyms.get(w.lower(), w) for w in words]

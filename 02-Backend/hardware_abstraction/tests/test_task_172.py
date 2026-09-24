@@ -76,3 +76,30 @@ class TestMemoryPoolAllocator:
         assert len(allocator.get_used_blocks()) == 0
         assert len(allocator.get_free_blocks()) == 1
         assert allocator.free_size() == 64
+
+    def test_three_adjacent_free_blocks_merge_chain(self):
+        allocator = MemoryPoolAllocator(total_size=64)
+        id1 = allocator.allocate(8)
+        id2 = allocator.allocate(8)
+        id3 = allocator.allocate(8)
+        allocator.free(id1)
+        allocator.free(id2)
+        allocator.free(id3)
+        assert len(allocator.get_free_blocks()) == 1
+        assert allocator.free_size() == 64
+        free_block = allocator.get_free_blocks()[0]
+        assert free_block.coalesced_with is None
+
+    def test_coalesced_with_chain_interleaved(self):
+        allocator = MemoryPoolAllocator(total_size=64)
+        id1 = allocator.allocate(8)
+        id2 = allocator.allocate(8)
+        id3 = allocator.allocate(8)
+        allocator.free(id1)
+        allocator.free(id3)
+        assert len(allocator.get_free_blocks()) == 2
+        allocator.free(id2)
+        assert len(allocator.get_free_blocks()) == 1
+        assert allocator.free_size() == 64
+        free_block = allocator.get_free_blocks()[0]
+        assert free_block.coalesced_with is None

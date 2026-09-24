@@ -55,11 +55,22 @@ class MemoryPoolAllocator:
                 continue
             prev = coalesced[-1]
             if prev.free and block.free:
+                prev_cw = prev.coalesced_with or None
+                block_cw = block.coalesced_with or None
+                merged_cw: Optional[str]
+                if prev_cw is None and block_cw is None:
+                    merged_cw = None
+                elif prev_cw is None:
+                    merged_cw = block_cw
+                elif block_cw is None:
+                    merged_cw = prev_cw
+                else:
+                    merged_cw = ",".join([prev_cw, block_cw])
                 merged = Block(
                     pointer=prev.pointer,
                     size=prev.size + block.size,
                     free=True,
-                    coalesced_with=",".join(filter(None, [prev.coalesced_with, block.coalesced_with])),
+                    coalesced_with=merged_cw,
                 )
                 coalesced[-1] = merged
             else:

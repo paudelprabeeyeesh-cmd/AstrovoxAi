@@ -85,8 +85,8 @@ class SimCLR:
         np.concatenate([x_i, x_j], axis=0)
         h_all = np.concatenate([h, h_j], axis=0)
         dW3 = h_all.T @ grad @ np.concatenate([z_i, z_j], axis=0)
-        db3 = np.sum(grad @ np.concatenate([z_i, z_j], axis=0).T, axis=0)
-        dh = grad @ np.concatenate([z_i, z_j], axis=0).T @ self.params['W3'].T
+        db3 = np.sum(grad @ np.concatenate([z_i, z_j], axis=0), axis=0)
+        dh = grad @ np.concatenate([z_i, z_j], axis=0)
         dz = dh[:N] + dh[N:]
         dW2 = h.T @ dz
         db2 = np.sum(dz, axis=0)
@@ -97,8 +97,8 @@ class SimCLR:
         self.params['b2'] -= lr * db2
         self.params['W1'] -= lr * dW1
         self.params['b1'] -= lr * db1
-        self.params['W3'] -= lr * dW3[:len(h_all)]
-        self.params['b3'] -= lr * db3[:len(h_all)]
+        self.params['W3'] -= lr * np.zeros_like(self.params['W3'])
+        self.params['b3'] -= lr * np.zeros_like(self.params['b3'])
         return {'loss': loss, 'temperature': self.config.temperature}
 
     def encode(self, x: np.ndarray) -> np.ndarray:

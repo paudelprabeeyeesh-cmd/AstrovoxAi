@@ -42,11 +42,14 @@ class GridMap:
 class GraphMap:
     def __init__(self):
         self.nodes: Dict[str, Dict[str, float]] = {}
+        self.node_attrs: Dict[str, Dict[str, Any]] = {}
         self.start_node: Optional[str] = None
         self.goal_node: Optional[str] = None
 
     def add_node(self, node_id: str, **properties: Any) -> None:
-        self.nodes[node_id] = dict(properties)
+        self.nodes.setdefault(node_id, {})
+        if properties:
+            self.node_attrs[node_id] = dict(properties)
 
     def add_edge(self, a: str, b: str, weight: float = 1.0) -> None:
         self.nodes.setdefault(a, {})[b] = weight
@@ -54,6 +57,9 @@ class GraphMap:
 
     def neighbors(self, node_id: str) -> Dict[str, float]:
         return self.nodes.get(node_id, {})
+
+    def get_properties(self, node_id: str) -> Dict[str, Any]:
+        return dict(self.node_attrs.get(node_id, {}))
 
 
 def parse_grid_map(raw: str) -> GridMap:

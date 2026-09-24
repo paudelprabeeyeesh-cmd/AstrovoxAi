@@ -44,6 +44,12 @@ class TestVector2D:
         n = v.normalize()
         assert abs(n.magnitude() - 1.0) < 1e-9
 
+    def test_normalize_zero_vector(self):
+        v = Vector2D(0.0, 0.0)
+        n = v.normalize()
+        assert n.x == 0.0
+        assert n.y == 0.0
+
     def test_dot(self):
         v1 = Vector2D(1.0, 0.0)
         v2 = Vector2D(0.0, 1.0)
@@ -59,6 +65,18 @@ class TestVector3D:
     def test_magnitude(self):
         v = Vector3D(1.0, 2.0, 2.0)
         assert v.magnitude() == 3.0
+
+    def test_normalize(self):
+        v = Vector3D(1.0, 2.0, 2.0)
+        n = v.normalize()
+        assert abs(n.magnitude() - 1.0) < 1e-9
+
+    def test_normalize_zero_vector(self):
+        v = Vector3D(0.0, 0.0, 0.0)
+        n = v.normalize()
+        assert n.x == 0.0
+        assert n.y == 0.0
+        assert n.z == 0.0
 
     def test_dot(self):
         v1 = Vector3D(1.0, 0.0, 0.0)
@@ -80,12 +98,22 @@ class TestBoundingBox2D:
         assert box.contains(Point2D(5.0, 5.0))
         assert not box.contains(Point2D(11.0, 5.0))
 
+    def test_edge_on_boundary(self):
+        box = BoundingBox2D(0.0, 0.0, 10.0, 10.0)
+        assert box.contains(Point2D(0.0, 5.0))
+        assert box.contains(Point2D(10.0, 5.0))
+
 
 class TestBoundingBox3D:
     def test_contains(self):
         box = BoundingBox3D(0.0, 0.0, 0.0, 10.0, 10.0, 10.0)
         assert box.contains(Point3D(5.0, 5.0, 5.0))
         assert not box.contains(Point3D(5.0, 5.0, 11.0))
+
+    def test_edge_on_boundary(self):
+        box = BoundingBox3D(0.0, 0.0, 0.0, 10.0, 10.0, 10.0)
+        assert box.contains(Point3D(0.0, 0.0, 0.0))
+        assert box.contains(Point3D(10.0, 10.0, 10.0))
 
 
 class TestRotate2D:
@@ -94,6 +122,12 @@ class TestRotate2D:
         r = rotate_2d(p, math.pi / 2)
         assert abs(r.x - 0.0) < 1e-9
         assert abs(r.y - 1.0) < 1e-9
+
+    def test_rotate_about_custom_origin(self):
+        p = Point2D(1.0, 1.0)
+        r = rotate_2d(p, math.pi / 2, origin=Point2D(1.0, 0.0))
+        assert abs(r.x - 0.0) < 1e-9
+        assert abs(r.y - 0.0) < 1e-9
 
 
 class TestIntersects2D:
@@ -110,3 +144,24 @@ class TestIntersects2D:
         c = Point2D(2.0, 0.0)
         d = Point2D(3.0, 1.0)
         assert not intersects_2d(a, b, c, d)
+
+    def test_shared_endpoint(self):
+        a = Point2D(0.0, 0.0)
+        b = Point2D(1.0, 0.0)
+        c = Point2D(1.0, 0.0)
+        d = Point2D(2.0, 0.0)
+        assert not intersects_2d(a, b, c, d)
+
+
+class TestAngleBetween:
+    def test_orthogonal(self):
+        v1 = Vector2D(1.0, 0.0)
+        v2 = Vector2D(0.0, 1.0)
+        angle = angle_between(v1, v2)
+        assert abs(angle - math.pi / 2) < 1e-9
+
+    def test_same_direction(self):
+        v1 = Vector2D(1.0, 0.0)
+        v2 = Vector2D(2.0, 0.0)
+        angle = angle_between(v1, v2)
+        assert abs(angle - 0.0) < 1e-9

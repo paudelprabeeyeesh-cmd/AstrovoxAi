@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from quantum_ml.quantum_circuits import QuantumCircuit
 from quantum_ml.quantum_kernels import QuantumKernel, QuantumSVM
 
 
@@ -71,3 +72,26 @@ class TestQuantumSVM:
         X = np.random.randn(5, 2)
         with pytest.raises(ValueError):
             svm.predict(X)
+
+
+class TestQuantumKernelMethods:
+    def test_encode_data_angle(self):
+        kernel = QuantumKernel(encoding="angle")
+        x = np.array([0.1, 0.2, 0.3])
+        circuit = kernel._encode_data(x)
+        assert isinstance(circuit, QuantumCircuit)
+        assert circuit.num_qubits == 3
+
+    def test_encode_data_amplitude(self):
+        kernel = QuantumKernel(encoding="amplitude")
+        x = np.array([1.0, 0.0, 0.0, 0.0])
+        circuit = kernel._encode_data(x)
+        assert isinstance(circuit, QuantumCircuit)
+        assert circuit.num_qubits == 2
+
+    def test_encode_data_default(self):
+        kernel = QuantumKernel(encoding="default")
+        x = np.array([0.1, 0.2, 0.3, 0.4])
+        circuit = kernel._encode_data(x)
+        assert isinstance(circuit, QuantumCircuit)
+        assert circuit.num_qubits == 2

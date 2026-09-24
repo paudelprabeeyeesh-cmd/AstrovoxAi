@@ -80,3 +80,13 @@ class TestQuantumOptimizer:
         alpha = opt.line_search(f, params, direction)
         assert alpha > 0
         assert alpha <= 1.0
+
+
+class TestQuantumOptimizerMethods:
+    def test_gradient_descent_minimizes(self):
+        opt = QuantumOptimizer()
+        def f(x):
+            return np.sum((x - 1)**2)
+        params = np.zeros(3)
+        result = opt._gradient_descent(f, params, lr=0.1, iterations=20)
+        assert np.linalg.norm(result - 1) < 0.5

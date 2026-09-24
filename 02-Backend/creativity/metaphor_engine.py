@@ -14,8 +14,7 @@ class Metaphor:
 
 class MetaphorEngine:
     def __init__(self, seed: Optional[int] = None):
-        if seed is not None:
-            random.seed(seed)
+        self._rand = random.Random(seed)
         self.domains = {
             "nature": ["river", "mountain", "forest", "storm", "seed", "ocean", "wind", "fire"],
             "technology": ["circuit", "algorithm", "network", "engine", "pipeline", "database", "protocol"],
@@ -32,11 +31,11 @@ class MetaphorEngine:
 
     def generate(self, target: str, source_domain: Optional[str] = None, n: int = 3) -> List[Metaphor]:
         if source_domain and source_domain in self.domains:
-            sources = self.domains[source_domain]
+            sources = list(self.domains[source_domain])
         else:
             sources = [item for items in self.domains.values() for item in items]
         metaphors = []
-        random.shuffle(sources)
+        self._rand.shuffle(sources)
         for i in range(min(n, len(sources))):
             source = sources[i]
             text = self._compose(target, source)
@@ -47,7 +46,7 @@ class MetaphorEngine:
         return metaphors
 
     def _compose(self, target: str, source: str) -> str:
-        template = random.choice(self.templates)
+        template = self._rand.choice(self.templates)
         return template.format(target=target, source=source)
 
     def _strength(self, target: str, source: str) -> float:

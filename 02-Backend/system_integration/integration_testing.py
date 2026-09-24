@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 @dataclass
 class TestScenario:
+    __test__ = False
     name: str
     steps: List[Callable[[], Any]]
     teardowns: List[Callable[[], Any]] = field(default_factory=list)
@@ -22,6 +23,7 @@ class TestScenario:
 
 @dataclass
 class TestResult:
+    __test__ = False
     scenario: str
     passed: bool
     steps_passed: int = 0

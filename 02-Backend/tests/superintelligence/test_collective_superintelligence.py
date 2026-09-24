@@ -54,3 +54,24 @@ class TestCollectiveSuperintelligence:
         stats = cs.get_collective_stats()
         assert stats["nodes"] == 1
         assert stats["states_recorded"] == 1
+
+    def test_collective_stats_no_history(self):
+        cs = CollectiveSuperintelligence(node_embedding_dim=16)
+        cs.add_node("n1", 0.5, "reasoning")
+        stats = cs.get_collective_stats()
+        assert stats["nodes"] == 1
+        assert stats["states_recorded"] == 0
+
+    def test_amplify_single_node_synergy(self):
+        cs = CollectiveSuperintelligence(node_embedding_dim=16)
+        cs.add_node("n1", 0.5, "reasoning")
+        state = cs.amplify_collective()
+        assert state.synergy_score == pytest.approx(0.5)
+
+    def test_emergent_consensus_threshold(self):
+        cs = CollectiveSuperintelligence(node_embedding_dim=16)
+        cs.add_node("n1", 0.5, "reasoning")
+        cs.add_node("n2", 0.7, "planning")
+        topic = np.random.randn(16)
+        result = cs.emergent_consensus(topic, threshold=2.0)
+        assert result["consensus_reached"] is False

@@ -70,6 +70,7 @@ class LatencyProfiler:
         metadata: Optional[Dict] = None,
     ) -> ProfilingContext:
         ctx = ProfilingContext(name=name, metadata=metadata or {})
+        ctx._event_type = event_type
         self._contexts[name] = ctx
         return ctx
 
@@ -82,8 +83,7 @@ class LatencyProfiler:
         ctx.end_time = time()
         ctx.tokens = tokens
         event = LatencyEvent(
-            event_type=LatencyEventType(ctx.name.split("_")[0] 
-                                        if "_" in ctx.name else LatencyEventType.STEP),
+            event_type=event_type,
             latency_ms=ctx.elapsed_ms,
             tokens=tokens,
             metadata={**(ctx.metadata or {}), **(metadata or {})},

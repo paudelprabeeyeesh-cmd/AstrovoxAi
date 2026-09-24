@@ -1,10 +1,8 @@
-import numpy as np
-
 from multimodal.vision_pipeline import VisionPipeline, VisionPipelineResult
 
 
 def _make_image(h=32, w=32):
-    return np.random.randint(0, 255, size=(h, w, 3), dtype=np.uint8)
+    return [[[int((i * j) % 256) for _ in range(3)] for j in range(w)] for i in range(h)]
 
 
 def test_vision_pipeline_result_dataclass():
@@ -41,7 +39,8 @@ def test_vision_pipeline_process_features_type():
     pipeline = VisionPipeline()
     pixels = _make_image(64, 64)
     result = pipeline.process(pixels)
-    from multimodal.vision_language import ImageFeatures
+    from multimodal.vision_pipeline import ImageFeatures
+
     assert isinstance(result.features, ImageFeatures)
 
 

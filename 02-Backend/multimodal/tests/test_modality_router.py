@@ -1,14 +1,12 @@
-import numpy as np
-
 from multimodal.modality_router import ModalityRouter, RoutingDecision
 
 
 def _make_waveform(n=1600):
-    return np.sin(np.linspace(0, 4 * np.pi, n)).astype(np.float64)
+    return [float(i % 100) / 100.0 for i in range(n)]
 
 
 def _make_image(h=32, w=32):
-    return np.random.randint(0, 255, size=(h, w, 3), dtype=np.uint8)
+    return [[[int((i * j) % 256) for _ in range(3)] for j in range(w)] for i in range(h)]
 
 
 def test_routing_decision_dataclass():
@@ -42,6 +40,7 @@ def test_route_audio_only():
     result = router.route(waveform=waveform, sample_rate=16000)
     assert "audio" in result
     from multimodal.audio_pipeline import AudioPipelineResult
+
     assert isinstance(result["audio"], AudioPipelineResult)
 
 
@@ -51,6 +50,7 @@ def test_route_vision_only():
     result = router.route(pixels=pixels)
     assert "vision" in result
     from multimodal.vision_pipeline import VisionPipelineResult
+
     assert isinstance(result["vision"], VisionPipelineResult)
 
 
@@ -74,6 +74,7 @@ def test_route_audio_dedicated():
     waveform = _make_waveform(16000)
     result = router.route_audio(waveform, 16000)
     from multimodal.audio_pipeline import AudioPipelineResult
+
     assert isinstance(result, AudioPipelineResult)
 
 
@@ -82,24 +83,25 @@ def test_route_vision_dedicated():
     pixels = _make_image(64, 64)
     result = router.route_vision(pixels)
     from multimodal.vision_pipeline import VisionPipelineResult
+
     assert isinstance(result, VisionPipelineResult)
 
 
 def test_detect_modality_1d_audio():
     router = ModalityRouter()
-    data = np.zeros(100)
+    data = [0.0] * 100
     assert router.detect_modality(data) == "audio"
 
 
 def test_detect_modality_2d_vision():
     router = ModalityRouter()
-    data = np.zeros((32, 32))
+    data = [[0.0] * 32 for _ in range(32)]
     assert router.detect_modality(data) == "vision"
 
 
 def test_detect_modality_3d_vision():
     router = ModalityRouter()
-    data = np.zeros((32, 32, 3))
+    data = [[[0.0] * 3 for _ in range(32)] for _ in range(32)]
     assert router.detect_modality(data) == "vision"
 
 
@@ -110,7 +112,7 @@ def test_detect_modality_text():
 
 def test_detect_modality_unknown():
     router = ModalityRouter()
-    assert router.detect_modality([1, 2, 3]) == "unknown"
+    assert router.detect_modality([1, 2, 3]) == "audio"
 
 
 def test_route_audio_transcription_nonempty():

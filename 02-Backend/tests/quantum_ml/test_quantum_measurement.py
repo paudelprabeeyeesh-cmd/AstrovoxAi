@@ -47,3 +47,29 @@ class TestQuantumMeasurement:
         state = np.array([0, 1], dtype=np.complex128)
         op = np.array([[1, 0], [0, -1]], dtype=np.complex128)
         assert abs(QuantumMeasurement.expectation_value(state, op) + 1.0) < 1e-10
+
+
+class TestSingleQubitMeasurements:
+    def test_measure_single_z_plus(self):
+        state = np.array([1, 0], dtype=np.complex128)
+        assert abs(QuantumMeasurement.measure_single_z(state, 0) - 1.0) < 1e-10
+
+    def test_measure_single_z_minus(self):
+        state = np.array([0, 1], dtype=np.complex128)
+        assert abs(QuantumMeasurement.measure_single_z(state, 0) + 1.0) < 1e-10
+
+    def test_measure_single_x_plus(self):
+        state = np.array([1, 1], dtype=np.complex128) / np.sqrt(2)
+        assert abs(QuantumMeasurement.measure_single_x(state, 0) - 1.0) < 1e-10
+
+    def test_measure_single_x_minus(self):
+        state = np.array([1, -1], dtype=np.complex128) / np.sqrt(2)
+        assert abs(QuantumMeasurement.measure_single_x(state, 0) + 1.0) < 1e-10
+
+    def test_measure_single_y_plus(self):
+        state = np.array([1, 1j], dtype=np.complex128) / np.sqrt(2)
+        assert abs(QuantumMeasurement.measure_single_y(state, 0) - 0.5) < 1e-10
+
+    def test_measure_single_y_minus(self):
+        state = np.array([1, -1j], dtype=np.complex128) / np.sqrt(2)
+        assert abs(QuantumMeasurement.measure_single_y(state, 0) + 0.5) < 1e-10

@@ -48,3 +48,17 @@ class TestSingularityPathways:
         stats = sp.get_pathway_stats()
         assert stats["scenarios_defined"] == 1
         assert stats["simulations_run"] == 1
+
+    def test_simulate_unknown_model_defaults_exponential(self):
+        sp = SingularityPathways()
+        scenario = sp.simulate_scenario("default", years=5, growth_model="unknown")
+        assert len(scenario.capability_curve) > 0
+
+    def test_compare_scenarios_ranks(self):
+        sp = SingularityPathways()
+        sp.simulate_scenario("slow", years=5, growth_model="polynomial")
+        sp.simulate_scenario("fast", years=30, growth_model="exponential")
+        result = sp.compare_scenarios()
+        assert result["scenario_count"] == 2
+        assert "safest_scenario" in result
+        assert "riskiest_scenario" in result

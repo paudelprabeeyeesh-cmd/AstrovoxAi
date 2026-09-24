@@ -62,3 +62,27 @@ class TestAnsatzDesigner:
         assert "ry" in gate_types
         assert "rz" in gate_types
         assert "cx" in gate_types
+
+
+class TestVQEMethods:
+    def test_gradient_shape(self):
+        vqe = VQE(num_qubits=2, ansatz_depth=2)
+        params = np.random.randn(4)
+        grad = vqe._gradient(params)
+        assert grad.shape == params.shape
+
+    def test_problem_hamiltonian_shape(self):
+        qaoa = QAOA(num_qubits=3, p=1)
+        h = qaoa._problem_hamiltonian()
+        assert h.shape == (8, 8)
+
+    def test_mixer_hamiltonian_length(self):
+        qaoa = QAOA(num_qubits=3, p=1)
+        mixers = qaoa._mixer_hamiltonian()
+        assert len(mixers) == 3
+
+    def test_param_gradient_shape(self):
+        qaoa = QAOA(num_qubits=3, p=1)
+        params = np.random.rand(2) * np.pi / 2
+        grad = qaoa._param_gradient(params)
+        assert grad.shape == params.shape

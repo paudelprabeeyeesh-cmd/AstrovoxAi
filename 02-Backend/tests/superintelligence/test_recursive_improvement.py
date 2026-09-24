@@ -39,3 +39,14 @@ class TestRecursiveSelfImprover:
         stats = improver.get_improvement_stats()
         assert stats["iterations"] == 15
         assert "final_capability" in stats
+
+    def test_bootstrap_converges_early(self):
+        improver = RecursiveSelfImprover(initial_capability=0.1, improvement_rate=0.001, max_iterations=5)
+        result = improver.bootstrap(target_capability=100.0)
+        assert result["success"] is False
+        assert result["iterations_used"] <= 5
+
+    def test_improvement_stats_not_started(self):
+        improver = RecursiveSelfImprover()
+        stats = improver.get_improvement_stats()
+        assert stats["status"] == "not_started"

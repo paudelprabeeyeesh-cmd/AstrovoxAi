@@ -73,3 +73,31 @@ class TestSelfReplicator:
         assert stats["total_replicas"] == 1
         assert stats["templates_registered"] == 1
         assert "generation_counts" in stats
+
+    def test_max_generation_exceeded_raises(self):
+        replicator = SelfReplicator(max_generation=1, branch_factor=2)
+        replicator.register_template("core", {"value": 1})
+        parent = replicator.replicate("core")
+        child = replicator.spawn_offspring(parent)[0]
+        with pytest.raises(ValueError):
+            replicator.replicate("core", parent=child)
+
+    def test_replicate_mutation(self):
+        replicator = SelfReplicator(max_generation=3, branch_factor=2, mutation_rate=0.9)
+        replicator.register_template("core", {"value": 10})
+        parent = replicator.replicate("core", state={"value": 10})
+        child = replicator.replicate("core", parent=parent)
+        assert child.generation == 1
+
+    def test_spawn_offspring_unknown_template_raises(self):
+        replicator = SelfReplicator()
+        replicator.register_template("core", {"value": 1})
+        parent = replicator.replicate("core")
+        with pytest.raises(ValueError):
+            replicator.spawn_offspring(parent, template_name="unknown")
+
+    def test_run_replication_stops_on_empty_frontier(self):
+        replicator = SelfReplicator(max_generation=2, branch_factor=1)
+        replicator.register_template("core", {"value": 1})
+        root = replicator.run_replication("core")
+        assert root.generation == 0

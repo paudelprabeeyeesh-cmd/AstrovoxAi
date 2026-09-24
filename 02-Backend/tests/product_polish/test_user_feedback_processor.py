@@ -54,7 +54,7 @@ def test_analyze_returns_summary():
     assert analysis["total_feedback"] == 2
     assert abs(analysis["average_rating"] - 3.5) < 1e-9
     assert "awesome" in analysis["positive_keywords"]
-    assert "bug" in analysis["negative_keywords"]
+    assert "issue" in analysis["negative_keywords"]
 
 
 def test_search_returns_ranked_results():

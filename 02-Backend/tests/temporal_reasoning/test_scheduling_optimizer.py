@@ -56,3 +56,39 @@ class TestSchedulingOptimizer:
         opt = SchedulingOptimizer()
         assert opt.optimize() == []
         assert opt.makespan() == 0.0
+
+    def test_task_defaults(self):
+        from temporal_reasoning.scheduling_optimizer import Task
+        task = Task(task_id="T1", duration=5.0)
+        assert task.resources == {}
+        assert task.dependencies == []
+        assert task.priority == 0.0
+
+    def test_scheduled_task(self):
+        from temporal_reasoning.scheduling_optimizer import ScheduledTask
+        st = ScheduledTask(task_id="T1", start=0.0, end=5.0, resources={"cpu": 1})
+        assert st.task_id == "T1"
+        assert st.end - st.start == 5.0
+
+    def test_optimize_multiple_dependencies(self):
+        opt = SchedulingOptimizer()
+        opt.add_task("T1", 3.0)
+        opt.add_task("T2", 2.0)
+        opt.add_task("T3", 4.0, dependencies=["T1", "T2"])
+        schedule = opt.optimize()
+        t3 = next(s for s in schedule if s.task_id == "T3")
+        assert t3.start == pytest.approx(3.0)
+
+    def test_resource_usage_outside_bounds(self):
+        opt = SchedulingOptimizer()
+        opt.add_task("T1", 5.0, resources={"cpu": 2})
+        opt.optimize()
+        assert opt.resource_usage_at(-1.0) == {}
+        assert opt.resource_usage_at(10.0) == {}
+
+    def test_optimize_with_cycle(self):
+        opt = SchedulingOptimizer()
+        opt.add_task("T1", 3.0, dependencies=["T2"])
+        opt.add_task("T2", 2.0, dependencies=["T1"])
+        schedule = opt.optimize()
+        assert len(schedule) == 0

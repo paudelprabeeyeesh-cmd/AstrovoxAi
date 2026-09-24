@@ -1,0 +1,158 @@
+> from typing import List, Dict, Any, Optional
+> from dataclasses import dataclass, field
+> import copy
+  
+  
+> @dataclass
+> class Pattern:
+>     id: str
+>     name: str
+>     source_descriptions: List[str]
+>     abstraction_level: int
+>     confidence: float
+>     components: List[str] = field(default_factory=list)
+  
+  
+> @dataclass
+> class AbstractionHierarchy:
+>     id: str
+>     root_pattern: str
+>     layers: List[Pattern]
+>     compression_ratio: float
+  
+  
+> class AbstractionEngine:
+>     def __init__(self, max_hierarchy_depth: int = 5, min_confidence: float = 0.5):
+>         self.max_hierarchy_depth = int(max_hierarchy_depth)
+>         self.min_confidence = float(min_confidence)
+>         self._patterns: List[Pattern] = []
+>         self._hierarchies: List[AbstractionHierarchy] = []
+>         self._counter = 0
+  
+>     def register_pattern(self, name: str, source_descriptions: List[str],
+>                          abstraction_level: int = 0, confidence: float = 1.0,
+>                          components: Optional[List[str]] = None) -> Pattern:
+>         if abstraction_level > self.max_hierarchy_depth:
+!             abstraction_level = self.max_hierarchy_depth
+>         confidence = float(max(0.0, min(1.0, confidence)))
+>         if confidence < self.min_confidence:
+>             raise ValueError(f"confidence {confidence} below minimum {self.min_confidence}")
+>         pattern = Pattern(
+>             id=self._next_id(),
+>             name=name,
+>             source_descriptions=list(source_descriptions),
+>             abstraction_level=abstraction_level,
+>             confidence=confidence,
+>             components=list(components or []),
+>         )
+>         self._patterns.append(pattern)
+>         return pattern
+  
+>     def extract_patterns(self, descriptions: List[str], min_sources: int = 2) -> List[Pattern]:
+>         patterns: List[Pattern] = []
+>         n = len(descriptions)
+>         for i, desc in enumerate(descriptions):
+>             source_slice = descriptions[max(0, i - min_sources + 1): i + 1]
+>             if len(source_slice) >= min_sources:
+>                 name = self._derive_name(source_slice)
+>                 components = self._decompose(source_slice[0])
+>                 level = i // max(1, n // self.max_hierarchy_depth)
+>                 level = min(level, self.max_hierarchy_depth)
+>                 confidence = min(1.0, 0.5 + (len(source_slice) / n) * 0.5)
+>                 pattern = Pattern(
+>                     id=self._next_id(),
+>                     name=name,
+>                     source_descriptions=list(source_slice),
+>                     abstraction_level=level,
+>                     confidence=confidence,
+>                     components=components,
+>                 )
+>                 patterns.append(pattern)
+>                 self._patterns.append(pattern)
+>         return patterns
+  
+>     def build_hierarchy(self, root_pattern: Pattern) -> AbstractionHierarchy:
+>         layers = [root_pattern]
+>         for level in range(root_pattern.abstraction_level + 1, self.max_hierarchy_depth + 1):
+>             parent = layers[-1]
+>             if not parent.components and not parent.source_descriptions:
+!                 break
+>             child_name = f"{parent.name}__abstract_{level}"
+>             child_descs = parent.source_descriptions[:1] if parent.source_descriptions else [parent.name]
+>             child = Pattern(
+>                 id=self._next_id(),
+>                 name=child_name,
+>                 source_descriptions=child_descs,
+>                 abstraction_level=level,
+>                 confidence=min(1.0, parent.confidence * 0.9),
+>                 components=parent.components[: len(parent.components) // 2],
+>             )
+>             layers.append(child)
+>         root_str = layers[0].name if layers else root_pattern.name
+>         ratio = len(layers) / max(1, self.max_hierarchy_depth)
+>         hierarchy = AbstractionHierarchy(
+>             id=self._next_id(),
+>             root_pattern=root_str,
+>             layers=layers,
+>             compression_ratio=ratio,
+>         )
+>         self._hierarchies.append(hierarchy)
+>         return hierarchy
+  
+>     def generalize(self, hierarchy: AbstractionHierarchy) -> Pattern:
+>         if not hierarchy.layers:
+!             raise ValueError("hierarchy has no layers")
+>         all_sources: List[str] = []
+>         all_components: List[str] = []
+>         for layer in hierarchy.layers:
+>             all_sources.extend(layer.source_descriptions)
+>             all_components.extend(layer.components)
+>         general = Pattern(
+>             id=self._next_id(),
+>             name=f"{hierarchy.root_pattern}__general",
+>             source_descriptions=all_sources,
+>             abstraction_level=hierarchy.layers[-1].abstraction_level,
+>             confidence=min(1.0, sum(p.confidence for p in hierarchy.layers) / len(hierarchy.layers)),
+>             components=list(set(all_components)),
+>         )
+>         self._patterns.append(general)
+>         return general
+  
+>     def get_patterns_by_level(self, level: int) -> List[Pattern]:
+>         return [p for p in self._patterns if p.abstraction_level == level]
+  
+>     def list_patterns(self, min_confidence: float = 0.0, max_level: Optional[int] = None) -> List[Pattern]:
+>         result = [p for p in self._patterns if p.confidence >= min_confidence]
+>         if max_level is not None:
+!             result = [p for p in result if p.abstraction_level <= max_level]
+>         return result
+  
+>     def get_stats(self) -> Dict[str, Any]:
+>         level_counts: Dict[int, int] = {}
+>         for p in self._patterns:
+>             level_counts[p.abstraction_level] = level_counts.get(p.abstraction_level, 0) + 1
+>         return {
+>             "total_patterns": len(self._patterns),
+>             "total_hierarchies": len(self._hierarchies),
+>             "levels": level_counts,
+>             "mean_confidence": sum(p.confidence for p in self._patterns) / max(1, len(self._patterns)),
+>         }
+  
+>     def _next_id(self) -> str:
+>         self._counter += 1
+>         return f"pattern_{self._counter}"
+  
+>     @staticmethod
+>     def _derive_name(descriptions: List[str]) -> str:
+>         words = " ".join(descriptions).split()
+>         if not words:
+!             return "pattern"
+>         common = words[0]
+>         return f"common_{common}"
+  
+>     @staticmethod
+>     def _decompose(description: str) -> List[str]:
+>         parts = description.split()
+>         if len(parts) <= 2:
+>             return [f"{description}__{i}" for i in range(min(len(parts), 3))]
+!         return [f"{parts[0]}_{parts[i]}" for i in range(1, min(len(parts), 4))]

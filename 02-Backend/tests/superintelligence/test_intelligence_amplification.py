@@ -69,3 +69,25 @@ class TestCognitiveEnhancer:
         stats = enhancer.get_enhancement_stats()
         assert "dimensions" in stats
         assert "mean_weight" in stats
+
+    def test_amplify_factor_one_efficiency(self):
+        amp = IntelligenceAmplifier()
+        profile = amp.amplify(1.0)
+        assert profile.efficiency_gain == 1.0
+
+    def test_amplify_energy_bottleneck(self):
+        amp = IntelligenceAmplifier(max_amplification=100.0)
+        profile = amp.amplify(90.0)
+        assert "energy_dissipation" in profile.bottlenecks
+
+    def test_augmentation_stats_empty(self):
+        amp = IntelligenceAmplifier()
+        stats = amp.get_augmentation_stats()
+        assert stats["current_amplification"] == 1.0
+
+    def test_measure_gain_shape_mismatch(self):
+        enhancer = CognitiveEnhancer(dimensions=16)
+        original = np.random.randn(16)
+        enhanced = np.random.randn(8)
+        gain = enhancer.measure_gain(original, enhanced)
+        assert gain >= 0.0

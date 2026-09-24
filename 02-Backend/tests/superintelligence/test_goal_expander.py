@@ -58,3 +58,8 @@ class TestGoalExpander:
         assert stats["total_expansions"] == 6
         assert stats["max_depth"] == 2
         assert stats["branching_factor"] == 2
+
+    def test_expand_with_constraints(self):
+        expander = GoalExpander(max_depth=2, branching_factor=2)
+        root = expander.expand("build system", constraints=["safe", "fast"])
+        assert len(root.constraints) == 2

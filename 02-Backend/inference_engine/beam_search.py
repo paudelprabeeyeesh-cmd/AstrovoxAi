@@ -149,10 +149,7 @@ class Beam:
     def detach(self, max_length: int) -> Optional[BeamHypothesis]:
         if not self._hypos:
             return None
-        best = self.best()
-        if best is None:
-            return None
-        return best
+        return self._hypos[0]
 
 
 def softmax(x: np.ndarray) -> np.ndarray:

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from quantum_ml.quantum_circuits import QuantumCircuit
 from quantum_ml.variational_classifier import VariationalClassifier
 
 
@@ -51,3 +52,28 @@ class TestVariationalClassifier:
         clf.fit(X, y, epochs=5, lr=0.01)
         pred = clf.predict(np.array([0.5]))
         assert pred in {0, 1}
+
+
+class TestVariationalClassifierMethods:
+    def test_ansatz_returns_circuit(self):
+        clf = VariationalClassifier(num_qubits=2, num_layers=2)
+        x = np.random.randn(2)
+        params = np.random.randn(clf.num_layers * clf.num_qubits * 2)
+        circuit = clf._ansatz(x, params)
+        assert isinstance(circuit, QuantumCircuit)
+        assert circuit.num_qubits == 2
+
+    def test_loss_computes_mse(self):
+        clf = VariationalClassifier(num_qubits=2, num_layers=2)
+        X = np.random.randn(5, 2)
+        y = np.array([1, 0, 1, 0, 1])
+        loss = clf._loss(X, y, clf.params)
+        assert isinstance(loss, float)
+        assert loss >= 0
+
+    def test_gradient_shape(self):
+        clf = VariationalClassifier(num_qubits=2, num_layers=2)
+        X = np.random.randn(5, 2)
+        y = np.array([1, 0, 1, 0, 1])
+        grad = clf._gradient(X, y, clf.params)
+        assert grad.shape == clf.params.shape

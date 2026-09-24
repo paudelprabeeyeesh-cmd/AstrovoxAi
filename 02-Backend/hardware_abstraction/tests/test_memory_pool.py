@@ -85,3 +85,30 @@ class TestMemoryPool:
         pool.free(id1)
         pool.free(id3)
         assert len(pool.get_free_blocks()) == 2
+
+    def test_three_adjacent_free_blocks_merge_chain(self):
+        pool = MemoryPool(total_size=64)
+        id1 = pool.allocate(8)
+        id2 = pool.allocate(8)
+        id3 = pool.allocate(8)
+        pool.free(id1)
+        pool.free(id2)
+        pool.free(id3)
+        assert len(pool.get_free_blocks()) == 1
+        assert pool.free_size() == 64
+        free_block = pool.get_free_blocks()[0]
+        assert free_block.coalesced_with is None
+
+    def test_coalesced_with_chain_interleaved(self):
+        pool = MemoryPool(total_size=64)
+        id1 = pool.allocate(8)
+        id2 = pool.allocate(8)
+        id3 = pool.allocate(8)
+        pool.free(id1)
+        pool.free(id3)
+        assert len(pool.get_free_blocks()) == 2
+        pool.free(id2)
+        assert len(pool.get_free_blocks()) == 1
+        assert pool.free_size() == 64
+        free_block = pool.get_free_blocks()[0]
+        assert free_block.coalesced_with is None

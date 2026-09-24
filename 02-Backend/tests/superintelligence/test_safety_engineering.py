@@ -57,3 +57,14 @@ class TestSafetyEngineer:
         stats = se.get_safety_stats()
         assert stats["protocols"] == 1
         assert stats["mean_strength"] == pytest.approx(0.9)
+
+    def test_simulate_escape_empty_protocols(self):
+        se = SafetyEngineer()
+        result = se.simulate_escape_attempt(capability_level=5.0, n_attempts=100)
+        assert result["escape_rate"] == 1.0
+
+    def test_safety_stats_empty(self):
+        se = SafetyEngineer()
+        stats = se.get_safety_stats()
+        assert stats["protocols"] == 0
+        assert stats["incidents"] == 0

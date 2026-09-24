@@ -45,6 +45,6 @@ def test_transaction_creates_and_closes_connection_when_none(tmp_path):
         conn.execute("INSERT INTO items (id) VALUES (1)")
     # Connection should be closed after exiting context
     new_conn = sqlite3.connect(db_path)
-    count = new_conn.execute("SELECT COUNT(*) AS c FROM items").fetchone()["c"]
+    count = new_conn.execute("SELECT COUNT(*) AS c FROM items").fetchone()[0]
     new_conn.close()
     assert count == 1

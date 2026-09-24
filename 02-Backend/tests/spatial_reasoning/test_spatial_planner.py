@@ -51,6 +51,32 @@ class TestAStarPlanner:
         plan = planner.plan_graph(graph, "s", "g")
         assert plan.success is False
 
+    def test_plan_graph_same_start_goal(self):
+        from spatial_reasoning.map_parser import parse_graph_map
+        edges = [("s", "m", 1.0)]
+        graph = parse_graph_map(edges, "s", "s")
+        planner = AStarPlanner()
+        plan = planner.plan_graph(graph, "s", "s")
+        assert plan.success is True
+        assert plan.path == ["s"]
+        assert plan.cost == 0.0
+
+    def test_plan_graph_missing_start(self):
+        from spatial_reasoning.map_parser import parse_graph_map
+        edges = [("m", "g", 1.0)]
+        graph = parse_graph_map(edges, "s", "g")
+        planner = AStarPlanner()
+        plan = planner.plan_graph(graph, "s", "g")
+        assert plan.success is False
+
+    def test_plan_graph_missing_goal(self):
+        from spatial_reasoning.map_parser import parse_graph_map
+        edges = [("s", "m", 1.0)]
+        graph = parse_graph_map(edges, "s", "g")
+        planner = AStarPlanner()
+        plan = planner.plan_graph(graph, "s", "x")
+        assert plan.success is False
+
 
 class TestPlan:
     def test_repr(self):

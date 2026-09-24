@@ -92,3 +92,41 @@ class TestGateDecomposer:
         assert swap.shape == (4, 4)
         expected = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
         np.testing.assert_allclose(swap, expected, atol=1e-10)
+
+
+class TestQuantumCircuitMethods:
+    def test_single_qubit_y(self):
+        circuit = QuantumCircuit(1)
+        circuit.y(0)
+        state = circuit.statevector()
+        np.testing.assert_allclose(state, np.array([0, 1j], dtype=np.complex128), atol=1e-10)
+
+    def test_rz_rotation(self):
+        circuit = QuantumCircuit(1)
+        circuit.rz(0, np.pi)
+        state = circuit.statevector()
+        np.testing.assert_allclose(state, np.array([-1j, 0], dtype=np.complex128), atol=1e-10)
+
+    def test_cnot_gate(self):
+        circuit = QuantumCircuit(2)
+        circuit.x(0).cnot(0, 1)
+        state = circuit.statevector()
+        np.testing.assert_allclose(state, np.array([0, 0, 0, 1], dtype=np.complex128), atol=1e-10)
+
+    def test_run_returns_state(self):
+        circuit = QuantumCircuit(2)
+        circuit.h(0).cx(0, 1)
+        state = circuit.run()
+        assert state.shape == (4,)
+
+    def test_decompose_unitary(self):
+        u = np.array([[1, 0], [0, 1]], dtype=np.complex128)
+        gates = QuantumCircuit.decompose_unitary(u)
+        assert isinstance(gates, list)
+
+    def test_statevector_copy(self):
+        circuit = QuantumCircuit(1)
+        circuit.h(0)
+        state = circuit.statevector()
+        circuit.x(0)
+        assert not np.allclose(state, circuit.statevector())

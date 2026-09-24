@@ -52,7 +52,8 @@ class AdvancedCurriculumLearner:
             h = self._relu(x @ self.params['W1'] + self.params['b1'])
             dh = grad @ self.params['W2'].T * self._relu_grad(h)
             dw1 = x.T @ dh
-            return np.linalg.norm(dw1, axis=1)
+            dw1_per_sample = x[:, :, None] * dh[:, None, :]
+            return np.linalg.norm(dw1_per_sample, axis=(1, 2))
         else:
             return np.random.rand(len(x)).astype(np.float64)
 

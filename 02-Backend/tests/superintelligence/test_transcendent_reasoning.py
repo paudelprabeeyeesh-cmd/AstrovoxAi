@@ -1,3 +1,4 @@
+import numpy as np
 import sys
 import os
 
@@ -43,3 +44,21 @@ class TestTranscendentReasoner:
         reasoner = TranscendentReasoner(max_abstraction=4)
         trace = reasoner.reason("test", abstraction_level=10)
         assert trace.abstraction_level == 4
+
+    def test_solve_subproblems_empty(self):
+        reasoner = TranscendentReasoner()
+        sol, conf = reasoner._solve_subproblems([], np.random.randn(64))
+        assert sol == "no_solution"
+        assert conf == 0.0
+
+    def test_detect_novelty_with_traces(self):
+        reasoner = TranscendentReasoner()
+        reasoner.reason("p1", abstraction_level=1)
+        reasoner.reason("p2", abstraction_level=2)
+        novelty = reasoner.detect_novelty("p3")
+        assert 0.0 <= novelty <= 1.0
+
+    def test_reasoning_stats_empty(self):
+        reasoner = TranscendentReasoner()
+        stats = reasoner.get_reasoning_stats()
+        assert stats["traces"] == 0

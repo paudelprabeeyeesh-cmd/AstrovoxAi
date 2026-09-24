@@ -33,17 +33,16 @@ class NavigationEngine:
         if not path:
             return NavigationResult(reached=False, path=[], message="empty path")
         states: List[NavigationState] = []
-        current = NavigationState(x=float(path[0][0]), y=float(path[0][1]))
-        states.append(current)
+        prev_x, prev_y = path[0]
+        states.append(NavigationState(x=float(prev_x), y=float(prev_y)))
         for target_x, target_y in path[1:]:
             target = Point2D(target_x, target_y)
-            current_pos = Point2D(current.x, current.y)
+            current_pos = Point2D(prev_x, prev_y)
             if self._is_blocked(current_pos, target):
                 return NavigationResult(reached=False, path=states, message="blocked")
-            current.x = float(target_x)
-            current.y = float(target_y)
-            current.heading = math.atan2(target_y - states[-1].y, target_x - states[-1].x)
-            states.append(current)
+            heading = math.atan2(target_y - prev_y, target_x - prev_x)
+            states.append(NavigationState(x=float(target_x), y=float(target_y), heading=heading))
+            prev_x, prev_y = target_x, target_y
         return NavigationResult(reached=True, path=states, message="complete")
 
     def plan_and_follow(self, grid: GridMap) -> NavigationResult:

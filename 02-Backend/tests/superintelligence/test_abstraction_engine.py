@@ -68,3 +68,32 @@ class TestAbstractionEngine:
         stats = engine.get_stats()
         assert stats["total_patterns"] == 2
         assert stats["total_hierarchies"] == 0
+
+    def test_register_pattern_clamps_level(self):
+        engine = AbstractionEngine(max_hierarchy_depth=3)
+        pattern = engine.register_pattern("p", ["s"], abstraction_level=10)
+        assert pattern.abstraction_level == 3
+
+    def test_build_hierarchy_empty_layers_raises(self):
+        engine = AbstractionEngine(max_hierarchy_depth=5)
+        empty_hierarchy = AbstractionHierarchy(id="h1", root_pattern="root", layers=[], compression_ratio=0.0)
+        with pytest.raises(ValueError):
+            engine.generalize(empty_hierarchy)
+
+    def test_list_patterns_max_level(self):
+        engine = AbstractionEngine(max_hierarchy_depth=5)
+        engine.register_pattern("p1", ["s1"], abstraction_level=0, confidence=0.9)
+        engine.register_pattern("p2", ["s2"], abstraction_level=2, confidence=0.8)
+        filtered = engine.list_patterns(min_confidence=0.0, max_level=1)
+        assert len(filtered) == 1
+
+    def test_derive_name_empty_descriptions(self):
+        engine = AbstractionEngine(max_hierarchy_depth=5)
+        name = engine._derive_name([])
+        assert name == "pattern"
+
+    def test_decompose_long_description(self):
+        engine = AbstractionEngine(max_hierarchy_depth=5)
+        parts = engine._decompose("hello world foo bar baz")
+        assert len(parts) == 3
+        assert parts[0] == "hello_world"

@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 import random
-import string
 
 
 @dataclass
@@ -15,8 +14,7 @@ class Idea:
 
 class IdeaGenerator:
     def __init__(self, seed: Optional[int] = None):
-        if seed is not None:
-            random.seed(seed)
+        self._rand = random.Random(seed)
         self.history: List[str] = []
 
     def generate(self, prompt: str, n: int = 3, domain: str = "general") -> List[Idea]:
@@ -38,9 +36,9 @@ class IdeaGenerator:
         adjectives = ["novel", "rapid", "scalable", "adaptive", "modular", "resilient", "intuitive", "hybrid"]
         verbs = ["reimagine", "orchestrate", "synthesize", "streamline", "augment", "blend", "restructure"]
         nouns = ["framework", "pipeline", "ecosystem", "paradigm", "workflow", "interface", "protocol"]
-        random.shuffle(adjectives)
-        random.shuffle(verbs)
-        random.shuffle(nouns)
+        self._rand.shuffle(adjectives)
+        self._rand.shuffle(verbs)
+        self._rand.shuffle(nouns)
         seed = (index * 7 + len(prompt)) % 10
         parts = [prompt]
         if seed < 4:
