@@ -1,7 +1,5 @@
 import math
-import os
 import random
-import struct
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -15,11 +13,8 @@ class LaplaceMechanism:
 
     def noise(self) -> float:
         scale = self._sensitivity / self._epsilon
-        while True:
-            u = random.random() - 0.5
-            v = random.random()
-            if v > 0:
-                return scale * (1.0 / v - 1.0) if u > 0 else -scale * (1.0 / v - 1.0)
+        u = random.random() - 0.5
+        return -scale * math.copysign(1, u) * math.log(1 - 2 * abs(u))
 
     def add_noise(self, value: float) -> float:
         return value + self.noise()
@@ -38,7 +33,7 @@ class GaussianMechanism:
         sigma = (self._sensitivity / self._epsilon) * math.sqrt(2 * math.log(1.25 / self._delta))
         u1 = random.random()
         u2 = random.random()
-        return sigma * math.sqrt(-2.0 * math.log(u1)) * math.cos(2.0 * math.pi * u2)
+        return sigma * math.sqrt(-2.0 * math.log(max(u1, 1e-8))) * math.cos(2.0 * math.pi * u2)
 
     def add_noise(self, value: float) -> float:
         return value + self.noise()

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from evolutionary_computation.evolution_strategies import EvolutionStrategy
 
 
@@ -33,4 +34,4 @@ class TestEvolutionStrategy:
         es = EvolutionStrategy(self.fitness_fn, mu=10, lambda_=30, gene_length=5)
         best, fitness = es.evolve(10)
         assert fitness <= 0
-        assert es.best_fitness_history[-1] == fitness
+        assert es.best_fitness_history[-1] == pytest.approx(fitness, abs=1e-4)

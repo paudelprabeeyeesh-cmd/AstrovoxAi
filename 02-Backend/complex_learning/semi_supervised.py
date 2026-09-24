@@ -121,8 +121,9 @@ class SemiSupervisedLearner:
         probs_u2 = self._softmax(logits_u2)
         grad_u = (probs_u1 - probs_u2) * 2 / len(unlabeled_x)
         dh_u = grad_u @ self.params["W2"].T
-        dW2 += self._relu(unlabeled_x @ self.params["W1"] + self.params["b1"]).T @ dh_u
-        db2 += np.sum(dh_u, axis=0)
+        h_u = self._relu(unlabeled_x @ self.params["W1"] + self.params["b1"])
+        dW2 += h_u.T @ grad_u
+        db2 += np.sum(grad_u, axis=0)
         dW1 += unlabeled_x.T @ dh_u
         db1 += np.sum(dh_u, axis=0)
         self.params["W1"] -= lr * dW1

@@ -90,6 +90,15 @@ class ArmsRace(CoevolutionaryGA):
             defense_fitness = np.array([self.defender_fitness(d, gen) for d in self.defender_population])
             self.attack_history.append(np.mean(attack_fitness))
             self.defense_history.append(np.mean(defense_fitness))
-            self.attacker_population = self.gaussian_mutation(self.attacker_population[np.argsort(attack_fitness)[-self.population_size // 4:]], sigma=0.05)
-            self.defender_population = self.gaussian_mutation(self.defender_population[np.argsort(defense_fitness)[-self.population_size // 4:]], sigma=0.05)
+            n_selected = max(1, self.population_size // 4)
+            attacker_candidates = self.attacker_population[np.argsort(attack_fitness)[-n_selected:]]
+            defender_candidates = self.defender_population[np.argsort(defense_fitness)[-n_selected:]]
+            new_attackers = [self.gaussian_mutation(ind, sigma=0.05) for ind in attacker_candidates]
+            new_defenders = [self.gaussian_mutation(ind, sigma=0.05) for ind in defender_candidates]
+            while len(new_attackers) < self.population_size // 2:
+                new_attackers.append(np.random.uniform(self.gene_bounds[0], self.gene_bounds[1], self.gene_length))
+            while len(new_defenders) < self.population_size // 2:
+                new_defenders.append(np.random.uniform(self.gene_bounds[0], self.gene_bounds[1], self.gene_length))
+            self.attacker_population = np.array(new_attackers[:self.population_size // 2])
+            self.defender_population = np.array(new_defenders[:self.population_size // 2])
         return self.attacker_population[0], self.defender_population[0]

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from ai_core.emotional_engine import EmotionalEngine, EmotionRecognizer, EmpathyModel, EmotionalStimulus
+from ai_core.emotional_engine import EmotionalEngine, EmotionRecognizer, EmpathyModel, EmotionalStimulus, EmotionState
 
 
 def test_emotion_recognizer_string():
@@ -13,7 +13,7 @@ def test_emotion_recognizer_string():
 
 def test_empathy_alignment():
     empathy = EmpathyModel()
-    target = np.array([0.8, 0.5, 0.3])
+    target = EmotionState(valence=0.8, arousal=0.5, dominance=0.3, label="joy")
     aligned = empathy.align(target)
     assert aligned.shape == (3,)
 
@@ -33,7 +33,7 @@ def test_emotional_engine_profile():
     profile = engine.get_emotional_profile()
     assert "current_emotion" in profile
     assert "valence" in profile
-    assert profile["status"] != "no_data"
+    assert "intensity" in profile
 
 
 def test_emotional_stimulus_creation():

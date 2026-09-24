@@ -19,7 +19,7 @@ class ArtificialImmuneSystem:
         return self.fitness_fn(individual)
 
     def somatic_hypermutation(self, individual, affinity):
-        mutation_strength = self.mutation_rate * (1 - affinity / (affinity + 1))
+        mutation_strength = self.mutation_rate * max(0, (1 - affinity / (affinity + 1)))
         individual = individual + np.random.normal(0, mutation_strength, self.n_dimensions)
         individual = np.clip(individual, self.bounds[0], self.bounds[1])
         return individual
@@ -56,6 +56,6 @@ class ArtificialImmuneSystem:
             self.best_fitness_history.append(fitness[best_idx])
             self.population = self.clonal_selection()
             self.negative_selection()
-        fitness = self.evaluate(self.population)
+        fitness = self.evaluate()
         best_idx = np.argmax(fitness)
         return self.population[best_idx], fitness[best_idx]

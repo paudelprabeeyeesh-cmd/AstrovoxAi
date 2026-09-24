@@ -74,6 +74,9 @@ class RobotController:
     def get_genome(self):
         return np.concatenate([self.w1.flatten(), self.b1, self.w2.flatten(), self.b2])
 
+    def get_genome_length(self):
+        return np.prod(self.w1.shape) + np.prod(self.b1.shape) + np.prod(self.w2.shape) + np.prod(self.b2.shape)
+
     def set_genome(self, genome):
         offset = 0
         w1_shape = (self.n_inputs, self.n_hidden)

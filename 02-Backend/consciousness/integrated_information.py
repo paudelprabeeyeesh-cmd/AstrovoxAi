@@ -39,7 +39,8 @@ class SystemModel:
         if transition_matrix is None:
             transition_matrix = np.ones((states, states)) / (states * states)
         self.transition_matrix = np.array(transition_matrix, dtype=float)
-        self.transition_matrix /= self.transition_matrix.sum()
+        row_sums = self.transition_matrix.sum(axis=1, keepdims=True)
+        np.divide(self.transition_matrix, row_sums, out=self.transition_matrix, where=row_sums != 0)
 
     def transition(self, state: np.ndarray) -> np.ndarray:
         return self.transition_matrix @ state

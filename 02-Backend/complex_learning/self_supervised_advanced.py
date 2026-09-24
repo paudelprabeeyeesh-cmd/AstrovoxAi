@@ -66,20 +66,25 @@ class AdvancedSelfSupervisedLearner:
         z_norm = z_i / (np.linalg.norm(z_i, axis=1, keepdims=True) + 1e-12)
         queue[:len(z_norm)] = queue[:len(z_norm)] * self.momentum + z_norm * (1.0 - self.momentum)
         lr = 0.01
-        z = self._relu(x @ self.params["W1"] + self.params["b1"])
-        z_j = self._relu(x_aug @ self.momentum_params["W1"] + self.momentum_params["b1"])
-        zj = z_j
+        z = self._relu(x @ self.params['W1'] + self.params['b1'])
+        z_j = self._relu(x_aug @ self.momentum_params['W1'] + self.momentum_params['b1'])
         batch_size = len(x)
         labels = np.zeros(batch_size, dtype=int)
-        logits = (z_i @ np.vstack([z_j, queue[:max(0, self.queue_size - batch_size)]]).T) / self.temperature
-        logits = np.concatenate([np.sum(z_i * z_j, axis=1, keepdims=True), logits], axis=1)
+        logits = z_i / (np.linalg.norm(z_i, axis=1, keepdims=True) + 1e-12)
+        logits_q = z_j / (np.linalg.norm(z_j, axis=1, keepdims=True) + 1e-12)
+        pos = np.sum(logits * logits_q, axis=1) / self.temperature
+        queue_short = queue[:max(0, batch_size)] if len(queue) >= batch_size else queue
+        neg = logits @ queue_short.T / self.temperature if len(queue_short) > 0 else np.zeros((batch_size, 1))
+        if neg.shape[1] == 0:
+            neg = np.zeros((batch_size, 1))
+        logits = np.concatenate([pos[:, None], neg], axis=1)
         probs = self._softmax(logits)
         grad = probs.copy()
         grad[np.arange(batch_size), labels] -= 1
         grad /= batch_size
         dWp = z.T @ grad[:, :1]
         dbp = np.sum(grad[:, :1], axis=0)
-        dh = grad[:, :1] @ self.params["Wp"].T
+        dh = grad[:, :1] @ self.params['Wp'].T
         dh = dh * (z > 0)
         dW1 = x.T @ dh
         db1 = np.sum(dh, axis=0)

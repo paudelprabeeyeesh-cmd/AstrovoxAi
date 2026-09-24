@@ -7,6 +7,7 @@ Manages task graphs, resolves dependencies, and executes workflows.
 from __future__ import annotations
 
 import threading
+import time
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
@@ -90,15 +91,25 @@ class DAGExecutor:
                 self._results[name] = TaskResult(status=TaskStatus.SKIPPED, error="missing dep")
                 return
         self._status[name] = TaskStatus.RUNNING
+        params = dict(task.params)
         for attempt in range(task.retries + 1):
             try:
-                output = task.fn(**dict(task.params, name=name))
+                output = task.fn(**params)
                 self._status[name] = TaskStatus.COMPLETED
                 self._results[name] = TaskResult(status=TaskStatus.COMPLETED, output=output)
                 return
-            except Exception as exc:
-                import time
-                time.sleep(task.backoff * (attempt + 1))
+            except TypeError:
+                try:
+                    output = task.fn(**params, name=name)
+                    self._status[name] = TaskStatus.COMPLETED
+                    self._results[name] = TaskResult(status=TaskStatus.COMPLETED, output=output)
+                    return
+                except Exception:
+                    if attempt < task.retries:
+                        time.sleep(task.backoff * (attempt + 1))
+            except Exception:
+                if attempt < task.retries:
+                    time.sleep(task.backoff * (attempt + 1))
         self._status[name] = TaskStatus.FAILED
         self._results[name] = TaskResult(status=TaskStatus.FAILED, error="max retries exceeded")
 

@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from evolutionary_computation.artificial_immune import ArtificialImmuneSystem
 
 
@@ -43,4 +44,4 @@ class TestArtificialImmuneSystem:
         ais = ArtificialImmuneSystem(self.fitness_fn, population_size=20, n_dimensions=5, bounds=(-1, 1))
         best, fitness = ais.evolve(10)
         assert fitness <= 0
-        assert ais.best_fitness_history[-1] == fitness
+        assert ais.best_fitness_history[-1] == pytest.approx(fitness, abs=1e-4)

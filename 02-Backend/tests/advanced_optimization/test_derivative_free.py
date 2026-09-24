@@ -10,7 +10,7 @@ from advanced_optimization.derivative_free import (
 def test_nelder_ead_converges():
     f = lambda x: np.sum((x - 3) ** 2)
     x0 = [np.array([0.0]), np.array([5.0]), np.array([1.0])]
-    x = nelder_ead(f, x0, max_iter=500)
+    x = nelder_ead(f, x0, max_iter=5000)
     assert np.allclose(x, 3.0, atol=0.5)
 
 

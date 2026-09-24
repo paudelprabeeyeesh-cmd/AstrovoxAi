@@ -32,13 +32,13 @@ class DefaultRule:
         self.if_ = if_
         self.then_ = then_
         self.default = default
-        self.confidence = confidence
+        self._confidence = confidence
 
     def can_override(self) -> bool:
-        return self.default and self.confidence < 1.0
+        return self.default and self._confidence < 1.0
 
     def confidence(self) -> float:
-        return self.confidence
+        return self._confidence
 
 
 class CommonsenseKnowledgeBase:

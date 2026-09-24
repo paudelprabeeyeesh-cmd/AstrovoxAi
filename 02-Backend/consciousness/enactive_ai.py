@@ -22,8 +22,10 @@ class EnactiveAgent:
 
     def act(self, action: np.ndarray) -> np.ndarray:
         action = np.array(action, dtype=float)
+        if action.size < self.dim:
+            action = np.pad(action, (0, self.dim - action.size))
         action = action / (np.linalg.norm(action) + 1e-9)
-        self._state.sensorimotor = self._state.sensorimotor * 0.7 + action * 0.3
+        self._state.sensorimotor = self._state.sensorimotor * 0.7 + action[: self.dim] * 0.3
         return self._state.sensorimotor
 
     def sense(self, sensorimotor: np.ndarray) -> SenseMakingState:

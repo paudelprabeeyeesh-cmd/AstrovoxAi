@@ -51,7 +51,7 @@ class TestAdvancedSelfSupervisedLearner:
         x = np.random.randn(4, 8).astype(np.float64)
         masked, target = ssl.mask_and_reconstruct(x, mask_ratio=0.15)
         assert masked.shape == x.shape
-        assert target.shape[0] == 4 * 8 * 0.15
+        assert target.shape[0] == 4 * int(8 * 0.15)
 
     def test_contrastive_loss(self):
         ssl = AdvancedSelfSupervisedLearner(input_dim=8)

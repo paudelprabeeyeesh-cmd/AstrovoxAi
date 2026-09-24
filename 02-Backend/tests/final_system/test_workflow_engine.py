@@ -41,7 +41,7 @@ def test_pipeline_stop_on_failure():
 
 def test_results_persisted():
     engine = WorkflowEngine()
-    pipeline = Pipeline(name="p4", stages=[Stage(name="a", fn=lambda: None)])
+    pipeline = Pipeline(name="p4", stages=[Stage(name="a", fn=lambda **kw: None)])
     engine.register(pipeline)
     engine.run("p4")
     assert engine.results("p4")["a"].status == StageStatus.COMPLETED

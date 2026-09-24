@@ -36,7 +36,7 @@ class TestNeuroevolution:
 
     def test_init(self):
         ne = Neuroevolution(self.fitness_fn, [2, 4, 1])
-        assert ne.population.shape[1] == 21
+        assert ne.population.shape[1] == 17
 
     def test_evaluate(self):
         ne = Neuroevolution(self.fitness_fn, [2, 4, 1], population_size=5)

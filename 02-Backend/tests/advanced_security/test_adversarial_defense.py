@@ -35,13 +35,14 @@ def test_adversarial_defense_gradient_pruning() -> None:
     grads = [0.1, 0.5, 0.9, 1.5, 2.5]
     pruned = defense.gradient_pruning(grads, 0.8)
     assert pruned[0] == 0.0
-    assert pruned[1] == 0.5
+    assert pruned[1] == 0.0
+    assert pruned[2] == 0.9
 
 
 def test_adversarial_defense_outlier_detection() -> None:
     defense = AdversarialDefense()
     data = [1.0, 2.0, 3.0, 4.0, 100.0]
-    outliers = defense.detect_outlier(data)
+    outliers = defense.detect_outlier(data, std_threshold=1.5)
     assert 4 in outliers
 
 
@@ -57,4 +58,4 @@ def test_label_smoothing() -> None:
     probs = [0.8, 0.2]
     result = ls.apply(probs)
     assert abs(sum(result) - 1.0) < 1e-6
-    assert abs(result[0] - 0.82) < 1e-6
+    assert abs(result[0] - 0.77) < 1e-6

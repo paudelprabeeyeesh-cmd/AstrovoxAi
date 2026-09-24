@@ -60,9 +60,8 @@ class OnlineMAML:
         steps = self.adaptation_steps if steps < 0 else steps
         params = {k: v.copy() for k, v in self.params.items()}
         for _ in range(steps):
-            logits = self._forward(x, params)
+            h, logits = self._forward(x, params)
             loss = self._compute_loss(logits, y)
-            h = self._relu(x @ params["W1"] + params["b1"])
             probs = self._softmax(logits)
             y_int = y.astype(int)
             grad = probs.copy()

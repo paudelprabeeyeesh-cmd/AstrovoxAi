@@ -139,9 +139,9 @@ class AdvancedContinualLearner:
             dh = dh * (h_i > 0)
             dW1 = x_sample[i:i+1].T @ dh
             db1 = np.sum(dh, axis=0)
-            self.fisher["W1"] += np.sum(dW1 ** 2, axis=1)
+            self.fisher["W1"] += np.sum(dW1 ** 2, axis=1, keepdims=True)
             self.fisher["b1"] += db1 ** 2
-            self.fisher["W2"] += np.sum(dW2 ** 2, axis=1)
+            self.fisher["W2"] += np.sum(dW2 ** 2, axis=1, keepdims=True)
             self.fisher["b2"] += db2 ** 2
         for k in self.fisher:
             self.fisher[k] = np.clip(self.fisher[k] / n, 1e-10, None)

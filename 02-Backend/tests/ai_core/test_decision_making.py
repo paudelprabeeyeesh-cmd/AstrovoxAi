@@ -42,13 +42,13 @@ def test_decision_tree_optimal_choice():
 def test_mdp_value_iteration():
     mdp = MarkovDecisionProcess(n_states=2, n_actions=2, discount=0.9)
     mdp.set_transition(0, 0, 0, 1.0)
-    mdp.set_transition(0, 0, 1, 0.0)
-    mdp.set_transition(0, 1, 0, 0.0)
+    mdp.set_reward(0, 0, 0, 1.0)
     mdp.set_transition(0, 1, 1, 1.0)
+    mdp.set_reward(0, 1, 1, 5.0)
     mdp.set_transition(1, 0, 1, 1.0)
     mdp.set_transition(1, 1, 1, 1.0)
-    mdp.set_reward(0, 1, 1, 5.0)
-    mdp.set_reward(0, 0, 0, 1.0)
-    values = mdp.value_iteration(tol=1e-3)
+    values = mdp.value_iteration(tol=1e-6)
     assert values.shape == (2,)
-    assert values[1] >= values[0]
+    assert all(np.isfinite(v) for v in values)
+    assert values[0] > 0.0
+    assert np.argmax(values) == 0

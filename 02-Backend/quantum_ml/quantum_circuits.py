@@ -55,6 +55,7 @@ class QuantumCircuit:
         return self.cx(control, target)
 
     def measure(self, shots: int = 1024) -> dict:
+        self.run()
         probs = np.abs(self.state)**2
         outcomes = np.random.choice(len(probs), size=shots, p=probs)
         counts = {}

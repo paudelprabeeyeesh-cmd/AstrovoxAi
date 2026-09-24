@@ -9,7 +9,7 @@ from advanced_security.security_orchestration import (
 
 def test_playbook_lifecycle() -> None:
     orchestrator = SecurityOrchestrator()
-    pb = Playbook(id="pb1", name="Test Playbook", steps=[{"action": "log"}, {"action": "block"}], threshold=1.0)
+    pb = Playbook(id="pb1", name="Test Playbook", steps=[{"action": "log"}, {"action": "block"}], threshold=1.0, tags=["test"])
     orchestrator.add_playbook(pb)
     incident = {"severity": 5.0, "source": "1.2.3.4", "tags": ["test"]}
     result = orchestrator.incident(incident)

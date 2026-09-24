@@ -1,11 +1,10 @@
 import hashlib
 import hmac
 import json
-import math
 import os
 import random
-import struct
-from typing import Any, Dict, List, Optional
+import re
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class TLP:
@@ -53,16 +52,20 @@ class ThreatIntelligence:
         return matched
 
     def _extract_ips(self, text: str) -> List[str]:
-        return []
+        return self._findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', text)
 
     def _extract_domains(self, text: str) -> List[str]:
-        return []
+        return self._findall(r'[a-z0-9.-]+\.[a-z]{2,}', text, re.IGNORECASE)
 
     def _extract_hashes(self, text: str) -> List[str]:
-        return []
+        return self._findall(r'[A-Fa-f0-9]{32,}', text)
 
     def _extract_urls(self, text: str) -> List[str]:
-        return []
+        return self._findall(r'https?://[^\s,]+', text)
+
+    def _findall(self, pattern: str, text: str, flags: int = 0) -> List[str]:
+        import re
+        return re.findall(pattern, text, flags)
 
     def enrich_ip(self, ip: str) -> Dict[str, Any]:
         return {"ip": ip, "geo": "unknown", "asn": "unknown", "tags": []}

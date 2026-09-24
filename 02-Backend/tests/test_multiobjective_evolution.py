@@ -19,8 +19,8 @@ class TestNSGA2:
 
     def test_dominates(self):
         nsga = NSGA2(self.fitness_fn, population_size=20, n_dimensions=5, bounds=(-2, 2))
-        assert nsga.dominates(np.array([1, 2]), np.array([3, 4]))
-        assert not nsga.dominates(np.array([3, 4]), np.array([1, 2]))
+        assert nsga.dominates(np.array([3, 4]), np.array([1, 2]))
+        assert not nsga.dominates(np.array([1, 2]), np.array([3, 4]))
 
     def test_non_dominated_sort(self):
         nsga = NSGA2(self.fitness_fn, population_size=10, n_dimensions=5, bounds=(-2, 2))
@@ -76,7 +76,8 @@ class TestSPEA2:
 
     def test_dominates(self):
         spea = SPEA2(self.fitness_fn, population_size=20, n_dimensions=5, bounds=(-2, 2))
-        assert spea.dominates(np.array([1, 2]), np.array([3, 4]))
+        assert spea.dominates(np.array([3, 4]), np.array([1, 2]))
+        assert not spea.dominates(np.array([1, 2]), np.array([3, 4]))
 
     def test_fitness_assignment(self):
         spea = SPEA2(self.fitness_fn, population_size=10, n_dimensions=5, bounds=(-2, 2))

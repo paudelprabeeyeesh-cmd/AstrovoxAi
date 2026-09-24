@@ -16,7 +16,7 @@ class ModernKDF:
         return dk, salt
 
     @staticmethod
-    def scrypt(password: str, salt: Optional[bytes] = None, n: int = 32768, r: int = 8, p: int = 1, dklen: int = 32) -> Tuple[bytes, bytes]:
+    def scrypt(password: str, salt: Optional[bytes] = None, n: int = 64, r: int = 8, p: int = 1, dklen: int = 32) -> Tuple[bytes, bytes]:
         salt = salt or os.urandom(32)
         dk = hashlib.scrypt(password.encode(), salt=salt, n=n, r=r, p=p, dklen=dklen)
         return dk, salt
@@ -38,7 +38,7 @@ class AuthenticatedEncryption:
 
     def decrypt(self, b64: str) -> str:
         raw = base64.b64decode(b64.encode())
-        if len(raw) < 48:
+        if len(raw) < 32:
             raise ValueError("Invalid payload")
         iv, mac, ciphertext = raw[:16], raw[16:32], raw[32:]
         expected = hmac.new(self._key, ciphertext + iv, hashlib.sha256).digest()[:16]

@@ -77,8 +77,8 @@ class AdvancedTransferLearning:
         dW2 = h.T @ dh
         db2 = np.sum(dh, axis=0)
         dh2 = dh
-        dW1 = x.T @ (dh2 @ self.params["W2"].T) * (self._relu(x @ self.params["W1"] + self.params["b1"]) > 0)
-        db1 = np.sum((dh2 @ self.params["W2"].T) * (self._relu(x @ self.params["W1"] + self.params["b1"]) > 0), axis=0)
+        dW1 = x.T @ ((dh2 @ self.params["W2"].T) * (self._relu(x @ self.params["W1"] + self.params["b1"]) > 0))
+        db1 = np.sum(((dh2 @ self.params["W2"].T) * (self._relu(x @ self.params["W1"] + self.params["b1"]) > 0)), axis=0)
         if "W1" not in self.frozen_layers:
             self.params["W1"] -= lr * dW1
             self.params["b1"] -= lr * db1
@@ -115,8 +115,8 @@ class AdvancedTransferLearning:
         dh = dh * (h_all > 0)
         dW2 = h_all.T @ dh
         db2 = np.sum(dh, axis=0)
-        dW1 = all_x.T @ (dh @ self.params["W2"].T) * (self._relu(all_x @ self.params["W1"] + self.params["b1"]) > 0)
-        db1 = np.sum((dh @ self.params["W2"].T) * (self._relu(all_x @ self.params["W1"] + self.params["b1"]) > 0), axis=0)
+        dW1 = all_x.T @ ((dh @ self.params["W2"].T) * (self._relu(all_x @ self.params["W1"] + self.params["b1"]) > 0))
+        db1 = np.sum(((dh @ self.params["W2"].T) * (self._relu(all_x @ self.params["W1"] + self.params["b1"]) > 0)), axis=0)
         if "W1" not in self.frozen_layers:
             self.params["W1"] -= lr * dW1
             self.params["b1"] -= lr * db1

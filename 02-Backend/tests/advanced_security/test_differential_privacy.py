@@ -28,7 +28,7 @@ def test_differential_privacy_histogram() -> None:
 def test_differential_privacy_attribute_value() -> None:
     dp = DifferentialPrivacy(epsilon=1.0)
     result = dp.attribute_value(10.0, 0.0, 100.0)
-    assert result >= 0.0
+    assert -100.0 <= result <= 110.0
 
 
 def test_sparse_mechanism_noise() -> None:
@@ -41,13 +41,13 @@ def test_sparse_mechanism_noise() -> None:
 def test_differential_privacy_query_laplace() -> None:
     dp = DifferentialPrivacy(epsilon=1.0)
     result = dp.query([1.0, 2.0, 3.0], mechanism="laplace")
-    assert result == (1.0 + 2.0 + 3.0)
+    assert abs(result - 6.0) < 10.0
 
 
 def test_differential_privacy_query_gaussian() -> None:
     dp = DifferentialPrivacy(epsilon=0.5, delta=1e-5)
     result = dp.query([1.0, 2.0, 3.0], mechanism="gaussian")
-    assert result == (1.0 + 2.0 + 3.0)
+    assert abs(result - 6.0) < 20.0
 
 
 def test_differential_privacy_histogram_sum() -> None:

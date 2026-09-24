@@ -43,6 +43,7 @@ def test_match_iocs() -> None:
     matched = ti.match_iocs("Visit evil.example.com for more")
     assert len(matched) == 1
     assert matched[0]["value"] == "evil.example.com"
+    assert matched[0]["value"] == "evil.example.com"
 
 
 def test_enrich_ip() -> None:
