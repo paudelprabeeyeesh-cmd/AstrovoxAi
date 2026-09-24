@@ -1,1 +1,7 @@
-{}
+{
+  "tests/production_readiness/test_health_checker.py": true,
+  "tests/production_readiness/test_graceful_shutdown.py": true,
+  "tests/production_readiness/test_config_validator.py": true,
+  "tests/production_readiness/test_dependency_health.py": true,
+  "tests/production_readiness/test_startup_sequence.py": true
+}

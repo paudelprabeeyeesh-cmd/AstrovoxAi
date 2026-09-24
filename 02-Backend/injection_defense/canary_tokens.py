@@ -10,7 +10,7 @@ from typing import Optional
 
 
 _DEFAULT_PREFIX = "ASTROVOX-CANARY-2026-001"
-_CANARY_REGEX = re.compile(r"ASTROVOX-CANARY-2026-001-[A-F0-9]{1,12}-[0-9]{3,}")
+_CANARY_REGEX = re.compile(r"ASTROVOX-CANARY-2026-001-[A-F0-9]{1,12}-[0-9]{3,}", re.IGNORECASE)
 
 
 @dataclass
@@ -43,10 +43,12 @@ class CanaryRegistry:
         return token
 
     def check(self, text: str) -> Optional[CanaryToken]:
-        matches = _CANARY_REGEX.findall(text)
+        normalized = re.sub(r"\s+", "", text)
+        matches = _CANARY_REGEX.findall(normalized)
         for match in matches:
-            if match in self._tokens:
-                token = self._tokens[match]
+            canonical = match.upper()
+            if canonical in self._tokens:
+                token = self._tokens[canonical]
                 if not token.is_expired():
                     token.mark_used()
                     return token

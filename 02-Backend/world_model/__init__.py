@@ -11,6 +11,10 @@ from .counterfactual_reasoning import DecisionTree, CounterfactualReasoner  # no
 from .state_estimator import StateEstimate, StateEstimator  # noqa: F401
 from .counterfactual_generator import Counterfactual, CounterfactualGenerator  # noqa: F401
 from .outcome_predictor import OutcomePredictor  # noqa: F401
+from .environment_simulator import EnvironmentSimulator  # noqa: F401
+from .entity_registry import Entity, EntityRegistry  # noqa: F401
+from .physics_engine import PhysicsEngine  # noqa: F401
+from .event_scheduler import EventScheduler, ScheduledEvent  # noqa: F401
 
 __all__ = [
     "PhysicsBody", "PhysicsConstraint", "PhysicsWorld", "WorldSimulator",
@@ -26,4 +30,8 @@ __all__ = [
     "StateEstimate", "StateEstimator",
     "Counterfactual", "CounterfactualGenerator",
     "OutcomePredictor",
+    "EnvironmentSimulator",
+    "Entity", "EntityRegistry",
+    "PhysicsEngine",
+    "EventScheduler", "ScheduledEvent",
 ]
