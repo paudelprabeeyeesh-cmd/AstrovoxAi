@@ -70,7 +70,6 @@ class TemporalPlanner:
         for event in sorted_events:
             if event.event_id not in times:
                 times[event.event_id] = event.time
-            # Apply constraints that may push the event later
             for constraint in self.constraints:
                 if constraint.source == event.event_id and constraint.target in times:
                     times[constraint.target] = max(times.get(constraint.target, event.time),
@@ -108,7 +107,7 @@ class CPM:
         ls = {act: project_duration for act in self._names}
         for act in reversed(order):
             for succ in self._succs.get(act, []):
-                ls[act] = min(ls[act], ls[succ] - self._dur[succ])
+                ls[act] = min(ls[act], ls[succ] - self._dur[act])
         for act in self._names:
             self.slack[act] = ls[act] - es[act]
             self.earliest_start[act] = es[act]

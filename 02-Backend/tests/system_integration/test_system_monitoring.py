@@ -2,6 +2,7 @@ import pytest
 from system_integration.system_monitoring import (
     HealthCheck,
     HealthState,
+    Metric,
     MetricsCollector,
     SystemMonitor,
 )

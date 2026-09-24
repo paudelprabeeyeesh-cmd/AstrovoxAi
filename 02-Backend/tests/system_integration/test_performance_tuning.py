@@ -5,6 +5,8 @@ from system_integration.performance_tuning import (
     Profiler,
     BatchProcessor,
     PerformanceOptimizer,
+    ProfileEntry,
+    Metric,
 )
 
 

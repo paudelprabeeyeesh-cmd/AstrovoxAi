@@ -50,6 +50,10 @@ class CircuitBreaker:
             return True
         if self.provider.circuit == CircuitState.HALF_OPEN:
             return time.time() - self.provider.last_failure >= self.provider.half_open_interval
+        if self.provider.circuit == CircuitState.OPEN:
+            if time.time() - self.provider.last_failure >= self.provider.half_open_interval:
+                self.provider.circuit = CircuitState.HALF_OPEN
+                return True
         return False
 
     def record_success(self) -> None:

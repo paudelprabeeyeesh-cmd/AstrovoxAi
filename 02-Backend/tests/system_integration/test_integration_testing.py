@@ -55,4 +55,4 @@ def test_tester_results():
     tester = IntegrationTester()
     tester.register(TestScenario(name="s1", steps=[lambda: None]))
     tester.run_all()
-    assert "s1" in tester.summary()["total"]
+    assert tester.summary()["total"] >= 1

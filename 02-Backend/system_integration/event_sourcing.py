@@ -103,9 +103,12 @@ class EventProjection:
         return self._projection[stream]
 
     def _apply(self, state: Any, event: Event) -> Any:
-        if isinstance(state, dict) and "append" in event.payload:
-            key = event.payload["key"]
-            state[key] = event.payload["value"]
+        if isinstance(state, dict):
+            if "append" in event.payload:
+                key = event.payload["key"]
+                state[key] = event.payload["value"]
+            elif "key" in event.payload and "value" in event.payload:
+                state[event.payload["key"]] = event.payload["value"]
         elif isinstance(state, list):
             state.append(event.payload)
         return state

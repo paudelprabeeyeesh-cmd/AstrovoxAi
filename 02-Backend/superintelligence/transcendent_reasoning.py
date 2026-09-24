@@ -1,0 +1,101 @@
+import numpy as np
+from typing import List, Dict, Any, Optional, Callable
+from dataclasses import dataclass, field
+
+
+@dataclass
+class ReasoningTrace:
+    problem: str
+    abstraction_level: int
+    subproblems: List[str]
+    solution: Optional[str]
+    confidence: float
+    steps: List[Dict[str, Any]] = field(default_factory=list)
+
+
+class TranscendentReasoner:
+    def __init__(self, max_abstraction: int = 8, novelty_threshold: float = 0.3):
+        self.max_abstraction = max_abstraction
+        self.novelty_threshold = novelty_threshold
+        self.reasoning_traces: List[ReasoningTrace] = []
+
+    def reason(self, problem: str, context: Optional[np.ndarray] = None, abstraction_level: int = 1) -> ReasoningTrace:
+        abstraction_level = min(abstraction_level, self.max_abstraction)
+        context = context if context is not None else np.random.randn(64)
+        subproblems = self._decompose(problem, abstraction_level)
+        solution, confidence = self._solve_subproblems(subproblems, context)
+        trace = ReasoningTrace(
+            problem=problem,
+            abstraction_level=abstraction_level,
+            subproblems=subproblems,
+            solution=solution,
+            confidence=confidence,
+        )
+        self.reasoning_traces.append(trace)
+        return trace
+
+    def _decompose(self, problem: str, level: int) -> List[str]:
+        base_subproblems = [f"{problem}_aspect_{i}" for i in range(min(level + 1, 5))]
+        if level > 2:
+            meta_aspects = [f"meta_{problem}_layer_{i}" for i in range(level - 2)]
+            base_subproblems.extend(meta_aspects)
+        return base_subproblems
+
+    def _solve_subproblems(self, subproblems: List[str], context: np.ndarray) -> Tuple[str, float]:
+        if not subproblems:
+            return "no_solution", 0.0
+        solutions = []
+        for sp in subproblems:
+            sol, conf = self._solve_single(subproblems[0], context)
+            solutions.append((sol, conf))
+        best_sol, best_conf = max(solutions, key=lambda x: x[1])
+        return best_sol, best_conf
+
+    def _solve_single(self, subproblem: str, context: np.ndarray) -> Tuple[str, float]:
+        vec = np.random.randn(64)
+        sim = float(np.dot(context, vec) / (np.linalg.norm(context) * np.linalg.norm(vec) + 1e-8))
+        confidence = float(np.clip((sim + 1.0) / 2.0, 0.0, 1.0))
+        solution = f"solved_{subproblem}"
+        return solution, confidence
+
+    def meta_reason(self, trace: ReasoningTrace) -> Dict[str, Any]:
+        abstractions = list(range(1, self.max_abstraction + 1))
+        confidences = []
+        for level in abstractions:
+            new_trace = self.reason(trace.problem, abstraction_level=level)
+            confidences.append(new_trace.confidence)
+        best_level = int(np.argmax(confidences))
+        improvement = float(np.max(confidences) - trace.confidence)
+        return {
+            "original_trace": trace.problem,
+            "abstraction_levels_tested": abstractions,
+            "confidences": confidences,
+            "optimal_abstraction": best_level,
+            "improvement": improvement,
+        }
+
+    def detect_novelty(self, problem: str) -> float:
+        if not self.reasoning_traces:
+            return 1.0
+        recent_solutions = [t.solution for t in self.reasoning_traces[-10:] if t.solution]
+        if not recent_solutions:
+            return 1.0
+        problem_vec = np.random.randn(64)
+        novelty_scores = []
+        for sol in recent_solutions:
+            sol_vec = np.random.randn(64)
+            sim = float(np.dot(problem_vec, sol_vec) / (np.linalg.norm(problem_vec) * np.linalg.norm(sol_vec) + 1e-8))
+            novelty_scores.append(sim)
+        novelty = 1.0 - float(np.mean(novelty_scores))
+        return float(np.clip(novelty, 0.0, 1.0))
+
+    def get_reasoning_stats(self) -> Dict[str, Any]:
+        if not self.reasoning_traces:
+            return {"traces": 0}
+        confidences = [t.confidence for t in self.reasoning_traces]
+        return {
+            "traces": len(self.reasoning_traces),
+            "mean_confidence": float(np.mean(confidences)),
+            "max_confidence": float(np.max(confidences)),
+            "mean_abstraction": float(np.mean([t.abstraction_level for t in self.reasoning_traces])),
+        }

@@ -1,0 +1,90 @@
+import numpy as np
+from typing import List, Dict, Any, Optional, Tuple
+from dataclasses import dataclass, field
+
+
+@dataclass
+class KnowledgeNode:
+    id: str
+    domain: str
+    embedding: np.ndarray
+    confidence: float
+    connections: List[str] = field(default_factory=list)
+
+
+class KnowledgeSynthesizer:
+    def __init__(self, embedding_dim: int = 64):
+        self.embedding_dim = embedding_dim
+        self.nodes: Dict[str, KnowledgeNode] = {}
+        self.synthesis_history: List[Dict[str, Any]] = []
+
+    def add_knowledge(self, node_id: str, domain: str, embedding: np.ndarray, confidence: float = 1.0) -> KnowledgeNode:
+        embedding = np.asarray(embedding, dtype=float)
+        if embedding.shape[-1] != self.embedding_dim:
+            embedding = np.pad(embedding, (0, self.embedding_dim - embedding.shape[-1]), mode="constant")[: self.embedding_dim]
+        node = KnowledgeNode(id=node_id, domain=domain, embedding=embedding, confidence=float(confidence))
+        self.nodes[node_id] = node
+        return node
+
+    def synthesize(self, node_ids: List[str], synthesis_method: str = "weighted_average") -> Dict[str, Any]:
+        if len(node_ids) < 2:
+            raise ValueError("Synthesis requires at least two nodes")
+        nodes = [self.nodes[nid] for nid in node_ids if nid in self.nodes]
+        if len(nodes) < 2:
+            raise ValueError("At least two valid nodes required for synthesis")
+        if synthesis_method == "weighted_average":
+            combined = self._weighted_average(nodes)
+        elif synthesis_method == "cross_domain_blend":
+            combined = self._cross_domain_blend(nodes)
+        else:
+            combined = self._concatenate(nodes)
+        result = {
+            "method": synthesis_method,
+            "source_nodes": [n.id for n in nodes],
+            "domains": list({n.domain for n in nodes}),
+            "synthesized_embedding": combined.tolist(),
+            "mean_confidence": float(np.mean([n.confidence for n in nodes])),
+        }
+        self.synthesis_history.append(result)
+        return result
+
+    def _weighted_average(self, nodes: List[KnowledgeNode]) -> np.ndarray:
+        weights = np.array([n.confidence for n in nodes], dtype=float)
+        weights = weights / (weights.sum() + 1e-8)
+        embeddings = np.stack([n.embedding for n in nodes])
+        return (embeddings.T @ weights).T
+
+    def _cross_domain_blend(self, nodes: List[KnowledgeNode]) -> np.ndarray:
+        embeddings = np.stack([n.embedding for n in nodes])
+        mean_emb = np.mean(embeddings, axis=0)
+        std_emb = np.std(embeddings, axis=0)
+        blended = mean_emb + std_emb * np.random.randn(self.embedding_dim) * 0.1
+        return blended
+
+    def _concatenate(self, nodes: List[KnowledgeNode]) -> np.ndarray:
+        return np.concatenate([n.embedding for n in nodes])
+
+    def find_analogies(self, source_id: str, target_id: str, top_k: int = 3) -> List[Tuple[str, float]]:
+        if source_id not in self.nodes or target_id not in self.nodes:
+            return []
+        source_emb = self.nodes[source_id].embedding
+        similarities = []
+        for nid, node in self.nodes.items():
+            if nid in (source_id, target_id):
+                continue
+            sim = float(np.dot(source_emb, node.embedding) / (np.linalg.norm(source_emb) * np.linalg.norm(node.embedding) + 1e-8))
+            similarities.append((nid, sim))
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        return similarities[:top_k]
+
+    def get_knowledge_stats(self) -> Dict[str, Any]:
+        if not self.nodes:
+            return {"node_count": 0}
+        domains = [n.domain for n in self.nodes.values()]
+        unique_domains = list(set(domains))
+        return {
+            "node_count": len(self.nodes),
+            "domains": unique_domains,
+            "mean_confidence": float(np.mean([n.confidence for n in self.nodes.values()])),
+            "syntheses_performed": len(self.synthesis_history),
+        }

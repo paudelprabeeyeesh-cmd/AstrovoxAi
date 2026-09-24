@@ -78,7 +78,8 @@ class DAGExecutor:
                     in_degree[t.name] -= 1
                     if in_degree[t.name] == 0:
                         queue.append(t.name)
-        return order
+        remaining = [n for n in self._node_map if n not in order]
+        return order + remaining
 
     def _execute_task(self, name: str) -> None:
         task = self._node_map[name]
@@ -91,7 +92,7 @@ class DAGExecutor:
         self._status[name] = TaskStatus.RUNNING
         for attempt in range(task.retries + 1):
             try:
-                output = task.fn(**task.params)
+                output = task.fn(**dict(task.params, name=name))
                 self._status[name] = TaskStatus.COMPLETED
                 self._results[name] = TaskResult(status=TaskStatus.COMPLETED, output=output)
                 return
@@ -103,6 +104,9 @@ class DAGExecutor:
 
     def log(self) -> List[str]:
         return list(self._log)
+
+    def status(self) -> Dict[str, TaskStatus]:
+        return dict(self._status)
 
 
 class WorkflowEngine:

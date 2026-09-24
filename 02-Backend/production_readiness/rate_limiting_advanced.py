@@ -79,7 +79,7 @@ class AdaptiveRateLimiter:
     def _adjust_rate(self) -> None:
         load = self._get_load()
         factor = 1.0 - load
-        self._current_refill_rate = max(self._base_refill_rate, min(self._max_refill_rate, self._base_refill_rate * factor + self._max_refill_rate * load))
+        self._current_refill_rate = max(self._base_refill_rate, min(self._max_refill_rate, self._base_refill_rate * load + self._max_refill_rate * factor))
 
     def record_load(self, load: float) -> None:
         with self._history_lock:

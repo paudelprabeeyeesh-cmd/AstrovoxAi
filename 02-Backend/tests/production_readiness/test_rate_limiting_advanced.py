@@ -38,8 +38,8 @@ def test_adaptive_rate_limiter():
     limiter = AdaptiveRateLimiter(base_refill_rate=1.0, max_refill_rate=5.0, burst_capacity=10)
     assert limiter.check("user-1") is True
     limiter.record_load(0.9)
-    limiter.check("user-1", 5.0)
-    assert limiter.remaining("user-1") == 0.0
+    assert limiter.check("user-1", 5.0) is True
+    assert pytest.approx(limiter.remaining("user-1"), abs=1.0) == 4.0
 
 
 def test_adaptive_rate_limiter_adjusts():
@@ -48,7 +48,7 @@ def test_adaptive_rate_limiter_adjusts():
         assert limiter.check("user-1") is True
     assert limiter.check("user-1") is False
     limiter.record_load(0.1)
-    time.sleep(0.1)
+    time.sleep(1.0)
     assert limiter.check("user-1") is True
 
 

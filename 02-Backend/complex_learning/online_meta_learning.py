@@ -45,30 +45,16 @@ class OnlineMAML:
         e = np.exp(x - np.max(x, axis=1, keepdims=True))
         return e / np.sum(e, axis=1, keepdims=True)
 
-    def _forward(self, x: np.ndarray, params: Dict[str, np.ndarray]) -> np.ndarray:
-        h = self._relu(x @ params["W1"] + params["b1"])
-        return h @ params["W2"] + params["b2"]
+    def _forward(self, x: np.ndarray, params: Optional[Dict[str, np.ndarray]] = None) -> Tuple[np.ndarray, np.ndarray]:
+        p = params if params is not None else self.params
+        h = self._relu(x @ p["W1"] + p["b1"])
+        logits = h @ p["W2"] + p["b2"]
+        return h, logits
 
     def _compute_loss(self, logits: np.ndarray, y: np.ndarray) -> float:
         probs = self._softmax(logits)
         y_int = y.astype(int)
         return float(-np.mean(np.log(probs[np.arange(len(y_int)), y_int] + 1e-12)))
-
-    def _compute_gradients(self, logits: np.ndarray, y: np.ndarray, x: np.ndarray, h: np.ndarray,
-                           params: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        probs = self._softmax(logits)
-        y_int = y.astype(int)
-        batch_size = len(y_int)
-        grad = probs.copy()
-        grad[np.arange(batch_size), y_int] -= 1
-        grad /= batch_size
-        dW2 = h.T @ grad
-        db2 = np.sum(grad, axis=0)
-        dh = grad @ params["W2"].T
-        dh = dh * (h > 0)
-        dW1 = x.T @ dh
-        db1 = np.sum(dh, axis=0)
-        return {"W1": dW1, "b1": db1, "W2": dW2, "b2": db2}
 
     def adapt(self, x: np.ndarray, y: np.ndarray, steps: int = -1) -> Dict[str, np.ndarray]:
         steps = self.adaptation_steps if steps < 0 else steps
@@ -77,9 +63,21 @@ class OnlineMAML:
             logits = self._forward(x, params)
             loss = self._compute_loss(logits, y)
             h = self._relu(x @ params["W1"] + params["b1"])
-            grads = self._compute_gradients(logits, y, x, h, params)
-            for k in params:
-                params[k] = params[k] - self.inner_lr * grads[k]
+            probs = self._softmax(logits)
+            y_int = y.astype(int)
+            grad = probs.copy()
+            grad[np.arange(len(y_int)), y_int] -= 1
+            grad /= len(y_int)
+            dW2 = h.T @ grad
+            db2 = np.sum(grad, axis=0)
+            dh = grad @ params["W2"].T
+            dh = dh * (h > 0)
+            dW1 = x.T @ dh
+            db1 = np.sum(dh, axis=0)
+            params["W1"] = params["W1"] - self.inner_lr * dW1
+            params["b1"] = params["b1"] - self.inner_lr * db1
+            params["W2"] = params["W2"] - self.inner_lr * dW2
+            params["b2"] = params["b2"] - self.inner_lr * db2
         return params
 
     def meta_train_step(self, tasks: List[Episode]) -> float:
@@ -91,16 +89,25 @@ class OnlineMAML:
             loss = self._compute_loss(logits, task.query_y)
             total_loss += loss
             h = self._relu(task.query_x @ adapted["W1"] + adapted["b1"])
-            grads = self._compute_gradients(logits, task.query_y, task.query_x, h, adapted)
-            for k in grads:
-                meta_grads[k] = meta_grads.get(k, 0.0) + grads[k]
+            probs = self._softmax(logits)
+            y_int = task.query_y.astype(int)
+            grad = probs.copy()
+            grad[np.arange(len(y_int)), y_int] -= 1
+            grad /= len(y_int)
+            dW2 = h.T @ grad
+            db2 = np.sum(grad, axis=0)
+            dh = grad @ adapted["W2"].T
+            dh = dh * (h > 0)
+            dW1 = task.query_x.T @ dh
+            db1 = np.sum(dh, axis=0)
+            meta_grads["W1"] = meta_grads.get("W1", 0.0) + dW1
+            meta_grads["b1"] = meta_grads.get("b1", 0.0) + db1
+            meta_grads["W2"] = meta_grads.get("W2", 0.0) + dW2
+            meta_grads["b2"] = meta_grads.get("b2", 0.0) + db2
         self.task_losses.append(total_loss / max(1, len(tasks)))
-        self._update_meta_params(meta_grads, len(tasks))
-        return total_loss / max(1, len(tasks))
-
-    def _update_meta_params(self, meta_grads: Dict[str, np.ndarray], num_tasks: int) -> None:
         for k in self.params:
-            self.params[k] = self.params[k] - self.outer_lr * meta_grads[k] / num_tasks
+            self.params[k] = self.params[k] - self.outer_lr * meta_grads.get(k, 0.0) / max(1, len(tasks))
+        return total_loss / max(1, len(tasks))
 
     def online_step(self, x: np.ndarray, y: np.ndarray) -> float:
         params = self.adapt(x, y, steps=1)
@@ -166,13 +173,14 @@ class FastAdaptationModel:
         y_int = y.astype(int)
         return float(-np.mean(np.log(probs[np.arange(len(y_int)), y_int] + 1e-12)))
 
-    def adapt(self, support_x: np.ndarray, support_y: np.ndarray) -> Dict[str, np.ndarray]:
-        for _ in range(self.steps):
-            h, logits = self._forward(support_x)
-            loss = self._loss(logits, support_y)
+    def adapt(self, x: np.ndarray, y: np.ndarray, steps: int = -1) -> Dict[str, np.ndarray]:
+        steps = self.steps if steps < 0 else steps
+        for _ in range(steps):
+            h, logits = self._forward(x)
+            loss = self._loss(logits, y)
             self.loss_history.append(loss)
             probs = self._softmax(logits)
-            y_int = support_y.astype(int)
+            y_int = y.astype(int)
             grad = probs.copy()
             grad[np.arange(len(y_int)), y_int] -= 1
             grad /= len(y_int)
@@ -180,7 +188,7 @@ class FastAdaptationModel:
             db2 = np.sum(grad, axis=0)
             dh = grad @ self.params["W2"].T
             dh = dh * (h > 0)
-            dW1 = support_x.T @ dh
+            dW1 = x.T @ dh
             db1 = np.sum(dh, axis=0)
             self.params["W1"] -= self.lr * dW1
             self.params["b1"] -= self.lr * db1

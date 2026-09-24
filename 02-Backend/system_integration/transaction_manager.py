@@ -131,11 +131,11 @@ class SagaOrchestrator:
             saga = self._sagas[tx_id]
             saga.state = SagaState.RUNNING
             for step in saga.steps:
+                saga.executed.append(step.name)
                 result = self._run_with_retries(step)
-                if not result:
+                if result is None:
                     self._compensate(saga)
                     return saga
-                saga.executed.append(step.name)
                 saga.results[step.name] = result
             saga.state = SagaState.COMPLETED
             return saga

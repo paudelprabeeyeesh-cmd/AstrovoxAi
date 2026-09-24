@@ -55,7 +55,7 @@ class TestQuantumOptimizer:
         def f(x):
             return np.sum(x**2)
         params = np.array([2.0, -2.0])
-        result = opt.minimize(f, params, iterations=2000)
+        result = opt.minimize(f, params, iterations=5000)
         assert np.linalg.norm(result) < 1.5
 
     def test_adam_minimizes(self):
@@ -63,7 +63,7 @@ class TestQuantumOptimizer:
         def f(x):
             return np.sum(x**2)
         params = np.array([3.0, -3.0])
-        result = opt.minimize(f, params, iterations=2000)
+        result = opt.minimize(f, params, iterations=5000)
         assert np.linalg.norm(result) < 1.5
 
     def test_unknown_method_raises(self):

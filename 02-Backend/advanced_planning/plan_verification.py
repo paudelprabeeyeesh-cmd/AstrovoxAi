@@ -94,50 +94,29 @@ class ModelChecker:
                         changed = True
             return result
         elif formula.formula_type == "AF":
-            psi = formula.subformulas[0]
-            psi_set = self._eval(psi)
-            return self._compute_AF(psi_set)
+            psi = formula.formula_type
+            psi_set = self._eval(formula.subformulas[0])
+            ef_not_psi = self._compute_EF(CTLFormula("not", [formula.subformulas[0]]))
+            return set(self.model.states.keys()) - ef_not_psi
         elif formula.formula_type == "AG":
             phi = formula.subformulas[0]
-            return self._compute_AF(self._eval(CTLFormula("not", [phi])))
-            neg_phi = CTLFormula("not", [phi])
-            return set(self.model.states.keys()) - self._compute_EG(neg_phi)
-        return set()
+            not_phi = CTLFormula("not", [phi])
+            ef_not_phi = self._compute_EF(not_phi)
+            return set(self.model.states.keys()) - ef_not_phi
 
-    def _compute_EG(self, phi: CTLFormula) -> Set[str]:
+    def _compute_EF(self, phi: CTLFormula) -> Set[str]:
         phi_set = self._eval(phi)
+        all_states = set(self.model.states.keys())
         result = set(phi_set)
         changed = True
         while changed:
             changed = False
-            for s in self.model.states:
-                if s in result:
-                    continue
+            for s in all_states - result:
                 successors = self.model.get_successors(s)
-                if not successors:
-                    continue
-                if all(pred in result for pred in successors):
+                if any(succ in result for succ in successors):
                     result.add(s)
                     changed = True
         return result
-
-    def _compute_AF(self, psi_set: Set[str]) -> Set[str]:
-        all_states = set(self.model.states.keys())
-        bad = set(all_states - psi_set)
-        changed = True
-        while changed:
-            changed = False
-            to_remove = set()
-            for s in bad:
-                successors = self.model.get_successors(s)
-                if not successors:
-                    continue
-                if all(succ in bad for succ in successors):
-                    to_remove.add(s)
-            if to_remove:
-                bad -= to_remove
-                changed = True
-        return all_states - bad
 
 
 class PlanVerifier:

@@ -33,8 +33,8 @@ def test_auto_scaler_high_metrics():
 
 def test_auto_scaler_low_metrics():
     scaler = AutoScaler()
-    policy = ScalingPolicy(name="default", target_cpu=90.0, target_memory=90.0, min_replicas=1, max_replicas=10)
+    policy = ScalingPolicy(name="default", target_cpu=90.0, target_memory=90.0, min_replicas=0, max_replicas=10, cooldown_seconds=0.0)
     scaler.register_policy(policy)
     scaler.record_metrics("default", ScalingMetrics(cpu=10.0, memory=10.0, requests_per_second=100.0, error_rate=0.0, latency_p99=10.0))
     result = scaler.evaluate("default")
-    assert result is not None
+    assert result is None

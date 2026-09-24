@@ -65,21 +65,24 @@ class IntegrationTester:
     def _run_scenario(self, scenario: TestScenario) -> TestResult:
         passed = 0
         failed = 0
+        error = None
         for idx, step in enumerate(scenario.steps):
             try:
                 step()
                 passed += 1
             except AssertionError as exc:
-                failed += 1
-                return TestResult(scenario=scenario.name, passed=False, steps_passed=passed, steps_failed=failed, error=str(exc))
+                error = str(exc)
+                break
             except Exception as exc:
-                failed += 1
-                return TestResult(scenario=scenario.name, passed=False, steps_passed=passed, steps_failed=failed, error=str(exc))
+                error = str(exc)
+                break
         for td in scenario.teardowns:
             try:
                 td()
             except Exception:
                 continue
+        if error:
+            return TestResult(scenario=scenario.name, passed=False, steps_passed=passed, steps_failed=failed, error=error)
         return TestResult(scenario=scenario.name, passed=failed == 0, steps_passed=passed, steps_failed=failed)
 
     def results(self) -> Dict[str, TestResult]:

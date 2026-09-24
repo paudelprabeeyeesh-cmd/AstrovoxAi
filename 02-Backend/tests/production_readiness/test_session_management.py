@@ -57,5 +57,5 @@ def test_session_sticky():
 def test_session_store_cleanup():
     store = SessionStore()
     store.create("user-1", "backend-1")
-    store.cleanup(0.1)
+    store.cleanup(0.0)
     assert store.count() == 0

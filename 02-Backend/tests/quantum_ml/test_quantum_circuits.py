@@ -43,9 +43,9 @@ class TestQuantumCircuit:
         np.testing.assert_allclose(state, np.array([0, 1], dtype=np.complex128), atol=1e-10)
 
     def test_measurement_counts(self):
-        np.random.seed(42)
         circuit = QuantumCircuit(1)
         circuit.h(0)
+        np.random.seed(42)
         counts = circuit.measure(shots=20000)
         assert sum(counts.values()) == 20000
         assert "0" in counts

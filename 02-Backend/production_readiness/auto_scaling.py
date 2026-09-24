@@ -129,7 +129,7 @@ class AutoScaler:
             if not avg.is_high({"cpu": policy.target_cpu, "memory": policy.target_memory}) and now - last >= policy.cooldown_seconds:
                 if len(running) > policy.min_replicas:
                     self._scale_cooldowns[policy_name] = now
-                    return self._scale_down(policy)
+                return self._scale_down(policy)
         return None
 
     def _scale_up(self, policy: ScalingPolicy) -> str:

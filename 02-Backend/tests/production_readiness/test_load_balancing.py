@@ -7,7 +7,7 @@ from production_readiness.load_balancing import (
 
 
 def _make_node(identifier):
-    return BackendNode(id=identifier, host="127.0.0.1", port=8000 + identifier, weight=1, healthy=True)
+    return BackendNode(id=str(identifier), host="127.0.0.1", port=8000 + identifier, weight=1, healthy=True)
 
 
 def test_load_balancer_select_round_robin():
@@ -16,9 +16,9 @@ def test_load_balancer_select_round_robin():
     lb.register(_make_node(2))
     first = lb.select()
     second = lb.select()
-    assert first.id == second.id
+    assert first.id != second.id
     third = lb.select()
-    assert third.id != second.id
+    assert third.id == first.id
 
 
 def test_load_balancer_select_least_connections():
@@ -27,10 +27,10 @@ def test_load_balancer_select_least_connections():
     lb.register(_make_node(2))
     first = lb.select()
     second = lb.select()
-    assert first.id == second.id
+    assert first.id != second.id
     lb.release(second.id)
     third = lb.select()
-    assert third.id != second.id
+    assert third.id == second.id
 
 
 def test_load_balancer_health_check():

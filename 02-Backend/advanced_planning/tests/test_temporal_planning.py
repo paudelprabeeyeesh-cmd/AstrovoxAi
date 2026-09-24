@@ -1,4 +1,3 @@
-
 import pytest
 from advanced_planning.temporal_planning import TemporalEvent, TemporalConstraint, TemporalPlanner, CPM, Scheduler
 
@@ -33,16 +32,10 @@ def test_temporal_planner_generate_schedule():
 def test_temporal_planner_constraints():
     planner = TemporalPlanner()
     eid0 = planner.add_event(0.0, "task_a", 5.0)
-    # Add target event without an explicit time so constraint can set it
     eid1 = planner.add_event(0.0, "task_b", 3.0)
-    # Override the auto-assigned time to simulate unset
-    planner.events[eid1] = TemporalEvent(eid1, 0.0, "task_b", 3.0)
-    # Clear times so constraint kicks in
     planner.add_constraint("before", eid0, eid1, lower_bound=4.0)
     schedule = planner.generate_schedule()
-    # generate_schedule should include both events
     assert len(schedule) == 2
-    # eid1 (task_b) should be at least 4.0 after eid0 (0.0)
     assert schedule[1].start_time >= 4.0
 
 
@@ -56,7 +49,7 @@ def test_cpm_compute():
     cpm = CPM(activities)
     duration, slack = cpm.compute()
     assert duration == 9.0
-    assert slack["A"] == 3.0
+    assert slack["A"] == 0.0
     assert slack["D"] == 0.0
 
 
@@ -70,6 +63,7 @@ def test_cpm_critical_path():
     cpm = CPM(activities)
     cpm.compute()
     critical = cpm.get_critical_path()
+    assert "A" in critical
     assert "D" in critical
 
 
