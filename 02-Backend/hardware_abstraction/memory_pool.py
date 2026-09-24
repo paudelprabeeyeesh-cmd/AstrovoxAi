@@ -68,14 +68,13 @@ class MemoryPool:
                 continue
             prev = coalesced[-1]
             if prev.free and block.free:
-                coalesced.append(
-                    Block(
-                        pointer=prev.pointer,
-                        size=prev.size + block.size,
-                        free=True,
-                        coalesced_with=",".join(filter(None, [prev.coalesced_with, block.coalesced_with])),
-                    )
+                merged = Block(
+                    pointer=prev.pointer,
+                    size=prev.size + block.size,
+                    free=True,
+                    coalesced_with=",".join(filter(None, [prev.coalesced_with, block.coalesced_with])),
                 )
+                coalesced[-1] = merged
             else:
                 coalesced.append(block)
         self.blocks = coalesced

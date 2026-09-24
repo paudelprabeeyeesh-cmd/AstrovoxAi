@@ -1,63 +1,50 @@
 import sqlite3
-
-import pytest
-
-from database.connection import get_connection, init_db
 from database.transaction import transaction
 
 
-@pytest.fixture()
-def db_path(tmp_path):
-    return str(tmp_path / "txn.db")
+def _make_conn(tmp_path):
+    conn = sqlite3.connect(str(tmp_path / "tx.db"))
+    conn.row_factory = sqlite3.Row
+    conn.executescript("""
+        CREATE TABLE accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            balance REAL NOT NULL
+        );
+    """)
+    conn.commit()
+    return conn
 
 
-def test_transaction_commits(db_path):
-    init_db(db_path)
-    conn = get_connection(db_path)
+def test_transaction_commits_on_success(tmp_path):
+    conn = _make_conn(tmp_path)
+    with transaction(conn):
+        conn.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ("alice", 100.0))
+    row = conn.execute("SELECT balance FROM accounts WHERE name=?", ("alice",)).fetchone()
+    assert row["balance"] == 100.0
+    conn.close()
+
+
+def test_transaction_rolls_back_on_exception(tmp_path):
+    conn = _make_conn(tmp_path)
     try:
-        with transaction(conn) as c:
-            c.execute(
-                "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                ("txn1", "txn1@example.com", "hash", "2026-01-01T00:00:00"),
-            )
-    finally:
-        conn.close()
-    conn2 = get_connection(db_path)
-    try:
-        row = conn2.execute("SELECT COUNT(*) AS c FROM users").fetchone()
-        assert row["c"] == 1
-    finally:
-        conn2.close()
+        with transaction(conn):
+            conn.execute("INSERT INTO accounts (name, balance) VALUES (?, ?)", ("alice", 100.0))
+            raise RuntimeError("fail")
+    except RuntimeError:
+        pass
+    row = conn.execute("SELECT balance FROM accounts WHERE name=?", ("alice",)).fetchone()
+    assert row is None
+    conn.close()
 
 
-def test_transaction_rolls_back_on_error(db_path):
-    init_db(db_path)
-    conn = get_connection(db_path)
-    with pytest.raises(ValueError):
-        with transaction(conn) as c:
-            c.execute(
-                "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-                ("txn2", "txn2@example.com", "hash", "2026-01-01T00:00:00"),
-            )
-            raise ValueError("fail")
-    conn2 = get_connection(db_path)
-    try:
-        row = conn2.execute("SELECT COUNT(*) AS c FROM users").fetchone()
-        assert row["c"] == 0
-    finally:
-        conn2.close()
-
-
-def test_transaction_manages_connection_when_none(db_path):
-    init_db(db_path)
-    with transaction() as c:
-        c.execute(
-            "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-            ("txn3", "txn3@example.com", "hash", "2026-01-01T00:00:00"),
-        )
-    conn = get_connection(db_path)
-    try:
-        row = conn.execute("SELECT COUNT(*) AS c FROM users").fetchone()
-        assert row["c"] == 1
-    finally:
-        conn.close()
+def test_transaction_creates_and_closes_connection_when_none(tmp_path):
+    db_path = str(tmp_path / "auto.db")
+    with transaction() as conn:
+        conn.execute("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY)")
+        conn.execute("INSERT INTO items (id) VALUES (1)")
+    # Connection should be closed after exiting context
+    new_conn = sqlite3.connect(db_path)
+    count = new_conn.execute("SELECT COUNT(*) AS c FROM items").fetchone()["c"]
+    new_conn.close()
+    assert count == 1

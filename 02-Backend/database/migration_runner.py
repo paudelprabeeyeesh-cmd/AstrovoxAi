@@ -38,3 +38,7 @@ class MigrationRunner:
     def pending(self, migrations: List[tuple]) -> List[tuple]:
         applied = set(self.applied_versions())
         return [m for m in migrations if m[0] not in applied]
+
+
+def run_migrations(conn: sqlite3.Connection, migrations: List[tuple]) -> None:
+    MigrationRunner(conn).run(migrations)

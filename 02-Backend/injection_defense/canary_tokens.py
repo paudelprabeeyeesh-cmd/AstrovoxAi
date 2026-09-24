@@ -39,7 +39,8 @@ class CanaryRegistry:
         raw = f"{_DEFAULT_PREFIX}-{hex_}-{suffix}"
         expires = time.time() + ttl_seconds if ttl_seconds else None
         token = CanaryToken(value=raw, expires_at=expires)
-        self._tokens[raw] = token
+        canonical = raw.upper()
+        self._tokens[canonical] = token
         return token
 
     def check(self, text: str) -> Optional[CanaryToken]:
@@ -58,13 +59,13 @@ class CanaryRegistry:
         return self.check(text) is not None
 
     def revoke(self, token_value: str) -> bool:
-        if token_value in self._tokens:
-            del self._tokens[token_value]
+        canonical = token_value.strip().upper()
+        if canonical in self._tokens:
+            del self._tokens[canonical]
             return True
         return False
 
     def cleanup_expired(self) -> int:
-        time.time()
         expired_keys = [k for k, v in self._tokens.items() if v.is_expired()]
         for k in expired_keys:
             del self._tokens[k]

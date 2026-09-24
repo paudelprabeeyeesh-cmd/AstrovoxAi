@@ -12,9 +12,18 @@ spec:
       labels:
         app: astrovox-backend
     spec:
+      serviceAccountName: astrovox-backend
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
       containers:
       - name: astrovox-backend
         image: astrovox/backend:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
         resources:
@@ -29,13 +38,29 @@ spec:
             name: astrovox-backend-config
         - secretRef:
             name: astrovox-backend-secret
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
         livenessProbe:
           httpGet:
-            path: /health/liveness
+            path: /healthz
             port: 8000
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health/readiness
+            path: /healthz
             port: 8000
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          periodSeconds: 5
+          failureThreshold: 30

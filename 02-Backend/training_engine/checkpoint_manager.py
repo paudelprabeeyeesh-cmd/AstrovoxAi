@@ -15,7 +15,6 @@ class CheckpointManager:
         with open(tmp_path, "w") as f:
             json.dump(payload, f)
         os.replace(tmp_path, path)
-        self._remove_meta(step)
         meta_path = os.path.join(self.directory, f"ckpt_{step}.meta.json")
         with open(meta_path, "w") as f:
             json.dump({"step": step, "path": path}, f)

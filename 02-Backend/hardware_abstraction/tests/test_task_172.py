@@ -58,10 +58,21 @@ class TestMemoryPoolAllocator:
         assert "fragmentation" in status
         assert "block_count" in status
 
-    def test_coalesce_after_free(self):
+    def test_coalesce_adjacent_free_blocks(self):
         allocator = MemoryPoolAllocator(total_size=64)
         allocator.allocate(8)
         allocator.allocate(8)
-        assert len(allocator.get_free_blocks()) == 1
         allocator.free(allocator.allocate(8))
-        assert len(allocator.get_free_blocks()) == 2
+        allocator.free(allocator.allocate(8))
+        assert len(allocator.get_free_blocks()) == 1
+        assert allocator.free_size() == 48
+
+    def test_coalesce_preserves_used_blocks(self):
+        allocator = MemoryPoolAllocator(total_size=64)
+        id1 = allocator.allocate(8)
+        id2 = allocator.allocate(8)
+        allocator.free(id1)
+        allocator.free(id2)
+        assert len(allocator.get_used_blocks()) == 0
+        assert len(allocator.get_free_blocks()) == 1
+        assert allocator.free_size() == 64

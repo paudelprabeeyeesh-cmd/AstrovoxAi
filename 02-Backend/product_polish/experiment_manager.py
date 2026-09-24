@@ -25,6 +25,14 @@ class ExperimentVariant:
     weight: float = 1.0
     config: Dict[str, Any] = field(default_factory=dict)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "weight": self.weight,
+            "config": dict(self.config),
+        }
+
 
 @dataclass
 class Experiment:

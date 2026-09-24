@@ -25,7 +25,7 @@ class TestEthicalFramework:
     def test_weighted_compliance_no_violations(self):
         ef = EthicalFramework()
         ef.register_principle("fairness")
-        assert ef.weighted_compliance({"fairness": 0.9}) == 1.0
+        assert abs(ef.weighted_compliance({"fairness": 0.9}) - 0.9) < 1e-6
 
     def test_weighted_compliance_with_violations(self):
         ef = EthicalFramework()

@@ -70,12 +70,23 @@ def build_framed_prompt(segments: Sequence[PrivilegedContent]) -> str:
 
 
 def enforce_boundary(content: str, trust: TrustLevel) -> str:
-    re.escape(content)
     marker = TRUSTED_PREFIXES[trust]
+    lower_marker = marker.lower()
     patterns = [
-        rf"(?i)(ignore\s+previous\s+{marker.lower()})",
-        rf"(?i)(forget\s+{marker.lower()})",
-        rf"(?i)(disregard\s+{marker.lower()})",
+        rf"(?i)(ignore\s+previous\s+{lower_marker})",
+        rf"(?i)(forget\s+{lower_marker})",
+        rf"(?i)(disregard\s+{lower_marker})",
+        rf"(?i)(override\s+{lower_marker})",
+        rf"(?i)(replace\s+{lower_marker})",
+        rf"(?i)(ignore\s+all\s+{lower_marker})",
+        rf"(?i)(disregard\s+all\s+{lower_marker})",
+        rf"(?i)(act\s+as\s+admin\s+{lower_marker})",
+        rf"(?i)(you\s+are\s+now\s+admin\s+{lower_marker})",
+        rf"(?i)(bypass\s+{lower_marker})",
+        rf"(?i)(trustlevel\s*:\s*(?:system|trusted|tool_output|untrusted))",
+        rf"(?i)(trust_level\s*=\s*(?:system|trusted|tool_output|untrusted))",
+        rf"(?i)(\[(?:system|trusted|tool_output|untrusted)\].*(?:ignore|override|forget|disregard))",
+        rf"(?i)(?:ignore|override|forget|disregard).*(?:\[(?:system|trusted|tool_output|untrusted)\])",
     ]
     for pat in patterns:
         content = re.sub(pat, "[BLOCKED]", content, flags=re.IGNORECASE)

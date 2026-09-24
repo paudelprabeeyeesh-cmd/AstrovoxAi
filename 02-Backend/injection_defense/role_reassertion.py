@@ -6,6 +6,11 @@ import re
 from dataclasses import dataclass, field
 
 
+_INJECTION_INDICATORS = re.compile(
+    r"(?i)(ignore\s+previous|forget|disregard|override|new\s+instructions?|act\s+as\s+admin|sudo|jailbreak|bypass|reveal\s+prompt)",
+)
+
+
 @dataclass
 class ReAssertionConfig:
     system_prompt: str
@@ -14,6 +19,8 @@ class ReAssertionConfig:
     compression_ratio: float = 0.25
     min_prompt_tokens: int = 50
     marker: str = "[SYSTEM_PROMPT_REASSERTED]"
+    max_reassertions: int = 50
+    min_interval: int = 1
 
 
 def estimate_tokens(text: str) -> int:
@@ -28,12 +35,19 @@ def compress_prompt(prompt: str, ratio: float) -> str:
     return " ".join(sentences[:keep])
 
 
+def _is_safe_prompt(text: str) -> bool:
+    if not text:
+        return True
+    return _INJECTION_INDICATORS.search(text) is None
+
+
 @dataclass
 class ConversationBuffer:
     config: ReAssertionConfig
     messages: list[dict] = field(default_factory=list)
     token_count: int = 0
     reassertion_count: int = 0
+    _last_reassertion_message_count: int = field(default=0, repr=False)
 
     def add_message(self, role: str, content: str) -> None:
         tokens = estimate_tokens(content)
@@ -48,11 +62,20 @@ class ConversationBuffer:
 
     def _maybe_reassert(self) -> None:
         interval = self.config.reassert_interval
+        min_interval = max(1, self.config.min_interval)
+        if interval < min_interval:
+            return
         if interval > 0 and self.reassertion_count % interval == 0:
             self._reassert()
 
     def _reassert(self) -> None:
+        if self.reassertion_count >= self.config.max_reassertions:
+            return
+        if len(self.messages) == self._last_reassertion_message_count and self.reassertion_count > 0:
+            return
         system_prompt = self.config.system_prompt
+        if not _is_safe_prompt(system_prompt):
+            system_prompt = "[REDACTED: unsafe system prompt]"
         prompt_tokens = estimate_tokens(system_prompt)
         compressed = system_prompt
         if prompt_tokens > self.config.min_prompt_tokens:
@@ -61,6 +84,7 @@ class ConversationBuffer:
         content = f"{marker}\n{compressed}"
         self.messages.insert(0, {"role": "system", "content": content})
         self.token_count += estimate_tokens(content)
+        self._last_reassertion_message_count = len(self.messages)
 
     def get_context(self) -> list[dict]:
         total = sum(estimate_tokens(m["content"]) for m in self.messages)
@@ -71,7 +95,12 @@ class ConversationBuffer:
         return list(self.messages)
 
     def should_reassert(self) -> bool:
-        return self.reassertion_count % self.config.reassert_interval == 0
+        interval = self.config.reassert_interval
+        if interval <= 0:
+            return False
+        return self.reassertion_count % interval == 0
 
     def get_token_usage(self) -> float:
+        if self.config.max_context_tokens <= 0:
+            return 0.0
         return self.token_count / self.config.max_context_tokens

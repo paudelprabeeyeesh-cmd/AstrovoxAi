@@ -1,12 +1,12 @@
-
-import numpy as np
-from typing import List
+import math
+import random
+from typing import Dict, List, Optional, Sequence
 
 
 class QTable:
     def __init__(self, state_size: int, action_size: int, lr: float = 0.1, gamma: float = 0.99, epsilon: float = 1.0,
                  epsilon_decay: float = 0.995, epsilon_min: float = 0.01):
-        self.q_table = np.zeros((state_size, action_size))
+        self.q_table: List[List[float]] = [[0.0] * action_size for _ in range(state_size)]
         self.lr = lr
         self.gamma = gamma
         self.epsilon = epsilon
@@ -15,15 +15,16 @@ class QTable:
         self.training_error: List[float] = []
 
     def get_action(self, state: int, explore: bool = True) -> int:
-        if explore and np.random.random() < self.epsilon:
-            return np.random.randint(0, self.q_table.shape[1])
-        return int(np.argmax(self.q_table[state]))
+        if explore and random.random() < self.epsilon:
+            return random.randint(0, len(self.q_table[0]) - 1)
+        return max(range(len(self.q_table[state])), key=lambda a: self.q_table[state][a])
 
     def update(self, state: int, action: int, reward: float, next_state: int, done: bool) -> None:
-        current = self.q_table[state, action]
-        target = reward + (1 - done) * self.gamma * np.max(self.q_table[next_state])
+        current = self.q_table[state][action]
+        next_max = max(self.q_table[next_state])
+        target = reward + (1 - done) * self.gamma * next_max
         td_error = target - current
-        self.q_table[state, action] = current + self.lr * td_error
+        self.q_table[state][action] = current + self.lr * td_error
         self.training_error.append(abs(td_error))
 
     def decay_epsilon(self) -> None:
@@ -60,47 +61,60 @@ class RLPlanner:
             rewards.append(r)
         return rewards
 
-    def get_best_policy(self) -> np.ndarray:
-        return np.argmax(self.q_table.q_table, axis=1)
+    def get_best_policy(self) -> List[int]:
+        return [max(range(len(self.q_table.q_table[s])), key=lambda a: self.q_table.q_table[s][a])
+                for s in range(self.num_states)]
 
     def get_policy_value(self, state: int) -> float:
-        return float(np.max(self.q_table.q_table[state]))
+        return float(max(self.q_table.q_table[state]))
 
 
 class PolicyGradientPlanner:
     def __init__(self, num_states: int, num_actions: int, lr: float = 0.01):
         self.num_states = num_states
         self.num_actions = num_actions
-        self.theta = np.random.randn(num_states, num_actions) * 0.01
+        self.theta: List[List[float]] = [[random.gauss(0, 0.01) for _ in range(num_actions)]
+                                          for _ in range(num_states)]
         self.lr = lr
         self.losses: List[float] = []
 
-    def softmax(self, state: int) -> np.ndarray:
+    def softmax(self, state: int) -> List[float]:
         logits = self.theta[state]
-        e = np.exp(logits - np.max(logits))
-        return e / np.sum(e)
+        m = max(logits)
+        e = [math.exp(x - m) for x in logits]
+        s = sum(e)
+        return [x / s for x in e]
 
     def get_action(self, state: int) -> int:
         probs = self.softmax(state)
-        return int(np.random.choice(self.num_actions, p=probs))
+        r = random.random()
+        cumsum = 0.0
+        for a, p in enumerate(probs):
+            cumsum += p
+            if r <= cumsum:
+                return a
+        return self.num_actions - 1
 
     def update(self, states: List[int], actions: List[int], rewards: List[float]) -> None:
         returns = self._discount_rewards(rewards)
         for s, a, g in zip(states, actions, returns):
             probs = self.softmax(s)
-            grad = -probs
+            grad = [-p for p in probs]
             grad[a] += 1.0
-            self.theta[s] += self.lr * g * grad
-            self.losses.append(-g * np.log(max(probs[a], 1e-10)))
+            self.theta[s] = [th + self.lr * g * gr for th, gr in zip(self.theta[s], grad)]
+            self.losses.append(-g * math.log(max(probs[a], 1e-10)))
 
-    def _discount_rewards(self, rewards: List[float], gamma: float = 0.99) -> np.ndarray:
-        returns = np.zeros(len(rewards))
+    def _discount_rewards(self, rewards: List[float], gamma: float = 0.99) -> List[float]:
+        returns = [0.0] * len(rewards)
         running = 0.0
         for i in range(len(rewards) - 1, -1, -1):
             running = rewards[i] + gamma * running
             returns[i] = running
         if len(returns) > 1:
-            returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+            mean_r = sum(returns) / len(returns)
+            var_r = sum((x - mean_r) ** 2 for x in returns) / len(returns)
+            std_r = math.sqrt(var_r) + 1e-8
+            returns = [(x - mean_r) / std_r for x in returns]
         return returns
 
     def train_episode(self, env, max_steps: int = 100) -> float:

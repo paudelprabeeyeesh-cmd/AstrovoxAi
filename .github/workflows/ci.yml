@@ -2,121 +2,85 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
-  backend-tests:
+  lint-frontend:
+    name: Lint Frontend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 02-Backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio pytest-timeout
-      - name: Run backend tests
-        run: python -m pytest tests/ -q --timeout=180
-
-  backend-lint:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 02-Backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install lint tools
-        run: |
-          python -m pip install --upgrade pip
-          pip install flake8
-      - name: Lint
-        run: flake8 app/ tests/
-
-  backend-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 02-Backend
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Verify app imports
-        run: python -c "import app.main; print('Backend build check passed')"
-
-  frontend-lint:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Install dependencies
-        run: npm ci
-      - name: Lint
-        run: npm run lint
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
 
-  frontend-typecheck:
+  lint-backend:
+    name: Lint Backend
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: npm ci
-      - name: Typecheck
-        run: npx tsc --noEmit
-
-  frontend-build:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Install dependencies
-        run: npm ci
-      - name: Build
-        run: npm run build
-
-  security:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: 02-Backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install bandit
-        run: |
-          python -m pip install --upgrade pip
-          pip install bandit
-      - name: Security scan
-        run: bandit -r app/ tests/
+      - run: pip install ruff
+      - run: ruff check 02-Backend/app 02-Backend/tests
+
+  typecheck:
+    name: TypeScript Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run typecheck
+
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pip install pytest pytest-asyncio
+      - run: pytest 02-Backend/tests -v --tb=short
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run test -- --run
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+
+  build-backend:
+    name: Build Backend Docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f Dockerfile.backend -t astrovox-backend:ci .

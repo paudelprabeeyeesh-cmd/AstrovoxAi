@@ -25,6 +25,7 @@ class ReleaseNoteEntry:
     title: str
     description: str
     entry_type: str = "feature"
+    raw_type: str = ""
     tags: List[str] = field(default_factory=list)
     source: str = "manual"
     author: str = ""
@@ -41,6 +42,7 @@ class ReleaseNoteEntry:
             "title": self.title,
             "description": self.description,
             "entry_type": self.entry_type,
+            "raw_type": self.raw_type,
             "tags": self.tags,
             "source": self.source,
             "author": self.author,
@@ -94,6 +96,7 @@ class ReleaseNotesGenerator:
             title=title,
             description=description,
             entry_type=normalized_type,
+            raw_type=entry_type,
             tags=tags or [],
             source=source,
             author=author,

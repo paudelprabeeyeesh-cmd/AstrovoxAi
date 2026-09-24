@@ -8,3 +8,6 @@ from agi_safety.cooperative_inverse import CooperativeInverseRL, PreferenceLearn
 from agi_safety.impact_regularization import ImpactRegularizer  # noqa: F401
 from agi_safety.verification import SimpleTheoremProver, verify_invariant  # noqa: F401
 from agi_safety.safe_exploration import SafeExplorer, SafetyConstraint  # noqa: F401
+from agi_safety.interpretable_alignment import AlignmentAuditor, AlignmentMetric, InterpretablePolicy  # noqa: F401
+from agi_safety.reward_hacking_detector import AnomalyReport, RewardHackingDetector  # noqa: F401
+from agi_safety.value_lock import FrozenValue, ValueLock  # noqa: F401

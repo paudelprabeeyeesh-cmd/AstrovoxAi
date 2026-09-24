@@ -1,6 +1,30 @@
+import math
+import random
+import statistics
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
-import numpy as np
-from typing import Any, Callable, Dict, List, Optional, Tuple
+
+def _vec_len(v):
+    return math.sqrt(sum(x * x for x in v))
+
+
+def _vec_sub(a, b):
+    return [x - y for x, y in zip(a, b)]
+
+
+def _vec_clamp(v, lo, hi):
+    return [max(lo_val, min(hi_val, x)) for lo_val, hi_val, x in zip(lo, hi, v)]
+
+
+def _vec_sum(v):
+    return sum(v)
+
+
+def _softmax(logits):
+    m = max(logits)
+    e = [math.exp(x - m) for x in logits]
+    s = sum(e)
+    return [x / s for x in e]
 
 
 class DomainMapping:
@@ -49,7 +73,8 @@ class PlanTransfer:
         translated = mapping.translate_plan(source_plan)
         if adapt_fn:
             translated = [adapt_fn(a) for a in translated]
-        confidence = float(np.mean([mapping.transfer_score.get(str(a), 0.0) for a in source_plan])) if source_plan else 0.0
+        scores = [mapping.transfer_score.get(str(a), 0.0) for a in source_plan]
+        confidence = statistics.mean(scores) if scores else 0.0
         self.transfer_history.append({"source_plan": source_plan, "translated_plan": translated,
                                       "confidence": confidence})
         return translated, confidence
@@ -67,4 +92,4 @@ class PlanTransfer:
             score = mapping.transfer_score.get(str(s), 0.0)
             matched = str(t) == mapping.action_mapping.get(str(s), "")
             scores.append(score if matched else 0.0)
-        return float(np.mean(scores))
+        return statistics.mean(scores) if scores else 0.0

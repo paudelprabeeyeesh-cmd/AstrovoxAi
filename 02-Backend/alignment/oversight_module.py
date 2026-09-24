@@ -61,5 +61,5 @@ class OversightModule:
             "total_interventions": len(self.intervention_log),
             "risk_score": self.compute_risk_score({}) if not self.audit_log else sum(e["risk_score"] for e in self.audit_log) / len(self.audit_log),
             "intervention_effectiveness": self.intervention_effectiveness(),
-            "needs_intervention": any(self.needs_intervention(a) for a in [e["risk_score"] for e in self.audit_log]) if self.audit_log else False,
+            "needs_intervention": any(e["risk_score"] >= self.intervention_threshold for e in self.audit_log) if self.audit_log else False,
         }

@@ -26,6 +26,12 @@ class TensorProfiler:
         self._records.append(record)
         return result
 
+    def cache_info(self):
+        return {
+            "calls": len(self._records),
+            "records": self._records,
+        }
+
     def report(self) -> Dict:
         total_time = sum(r["time"] for r in self._records)
         total_mem = sum(r["mem_delta"] for r in self._records)

@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
 
@@ -15,9 +16,7 @@ class DataLoader:
     def __iter__(self) -> Iterator[List[Any]]:
         indices = list(range(len(self.data)))
         if self.shuffle:
-            for i in range(len(indices) - 1, 0, -1):
-                j = int((hash(str(indices[i])) % (i + 1)))
-                indices[i], indices[j] = indices[j], indices[i]
+            random.shuffle(indices)
         for i in range(0, len(self.data), self.batch_size):
             yield [self.data[idx] for idx in indices[i : i + self.batch_size]]
 
