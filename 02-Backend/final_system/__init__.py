@@ -11,3 +11,7 @@ from final_system.analytics_engine import AnalyticsEngine, Metric  # noqa: F401
 from final_system.reporting_system import ReportingSystem, Report  # noqa: F401
 from final_system.notification_system import NotificationSystem, Notification  # noqa: F401
 from final_system.scheduler import Scheduler, ScheduledJob  # noqa: F401
+from final_system.integration_coordinator import IntegrationCoordinator, IntegrationStep, StepResult, StepStatus  # noqa: F401
+from final_system.system_validator import SystemValidator, Severity, ValidationRule, ValidationResult  # noqa: F401
+from final_system.release_manager import Release, ReleaseManager, ReleaseStatus  # noqa: F401
+from final_system.rollback_controller import RollbackController, RollbackRecord, RollbackStatus  # noqa: F401

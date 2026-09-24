@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pytest
-import numpy as np
 
 from hardware_abstraction.task_171_device_abstraction import (
     CPUDevice,
