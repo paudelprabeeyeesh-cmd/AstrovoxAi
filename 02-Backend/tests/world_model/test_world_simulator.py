@@ -72,8 +72,11 @@ class TestWorldSimulator(unittest.TestCase):
     def test_simulate(self):
         sim = WorldSimulator()
         sim.create_world("w1")
+        body = PhysicsBody(id="b1", position=[0.0, 0.0, 0.0])
+        sim.worlds["w1"].add_body(body)
         result = sim.simulate("w1", steps=2)
-        self.assertIn("b1" if False else "", result)
+        self.assertIn("b1", result)
+        self.assertEqual(len(result["b1"]), 2)
 
 
 if __name__ == "__main__":

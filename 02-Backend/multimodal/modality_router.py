@@ -1,9 +1,5 @@
-import numpy as np
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional, Union
-
-from multimodal.audio_pipeline import AudioPipeline, AudioPipelineResult
-from multimodal.vision_pipeline import VisionPipeline, VisionPipelineResult
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -22,14 +18,17 @@ class ModalityRouter:
         feature_dim: int = 256,
         num_regions: int = 9,
     ):
+        from multimodal.audio_pipeline import AudioPipeline
+        from multimodal.vision_pipeline import VisionPipeline
+
         self.audio_pipeline = AudioPipeline(sample_rate=sample_rate, n_mfcc=n_mfcc)
         self.vision_pipeline = VisionPipeline(feature_dim=feature_dim, num_regions=num_regions)
 
     def route(
         self,
-        waveform: Optional[np.ndarray] = None,
+        waveform=None,
         sample_rate: int = 16000,
-        pixels: Optional[np.ndarray] = None,
+        pixels=None,
     ) -> Dict[str, Any]:
         results: Dict[str, Any] = {}
         if waveform is not None:
@@ -38,27 +37,31 @@ class ModalityRouter:
             results["vision"] = self.vision_pipeline.process(pixels)
         return results
 
-    def route_audio(
-        self,
-        waveform: np.ndarray,
-        sample_rate: int = 16000,
-    ) -> AudioPipelineResult:
+    def route_audio(self, waveform, sample_rate: int = 16000):
+        from multimodal.audio_pipeline import AudioPipelineResult
+
         return self.audio_pipeline.process(waveform, sample_rate)
 
-    def route_vision(
-        self,
-        pixels: np.ndarray,
-    ) -> VisionPipelineResult:
+    def route_vision(self, pixels):
+        from multimodal.vision_pipeline import VisionPipelineResult
+
         return self.vision_pipeline.process(pixels)
 
-    def detect_modality(self, data: Any) -> str:
-        if isinstance(data, np.ndarray):
-            if data.ndim == 1:
+    def detect_modality(self, data) -> str:
+        if hasattr(data, "tolist"):
+            data = data.tolist()
+        if isinstance(data, list):
+            if not data:
+                return "unknown"
+            if isinstance(data[0], (int, float)):
                 return "audio"
-            if data.ndim == 2:
-                return "vision"
-            if data.ndim == 3:
-                return "vision"
+            if isinstance(data[0], list):
+                if not data[0]:
+                    return "unknown"
+                if isinstance(data[0][0], (int, float)):
+                    return "vision"
+                if isinstance(data[0][0], list):
+                    return "vision"
             return "unknown"
         if isinstance(data, str):
             return "text"

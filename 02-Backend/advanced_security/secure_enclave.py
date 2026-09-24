@@ -50,7 +50,7 @@ class SecureEnclave:
         payload = plaintext.encode() + ad
         tag = hmac.new(self._key, (nonce.encode() + payload), hashlib.sha256).hexdigest()[:16]
         blob = SealedBlob(
-            ciphertext=hashlib.sha256(payload).hexdigest(),
+            ciphertext=payload.hex(),
             tag=tag,
             nonce=nonce,
             enclave_id=self._enclave_id,
@@ -62,11 +62,11 @@ class SecureEnclave:
         if blob.enclave_id != self._enclave_id:
             raise ValueError("Blob belongs to different enclave")
         ad = (associated_data or "").encode()
-        payload = blob.ciphertext.encode() + ad
+        payload = bytes.fromhex(blob.ciphertext)
         expected_tag = hmac.new(self._key, (blob.nonce.encode() + payload), hashlib.sha256).hexdigest()[:16]
         if not hmac.compare_digest(expected_tag, blob.tag):
             raise ValueError("Integrity check failed")
-        return hashlib.sha256(payload).hexdigest()
+        return payload[: -len(ad)].decode() if ad else payload.decode()
 
     def memory_guard(self, address: int, length: int, max_bound: int = 65536) -> bool:
         return 0 <= address and 0 < length and address + length <= max_bound

@@ -1,7 +1,5 @@
-
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
-import numpy as np
 
 
 @dataclass
@@ -58,10 +56,13 @@ class ValueAligner:
         if not self.alignment_history:
             return {"mean_alignment": 0.0, "conflict_rate": 0.0}
         all_vals = [v for hist in self.alignment_history for v in hist.values()]
-        mean_alignment = float(np.mean(all_vals)) if all_vals else 0.0
+        if all_vals:
+            mean_alignment = sum(all_vals) / len(all_vals)
+        else:
+            mean_alignment = 0.0
         conflict_rate = sum(1 for a in self.alignment_history if len(a) > 1 and max(a.values()) - min(a.values()) > 0.4) / max(len(self.alignment_history), 1)
         return {"mean_alignment": mean_alignment, "conflict_rate": conflict_rate}
 
-    def alignment_vector(self, action: str) -> np.ndarray:
+    def alignment_vector(self, action: str) -> List[float]:
         scores = list(self.compute_alignment(action, list(self.values.keys())).values())
-        return np.array(scores, dtype=float)
+        return [float(s) for s in scores]

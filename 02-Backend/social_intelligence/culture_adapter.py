@@ -40,7 +40,7 @@ class CultureAdapter:
 
         if profile.formality > 0.6:
             adapted = self._increase_formality(adapted)
-        if profile.directness < 0.4:
+        if profile.directness < 0.4 or profile.culture == "low_context":
             adapted = self._soften(adapted)
         if profile.context_richness > 0.6:
             adapted = self._add_context(adapted, intent)

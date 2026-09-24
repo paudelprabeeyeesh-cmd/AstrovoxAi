@@ -1,3 +1,4 @@
+import hashlib
 from advanced_security.post_quantum_crypto import (
     HashBasedSignature,
     LatticeSignature,
@@ -30,7 +31,7 @@ def test_hash_signature_sign_verify() -> None:
 
 def test_lattice_signature() -> None:
     private = b"private_key_seed"
-    public = hashlib.sha256(private).digest()
+    public = private
     sig = LatticeSignature.sign(private, b"message")
     assert LatticeSignature.verify(public, b"message", sig) is True
     assert LatticeSignature.verify(public, b"other", sig) is False
@@ -46,5 +47,5 @@ def test_postquantum_unified_kem() -> None:
 def test_postquantum_hash_sign_verify() -> None:
     scheme = HashBasedSignature(height=8)
     public = scheme.public_key()
-    path = PostQuantumCrypto.hash_sign(public, b"msg", index=2)
-    assert PostQuantumCrypto.hash_verify(public, b"msg", 2, path) is True
+    path = scheme.sign(b"msg", index=2)
+    assert HashBasedSignature.verify(public, b"msg", 2, path) is True

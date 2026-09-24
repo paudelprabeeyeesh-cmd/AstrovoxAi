@@ -27,7 +27,7 @@ class ZeroKnowledgeProof:
     def prove(secret: str, witness: str) -> Dict[str, Any]:
         commitment = ZeroKnowledgeProof.commit(secret)
         challenge = hashlib.sha256((commitment.commitment + witness).encode()).hexdigest()[:8]
-        response = hashlib.sha256((secret + challenge).encode()).hexdigest()
+        response = hashlib.sha256((witness + challenge).encode()).hexdigest()
         return {"commitment": commitment.commitment, "challenge": challenge, "response": response}
 
     @staticmethod

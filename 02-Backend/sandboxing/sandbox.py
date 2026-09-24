@@ -39,9 +39,10 @@ class Sandbox:
             )
         try:
             self.limiter.enforce_with_timeout()
-        except (OSError, ValueError):
+        except (OSError, ValueError, TimeoutError):
             pass
-        result = self.executor.run(code)
+        safe_globals = self.checker.build_safe_globals()
+        result = self.executor.run(code, globals_=safe_globals)
         return SandboxResult(
             success=result.success,
             output=result.output,

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
-from realtime import Optional
+from typing import Optional
 
 router = APIRouter()
 
@@ -18,7 +18,6 @@ class AuthResponse(BaseModel):
 
 @router.post("/login", response_model=AuthResponse)
 async def login(request: LoginRequest):
-    # Supabase handles auth in frontend
     return {
         "success": True,
         "message": "Login handled by Supabase",

@@ -6,11 +6,13 @@ from typing import Generator, Optional
 @contextmanager
 def transaction(
     conn: Optional[sqlite3.Connection] = None,
+    path: Optional[str] = None,
 ) -> Generator[sqlite3.Connection, None, None]:
     managed = False
     if conn is None:
         from database.connection import get_connection
-        conn = get_connection()
+
+        conn = get_connection(path)
         managed = True
     try:
         conn.execute("BEGIN")

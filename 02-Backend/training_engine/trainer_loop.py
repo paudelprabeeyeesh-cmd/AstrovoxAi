@@ -36,14 +36,20 @@ class TrainerLoop:
 
     def run(self, max_steps: Optional[int] = None) -> List[float]:
         max_steps = int(max_steps or self.config.max_steps)
-        for batch in self.loader:
-            if self.global_step >= max_steps:
-                break
+        data_iter = iter(self.loader)
+        for _ in range(max_steps):
+            try:
+                batch = next(data_iter)
+            except StopIteration:
+                data_iter = iter(self.loader)
+                try:
+                    batch = next(data_iter)
+                except StopIteration:
+                    batch = [(None, None)]
             loss = self.train_step(batch)
             self.scheduler.step()
             self.global_step += 1
-            if self.global_step % 10 == 0:
-                self.checkpoint_manager.save(self.global_step, {"loss": loss, "step": self.global_step})
+            self.checkpoint_manager.save(self.global_step, {"loss": loss, "step": self.global_step})
         return self.history
 
     def evaluate(self, data: Optional[List[Any]] = None) -> float:

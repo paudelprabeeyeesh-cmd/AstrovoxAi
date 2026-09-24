@@ -40,7 +40,7 @@ def test_transaction_rolls_back_on_exception(tmp_path):
 
 def test_transaction_creates_and_closes_connection_when_none(tmp_path):
     db_path = str(tmp_path / "auto.db")
-    with transaction() as conn:
+    with transaction(path=db_path) as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS items (id INTEGER PRIMARY KEY)")
         conn.execute("INSERT INTO items (id) VALUES (1)")
     # Connection should be closed after exiting context

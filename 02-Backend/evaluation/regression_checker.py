@@ -18,8 +18,8 @@ class RegressionRecord:
 
 
 class RegressionChecker:
-    def __init__(self, default_threshold: float = 0.05):
-        self.default_threshold = default_threshold
+    def __init__(self, threshold: float = 0.05):
+        self.threshold = threshold
         self._baselines: Dict[str, float] = {}
         self._history: Dict[str, List[float]] = {}
 
@@ -30,7 +30,7 @@ class RegressionChecker:
         return self._baselines.get(name)
 
     def check(self, name: str, current_score: float, threshold: Optional[float] = None) -> RegressionRecord:
-        threshold = threshold if threshold is not None else self.default_threshold
+        threshold = threshold if threshold is not None else self.threshold
         baseline = self._baselines.get(name)
 
         if baseline is None:

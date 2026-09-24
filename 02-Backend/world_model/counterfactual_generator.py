@@ -33,7 +33,9 @@ class CounterfactualGenerator:
             f_val = factual.get(key, 0)
             c_val = counterfactual.get(key, 0)
             if isinstance(f_val, (int, float)) and isinstance(c_val, (int, float)):
-                diffs[key] = float(c_val - f_val)
+                diff = float(c_val - f_val)
+                if diff:
+                    diffs[key] = diff
         return diffs
 
     def probability(self, scenario: Counterfactual) -> float:

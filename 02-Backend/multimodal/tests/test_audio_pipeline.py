@@ -1,10 +1,8 @@
-import numpy as np
-
 from multimodal.audio_pipeline import AudioPipeline, AudioPipelineResult
 
 
 def _make_waveform(n=1600):
-    return np.sin(np.linspace(0, 4 * np.pi, n)).astype(np.float64)
+    return [float(i % 100) / 100.0 for i in range(n)]
 
 
 def test_audio_pipeline_result_dataclass():
@@ -43,7 +41,8 @@ def test_audio_pipeline_process_features_type():
     pipeline = AudioPipeline()
     waveform = _make_waveform(16000)
     result = pipeline.process(waveform, 16000)
-    from multimodal.audio_language import AudioFeatures
+    from multimodal.audio_pipeline import AudioFeatures
+
     assert isinstance(result.features, AudioFeatures)
 
 

@@ -21,6 +21,8 @@ class LRScheduler:
         return self._compute_lr()
 
     def _compute_lr(self) -> float:
+        if self.step_count == 0:
+            return self.lr
         if self.step_count <= self.warmup_steps:
             return self.lr * self.step_count / max(self.warmup_steps, 1)
         progress = (self.step_count - self.warmup_steps) / max(self.max_steps - self.warmup_steps, 1)

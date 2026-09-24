@@ -31,7 +31,7 @@ class TestMonotonicReasoner:
 
     def test_confidence_increases_on_shared_words(self):
         reasoner = MonotonicReasoner()
-        p1 = Premise(id="p1", content="the cat sat")
+        p1 = Premise(id="p1", content="the cat sat", confidence=0.9)
         p2 = Premise(id="p2", content="the cat runs")
         reasoner.add_premise(p1)
         conclusions = reasoner.add_premise(p2)

@@ -117,7 +117,7 @@ class SignatureDetector:
 class ThreatDetector:
     def __init__(self) -> None:
         self._anomaly = AnomalyDetector()
-        self._brute = BruteForceDetector()
+        self._brute = BruteForceDetector(threshold=1)
         self._scan = PortScanDetector()
         self._sig = SignatureDetector()
         self._events: List[ThreatEvent] = []

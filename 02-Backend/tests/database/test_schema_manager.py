@@ -47,6 +47,7 @@ def test_create_table(tmp_path):
     mgr = _make_manager(tmp_path)
     mgr.create_table("widgets", {"id": "INTEGER PRIMARY KEY", "name": "TEXT NOT NULL"})
     conn = sqlite3.connect(str(tmp_path / "schema.db"))
+    conn.row_factory = sqlite3.Row
     tables = [r["name"] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
     conn.close()
     assert "widgets" in tables
@@ -57,6 +58,7 @@ def test_add_column_when_missing(tmp_path):
     mgr.create_table("widgets", {"id": "INTEGER PRIMARY KEY", "name": "TEXT NOT NULL"})
     mgr.add_column("widgets", "price", "REAL")
     conn = sqlite3.connect(str(tmp_path / "schema.db"))
+    conn.row_factory = sqlite3.Row
     cols = [r["name"] for r in conn.execute("PRAGMA table_info(widgets)").fetchall()]
     conn.close()
     assert "price" in cols
@@ -68,6 +70,7 @@ def test_add_column_when_exists(tmp_path):
     # Should not raise when adding an existing column
     mgr.add_column("widgets", "name", "TEXT")
     conn = sqlite3.connect(str(tmp_path / "schema.db"))
+    conn.row_factory = sqlite3.Row
     cols = [r["name"] for r in conn.execute("PRAGMA table_info(widgets)").fetchall()]
     conn.close()
     assert cols.count("name") == 1

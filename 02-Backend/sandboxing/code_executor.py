@@ -1,6 +1,8 @@
 import ast
-import textwrap
+import io
+import sys
 import traceback
+from contextlib import redirect_stdout
 from dataclasses import dataclass
 from typing import Any
 
@@ -16,7 +18,7 @@ class CodeExecutor:
     def __init__(self, timeout: float = 1.0):
         self.timeout = timeout
 
-    def run(self, code: str) -> ExecutionResult:
+    def run(self, code: str, globals_: dict | None = None) -> ExecutionResult:
         try:
             ast.parse(code)
         except SyntaxError as exc:
@@ -27,10 +29,12 @@ class CodeExecutor:
             )
         try:
             compiled = compile(ast.parse(code), "<sandbox>", "exec")
-            globals_: dict = {"__name__": "__main__"}
-            locals_: dict = {}
-            exec(compiled, globals_, locals_)
-            return ExecutionResult(success=True, output="executed", error="")
+            globs = globals_ if globals_ is not None else {"__name__": "__main__"}
+            buffer = io.StringIO()
+            with redirect_stdout(buffer):
+                exec(compiled, globs, globs)
+            output = buffer.getvalue()
+            return ExecutionResult(success=True, output=output, error="")
         except Exception as exc:
             return ExecutionResult(
                 success=False,

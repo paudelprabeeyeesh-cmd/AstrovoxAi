@@ -39,10 +39,10 @@ class TestVariationalClassifier:
         X = np.random.randn(10, 2)
         clf = VariationalClassifier(num_qubits=2, num_layers=2)
         clf.fit(X, np.array([1] * 5 + [0] * 5), epochs=5, lr=0.01)
-        preds1 = np.array([clf.predict(x) for x in X])
+        preds1 = np.array([clf.predict_proba(x) for x in X])
         clf.params = np.random.randn(*clf.params.shape) * 10
-        preds2 = np.array([clf.predict(x) for x in X])
-        assert not np.array_equal(preds1, preds2)
+        preds2 = np.array([clf.predict_proba(x) for x in X])
+        assert not np.allclose(preds1, preds2)
 
     def test_predict_single_feature(self):
         clf = VariationalClassifier(num_qubits=1, num_layers=1)

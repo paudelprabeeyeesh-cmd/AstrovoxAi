@@ -47,3 +47,13 @@ class PermissionChecker:
     def apply(self, code: str) -> bool:
         blocked_imports = self.check_imports(code)
         return len(blocked_imports) == 0
+
+    def build_safe_globals(self) -> dict:
+        _builtins = __builtins__ if isinstance(__builtins__, dict) else vars(__builtins__)
+        safe_builtins = {}
+        for name in self.profile.allowed_builtins:
+            if name in _builtins:
+                safe_builtins[name] = _builtins[name]
+        if "__import__" in _builtins:
+            safe_builtins["__import__"] = _builtins["__import__"]
+        return {"__name__": "__main__", "__builtins__": safe_builtins}

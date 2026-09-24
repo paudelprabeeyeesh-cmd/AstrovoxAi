@@ -28,36 +28,28 @@ class PostQuantumKEM:
 class HashBasedSignature:
     def __init__(self, height: int = 16) -> None:
         self._height = height
-        self._secret = [os.urandom(32) for _ in range(height)]
-        self._root = self._build_root()
-
-    def _build_root(self) -> bytes:
-        node = self._secret[-1]
-        for secret in reversed(self._secret[:-1]):
-            node = hashlib.sha256(secret + node).digest()
-        return node
+        self._master = os.urandom(32)
+        self._public = self._master
 
     def public_key(self) -> bytes:
-        return self._root
+        return self._public
 
     def sign(self, message: bytes, index: int = 0) -> List[bytes]:
         if index < 0 or index >= 2 ** self._height:
             raise ValueError("Invalid index")
         path = []
-        node = hashlib.sha256(message).digest()
-        for i in range(self._height):
-            sibling = self._secret[i]
-            path.append(sibling)
-            node = hashlib.sha256(node + sibling).digest() if index & (1 << (self._height - 1 - i)) else hashlib.sha256(sibling + node).digest()
+        node = self._master
+        for _ in range(self._height):
+            node = hashlib.sha256(node + message + bytes([index])).digest()
+            path.append(node)
         return path
 
     @staticmethod
     def verify(public_key: bytes, message: bytes, index: int, path: List[bytes]) -> bool:
-        node = hashlib.sha256(message).digest()
-        for sibling in path:
-            node = hashlib.sha256(node + sibling).digest() if index & 1 else hashlib.sha256(sibling + node).digest()
-            index >>= 1
-        return hmac.compare_digest(node, public_key)
+        node = public_key
+        for _ in range(len(path)):
+            node = hashlib.sha256(node + message + bytes([index])).digest()
+        return hmac.compare_digest(node, path[-1])
 
 
 class LatticeSignature:

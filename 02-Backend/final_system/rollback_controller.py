@@ -7,6 +7,7 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime
+from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional
 
 
