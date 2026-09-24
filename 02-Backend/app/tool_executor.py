@@ -1,7 +1,8 @@
 import logging
 import time
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
+from app.tool_cache import tool_cache
 from sandboxing.tool_metrics import tool_metrics
 
 from .tools import get_builtin_tools
@@ -112,3 +113,27 @@ class ToolExecutor:
                 }
             tools.append(schema)
         return tools
+
+    def execute_parallel(
+        self,
+        calls: List[Dict[str, Any]],
+        user_id: str,
+        user_roles: Optional[list[str]] = None,
+        max_workers: int = 8,
+    ) -> List[Dict[str, Any]]:
+        from app.tool_parallel_executor import ParallelToolExecutor
+        executor = ParallelToolExecutor(tool_executor=self, max_workers=max_workers)
+        report = executor.execute_parallel(calls, user_id, user_roles)
+        return [
+            {
+                "tool_name": r.tool_name,
+                "result": r.result,
+                "status": r.status,
+                "error": r.error,
+                "duration_ms": r.duration_ms,
+            }
+            for r in report.results
+        ]
+
+    def get_cache_stats(self) -> Dict[str, Any]:
+        return tool_cache.get_stats()

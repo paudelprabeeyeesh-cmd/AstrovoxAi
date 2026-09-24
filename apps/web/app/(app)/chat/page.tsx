@@ -110,7 +110,7 @@ function EnhancedChatWrapper({
   setShowExportImport: (show: boolean) => void
 }) {
   const router = useRouter();
-  const { conversations, activeId, setActiveConversation, pinConversation, unpinConversation, moveConversationToFolder, createFolder, deleteConversation, archiveConversation } = useChatStore();
+  const { conversations, activeId, setActiveConversation, pinConversation, unpinConversation, createFolder, deleteConversation, archiveConversation } = useChatStore();
   const {
     messages,
     isLoading,
@@ -123,7 +123,7 @@ function EnhancedChatWrapper({
     copyMessage,
     rateMessage,
   } = useChat();
-  const { settings } = useSettingsStore();
+  const settings = useSettingsStore();
 
   const handleNewChat = useCallback(() => {
     const newId = crypto.randomUUID();
@@ -147,13 +147,6 @@ function EnhancedChatWrapper({
       }
     },
     [pinConversation, unpinConversation]
-  );
-
-  const handleMoveToFolder = useCallback(
-    (id: string, folder: string) => {
-      moveConversationToFolder(id, folder);
-    },
-    [moveConversationToFolder]
   );
 
   const handleCreateFolder = useCallback(
@@ -257,7 +250,6 @@ function EnhancedChatWrapper({
                   isActive={conv.id === activeId}
                   onClick={() => handleSelectConversation(conv.id)}
                   onPin={() => handlePinConversation(conv.id, conv.pinned ?? false)}
-                  onMoveToFolder={handleMoveToFolder}
                   onDelete={() => deleteConversation(conv.id)}
                   onArchive={() => archiveConversation(conv.id)}
                 />
@@ -324,7 +316,7 @@ function EnhancedChatWrapper({
               onCopy={copyMessage}
               onFeedback={rateMessage}
               error={error}
-              selectedModel={settings.codeTheme || 'gpt-4'}
+              selectedModel={settings.modelId || 'gpt-4'}
               onModelChange={(model) => console.log('Model changed:', model)}
             />
           </div>
@@ -351,7 +343,6 @@ function ConversationItem({
   isActive,
   onClick,
   onPin,
-  onMoveToFolder,
   onDelete,
   onArchive,
 }: {
@@ -359,7 +350,6 @@ function ConversationItem({
   isActive: boolean
   onClick: () => void
   onPin: () => void
-  onMoveToFolder: (folder: string) => void
   onDelete: () => void
   onArchive: () => void
 }) {
@@ -385,16 +375,16 @@ function ConversationItem({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPin(); }}>
+          <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); onPin(); }}>
             <Pin className="mr-2 h-4 w-4" />
             {conversation.pinned ? 'Unpin' : 'Pin'}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onArchive(); }}>
+          <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); onArchive(); }}>
             <Archive className="mr-2 h-4 w-4" />
             Archive
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDelete(); }} className="text-destructive">
+          <DropdownMenuItem onClick={(e: React.MouseEvent) => { e.stopPropagation(); onDelete(); }} className="text-destructive">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </DropdownMenuItem>

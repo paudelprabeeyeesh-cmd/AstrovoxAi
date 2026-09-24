@@ -145,6 +145,12 @@ except Exception as _e:  # noqa: BLE001
     quota_api_router = APIRouter()
 
 try:
+    from .routers.performance import router as performance_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    performance_router = APIRouter()
+
+try:
     from .routers.scim_api import router as scim_api_router
 except Exception as _e:  # noqa: BLE001
     from fastapi import APIRouter

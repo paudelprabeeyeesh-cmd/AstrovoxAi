@@ -79,6 +79,11 @@ def require_verified_email(authorization: Optional[str] = Header(None)):
     return info["user_id"]
 
 
+def get_current_user(authorization: Optional[str] = Header(None)):
+    info = get_user_id_from_token_with_roles(authorization)
+    return info["user_id"]
+
+
 class SignUpRequest(BaseModel):
     email: str
     password: str

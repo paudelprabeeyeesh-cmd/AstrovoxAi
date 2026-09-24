@@ -95,6 +95,10 @@ class AuditLogEntryResponse(BaseModel):
     status: str
 
 
+def log_action(actor: str, action: str, target: str = "", details: Optional[Dict[str, Any]] = None, status: str = "success") -> dict:
+    return audit_logger.log("action", actor, action, target, details, status)
+
+
 router = APIRouter(tags=["audit"])
 
 

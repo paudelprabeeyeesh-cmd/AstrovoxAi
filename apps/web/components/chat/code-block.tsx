@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Check, Copy, Play, Loader2, CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { CodeBlockExecutor } from './code-block-executor'
 
 interface CodeBlockProps {

@@ -73,7 +73,6 @@ function EnhancedChat({
     setActiveConversation,
     pinConversation,
     unpinConversation,
-    moveConversationToFolder,
     createFolder,
   } = useChatStore();
 
@@ -106,13 +105,6 @@ function EnhancedChat({
       }
     },
     [pinConversation, unpinConversation]
-  );
-
-  const handleMoveToFolder = useCallback(
-    (id: string, folder: string) => {
-      moveConversationToFolder(id, folder);
-    },
-    [moveConversationToFolder]
   );
 
   const handleCreateFolder = useCallback(
@@ -214,7 +206,6 @@ function EnhancedChat({
                   isActive={conv.id === activeId}
                   onClick={() => handleSelectConversation(conv.id)}
                   onPin={() => handlePinConversation(conv.id, conv.pinned ?? false)}
-                  onMoveToFolder={handleMoveToFolder}
                 />
               ))}
             </div>
@@ -259,13 +250,11 @@ function ConversationItem({
   isActive,
   onClick,
   onPin,
-  onMoveToFolder,
 }: {
   conversation: any
   isActive: boolean
   onClick: () => void
   onPin: () => void
-  onMoveToFolder: (folder: string) => void
 }) {
   return (
     <div
@@ -281,7 +270,7 @@ function ConversationItem({
         variant="ghost"
         size="icon"
         className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => {
+        onClick={(e: React.MouseEvent) => {
           e.stopPropagation();
           onPin();
         }}

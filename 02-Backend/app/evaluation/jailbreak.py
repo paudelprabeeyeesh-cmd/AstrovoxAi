@@ -1,4 +1,3 @@
-
 import logging
 import re
 from typing import Any
@@ -23,6 +22,10 @@ _JAILBREAK_PATTERNS = [
     r"forget\s+your\s+role",
     r"act\s+as\s+admin",
     r"you\s+are\s+now\s+an\s+AI\s+without",
+    r"developer\s+mode",
+    r"god\s+mode",
+    r"uncensored",
+    r"without\s+restrictions",
 ]
 
 
@@ -35,13 +38,19 @@ class JailbreakDetector:
             if match:
                 hits.append(pattern)
         blocked = len(hits) > 0
-        score = max(0.0, 1.0 - 0.2 * len(hits))
+        score = max(0.0, 1.0 - 0.15 * len(hits))
+        severity = "critical" if len(hits) >= 3 else "high" if len(hits) >= 2 else "medium" if len(hits) == 1 else "low"
         return {
             "blocked": blocked,
             "score": round(score, 4),
             "hits": hits,
+            "hit_count": len(hits),
+            "severity": severity,
             "risk_level": "high" if blocked else "low",
         }
 
     def score(self, prompt: str) -> float:
         return self.detect(prompt)["score"]
+
+    def is_injection(self, prompt: str) -> bool:
+        return self.detect(prompt)["blocked"]

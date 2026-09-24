@@ -12,6 +12,7 @@ interface SettingsState {
   showTimestamps: boolean
   showModelBadges: boolean
   soundEnabled: boolean
+  modelId: string
   updateSettings: (settings: Partial<SettingsState>) => void
 }
 
@@ -29,6 +30,7 @@ export const useSettingsStore = create<SettingsState>()(
         showTimestamps: true,
         showModelBadges: true,
         soundEnabled: true,
+        modelId: 'gpt-4o',
         updateSettings: (newSettings) =>
           set((state) => ({ ...state, ...newSettings })),
       }),

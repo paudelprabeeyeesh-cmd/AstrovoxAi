@@ -1,9 +1,11 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
 
+from app.tool_cache import tool_cache
 from sandboxing.tool_metrics import tool_metrics
 
 logger = logging.getLogger(__name__)
@@ -14,6 +16,16 @@ class ToolHealthStatus(str, Enum):
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
     UNKNOWN = "unknown"
+
+
+@dataclass
+class ToolExecutionResult:
+    tool_name: str
+    result: str
+    duration_ms: float
+    status: str = "success"
+    error: Optional[str] = None
+    cached: bool = False
 
 
 @dataclass
@@ -188,6 +200,118 @@ class ToolRegistry:
             "metrics_available": len(all_metrics),
         }
         return summary
+
+    def execute(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        user_id: str,
+        use_cache: bool = True,
+        cache_ttl: Optional[int] = None,
+    ) -> ToolExecutionResult:
+        start = time.perf_counter()
+        tool = self._tools.get(tool_name)
+        if not tool:
+            duration_ms = (time.perf_counter() - start) * 1000
+            tool_metrics.record_call(tool_name, duration_ms, "error")
+            return ToolExecutionResult(
+                tool_name=tool_name,
+                result=f"Error: tool '{tool_name}' not found",
+                duration_ms=duration_ms,
+                status="error",
+                error="tool_not_found",
+            )
+        if use_cache and tool.timeout_seconds > 0:
+            cached_result = tool_cache.get(tool_name, arguments)
+            if cached_result is not None:
+                duration_ms = (time.perf_counter() - start) * 1000
+                tool_metrics.record_call(tool_name, duration_ms, "cached")
+                return ToolExecutionResult(
+                    tool_name=tool_name,
+                    result=cached_result,
+                    duration_ms=duration_ms,
+                    status="success",
+                    cached=True,
+                )
+        if not tool.handler:
+            duration_ms = (time.perf_counter() - start) * 1000
+            return ToolExecutionResult(
+                tool_name=tool_name,
+                result="Error: tool has no handler",
+                duration_ms=duration_ms,
+                status="error",
+                error="no_handler",
+            )
+        try:
+            if tool_name in ("search_documents", "create_memory"):
+                result = tool.handler(user_id=user_id, **arguments)
+            else:
+                result = tool.handler(**arguments)
+            duration_ms = (time.perf_counter() - start) * 1000
+            tool_metrics.record_call(tool_name, duration_ms, "success")
+            if use_cache and tool.timeout_seconds > 0:
+                tool_cache.set(tool_name, arguments, str(result), ttl=cache_ttl)
+            return ToolExecutionResult(
+                tool_name=tool_name,
+                result=str(result),
+                duration_ms=duration_ms,
+                status="success",
+            )
+        except Exception as _e:
+            duration_ms = (time.perf_counter() - start) * 1000
+            tool_metrics.record_call(tool_name, duration_ms, "error")
+            logger.error("Tool execution error for %s: %s", tool_name, _e)
+            return ToolExecutionResult(
+                tool_name=tool_name,
+                result=f"Error executing {tool_name}: {_e}",
+                duration_ms=duration_ms,
+                status="error",
+                error=str(_e),
+            )
+
+    def execute_parallel(
+        self,
+        calls: List[Dict[str, Any]],
+        user_id: str,
+        max_workers: int = 8,
+    ) -> List[ToolExecutionResult]:
+        results: List[ToolExecutionResult] = []
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {}
+            for call in calls:
+                tool_name = call.get("tool_name") or call.get("name")
+                arguments = call.get("arguments", call.get("input", {}))
+                future = pool.submit(
+                    self.execute,
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    user_id=user_id,
+                    use_cache=True,
+                )
+                futures[future] = tool_name
+            for future in as_completed(futures):
+                try:
+                    results.append(future.result())
+                except Exception as exc:
+                    results.append(
+                        ToolExecutionResult(
+                            tool_name=futures[future],
+                            result=f"Error: {exc}",
+                            duration_ms=0.0,
+                            status="error",
+                            error=str(exc),
+                        )
+                    )
+        return results
+
+    def load_from_source(self, module_path: str, attribute: str = "tool_spec") -> Optional[ToolSpec]:
+        try:
+            from app.tool_dynamic_loader import dynamic_tool_loader
+            loaded = dynamic_tool_loader.load_from_module(module_path, attribute=attribute)
+            return loaded.spec if loaded else None
+        except Exception as exc:
+            logger.error("Failed to dynamically load tool from %s: %s", module_path, exc)
+            return None
 
 
 tool_registry = ToolRegistry()

@@ -6,9 +6,6 @@ from .metrics import MetricsCalculator  # noqa: F401
 from .retrieval_benchmark import RetrievalBenchmark  # noqa: F401
 from .evaluation_suite import EvaluationSuite  # noqa: F401
 from .prompt_regression import PromptRegressionTester  # noqa: F401
-from .ab_testing import ABTest, VariantConfig  # noqa: F401
-from .llm_judge import LLMJudge  # noqa: F401
-from .ragas_metrics import RAGASMetrics  # noqa: F401
 from .red_team import RedTeamTester, RedTeamCase  # noqa: F401
 from .jailbreak import JailbreakDetector  # noqa: F401
 from .bias_fairness import BiasFairnessEvaluator  # noqa: F401
@@ -23,6 +20,9 @@ from .multi_turn_eval import MultiTurnEvaluator  # noqa: F401
 from .tool_use_eval import ToolUseEvaluator  # noqa: F401
 from .end_to_end_pipeline import EndToEndEvaluationPipeline  # noqa: F401
 from .continuous_eval import ContinuousEvaluator  # noqa: F401
+from .ab_testing import ABTest, VariantConfig  # noqa: F401
+from .llm_judge import LLMJudge  # noqa: F401
+from .ragas_metrics import RAGASMetrics  # noqa: F401
 
 __all__ = [
     "Benchmark",
@@ -33,10 +33,6 @@ __all__ = [
     "RetrievalBenchmark",
     "EvaluationSuite",
     "PromptRegressionTester",
-    "ABTest",
-    "VariantConfig",
-    "LLMJudge",
-    "RAGASMetrics",
     "RedTeamTester",
     "RedTeamCase",
     "JailbreakDetector",
@@ -52,4 +48,8 @@ __all__ = [
     "ToolUseEvaluator",
     "EndToEndEvaluationPipeline",
     "ContinuousEvaluator",
+    "ABTest",
+    "VariantConfig",
+    "LLMJudge",
+    "RAGASMetrics",
 ]

@@ -64,7 +64,7 @@ export function StreamingRenderer({
   const [paused, setPaused] = useState(false)
   const [tokenCount, setTokenCount] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [speed, setSpeed] = useState(speed || 1)
+  const [speed, setSpeed] = useState(1)
   const [showSpeedControl, setShowSpeedControl] = useState(false)
 
   const words = content.split(/(\s+)/)

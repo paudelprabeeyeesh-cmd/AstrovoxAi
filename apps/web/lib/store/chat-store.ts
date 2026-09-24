@@ -25,7 +25,10 @@ interface ChatState {
   unpinConversation: (id: string) => Promise<void>
   moveConversationToFolder: (id: string, folder: string) => Promise<void>
   deleteConversation: (id: string) => Promise<void>
+  archiveConversation: (id: string) => Promise<void>
+  unarchiveConversation: (id: string) => Promise<void>
   createFolder: (name: string) => void
+  createConversation: (title?: string, model?: string) => Promise<{ status: string; conversation: Conversation | null }>
   loadConversations: () => Promise<void>
   syncConversation: (conversation: Conversation) => void
 }
@@ -141,20 +144,88 @@ export const useChatStore = create<ChatState>()(
           }
         },
 
-        deleteConversation: async (id) => {
-          set((state) => ({
-            conversations: state.conversations.filter((c) => c.id !== id),
-            messages: state.messages.filter((m) => m.conversationId !== id),
-          }))
-          try {
-            await api.deleteConversation(id)
-          } catch {
-            set((state) => ({
-              conversations: state.conversations,
-              messages: state.messages,
-            }))
-          }
-        },
+  deleteConversation: async (id) => {
+    set((state) => ({
+      conversations: state.conversations.filter((c) => c.id !== id),
+      messages: state.messages.filter((m) => m.conversationId !== id),
+    }))
+    try {
+      await api.deleteConversation(id)
+    } catch {
+      set((state) => ({
+        conversations: state.conversations,
+        messages: state.messages,
+      }))
+    }
+  },
+
+  archiveConversation: async (id) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, archived: true } : c
+      ),
+    }))
+    try {
+      await api.archiveConversation(id)
+    } catch {
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === id ? { ...c, archived: false } : c
+        ),
+      }))
+    }
+  },
+
+  unarchiveConversation: async (id) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c.id === id ? { ...c, archived: false } : c
+      ),
+    }))
+    try {
+      await api.unarchiveConversation(id)
+    } catch {
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c.id === id ? { ...c, archived: true } : c
+        ),
+      }))
+    }
+  },
+
+  createConversation: async (title, model) => {
+    try {
+      const response = await api.createConversation(title, model)
+      const conversation = (response as any).conversation
+      if (conversation) {
+        set((state) => ({
+          conversations: [conversation, ...state.conversations],
+          activeId: conversation.id,
+        }))
+        return { status: 'success', conversation }
+      }
+    } catch {
+      const newId = crypto.randomUUID()
+      const newConv = {
+        id: newId,
+        title: title || 'New Chat',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        model: model || 'gpt-4',
+        pinned: false,
+        folder: null,
+        archived: false,
+        messageCount: 0,
+        preview: '',
+      } as any as Conversation
+      set((state) => ({
+        conversations: [newConv, ...state.conversations],
+        activeId: newId,
+      }))
+      return { status: 'success', conversation: newConv }
+    }
+    return { status: 'error', conversation: null as any }
+  },
 
         createFolder: (name) =>
           set((state) => ({

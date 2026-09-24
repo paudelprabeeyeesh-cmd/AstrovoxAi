@@ -121,4 +121,6 @@ class WorkflowAutomation:
         return False
 
 
-workflow_automation = None
+from app.tool_registry import tool_registry
+
+workflow_automation = WorkflowAutomation(tool_registry=tool_registry)

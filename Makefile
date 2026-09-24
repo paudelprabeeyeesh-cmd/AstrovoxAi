@@ -67,7 +67,7 @@ health: ## Check health of all services
 	@echo "Checking backend health..."
 	@curl -s http://localhost:8000/health | jq .
 	@echo "Checking frontend health..."
-	@curl -s http://localhost/ | head -1
+	@curl -s http://localhost: | head -1
 
 deploy-staging: ## Deploy to staging
 	@echo "Deploying to staging..."
@@ -78,3 +78,18 @@ deploy-prod: ## Deploy to production
 	@echo "Deploying to production..."
 	@kubectl apply -f k8s/
 	@kubectl rollout status deployment/astrovox-backend -n astrovox --timeout=10m
+
+test-backend: ## Run backend tests only
+	python scripts/test_automation.py --backend
+
+test-frontend: ## Run frontend tests only
+	python scripts/test_automation.py --frontend
+
+test-all: ## Run all automated checks
+	python scripts/test_automation.py --all
+
+coverage: ## Generate coverage reports
+	cd 02-Backend && pytest --cov=app --cov-report=html --cov-report=term
+
+mutation: ## Run mutation testing
+	python scripts/run_mutation_tests.py
