@@ -212,7 +212,7 @@ class BugReportRequest(BaseModel):
 
 
 class BugReportUpdateRequest(BaseModel):
-    status: str = Field(..., regex="^(open|in_progress|resolved|closed)$")
+    status: str = Field(..., pattern="^(open|in_progress|resolved|closed)$")
 
 
 @router.post("/bugs")
@@ -636,7 +636,7 @@ class IncidentCreateRequest(BaseModel):
 
 
 class IncidentUpdateRequest(BaseModel):
-    status: str = Field(..., regex="^(investigating|identified|monitoring|resolved)$")
+    status: str = Field(..., pattern="^(investigating|identified|monitoring|resolved)$")
 
 
 @router.post("/incidents")

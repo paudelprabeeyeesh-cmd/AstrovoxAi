@@ -383,6 +383,21 @@ class SecretScanner:
             "pattern_count": sum(len(patterns) for patterns in self.patterns.values()),
         }
 
+    def get_scan_summary(self, findings: List[SecretFinding]) -> Dict[str, Any]:
+        """Generate a summary of scan findings."""
+        severity_counts: Dict[str, int] = {}
+        type_counts: Dict[str, int] = {}
+        for finding in findings:
+            severity_counts[finding.severity.value] = severity_counts.get(finding.severity.value, 0) + 1
+            type_counts[finding.secret_type.value] = type_counts.get(finding.secret_type.value, 0) + 1
+        return {
+            "total_findings": len(findings),
+            "severity_distribution": severity_counts,
+            "type_distribution": type_counts,
+            "critical_count": severity_counts.get("critical", 0),
+            "high_count": severity_counts.get("high", 0),
+        }
+
 
 secret_scanner = SecretScanner()
 
