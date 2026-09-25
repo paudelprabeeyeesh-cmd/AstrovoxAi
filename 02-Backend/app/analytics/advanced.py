@@ -1278,6 +1278,47 @@ class AdvancedAnalyticsEngine:
             "engagement_by_category": dict(sorted(event_counts.items(), key=lambda x: x[1], reverse=True)[:10]),
         }
 
+    def get_overview(self, days: int = 7) -> dict:
+        usage = self.get_usage_stats(days=days)
+        ai = self.get_ai_usage_analytics(days=days)
+        tokens = self.get_token_analytics(days=days)
+        costs = self.get_cost_analytics(days=days)
+        models = self.get_model_performance_comparison(days=days)
+        users = self.get_user_analytics(days=days)
+
+        return {
+            "period_days": days,
+            "usage": {
+                "total_requests": usage.get("total_requests", 0),
+                "total_tokens": usage.get("total_tokens", 0),
+                "active_users": usage.get("active_users", 0),
+                "avg_latency": usage.get("average_latency", 0),
+                "error_rate": usage.get("error_rate", 0),
+            },
+            "ai_usage": {
+                "total_requests": ai.get("total_requests", 0),
+                "success_rate": ai.get("success_rate", 0),
+                "avg_latency": ai.get("average_latency", 0),
+            },
+            "tokens": {
+                "total_tokens": tokens.get("total_tokens", 0),
+                "total_cost": tokens.get("total_cost", 0),
+            },
+            "costs": {
+                "total_cost": costs.get("total_api_cost", costs.get("total_cost", 0)),
+                "trend": costs.get("trend", "stable"),
+            },
+            "models": {
+                "model_count": len(models.get("models", {})),
+                "best_by_latency": models.get("best_by_latency"),
+                "best_by_success": models.get("best_by_success"),
+            },
+            "users": {
+                "active_users": users.get("active_users", 0),
+                "total_actions": users.get("total_actions", 0),
+            },
+        }
+
     def get_dashboard_data(self, days: int = 7) -> dict:
         return {
             "realtime": self.get_realtime_dashboard(days=min(days, 1)),
