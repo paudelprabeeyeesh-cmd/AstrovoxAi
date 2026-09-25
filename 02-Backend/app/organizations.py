@@ -1,23 +1,29 @@
 
 import uuid
+import logging
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict
 from repositories.database.client import get_db
 from .audit import log_action
+
+
+logger = logging.getLogger(__name__)
 
 
 class OrganizationRole:
     OWNER = "owner"
     ADMIN = "admin"
+    MANAGER = "manager"
     MEMBER = "member"
+    GUEST = "guest"
 
 
-def create_organization(name: str, owner_id: str, plan: str = "free") -> dict:
+def create_organization(name: str, owner_id: str, plan: str = "free", description: str = "", website: str = "") -> dict:
     org_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO organizations (id, name, owner_id, plan, created_at) VALUES (?, ?, ?, ?, ?)",
-            (org_id, name, owner_id, plan, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO organizations (id, name, owner_id, plan, description, website, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (org_id, name, owner_id, plan, description, website, datetime.now(timezone.utc).isoformat()),
         )
         conn.execute(
             "INSERT INTO organization_members (id, org_id, user_id, role, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -28,12 +34,12 @@ def create_organization(name: str, owner_id: str, plan: str = "free") -> dict:
     return {"id": org_id, "name": name, "owner_id": owner_id, "plan": plan}
 
 
-def add_member(org_id: str, user_id: str, role: str = OrganizationRole.MEMBER) -> dict:
+def add_member(org_id: str, user_id: str, role: str = OrganizationRole.MEMBER, invited_by: str = "") -> dict:
     member_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO organization_members (id, org_id, user_id, role, created_at) VALUES (?, ?, ?, ?, ?)",
-            (member_id, org_id, user_id, role, datetime.now(timezone.utc).isoformat()),
+            "INSERT INTO organization_members (id, org_id, user_id, role, invited_by, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (member_id, org_id, user_id, role, invited_by, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
     return {"id": member_id, "org_id": org_id, "user_id": user_id, "role": role}
@@ -43,7 +49,7 @@ def get_user_organizations(user_id: str) -> List[dict]:
     with get_db() as conn:
         rows = conn.execute(
             """
-            SELECT o.id, o.name, o.owner_id, o.plan, o.created_at, om.role
+            SELECT o.id, o.name, o.owner_id, o.plan, o.description, o.website, o.created_at, om.role
             FROM organizations o
             JOIN organization_members om ON o.id = om.org_id
             WHERE om.user_id = ?
@@ -64,7 +70,7 @@ def get_org_members(org_id: str) -> List[dict]:
     with get_db() as conn:
         rows = conn.execute(
             """
-            SELECT om.id, om.user_id, u.email, om.role, om.created_at
+            SELECT om.id, om.user_id, u.email, om.role, om.invited_by, om.created_at
             FROM organization_members om
             LEFT JOIN users u ON u.id = om.user_id
             WHERE om.org_id = ?

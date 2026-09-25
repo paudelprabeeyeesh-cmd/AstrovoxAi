@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timezone
 from app.observability import (
     get_observability,
     Metric,
@@ -21,6 +22,10 @@ from app.observability import (
     usage_analytics,
     IncidentTimelineVisualizer,
 )
+from app.observability.log_retention import RetentionRule, RetentionAction
+from app.observability.trace_sampling import SamplingStrategy
+from app.observability.oncall_escalation import RotationSchedule, OnCallPerson, EscalationLevel, EscalationAction
+from app.observability.error_budget_dashboard import ErrorBudgetSnapshot
 
 
 def setup_default_observability():
@@ -127,40 +132,40 @@ def setup_default_observability():
     for rule in default_alert_rules:
         register_alert_rule(rule)
 
-    log_retention.add_rule(LogRetentionPolicy.RetentionRule(
+    log_retention.add_rule(RetentionRule(
         rule_id="default-log-7d",
         name="Default 7-day logs",
         pattern="*.log",
         retention_days=7,
-        action=log_retention.RetentionAction.COMPRESS,
+        action=RetentionAction.COMPRESS,
     ))
-    log_retention.add_rule(LogRetentionPolicy.RetentionRule(
+    log_retention.add_rule(RetentionRule(
         rule_id="default-log-30d",
         name="Default 30-day logs",
         pattern="*.log.gz",
         retention_days=30,
-        action=log_retention.RetentionAction.DELETE,
+        action=RetentionAction.DELETE,
     ))
 
-    sampler.set_strategy(sampler.SamplingStrategy.PROBABILISTIC, probability=0.1)
+    sampler.set_strategy(SamplingStrategy.PROBABILISTIC, probability=0.1)
     sampler.add_custom_rule(lambda attrs: 1.0 if attrs.get("severity") == "critical" else 0.0)
 
     for rotation_name, member_ids in [
         ("backend-primary", ["user-1", "user-2", "user-3"]),
         ("ai-primary", ["user-4", "user-5"]),
     ]:
-        oncall.register_rotation(oncall.RotationSchedule(
+        oncall.register_rotation(RotationSchedule(
             rotation_id=rotation_name,
             name=rotation_name,
             members=member_ids,
-            start_date=asyncio.get_event_loop().time() if hasattr(asyncio, "get_event_loop") else __import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            start_date=datetime.now(timezone.utc),
             rotation_days=7,
         ))
 
     cost_tracker.set_budget("ai-service", daily_usd=500.0, monthly_usd=10000.0)
     cost_tracker.set_budget("embedding-service", daily_usd=100.0, monthly_usd=2000.0)
 
-    error_budget_dashboard.record_snapshot(error_budget_dashboard.ErrorBudgetSnapshot(
+    error_budget_dashboard.record_snapshot(ErrorBudgetSnapshot(
         slo_name="api_availability",
         target_slo=0.999,
         window_days=30,
@@ -172,9 +177,10 @@ def setup_default_observability():
         compliance_pct=99.9,
     ))
 
+    from app.observability.incident_timeline import IncidentSeverity
     IncidentTimelineVisualizer.create_incident(
         title="Observability stack initialized",
-        severity=oncall.IncidentSeverity.P4_LOW,
+        severity=IncidentSeverity.P4_LOW,
         description="Initial system health check",
         affected_services=["observability"],
         owner="system",

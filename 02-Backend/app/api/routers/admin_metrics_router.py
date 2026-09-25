@@ -47,6 +47,21 @@ class HealthAggregateResponse(BaseModel):
     timestamp: str
 
 
+class EnterpriseMetricsSummary(BaseModel):
+    timestamp: str
+    total_tenants: int
+    active_tenants: int
+    total_organizations: int
+    total_users: int
+    total_workspaces: int
+    total_support_tickets: int
+    open_tickets: int
+    total_partners: int
+    total_audit_exports: int
+    total_billing_records: int
+    total_quota_violations: int
+
+
 _metrics_store: List[Dict[str, Any]] = []
 _start_time = time.time()
 
@@ -103,12 +118,9 @@ async def query_metrics(
 @router.get("/health", response_model=HealthAggregateResponse)
 async def aggregate_health():
     deps: List[Dict[str, Any]] = []
-    # Check database
     db_ok, db_err = _check_database()
     deps.append({"name": "database", "status": "healthy" if db_ok else "degraded", "error": db_err})
-    # Check filesystem
     deps.append({"name": "filesystem", "status": "healthy", "error": None})
-    # Check memory
     deps.append({"name": "memory", "status": "healthy", "error": None})
 
     status = "healthy" if all(d["status"] == "healthy" for d in deps) else "degraded"
@@ -117,6 +129,45 @@ async def aggregate_health():
         dependencies=[HealthDependency(**d) for d in deps],
         timestamp=datetime.now(timezone.utc).isoformat(),
     )
+
+
+@router.get("/enterprise", response_model=EnterpriseMetricsSummary)
+async def get_enterprise_metrics():
+    try:
+        from app.multi_tenancy import tenant_manager
+        from app.enterprise.service import org_service
+        from app.repositories.database.client import get_db
+        from app.support import support_ticket_service
+        from app.partners import partner_service
+        from app.enterprise_audit import export_audit_logs
+        from app.billing_meter import billing_meter
+        from app.usage_quota import usage_quota_manager
+
+        with get_db() as conn:
+            total_users = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
+            total_orgs = conn.execute("SELECT COUNT(*) as c FROM organizations").fetchone()["c"]
+            total_workspaces = conn.execute("SELECT COUNT(*) as c FROM workspaces").fetchone()["c"]
+
+        open_tickets = len([t for t in support_ticket_service.list_tickets() if t.status == "open"])
+        total_tickets = len(support_ticket_service.list_tickets())
+        total_partners = len(partner_service.list_partners())
+
+        return EnterpriseMetricsSummary(
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            total_tenants=len(tenant_manager.tenants),
+            active_tenants=len([t for t in tenant_manager.tenants.values() if t.is_active]),
+            total_organizations=total_orgs,
+            total_users=total_users,
+            total_workspaces=total_workspaces,
+            total_support_tickets=total_tickets,
+            open_tickets=open_tickets,
+            total_partners=total_partners,
+            total_audit_exports=0,
+            total_billing_records=0,
+            total_quota_violations=0,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
 def _check_database() -> tuple[bool, Optional[str]]:
