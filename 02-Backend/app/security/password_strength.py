@@ -7,6 +7,7 @@ scoring. Rejects common passwords and enforces composition rules.
 from __future__ import annotations
 
 import logging
+import math
 import re
 import string
 from dataclasses import dataclass
@@ -65,8 +66,6 @@ class PasswordStrengthEnforcer:
         if any(c in string.punctuation for c in password):
             pool += 32
         return pool or 1.0
-
-import math
 
     def compute_entropy(self, password: str) -> float:
         pool = self._char_pool_size(password)

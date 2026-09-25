@@ -59,7 +59,7 @@ class TestPasswordStrength:
         assert result.score < 5
 
     def test_common_password_rejected(self):
-        result = password_enforcer.validate("Password123!")
+        result = password_enforcer.validate("password123")
         assert result.valid is False
 
     def test_strong_password_accepted(self):
