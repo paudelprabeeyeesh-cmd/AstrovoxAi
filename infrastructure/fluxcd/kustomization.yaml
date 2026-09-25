@@ -4,10 +4,12 @@ metadata:
   name: astrovox
   namespace: flux-system
 spec:
-  interval: 30s
+  interval: 1m
   url: https://github.com/astrovox/astrovox.git
   ref:
     branch: main
+  secretRef:
+    name: astrovox-github-auth
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
@@ -22,3 +24,20 @@ spec:
   path: ./infrastructure/k8s
   prune: true
   validation: client
+  timeout: 5m
+  retryInterval: 1m
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: astrovox-backend
+      namespace: astrovox
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: astrovox-frontend
+      namespace: astrovox
+  dependsOn:
+    - name: astrovox-infra
+  postBuild:
+    substitute:
+      environment: production
+      cluster: astrovox-production

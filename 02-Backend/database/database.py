@@ -63,11 +63,145 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             last_reset TEXT
         )
         """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS analytics_events (
+            id TEXT PRIMARY KEY,
+            event_type TEXT NOT NULL,
+            properties TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS ab_events (
+            id TEXT PRIMARY KEY,
+            test_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            variant TEXT NOT NULL,
+            event_name TEXT NOT NULL,
+            event_value REAL,
+            properties TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS funnels (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            steps TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS funnel_events (
+            id TEXT PRIMARY KEY,
+            funnel_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            session_id TEXT,
+            step_index INTEGER NOT NULL,
+            step_name TEXT NOT NULL,
+            entered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            exited_at TIMESTAMP,
+            completed INTEGER DEFAULT 0,
+            drop_off_reason TEXT,
+            properties TEXT
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cohorts (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            definition TEXT NOT NULL,
+            member_count INTEGER DEFAULT 0,
+            created_by TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cohort_members (
+            id TEXT PRIMARY KEY,
+            cohort_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            left_at TIMESTAMP,
+            is_active INTEGER DEFAULT 1
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS cohort_metrics (
+            id TEXT PRIMARY KEY,
+            cohort_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            active_users INTEGER DEFAULT 0,
+            new_retained INTEGER DEFAULT 0,
+            returning_users INTEGER DEFAULT 0,
+            churned_users INTEGER DEFAULT 0,
+            retention_rate REAL DEFAULT 0,
+            revenue REAL DEFAULT 0
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS retention_snapshots (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            cohort_date TEXT NOT NULL,
+            day_0 INTEGER DEFAULT 1,
+            day_1 INTEGER DEFAULT 0,
+            day_3 INTEGER DEFAULT 0,
+            day_7 INTEGER DEFAULT 0,
+            day_14 INTEGER DEFAULT 0,
+            day_30 INTEGER DEFAULT 0,
+            day_60 INTEGER DEFAULT 0,
+            day_90 INTEGER DEFAULT 0,
+            last_active_date TEXT
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS revenue_events (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            amount REAL NOT NULL,
+            currency TEXT DEFAULT 'USD',
+            plan_name TEXT,
+            plan_interval TEXT,
+            payment_method TEXT,
+            stripe_invoice_id TEXT,
+            stripe_customer_id TEXT,
+            metadata TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS custom_reports (
+            id TEXT PRIMARY KEY,
+            report_name TEXT NOT NULL,
+            description TEXT,
+            created_by TEXT NOT NULL,
+            config TEXT NOT NULL,
+            schedule TEXT,
+            recipients TEXT DEFAULT '[]',
+            last_run_at TIMESTAMP,
+            is_public INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
     _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
     _ensure_index(conn, "chats", "idx_chats_conversation", "conversation_id, created_at")
     _ensure_index(conn, "usage", "idx_usage_user_kind", "user_id, kind")
+    _ensure_index(conn, "analytics_events", "idx_analytics_events_type", "event_type")
+    _ensure_index(conn, "ab_events", "idx_ab_events_test", "test_id")
+    _ensure_index(conn, "funnel_events", "idx_funnel_events_funnel", "funnel_id")
+    _ensure_index(conn, "cohort_members", "idx_cohort_members_cohort", "cohort_id")
+    _ensure_index(conn, "cohort_metrics", "idx_cohort_metrics_cohort_date", "cohort_id, date")
+    _ensure_index(conn, "retention_snapshots", "idx_retention_user_cohort", "user_id, cohort_date")
+    _ensure_index(conn, "revenue_events", "idx_revenue_user", "user_id")
+    _ensure_index(conn, "revenue_events", "idx_revenue_type", "event_type")
+    _ensure_index(conn, "custom_reports", "idx_custom_reports_owner", "created_by")
 
 
 def init_db() -> None:
