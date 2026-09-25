@@ -21,7 +21,7 @@ def complexity(node: ast.AST) -> int:
 
 def analyze_file(path: Path) -> list[dict[str, Any]]:
     try:
-        tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
     except SyntaxError:
         return []
     results = []

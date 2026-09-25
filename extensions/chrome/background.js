@@ -1,5 +1,8 @@
 // Background service worker for Chrome extension
-const API_BASE = 'https://api.astrovox.ai/v1'
+import { AstrovoxCore } from './shared/core.js'
+
+const core = window.AstrovoxCore || new AstrovoxCore()
+core.init().catch(console.error)
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'CHAT') {
@@ -22,33 +25,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .catch(error => sendResponse({ error: error.message }))
     return true
   }
+
+  if (message.type === 'REFACTOR') {
+    handleRefactor(message.payload)
+      .then(sendResponse)
+      .catch(error => sendResponse({ error: error.message }))
+    return true
+  }
+
+  if (message.type === 'GENERATE_TESTS') {
+    handleGenerateTests(message.payload)
+      .then(sendResponse)
+      .catch(error => sendResponse({ error: error.message }))
+    return true
+  }
 })
 
 async function handleChat(payload) {
-  const response = await fetch(`${API_BASE}/chat/message`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${payload.apiKey}`
-    },
-    body: JSON.stringify({
-      conversation_id: payload.conversationId || 'browser-' + Date.now(),
-      message: payload.message,
-      model: payload.model || 'gpt-4'
-    })
-  })
-  if (!response.ok) throw new Error(`HTTP ${response.status}`)
-  return response.json()
+  const response = await core.chat(payload.message)
+  return response
 }
 
 async function handleExplain(payload) {
-  const prompt = `Explain this code:\n\n${payload.code}`
-  return handleChat({ ...payload, message: prompt })
+  const response = await core.explain(payload.code)
+  return response
 }
 
 async function handleSummarize(payload) {
-  const prompt = `Summarize this page:\n\n${payload.content}`
-  return handleChat({ ...payload, message: prompt })
+  const response = await core.summarize(payload.content)
+  return response
+}
+
+async function handleRefactor(payload) {
+  const response = await core.refactor(payload.code, payload.language)
+  return response
+}
+
+async function handleGenerateTests(payload) {
+  const response = await core.generateTests(payload.code, payload.language)
+  return response
 }
 
 chrome.contextMenus.create({
@@ -57,10 +72,22 @@ chrome.contextMenus.create({
   contexts: ['selection']
 })
 
+chrome.contextMenus.create({
+  id: 'astrovox-summarize',
+  title: 'Summarize with Astrovox',
+  contexts: ['selection']
+})
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === 'astrovox-explain' && info.selectionText) {
     chrome.tabs.sendMessage(tab.id, {
       type: 'EXPLAIN_SELECTION',
+      text: info.selectionText
+    })
+  }
+  if (info.menuItemId === 'astrovox-summarize' && info.selectionText) {
+    chrome.tabs.sendMessage(tab.id, {
+      type: 'SUMMARIZE_SELECTION',
       text: info.selectionText
     })
   }

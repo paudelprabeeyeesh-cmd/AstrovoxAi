@@ -3,7 +3,7 @@
   "name": "Astrovox AI",
   "version": "1.0.0",
   "description": "Astrovox AI assistant in your browser",
-  "permissions": ["storage", "activeTab", "contextMenus"],
+  "permissions": ["storage", "activeTab", "contextMenus", "scripting"],
   "host_permissions": ["https://*/*", "http://*/*"],
   "background": {
     "service_worker": "background.js"
@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["shared/core.js", "content-core.js", "content.js"],
       "css": ["content.css"]
     }
   ],
@@ -31,5 +31,11 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["shared/core.js", "sidebar-core.js", "content-core.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
