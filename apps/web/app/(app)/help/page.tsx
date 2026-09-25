@@ -36,7 +36,7 @@ export default function HelpCenterPage() {
   const loadArticles = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ articles: HelpArticle[] }>('/support/articles');
+      const data = await api.getHelpArticles();
       setArticles(data.articles || []);
     } catch {
       setArticles([]);

@@ -23,11 +23,11 @@ export default function HelpArticlePage() {
   const loadArticle = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ article: HelpArticle }>(`/support/articles/search?q=${encodeURIComponent(slug)}`);
+      const data = await api.searchHelpArticles(slug);
       const found = data.articles?.find((a: HelpArticle) => a.slug === slug) || data.article;
       if (found) {
         setArticle(found);
-        await api.post(`/support/articles/${found.id}/feedback`, null);
+        await api.markArticleHelpful(found.id, true);
       }
     } catch {
       setArticle(null);
@@ -39,7 +39,7 @@ export default function HelpArticlePage() {
   const handleFeedback = async (helpful: boolean) => {
     if (!article) return;
     setFeedback(helpful ? 'helpful' : 'not_helpful');
-    await api.post(`/support/articles/${article.id}/feedback`, helpful);
+    await api.markArticleHelpful(article.id, helpful);
   };
 
   if (loading) {

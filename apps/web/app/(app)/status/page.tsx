@@ -22,8 +22,8 @@ export default function StatusPage() {
     setLoading(true);
     try {
       const [summaryData, incidentsData] = await Promise.all([
-        api.get<{ summary: StatusSummary }>('/support/status'),
-        api.get<{ incidents: StatusIncident[] }>('/support/incidents'),
+        api.getStatusSummary(),
+        api.getIncidents(),
       ]);
       setSummary(summaryData.summary);
       setIncidents(incidentsData.incidents || []);

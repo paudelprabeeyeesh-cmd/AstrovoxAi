@@ -31,7 +31,7 @@ export function LiveChatWidget() {
   const startSession = async () => {
     setLoading(true);
     try {
-      const data = await api.createChatSession(agentId);
+      const data = await api.createChatSession(undefined);
       setSession(data.session);
       await loadMessages(data.session.id);
     } catch {

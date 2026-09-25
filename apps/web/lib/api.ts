@@ -139,6 +139,11 @@ export const api = {
     request<{ article: HelpArticle }>(`/support/articles/${id}`),
   searchHelpArticles: (query: string) =>
     request<{ articles: HelpArticle[] }>(`/support/articles/search?q=${encodeURIComponent(query)}`),
+  markArticleHelpful: (id: string, helpful: boolean) =>
+    request<void>(`/support/articles/${id}/feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ helpful }),
+    }),
 
   // Tutorials
   getTutorials: (difficulty?: string) =>

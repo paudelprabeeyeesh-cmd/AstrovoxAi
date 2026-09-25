@@ -20,7 +20,7 @@ export default function CustomerPortalPage() {
   const loadPortal = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ portal: CustomerPortal }>('/support/portal');
+      const data = await api.getCustomerPortal();
       setPortal(data.portal);
     } catch {
       setPortal(null);
