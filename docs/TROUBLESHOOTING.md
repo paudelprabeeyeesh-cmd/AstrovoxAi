@@ -157,6 +157,24 @@ Common issues and solutions for Astrovox AI.
 - Verify idempotency keys are implemented
 - Review WebSocket reconnection logic
 
+## Streaming Issues
+
+### SSE stream disconnects unexpectedly
+
+**Solutions**:
+- Check network stability
+- Verify `stream` parameter is set to `true`
+- Review backend timeout settings
+- Check Nginx/proxy timeout configuration
+
+### Streaming response is incomplete
+
+**Solutions**:
+- Check provider quota and rate limits
+- Verify `max_tokens` is not too low
+- Review backend logs for provider errors
+- Test with different AI provider
+
 ## Getting Help
 
 If you're still stuck:
