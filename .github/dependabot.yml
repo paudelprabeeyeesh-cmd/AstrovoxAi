@@ -1,0 +1,57 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "ci"
+    assignees:
+      - "astrovox-devops"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "docker"
+    assignees:
+      - "astrovox-devops"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "pip"
+    directory: "/02-Backend"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "direct"
+    labels:
+      - "dependencies"
+      - "backend"
+    assignees:
+      - "astrovox-backend"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-type: "direct"
+    labels:
+      - "dependencies"
+      - "frontend"
+    assignees:
+      - "astrovox-frontend"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"

@@ -1,0 +1,46 @@
+# AstrovoxAI CODEOWNERS
+# This file defines code owners for review automation
+
+# Default owners for everything
+* @astrovox-devops
+
+# Backend code
+02-Backend/** @astrovox-backend
+02-Backend/requirements.txt @astrovox-backend @astrovox-devops
+02-Backend/Dockerfile* @astrovox-devops @astrovox-backend
+
+# Frontend code
+src/** @astrovox-frontend
+apps/** @astrovox-frontend
+package.json @astrovox-frontend @astrovox-devops
+package-lock.json @astrovox-frontend @astrovox-devops
+Dockerfile.frontend @astrovox-devops @astrovox-frontend
+
+# Infrastructure
+infrastructure/** @astrovox-devops
+helm/** @astrovox-devops
+charts/** @astrovox-devops
+k8s/** @astrovox-devops
+docker-compose*.yml @astrovox-devops
+Dockerfile @astrovox-devops
+terraform/** @astrovox-devops
+
+# CI/CD and GitHub workflows
+.github/** @astrovox-devops
+.github/workflows/** @astrovox-devops
+
+# Security
+security/** @astrovox-devops
+.gitleaks.toml @astrovox-devops
+.pre-commit-config.yaml @astrovox-devops
+
+# Documentation
+**/*.md @astrovox-devops @astrovox-docs
+CHANGELOG.md @astrovox-devops @astrovox-docs
+API.md @astrovox-backend @astrovox-devops
+DEPLOY*.md @astrovox-devops
+
+# Scripts and tooling
+scripts/** @astrovox-devops
+tools/** @astrovox-devops
+bin/** @astrovox-devops
