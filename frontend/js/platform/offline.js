@@ -24,12 +24,19 @@ const OfflineQueue = {
   },
 
   enqueue(request) {
+    const dedupKey = request.method + '|' + request.url + '|' + (request.body || '').slice(0, 100);
+    if (this._dedupKeys.has(dedupKey)) {
+      return null;
+    }
+    this._dedupKeys.add(dedupKey);
+
     const item = {
       id: crypto.randomUUID(),
       request,
       attempts: 0,
       createdAt: Date.now(),
       status: 'pending',
+      dedupKey,
     };
 
     this._queue.push(item);
@@ -37,9 +44,22 @@ const OfflineQueue = {
 
     if (this._isOnline) {
       this._processQueue();
+    } else if (this._backgroundSyncSupported && 'serviceWorker' in navigator) {
+      this._registerBackgroundSync();
     }
 
     return item.id;
+  },
+
+  async _registerBackgroundSync() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.sync) {
+        await reg.sync.register('astrovox-offline-sync');
+      }
+    } catch {
+      // background sync not available
+    }
   },
 
   async _processQueue() {

@@ -1,4 +1,5 @@
 // Frontend Platform - Group 7: Theme engine and design token system
+// Enhanced with CSS transition support, system preference detection, and theme persistence
 const ThemeEngine = {
   _currentTheme: 'dark',
   _themes: {
@@ -47,6 +48,7 @@ const ThemeEngine = {
   },
 
   _storageKey: 'astrovox_theme',
+  _transitionDuration = 300,
 
   init() {
     const stored = this._getStoredTheme();

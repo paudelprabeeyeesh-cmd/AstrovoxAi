@@ -26,7 +26,7 @@ from app.memory_leak_detection import memory_leak_detector
 from app.batch_processor import BatchProcessor, BatchResult
 from app.lazy_loader import get_lazy_module, get_lazy_module_async, get_lazy_module_stats, invalidate_lazy_module, invalidate_all_lazy_modules, register_lazy_module
 from app.middleware.security.rate_limit_hardened import get_rate_limiter, RateLimitConfig, DEFAULT_LIMITS
-from app.circuit_breaker import circuit_breaker_manager, CircuitBreaker, CircuitState
+from app.circuit_breaker import circuit_breaker_manager, CircuitBreaker
 from app.retry_backoff import RetryWithBackoff, RetryConfig
 from app.retry_budget import retry_budget_manager, RetryBudget
 from app.cost_management import cost_tracker

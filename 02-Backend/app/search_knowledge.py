@@ -1176,12 +1176,19 @@ class ChunkingStrategies:
         sentences = self._split_sentences(text)
         chunks = []
         chunk_index = 0
-        for i in range(0, len(sentences), max(1, self.chunk_size // 100)):
-            content = " ".join(sentences[i:i + max(1, self.chunk_size // 100)])
+        step = max(1, self.chunk_size // 100)
+        for i in range(0, len(sentences), step):
+            content = " ".join(sentences[i:i + step])
             if content.strip():
-                chunks.append(Chunk(id=self._make_id(document_id, chunk_index), document_id=document_id,
-                                    content=content, chunk_index=chunk_index,
-                                    char_end=len(content), token_estimate=max(1, len(content.split())))
+                chunk = Chunk(
+                    id=self._make_id(document_id, chunk_index),
+                    document_id=document_id,
+                    content=content,
+                    chunk_index=chunk_index,
+                    char_end=len(content),
+                    token_estimate=max(1, len(content.split())),
+                )
+                chunks.append(chunk)
                 chunk_index += 1
         return chunks
 
@@ -1191,10 +1198,16 @@ class ChunkingStrategies:
         for i in range(0, len(text), step):
             content = text[i:i + self.chunk_size]
             if content.strip():
-                chunks.append(Chunk(id=self._make_id(document_id, len(chunks)), document_id=document_id,
-                                    content=content, chunk_index=len(chunks),
-                                    char_start=i, char_end=i + len(content),
-                                    token_estimate=max(1, len(content.split())))
+                chunk = Chunk(
+                    id=self._make_id(document_id, len(chunks)),
+                    document_id=document_id,
+                    content=content,
+                    chunk_index=len(chunks),
+                    char_start=i,
+                    char_end=i + len(content),
+                    token_estimate=max(1, len(content.split())),
+                )
+                chunks.append(chunk)
         return chunks
 
     def _chunk_recursive(self, text: str, document_id: str) -> List[Chunk]:

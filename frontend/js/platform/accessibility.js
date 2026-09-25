@@ -150,4 +150,5 @@ window.A11y = {
   announce,
   skipToMain,
   FocusManager,
+  setInert: (el, inert = true) => FocusManager.prototype.setInert(el, inert),
 };

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from utils.auth.auth_utils import get_user_id_from_token
-from .engine import MemoryEngine
+from app.memory_engine.engine import MemoryEngine
 
 router = APIRouter(prefix="/api/memory-v2", tags=["memory-engine"])
 

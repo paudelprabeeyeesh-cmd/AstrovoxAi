@@ -398,6 +398,26 @@ class DependencyVulnerabilityScanner:
         with self._lock:
             return self._scan_history[-limit:]
 
+    def get_vulnerability_trends(self) -> Dict[str, Any]:
+        """Get vulnerability trends from historical scans."""
+        with self._lock:
+            if not self._scan_history:
+                return {"total_scans": 0}
+        trend_data = []
+        for scan in self._scan_history:
+            summary = scan.get("summary", {})
+            trend_data.append({
+                "timestamp": scan.get("scan_timestamp"),
+                "total": summary.get("total_vulnerabilities", 0),
+                "critical": summary.get("critical_count", 0),
+                "high": summary.get("high_count", 0),
+            })
+        return {
+            "total_scans": len(trend_data),
+            "trend": trend_data,
+            "avg_vulnerabilities": round(sum(d["total"] for d in trend_data) / max(1, len(trend_data)), 2),
+        }
+
 
 dependency_scanner = DependencyVulnerabilityScanner()
 
