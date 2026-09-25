@@ -1,0 +1,31 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  hosts:
+  - "api.astrovox.ai"
+  - "astrovox-api"
+  gateways:
+  - istio-gateway
+  http:
+  - route:
+    - destination:
+        host: astrovox-api-v1
+        subset: v1
+      weight: 100
+    timeout: 30s
+    retries:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: gateway-error,connect-failure,refused-stream
+    fault:
+      delay:
+        percentage:
+          value: 0.1
+        fixedDelay: 5ms
+      abort:
+        percentage:
+          value: 0.01
+        httpStatus: 500

@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  selector:
+    app: astrovox-api
+    version: active
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: astrovox-api-preview
+  namespace: astrovox-production
+spec:
+  selector:
+    app: astrovox-api
+    version: preview
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8000
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-api-active
+  namespace: astrovox-production
+  labels:
+    app: astrovox-api
+    version: active
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox-api
+      version: active
+  template:
+    metadata:
+      labels:
+        app: astrovox-api
+        version: active
+    spec:
+      containers:
+      - name: astrovox-api
+        image: astrovoxai/backend:production
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: astrovox-secrets
+              key: database-url
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-api-preview
+  namespace: astrovox-production
+  labels:
+    app: astrovox-api
+    version: preview
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: astrovox-api
+      version: preview
+  template:
+    metadata:
+      labels:
+        app: astrovox-api
+        version: preview
+    spec:
+      containers:
+      - name: astrovox-api
+        image: astrovoxai/backend:preview
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: astrovox-secrets
+              key: database-url
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20

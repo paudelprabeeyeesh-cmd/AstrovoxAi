@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: istio-gateway
+  namespace: astrovox-production
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "api.astrovox.ai"
+    - "*.astrovox.ai"
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: astrovox-tls-cert
+    hosts:
+    - "api.astrovox.ai"
+    - "*.astrovox.ai"
+  - port:
+      number: 9080
+      name: http-prom
+      protocol: HTTP
+    hosts:
+    - "*.astrovox.ai"
+    tls:
+      httpsRedirect: true

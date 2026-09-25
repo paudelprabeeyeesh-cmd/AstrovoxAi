@@ -1,0 +1,20 @@
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: astrovox-default
+  namespace: astrovox-production
+spec:
+  mtls:
+    mode: PERMISSIVE
+---
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  selector:
+    matchLabels:
+      app: astrovox-api
+  mtls:
+    mode: STRICT

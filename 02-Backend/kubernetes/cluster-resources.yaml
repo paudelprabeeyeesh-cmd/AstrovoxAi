@@ -1,0 +1,103 @@
+apiVersion: autoscaling/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-api-active
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: "*"
+      minAllowed:
+        cpu: 100m
+        memory: 128Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 2Gi
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: astrovox-api
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: astrovox-api-network
+  namespace: astrovox-production
+spec:
+  podSelector:
+    matchLabels:
+      app: astrovox-api
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: istio-system
+    - podSelector:
+        matchLabels:
+          app: istio-ingressgateway
+    ports:
+    - protocol: TCP
+      port: 8000
+    - protocol: TCP
+      port: 9090
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          name: astrovox-production
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379
+  - to:
+    - namespaceSelector: {}
+      matchLabels:
+        name: default
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: astrovox-api
+  namespace: astrovox-production
+spec:
+  selector:
+    matchLabels:
+      app: astrovox-api
+  endpoints:
+  - port: metrics
+    interval: 15s
+    path: /metrics
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: astrovox-secrets
+  namespace: astrovox-production
+type: Opaque
+stringData:
+  database-url: "postgresql://user:password@postgres:5432/astrovox"
+  redis-url: "redis://redis:6379/0"
+  jwt-secret-key: "CHANGE_ME_IN_PRODUCTION"
+  stripe-secret-key: "CHANGE_ME_IN_PRODUCTION"

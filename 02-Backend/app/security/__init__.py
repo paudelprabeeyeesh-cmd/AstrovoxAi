@@ -28,7 +28,7 @@ from ..ai_security import (
     content_moderator as ai_content_moderator,
     input_validator,
 )
-from .enhanced_security import (
+from ..enhanced_security import (
     BehavioralJailbreakDetector,
     MLSecretScanner,
     APIAbuseDetector,
