@@ -7,7 +7,7 @@ import ParallelAssistant from './ParallelAssistant'
 import MetaDebugTools from './MetaDebugTools'
 
 export default function MultiversePanel() {
-  const [selectedTimelineId, setSelectedTimelineId] = useState(null)
+  const [selectedTimelineId] = useState(null)
   const [selectedUniverseId, setSelectedUniverseId] = useState(null)
   const [view, setView] = useState('dashboard')
 

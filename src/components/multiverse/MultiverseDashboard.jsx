@@ -77,7 +77,7 @@ export default function MultiverseDashboard() {
     setLoading(true)
     setError(null)
     try {
-      const data = await forkUniverse(selectedTimeline.id, forkName, null, modelOverride || undefined, undefined, undefined)
+      await forkUniverse(selectedTimeline.id, forkName, null, modelOverride || undefined, undefined, undefined)
       setForkName('')
       setModelOverride('')
       await loadVisualization(selectedTimeline.id)

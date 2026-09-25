@@ -56,10 +56,11 @@ class TestTimeTravelDebugger:
         assert restored["step"] == 1
 
     def test_branch_creation_and_switch(self):
-        branch = self.debugger.create_branch("experiment", created_by="test")
-        assert branch in self.debugger.list_branches()
-        self.debugger.switch_branch(branch)
-        assert self.debugger.get_current_branch() == branch
+        branch_id = self.debugger.create_branch("experiment", created_by="test")
+        branches = self.debugger.list_branches()
+        assert any(b["branch_id"] == branch_id for b in branches)
+        self.debugger.switch_branch(branch_id)
+        assert self.debugger.get_current_branch() == branch_id
 
     def test_breakpoint_lifecycle(self):
         bp = TemporalBreakpoint(

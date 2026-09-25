@@ -500,7 +500,9 @@ class TemporalDatabase:
         self._queries = QueryHandler(self._store)
         self._lock = threading.Lock()
 
-    def apply(self, entity_id: str, operation: OperationType, new_state: Dict[str, Any], actor: str = "system", entity_type: str = "entity", old_state: Optional[Dict[str, Any]] = None, correlation_id: Optional[str] = None, causation_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> TemporalEntity:
+    def apply(self, entity_id: str, operation: Union[str, OperationType], new_state: Dict[str, Any], actor: str = "system", entity_type: str = "entity", old_state: Optional[Dict[str, Any]] = None, correlation_id: Optional[str] = None, causation_id: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> TemporalEntity:
+        if isinstance(operation, str):
+            operation = OperationType(operation)
         with self._lock:
             violations = self._constraints.validate(entity_type, new_state, old_state)
             if violations:
