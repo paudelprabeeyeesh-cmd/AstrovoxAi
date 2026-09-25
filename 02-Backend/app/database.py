@@ -40,22 +40,33 @@ async def create_user_profile(
         return None
 
 
+<<<<<<< HEAD
 ALLOWED_PROFILE_FIELDS = {"full_name", "avatar_url", "bio", "website"}
 ALLOWED_CONVERSATION_FIELDS = {"title", "model"}
 ALLOWED_SETTINGS_FIELDS = {"theme", "language", "notifications_enabled", "default_model"}
 
 
+=======
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 async def update_user_profile(user_id: str, **kwargs):
     """Update user profile. Only whitelisted fields can be updated."""
     safe_kwargs = {k: v for k, v in kwargs.items() if k in ALLOWED_PROFILE_FIELDS}
     if not safe_kwargs:
         return None
     try:
+<<<<<<< HEAD
         response = supabase.table("profiles").update(safe_kwargs).eq("id", user_id).execute()
         logger.info(f"Updated user profile for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
         logger.error(f"Error updating user profile: {str(e)[:100]}")
+=======
+        response = supabase.table("profiles").update(kwargs).eq("id", user_id).execute()
+        logger.info(f"Updated user profile for {user_id}")
+        return response.data[0] if response.data else None
+    except Exception as e:
+        logger.error(f"Error updating user profile: {e}")
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return None
 
 
@@ -121,14 +132,22 @@ async def update_conversation(conversation_id: int, **kwargs):
     try:
         response = (
             supabase.table("conversations")
+<<<<<<< HEAD
             .update(safe_kwargs)
+=======
+            .update(kwargs)
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
             .eq("id", conversation_id)
             .execute()
         )
         logger.debug(f"Updated conversation {conversation_id}")
         return response.data[0] if response.data else None
     except Exception as e:
+<<<<<<< HEAD
         logger.error(f"Error updating conversation: {str(e)[:100]}")
+=======
+        logger.error(f"Error updating conversation: {e}")
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return None
 
 
@@ -273,12 +292,20 @@ async def update_user_settings(user_id: str, **kwargs):
     try:
         response = (
             supabase.table("user_settings")
+<<<<<<< HEAD
             .update(safe_kwargs)
+=======
+            .update(kwargs)
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
             .eq("user_id", user_id)
             .execute()
         )
         logger.info(f"Updated user settings for {user_id}")
         return response.data[0] if response.data else None
     except Exception as e:
+<<<<<<< HEAD
         logger.error(f"Error updating user settings: {str(e)[:100]}")
+=======
+        logger.error(f"Error updating settings: {e}")
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return None

@@ -1,0 +1,4 @@
+# Meilisearch
+
+TODO: Add documentation.
+

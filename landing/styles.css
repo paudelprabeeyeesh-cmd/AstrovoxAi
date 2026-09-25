@@ -1,0 +1,95 @@
+﻿/* Custom styles for AstrovoxAI Landing Page */
+
+html {
+    scroll-behavior: smooth;
+}
+
+.hero-animate {
+    animation: fadeInUp 0.8s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.hero-animate:nth-child(1) { animation-delay: 0.1s; }
+.hero-animate:nth-child(2) { animation-delay: 0.2s; }
+.hero-animate:nth-child(3) { animation-delay: 0.3s; }
+.hero-animate:nth-child(4) { animation-delay: 0.4s; }
+.hero-animate:nth-child(5) { animation-delay: 0.5s; }
+
+.gradient-text {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.feature-card {
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+}
+
+.btn-primary {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(92, 80, 80, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-primary:hover::after {
+    left: 100%;
+}
+
+/* Performance: use loading="lazy" on <img> tags in HTML */
+
+@media print {
+    nav, footer, .no-print {
+        display: none;
+    }
+}
+
+.will-change-transform {
+    will-change: transform;
+}
+
+a:focus-visible, button:focus-visible {
+    outline: 2px solid #a1a5a7;
+    outline-offset: 2px;
+}
+
+@media (forced-colors: active) {
+    .border-slate-200 {
+        border-color: ButtonBorder;
+    }
+    .bg-brand-600 {
+        background-color: Highlight;
+        color: HighlightText;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

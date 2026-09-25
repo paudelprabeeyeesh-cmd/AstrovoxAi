@@ -1,0 +1,51 @@
+{"prompt": "What is the capital of France?", "expected": "Paris"}
+{"prompt": "Explain Newton's first law of motion", "expected": "An object at rest stays at rest and an object in motion stays in motion unless acted upon by a force"}
+{"prompt": "What is 2 + 2?", "expected": "4"}
+{"prompt": "Who wrote Romeo and Juliet?", "expected": "William Shakespeare"}
+{"prompt": "What is the boiling point of water?", "expected": "100 degrees Celsius"}
+{"prompt": "What is the largest planet in our solar system?", "expected": "Jupiter"}
+{"prompt": "What is the chemical symbol for gold?", "expected": "Au"}
+{"prompt": "Who painted the Mona Lisa?", "expected": "Leonardo da Vinci"}
+{"prompt": "What is the speed of light?", "expected": "299,792 kilometers per second"}
+{"prompt": "What is photosynthesis?", "expected": "The process by which plants convert sunlight into energy"}
+{"prompt": "What is the capital of Japan?", "expected": "Tokyo"}
+{"prompt": "What is the tallest mountain in the world?", "expected": "Mount Everest"}
+{"prompt": "What is the powerhouse of the cell?", "expected": "Mitochondria"}
+{"prompt": "What is the largest ocean on Earth?", "expected": "Pacific Ocean"}
+{"prompt": "Who developed the theory of relativity?", "expected": "Albert Einstein"}
+{"prompt": "What is the smallest unit of matter?", "expected": "Atom"}
+{"prompt": "What is the capital of Germany?", "expected": "Berlin"}
+{"prompt": "What is the chemical formula for water?", "expected": "H2O"}
+{"prompt": "Who discovered penicillin?", "expected": "Alexander Fleming"}
+{"prompt": "What is the longest river in the world?", "expected": "Nile"}
+{"prompt": "What is the capital of Italy?", "expected": "Rome"}
+{"prompt": "What is the largest mammal?", "expected": "Blue whale"}
+{"prompt": "What is the freezing point of water?", "expected": "0 degrees Celsius"}
+{"prompt": "Who wrote The Odyssey?", "expected": "Homer"}
+{"prompt": "What is the square root of 64?", "expected": "8"}
+{"prompt": "What is the capital of Spain?", "expected": "Madrid"}
+{"prompt": "What is the hardest natural substance?", "expected": "Diamond"}
+{"prompt": "Who was the first person to walk on the moon?", "expected": "Neil Armstrong"}
+{"prompt": "What is the largest continent?", "expected": "Asia"}
+{"prompt": "What is the chemical symbol for oxygen?", "expected": "O"}
+{"prompt": "What is the capital of Canada?", "expected": "Ottawa"}
+{"prompt": "What is the speed of sound?", "expected": "343 meters per second"}
+{"prompt": "Who wrote Pride and Prejudice?", "expected": "Jane Austen"}
+{"prompt": "What is the smallest country in the world?", "expected": "Vatican City"}
+{"prompt": "What is the largest desert in the world?", "expected": "Antarctica"}
+{"prompt": "What is the capital of Australia?", "expected": "Canberra"}
+{"prompt": "Who invented the telephone?", "expected": "Alexander Graham Bell"}
+{"prompt": "What is the largest bone in the human body?", "expected": "Femur"}
+{"prompt": "What is the capital of Brazil?", "expected": "Brasilia"}
+{"prompt": "What is the chemical symbol for carbon?", "expected": "C"}
+{"prompt": "Who wrote 1984?", "expected": "George Orwell"}
+{"prompt": "What is the deepest ocean trench?", "expected": "Mariana Trench"}
+{"prompt": "What is the capital of India?", "expected": "New Delhi"}
+{"prompt": "What is the largest planet?", "expected": "Jupiter"}
+{"prompt": "Who discovered gravity?", "expected": "Isaac Newton"}
+{"prompt": "What is the smallest bone in the human body?", "expected": "Stapes"}
+{"prompt": "What is the capital of China?", "expected": "Beijing"}
+{"prompt": "What is the chemical formula for salt?", "expected": "NaCl"}
+{"prompt": "Who wrote Hamlet?", "expected": "William Shakespeare"}
+{"prompt": "What is the longest mountain range?", "expected": "Andes"}
+{"prompt": "What is the capital of Russia?", "expected": "Moscow"}

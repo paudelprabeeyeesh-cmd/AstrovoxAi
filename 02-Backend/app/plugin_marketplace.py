@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Phase 378 — Plugin Marketplace
 Plugin SDK, sandboxed execution, revenue sharing, plugin analytics, verified plugins
 """
@@ -60,3 +61,19 @@ class Phase378Manager:
 
 
 phase_378 = Phase378Manager()
+=======
+class PluginMarketplace:
+    def __init__(self):
+        self.plugins = {}
+
+    def register(self, plugin_id, plugin):
+        self.plugins[plugin_id] = plugin
+
+    def install(self, plugin_id):
+        if plugin_id not in self.plugins:
+            raise ValueError(f"Plugin {plugin_id} not found")
+        return self.plugins[plugin_id].install()
+
+    def list_available(self):
+        return list(self.plugins.keys())
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

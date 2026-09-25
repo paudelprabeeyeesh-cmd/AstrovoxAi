@@ -1,4 +1,4 @@
-# ASTRAVOX PRIME - API Documentation
+# Astravox AI - API Documentation
 
 ## Base URL
 
@@ -13,6 +13,12 @@ All protected endpoints require an `Authorization` header with a Bearer token:
 ```
 Authorization: Bearer <access_token>
 ```
+
+## Request correlation
+
+Every response includes an `X-Request-ID` header. Clients may provide a short
+safe ID using the same header to correlate browser, API, and gateway logs;
+unsafe or oversized values are replaced with a server-generated UUID.
 
 ## Health Endpoints
 
@@ -161,6 +167,24 @@ Response:
 ```
 
 ## Chat Endpoints
+
+### Stream a Chat Response
+
+```http
+POST /chat/stream
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "conversation_id": 42,
+  "message": "Summarize this project",
+  "model": "gpt-4"
+}
+```
+
+Returns `text/event-stream`. Events are JSON payloads named `message`, `token`,
+`done`, and `error`. The assistant message is persisted only after a successful
+`done` event. Clients must treat `error` as a retryable incomplete response.
 
 ### Create Conversation
 
@@ -629,7 +653,9 @@ Response:
 
 ## Rate Limiting
 
-Currently, there are no rate limits implemented. Rate limiting will be added in future versions.
+The API applies a configurable per-client limit (default `120/minute`) at the
+FastAPI boundary. Set `RATE_LIMIT` to change it. Multi-replica deployments
+should configure shared Redis-backed storage before scaling horizontally.
 
 ## Pagination
 

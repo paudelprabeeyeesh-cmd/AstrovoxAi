@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-app
+  namespace: astrovox
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox-app
+  template:
+    metadata:
+      labels:
+        app: astrovox-app
+    spec:
+      containers:
+      - name: app
+        image: astrovox:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: astrovox-config
+        - secretRef:
+            name: astrovox-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5

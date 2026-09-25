@@ -1,4 +1,5 @@
 [
+<<<<<<< HEAD
   "02-Backend/tests/test_acdos_compute_fabric.py::ComputeFabricAsyncTest::test_checkpoints",
   "02-Backend/tests/test_acdos_compute_fabric.py::ComputeFabricAsyncTest::test_failure",
   "02-Backend/tests/test_acdos_compute_fabric.py::ComputeFabricAsyncTest::test_multi_tenant",
@@ -431,12 +432,16 @@
   "02-Backend/tests/test_executor_runtime.py::RuntimeTest::test_failure_propagates",
   "02-Backend/tests/test_executor_runtime.py::RuntimeTest::test_parallel_execution",
   "02-Backend/tests/test_executor_runtime.py::RuntimeTest::test_retry",
+=======
+  "02-Backend/tests/test_auth_and_rate_limit.py::test_rate_limit_headers_present_on_health_endpoint",
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
   "02-Backend/tests/test_health.py::test_chat_message_validation_rejects_invalid_payload",
   "02-Backend/tests/test_health.py::test_health",
   "02-Backend/tests/test_health.py::test_liveness",
   "02-Backend/tests/test_health.py::test_protected_route_requires_auth",
   "02-Backend/tests/test_health.py::test_readiness",
   "02-Backend/tests/test_health.py::test_root_lists_endpoints",
+<<<<<<< HEAD
   "02-Backend/tests/test_iam.py::JWTIAMTest::test_admin_principal_from_jwt_claims",
   "02-Backend/tests/test_iam.py::JWTIAMTest::test_legacy_string_check_bypassed",
   "02-Backend/tests/test_iam.py::JWTIAMTest::test_principal_from_jwt_preserves_workspace",
@@ -965,4 +970,10 @@
   "02-Backend/tests/test_workflow_engine.py::TestWorkflowExecution::test_execution_creation",
   "02-Backend/tests/test_workflow_engine.py::TestWorkflowStep::test_step_creation",
   "02-Backend/tests/test_workflow_engine.py::TestWorkflowStep::test_step_with_dependencies"
+=======
+  "02-Backend/tests/test_persistence_and_storage.py::test_persistent_usage_tracker_uses_local_store",
+  "02-Backend/tests/test_persistence_and_storage.py::test_storage_service_uploads_and_enforces_owner_paths",
+  "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id",
+  "02-Backend/tests/test_usage_limits.py::test_daily_usage_tracker_blocks_excess_requests"
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 ]

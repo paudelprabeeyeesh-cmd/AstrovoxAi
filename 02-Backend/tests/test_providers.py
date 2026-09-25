@@ -133,6 +133,7 @@ class TestProviderBase:
         assert vec.model == "embedding-001"
         assert vec.tokens_used is None
 
+<<<<<<< HEAD
     def _make_provider(self):
         """Create a concrete AIProvider for testing abstract methods."""
         from app.providers.base import AIProvider
@@ -146,31 +147,56 @@ class TestProviderBase:
 
     def test_sanitize_error_redacts_openai_key(self):
         provider = self._make_provider()
+=======
+    def test_sanitize_error_redacts_openai_key(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         error = Exception("Invalid API key: sk-abc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_anthropic_key(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         error = Exception("Invalid key: sk-ant-abc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_google_key(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         error = Exception("Invalid key: AIzaSyAbc123def456ghi789jkl012mno345pqr")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     def test_sanitize_error_redacts_bearer_token(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         error = Exception("Authorization: Bearer secret-token-12345")
         sanitized = provider.sanitize_error(error)
         assert "REDACTED" in sanitized or "redacted" in sanitized.lower()
 
     @pytest.mark.asyncio
     async def test_embed_not_implemented_by_default(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test"))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         with pytest.raises(NotImplementedError):
             await provider.embed(["test"])
 
@@ -180,6 +206,7 @@ class TestProviderBase:
 # ============================================================================
 
 class TestRetryLogic:
+<<<<<<< HEAD
     def _make_provider(self, max_retries=2):
         from app.providers.base import AIProvider, ChatResponse
         class TestProvider(AIProvider):
@@ -193,6 +220,12 @@ class TestRetryLogic:
     @pytest.mark.asyncio
     async def test_chat_with_retry_succeeds_first_try(self):
         provider = self._make_provider()
+=======
+    @pytest.mark.asyncio
+    async def test_chat_with_retry_succeeds_first_try(self):
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         provider.chat = AsyncMock(return_value=ChatResponse(content="Hi", model="test"))
         result = await provider.chat_with_retry(
             messages=[ChatMessage(role="user", content="Hello")],
@@ -203,7 +236,12 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_on_transient_error(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         mock = AsyncMock(
             side_effect=[
                 Exception("timeout error"),
@@ -221,7 +259,12 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_exhausts_retries(self):
+<<<<<<< HEAD
         provider = self._make_provider(max_retries=1)
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=1))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         provider.chat = AsyncMock(side_effect=Exception("timeout error"))
         with patch("asyncio.sleep", new_callable=AsyncMock):
             with pytest.raises(Exception, match="timeout"):
@@ -233,7 +276,12 @@ class TestRetryLogic:
 
     @pytest.mark.asyncio
     async def test_chat_with_retry_no_retry_on_permanent_error(self):
+<<<<<<< HEAD
         provider = self._make_provider()
+=======
+        from app.providers.base import AIProvider
+        provider = AIProvider(ProviderConfig(api_key="test", max_retries=2))
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         provider.chat = AsyncMock(side_effect=Exception("invalid model name"))
         with pytest.raises(Exception, match="invalid model"):
             await provider.chat_with_retry(

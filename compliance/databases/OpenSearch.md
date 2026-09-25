@@ -1,0 +1,4 @@
+# OpenSearch
+
+TODO: Add documentation.
+

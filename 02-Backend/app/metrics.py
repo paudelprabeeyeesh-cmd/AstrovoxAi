@@ -63,6 +63,7 @@ if PROMETHEUS_AVAILABLE:
         buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
     )
 
+<<<<<<< HEAD
     rate_limit_total = Counter(
         "rate_limit_total",
         "Total rate limit checks",
@@ -75,6 +76,8 @@ if PROMETHEUS_AVAILABLE:
         ["policy", "identity"]
     )
 
+=======
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 def track_request(method: str, endpoint: str, status: int, duration: float):
     """Track an HTTP request."""
@@ -109,6 +112,7 @@ def track_db_query(operation: str, duration: float):
         db_query_duration.labels(operation=operation).observe(duration)
 
 
+<<<<<<< HEAD
 def track_rate_limit(policy: str, identity: str, allowed: bool, remaining: int = 0):
     """Track a rate limit check."""
     if PROMETHEUS_AVAILABLE:
@@ -116,6 +120,8 @@ def track_rate_limit(policy: str, identity: str, allowed: bool, remaining: int =
         rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
 
 
+=======
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 def get_metrics():
     """Get Prometheus-formatted metrics."""
     if PROMETHEUS_AVAILABLE:

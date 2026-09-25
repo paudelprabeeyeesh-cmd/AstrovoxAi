@@ -1,15 +1,25 @@
 import os
+<<<<<<< HEAD
 import re
 import secrets
+=======
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 from pathlib import Path
 from typing import Optional
 from urllib.parse import unquote
 
+<<<<<<< HEAD
 from fastapi import APIRouter, File, HTTPException, UploadFile, status, Header
 from fastapi.responses import JSONResponse
 
 from .logging_config import logger
 from .auth_utils import get_user_id_from_token
+=======
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
+from fastapi.responses import JSONResponse
+
+from .logging_config import logger
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -19,6 +29,7 @@ ALLOWED_CONTENT_TYPES = {
     "image/webp",
     "application/pdf",
     "text/plain",
+<<<<<<< HEAD
 }
 
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".pdf", ".txt"}
@@ -52,6 +63,13 @@ def verify_magic_bytes(content: bytes, content_type: str) -> bool:
     return magic_map.get(content_type, True)
 
 
+=======
+    "application/octet-stream",
+}
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+
+
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 class StorageService:
     """Persist files locally and optionally through Supabase Storage."""
 
@@ -113,6 +131,7 @@ storage_service = StorageService()
 async def upload_storage_file(
     bucket: str,
     file: UploadFile = File(...),
+<<<<<<< HEAD
     path: str = "",
     authorization: str = Header(None),
 ):
@@ -129,18 +148,33 @@ async def upload_storage_file(
         content = await file.read()
 
         # Validate file size
+=======
+    user_id: str = "",
+    path: str = "",
+):
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="user_id is required"
+        )
+    try:
+        content = await file.read()
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         if len(content) > MAX_UPLOAD_SIZE:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="File too large",
             )
+<<<<<<< HEAD
 
         # Validate content type
+=======
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         if file.content_type and file.content_type not in ALLOWED_CONTENT_TYPES:
             raise HTTPException(
                 status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
                 detail="Unsupported content type",
             )
+<<<<<<< HEAD
 
         # Verify magic bytes match claimed content type
         if not verify_magic_bytes(content, file.content_type or ""):
@@ -156,12 +190,19 @@ async def upload_storage_file(
             user_id,
             bucket,
             path or safe_filename,
+=======
+        result = storage_service.upload_file(
+            user_id,
+            bucket,
+            path or file.filename or "upload.bin",
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
             content,
             content_type=file.content_type,
         )
         return JSONResponse(
             status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
         )
+<<<<<<< HEAD
     except HTTPException:
         raise
     except ValueError as exc:
@@ -173,12 +214,26 @@ async def upload_storage_file(
         logger.exception("Storage upload failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed"
+=======
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
+    except Exception as exc:  # pragma: no cover - defensive path
+        logger.exception("Storage upload failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         ) from exc
 
 
 @router.delete("/{bucket}/{path:path}")
+<<<<<<< HEAD
 async def delete_storage_file(bucket: str, path: str, authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
+=======
+async def delete_storage_file(bucket: str, path: str, user_id: str):
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
     try:
         deleted = storage_service.delete_file(user_id, bucket, path)
         if not deleted:
@@ -193,6 +248,7 @@ async def delete_storage_file(bucket: str, path: str, authorization: str = Heade
 
 
 @router.get("/{bucket}/{path:path}/signed-url")
+<<<<<<< HEAD
 async def signed_url(bucket: str, path: str, authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
@@ -201,4 +257,12 @@ async def signed_url(bucket: str, path: str, authorization: str = Header(None)):
         logger.warning(f"Storage signed-url access denied: {str(exc)[:100]}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+=======
+async def signed_url(bucket: str, path: str, user_id: str):
+    try:
+        return {"status": "OK", **storage_service.get_signed_url(user_id, bucket, path)}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         ) from exc

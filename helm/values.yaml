@@ -1,0 +1,56 @@
+replicaCount: 3
+
+namespace: astrovox
+
+image:
+  repository: astrovox
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: astrovox.example.com
+
+configmap:
+  data:
+    APP_ENV: production
+    LOG_LEVEL: info
+    REDIS_URL: redis://redis-master:6379
+
+secret:
+  data:
+    DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+    REDIS_URL: redis://redis-master:6379
+    NEO4J_URI: bolt://neo4j:7687
+    NEO4J_USER: neo4j
+    NEO4J_PASSWORD: neo4j_password
+    JAEGER_URL: http://jaeger:14268/api/traces
+    OPENAI_API_KEY: change-me
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  storage: 20Gi
+
+redis:
+  enabled: true
+  image: redis:7-alpine

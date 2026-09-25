@@ -1,0 +1,4 @@
+# Algolia
+
+TODO: Add documentation.
+

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "02-Backend/tests/test_storage_routes.py::test_storage_upload_requires_user_id": true,
   "02-Backend/tests/test_ai_kernel.py::HotReloaderTest::test_reload_changed": true,
@@ -90,3 +91,6 @@
   "02-Backend/tests/test_terminal.py::test_usage_reports_count_and_limit": true,
   "02-Backend/tests/test_terminal.py::test_usage_reads_real_tracker_with_isolated_db": true
 }
+=======
+{}
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

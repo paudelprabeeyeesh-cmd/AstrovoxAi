@@ -24,7 +24,11 @@ class EmbeddingService:
 
     def _initialize_provider(self):
         """Initialize the embedding provider from environment variables."""
+<<<<<<< HEAD
         from .providers.factory import ProviderFactory
+=======
+        from .factory import ProviderFactory
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
         gemini = ProviderFactory.get("gemini")
         if gemini and gemini.is_configured:

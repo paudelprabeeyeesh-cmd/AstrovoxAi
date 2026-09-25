@@ -111,11 +111,19 @@ class TestChatModelsEndpoint:
 class TestEmbeddingEndpoints:
     def test_embedding_status(self):
         client = TestClient(app)
+<<<<<<< HEAD
         response = client.get("/api/embedding/status", headers={"Authorization": "Bearer test-token"})
         assert response.status_code == 200
         data = response.json()
         assert "configured" in data
         assert "providers" in data
+=======
+        response = client.get("/embeddings/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "configured" in data
+        assert "model" in data
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 
 # ============================================================================

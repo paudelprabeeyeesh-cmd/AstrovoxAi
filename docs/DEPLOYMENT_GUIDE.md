@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ASTROVOX AI — DEPLOYMENT GUIDE
 
 ## Prerequisites
@@ -104,3 +105,8 @@ tar -czf backup-$(date +%Y%m%d).tar.gz storage/
 - Use a load balancer for multiple backend instances
 - Enable database connection pooling
 - Use CDN for static assets
+=======
+# DEPLOYMENT_GUIDE
+
+Deployment instructions: environment variables, secrets, database migrations, backup and restore, and rolling deploys.
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

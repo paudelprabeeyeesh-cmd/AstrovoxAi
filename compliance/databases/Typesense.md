@@ -1,0 +1,4 @@
+# Typesense
+
+TODO: Add documentation.
+

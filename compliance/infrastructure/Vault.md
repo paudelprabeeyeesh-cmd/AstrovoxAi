@@ -1,0 +1,4 @@
+# Vault
+
+TODO: Add documentation.
+

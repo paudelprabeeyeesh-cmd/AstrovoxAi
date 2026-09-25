@@ -1,0 +1,4 @@
+# DuckDB
+
+TODO: Add documentation.
+

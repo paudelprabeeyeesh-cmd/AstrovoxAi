@@ -1,0 +1,30 @@
+﻿title = "gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "custom-api-key"
+description = "Detected custom API key"
+regex = '''(?i)(api[_-]?key|apikey)['":= ]+['"]([a-zA-Z0-9_\-]{20,})['"]'''
+entropy = 3.0
+tags = ["api", "key"]
+
+[[rules]]
+id = "custom-bearer-token"
+description = "Detected bearer token"
+regex = '''(?i)bearer [a-zA-Z0-9_\-\.]{20,}'''
+tags = ["auth", "token"]
+
+[[rules]]
+id = "custom-aws-access-key"
+description = "Detected AWS Access Key"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["aws", "credentials"]
+
+[[rules]]
+id = "generic-api-key-high-entropy"
+description = "Detected generic high entropy API key"
+regex = '''(?i)(api[_-]?key|apikey)['":= ]+['"]([a-zA-Z0-9+/]{32,})['"]'''
+entropy = 4.0
+tags = ["api", "key"]

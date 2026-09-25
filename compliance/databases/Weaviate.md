@@ -1,0 +1,4 @@
+# Weaviate
+
+TODO: Add documentation.
+

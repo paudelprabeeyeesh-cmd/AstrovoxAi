@@ -1,0 +1,37 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox-backend
+  template:
+    metadata:
+      labels:
+        app: astrovox-backend
+    spec:
+      containers:
+      - name: astrovox-backend
+        image: astrovox/backend:latest
+        ports:
+        - containerPort: 8000
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8000
+          periodSeconds: 10

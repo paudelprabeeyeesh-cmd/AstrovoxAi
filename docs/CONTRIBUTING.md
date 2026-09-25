@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Contributing to AstrovoxAI
 
 Thank you for your interest in contributing!
@@ -61,3 +62,8 @@ npm run typecheck
 ## Code of Conduct
 
 Be respectful and constructive. We welcome all contributors.
+=======
+# CONTRIBUTING
+
+Contribution guidelines, PR process, code style, testing requirements, and community code of conduct.
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

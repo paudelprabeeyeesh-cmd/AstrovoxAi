@@ -1,0 +1,4 @@
+# Elasticsearch
+
+TODO: Add documentation.
+

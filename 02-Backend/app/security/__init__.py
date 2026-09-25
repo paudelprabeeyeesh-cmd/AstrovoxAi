@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Security package for AstrovoxAi.
 
 Provides:
@@ -118,3 +119,22 @@ __all__ = [
     "__version__",
     "__author__"
 ]
+=======
+"""Security package."""
+from .core import PromptInjectionDetector, SecretScanner, InputSanitizer, EncryptionService
+from .automation import PenTestHarness, SBOMGenerator, SecretRotator, RuntimeAnomalyDetector, ZeroTrustEnforcer, DependencyMonitor, SERVICE_THREAT_MODELS
+
+__all__ = [
+    "PromptInjectionDetector",
+    "SecretScanner",
+    "InputSanitizer",
+    "EncryptionService",
+    "PenTestHarness",
+    "SBOMGenerator",
+    "SecretRotator",
+    "RuntimeAnomalyDetector",
+    "ZeroTrustEnforcer",
+    "DependencyMonitor",
+    "SERVICE_THREAT_MODELS",
+]
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

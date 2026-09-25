@@ -1,0 +1,64 @@
+
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: astrovox-backend
+  namespace: default
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-backend
+  minReplicas: 3
+  maxReplicas: 100
+  behavior:
+    scaleUp:
+      policies:
+      - type: Pods
+        value: 4
+        periodSeconds: 60
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 300
+      - type: Percent
+        value: 50
+        periodSeconds: 300
+      selectPolicy: Min
+      stabilizationWindowSeconds: 300
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Pods
+    pods:
+      metric:
+        name: queue_length
+      target:
+        type: AverageValue
+        averageValue: "50"
+  - type: Object
+    object:
+      metric:
+        name: active_connections
+      target:
+        type: Value
+        value: "100"
+      describedObject:
+        apiVersion: v1
+        kind: Service
+        name: astrovox-backend

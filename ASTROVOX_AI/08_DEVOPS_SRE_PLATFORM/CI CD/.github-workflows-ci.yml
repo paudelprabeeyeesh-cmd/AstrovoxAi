@@ -1,0 +1,62 @@
+"""DevOps: CI/CD pipeline skeleton."""
+
+name: CI
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: python-version: "3.12"
+      - run: pip install ruff mypy
+      - run: ruff check src/
+      - run: mypy src/
+
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: astrovox
+          POSTGRES_PASSWORD: astrovox
+          POSTGRES_DB: astrovox
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd redis-cli ping
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pytest tests/ -q --tb=short
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install bandit pip-audit trivy
+      - run: bandit -r src/
+      - run: pip-audit
+      - run: trivy fs --security-checks vuln,secret .
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: astrovoxai:${{ github.sha }}

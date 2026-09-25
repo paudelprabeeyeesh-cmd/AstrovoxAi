@@ -1,6 +1,3 @@
-from datetime import datetime, timezone
-import time
-
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -16,7 +13,7 @@ from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
-from .embedding.router import router as embedding_router
+from .embeddings_route import router as embeddings_router
 from .memory_engine.router import router as memory_engine_router
 from .enterprise.router import router as enterprise_router
 from .enterprise.ws_router import router as ws_router
@@ -43,7 +40,6 @@ from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
 from .executor.api import router as executor_router
 from .document_route import router as document_router
-from .ecosystem.router import router as ecosystem_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit_hardened import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
@@ -53,8 +49,13 @@ load_dotenv()
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
+<<<<<<< HEAD
     title="AstravoxAi Engine",
     version="1.0.0",
+=======
+    title="AstrovoxAi Engine",
+    version="2.0.0",
+>>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
     description="Production-grade asynchronous stateless backend for AI chat",
 )
 app.state.limiter = limiter
@@ -89,7 +90,7 @@ app.include_router(memory_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
-app.include_router(embedding_router)
+app.include_router(embeddings_router)
 app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(ws_router)
@@ -159,7 +160,7 @@ async def metrics():
 # Health check endpoints
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "astravox-ai-backend", "version": "1.0.0"}
+    return {"status": "healthy", "service": "astravox-ai-backend", "version": "2.0.0"}
 
 
 @app.get("/health/readiness")
