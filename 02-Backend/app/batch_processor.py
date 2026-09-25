@@ -1,6 +1,7 @@
 from typing import TypeVar, Callable, Iterable, List, Optional, Dict, Any
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import asyncio
 import inspect
 import time
 import logging
@@ -152,7 +153,7 @@ class BatchProcessor:
     async def _safe_execute_async(self, func: Callable[[T], R], item: T) -> R:
         for attempt in range(self.retry_count + 1):
             try:
-                if asyncio.iscoroutinefunction(func):
+                if inspect.iscoroutinefunction(func):
                     return await func(item)
                 return func(item)
             except Exception:
