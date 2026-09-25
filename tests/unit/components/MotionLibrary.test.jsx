@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { AnimatedContainer, AnimatedList } from '../src/design/MotionLibrary'
+import { AnimatedContainer, AnimatedList } from '../../src/design/MotionLibrary'
 import { motion } from 'framer-motion'
 
 describe('MotionLibrary', () => {

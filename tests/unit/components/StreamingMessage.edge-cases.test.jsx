@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import StreamingMessage from '../src/components/chat/StreamingMessage'
+import StreamingMessage from '../../src/components/chat/StreamingMessage'
 
 describe('StreamingMessage - Edge Cases', () => {
   beforeEach(() => {

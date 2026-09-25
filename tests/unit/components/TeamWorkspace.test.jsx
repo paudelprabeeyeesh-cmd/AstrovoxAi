@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import TeamWorkspace from '../src/components/workspace/TeamWorkspace'
+import TeamWorkspace from '../../src/components/workspace/TeamWorkspace'
 
 describe('TeamWorkspace', () => {
   const mockTeam = { id: '1', name: 'Acme Corp', plan: 'Pro' }

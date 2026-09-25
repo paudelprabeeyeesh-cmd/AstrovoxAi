@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CRDTProvider, useCRDT } from '../src/components/crdt/CRDTProvider'
+import { CRDTProvider, useCRDT } from '../../src/components/crdt/CRDTProvider'
 
 function TestConsumer({ onValue }) {
   const ctx = useCRDT()

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import Search from '../src/components/Search'
+import Search from '../../src/components/Search'
 
 describe('Search', () => {
   beforeEach(() => {

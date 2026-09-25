@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import MessageActions from '../src/components/chat/MessageActions'
+import MessageActions from '../../src/components/chat/MessageActions'
 
 describe('MessageActions', () => {
   const mockMessage = {

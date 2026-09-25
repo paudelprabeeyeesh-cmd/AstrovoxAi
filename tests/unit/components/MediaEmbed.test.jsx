@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import MediaEmbed from '../src/components/chat/MediaEmbed'
+import MediaEmbed from '../../src/components/chat/MediaEmbed'
 
 describe('MediaEmbed', () => {
   beforeEach(() => {

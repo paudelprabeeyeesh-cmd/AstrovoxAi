@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import Whiteboard from '../src/components/chat/Whiteboard'
+import Whiteboard from '../../src/components/chat/Whiteboard'
 
 describe('Whiteboard', () => {
   beforeEach(() => {

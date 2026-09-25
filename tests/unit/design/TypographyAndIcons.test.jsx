@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { Icon } from '../src/design/Iconography'
-import { TYPOGRAPHY, useTypography } from '../src/design/TypographyScale'
+import { Icon } from '../../src/design/Iconography'
+import { TYPOGRAPHY, useTypography } from '../../src/design/TypographyScale'
 
 describe('TypographyScale', () => {
   beforeEach(() => {

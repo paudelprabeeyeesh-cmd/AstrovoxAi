@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import ArtifactViewer from '../src/components/chat/ArtifactViewer'
+import ArtifactViewer from '../../src/components/chat/ArtifactViewer'
 
 describe('ArtifactViewer', () => {
   const mockArtifact = {

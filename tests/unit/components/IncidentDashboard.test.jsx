@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import IncidentDashboard from '../src/components/dashboards/IncidentDashboard'
+import IncidentDashboard from '../../src/components/dashboards/IncidentDashboard'
 
 describe('IncidentDashboard', () => {
   const mockIncidents = [

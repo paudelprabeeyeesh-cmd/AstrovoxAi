@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { useKeyboardShortcuts, useFocusManagement } from '../src/components/ui/KeyboardShortcuts'
-import { A11yProvider } from '../src/components/ui/A11yProvider'
+import { useKeyboardShortcuts, useFocusManagement } from '../../src/components/ui/KeyboardShortcuts'
+import { A11yProvider } from '../../src/components/ui/A11yProvider'
 
 describe('KeyboardShortcuts - Advanced', () => {
   beforeEach(() => {

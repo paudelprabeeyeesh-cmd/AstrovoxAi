@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import UsageDashboard from '../src/components/dashboards/UsageDashboard'
+import UsageDashboard from '../../src/components/dashboards/UsageDashboard'
 
 describe('UsageDashboard', () => {
   const mockUsage = { current: 5000, limit: 10000, tokens: 50000, apiCalls: 1200 }

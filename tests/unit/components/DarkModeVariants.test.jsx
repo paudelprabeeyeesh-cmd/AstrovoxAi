@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { ThemeEngine } from '../src/components/ui/ThemeEngine'
-import { THEMES, useTheme } from '../src/design/DesignTokens'
+import { ThemeEngine } from '../../src/components/ui/ThemeEngine'
+import { THEMES, useTheme } from '../../src/design/DesignTokens'
 
 describe('Dark Mode Variants', () => {
   beforeEach(() => {

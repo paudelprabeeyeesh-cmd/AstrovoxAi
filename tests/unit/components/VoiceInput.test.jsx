@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import VoiceInput from '../src/components/chat/VoiceInput'
+import VoiceInput from '../../src/components/chat/VoiceInput'
 
 describe('VoiceInput', () => {
   beforeEach(() => {

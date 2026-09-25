@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import AnalyticsDashboard from '../src/components/dashboards/AnalyticsDashboard'
+import AnalyticsDashboard from '../../src/components/dashboards/AnalyticsDashboard'
 
 describe('AnalyticsDashboard', () => {
   beforeEach(() => {

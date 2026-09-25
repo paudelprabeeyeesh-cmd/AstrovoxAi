@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import CustomerAdmin from '../src/components/admin/CustomerAdmin'
+import CustomerAdmin from '../../src/components/admin/CustomerAdmin'
 
 describe('CustomerAdmin', () => {
   const mockOrg = { id: '1', name: 'Acme Corp', plan: 'Pro' }

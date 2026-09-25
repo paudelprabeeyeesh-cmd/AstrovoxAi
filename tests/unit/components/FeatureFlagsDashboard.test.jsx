@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import FeatureFlagsDashboard from '../src/components/dashboards/FeatureFlagsDashboard'
+import FeatureFlagsDashboard from '../../src/components/dashboards/FeatureFlagsDashboard'
 
 describe('FeatureFlagsDashboard', () => {
   const mockFlags = [

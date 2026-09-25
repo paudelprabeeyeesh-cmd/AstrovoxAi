@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import CodeBlock from '../src/components/chat/CodeBlock'
+import CodeBlock from '../../src/components/chat/CodeBlock'
 
 describe('CodeBlock', () => {
   it('renders code content', () => {

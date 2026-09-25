@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import SharedConversations from '../src/components/workspace/SharedConversations'
+import SharedConversations from '../../src/components/workspace/SharedConversations'
 
 describe('SharedConversations', () => {
   const mockShared = [

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import MultiChatTabs from '../src/components/workspace/MultiChatTabs'
+import MultiChatTabs from '../../src/components/workspace/MultiChatTabs'
 
 describe('MultiChatTabs', () => {
   const mockConversations = [

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import ScreenShare from '../src/components/chat/ScreenShare'
+import ScreenShare from '../../src/components/chat/ScreenShare'
 
 describe('ScreenShare', () => {
   beforeEach(() => {

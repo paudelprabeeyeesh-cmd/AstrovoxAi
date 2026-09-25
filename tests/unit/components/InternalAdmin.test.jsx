@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import InternalAdmin from '../src/components/admin/InternalAdmin'
+import InternalAdmin from '../../src/components/admin/InternalAdmin'
 
 describe('InternalAdmin', () => {
   const mockUsers = [

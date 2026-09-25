@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import FileUpload from '../src/components/chat/FileUpload'
+import FileUpload from '../../src/components/chat/FileUpload'
 
 describe('FileUpload', () => {
   beforeEach(() => {

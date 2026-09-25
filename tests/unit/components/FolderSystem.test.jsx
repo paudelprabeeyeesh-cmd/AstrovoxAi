@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import FolderSystem from '../src/components/workspace/FolderSystem'
+import FolderSystem from '../../src/components/workspace/FolderSystem'
 
 describe('FolderSystem', () => {
   const mockFolders = [
