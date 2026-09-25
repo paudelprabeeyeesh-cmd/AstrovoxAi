@@ -492,17 +492,16 @@ class QuantumAdvantageBenchmark:
         self.simulator = QuantumCircuitSimulator(num_qubits)
 
     def grover_search(self, target: int, shots: int = 1024) -> Tuple[int, int]:
+        self.simulator.reset()
+        for i in range(self.num_qubits):
+            self.simulator.hadamard(i)
         iterations = int(math.pi / 4 * math.sqrt(2 ** self.num_qubits))
         for _ in range(iterations):
-            for i in range(self.num_qubits):
-                self.simulator.hadamard(i)
-            self.simulator.cnot(0, 1)
-            self.simulator.pauli_x(0)
-            for i in range(self.num_qubits):
-                self.simulator.hadamard(i)
-            for i in range(self.num_qubits):
-                self.simulator.cnot(i, (i + 1) % self.num_qubits)
-            self.simulator.pauli_x(0)
+            if target < 2 ** self.num_qubits:
+                self.simulator.state[target] *= -1
+            mean_amp = np.mean(self.simulator.state)
+            for i in range(2 ** self.num_qubits):
+                self.simulator.state[i] = 2 * mean_amp - self.simulator.state[i]
         counts = self.simulator.measure(shots)
         found = max(counts, key=counts.get)
         return found, counts[found]
@@ -513,7 +512,12 @@ class QuantumAdvantageBenchmark:
             self.simulator.hadamard(i)
         for i in range(2 ** self.num_qubits):
             if oracle(i) == 1:
-                self.simulator.pauli_x(0)
+                self.simulator.state[i] *= -1
+        mean_amp = np.mean(self.simulator.state)
+        for i in range(2 ** self.num_qubits):
+            self.simulator.state[i] = 2 * mean_amp - self.simulator.state[i]
+        for i in range(1, self.num_qubits):
+            self.simulator.hadamard(i)
         counts = self.simulator.measure(shots=1)
         result = next(iter(counts))
         return "balanced" if result != 0 else "constant"
@@ -617,14 +621,12 @@ class QuantumApproximateCounting:
     def oracle(self, marked_indices: List[int]) -> None:
         for idx in marked_indices:
             if idx < 2 ** self.num_qubits:
-                self.simulator.pauli_x(idx)
+                self.simulator.state[idx] *= -1
 
     def grover_diffusion(self) -> None:
-        self.simulator.hadamard(0)
-        self.simulator.pauli_x(0)
-        self.simulator.cnot(0, 1)
-        self.simulator.hadamard(0)
-        self.simulator.pauli_x(0)
+        mean_amp = np.mean(self.simulator.state)
+        for i in range(2 ** self.num_qubits):
+            self.simulator.state[i] = 2 * mean_amp - self.simulator.state[i]
 
     def count(self, marked_indices: List[int], shots: int = 1024) -> int:
         self.simulator.reset()
