@@ -141,3 +141,4 @@ class ASICDesignSpaceExplorer:
                 f"Power={d['power_watts']:.1f}W, Area={d['area_mm2']:.1f}mm^2"
             )
         return "\n".join(lines)
+# hardware-acceleration-v2

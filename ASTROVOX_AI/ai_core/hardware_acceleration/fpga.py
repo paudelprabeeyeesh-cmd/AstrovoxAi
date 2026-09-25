@@ -153,3 +153,4 @@ class FPGABitstreamManager:
 
     def get_metadata(self, name: str) -> Dict[str, Any]:
         return self.metadata.get(name, {})
+# hardware-acceleration-v2

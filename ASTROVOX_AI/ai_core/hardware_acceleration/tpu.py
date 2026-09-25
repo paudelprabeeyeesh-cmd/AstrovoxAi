@@ -137,3 +137,5 @@ class TPUCompiler:
             return model
         except ImportError:
             return model
+MODIFIED_FOR_TEST
+# hardware-acceleration-v2
