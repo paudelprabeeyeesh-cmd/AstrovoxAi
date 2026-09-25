@@ -3,7 +3,6 @@ import os
 from logging.handlers import RotatingFileHandler
 
 
-<<<<<<< HEAD
 def get_logger(name: str = "astravox") -> logging.Logger:
     """Return a configured logger instance.
 
@@ -17,8 +16,6 @@ def get_logger(name: str = "astravox") -> logging.Logger:
     return root.getChild(name)
 
 
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 def configure_logging():
     """Configure centralized logging for the application."""
     log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -38,7 +35,6 @@ def configure_logging():
     )
     file_handler.setLevel(getattr(logging, log_level))
 
-    # Formatter
     formatter = logging.Formatter(
         "%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
@@ -47,7 +43,6 @@ def configure_logging():
     console_handler.setFormatter(formatter)
     file_handler.setFormatter(formatter)
 
-    # Add handlers
     if not logger.handlers:
         logger.addHandler(console_handler)
         logger.addHandler(file_handler)
@@ -55,5 +50,4 @@ def configure_logging():
     return logger
 
 
-# Initialize logger
 logger = configure_logging()
