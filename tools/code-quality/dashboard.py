@@ -5,7 +5,7 @@ Code Quality Dashboard - Main orchestrator for all code quality checks.
 import json
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +14,7 @@ REPORT_DIR.mkdir(exist_ok=True)
 class QualityRunner:
     def __init__(self) -> None:
         self.results: dict[str, Any] = {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             "checks": {},
         }
 
