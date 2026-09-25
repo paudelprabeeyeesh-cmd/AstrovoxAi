@@ -13,6 +13,7 @@ from app.security.ip_filter import ip_filter
 from app.security.user_agent_analytics import user_agent_analyzer
 from app.security.anomaly_alerts import auth_anomaly_detector
 from app.security.dependency_vulnerabilities import dependency_scanner
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 

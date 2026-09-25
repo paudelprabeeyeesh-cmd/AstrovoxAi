@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Header
 
-from .services import knowledge
-from ..utils.auth.auth_utils import get_user_id_from_token
+from app.services import knowledge
+from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 

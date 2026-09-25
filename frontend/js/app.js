@@ -173,8 +173,8 @@ class App {
     const isForgot = path === '/forgot-password.html';
 
     app.innerHTML = `
-      <div class="auth-page">
-        <div class="auth-card">
+      <div class="auth-page rbp-rift">
+        <div class="auth-card rbp-gravity-panel" data-gravity="normal">
           <h1>${isForgot ? 'Reset Password' : isRegister ? 'Create an account' : 'Welcome back'}</h1>
           <p class="subtitle">${isForgot ? 'Enter your email to reset your password' : isRegister ? 'Enter your details to get started' : 'Enter your credentials to access your account'}</p>
           <form id="auth-form">
@@ -227,6 +227,16 @@ class App {
         this._handleAuthSubmit(path);
       });
     }
+
+    this._initRealityAuth();
+  }
+
+  _initRealityAuth() {
+    if (typeof AstrovoxReality === 'undefined') return;
+    try {
+      const card = document.querySelector('.auth-card');
+      if (card) AstrovoxReality.applyPhysicsToElement(card, 0.02);
+    } catch {}
   }
 
   async _handleAuthSubmit(path) {

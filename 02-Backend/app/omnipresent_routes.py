@@ -177,10 +177,8 @@ async def get_ambient_context(authorization: Optional[str] = None):
     user_id = authorization or "anonymous"
     context = _engine.get_latest_context(user_id)
     if not context:
-        context = _engine._simulate_context(user_id) if hasattr(_engine, '_simulate_context') else None
-        if not context:
-            from app.omnipresent_system import _simulate_context
-            context = _simulate_context(user_id)
+        from app.omnipresent_system import _simulate_context
+        context = _simulate_context(user_id)
     return {
         "status": "OK",
         "context": {

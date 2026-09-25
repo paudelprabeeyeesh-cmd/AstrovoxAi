@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { portalNavigate, listTimelines } from '../../services/multiverseService'
+import { portalNavigate } from '../../services/multiverseService'
 
 export default function DimensionalPortal({ universeId }) {
   const [targetId, setTargetId] = useState('')

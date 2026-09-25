@@ -9,7 +9,7 @@ from app.utils.auth.auth_utils import get_user_id_from_token
 from .dashboard import admin_dashboard
 from .tenancy import tenant_manager
 from .audit import audit_exporter
-from .retention import retention_engine
+from ..retention import retention_engine
 from .compliance import compliance_generator
 from .export_import import export_import_service
 from .partners import partner_service

@@ -40,6 +40,7 @@ from app.api.routers.automation_route import router as automation_router
 from app.kernel.api import router as kernel_router
 from app.aios.api import router as aios_router
 from app.api.routers.document_route import router as document_router
+from app.api.routers.temporal_route import router as temporal_router
 from app.performance_route import router as performance_router
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.security.rate_limit_hardened import rate_limit_middleware
@@ -165,6 +166,7 @@ app.include_router(memory_v2_router)
 app.include_router(automation_router)
 app.include_router(document_router)
 app.include_router(performance_router)
+app.include_router(temporal_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
 app.include_router(bulk_router)
