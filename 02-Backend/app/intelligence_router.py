@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 
 from .intelligence import IntelligenceCore
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/intelligence", tags=["intelligence"])
 

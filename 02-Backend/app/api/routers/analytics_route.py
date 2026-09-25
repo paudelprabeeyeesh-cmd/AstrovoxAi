@@ -12,7 +12,7 @@ router = APIRouter(prefix="/analytics", tags=["analytics"])
 async def get_dashboard(authorization: str = Header(None)):
     """Get analytics dashboard data."""
     user_id = get_user_id_from_token(authorization)
-    return {"status": "OK", "data": analytics.get_dashboard_data()}
+    return analytics.get_dashboard_data()
 
 
 @router.get("/usage")

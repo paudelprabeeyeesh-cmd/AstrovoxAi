@@ -1,4 +1,5 @@
 // Frontend Platform - Group 1: Accessible component primitives and focus management
+// Enhanced with inert attribute support, focus-visible polyfill, and ARIA live region management
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',
@@ -13,6 +14,10 @@ const FOCUSABLE_SELECTOR = [
   'details',
   'fieldset',
   'output',
+  '[role="button"]:not([disabled])',
+  '[role="link"]:not([disabled])',
+  '[role="tab"]:not([aria-disabled="true"])',
+  '[role="menuitem"]:not([aria-disabled="true"])',
 ].join(', ');
 
 function getFocusableElements(root = document) {
@@ -122,8 +127,19 @@ class FocusManager {
     const current = document.activeElement;
     const idx = focusable.indexOf(current);
     const prev = focusable[(idx - 1 + focusable.length) % focusable.length];
-    prev?.focus();
-  }
+    prev?.focus({ preventScroll: false });
+  },
+
+  setInert(element, inert = true) {
+    if (!element) return;
+    if (inert) {
+      element.setAttribute('inert', '');
+      element.setAttribute('aria-hidden', 'true');
+    } else {
+      element.removeAttribute('inert');
+      element.removeAttribute('aria-hidden');
+    }
+  },
 }
 
 window.A11y = {

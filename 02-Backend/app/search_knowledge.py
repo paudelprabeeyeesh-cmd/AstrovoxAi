@@ -1167,9 +1167,9 @@ class ChunkingStrategies:
             buffer_len += len(para)
         if buffer:
             content = "\n\n".join(buffer)
-                chunks.append(Chunk(id=self._make_id(document_id, chunk_index), document_id=document_id,
-                                    content=content, chunk_index=chunk_index,
-                                    char_end=len(content), token_estimate=max(1, len(content.split()))))
+            chunks.append(Chunk(id=self._make_id(document_id, chunk_index), document_id=document_id,
+                                content=content, chunk_index=chunk_index,
+                                char_end=len(content), token_estimate=max(1, len(content.split()))))
         return chunks
 
     def _chunk_by_sentence(self, text: str, document_id: str) -> List[Chunk]:

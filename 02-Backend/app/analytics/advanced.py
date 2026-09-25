@@ -1524,14 +1524,18 @@ class AdvancedAnalyticsEngine:
         }
 
     def get_dashboard_data(self, days: int = 7) -> dict:
+        conversations = self.get_conversation_analytics(days=days)
+        costs = self.get_cost_analytics(days=days)
         return {
+            "total_messages": conversations.get("total_messages", 0),
+            "total_cost_usd": costs.get("total_api_cost", costs.get("total_cost", 0)),
             "realtime": self.get_realtime_dashboard(days=min(days, 1)),
             "usage": self.get_usage_stats(days=days),
             "tokens": self.get_token_analytics(days=days),
-            "costs": self.get_cost_analytics(days=days),
+            "costs": costs,
             "performance": self.get_performance_analytics(days=days),
             "errors": self.get_error_analytics(days=days),
-            "conversations": self.get_conversation_analytics(days=days),
+            "conversations": conversations,
             "models": self.get_model_performance_comparison(days=days),
             "feature_adoption": self.get_feature_adoption_analytics(days=days),
             "user_behavior": self.get_user_behavior_analytics(days=days),

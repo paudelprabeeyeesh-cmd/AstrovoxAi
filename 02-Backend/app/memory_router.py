@@ -11,8 +11,8 @@ from fastapi import APIRouter, Header, HTTPException, status
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from utils.auth.auth_utils import get_user_id_from_token
-from repositories.database.client import get_recent_messages, get_user_memory, save_memory
+from app.utils.auth.auth_utils import get_user_id_from_token
+from app.repositories.database.client import get_recent_messages, get_user_memory, save_memory
 
 router = APIRouter(prefix="/memory", tags=["memory"])
 

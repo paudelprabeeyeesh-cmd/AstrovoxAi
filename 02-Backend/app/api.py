@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Header, HTTPException, status
 
-from utils.auth.auth_utils import get_user_id_from_token
-from repositories.database.client import (
+from app.utils.auth.auth_utils import get_user_id_from_token
+from app.repositories.database.client import (
     get_user_profile,
     get_user_memory,
     get_conversations,

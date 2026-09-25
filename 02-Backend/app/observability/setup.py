@@ -26,10 +26,12 @@ from app.observability.log_retention import RetentionRule, RetentionAction
 from app.observability.trace_sampling import SamplingStrategy
 from app.observability.oncall_escalation import RotationSchedule, OnCallPerson, EscalationLevel, EscalationAction
 from app.observability.error_budget_dashboard import ErrorBudgetSnapshot
+from app.structured_logging import setup_logging
 
 
 def setup_default_observability():
     """Set up default metrics, health checks, alert rules, and new observability modules."""
+    setup_logging(service_name="astrovoxai", service_version="1.0.0", log_format="json")
     obs = get_observability()
 
     default_metrics = [

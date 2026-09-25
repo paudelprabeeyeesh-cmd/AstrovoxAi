@@ -7,7 +7,7 @@ from typing import Optional
 from ...realtime import connection_manager, background_worker
 from ...tools import tool_registry
 from middleware.security.ai_security_enhanced import pii_detector, secret_detector, conversation_limiter
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from middleware.security.security_hardening import Principal
 
 router = APIRouter(prefix="/realtime", tags=["realtime"])

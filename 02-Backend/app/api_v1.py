@@ -16,7 +16,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from ...multi_agent import agent_orchestrator, CollaborationManager
 from ...workflow_engine import workflow_engine, WorkflowStep, StepAction
 from ...tool_execution import tool_executor

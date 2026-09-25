@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Header
 from typing import Optional
 
 from ...monitoring import error_tracker, performance_monitor, uptime_tracker
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 

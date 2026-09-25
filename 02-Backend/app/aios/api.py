@@ -7,11 +7,11 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from utils.auth.auth_utils import get_current_user
+from app.utils.auth.auth_utils import get_current_user
 
 from .consensus import Node, get_consensus
 from .healing import HealthProbe, get_self_healing
-from services.memory.memory import MemoryTier, get_memory_manager
+from app.services.memory.memory import MemoryTier, get_memory_manager
 from .mesh import ServiceInstance, ServiceState, get_service_registry, seed_default_services
 from .observability import SLO, get_aios_observability
 from .resources import ResourceUsage, get_resource_manager

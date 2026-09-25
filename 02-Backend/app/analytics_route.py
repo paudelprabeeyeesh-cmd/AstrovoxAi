@@ -7,7 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, Header, Query, Body
 
 from ...analytics import analytics, advanced_analytics
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
