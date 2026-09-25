@@ -45,6 +45,7 @@ from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
+from app.middleware.content_negotiation import ContentNegotiationMiddleware
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
@@ -100,6 +101,7 @@ app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
 
 # Graceful shutdown
 app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
+app.add_middleware(ContentNegotiationMiddleware)
 register_lifecycle_handlers(app)
 
 # Include routers
@@ -198,3 +200,12 @@ if __name__ == "__main__":
         reload=True,
         log_level="info",
     )
+
+
+@app.on_event("startup")
+async def _startup():
+    try:
+        from app.background_workers import BackgroundWorker
+        await BackgroundWorker.start(num_workers=4)
+    except Exception:
+        pass

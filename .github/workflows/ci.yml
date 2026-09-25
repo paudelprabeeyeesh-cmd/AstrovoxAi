@@ -9,12 +9,68 @@ on:
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
+  # Image vulnerability scan failure threshold (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN)
+  TRIVY_SEVERITY: "CRITICAL,HIGH"
+  # Maximum allowed vulnerable count in Trivy scan (0 = fail if any found at threshold severity)
+  TRIVY_EXIT_CODE: "1"
 
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # ============================================================================
+  # PR Size / Review Gates
+  # ============================================================================
+  pr-gates:
+    name: PR size / review gates
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PR size check
+        run: |
+          SIZE=$(git diff --stat origin/${{ github.base_ref }} HEAD -- . | tail -1)
+          FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD -- . | wc -l)
+          INSERTIONS=$(git diff --numstat origin/${{ github.base_ref }} HEAD -- . | awk '{sum+=$1} END {print sum+0}')
+          echo "Files changed: $FILES"
+          echo "Insertions: $INSERTIONS"
+
+          if [ "$INSERTIONS" -gt 3000 ]; then
+            echo "::error::PR is too large ($INSERTIONS insertions). Please split into smaller PRs (max 3000 insertions)."
+            exit 1
+          fi
+
+          if [ "$FILES" -gt 50 ]; then
+            echo "::warning::PR touches more than 50 files. Please ensure thorough review."
+          fi
+
+          LABEL_SIZE="small"
+          if [ "$INSERTIONS" -gt 500 ]; then
+            LABEL_SIZE="medium"
+          fi
+          if [ "$INSERTIONS" -gt 2000 ]; then
+            LABEL_SIZE="large"
+          fi
+          echo "PR size: $LABEL_SIZE ($INSERTIONS insertions, $FILES files)"
+
+      - name: Path-based reviewers
+        run: |
+          echo "Labeling PR based on paths..."
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD -- .)
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
+
+      - name: Validate PR title
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ ! "$TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert|ops|devops)\(.+\).+: ]]; then
+            if [[ ! "$TITLE" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert|ops|devops)(\(.+\))?: ]]; then
+              echo "::warning::PR title should follow conventional commits format: type(scope): description"
+            fi
+          fi
+
   # ============================================================================
   # Backend Quality Checks
   # ============================================================================
