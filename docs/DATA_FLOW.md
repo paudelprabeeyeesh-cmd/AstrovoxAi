@@ -330,3 +330,37 @@ graph TD
 6. Rate limiting is applied
 7. Request is processed
 8. Response is returned or error is thrown
+
+## 11. Plugin Execution Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as API
+    participant P as Plugin Manager
+    participant S as Sandbox
+    participant T as Tool Registry
+
+    U->>A: POST /ecosystem/plugins/{id}/invoke
+    A->>A: Validate JWT + permissions
+    A->>P: Load plugin manifest
+    P->>P: Verify checksum
+    P->>S: Initialize sandbox
+    S->>T: Resolve tool dependencies
+    T-->>S: Tool handles
+    S->>S: Execute plugin method
+    S-->>P: Result
+    P->>D: Log execution
+    P-->>A: Formatted response
+    A-->>U: Return result
+```
+
+### Flow Details
+
+1. User invokes a plugin method via API
+2. API validates JWT and plugin permissions
+3. Plugin manager loads manifest and verifies integrity
+4. Sandbox initializes with restricted permissions
+5. Tool dependencies are resolved
+6. Plugin method executes in sandbox
+7. Result is returned and audit-logged

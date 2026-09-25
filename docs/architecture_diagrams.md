@@ -2,6 +2,9 @@
 
 Visual representations of the Astrovox AI system architecture.
 
+For prose architecture details, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+For data-flow narratives, see [DATA_FLOW.md](./DATA_FLOW.md).
+
 ## System Architecture
 
 ```mermaid
