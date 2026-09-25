@@ -1,3 +1,4 @@
+// Frontend Platform - Group 10: Code execution UI with language tabs and output panels
 const CodeExecutor = {
   _container: null,
   _tabs = [],

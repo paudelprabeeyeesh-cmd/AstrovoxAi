@@ -1,5 +1,6 @@
+// Frontend Platform - Group 8: Resizable split-pane and workspace layouts
 const SplitPane = {
-  _instances: new Map(),
+  _instances = new Map(),
 
   create(container, options = {}) {
     const {

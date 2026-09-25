@@ -1,3 +1,4 @@
+// Frontend Platform - Group 6: Tooltip with positioning and accessibility
 const Tooltip = {
   _instances: new Map(),
   _globalHandler: null,

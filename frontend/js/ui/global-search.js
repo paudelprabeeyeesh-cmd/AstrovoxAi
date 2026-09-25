@@ -1,3 +1,4 @@
+// Frontend Platform - Group 9: Global search with keyboard navigation
 const GlobalSearch = {
   _container: null,
   _input: null,

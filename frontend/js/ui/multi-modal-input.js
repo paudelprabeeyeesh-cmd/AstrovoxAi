@@ -1,3 +1,4 @@
+// Frontend Platform - Group 11: Multi-modal input: voice, camera, screen share
 const MultiModalInput = {
   _container: null,
   _modes = ['text', 'voice', 'camera', 'screen'],

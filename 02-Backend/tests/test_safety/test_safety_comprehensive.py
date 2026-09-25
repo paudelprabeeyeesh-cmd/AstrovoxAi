@@ -125,7 +125,7 @@ class TestModerationPipeline:
 
     def test_classifier_flags_harm(self):
         pipeline = ModerationPipeline()
-        result = pipeline.moderate("This content contains manipulation and deception techniques.", stages=[ModerationStage.CLASSIFIER])
+        result = pipeline.moderate("This is a scam and a fraud attempt.", stages=[ModerationStage.CLASSIFIER])
         assert any(r["stage"] == "classifier" for r in result["results"])
 
 
