@@ -1,24 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import monacoEditorPlugin from '@monaco-editor/plugin'
 
 export default defineConfig({
-  plugins: [
-    react(),
-    monacoEditorPlugin({
-      viteConfig: {
-        build: {
-          rollupOptions: {
-            output: {
-              manualChunks: {
-                'monaco-editor': ['monaco-editor']
-              }
-            }
-          }
-        }
-      }
-    })
-  ],
+  plugins: [react()],
   server: {
     port: 5173,
     host: true,
@@ -33,14 +17,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'monaco-editor': ['monaco-editor']
-        }
-      }
-    }
+    minify: 'esbuild'
   },
   optimizeDeps: {
     include: ['monaco-editor']
