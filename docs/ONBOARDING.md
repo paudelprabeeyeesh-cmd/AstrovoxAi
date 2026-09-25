@@ -1,18 +1,17 @@
-# Getting Started Checklist
+# Developer Onboarding Checklist
 
-Use this checklist to verify your Astrovox AI setup is complete and working.
-
-For a comprehensive developer onboarding guide, see [ONBOARDING.md](./ONBOARDING.md).
+Use this checklist to onboard new developers to the Astrovox AI project.
 
 ## Prerequisites
 
 - [ ] Node.js 18+ installed (`node --version`)
 - [ ] Python 3.9+ installed (`python --version`)
 - [ ] Git installed (`git --version`)
+- [ ] Docker & Docker Compose installed
 - [ ] Supabase account created
-- [ ] At least one AI provider API key (OpenAI, Anthropic, Gemini, or Ollama)
+- [ ] Code editor configured (VS Code recommended)
 
-## Installation
+## Environment Setup
 
 - [ ] Clone repository: `git clone https://github.com/astrovox/astrovox.git`
 - [ ] Navigate to project: `cd astrovox`
@@ -20,19 +19,14 @@ For a comprehensive developer onboarding guide, see [ONBOARDING.md](./ONBOARDING
 - [ ] Install backend dependencies: `cd 02-Backend && pip install -r requirements.txt`
 - [ ] Copy environment file: `cp .env.example .env`
 - [ ] Configure `.env` with required values
-
-## Configuration
-
-- [ ] Set `DATABASE_URL` in `.env`
-- [ ] Set `SUPABASE_URL` in `.env`
-- [ ] Set `SUPABASE_ANON_KEY` in `.env`
-- [ ] Set `OPENAI_API_KEY` (or other provider keys) in `.env`
-- [ ] Run Supabase SQL setup in SQL editor
+- [ ] Run pre-commit install: `pre-commit install`
 
 ## Database Setup
 
+- [ ] Create Supabase project
 - [ ] Execute `database/schemas/supabase_setup.sql` in Supabase SQL Editor
 - [ ] Verify tables created: `profiles`, `conversations`, `messages`, `memories`
+- [ ] Set `DATABASE_URL` in `.env`
 
 ## Local Development
 
@@ -53,16 +47,25 @@ For a comprehensive developer onboarding guide, see [ONBOARDING.md](./ONBOARDING
 - [ ] AI provider responds to messages
 - [ ] Conversation history persists on refresh
 
-## Docker Setup (Alternative)
+## Testing
 
-- [ ] Docker & Docker Compose installed
-- [ ] Run: `docker-compose up --build`
-- [ ] Verify containers are healthy: `docker-compose ps`
-- [ ] Access http://localhost:5173
+- [ ] Run backend tests: `cd 02-Backend && pytest`
+- [ ] Run frontend lint: `npm run lint`
+- [ ] Run frontend typecheck: `npm run typecheck`
+- [ ] Run frontend tests: `npm run test`
+
+## Documentation Review
+
+- [ ] Read [README.md](../README.md)
+- [ ] Read [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [ ] Read [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [ ] Read [SECURITY.md](./SECURITY.md)
+- [ ] Review [API Reference](./API_REFERENCE.md)
+- [ ] Review [Architecture](./ARCHITECTURE.md)
 
 ## Next Steps
 
-- [ ] Read [API Reference](./api-reference.md)
-- [ ] Explore [Examples Gallery](./examples-gallery.md)
-- [ ] Try [SDK Quickstart](./SDK_QUICKSTART.md)
-- [ ] Review [Architecture Diagrams](./architecture-diagrams.md)
+- [ ] Join [Discord](https://discord.gg/astrovox)
+- [ ] Introduce yourself in #introductions
+- [ ] Pick up a good first issue
+- [ ] Review [Roadmap](./ROADMAP.md)
