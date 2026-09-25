@@ -1,3 +1,4 @@
+// Frontend Platform - Group 15: Performance budgets and bundle-splitting hooks
 const Performance = {
   _metrics: {
     fcp: null,

@@ -1,3 +1,4 @@
+// Frontend Platform - Group 6: Modal dialog with focus trap
 const Modal = {
   _container: null,
   _activeModal: null,

@@ -1,3 +1,4 @@
+// Frontend Platform - Group 6: Command palette with keyboard navigation
 const CommandPalette = {
   _container: null,
   _input: null,

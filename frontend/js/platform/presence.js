@@ -1,3 +1,4 @@
+// Frontend Platform - Group 12: Collaboration cursors and presence indicators
 const Presence = {
   _users = new Map(),
   _cursors = new Map(),

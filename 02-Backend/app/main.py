@@ -56,6 +56,7 @@ from app.api.routers.webhook_router import router as webhook_router
 from app.api.routers.feature_flags_router import router as feature_flags_router
 from app.api.routers.admin_metrics_router import router as admin_metrics_router
 from app.api.routers.support_router import router as support_router
+from app.api.routers.cx_router import router as cx_router
 from app.api.routers.search_knowledge_route import router as search_knowledge_router
 from app.observability.endpoints import router as observability_router
 
@@ -154,6 +155,7 @@ app.include_router(admin_metrics_router)
 app.include_router(support_router)
 app.include_router(observability_router)
 app.include_router(support_router)
+app.include_router(search_knowledge_router)
 
 
 # Prometheus metrics middleware

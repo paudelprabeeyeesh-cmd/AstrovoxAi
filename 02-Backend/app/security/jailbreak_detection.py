@@ -352,6 +352,16 @@ class JailbreakDetector:
                 del self._blocked_ips[ip]
             return list(self._blocked_ips.keys())
 
+    def configure(self, blocked_ip_duration: Optional[float] = None, risk_threshold: Optional[float] = None) -> None:
+        """Configure detector parameters at runtime."""
+        with self._lock:
+            if blocked_ip_duration is not None:
+                self._blocked_ip_duration = blocked_ip_duration
+            if risk_threshold is not None:
+                self._risk_threshold = risk_threshold
+        logger.info("Jailbreak detector configured: blocked_ip_duration=%s, risk_threshold=%s",
+                   blocked_ip_duration, risk_threshold)
+
 
 jailbreak_detector = JailbreakDetector()
 

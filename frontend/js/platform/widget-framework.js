@@ -1,3 +1,4 @@
+// Frontend Platform - Group 13: Dashboard shell and widget framework
 const WidgetFramework = {
   _widgets = new Map(),
   _layout = [],

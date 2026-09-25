@@ -1,3 +1,4 @@
+// Frontend Platform - Group 6: Toast notification system
 const Toast = {
   _container: null,
   _toasts = [],
