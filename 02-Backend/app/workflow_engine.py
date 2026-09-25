@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from app.utils import BackoffStrategy, now
-from .events import event_bus, Event
-from .jobs import job_queue, JobPriority
+from ...events import event_bus, Event
+from ...jobs import job_queue, JobPriority
 
 logger = logging.getLogger(__name__)
 

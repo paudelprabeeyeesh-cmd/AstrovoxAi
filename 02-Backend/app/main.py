@@ -35,6 +35,7 @@ from api.routers.agents_route import memory_router as memory_v2_router
 from api.routers.automation_route import router as automation_router
 from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
+from .multiverse.api import router as multiverse_router
 from api.routers.document_route import router as document_router
 from api.routers.temporal_route import router as temporal_router
 from middleware.security.security_headers import SecurityHeadersMiddleware
@@ -106,6 +107,7 @@ app.include_router(automation_router)
 app.include_router(document_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
+app.include_router(multiverse_router)
 app.include_router(temporal_router)
 
 
