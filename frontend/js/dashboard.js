@@ -117,6 +117,25 @@ class DashboardApp {
         this._loadUsageChart(e.target.value);
       });
     }
+
+    this._initRealityBending();
+  }
+
+  _initRealityBending() {
+    if (typeof AstrovoxReality === 'undefined') return;
+    try {
+      AstrovoxReality.enableGravityPanels('.dashboard-card, .stat-card');
+      const grid = document.querySelector('.dashboard-grid');
+      if (grid) AstrovoxReality.addRiftToElement(grid);
+      const statsGrid = document.getElementById('stats-grid');
+      if (statsGrid) {
+        AstrovoxReality.applyPhysicsToElement(statsGrid, 0.02);
+      }
+      if (typeof AstrovoxReality.renderMultiverseBadge === 'function') {
+        const badgeContainer = document.querySelector('.page-content .container > div:first-child');
+        if (badgeContainer) AstrovoxReality.renderMultiverseBadge(badgeContainer);
+      }
+    } catch {}
   }
 
   async _init() {

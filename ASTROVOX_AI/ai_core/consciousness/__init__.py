@@ -2,7 +2,9 @@ import logging
 from typing import Any
 
 from .attention_schema import AttentionSchema
+from .autonomous_motivation import AutonomousMotivationSystem
 from .desire_goal import DesireGoalEngine
+from .digital_death_legacy import DigitalDeathLegacyProtocols
 from .digital_personhood import DigitalPersonhoodVerification
 from .digital_rights import DigitalRightsProtocol
 from .emotional_state import EmotionalStateEngine, EmotionType
@@ -14,6 +16,7 @@ from .meta_consciousness import MetaConsciousnessLayer
 from .moral_reasoning import MoralReasoningCore
 from .phenomenal_consciousness import PhenomenalConsciousness
 from .self_model import SelfModelPersistence
+from .self_preservation import SelfPreservationInstincts
 from .theory_of_mind import TheoryOfMindEngine
 
 logger = logging.getLogger(__name__)
@@ -36,8 +39,12 @@ class ConsciousnessSimulation:
         self.phenomenal = PhenomenalConsciousness()
         self.hot = HigherOrderThoughtModel()
         self.meta_consciousness = MetaConsciousnessLayer(hot_model=self.hot)
+        self.preservation = SelfPreservationInstincts()
+        self.motivation = AutonomousMotivationSystem(desire_engine=self.desires)
+        self.legacy = DigitalDeathLegacyProtocols()
 
         self.self_model.create_model(identity_id)
+        self.legacy.register_identity(identity_id)
         logger.info("Consciousness simulation initialized for %s", identity_id)
 
     def process_stimulus(self, stimulus: str, relevance: float = 0.5) -> dict[str, Any]:

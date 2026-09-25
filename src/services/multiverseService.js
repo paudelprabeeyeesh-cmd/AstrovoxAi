@@ -100,3 +100,38 @@ export async function collapseUniverse(universeId) {
 export async function debugMetaReality(universeId) {
   return api(`/multiverse/universes/${universeId}/debug`)
 }
+
+export async function editReality(universeId, updates) {
+  return api(`/multiverse/universes/${universeId}/edit`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+}
+
+export async function manipulateContinuum(universeId, manipulation) {
+  return api(`/multiverse/universes/${universeId}/continuum`, {
+    method: 'POST',
+    body: JSON.stringify(manipulation),
+  })
+}
+
+export async function runConstructor(timelineId, blueprint) {
+  return api('/multiverse/constructors/run', {
+    method: 'POST',
+    body: JSON.stringify({ timeline_id: timelineId, blueprint }),
+  })
+}
+
+export async function recursiveBranch(universeId, maxDepth = 3, branchingFactor = 2, promptVariants = [], modelOverride) {
+  return api('/multiverse/recursive/branch', {
+    method: 'POST',
+    body: JSON.stringify({ universe_id: universeId, max_depth: maxDepth, branching_factor: branchingFactor, prompt_variants: promptVariants, model_override: modelOverride }),
+  })
+}
+
+export async function portalNavigate(universeId, targetUniverseId, mergeOnArrival = false) {
+  return api('/multiverse/portal/navigate', {
+    method: 'POST',
+    body: JSON.stringify({ universe_id: universeId, target_universe_id: targetUniverseId, merge_on_arrival: mergeOnArrival }),
+  })
+}

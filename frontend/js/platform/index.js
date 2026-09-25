@@ -3,4 +3,5 @@ window.addEventListener('DOMContentLoaded', () => {
   if (typeof PWA !== 'undefined') PWA.init();
   if (typeof OfflineQueue !== 'undefined') OfflineQueue.init();
   if (typeof Performance !== 'undefined') Performance.init();
+  if (typeof AstrovoxReality !== 'undefined') AstrovoxReality.init();
 });

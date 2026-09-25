@@ -10,7 +10,7 @@ const STATUS_COLORS = {
   paused: '#94a3b8',
 }
 
-export default function MultiverseDashboard() {
+export default function MultiverseDashboard({ onSelectTimeline, onSelectUniverse }) {
   const [timelines, setTimelines] = useState([])
   const [selectedTimeline, setSelectedTimeline] = useState(null)
   const [viz, setViz] = useState(null)
@@ -48,8 +48,10 @@ export default function MultiverseDashboard() {
       setName('')
       setDescription('')
       await loadTimelines()
-      setSelectedTimeline(data.timeline)
-      await loadVisualization(data.timeline.id)
+      const timeline = data.timeline
+      setSelectedTimeline(timeline)
+      onSelectTimeline?.(timeline)
+      await loadVisualization(timeline.id)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -59,6 +61,7 @@ export default function MultiverseDashboard() {
 
   async function handleSelectTimeline(timeline) {
     setSelectedTimeline(timeline)
+    onSelectTimeline?.(timeline)
     await loadVisualization(timeline.id)
   }
 
@@ -77,9 +80,10 @@ export default function MultiverseDashboard() {
     setLoading(true)
     setError(null)
     try {
-      await forkUniverse(selectedTimeline.id, forkName, null, modelOverride || undefined, undefined, undefined)
+      const data = await forkUniverse(selectedTimeline.id, forkName, null, modelOverride || undefined, undefined, undefined)
       setForkName('')
       setModelOverride('')
+      onSelectUniverse?.(data.universe.id)
       await loadVisualization(selectedTimeline.id)
     } catch (err) {
       setError(err.message)

@@ -5,9 +5,14 @@ import ForkVisualizer from './ForkVisualizer'
 import ScenarioEngine from './ScenarioEngine'
 import ParallelAssistant from './ParallelAssistant'
 import MetaDebugTools from './MetaDebugTools'
+import RealityEditor from './RealityEditor'
+import TimeSpaceContinuum from './TimeSpaceContinuum'
+import UniversalConstructor from './UniversalConstructor'
+import InfiniteRecursion from './InfiniteRecursion'
+import DimensionalPortal from './DimensionalPortal'
 
 export default function MultiversePanel() {
-  const [selectedTimelineId] = useState(null)
+  const [selectedTimelineId, setSelectedTimelineId] = useState(null)
   const [selectedUniverseId, setSelectedUniverseId] = useState(null)
   const [view, setView] = useState('dashboard')
 
@@ -23,16 +28,20 @@ export default function MultiversePanel() {
   return (
     <div style={{ display: 'flex', height: '100%', gap: '16px' }}>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
-        <MultiverseDashboard />
+        <MultiverseDashboard onSelectTimeline={setSelectedTimelineId} onSelectUniverse={setSelectedUniverseId} />
       </div>
-      <div style={{ width: '340px', display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
+      <div style={{ width: '360px', display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
         {selectedTimelineId && (
           <ForkVisualizer timelineId={selectedTimelineId} onSelectUniverse={(id) => { setSelectedUniverseId(id); setView('visualizer') }} />
         )}
         {selectedUniverseId && (
           <>
+            <RealityEditor universeId={selectedUniverseId} />
+            <TimeSpaceContinuum universeId={selectedUniverseId} />
             <ParallelAssistant universeId={selectedUniverseId} />
             <ScenarioEngine universeId={selectedUniverseId} />
+            <InfiniteRecursion universeId={selectedUniverseId} />
+            <DimensionalPortal universeId={selectedUniverseId} />
             <MetaDebugTools universeId={selectedUniverseId} />
           </>
         )}

@@ -1,21 +1,27 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { HOLOGRAPHIC_CONFIG } from '../utils/holographic/HolographicConfig'
 
-export function useGestureRecognition() {
+export function useGestureRecognizer() {
   const [gesture, setGesture] = useState(null)
   const [confidence, setConfidence] = useState(0)
   const [isTracking, setIsTracking] = useState(false)
   const [gestureHistory, setGestureHistory] = useState([])
   const [recognizedGestures, setRecognizedGestures] = useState([])
+  const [landmarks, setLandmarks] = useState([])
+  const [gestureVelocity, setGestureVelocity] = useState({ x: 0, y: 0, z: 0 })
 
   const trackRef = useRef(null)
   const pointsRef = useRef([])
   const gestureStartRef = useRef(null)
   const gestureLibraryRef = useRef(HOLOGRAPHIC_CONFIG.gesture.gestureLibrary)
+  const velocityBufferRef = useRef([])
+  const smoothingBufferRef = useRef([])
 
   const startTracking = useCallback(() => {
     setIsTracking(true)
     pointsRef.current = []
+    velocityBufferRef.current = []
+    smoothingBufferRef.current = []
     gestureStartRef.current = Date.now()
     trackRef.current = requestAnimationFrame(trackLoop)
   }, [])
@@ -38,18 +44,21 @@ export function useGestureRecognition() {
       recognizeGesture()
       gestureStartRef.current = now
       pointsRef.current = []
+      velocityBufferRef.current = []
+      smoothingBufferRef.current = []
     }
 
     trackRef.current = requestAnimationFrame(trackLoop)
   }, [isTracking])
 
-  const addPoint = useCallback((x, y, z = 0) => {
+  const addPoint = useCallback((x, y, z = 0, pressure = 0.5) => {
     if (!isTracking) return
 
     const point = {
-      x,
-      y,
-      z,
+      x: Math.max(0, Math.min(1, x)),
+      y: Math.max(0, Math.min(1, y)),
+      z: Math.max(0, Math.min(1, z)),
+      pressure,
       timestamp: Date.now(),
       velocity: { x: 0, y: 0, z: 0 }
     }
@@ -63,14 +72,48 @@ export function useGestureRecognition() {
           y: (point.y - lastPoint.y) / dt,
           z: (point.z - lastPoint.z) / dt
         }
+
+        velocityBufferRef.current.push(point.velocity)
+        if (velocityBufferRef.current.length > 10) {
+          velocityBufferRef.current = velocityBufferRef.current.slice(-10)
+        }
+
+        const avgVel = velocityBufferRef.current.reduce((sum, v) => ({
+          x: sum.x + v.x,
+          y: sum.y + v.y,
+          z: sum.z + v.z
+        }), { x: 0, y: 0, z: 0 })
+
+        const count = velocityBufferRef.current.length
+        setGestureVelocity({
+          x: avgVel.x / count,
+          y: avgVel.y / count,
+          z: avgVel.z / count
+        })
       }
     }
 
-    pointsRef.current.push(point)
+    smoothingBufferRef.current.push(point)
+    if (smoothingBufferRef.current.length > 3) {
+      smoothingBufferRef.current = smoothingBufferRef.current.slice(-3)
+    }
+
+    const smoothed = {
+      x: smoothingBufferRef.current.reduce((s, p) => s + p.x, 0) / smoothingBufferRef.current.length,
+      y: smoothingBufferRef.current.reduce((s, p) => s + p.y, 0) / smoothingBufferRef.current.length,
+      z: smoothingBufferRef.current.reduce((s, p) => s + p.z, 0) / smoothingBufferRef.current.length,
+      pressure,
+      timestamp: point.timestamp,
+      velocity: point.velocity
+    }
+
+    pointsRef.current.push(smoothed)
 
     if (pointsRef.current.length > 100) {
       pointsRef.current = pointsRef.current.slice(-100)
     }
+
+    setLandmarks([...pointsRef.current])
   }, [isTracking])
 
   const recognizeGesture = useCallback(() => {
@@ -89,7 +132,10 @@ export function useGestureRecognition() {
       point: detectPoint(points),
       grab: detectGrab(points),
       release: detectRelease(points),
-      push: detectPush(points)
+      push: detectPush(points),
+      tap: detectTap(points),
+      doubleTap: detectDoubleTap(points),
+      circle: detectCircle(points)
     }
 
     let bestGesture = null
@@ -108,7 +154,8 @@ export function useGestureRecognition() {
       setGestureHistory(prev => [...prev.slice(-50), {
         gesture: bestGesture,
         confidence: bestConfidence,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        points: points.length
       }])
       setRecognizedGestures(prev => [...prev.slice(-100), bestGesture])
     }
@@ -132,7 +179,8 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'swipe',
-      confidence: Math.min(1, (distance * 0.5 + avgVelocity * 0.1) * directionConfidence)
+      confidence: Math.min(1, (distance * 0.5 + avgVelocity * 0.12) * directionConfidence),
+      direction
     }
   }
 
@@ -156,7 +204,7 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'pinch',
-      confidence: convergence > 0.3 ? Math.min(1, convergence) : 0
+      confidence: convergence > 0.3 ? Math.min(1, convergence + 0.2) : 0
     }
   }
 
@@ -186,7 +234,7 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'rotate',
-      confidence: avgDistance > 0.05 ? Math.min(1, Math.abs(totalRotation) * 0.5) : 0
+      confidence: avgDistance > 0.05 ? Math.min(1, Math.abs(totalRotation) * 0.6) : 0
     }
   }
 
@@ -199,10 +247,11 @@ export function useGestureRecognition() {
     const xRange = Math.max(...xValues) - Math.min(...xValues)
 
     const oscillations = countOscillations(yValues)
+    const xOscillations = countOscillations(xValues)
 
     return {
       gesture: 'wave',
-      confidence: yRange > 0.1 && oscillations > 3 ? Math.min(1, oscillations * 0.2) : 0
+      confidence: yRange > 0.1 && oscillations > 3 ? Math.min(1, oscillations * 0.2 + xOscillations * 0.1) : 0
     }
   }
 
@@ -214,10 +263,13 @@ export function useGestureRecognition() {
     const position = recent[recent.length - 1]
 
     const velocityLow = avgVelocity < 0.5
+    const stablePosition = recent.every(p =>
+      Math.abs(p.x - position.x) < 0.05 && Math.abs(p.y - position.y) < 0.05
+    )
 
     return {
       gesture: 'point',
-      confidence: velocityLow ? 0.8 : 0
+      confidence: velocityLow && stablePosition ? 0.85 : 0
     }
   }
 
@@ -238,7 +290,7 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'grab',
-      confidence: convergence > 0.3 ? Math.min(1, convergence) : 0
+      confidence: convergence > 0.3 ? Math.min(1, convergence + 0.15) : 0
     }
   }
 
@@ -259,7 +311,7 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'release',
-      confidence: divergence > 0.3 ? Math.min(1, divergence) : 0
+      confidence: divergence > 0.3 ? Math.min(1, divergence + 0.15) : 0
     }
   }
 
@@ -273,8 +325,89 @@ export function useGestureRecognition() {
 
     return {
       gesture: 'push',
-      confidence: avgZ > 0.3 && zVelocity < -0.1 ? Math.min(1, Math.abs(zVelocity) * 5) : 0
+      confidence: avgZ > 0.3 && zVelocity < -0.1 ? Math.min(1, Math.abs(zVelocity) * 6) : 0
     }
+  }
+
+  const detectTap = (points) => {
+    if (points.length < 5) return { gesture: 'tap', confidence: 0 }
+
+    const recent = points.slice(-5)
+    const start = recent[0]
+    const end = recent[recent.length - 1]
+    const distance = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2)
+
+    const avgVelocity = recent.reduce((sum, p) => sum + Math.sqrt(p.velocity.x ** 2 + p.velocity.y ** 2), 0) / recent.length
+
+    if (distance < 0.05 && avgVelocity < 1.0) {
+      return {
+        gesture: 'tap',
+        confidence: Math.min(1, 0.7 + avgVelocity * 0.3)
+      }
+    }
+
+    return { gesture: 'tap', confidence: 0 }
+  }
+
+  const detectDoubleTap = (points) => {
+    const history = gestureHistory
+    if (history.length < 2) return { gesture: 'doubleTap', confidence: 0 }
+
+    const last = history[history.length - 1]
+    const prev = history[history.length - 2]
+
+    if (last.gesture === 'tap' && prev.gesture === 'tap') {
+      const timeDiff = last.timestamp - prev.timestamp
+      if (timeDiff < 500) {
+        return {
+          gesture: 'doubleTap',
+          confidence: 0.8
+        }
+      }
+    }
+
+    return { gesture: 'doubleTap', confidence: 0 }
+  }
+
+  const detectCircle = (points) => {
+    if (points.length < 25) return { gesture: 'circle', confidence: 0 }
+
+    const center = {
+      x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+      y: points.reduce((sum, p) => sum + p.y, 0) / points.length
+    }
+
+    const angles = points.map(p => Math.atan2(p.y - center.y, p.x - center.x))
+
+    let totalAngle = 0
+    for (let i = 1; i < angles.length; i++) {
+      let diff = angles[i] - angles[i - 1]
+      if (diff > Math.PI) diff -= 2 * Math.PI
+      if (diff < -Math.PI) diff += 2 * Math.PI
+      totalAngle += diff
+    }
+
+    const avgRadius = points.reduce((sum, p) => {
+      const dx = p.x - center.x
+      const dy = p.y - center.y
+      return sum + Math.sqrt(dx * dx + dy * dy)
+    }, 0) / points.length
+
+    const radiusVariance = points.reduce((sum, p) => {
+      const dx = p.x - center.x
+      const dy = p.y - center.y
+      const r = Math.sqrt(dx * dx + dy * dy)
+      return sum + (r - avgRadius) ** 2
+    }, 0) / points.length
+
+    if (Math.abs(totalAngle) > Math.PI * 1.5 && radiusVariance < 0.02) {
+      return {
+        gesture: 'circle',
+        confidence: Math.min(1, Math.abs(totalAngle) / (Math.PI * 2))
+      }
+    }
+
+    return { gesture: 'circle', confidence: 0 }
   }
 
   const countOscillations = (values) => {
@@ -297,6 +430,14 @@ export function useGestureRecognition() {
     setRecognizedGestures([])
   }, [])
 
+  const getGestureStats = useCallback(() => {
+    const stats = {}
+    recognizedGestures.forEach(g => {
+      stats[g] = (stats[g] || 0) + 1
+    })
+    return stats
+  }, [recognizedGestures])
+
   useEffect(() => {
     return () => {
       if (trackRef.current) {
@@ -311,10 +452,13 @@ export function useGestureRecognition() {
     isTracking,
     gestureHistory,
     recognizedGestures,
+    landmarks,
+    gestureVelocity,
     startTracking,
     stopTracking,
     addPoint,
     clearHistory,
-    recognizeGesture
+    recognizeGesture,
+    getGestureStats
   }
 }

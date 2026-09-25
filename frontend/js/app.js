@@ -327,14 +327,14 @@ class App {
         </a>
         <nav class="navbar-nav">
           <a href="/chat.html" class="nav-link active">Chat</a>
-          <a href="/dashboard.html" class="nav-link">Dashboard</a>
+          <a href="/dashboard.html" class="nav-link" data-reality-teleport>Dashboard</a>
           <div class="nav-user">
             <span style="font-size: 0.875rem; color: var(--text-secondary);">${user?.email || 'User'}</span>
             <button class="btn btn-sm btn-secondary" id="logout-btn">Logout</button>
           </div>
         </nav>
       </div>
-      <div class="chat-layout">
+      <div class="chat-layout rbp-gravity-panel" data-gravity="normal">
         <aside class="chat-sidebar">
           <div class="chat-sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
             <h2>Conversations</h2>
@@ -347,7 +347,7 @@ class App {
             </div>
           </div>
         </aside>
-        <main class="chat-main">
+        <main class="chat-main rbp-rift">
           <div class="chat-messages" id="chat-messages">
             <div class="chat-messages-inner">
               <div class="empty-state">
@@ -376,7 +376,21 @@ class App {
     `;
 
     document.getElementById('logout-btn')?.addEventListener('click', () => this._handleLogout());
+    this._initRealityNav();
     this.chatApp = new ChatApp();
+  }
+
+  _initRealityNav() {
+    if (typeof AstrovoxReality === 'undefined') return;
+    try {
+      document.querySelectorAll('[data-reality-teleport]').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.preventDefault();
+          const href = el.getAttribute('href');
+          if (href === '/dashboard.html') AstrovoxReality.teleportToWorkspace('dashboard');
+        });
+      });
+    } catch {}
   }
 
   _showDashboard() {
@@ -391,7 +405,7 @@ class App {
           <span>AstrovoxAI</span>
         </a>
         <nav class="navbar-nav">
-          <a href="/chat.html" class="nav-link">Chat</a>
+          <a href="/chat.html" class="nav-link" data-reality-teleport>Chat</a>
           <a href="/dashboard.html" class="nav-link active">Dashboard</a>
           <div class="nav-user">
             <span style="font-size: 0.875rem; color: var(--text-secondary);">${user?.email || 'User'}</span>
@@ -401,17 +415,20 @@ class App {
       </div>
       <div class="page-content">
         <div class="container">
-          <div style="margin-bottom: 1.5rem;">
-            <h1 style="font-size: 1.875rem; font-weight: 700;">Dashboard</h1>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Welcome back! Here is your overview.</p>
+          <div id="dashboard-header" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+              <h1 style="font-size: 1.875rem; font-weight: 700;">Dashboard</h1>
+              <p style="color: var(--text-muted); font-size: 0.875rem;">Welcome back! Here is your overview.</p>
+            </div>
+            <div id="rbp-dashboard-badges"></div>
           </div>
           <div id="dashboard-loading" class="loading-container" style="display: none;">
             <div class="spinner"></div>
             <span>Loading dashboard...</span>
           </div>
           <div id="dashboard-error" style="display: none; color: var(--error); margin-bottom: 1rem;"></div>
-          <div class="stats-grid" id="stats-grid"></div>
-          <div class="dashboard-grid">
+          <div class="stats-grid rbp-gravity-panel" data-gravity="normal" id="stats-grid"></div>
+          <div class="dashboard-grid rbp-rift">
             <div id="usage-chart"></div>
             <div class="dashboard-card" id="activity-list">
               <h3>Recent Activity</h3>
@@ -425,6 +442,7 @@ class App {
     `;
 
     document.getElementById('logout-btn')?.addEventListener('click', () => this._handleLogout());
+    this._initRealityNav();
     this.dashboardApp = new DashboardApp();
   }
 

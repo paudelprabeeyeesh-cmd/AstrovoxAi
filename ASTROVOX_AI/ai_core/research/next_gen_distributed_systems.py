@@ -8,6 +8,7 @@ import logging
 import hashlib
 import json
 import random
+import time
 from typing import Optional, Dict, Any, List, Tuple, Callable
 import torch
 import torch.nn as nn
@@ -19,6 +20,8 @@ class ServerlessQuantumFunctions:
     def __init__(self, max_qubits: int = 8):
         self.max_qubits = max_qubits
         self.function_registry: Dict[str, Callable] = {}
+        self.cold_start_latency_ms: float = 120.0
+        self.warm_start_latency_ms: float = 8.0
 
     def register_function(self, name: str, func: Callable) -> None:
         self.function_registry[name] = func
@@ -34,14 +37,34 @@ class ServerlessQuantumFunctions:
         from ASTROVOX_AI.ai_core.research.quantum_computing_integration import QuantumCircuitSimulator
         simulator = QuantumCircuitSimulator(num_qubits)
         gates = circuit_description.get("gates", [])
-        gate_map = {"h": simulator.hadamard, "x": simulator.pauli_x, "cx": lambda c, t: simulator.cnot(c, t)}
+        gate_map = {
+            "h": simulator.hadamard,
+            "x": simulator.pauli_x,
+            "cx": lambda c, t: simulator.cnot(c, t),
+            "z": simulator.pauli_z,
+            "y": simulator.pauli_y,
+            "rx": simulator.rx,
+            "ry": simulator.ry,
+            "rz": simulator.rz,
+        }
         for gate in gates:
             gate_type = gate.get("type")
             qubits = gate.get("qubits", [])
+            params = gate.get("params", [])
             if gate_type in gate_map:
-                gate_map[gate_type](*qubits)
+                if params:
+                    gate_map[gate_type](*qubits, *params)
+                else:
+                    gate_map[gate_type](*qubits)
         counts = simulator.measure(shots)
-        return {"counts": counts, "shots": shots}
+        return {"counts": counts, "shots": shots, "qubits": num_qubits}
+
+    def scale_to_zero(self) -> Dict[str, Any]:
+        self.function_registry.clear()
+        return {"status": "scaled_to_zero", "functions_retained": 0}
+
+    def provision(self, concurrency: int = 10) -> Dict[str, Any]:
+        return {"status": "provisioned", "concurrency": concurrency, "estimated_latency_ms": self.warm_start_latency_ms}
 
 
 class EdgeAIFederatedLearning:
@@ -51,6 +74,7 @@ class EdgeAIFederatedLearning:
         self.client_ids = client_ids
         self.global_weights = {k: v.clone() for k, v in model.state_dict().items()}
         self.round_metrics: List[Dict[str, Any]] = []
+        self.cur_round: int = 0
 
     def local_train_step(self, client_id: str, data: Dict[str, torch.Tensor], lr: float = 1e-4) -> Dict[str, torch.Tensor]:
         model_copy = type(self.model)()
@@ -95,7 +119,8 @@ class EdgeAIFederatedLearning:
             client_weights.append(w)
         aggregated = self.secure_aggregate(client_weights)
         self.model.load_state_dict(aggregated, strict=False)
-        return {"round_metrics": self.round_metrics, "num_participants": len(client_weights)}
+        self.cur_round += 1
+        return {"round": self.cur_round, "round_metrics": self.round_metrics, "num_participants": len(client_weights)}
 
 
 class DecentralizedAIModelNetwork:
@@ -104,13 +129,16 @@ class DecentralizedAIModelNetwork:
         self.peers: List[str] = []
         self.local_model: Optional[nn.Module] = None
         self.model_registry: Dict[str, Dict[str, Any]] = {}
+        self.version_vector: Dict[str, int] = {}
 
     def register_peer(self, peer_id: str) -> None:
-        self.peers.append(peer_id)
+        if peer_id not in self.peers:
+            self.peers.append(peer_id)
 
     def publish_model(self, model_weights: Dict[str, torch.Tensor], metadata: Dict[str, Any]) -> str:
         model_hash = hashlib.sha256(json.dumps({k: v.tolist() for k, v in model_weights.items()}).encode()).hexdigest()
         self.model_registry[model_hash] = {"weights": model_weights, "metadata": metadata, "publisher": self.node_id}
+        self.version_vector[self.node_id] = self.version_vector.get(self.node_id, 0) + 1
         return model_hash
 
     def pull_model(self, model_hash: str) -> Optional[Dict[str, Any]]:
@@ -124,12 +152,21 @@ class DecentralizedAIModelNetwork:
             avg_weights[key] = torch.stack([m[key] for m in models]).mean(dim=0)
         return avg_weights
 
+    def reconcile(self, remote_models: Dict[str, Dict[str, torch.Tensor]]) -> Dict[str, torch.Tensor]:
+        all_weights = list(self.model_registry.values())
+        for v in remote_models.values():
+            all_weights.append(v)
+        if not all_weights:
+            return {}
+        return self.gossip_sync([m["weights"] for m in all_weights])
+
 
 class BlockchainModelVerifier:
     def __init__(self, chain_id: str = "astrovox-models"):
         self.chain_id = chain_id
         self.blocks: List[Dict[str, Any]] = []
         self.model_hashes: Dict[str, str] = {}
+        self.pending_transactions: List[Dict[str, Any]] = []
 
     def register_model(self, model_weights: Dict[str, torch.Tensor], metadata: Dict[str, Any]) -> str:
         model_hash = hashlib.sha256(json.dumps({k: v.tolist() for k, v in model_weights.items()}).encode()).hexdigest()
@@ -138,9 +175,10 @@ class BlockchainModelVerifier:
             "previous_hash": self.blocks[-1]["hash"] if self.blocks else "0",
             "model_hash": model_hash,
             "metadata": metadata,
-            "timestamp": logging.Formatter().formatTime(logging.LogRecord("", 0, "", 0, "", (), None)),
+            "timestamp": time.time(),
+            "nonce": 0,
         }
-        block["hash"] = hashlib.sha256(json.dumps(block).encode()).hexdigest()
+        block["hash"] = hashlib.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
         self.blocks.append(block)
         self.model_hashes[model_hash] = block["hash"]
         return block["hash"]
@@ -151,6 +189,27 @@ class BlockchainModelVerifier:
 
     def get_model_history(self, model_hash: str) -> List[Dict[str, Any]]:
         return [b for b in self.blocks if b.get("model_hash") == model_hash]
+
+    def mine_block(self, model_weights: Dict[str, torch.Tensor], metadata: Dict[str, Any], difficulty: int = 2) -> str:
+        model_hash = hashlib.sha256(json.dumps({k: v.tolist() for k, v in model_weights.items()}).encode()).hexdigest()
+        prefix = "0" * difficulty
+        nonce = 0
+        while True:
+            block = {
+                "index": len(self.blocks),
+                "previous_hash": self.blocks[-1]["hash"] if self.blocks else "0",
+                "model_hash": model_hash,
+                "metadata": metadata,
+                "timestamp": time.time(),
+                "nonce": nonce,
+            }
+            block_hash = hashlib.sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
+            if block_hash.startswith(prefix):
+                block["hash"] = block_hash
+                self.blocks.append(block)
+                self.model_hashes[model_hash] = block_hash
+                return block_hash
+            nonce += 1
 
 
 class ZeroKnowledgePrivacy:

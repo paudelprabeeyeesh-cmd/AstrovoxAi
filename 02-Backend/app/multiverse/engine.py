@@ -463,3 +463,168 @@ class MultiverseEngine:
         intersection = set_a & set_b
         union = set_a | set_b
         return len(intersection) / len(union) if union else 0.0
+
+    def edit_reality(self, universe_id: str, user_id: str, updates: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        universe = self.universes.get(universe_id)
+        if not universe or universe.user_id != user_id:
+            return None
+
+        if "name" in updates and updates["name"] is not None:
+            universe.name = updates["name"]
+        if "description" in updates and updates["description"] is not None:
+            universe.description = updates["description"]
+        if "status" in updates and updates["status"] is not None:
+            universe.status = updates["status"]
+        if "parameters" in updates and isinstance(updates["parameters"], dict):
+            universe.parameters = {**(universe.parameters or {}), **updates["parameters"]}
+
+        universe.updated_at = self._now()
+        return {
+            "id": universe.id,
+            "name": universe.name,
+            "description": universe.description,
+            "status": universe.status.value,
+            "parameters": universe.parameters,
+            "updated_at": universe.updated_at.isoformat(),
+        }
+
+    def manipulate_continuum(self, universe_id: str, user_id: str, manipulation: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        universe = self.universes.get(universe_id)
+        if not universe or universe.user_id != user_id:
+            return None
+
+        generation_shift = manipulation.get("generation_shift")
+        if generation_shift is not None:
+            universe.generation = max(0, universe.generation + generation_shift)
+
+        temperature_override = manipulation.get("temperature_override")
+        if temperature_override is not None:
+            universe.parameters = {**(universe.parameters or {}), "temperature_override": temperature_override}
+
+        time_delta = manipulation.get("time_delta_seconds")
+        if time_delta is not None:
+            from datetime import timedelta
+            universe.updated_at = universe.updated_at + timedelta(seconds=time_delta)
+
+        simulate_time_travel = manipulation.get("simulate_time_travel")
+        if simulate_time_travel:
+            universe.parameters = {**(universe.parameters or {}), "time_travel_simulated": True, "last_manipulation": self._now().isoformat()}
+
+        collapse_probability = manipulation.get("collapse_probability")
+        if collapse_probability is not None and random.random() < collapse_probability:
+            universe.status = UniverseStatus.COLLAPSED
+            universe.parameters = {**(universe.parameters or {}), "collapsed_by_continuum": True}
+
+        universe.updated_at = self._now()
+        return {
+            "id": universe.id,
+            "name": universe.name,
+            "generation": universe.generation,
+            "status": universe.status.value,
+            "parameters": universe.parameters,
+            "updated_at": universe.updated_at.isoformat(),
+        }
+
+    def construct_universe(self, user_id: str, timeline_id: str, blueprint: Dict[str, Any]) -> Optional[Universe]:
+        timeline = self.timelines.get(timeline_id)
+        if not timeline or timeline.user_id != user_id:
+            return None
+
+        universe_id = self._id()
+        universe = Universe(
+            id=universe_id,
+            user_id=user_id,
+            name=blueprint.get("name", f"Constructed Universe {self._id()[:8]}"),
+            description=blueprint.get("description"),
+            status=UniverseStatus.ACTIVE,
+            branch_type=blueprint.get("branch_type", BranchType.CONVERSATION),
+            root_universe_id=timeline.root_universe_id,
+            generation=0,
+            parameters={
+                **(blueprint.get("parameters") or {}),
+                "blueprint_name": blueprint.get("name", "default"),
+                "temperature": blueprint.get("temperature", 0.7),
+                "system_prompt_override": blueprint.get("system_prompt_override", ""),
+            },
+            created_at=self._now(),
+            updated_at=self._now(),
+        )
+        self.universes[universe_id] = universe
+        self.message_histories[universe_id] = []
+        timeline.universes.append(universe)
+        timeline.updated_at = self._now()
+        return universe
+
+    def run_safe_recursive_branch(self, universe_id: str, user_id: str, max_depth: int = 3, branching_factor: int = 2, prompt_variants: List[str] = None, model_override: Optional[str] = None) -> List[Universe]:
+        universe = self.universes.get(universe_id)
+        if not universe or universe.user_id != user_id:
+            return []
+
+        prompt_variants = prompt_variants or [f"Variant {i+1}" for i in range(branching_factor)]
+        created: List[Universe] = []
+        self._recursive_branch_inner(universe_id, user_id, max_depth, branching_factor, prompt_variants, model_override, 0, created)
+        return created
+
+    def _recursive_branch_inner(self, parent_id: str, user_id: str, max_depth: int, branching_factor: int, prompt_variants: List[str], model_override: Optional[str], current_depth: int, created: List[Universe]) -> None:
+        if current_depth >= max_depth:
+            return
+
+        for i, variant in enumerate(prompt_variants[:branching_factor]):
+            fork_id = self._id()
+            parent = self.universes.get(parent_id)
+            if not parent:
+                continue
+
+            messages = self.message_histories.get(parent_id, [])
+            fork_universe = Universe(
+                id=fork_id,
+                user_id=user_id,
+                name=f"{parent.name} → Recursion L{current_depth+1} V{i+1}",
+                description=f"Recursive branch depth {current_depth + 1}",
+                status=UniverseStatus.FORKED,
+                branch_type=parent.branch_type,
+                parent_universe_id=parent.id,
+                root_universe_id=parent.root_universe_id,
+                generation=parent.generation + 1,
+                parameters={
+                    **(parent.parameters or {}),
+                    "recursive_depth": current_depth + 1,
+                    "prompt_variant": variant,
+                    "model_override": model_override or "",
+                    "safe_termination_max_depth": max_depth,
+                },
+                created_at=self._now(),
+                updated_at=self._now(),
+            )
+            self.universes[fork_id] = fork_universe
+            self.message_histories[fork_id] = list(messages)
+            created.append(fork_universe)
+
+            if parent.root_universe_id:
+                timeline = next((t for t in self.timelines.values() if t.root_universe_id == parent.root_universe_id), None)
+                if timeline:
+                    timeline.universes.append(fork_universe)
+                    timeline.updated_at = self._now()
+
+            self._recursive_branch_inner(fork_id, user_id, max_depth, branching_factor, prompt_variants, model_override, current_depth + 1, created)
+
+    def portal_navigate(self, universe_id: str, user_id: str, target_universe_id: str, merge_on_arrival: bool = False) -> Optional[Dict[str, Any]]:
+        source = self.universes.get(universe_id)
+        target = self.universes.get(target_universe_id)
+        if not source or not target or source.user_id != user_id or target.user_id != user_id:
+            return None
+
+        if merge_on_arrival:
+            return self.merge_universes(universe_id, target_universe_id, user_id, strategy="interleave")
+
+        return {
+            "source_universe_id": universe_id,
+            "source_name": source.name,
+            "target_universe_id": target_universe_id,
+            "target_name": target.name,
+            "target_status": target.status.value,
+            "target_generation": target.generation,
+            "target_message_count": target.message_count,
+            "navigation_type": "portal_jump",
+            "arrival_timestamp": self._now().isoformat(),
+        }

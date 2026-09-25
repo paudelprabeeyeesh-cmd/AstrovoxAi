@@ -128,30 +128,39 @@ export function useWebGLHolographicRenderer() {
         float lens = 0.02 + depth * 0.01;
         vec2 offset = (uv - mouse) * lens;
         float field = 0.0;
-        for (float i = -2.0; i <= 2.0; i += 1.0) {
-          for (float j = -2.0; j <= 2.0; j += 1.0) {
-            vec2 sampleUV = uv + vec2(i, j) * 0.002;
-            field += hologramPattern(sampleUV, u_time + length(vec2(i, j)) * 0.1);
+        for (float i = -3.0; i <= 3.0; i += 1.0) {
+          for (float j = -3.0; j <= 3.0; j += 1.0) {
+            vec2 sampleUV = uv + vec2(i, j) * 0.0015;
+            float ca = length(sampleUV - mouse) * 0.002;
+            sampleUV += normalize(sampleUV - mouse + 0.001) * ca;
+            field += hologramPattern(sampleUV, u_time + length(vec2(i, j)) * 0.08);
           }
         }
-        return field / 25.0;
+        return field / 49.0;
       }
 
       float volumetricFog(vec2 uv, float depth) {
         float fog = 0.0;
-        for (float i = 0.0; i < 5.0; i += 1.0) {
-          float z = i / 5.0;
-          float layerScale = 1.0 + z * 0.5;
-          vec2 layerUV = uv * layerScale + u_time * 0.1 * (1.0 - z);
-          fog += hologramPattern(layerUV, u_time + z) * (1.0 - z) * 0.2;
+        for (float i = 0.0; i < 8.0; i += 1.0) {
+          float z = i / 8.0;
+          float layerScale = 1.0 + z * 0.6;
+          vec2 layerUV = uv * layerScale + u_time * 0.08 * (1.0 - z);
+          float layerDepth = depth * (1.0 - z * 0.5);
+          fog += hologramPattern(layerUV, u_time + z) * layerDepth * 0.15;
         }
-        return fog * depth;
+        return fog;
       }
 
       float diffractionGrating(vec2 uv, float angle) {
-        float grating = sin((uv.x * cos(angle) + uv.y * sin(angle)) * 50.0 + u_time * 2.0);
+        float grating = sin((uv.x * cos(angle) + uv.y * sin(angle)) * 80.0 + u_time * 2.5);
         grating = grating * 0.5 + 0.5;
         return grating;
+      }
+
+      float depthOfField(vec2 uv, float focusDepth, float aperture) {
+        float centerDist = length(uv - 0.5);
+        float blur = abs(centerDist - focusDepth) * aperture;
+        return smoothstep(0.0, 0.3, blur);
       }
 
       vec3 hologramColor(vec2 uv, float intensity, float depth) {
@@ -184,49 +193,59 @@ export function useWebGLHolographicRenderer() {
         float time = u_time;
         float glitchOffset = 0.0;
         if (u_glitchIntensity > 0.0) {
-          float glitchLine = step(0.98, random(vec2(floor(uv.y * 50.0), floor(time * 10.0))));
-          glitchOffset = glitchLine * u_glitchIntensity * (random(vec2(time, uv.y)) - 0.5) * 0.1;
+          float glitchLine = step(0.98, random(vec2(floor(uv.y * 80.0), floor(time * 12.0))));
+          glitchOffset = glitchLine * u_glitchIntensity * (random(vec2(time, uv.y)) - 0.5) * 0.12;
         }
 
         vec2 distortedUV = centeredUV;
         distortedUV.x += glitchOffset;
-        distortedUV += (noise(uv * 10.0 + time) - 0.5) * u_noiseAmount;
+        distortedUV += (noise(uv * 12.0 + time) - 0.5) * u_noiseAmount;
 
         float ca = u_chromaticAberration * hoverEffect;
-        float r = hologramPattern(distortedUV + vec2(ca * 0.01, 0.0), time).r;
+        float r = hologramPattern(distortedUV + vec2(ca * 0.012, 0.0), time).r;
         float g = hologramPattern(distortedUV, time).g;
-        float b = hologramPattern(distortedUV - vec2(ca * 0.01, 0.0), time).b;
+        float b = hologramPattern(distortedUV - vec2(ca * 0.012, 0.0), time).b;
         float wave = (r + g + b) / 3.0;
 
         float depth = u_depth + hoverEffect * 0.2;
-        float intensity = smoothstep(0.0, 0.5, wave) * (0.5 + hoverEffect);
-        intensity *= 0.7 + sin(time * 2.0 + uv.x * 5.0) * 0.3;
-        intensity = mix(intensity, intensity * u_hologramPersistence, 0.5);
+        float focusDepth = 0.5;
+        float aperture = 0.03 + u_chromaticAberration * 0.01;
+        float dof = depthOfField(distortedUV, focusDepth, aperture);
 
-        float scanline = sin(uv.y * u_resolution.y * 2.0) * u_scanlineOpacity;
-        float holographicNoise = noise(uv * 100.0 + time) * u_noiseAmount;
+        float intensity = smoothstep(0.0, 0.5, wave) * (0.5 + hoverEffect);
+        intensity *= 0.7 + sin(time * 2.2 + uv.x * 5.5) * 0.3;
+        intensity = mix(intensity, intensity * u_hologramPersistence, 0.5);
+        intensity *= (1.0 - dof * 0.3);
+
+        float scanline = sin(uv.y * u_resolution.y * 3.0) * u_scanlineOpacity;
+        float holographicNoise = noise(uv * 120.0 + time) * u_noiseAmount;
 
         float interference = 0.0;
-        for (float i = 0.0; i < 3.0; i += 1.0) {
-          interference += sin(length(centeredUV - 0.5) * 20.0 - time * 3.0 + i) * u_interference * 0.3;
+        for (float i = 0.0; i < 4.0; i += 1.0) {
+          interference += sin(length(centeredUV - 0.5) * 25.0 - time * 3.5 + i) * u_interference * 0.25;
         }
         interference = interference * 0.5 + 0.5;
 
         vec3 hColor = hologramColor(distortedUV, intensity, depth);
 
         vec3 color = hColor.rgb;
-        color += scanline * 0.1;
-        color += holographicNoise * 0.05;
-        color += interference * u_primaryColor * 0.1;
+        color += scanline * 0.12;
+        color += holographicNoise * 0.06;
+        color += interference * u_primaryColor * 0.12;
 
-        float diffraction = diffractionGrating(distortedUV, time * 0.3) * u_diffraction;
-        color += u_accentColor * diffraction * 0.1;
+        float diffraction = diffractionGrating(distortedUV, time * 0.35) * u_diffraction;
+        color += u_accentColor * diffraction * 0.12;
 
-        color += u_primaryColor * hoverEffect * 0.2;
-        color += u_quantum * u_quantumColor * 0.15;
+        color += u_primaryColor * hoverEffect * 0.25;
+        color += u_quantum * u_quantumColor * 0.18;
+
+        color = pow(color, vec3(0.95));
+        color = clamp(color, 0.0, 1.0);
 
         float alpha = hColor.a;
         alpha = clamp(alpha, 0.0, 1.0);
+        alpha *= smoothstep(0.0, 0.15, intensity);
+        alpha *= smoothstep(1.0, 0.85, intensity);
 
         gl_FragColor = vec4(color, alpha);
       }

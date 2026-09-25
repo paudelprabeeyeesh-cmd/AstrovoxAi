@@ -132,3 +132,48 @@ class UniverseDiff(BaseModel):
     diff: List[Dict[str, Any]]
     summary: str
     created_at: datetime
+
+
+class RealityEditRequest(BaseModel):
+    universe_id: str
+    name: Optional[str] = Field(None, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    status: Optional[UniverseStatus] = None
+
+
+class ContinuumManipulationRequest(BaseModel):
+    universe_id: str
+    generation_shift: Optional[int] = Field(None, ge=-100, le=100)
+    temperature_override: Optional[float] = Field(None, ge=0, le=2)
+    simulate_time_travel: Optional[bool] = False
+    time_delta_seconds: Optional[int] = Field(None, ge=-86400, le=86400)
+    collapse_probability: Optional[float] = Field(None, ge=0, le=1)
+
+
+class ConstructorBlueprint(BaseModel):
+    name: str
+    description: Optional[str] = None
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    system_prompt_override: Optional[str] = None
+    temperature: float = Field(0.7, ge=0, le=2)
+    branch_type: BranchType = BranchType.CONVERSATION
+
+
+class ConstructorRunRequest(BaseModel):
+    timeline_id: str
+    blueprint: ConstructorBlueprint
+
+
+class RecursiveBranchRequest(BaseModel):
+    universe_id: str
+    max_depth: int = Field(3, ge=1, le=10)
+    branching_factor: int = Field(2, ge=1, le=5)
+    prompt_variants: List[str] = Field(default_factory=list)
+    model_override: Optional[str] = None
+
+
+class PortalNavigateRequest(BaseModel):
+    universe_id: str
+    target_universe_id: str
+    merge_on_arrival: bool = False

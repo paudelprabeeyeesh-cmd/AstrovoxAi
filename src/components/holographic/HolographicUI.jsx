@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
 import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../../utils/holographic/HolographicConfig'
 import { useWebGLHolographicRenderer } from '../../hooks/holographic/useWebGLHolographicRenderer'
-import { useGestureRecognition } from '../../hooks/holographic/useGestureRecognition'
+import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognizer'
 import { useDepthAwareInteractions } from '../../hooks/holographic/useDepthAwareInteractions'
 
 export function HolographicCanvas({ children, className = '', style = {}, interactive = true, depthEnabled = true }) {
@@ -10,7 +10,7 @@ export function HolographicCanvas({ children, className = '', style = {}, intera
   const [isHovered, setIsHovered] = useState(false)
   const [gestureState, setGestureState] = useState({ type: null, progress: 0 })
   const { canvasRef, render, startRenderLoop, stopRenderLoop } = useWebGLHolographicRenderer()
-  const { gesture, confidence, isTracking, startTracking, stopTracking, addPoint } = useGestureRecognition()
+  const { gesture, confidence, isTracking, startTracking, stopTracking, addPoint } = useGestureRecognizer()
   const { depthMap, updateDepth, calculateParallax, focusOnElement, blurElement, focusedElement } = useDepthAwareInteractions()
 
   const renderParams = useCallback(() => ({
@@ -107,9 +107,10 @@ export function HolographicCanvas({ children, className = '', style = {}, intera
   )
 }
 
-export function VolumetricDisplay({ width = 32, height = 32, depth = 32, active = true, className = '' }) {
+export function VolumetricDisplay({ width = 32, height = 32, depth = 32, active = true, className = '', style = {} }) {
   const canvasRef = useRef(null)
-  const { voxels, isActive, startVolumetricDisplay, stopVolumetricDisplay, initializeGrid } = useVolumetricDisplay()
+  const { voxels, isActive, density, emission, rotation, startVolumetricDisplay, stopVolumetricDisplay, initializeGrid, updateRotation } = useVolumetricDisplay()
+  const [localRotation, setLocalRotation] = useState({ x: 0, y: 0, z: 0 })
 
   useEffect(() => {
     if (active) {
@@ -121,6 +122,32 @@ export function VolumetricDisplay({ width = 32, height = 32, depth = 32, active 
     return () => stopVolumetricDisplay()
   }, [active, width, height, depth, startVolumetricDisplay, stopVolumetricDisplay])
 
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      const rect = canvasRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const x = (e.clientX - rect.left) / rect.width - 0.5
+      const y = (e.clientY - rect.top) / rect.height - 0.5
+
+      setLocalRotation({
+        x: y * 0.5,
+        y: x * 0.5,
+        z: 0
+      })
+    }
+
+    const canvas = canvasRef.current
+    if (canvas) {
+      canvas.addEventListener('mousemove', handleMouseMove)
+      return () => canvas.removeEventListener('mousemove', handleMouseMove)
+    }
+  }, [])
+
+  useEffect(() => {
+    updateRotation(localRotation.x, localRotation.y, localRotation.z)
+  }, [localRotation, updateRotation])
+
   return (
     <div
       ref={canvasRef}
@@ -130,27 +157,39 @@ export function VolumetricDisplay({ width = 32, height = 32, depth = 32, active 
         width: '100%',
         height: '400px',
         overflow: 'hidden',
-        background: 'transparent'
+        background: 'transparent',
+        perspective: '1000px',
+        transformStyle: 'preserve-3d',
+        ...style
       }}
     >
-      {voxels.map((voxel, index) => (
-        <div
-          key={index}
-          style={{
-            position: 'absolute',
-            left: voxel.x,
-            top: voxel.y,
-            width: voxel.size,
-            height: voxel.size,
-            backgroundColor: voxel.color,
-            opacity: voxel.opacity,
-            borderRadius: '50%',
-            transform: `translateZ(${voxel.z * 10}px)`,
-            boxShadow: `0 0 ${voxel.size}px ${voxel.color}`,
-            pointerEvents: 'none'
-          }}
-        />
-      ))}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        transformStyle: 'preserve-3d',
+        transform: `rotateX(${localRotation.x * 20}deg) rotateY(${localRotation.y * 20}deg)`,
+        transition: 'transform 0.1s ease-out'
+      }}>
+        {voxels.map((voxel, index) => (
+          <div
+            key={index}
+            style={{
+              position: 'absolute',
+              left: voxel.x,
+              top: voxel.y,
+              width: voxel.size,
+              height: voxel.size,
+              backgroundColor: voxel.color,
+              opacity: voxel.opacity,
+              borderRadius: '50%',
+              transform: `translateZ(${voxel.z * 10}px)`,
+              boxShadow: `0 0 ${voxel.size * 1.5}px ${voxel.color}`,
+              pointerEvents: 'none',
+              transformStyle: 'preserve-3d'
+            }}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -160,8 +199,7 @@ export function HolographicChatInterface({ messages = [], onSendMessage, classNa
   const [isTyping, setIsTyping] = useState(false)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
-  const { gesture, confidence } = useGestureRecognition()
-  const { gestureHistory } = useGestureRecognition()
+  const { gesture, confidence, gestureHistory } = useGestureRecognizer()
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })

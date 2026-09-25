@@ -6,11 +6,14 @@ export function useDepthAwareInteractions() {
   const [focusedElement, setFocusedElement] = useState(null)
   const [depthLayers, setDepthLayers] = useState([])
   const [isDepthEnabled, setIsDepthEnabled] = useState(true)
+  const [occludedElements, setOccludedElements] = useState(new Set())
+  const [spatialClicks, setSpatialClicks] = useState([])
   const depthBufferRef = useRef(new Map())
   const raycasterRef = useRef({
     origin: { x: 0, y: 0, z: -5 },
     direction: { x: 0, y: 0, z: 1 }
   })
+  const interactionHistoryRef = useRef([])
 
   const updateDepth = useCallback((elementId, depth, metadata = {}) => {
     const depthValue = Math.max(0, Math.min(1, depth))
@@ -32,25 +35,25 @@ export function useDepthAwareInteractions() {
   const calculateDepthBlur = useCallback((elementId, focusDepth = 0.5) => {
     const elementDepth = getDepth(elementId)
     const distance = Math.abs(elementDepth - focusDepth)
-    const blurAmount = distance * HOLOGRAPHIC_CONFIG.depth.blurTransition * 10
+    const blurAmount = distance * HOLOGRAPHIC_CONFIG.depth.blurTransition * 12
 
-    return Math.min(20, blurAmount)
+    return Math.min(24, blurAmount)
   }, [getDepth])
 
   const getDepthScale = useCallback((elementId, focusDepth = 0.5) => {
     const elementDepth = getDepth(elementId)
     const distance = Math.abs(elementDepth - focusDepth)
-    const scale = 1 - distance * HOLOGRAPHIC_CONFIG.depth.parallaxFactor * 0.5
+    const scale = 1 - distance * HOLOGRAPHIC_CONFIG.depth.parallaxFactor * 0.6
 
-    return Math.max(0.5, Math.min(1.2, scale))
+    return Math.max(0.5, Math.min(1.25, scale))
   }, [getDepth])
 
   const getDepthOpacity = useCallback((elementId, focusDepth = 0.5) => {
     const elementDepth = getDepth(elementId)
     const distance = Math.abs(elementDepth - focusDepth)
 
-    const opacity = 1 - distance * HOLOGRAPHIC_CONFIG.depth.parallaxFactor
-    return Math.max(0.3, Math.min(1, opacity))
+    const opacity = 1 - distance * HOLOGRAPHIC_CONFIG.depth.parallaxFactor * 1.2
+    return Math.max(0.25, Math.min(1, opacity))
   }, [getDepth])
 
   const raycast = useCallback((x, y, z = 0) => {
@@ -68,7 +71,7 @@ export function useDepthAwareInteractions() {
         const hitY = origin.y + direction.y * t
 
         const distance = Math.sqrt((x - hitX) ** 2 + (y - hitY) ** 2)
-        const hitRadius = 0.1 + elementDepth * 0.2
+        const hitRadius = 0.08 + elementDepth * 0.25
 
         if (distance < hitRadius) {
           intersections.push({
@@ -121,14 +124,14 @@ export function useDepthAwareInteractions() {
     const centerY = 0.5
     const parallaxStrength = HOLOGRAPHIC_CONFIG.depth.parallaxFactor
 
-    const offsetX = (mouseX - centerX) * depth * parallaxStrength * 100
-    const offsetY = (mouseY - centerY) * depth * parallaxStrength * 100
+    const offsetX = (mouseX - centerX) * depth * parallaxStrength * 120
+    const offsetY = (mouseY - centerY) * depth * parallaxStrength * 120
 
     return {
       x: offsetX,
       y: offsetY,
-      rotationX: (mouseY - centerY) * depth * parallaxStrength * 10,
-      rotationY: (mouseX - centerX) * depth * parallaxStrength * 10
+      rotationX: (mouseY - centerY) * depth * parallaxStrength * 12,
+      rotationY: (mouseX - centerX) * depth * parallaxStrength * 12
     }
   }, [])
 
@@ -152,6 +155,47 @@ export function useDepthAwareInteractions() {
     })
   }, [])
 
+  const calculateOcclusion = useCallback((cameraPosition = { x: 0, y: 0, z: -5 }) => {
+    const occluded = new Set()
+    const elements = getDepthSortedElements()
+
+    elements.forEach((element, index) => {
+      if (index === 0) return
+
+      const prev = elements[index - 1]
+      const elementDepth = element.depth
+      const prevDepth = prev.depth
+
+      if (Math.abs(elementDepth - prevDepth) < 0.05) {
+        occluded.add(element.id)
+      }
+    })
+
+    setOccludedElements(occluded)
+    return occluded
+  }, [getDepthSortedElements])
+
+  const recordSpatialClick = useCallback((position, targetId, depth) => {
+    const click = {
+      id: Date.now(),
+      position,
+      targetId,
+      depth,
+      timestamp: Date.now()
+    }
+
+    interactionHistoryRef.current = [...interactionHistoryRef.current.slice(-100), click]
+    setSpatialClicks([...interactionHistoryRef.current])
+  }, [])
+
+  const getInteractionHistory = useCallback(() => {
+    return interactionHistoryRef.current
+  }, [])
+
+  const updateRaycaster = useCallback((origin, direction) => {
+    raycasterRef.current = { origin, direction }
+  }, [])
+
   useEffect(() => {
     if (!isDepthEnabled) {
       setDepthLayers([])
@@ -164,6 +208,8 @@ export function useDepthAwareInteractions() {
     focusedElement,
     depthLayers,
     isDepthEnabled,
+    occludedElements,
+    spatialClicks,
     updateDepth,
     getDepth,
     calculateDepthBlur,
@@ -176,6 +222,10 @@ export function useDepthAwareInteractions() {
     calculateParallax,
     focusOnElement,
     blurElement,
+    calculateOcclusion,
+    recordSpatialClick,
+    getInteractionHistory,
+    updateRaycaster,
     setIsDepthEnabled
   }
 }

@@ -5,6 +5,11 @@ import ParallelAssistant from './ParallelAssistant'
 import ScenarioEngine from './ScenarioEngine'
 import DivergenceTracker from './DivergenceTracker'
 import MetaDebugTools from './MetaDebugTools'
+import RealityEditor from './RealityEditor'
+import TimeSpaceContinuum from './TimeSpaceContinuum'
+import UniversalConstructor from './UniversalConstructor'
+import InfiniteRecursion from './InfiniteRecursion'
+import DimensionalPortal from './DimensionalPortal'
 
 export {
   MultiverseDashboard,
@@ -14,4 +19,9 @@ export {
   ScenarioEngine,
   DivergenceTracker,
   MetaDebugTools,
+  RealityEditor,
+  TimeSpaceContinuum,
+  UniversalConstructor,
+  InfiniteRecursion,
+  DimensionalPortal,
 }

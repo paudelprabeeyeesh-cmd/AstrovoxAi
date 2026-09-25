@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../../utils/holographic/HolographicConfig'
 import { useWebXRIntegration } from '../../hooks/holographic/useWebXRIntegration'
-import { useGestureRecognition } from '../../hooks/holographic/useGestureRecognition'
+import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognizer'
 
 export function VRWorkspace({ children, className = '', style = {} }) {
   const { isSupported, isInSession, startVRSession, endSession, handTracking, eyeTracking, haptics } = useWebXRIntegration()
@@ -288,7 +288,9 @@ export function AROverlay({ className = '', style = {} }) {
         >
           {element.label}
         </div>
-      ))}
+      )      )}
     </div>
   )
 }
+
+export { VRWorkspace, AROverlay }

@@ -1,7 +1,7 @@
 export { useWebGLHolographicRenderer } from './useWebGLHolographicRenderer'
 export { useVolumetricDisplay } from './useVolumetricDisplay'
 export { useLightFieldRendering } from './useLightFieldRendering'
-export { useGestureRecognition } from './useGestureRecognition'
+export { useGestureRecognizer } from './useGestureRecognition'
 export { useDepthAwareInteractions } from './useDepthAwareInteractions'
 export { useWebXRIntegration } from './useWebXRIntegration'
 export { useNeuralInterface } from './useNeuralInterface'

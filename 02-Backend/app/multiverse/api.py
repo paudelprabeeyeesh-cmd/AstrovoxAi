@@ -3,6 +3,15 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 from ..multiverse.engine import MultiverseEngine
+from ..multiverse.models import (
+    BranchType,
+    RealityEditRequest,
+    ContinuumManipulationRequest,
+    ConstructorBlueprint,
+    ConstructorRunRequest,
+    RecursiveBranchRequest,
+    PortalNavigateRequest,
+)
 from ...utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/multiverse", tags=["multiverse"])
@@ -198,3 +207,53 @@ async def debug_meta_reality(universe_id: str, authorization: str = Header(None)
     if "error" in debug:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=debug["error"])
     return {"status": "OK", "debug": debug}
+
+
+@router.put("/universes/{universe_id}/edit")
+async def edit_reality(universe_id: str, request: RealityEditRequest, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
+    updated = engine.edit_reality(universe_id, user_id, request.dict(exclude_none=True))
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Universe not found")
+    return {"status": "OK", "universe": updated}
+
+
+@router.post("/universes/{universe_id}/continuum")
+async def manipulate_continuum(universe_id: str, request: ContinuumManipulationRequest, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
+    result = engine.manipulate_continuum(universe_id, user_id, request.dict(exclude_none=True))
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Universe not found")
+    return {"status": "OK", "continuum": result}
+
+
+@router.post("/constructors/run")
+async def run_constructor(request: ConstructorRunRequest, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
+    universe = engine.construct_universe(user_id, request.timeline_id, request.blueprint.dict())
+    if not universe:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Timeline not found")
+    return {"status": "OK", "universe": universe.dict()}
+
+
+@router.post("/recursive/branch")
+async def recursive_branch(request: RecursiveBranchRequest, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
+    universes = engine.run_safe_recursive_branch(
+        universe_id=request.universe_id,
+        user_id=user_id,
+        max_depth=request.max_depth,
+        branching_factor=request.branching_factor,
+        prompt_variants=request.prompt_variants,
+        model_override=request.model_override,
+    )
+    return {"status": "OK", "universes": [u.dict() for u in universes], "count": len(universes)}
+
+
+@router.post("/portal/navigate")
+async def portal_navigate(request: PortalNavigateRequest, authorization: str = Header(None)):
+    user_id = get_user_id_from_token(authorization)
+    result = engine.portal_navigate(request.universe_id, user_id, request.target_universe_id, request.merge_on_arrival)
+    if not result:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Portal navigation failed")
+    return {"status": "OK", "portal": result}

@@ -368,6 +368,19 @@ class ChatApp {
         this.selectedModel = e.target.value;
       });
     }
+
+    this._initRealityBending();
+  }
+
+  _initRealityBending() {
+    if (typeof AstrovoxReality === 'undefined') return;
+    try {
+      AstrovoxReality.enableGravityPanels('.chat-layout, .chat-sidebar, .chat-main');
+      const chatMain = document.querySelector('.chat-main');
+      if (chatMain) AstrovoxReality.addRiftToElement(chatMain);
+      const sidebar = document.querySelector('.chat-sidebar');
+      if (sidebar) AstrovoxReality.applyPhysicsToElement(sidebar, 0.03);
+    } catch {}
   }
 
   async _init() {
@@ -573,7 +586,12 @@ class ChatApp {
     this.conversationListEl.querySelectorAll('.conversation-item').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.dataset.id;
-        if (id) this._loadConversation(id);
+        if (id) {
+          if (typeof AstrovoxReality !== 'undefined') {
+            AstrovoxReality.wormholeNavigateToConversation(id);
+          }
+          this._loadConversation(id);
+        }
       });
     });
   }
