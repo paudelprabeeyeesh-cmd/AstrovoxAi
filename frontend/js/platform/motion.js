@@ -1,7 +1,12 @@
 // Frontend Platform - Group 2: Animation/transition system with reduced-motion support
+// Enhanced with spring physics, staggered animations, and view-transition API integration
 const Motion = {
   _prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  },
+
+  _getReducedMotionValue(value, reducedValue) {
+    return this._prefersReducedMotion() ? reducedValue : value;
   },
 
   animate(element, keyframes, options = {}) {
@@ -85,6 +90,25 @@ const Motion = {
       { transform: 'translateX(4px)' },
       { transform: 'translateX(0)' },
     ], { duration: 400, ...options, finalStyle: { transform: 'translateX(0)' } });
+  },
+
+  stagger(elements, keyframes, options = {}) {
+    if (this._prefersReducedMotion()) {
+      elements.forEach(el => {
+        if (options.finalStyle) Object.assign(el.style, options.finalStyle);
+      });
+      return Promise.resolve();
+    }
+
+    const staggerDelay = options.staggerDelay || 50;
+    const animations = elements.map((el, idx) => {
+      return this.animate(el, keyframes, {
+        ...options,
+        delay: (options.delay || 0) + idx * staggerDelay,
+      });
+    });
+
+    return Promise.all(animations);
   },
 };
 

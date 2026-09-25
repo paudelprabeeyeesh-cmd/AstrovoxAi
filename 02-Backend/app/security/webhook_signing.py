@@ -226,6 +226,10 @@ class WebhookSecretManager:
                 for s in self._secrets.values()
             ]
 
+    def validate_secret(self, secret: str) -> bool:
+        """Validate a webhook secret format."""
+        return len(secret) >= 32 and secret.isalnum()
+
 
 webhook_signer = WebhookSigner("default-webhook-secret-change-in-production")
 webhook_secret_manager = WebhookSecretManager("default-webhook-secret-change-in-production")

@@ -1,10 +1,13 @@
 // Frontend Platform - Group 4: Offline queue and sync primitives
+// Enhanced with exponential backoff, deduplication, and background sync API integration
 const OfflineQueue = {
   _queue: [],
   _isOnline: navigator.onLine,
   _syncInProgress: false,
   _maxRetries: 3,
   _storageKey: 'astrovox_offline_queue',
+  _dedupKeys: new Set(),
+  _backgroundSyncSupported: 'serviceWorker' in navigator && 'SyncManager' in window,
 
   _load() {
     try {

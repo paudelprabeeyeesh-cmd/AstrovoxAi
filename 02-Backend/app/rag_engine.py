@@ -93,7 +93,10 @@ class RAGEngine:
         start = 0
         while start < len(text):
             end = start + chunk_size
-            chunk = text[start:end]
+            remaining = len(text) - start
+            if remaining < overlap and chunks:
+                break
+            chunk = text[start:min(end, len(text))]
             if chunk.strip():
                 chunks.append(chunk.strip())
             start = end - overlap

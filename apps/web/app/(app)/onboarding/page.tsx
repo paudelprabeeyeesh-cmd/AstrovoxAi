@@ -27,12 +27,12 @@ export default function OnboardingPage() {
   const loadProgress = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ progress: OnboardingProgress | null }>('/support/onboarding');
+      const data = await api.getOnboardingProgress();
       if (data.progress) {
         setProgress(data.progress);
         setCurrentStepIndex(data.progress.current_step);
       } else {
-        await api.post('/support/onboarding/start', {});
+        await api.startOnboarding();
       }
     } catch {
       // ignore
@@ -42,10 +42,10 @@ export default function OnboardingPage() {
   };
 
   const completeStep = async (stepId: string) => {
-    await api.post('/support/onboarding/step', { step: stepId });
+    await api.completeOnboardingStep(stepId);
     setCurrentStepIndex((prev) => prev + 1);
     if (currentStepIndex >= STEPS.length - 1) {
-      await api.post('/support/onboarding/complete', {});
+      await api.completeOnboarding();
     }
     loadProgress();
   };

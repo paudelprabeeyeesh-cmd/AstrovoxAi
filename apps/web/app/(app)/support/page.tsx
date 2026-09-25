@@ -146,7 +146,7 @@ function BugsTab() {
   const loadBugs = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any>('/support/bugs');
+      const data = await api.getBugReports();
       setBugs(data.bugs || []);
     } catch {
       setBugs([]);
@@ -156,7 +156,7 @@ function BugsTab() {
   };
 
   const createBug = async () => {
-    await api.post('/support/bugs', { title, description, severity });
+    await api.createBugReport(title, description, severity);
     setShowForm(false);
     setTitle('');
     setDescription('');
@@ -236,7 +236,7 @@ function FeaturesTab() {
   const loadRequests = async () => {
     setLoading(true);
     try {
-      const data = await api.get<any>('/support/features');
+      const data = await api.getFeatureRequests();
       setRequests(data.requests || []);
     } catch {
       setRequests([]);
@@ -246,7 +246,7 @@ function FeaturesTab() {
   };
 
   const createRequest = async () => {
-    await api.post('/support/features', { title, description });
+    await api.createFeatureRequest(title, description);
     setShowForm(false);
     setTitle('');
     setDescription('');
@@ -254,7 +254,7 @@ function FeaturesTab() {
   };
 
   const vote = async (id: string) => {
-    await api.post(`/support/features/${id}/vote`, {});
+    await api.voteFeatureRequest(id);
     loadRequests();
   };
 
