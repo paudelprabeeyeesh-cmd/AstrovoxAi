@@ -152,6 +152,22 @@ export default function Dashboard({ session }) {
               ⚙️ SETTINGS
             </button>
             <button
+              onClick={() => setActivePanel('quantum')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'quantum' ? '#a78bfa' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'quantum' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              ⚛️ QUANTUM
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -209,6 +225,12 @@ export default function Dashboard({ session }) {
           {activePanel === 'settings' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <SettingsPanel session={session} onModelChange={setSelectedModel} />
+            </div>
+          )}
+
+          {activePanel === 'quantum' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <QuantumHolographicSystem />
             </div>
           )}
 

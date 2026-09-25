@@ -6,38 +6,39 @@ from slowapi.errors import RateLimitExceeded
 import os
 from dotenv import load_dotenv
 
-from .auth import router as auth_router
+from services.auth.auth import router as auth_router
 from .chat import router as chat_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
-from .embeddings_route import router as embeddings_router
-from .memory_engine.router import router as memory_engine_router
-from .enterprise.router import router as enterprise_router
+from services.vector.embeddings_route import router as embeddings_router
+from api.routers.memory.router import router as memory_engine_router
+from api.routers.router import router as enterprise_router
 from .enterprise.ws_router import router as ws_router
-from .workspace_route import router as workspace_router
-from .jobs_router import router as jobs_router, events_router
-from .analytics_route import router as analytics_router
-from .knowledge_route import router as knowledge_router
-from .agent_route import router as agent_router
-from .monitoring_route import router as monitoring_router
-from .security_route import router as security_router
-from .admin_route import router as admin_router
-from .realtime_route import router as realtime_router
-from .dashboard_route import router as dashboard_router
-from .api_v1 import router as api_v1_router
-from .platform_route import router as platform_router
-from .knowledge_route_v2 import router as knowledge_v2_router
-from .realtime_route import tools_router
-from .realtime_route import security_router as scan_router
-from .agents_route import router as agents_router
-from .agents_route import memory_router as memory_v2_router
-from .automation_route import router as automation_router
+from api.routers.workspace_route import router as workspace_router
+from api.routers.jobs_router import router as jobs_router, events_router
+from api.routers.analytics_route import router as analytics_router
+from api.routers.knowledge_route import router as knowledge_router
+from api.routers.agent_route import router as agent_router
+from api.routers.monitoring_route import router as monitoring_router
+from api.routers.auth.security_route import router as security_router
+from api.routers.admin_route import router as admin_router
+from api.routers.realtime_route import router as realtime_router
+from api.routers.dashboard_route import router as dashboard_router
+from api.v1 import router as api_v1_router
+from api.routers.platform_route import router as platform_router
+from api.routers.knowledge_route_v2 import router as knowledge_v2_router
+from api.routers.realtime_route import tools_router
+from api.routers.realtime_route import security_router as scan_router
+from api.routers.agents_route import router as agents_router
+from api.routers.agents_route import memory_router as memory_v2_router
+from api.routers.automation_route import router as automation_router
 from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
-from .document_route import router as document_router
-from .security_headers import SecurityHeadersMiddleware
-from .rate_limit_hardened import rate_limit_middleware
+from api.routers.document_route import router as document_router
+from api.routers.temporal_route import router as temporal_router
+from middleware.security.security_headers import SecurityHeadersMiddleware
+from middleware.security.rate_limit_hardened import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 
 load_dotenv()
@@ -105,6 +106,7 @@ app.include_router(automation_router)
 app.include_router(document_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
+app.include_router(temporal_router)
 
 
 # Prometheus metrics middleware
@@ -116,7 +118,7 @@ async def metrics_middleware(request: Request, call_next):
     duration = time.time() - start_time
 
     try:
-        from .metrics import track_request
+        from ...metrics import track_request
         track_request(
             method=request.method,
             endpoint=request.url.path,
@@ -135,7 +137,7 @@ async def metrics_middleware(request: Request, call_next):
 async def metrics():
     """Prometheus metrics endpoint."""
     try:
-        from .metrics import get_metrics, CONTENT_TYPE_LATEST
+        from ...metrics import get_metrics, CONTENT_TYPE_LATEST
         return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
     except ImportError:
         return Response(
