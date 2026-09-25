@@ -2,3 +2,6 @@ export { HolographicCanvas, VolumetricDisplay, HolographicChatInterface, Floatin
 export { VRWorkspace, AROverlay, WebXRChatExperience } from './XRIntegration'
 export { NeuralVisualization, QuantumVisualization, ConsciousnessMap } from './VisualizationComponents'
 export { HolographicPanel } from './HolographicPanel'
+export { KnowledgeGraphExplorer } from './KnowledgeGraphExplorer'
+export { QuantumStateVisualization } from './QuantumStateVisualization'
+export { DreamStateInterface } from './DreamStateInterface'

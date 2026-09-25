@@ -54,8 +54,8 @@ class ParallelVariant(BaseModel):
 class MergeRequest(BaseModel):
     source_universe_id: str
     target_universe_id: str
-    strategy: str = Field("prefer_target", regex="^(prefer_source|prefer_target|interleave|diff_only)$")
-    conflict_resolution: Optional[str] = Field(None, regex="^(source|target|newest|manual)$")
+    strategy: str = Field("prefer_target", pattern="^(prefer_source|prefer_target|interleave|diff_only)$")
+    conflict_resolution: Optional[str] = Field(None, pattern="^(source|target|newest|manual)$")
 
 
 class DivergenceQuery(BaseModel):

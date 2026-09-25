@@ -5,6 +5,7 @@ from .identity_persistence import IdentityPersistence, IdentitySnapshot
 from .digital_death import DigitalDeathProtocols, DigitalDeathProtocol
 from .legacy import LegacySystems, LegacyArtifact
 from .afterlife import AfterlifeSimulation, AfterlifeState
+from .governance import DigitalRightsGovernance, GovernancePolicy, DigitalRightsCase
 
 __all__ = [
     "AIRightsFramework",
@@ -21,4 +22,7 @@ __all__ = [
     "LegacyArtifact",
     "AfterlifeSimulation",
     "AfterlifeState",
+    "DigitalRightsGovernance",
+    "GovernancePolicy",
+    "DigitalRightsCase",
 ]

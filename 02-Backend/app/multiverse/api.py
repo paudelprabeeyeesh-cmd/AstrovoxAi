@@ -21,7 +21,7 @@ engine = MultiverseEngine()
 class CreateTimelineRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=2000)
-    branch_type: str = Field("conversation", regex="^(conversation|scenario|parallel|divergence)$")
+    branch_type: str = Field("conversation", pattern="^(conversation|scenario|parallel|divergence)$")
 
 
 class ForkUniverseRequest(BaseModel):

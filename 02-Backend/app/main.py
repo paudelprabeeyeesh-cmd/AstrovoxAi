@@ -68,6 +68,7 @@ from app.api.routers.cx_router import router as cx_router
 from app.api.routers.search_knowledge_route import router as search_knowledge_router
 from app.observability.endpoints import router as observability_router
 from app.omniscient_ai.router import router as omniscient_router
+from app.quantum.routes.router import router as quantum_router
 from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
@@ -176,6 +177,7 @@ app.include_router(cx_router)
 app.include_router(observability_router)
 app.include_router(search_knowledge_router)
 app.include_router(omniscient_router)
+app.include_router(quantum_router)
 app.include_router(neural_bci_router)
 app.include_router(multiverse_router)
 app.include_router(omnipresent_router)
