@@ -18,10 +18,13 @@ from .semantic_memory import SemanticMemory
 from .episodic_memory import EpisodicMemory
 from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory
-from .memory_manager import MemoryManager
+from .memory_manager import MemoryManager, get_memory_manager
 from .importance_scorer import ImportanceScorer
 from .retrieval_engine import RetrievalEngine
 from .vector_store import VectorStore
+from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceScoringEngine
+from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
+from .memory_ranking import MemoryRanker, RankedMemory
 
 __all__ = [
     "ContextMemory",
@@ -31,7 +34,15 @@ __all__ = [
     "ProceduralMemory",
     "WorkspaceMemory",
     "MemoryManager",
+    "get_memory_manager",
     "ImportanceScorer",
     "RetrievalEngine",
     "VectorStore",
+    "AdvancedMemoryManager",
+    "MemoryFragment",
+    "ImportanceScoringEngine",
+    "MemoryConsolidator",
+    "ConsolidatedMemory",
+    "MemoryRanker",
+    "RankedMemory",
 ]

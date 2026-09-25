@@ -8,6 +8,7 @@ from .debugger import DebuggerAgent
 from .orchestrator import MultiAgentOrchestrator
 from .debate_system import MultiAgentDebateSystem, DebateResult, DebateArgument
 from .agent_marketplace import AgentMarketplace, AgentListing, AgentCapability, get_marketplace
+from .enhanced_orchestrator import EnhancedAgentOrchestrator, OrchestrationTask, OrchestrationStrategy
 
 __all__ = [
     "BaseAgent",
@@ -28,4 +29,7 @@ __all__ = [
     "AgentListing",
     "AgentCapability",
     "get_marketplace",
+    "EnhancedAgentOrchestrator",
+    "OrchestrationTask",
+    "OrchestrationStrategy",
 ]
