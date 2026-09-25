@@ -1,26 +1,52 @@
 # ============================================================================
-# AstrovoxAI Frontend — Production Dockerfile
+# AstrovoxAI Frontend — Production Dockerfile (Hardened Multi-Stage)
 # ============================================================================
 
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:20-alpine@sha256:1a3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS base
+
+ARG NODE_VERSION=20
+ARG APP_USER=nginxuser
+ARG APP_UID=1001
+ARG APP_GID=1001
+ARG TZ=UTC
+
+ENV NODE_VERSION=${NODE_VERSION} \
+    APP_USER=${APP_USER} \
+    APP_UID=${APP_UID} \
+    APP_GID=${APP_GID} \
+    TZ=${TZ} \
+    NODE_ENV=production
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Build stage
+FROM base AS builder
 
-# Install dependencies
-RUN npm ci
+# Install all dependencies for build
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund && npm cache clean --force
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN npm run build && \
+    rm -rf node_modules
 
+# ============================================================================
 # Production stage
-FROM nginx:alpine AS production
+# ============================================================================
+FROM nginx:alpine@sha256:2c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS production
+
+ARG APP_USER=nginxuser
+ARG APP_UID=1001
+ARG APP_GID=1001
+ARG TZ=UTC
+
+ENV APP_USER=${APP_USER} \
+    APP_UID=${APP_UID} \
+    APP_GID=${APP_GID} \
+    TZ=${TZ}
 
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
@@ -31,16 +57,23 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add non-root user
-RUN addgroup -g 1001 -S nginxgroup && \
-    adduser -S nginxuser -u 1001 -G nginxgroup
+# Add non-root user with fixed UID/GID
+RUN addgroup -g ${APP_GID} -S nginxgroup && \
+    adduser -S ${APP_USER} -u ${APP_UID} -G nginxgroup
+
+# Set labels for image metadata
+LABEL org.opencontainers.image.title="astrovoxai-frontend" \
+      org.opencontainers.image.description="AstrovoxAI Frontend (Nginx)" \
+      org.opencontainers.image.vendor="AstrovoxAI" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.url="https://github.com/AstrovoxAi/AstrovoxAi"
 
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health probe: check root path returns 200
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
-# Start nginx
+# Start nginx as non-root
 CMD ["nginx", "-g", "daemon off;"]

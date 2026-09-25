@@ -1,0 +1,59 @@
+# ==============================================================================
+# AstrovoxAI Docker Compose Override
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d
+# ==============================================================================
+#
+# This file provides local development overrides. It is automatically picked up
+# by Docker Compose as as a lower-priority override over docker-compose.yml.
+#
+# For local development, mount the source code as a volume to avoid image rebuilds.
+# For production, use: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ==============================================================================
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./02-Backend/app:/app/app
+      - ./02-Backend/scripts:/app/scripts
+      - ./logs:/app/logs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    volumes:
+      - ./:/app
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  prometheus:
+    ports:
+      - "127.0.0.1:9090:9090"
+
+  grafana:
+    ports:
+      - "127.0.0.1:3000:3000"

@@ -8,16 +8,25 @@ spec:
   selector:
     matchLabels:
       app: astrovox-app
+  minReadySeconds: 10
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+    type: RollingUpdate
   template:
     metadata:
       labels:
         app: astrovox-app
     spec:
+      terminationGracePeriodSeconds: 60
       containers:
       - name: app
         image: astrovox:latest
         ports:
         - containerPort: 8000
+          name: http
+          protocol: TCP
         envFrom:
         - configMapRef:
             name: astrovox-config
@@ -30,15 +39,30 @@ spec:
           limits:
             cpu: 500m
             memory: 512Mi
-        livenessProbe:
+        startupProbe:
           httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
+            path: /health/startup
+            port: http
           periodSeconds: 10
+          failureThreshold: 6
         readinessProbe:
           httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 5
+            path: /health/ready
+            port: http
           periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            httpGet:
+              path: /health/prestop
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
