@@ -8,9 +8,9 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from ...utils.auth.auth_utils import get_user_id_from_token
-from .enterprise.service import org_service
-from .enterprise import rbac
-from .workspace import workspace_manager
+from ...enterprise.service import org_service
+from ...enterprise import rbac
+from ...workspace import workspace_manager
 
 
 router = APIRouter(prefix="/api/workspaces", tags=["workspace"])

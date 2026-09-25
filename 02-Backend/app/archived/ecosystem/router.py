@@ -37,7 +37,7 @@ from .marketplace import (
     get_marketplace_catalog,
     seed_default_catalog,
 )
-from ...monitoring import (
+from ..monitoring import (
     DependencyScanner,
     get_audit_log,
     get_ecosystem_monitor,

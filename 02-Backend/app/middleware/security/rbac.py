@@ -4,8 +4,8 @@ from enum import Enum
 from typing import List, Optional, Dict, Any
 from fastapi import Depends, HTTPException
 
-from ..services.auth.auth import get_current_user
-from ..repositories.database.client import get_db
+from app.services.auth.auth import get_current_user
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

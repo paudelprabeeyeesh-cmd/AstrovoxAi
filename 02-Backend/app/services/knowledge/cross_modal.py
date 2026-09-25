@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from ...config import settings
+from ..config import settings
 from ..repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)

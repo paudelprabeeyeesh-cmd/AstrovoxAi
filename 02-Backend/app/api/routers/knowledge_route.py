@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from .services import knowledge
-from ...utils.auth.auth_utils import get_user_id_from_token
+from ..utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 

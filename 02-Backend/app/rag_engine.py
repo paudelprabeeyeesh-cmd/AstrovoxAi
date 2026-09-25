@@ -52,25 +52,19 @@ except ImportError:
     HAS_BS4 = False
 
 
-class _LazyOpenAIClient:
-    def __init__(self):
-        self._client = None
-
-    def _get_client(self):
-        if self._client is None:
-            if openai is None:
-                raise RuntimeError("openai is not installed")
-            api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
-            if not api_key:
-                raise RuntimeError("OPENAI_API_KEY is not set")
-            self._client = openai.OpenAI(api_key=api_key)
-        return self._client
-
-    def __getattr__(self, name):
-        return getattr(self._get_client(), name)
+client = None
 
 
-client = _LazyOpenAIClient()
+def _ensure_client():
+    global client
+    if client is None:
+        if openai is None:
+            raise RuntimeError("openai is not installed")
+        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise RuntimeError("OPENAI_API_KEY is not set")
+        client = openai.OpenAI(api_key=api_key)
+    return client
 
 
 class RAGEngine:
@@ -107,8 +101,7 @@ class RAGEngine:
     def embed_chunks(self, chunks: List[str]) -> List[List[float]]:
         if not chunks:
             return []
-        if not HAS_OPENAI:
-            raise RuntimeError("openai is not installed")
+        _ensure_client()
         response = client.embeddings.create(
             model=self.embedding_model,
             input=chunks,

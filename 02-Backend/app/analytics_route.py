@@ -6,7 +6,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Header, Query, Body
 
-from ...analytics import analytics, advanced_analytics
+from .analytics import analytics, advanced_analytics
 from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
@@ -249,7 +249,7 @@ async def create_ab_test(authorization: str = Header(None), payload: dict = Body
 
 
 @router.post("/ab-tests/{test_id}/assign")
-async def assign_ab_test(authorization: str = Header(None), test_id: str, payload: dict = Body(...)):
+async def assign_ab_test(test_id: str, authorization: str = Header(None), payload: dict = Body(...)):
     """Assign a user to an A/B test variant."""
     user_id = get_user_id_from_token(authorization)
     from app.analytics.advanced import ABTestAssignment
@@ -264,7 +264,7 @@ async def assign_ab_test(authorization: str = Header(None), test_id: str, payloa
 
 
 @router.post("/ab-tests/{test_id}/events")
-async def track_ab_event(authorization: str = Header(None), test_id: str, payload: dict = Body(...)):
+async def track_ab_event(test_id: str, authorization: str = Header(None), payload: dict = Body(...)):
     """Track an A/B test event."""
     user_id = get_user_id_from_token(authorization)
     from app.analytics.advanced import ABTestEvent
@@ -282,7 +282,7 @@ async def track_ab_event(authorization: str = Header(None), test_id: str, payloa
 
 
 @router.get("/ab-tests/{test_id}")
-async def get_ab_test_analytics(authorization: str = Header(None), test_id: str):
+async def get_ab_test_analytics(test_id: str, authorization: str = Header(None)):
     """Get A/B test analytics."""
     get_user_id_from_token(authorization)
     data = advanced_analytics.get_ab_test_analytics(test_id=test_id)

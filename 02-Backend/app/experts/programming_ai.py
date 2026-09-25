@@ -529,7 +529,7 @@ When generating code:
         response += "- Python, Java, JavaScript, TypeScript\n"
         response += "- C, C++, C#, Go, Rust\n"
         response += "- Kotlin, Swift, PHP, Ruby\n\n"
-        response += **Supported Frameworks:**\n"
+        response += "**Supported Frameworks:**\n"
         response += "- React, Vue, Angular (Frontend)\n"
         response += "- FastAPI, Django, Flask (Python)\n"
         response += "- Node.js, Express (JavaScript)\n"

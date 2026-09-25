@@ -995,7 +995,7 @@ class AnalyticsTracker:
         """Get budget alerts from cost tracker."""
         alerts = []
         try:
-            from ...cost_management import cost_tracker
+            from .cost_management import cost_tracker
             for budget_id, budget in cost_tracker._budgets.items():
                 for user_id in list(cost_tracker._user_usage.keys())[:10]:
                     check = cost_tracker.check_budget(budget_id, user_id)

@@ -50,11 +50,11 @@ class UniversalKnowledgeGraph:
     def __init__(self):
         self._entities: Dict[str, OmniscientEntity] = {}
         self._relationships: Dict[str, OmniscientRelationship] = {}
-        self._adjacency: Dict[str, Set[str)] = defaultdict(set)
-        self._reverse_adjacency: Dict[str, Set[str)] = defaultdict(set)
+        self._adjacency: Dict[str, Set[str]] = defaultdict(set)
+        self._reverse_adjacency: Dict[str, Set[str]] = defaultdict(set)
         self._entity_embeddings: Dict[str, List[float]] = {}
-        self._property_index: Dict[str, Dict[str, Set[str)]] = defaultdict(lambda: defaultdict(set))
-        self._type_index: Dict[str, Set[str)]] = defaultdict(set)
+        self._property_index: Dict[str, Dict[str, Set[str]]] = defaultdict(lambda: defaultdict(set))
+        self._type_index: Dict[str, Set[str]] = defaultdict(set)
         self._inference_cache: Dict[str, Any] = {}
         self._omniscient_cache: Dict[str, Any] = {}
         self._prediction_cache: Dict[str, Any] = {}

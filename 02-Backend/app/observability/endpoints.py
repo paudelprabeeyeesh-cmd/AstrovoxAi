@@ -1,6 +1,6 @@
 """Health check endpoints for the AstrovoxAi API."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from typing import Dict, Any
 import asyncio
 
@@ -64,7 +64,7 @@ async def liveness_check():
 async def metrics_endpoint():
     """Prometheus metrics endpoint."""
     obs = get_observability()
-    return obs.get_metrics_prometheus()
+    return Response(content=obs.get_metrics_prometheus(), media_type="text/plain; version=0.0.4")
 
 
 @router.get("/alerts")

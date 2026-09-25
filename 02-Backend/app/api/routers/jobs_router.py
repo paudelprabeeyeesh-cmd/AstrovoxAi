@@ -4,9 +4,9 @@ from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 
-from ...utils.auth.auth_utils import get_user_id_from_token
-from ...jobs import job_queue, JobPriority, JobStatus
-from ...events import event_bus
+from ..utils.auth.auth_utils import get_user_id_from_token
+from ..jobs import job_queue, JobPriority, JobStatus
+from ..events import event_bus
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 

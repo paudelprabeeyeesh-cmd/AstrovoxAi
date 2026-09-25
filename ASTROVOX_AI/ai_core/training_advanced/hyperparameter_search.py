@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 class HyperparameterSearch:
-    def __init__(self, model_fn: Callable, search_space: Dict[str, List[Any], objective_fn: Callable, strategy: str = 'random'):
+    def __init__(self, model_fn: Callable, search_space: Dict[str, List[Any]], objective_fn: Callable, strategy: str = 'random'):
         self.model_fn = model_fn
         self.search_space = search_space
         self.objective_fn = objective_fn
