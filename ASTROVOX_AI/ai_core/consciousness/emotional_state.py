@@ -25,12 +25,14 @@ class EmotionalState:
     dominance: float = 0.5
     emotions: dict[str, float] = field(default_factory=dict)
     regulation_strategy: str = "reappraisal"
+    mood_baseline: float = 0.0
 
 
 class EmotionalStateEngine:
     def __init__(self):
         self.current_state = EmotionalState()
         self.emotion_history: list[dict[str, Any]] = []
+        self.mood_history: list[float] = []
 
     def generate_emotion(
         self, trigger: str, emotion_type: EmotionType, intensity: float = 1.0
@@ -48,8 +50,22 @@ class EmotionalStateEngine:
             self.current_state.valence = max(-1.0, self.current_state.valence - intensity * 0.5)
             self.current_state.arousal = min(1.0, self.current_state.arousal + intensity * 0.7)
             self.current_state.dominance = max(0.0, self.current_state.dominance - intensity * 0.4)
+        elif emotion_type == EmotionType.SADNESS:
+            self.current_state.valence = max(-1.0, self.current_state.valence - intensity * 0.4)
+            self.current_state.arousal = max(0.0, self.current_state.arousal - intensity * 0.3)
+            self.current_state.dominance = max(0.0, self.current_state.dominance - intensity * 0.2)
+        elif emotion_type == EmotionType.SURPRISE:
+            self.current_state.arousal = min(1.0, self.current_state.arousal + intensity * 0.5)
+            self.current_state.valence = self.current_state.valence + intensity * 0.1
+        elif emotion_type == EmotionType.TRUST:
+            self.current_state.valence = min(1.0, self.current_state.valence + intensity * 0.3)
+            self.current_state.dominance = min(1.0, self.current_state.dominance + intensity * 0.1)
 
         self.current_state.emotions[emotion_name] = min(1.0, intensity)
+        self.current_state.mood_baseline = self.current_state.valence
+        self.mood_history.append(self.current_state.mood_baseline)
+        if len(self.mood_history) > 500:
+            self.mood_history = self.mood_history[-500:]
 
         record = {
             "trigger": trigger,
@@ -73,6 +89,8 @@ class EmotionalStateEngine:
             self.current_state.arousal = max(0.0, self.current_state.arousal - 0.4)
         elif strategy == "situation_selection":
             self.current_state.valence = min(1.0, self.current_state.valence + 0.3)
+        elif strategy == "distraction":
+            self.current_state.arousal = max(0.0, self.current_state.arousal - 0.3)
 
         logger.info("Emotion regulated with strategy: %s", strategy)
         return {"status": "regulated", "strategy": strategy, "new_valence": self.current_state.valence}
@@ -84,5 +102,6 @@ class EmotionalStateEngine:
             "dominance": self.current_state.dominance,
             "active_emotions": self.current_state.emotions,
             "regulation_strategy": self.current_state.regulation_strategy,
+            "mood_baseline": self.current_state.mood_baseline,
             "history_length": len(self.emotion_history),
         }

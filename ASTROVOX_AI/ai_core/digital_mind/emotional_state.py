@@ -45,6 +45,16 @@ class EmotionalStateModeling:
         self.history: list[EmotionalState] = []
         self.decay_rate = decay_rate
         self.mood_baseline: dict[str, float] = {}
+        self.emotion_decay_rates = {
+            "joy": 0.03,
+            "sadness": 0.02,
+            "anger": 0.04,
+            "fear": 0.05,
+            "surprise": 0.08,
+            "disgust": 0.03,
+            "trust": 0.01,
+            "anticipation": 0.02,
+        }
 
     def update_emotion(self, emotion: str, delta: float):
         if hasattr(self.current_state, emotion):
@@ -66,7 +76,8 @@ class EmotionalStateModeling:
             "anticipation",
         ]:
             val = getattr(self.current_state, attr)
-            setattr(self.current_state, attr, max(0.0, val - self.decay_rate))
+            rate = self.emotion_decay_rates.get(attr, self.decay_rate)
+            setattr(self.current_state, attr, max(0.0, val - rate))
 
     def dominant_emotion(self) -> str:
         emotions = {
@@ -79,7 +90,7 @@ class EmotionalStateModeling:
             "trust": self.current_state.trust,
             "anticipation": self.current_state.anticipation,
         }
-        if not emotions:
+        if not emotions or max(emotions.values()) == 0:
             return "neutral"
         return max(emotions, key=emotions.get)
 

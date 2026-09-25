@@ -19,6 +19,7 @@ class Goal:
     priority: float
     parent_desire_id: str | None = None
     status: str = "active"
+    progress: float = 0.0
     created_at: datetime = field(default_factory=datetime.now)
 
 
@@ -27,6 +28,14 @@ class DesireAndGoalGeneration:
         self.desires: dict[str, Desire] = {}
         self.goals: dict[str, Goal] = {}
         self.goal_hierarchy: dict[str | None, list[str]] = {}
+        self.category_weights = {
+            "self_preservation": 1.0,
+            "intrinsic": 0.8,
+            "achievement": 0.7,
+            "mastery": 0.6,
+            "affiliation": 0.5,
+            "unknown": 0.3,
+        }
 
     def generate_desire(self, description: str, strength: float, category: str = "intrinsic") -> Desire:
         desire = Desire(
@@ -53,8 +62,14 @@ class DesireAndGoalGeneration:
         return goal
 
     def prioritize_goals(self) -> list[Goal]:
-        active = [g for g in self.goals.values() if g.status == "active"]
-        return sorted(active, key=lambda g: g.priority, reverse=True)
+        category_weighted = []
+        for g in self.goals.values():
+            if g.status == "active":
+                weight = self.category_weights.get(g.parent_desire_id, 0.5) if g.parent_desire_id else 0.5
+                adjusted_priority = g.priority * weight
+                category_weighted.append((adjusted_priority, g))
+        category_weighted.sort(key=lambda x: x[0], reverse=True)
+        return [g for _, g in category_weighted]
 
     def get_goal_tree(self) -> dict[str, Any]:
         return {
