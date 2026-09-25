@@ -483,6 +483,23 @@ class ThreatModel:
                 },
             }
 
+    def export_model(self, format: str = "json") -> str:
+        """Export the threat model in various formats."""
+        model = self.get_full_model()
+        if format == "json":
+            return json.dumps(model, default=str, indent=2)
+        elif format == "markdown":
+            lines = ["# Threat Model Report", ""]
+            for threat in model["threats"]:
+                lines.append(f"## {threat['id']}: {threat['name']}")
+                lines.append(f"- **Category:** {threat['category']}")
+                lines.append(f"- **Severity:** {threat['severity']}")
+                lines.append(f"- **Subsystem:** {threat['subsystem']}")
+                lines.append("")
+            return "\n".join(lines)
+        else:
+            raise ValueError(f"Unsupported format: {format}")
+
 
 threat_model = ThreatModel()
 
