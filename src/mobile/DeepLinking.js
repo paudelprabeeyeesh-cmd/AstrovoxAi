@@ -1,7 +1,9 @@
 import { useEffect, useCallback } from 'react'
-import { createStorage } from '../utils/storage'
+import { Linking, Platform } from 'react-native'
+import * as IntentLauncher from 'expo-intent-launcher'
+import { createRNStorage } from './storageAdapter'
 
-const LINK_STORAGE = createStorage('deep_links')
+const LINK_STORAGE = createRNStorage('deep_links')
 
 const ROUTE_MAP = {
   '/chat': 'chat',
@@ -12,41 +14,73 @@ const ROUTE_MAP = {
   '/reset-password': 'reset-password'
 }
 
+const UNIVERSAL_LINKS = {
+  ios: 'https://astrovox.ai',
+  android: 'https://astrovox.ai'
+}
+
 export function useDeepLinking(onNavigate) {
-  const handleRoute = useCallback((path) => {
+  const handleRoute = useCallback((path, params = {}) => {
     const cleanPath = path.split('?')[0]
     const route = ROUTE_MAP[cleanPath] || 'chat'
-    const params = new URLSearchParams(path.split('?')[1] || '')
+    const urlParams = new URLSearchParams(path.split('?')[1] || '')
 
+    const parsed = { route }
     if (route === 'conversation') {
-      const conversationId = params.get('id')
-      onNavigate?.({ route, conversationId })
+      parsed.conversationId = params.id || urlParams.get('id')
     } else if (route === 'reset-password') {
-      const accessToken = params.get('access_token')
-      const refreshToken = params.get('refresh_token')
-      onNavigate?.({ route, accessToken, refreshToken })
+      parsed.accessToken = params.access_token || urlParams.get('access_token')
+      parsed.refreshToken = params.refresh_token || urlParams.get('refresh_token')
     } else {
-      onNavigate?.({ route })
+      Object.entries(params).forEach(([key, value]) => {
+        if (value) parsed[key] = value
+      })
     }
 
-    LINK_STORAGE.set('last_route', { path, route, params: Object.fromEntries(params), timestamp: new Date().toISOString() })
+    onNavigate?.(parsed)
+
+    LINK_STORAGE.set('last_route', {
+      path,
+      route,
+      params: parsed,
+      timestamp: new Date().toISOString()
+    })
   }, [onNavigate])
 
   useEffect(() => {
-    if (!window.location?.pathname) return
-
-    handleRoute(window.location.pathname + window.location.search)
-
-    const handlePopState = () => {
-      handleRoute(window.location.pathname + window.location.search)
+    async function handleInitialLink() {
+      try {
+        const initialUrl = await Linking.getInitialURL()
+        if (initialUrl) {
+          parseIncomingLink(initialUrl)
+        }
+      } catch (e) {
+        console.error('Failed to get initial URL:', e)
+      }
     }
 
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
+    handleInitialLink()
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      parseIncomingLink(url)
+    })
+
+    return () => subscription.remove()
+  }, [])
+
+  const parseIncomingLink = useCallback((url) => {
+    try {
+      const urlObj = new URL(url)
+      const path = urlObj.pathname
+      const params = Object.fromEntries(urlObj.searchParams.entries())
+      handleRoute(path + urlObj.search, params)
+    } catch {
+      console.error('Failed to parse deep link:', url)
+    }
   }, [handleRoute])
 
   const generateLink = useCallback((route, params = {}) => {
-    const baseUrl = window.location.origin
+    const baseUrl = UNIVERSAL_LINKS[Platform.OS] || 'https://astrovox.ai'
     const searchParams = new URLSearchParams()
 
     Object.entries(params).forEach(([key, value]) => {
@@ -59,58 +93,78 @@ export function useDeepLinking(onNavigate) {
     return `${baseUrl}${route}${queryString ? '?' + queryString : ''}`
   }, [])
 
-  const parseIncomingLink = useCallback((url) => {
+  const openDeepLink = useCallback(async (route, params = {}) => {
+    const url = generateLink(route, params)
     try {
-      const urlObj = new URL(url)
-      const path = urlObj.pathname
-      handleRoute(path + urlObj.search)
-    } catch {
-      console.error('Failed to parse deep link:', url)
+      const supported = await Linking.canOpenURL(url)
+      if (supported) {
+        await Linking.openURL(url)
+      } else {
+        console.warn('Cannot open URL:', url)
+      }
+    } catch (e) {
+      console.error('Failed to open deep link:', e)
     }
-  }, [handleRoute])
+  }, [generateLink])
+
+  const openAppSettings = useCallback(async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        await Linking.openURL('app-settings:')
+      } else {
+        await IntentLauncher.openSettingsAsync()
+      }
+    } catch (e) {
+      console.error('Failed to open settings:', e)
+    }
+  }, [])
 
   return {
-    generateLink,
+    handleRoute,
     parseIncomingLink,
+    generateLink,
+    openDeepLink,
+    openAppSettings,
     getLastRoute: () => LINK_STORAGE.get('last_route'),
     routeMap: ROUTE_MAP
   }
 }
 
 export function DeepLinkingManager() {
-  const handleNavigate = useCallback((nav) => {
-    console.log('Navigate:', nav)
-  }, [])
-
-  useDeepLinking(handleNavigate)
+  const { handleRoute } = useDeepLinking(() => {})
 
   useEffect(() => {
-    const handleMessage = (event) => {
-      if (event.data?.type === 'DEEP_LINK') {
-        const url = event.data.url
-        if (url) {
-          window.history.pushState({}, '', url)
-          window.dispatchEvent(new PopStateEvent('popstate'))
+    async function setup() {
+      try {
+        const initialUrl = await Linking.getInitialURL()
+        if (initialUrl) {
+          handleRoute(new URL(initialUrl).pathname + new URL(initialUrl).search)
         }
+      } catch (e) {
+        console.error('Deep linking init failed:', e)
       }
     }
 
-    window.addEventListener('message', handleMessage)
-
-    if (window.ReactNativeWebView) {
-      window.addEventListener('message', handleMessage)
-    }
-
-    return () => window.removeEventListener('message', handleMessage)
-  }, [])
+    setup()
+  }, [handleRoute])
 
   return null
 }
 
 export function registerDeepLinkHandler() {
-  if (document) {
-    document.addEventListener('DOMContentLoaded', () => {
-      console.log('Deep linking initialized')
-    })
+  console.log('Deep linking handler registered for', Platform.OS)
+}
+
+export function configureUniversalLinks(config = {}) {
+  return {
+    ios: {
+      ...UNIVERSAL_LINKS.ios,
+      appId: config.iosAppId || '',
+      teamId: config.iosTeamId || ''
+    },
+    android: {
+      ...UNIVERSAL_LINKS.android,
+      packageName: config.androidPackageName || 'ai.astrovox.mobile'
+    }
   }
 }

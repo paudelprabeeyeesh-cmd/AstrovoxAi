@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform } from 'react-native'
+import * as LocalAuthentication from 'expo-local-authentication'
+import * as SecureStore from 'expo-secure-store'
 import { supabase } from '../supabase'
 import { isMobile, getDeviceType } from '../utils/platform'
-import { createStorage } from '../utils/storage'
+import { createSecureStorage } from './storageAdapter'
 
-const MOBILE_STORAGE = createStorage('mobile_auth')
+const SECURE_STORAGE = createSecureStorage('mobile_auth')
 
 export function useMobileAuth() {
   const [loading, setLoading] = useState(false)
@@ -15,28 +18,31 @@ export function useMobileAuth() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [biometricType, setBiometricType] = useState('none')
   const [deviceType, setDeviceType] = useState(getDeviceType())
 
   useEffect(() => {
-    const handleResize = () => setDeviceType(getDeviceType())
-    window.addEventListener('resize', handleResize)
     checkBiometric()
-    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   const checkBiometric = useCallback(async () => {
-    if (window.PublicKeyCredential) {
-      try {
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        setBiometricAvailable(available)
-      } catch {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync()
+      if (compatible) {
+        const enrolled = await LocalAuthentication.isEnrolledAsync()
+        const types = await LocalAuthentication.supportedAuthenticationTypesAsync()
+        setBiometricAvailable(enrolled)
+        setBiometricType(enrolled ? types[0]?.toString() || 'biometric' : 'none')
+      } else {
         setBiometricAvailable(false)
       }
+    } catch {
+      setBiometricAvailable(false)
     }
   }, [])
 
   const handleAuth = useCallback(async (e) => {
-    e.preventDefault()
+    e?.preventDefault?.()
     setMessage('')
     setError('')
 
@@ -70,13 +76,13 @@ export function useMobileAuth() {
         setFullName('')
         setTimeout(() => setIsSignUp(false), 2000)
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError, data } = await supabase.auth.signInWithPassword({
           email,
           password
         })
         if (signInError) throw signInError
         setMessage('Login successful!')
-        if (biometricAvailable) {
+        if (biometricAvailable && data?.session) {
           await saveBiometricCredentials(email, password)
         }
       }
@@ -88,7 +94,7 @@ export function useMobileAuth() {
   }, [email, password, fullName, isSignUp, biometricAvailable])
 
   const handleForgotPassword = useCallback(async (e) => {
-    e.preventDefault()
+    e?.preventDefault?.()
     setMessage('')
     setError('')
 
@@ -100,7 +106,7 @@ export function useMobileAuth() {
     try {
       setLoading(true)
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`
+        redirectTo: 'astrovoxai://reset-password'
       })
       if (error) throw error
       setMessage('Password reset link sent!')
@@ -115,37 +121,50 @@ export function useMobileAuth() {
 
   const saveBiometricCredentials = useCallback(async (email, password) => {
     try {
-      if (window.PublicKeyCredential) {
-        const challenge = new Uint8Array(32)
-        crypto.getRandomValues(challenge)
-        MOBILE_STORAGE.set('pending_credentials', { email, password })
-      }
-    } catch {
-      console.warn('Biometric storage not available')
+      await SECURE_STORAGE.set('pending_credentials', { email, password })
+    } catch (e) {
+      console.warn('Biometric storage not available:', e)
     }
   }, [])
 
   const authenticateWithBiometric = useCallback(async () => {
     try {
-      const pending = MOBILE_STORAGE.get('pending_credentials')
-      if (!pending) {
-        setError('No saved credentials found. Please sign in first.')
-        return
-      }
-      if (window.PublicKeyCredential) {
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
-        if (!available) {
-          setError('Biometric authentication not available on this device.')
-          return
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Authenticate with biometrics',
+        fallbackLabel: 'Use passcode',
+        cancelLabel: 'Cancel'
+      })
+
+      if (result.success) {
+        const pending = await SECURE_STORAGE.get('pending_credentials')
+        if (pending) {
+          setEmail(pending.email)
+          setPassword(pending.password)
+          await handleAuth({ preventDefault: () => {} })
+        } else {
+          setError('No saved credentials found. Please sign in first.')
         }
+      } else if (result.error) {
+        setError(`Biometric authentication failed: ${result.error}`)
       }
-      setEmail(pending.email)
-      setPassword(pending.password)
-      await handleAuth({ preventDefault: () => {} })
     } catch (err) {
-      setError('Biometric authentication failed.')
+      setError('Biometric authentication not available.')
     }
   }, [handleAuth])
+
+  const signOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut()
+      setEmail('')
+      setPassword('')
+      setFullName('')
+      setMessage('')
+      setError('')
+      await SECURE_STORAGE.remove('pending_credentials')
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [])
 
   const isPhone = deviceType === 'phone'
 
@@ -159,6 +178,7 @@ export function useMobileAuth() {
     message,
     error,
     biometricAvailable,
+    biometricType,
     deviceType,
     isPhone,
     setEmail,
@@ -170,7 +190,8 @@ export function useMobileAuth() {
     setError,
     handleAuth,
     handleForgotPassword,
-    authenticateWithBiometric
+    authenticateWithBiometric,
+    signOut
   }
 }
 
@@ -201,256 +222,256 @@ export function MobileAuthFlow() {
   const fieldWidth = isPhone ? '100%' : '320px'
 
   return (
-    <div style={{
+    <View style={{
+      flex: 1,
       backgroundColor: '#02040a',
-      minHeight: '100vh',
-      display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      fontFamily: 'monospace',
-      color: '#e2e8f0',
       padding: 20,
-      backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(6, 182, 212, 0.05) 0%, transparent 70%)'
+      fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' })
     }}>
-      <div style={{
+      <View style={{
         backgroundColor: 'rgba(4, 8, 20, 0.85)',
-        backdropFilter: 'blur(12px)',
-        border: '1px solid #1e293b',
+        borderWidth: 1,
+        borderColor: '#1e293b',
         borderRadius: 16,
         padding: isPhone ? 24 : 40,
         width: '100%',
-        maxWidth: isPhone ? '100%' : 400,
-        boxShadow: '0 0 30px rgba(6, 182, 212, 0.15)'
+        maxWidth: isPhone ? '100%' : 400
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 30 }}>
-          <h2 style={{
+        <View style={{ textAlign: 'center', marginBottom: 30 }}>
+          <Text style={{
             fontSize: isPhone ? 18 : 20,
-            fontWeight: 900,
-            letterSpacing: '2px',
-            color: '#fff',
-            margin: 0
+            fontWeight: '900',
+            letterSpacing: 2,
+            color: '#fff'
           }}>
-            ASTROVOX <span style={{ color: '#d946ef', fontSize: isPhone ? 12 : 14 }}>PRIME</span>
-          </h2>
-          <p style={{ fontSize: 10, color: '#64748b', letterSpacing: '1px', marginTop: 5 }}>
+            ASTROVOX <Text style={{ color: '#d946ef', fontSize: isPhone ? 12 : 14 }}>PRIME</Text>
+          </Text>
+          <Text style={{ fontSize: 10, color: '#64748b', letterSpacing: 1, marginTop: 5 }}>
             {isForgotPassword ? 'RESET SECURITY KEY' : isSignUp ? 'REGISTER NEW QUANTUM LINK' : 'SECURE IDENTITY VERIFICATION'}
-          </p>
-        </div>
+          </Text>
+        </View>
 
-        {message && (
-          <div style={{
+        {message ? (
+          <View style={{
             backgroundColor: 'rgba(34, 197, 94, 0.1)',
-            border: '1px solid #22c55e',
+            borderWidth: 1,
+            borderColor: '#22c55e',
             borderRadius: 8,
             padding: 12,
-            marginBottom: 20,
-            fontSize: 12,
-            color: '#22c55e',
-            textAlign: 'center'
+            marginBottom: 20
           }}>
-            {message}
-          </div>
-        )}
+            <Text style={{ color: '#22c55e', fontSize: 12, textAlign: 'center' }}>{message}</Text>
+          </View>
+        ) : null}
 
-        {error && (
-          <div style={{
+        {error ? (
+          <View style={{
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid #ef4444',
+            borderWidth: 1,
+            borderColor: '#ef4444',
             borderRadius: 8,
             padding: 12,
-            marginBottom: 20,
-            fontSize: 12,
-            color: '#f87171',
-            textAlign: 'center'
+            marginBottom: 20
           }}>
-            {error}
-          </div>
-        )}
+            <Text style={{ color: '#f87171', fontSize: 12, textAlign: 'center' }}>{error}</Text>
+          </View>
+        ) : null}
 
         {isForgotPassword ? (
-          <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 11, color: '#94a3b8', letterSpacing: '1px' }}>
-                ACCESS IDENTIFIER (EMAIL)
-              </label>
-              <input
-                type="email"
-                placeholder="name@domain.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{
-                  width: fieldWidth,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: '#050a18',
-                  border: '1px solid #1e293b',
-                  color: '#67e8f9',
-                  fontFamily: 'monospace',
-                  boxSizing: 'border-box'
-                }}
-              />
-            </div>
-
-            <button
-              type="submit"
+          <View>
+            <Text style={{ fontSize: 11, color: '#94a3b8', letterSpacing: 1, marginBottom: 8 }}>
+              ACCESS IDENTIFIER (EMAIL)
+            </Text>
+            <TextInput
+              style={{
+                width: fieldWidth,
+                padding: 12,
+                borderRadius: 8,
+                backgroundColor: '#050a18',
+                borderWidth: 1,
+                borderColor: '#1e293b',
+                color: '#67e8f9',
+                fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+                marginBottom: 20
+              }}
+              placeholder="name@domain.com"
+              placeholderTextColor="#64748b"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+            <TouchableOpacity
+              onPress={handleForgotPassword}
               disabled={loading}
               style={{
                 padding: 14,
-                background: 'linear-gradient(to right, #06b6d4, #3b82f6)',
-                color: '#02040a',
-                border: 'none',
+                backgroundColor: '#06b6d4',
                 borderRadius: 8,
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                letterSpacing: '1px',
-                marginTop: 10,
-                boxShadow: '0 4px 14px rgba(6, 182, 212, 0.3)',
                 opacity: loading ? 0.7 : 1
               }}
             >
-              {loading ? 'SENDING...' : 'SEND RESET LINK'}
-            </button>
-          </form>
+              <Text style={{
+                color: '#02040a',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                letterSpacing: 1
+              }}>
+                {loading ? 'SENDING...' : 'SEND RESET LINK'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : (
-          <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <View>
             {isSignUp && (
-              <div>
-                <label style={{ display: 'block', marginBottom: 8, fontSize: 11, color: '#94a3b8', letterSpacing: '1px' }}>
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 11, color: '#94a3b8', letterSpacing: 1, marginBottom: 8 }}>
                   FULL NAME
-                </label>
-                <input
-                  type="text"
-                  placeholder="Your full name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
+                </Text>
+                <TextInput
                   style={{
                     width: fieldWidth,
                     padding: 12,
                     borderRadius: 8,
                     backgroundColor: '#050a18',
-                    border: '1px solid #1e293b',
+                    borderWidth: 1,
+                    borderColor: '#1e293b',
                     color: '#67e8f9',
-                    fontFamily: 'monospace',
-                    boxSizing: 'border-box'
+                    fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' })
                   }}
+                  placeholder="Your full name"
+                  placeholderTextColor="#64748b"
+                  value={fullName}
+                  onChangeText={setFullName}
                 />
-              </div>
+              </View>
             )}
 
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 11, color: '#94a3b8', letterSpacing: '1px' }}>
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 11, color: '#94a3b8', letterSpacing: 1, marginBottom: 8 }}>
                 ACCESS IDENTIFIER (EMAIL)
-              </label>
-              <input
-                type="email"
+              </Text>
+              <TextInput
+                style={{
+                  width: fieldWidth,
+                  padding: 12,
+                  borderRadius: 8,
+                  backgroundColor: '#050a18',
+                  borderWidth: 1,
+                  borderColor: '#1e293b',
+                  color: '#67e8f9',
+                  fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' })
+                }}
                 placeholder="name@domain.com"
+                placeholderTextColor="#64748b"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={{
-                  width: fieldWidth,
-                  padding: 12,
-                  borderRadius: 8,
-                  backgroundColor: '#050a18',
-                  border: '1px solid #1e293b',
-                  color: '#67e8f9',
-                  fontFamily: 'monospace',
-                  boxSizing: 'border-box'
-                }}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
               />
-            </div>
+            </View>
 
-            <div>
-              <label style={{ display: 'block', marginBottom: 8, fontSize: 11, color: '#94a3b8', letterSpacing: '1px' }}>
+            <View style={{ marginBottom: 20 }}>
+              <Text style={{ fontSize: 11, color: '#94a3b8', letterSpacing: 1, marginBottom: 8 }}>
                 SECURITY KEY (PASSWORD)
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+              </Text>
+              <TextInput
                 style={{
                   width: fieldWidth,
                   padding: 12,
                   borderRadius: 8,
                   backgroundColor: '#050a18',
-                  border: '1px solid #1e293b',
+                  borderWidth: 1,
+                  borderColor: '#1e293b',
                   color: '#67e8f9',
-                  fontFamily: 'monospace',
-                  boxSizing: 'border-box'
+                  fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' })
                 }}
+                placeholder="••••••••"
+                placeholderTextColor="#64748b"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
               />
-            </div>
+            </View>
 
             {!isSignUp && biometricAvailable && (
-              <button
-                type="button"
-                onClick={authenticateWithBiometric}
+              <TouchableOpacity
+                onPress={authenticateWithBiometric}
                 style={{
                   padding: 10,
-                  background: 'rgba(6, 182, 212, 0.1)',
-                  border: '1px solid #06b6d4',
-                  color: '#06b6d4',
+                  backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                  borderWidth: 1,
+                  borderColor: '#06b6d4',
                   borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: 12,
-                  fontWeight: 600
+                  marginBottom: 12
                 }}
               >
-                Authenticate with Biometrics
-              </button>
+                <Text style={{
+                  color: '#06b6d4',
+                  fontSize: 12,
+                  fontWeight: '600',
+                  textAlign: 'center'
+                }}>
+                  Authenticate with Biometrics ({biometricType})
+                </Text>
+              </TouchableOpacity>
             )}
 
-            <button
-              type="submit"
+            <TouchableOpacity
+              onPress={handleAuth}
               disabled={loading}
               style={{
                 padding: 14,
-                background: 'linear-gradient(to right, #06b6d4, #3b82f6)',
-                color: '#02040a',
-                border: 'none',
+                backgroundColor: '#06b6d4',
                 borderRadius: 8,
-                cursor: 'pointer',
-                fontWeight: 'bold',
-                letterSpacing: '1px',
-                marginTop: 10,
-                boxShadow: '0 4px 14px rgba(6, 182, 212, 0.3)',
                 opacity: loading ? 0.7 : 1
               }}
             >
-              {loading ? 'INITIALIZING...' : isSignUp ? 'CREATE NEXUS LINK' : 'ESTABLISH LINK'}
-            </button>
-          </form>
+              <Text style={{
+                color: '#02040a',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                letterSpacing: 1
+              }}>
+                {loading ? 'INITIALIZING...' : isSignUp ? 'CREATE NEXUS LINK' : 'ESTABLISH LINK'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: 25, fontSize: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <View style={{ textAlign: 'center', marginTop: 25 }}>
           {!isForgotPassword && (
-            <button
-              onClick={() => { setIsSignUp(!isSignUp); setError(''); setMessage('') }}
-              style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'monospace' }}
+            <TouchableOpacity
+              onPress={() => { setIsSignUp(!isSignUp); setError(''); setMessage('') }}
+              style={{ padding: 8 }}
             >
-              {isSignUp ? '>> Return to standard login secure gate' : '>> Request new credentials architecture'}
-            </button>
+              <Text style={{ color: '#06b6d4', fontSize: 12 }}>
+                {isSignUp ? '>> Return to standard login secure gate' : '>> Request new credentials architecture'}
+              </Text>
+            </TouchableOpacity>
           )}
 
           {!isSignUp && !isForgotPassword && (
-            <button
-              onClick={() => { setIsForgotPassword(true); setError(''); setMessage('') }}
-              style={{ background: 'none', border: 'none', color: '#d946ef', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'monospace' }}
+            <TouchableOpacity
+              onPress={() => { setIsForgotPassword(true); setError(''); setMessage('') }}
+              style={{ padding: 8 }}
             >
-              {'>> Forgot security key?'}
-            </button>
+              <Text style={{ color: '#d946ef', fontSize: 12 }}>{'>> Forgot security key?'}</Text>
+            </TouchableOpacity>
           )}
 
           {isForgotPassword && (
-            <button
-              onClick={() => { setIsForgotPassword(false); setError(''); setMessage('') }}
-              style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer', textDecoration: 'underline', fontFamily: 'monospace' }}
+            <TouchableOpacity
+              onPress={() => { setIsForgotPassword(false); setError(''); setMessage('') }}
+              style={{ padding: 8 }}
             >
-              {'>> Return to login'}
-            </button>
+              <Text style={{ color: '#06b6d4', fontSize: 12 }}>{'>> Return to login'}</Text>
+            </TouchableOpacity>
           )}
-        </div>
-      </div>
-    </div>
+        </View>
+      </View>
+    </View>
   )
 }
