@@ -1,47 +1,45 @@
 # Testing Plan
 
-## Scope
+## Strategy
 
-This plan covers backend validation for AstravoxAi Engine v1.0.0.
+Astrovox AI uses a comprehensive testing strategy covering unit, integration, E2E, security, performance, and AI quality tests.
 
-## Test Suites
+## Test Pyramid
 
-| Suite | Focus | Command |
-|-------|-------|---------|
-| Compiler | DSL parsing, optimization, caching | `pytest tests/test_executor_compiler.py` |
-| Runtime | Execution, retries, checkpoints | `pytest tests/test_executor_runtime.py` |
-| Kernel | Event bus, scheduler, model router | `pytest tests/test_kernel.py` |
-| Integration | E2E pipeline, production config | `pytest tests/test_integration_stage44.py` |
-| Security | JWT, RBAC, input validation | `pytest tests/test_security_hardening.py` |
-| Performance | Cache, metrics, decorators | `pytest tests/test_performance.py` |
-| Infrastructure | Job queue, event bus, circuit breaker | `pytest tests/test_infrastructure.py` |
-| Workflow | Workflow engine, templates, cloning | `pytest tests/test_workflow_engine.py` |
+```
+        /\
+       /E2E\       10% - Critical user journeys
+      /------\
+     /Integr.\     20% - API contracts, component integration
+    /----------\
+   /Unit Tests \   70% - Component, hook, utility tests
+  /--------------\
+```
 
-## Current Status
+## Coverage Goals
 
-- 141 core tests passing
-- Some integration/E2E tests have pre-existing rate-limiting test isolation issues
+- **Unit**: 90%+ line coverage
+- **Integration**: 80%+ API coverage
+- **E2E**: 100% critical path coverage
+- **Security**: All OWASP Top 10
+- **Performance**: P95 < 500ms
+- **Accessibility**: 0 WCAG violations
 
-## Stress Testing
+## CI/CD Pipeline
 
-- Run compiler with 10,000-step programs
-- Run runtime with 100 parallel tasks
-- Monitor memory usage with `tracemalloc` or `memray`
+1. Lint and typecheck
+2. Unit tests
+3. Integration tests
+4. Build
+5. E2E tests
+6. Security scan
+7. Performance benchmarks
+8. Deploy
 
-## Failure Injection
+## Test Maintenance
 
-- Toggle network failures in provider adapters
-- Inject latency with `asyncio.sleep`
-- Verify circuit breaker opens and recovers
-
-## Backup / Restore
-
-- Verify `BackupManager` creates and restores snapshots
-- Verify `StabilityMonitor` summarizes health correctly
-
-## Acceptance Criteria
-
-- All core test suites pass
-- No memory leaks in 1-hour continuous run
-- Compiler cache remains stable under concurrent access
-- Runtime retries recover from transient failures
+- Update snapshots with `--update`
+- Review and merge test PRs promptly
+- Add tests for all new features
+- Fix flaky tests immediately
+- Weekly test health review

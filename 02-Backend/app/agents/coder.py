@@ -1,29 +1,41 @@
-import logging
-from typing import Any
+"""Coder agent for code generation."""
 
-from .base import BaseAgent, AgentResult, Plan, Review
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
+
+@dataclass
+class CodeArtifact:
+    language: str
+    code: str
+    description: str
+    tests: Optional[str] = None
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class CoderAgent(BaseAgent):
-    def __init__(self, llm_client: Any | None = None):
-        super().__init__("Coder", llm_client)
+class CoderAgent:
+    _artifacts: Dict[str, CodeArtifact] = {}
 
-    def plan(self, task: str) -> Plan:
-        steps = [
-            f"Analyze code requirements for: {task}",
-            f"Design code structure and interfaces",
-            f"Implement core functionality",
-            f"Add error handling and edge cases",
-            f"Review code quality and style",
-        ]
-        return Plan(steps=steps, estimated_tokens=1000)
+    @classmethod
+    def generate(cls, language: str, description: str, tests: bool = False) -> CodeArtifact:
+        code = f"# Generated {language} code for: {description}\npass"
+        artifact = CodeArtifact(
+            language=language,
+            code=code,
+            description=description,
+            tests="# TODO: Add tests",
+        )
+        cls._artifacts[f"{language}:{description}"] = artifact
+        return artifact
 
-    def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        language = context.get("language", "python") if context else "python"
-        output = f"# Generated {language} code for: {task}\n\ndef solution():\n    pass\n"
-        return AgentResult(success=True, output=output, metadata={"language": language})
-
-    def review(self, output: str) -> Review:
-        return Review(approved=True, feedback="Code follows best practices", score=0.9)
+    @classmethod
+    def review(cls, language: str, code: str) -> Dict[str, Any]:
+        issues = []
+        if "pass" in code:
+            issues.append("Code contains pass statement - needs implementation")
+        return {
+            "language": language,
+            "issues": issues,
+            "score": 0.5 if issues else 1.0,
+        }

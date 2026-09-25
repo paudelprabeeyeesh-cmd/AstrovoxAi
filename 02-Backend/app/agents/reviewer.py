@@ -1,28 +1,38 @@
-import logging
-from typing import Any
+"""Reviewer agent for code review and quality checks."""
 
-from .base import BaseAgent, AgentResult, Plan, Review
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
+
+@dataclass
+class ReviewResult:
+    artifact_id: str
+    score: float
+    issues: List[str] = field(default_factory=list)
+    suggestions: List[str] = field(default_factory=list)
+    approved: bool = False
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class ReviewerAgent(BaseAgent):
-    def __init__(self, llm_client: Any | None = None):
-        super().__init__("Reviewer", llm_client)
+class ReviewerAgent:
+    _reviews: Dict[str, ReviewResult] = {}
 
-    def plan(self, task: str) -> Plan:
-        steps = [
-            f"Understand review criteria for: {task}",
-            f"Evaluate content against standards",
-            f"Identify issues and improvements",
-            f"Provide constructive feedback",
-            f"Summarize review findings",
-        ]
-        return Plan(steps=steps, estimated_tokens=800)
-
-    def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        output = f"Review of: {task}\n\nFeedback: The content meets requirements with minor improvements suggested."
-        return AgentResult(success=True, output=output)
-
-    def review(self, output: str) -> Review:
-        return Review(approved=True, feedback="Review completed", score=0.9)
+    @classmethod
+    def review(cls, artifact_id: str, artifact: Dict[str, Any]) -> ReviewResult:
+        issues = []
+        suggestions = []
+        code = artifact.get("code", "")
+        if "pass" in code and len(code) < 100:
+            issues.append("Implementation appears incomplete")
+            suggestions.append("Add actual implementation logic")
+        score = 1.0 - (len(issues) * 0.2)
+        result = ReviewResult(
+            artifact_id=artifact_id,
+            score=max(0.0, score),
+            issues=issues,
+            suggestions=suggestions,
+            approved=len(issues) == 0,
+        )
+        cls._reviews[artifact_id] = result
+        return result

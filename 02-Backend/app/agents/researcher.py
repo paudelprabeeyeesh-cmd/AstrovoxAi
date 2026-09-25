@@ -1,28 +1,34 @@
-import logging
-from typing import Any
+"""Researcher agent for information gathering."""
 
-from .base import BaseAgent, AgentResult, Plan, Review
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
-logger = logging.getLogger(__name__)
+
+@dataclass
+class ResearchResult:
+    query: str
+    sources: List[str]
+    findings: str
+    confidence: float = 0.0
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
-class ResearcherAgent(BaseAgent):
-    def __init__(self, llm_client: Any | None = None):
-        super().__init__("Researcher", llm_client)
+class ResearcherAgent:
+    _results: Dict[str, ResearchResult] = {}
 
-    def plan(self, task: str) -> Plan:
-        steps = [
-            f"Define research scope for: {task}",
-            f"Gather relevant sources and data",
-            f"Synthesize findings",
-            f"Cross-reference information",
-            f"Prepare comprehensive summary",
-        ]
-        return Plan(steps=steps, estimated_tokens=1500)
+    @classmethod
+    def search(cls, query: str) -> ResearchResult:
+        findings = f"Research results for: {query}\n\nNo external search configured."
+        result = ResearchResult(
+            query=query,
+            sources=[],
+            findings=findings,
+            confidence=0.0,
+        )
+        cls._results[query] = result
+        return result
 
-    def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        output = f"Research findings on: {task}\n\nKey insights:\n1. Finding 1\n2. Finding 2\n3. Finding 3"
-        return AgentResult(success=True, output=output)
-
-    def review(self, output: str) -> Review:
-        return Review(approved=True, feedback="Research is well-sourced", score=0.8)
+    @classmethod
+    def get_result(cls, query: str) -> Optional[ResearchResult]:
+        return cls._results.get(query)

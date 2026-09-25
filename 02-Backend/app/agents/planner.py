@@ -1,33 +1,67 @@
-import logging
-from typing import Any
+"""Planner agent for task decomposition."""
 
-from .base import BaseAgent, AgentResult, Plan, Review
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
 
-logger = logging.getLogger(__name__)
+
+class PlanStatus(Enum):
+    DRAFT = "draft"
+    APPROVED = "approved"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
-class PlannerAgent(BaseAgent):
-    def __init__(self, llm_client: Any | None = None):
-        super().__init__("Planner", llm_client)
+@dataclass
+class TaskStep:
+    step_id: str
+    description: str
+    status: PlanStatus = PlanStatus.DRAFT
+    dependencies: List[str] = field(default_factory=list)
+    estimated_tokens: int = 0
+    assigned_agent: Optional[str] = None
+    result: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def plan(self, task: str) -> Plan:
-        steps = [
-            f"Analyze requirements for: {task}",
-            f"Break down task into subtasks",
-            f"Identify dependencies and resources needed",
-            f"Create timeline with milestones",
-            f"Review and optimize plan",
-        ]
-        logger.info(f"Planned workflow for task: {task[:50]}...")
-        return Plan(steps=steps, estimated_tokens=500, metadata={"task": task})
 
-    def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        plan = self.plan(task)
-        return AgentResult(
-            success=True,
-            output=f"Plan created with {len(plan.steps)} steps",
-            metadata={"plan": plan},
-        )
+@dataclass
+class Plan:
+    plan_id: str
+    user_id: str
+    goal: str
+    steps: List[TaskStep]
+    status: PlanStatus = PlanStatus.DRAFT
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    completed_at: Optional[datetime] = None
 
-    def review(self, output: str) -> Review:
-        return Review(approved=True, feedback="Plan looks solid", score=0.85)
+
+class PlannerAgent:
+    _plans: Dict[str, Plan] = {}
+
+    @classmethod
+    def create_plan(cls, user_id: str, goal: str) -> Plan:
+        plan_id = f"plan_{user_id}_{len(cls._plans)}"
+        plan = Plan(plan_id=plan_id, user_id=user_id, goal=goal, steps=[])
+        cls._plans[plan_id] = plan
+        return plan
+
+    @classmethod
+    def add_step(cls, plan_id: str, step: TaskStep) -> None:
+        plan = cls._plans.get(plan_id)
+        if plan:
+            plan.steps.append(step)
+
+    @classmethod
+    def get_plan(cls, plan_id: str) -> Optional[Plan]:
+        return cls._plans.get(plan_id)
+
+    @classmethod
+    def update_step_status(cls, plan_id: str, step_id: str, status: PlanStatus) -> None:
+        plan = cls._plans.get(plan_id)
+        if plan:
+            for step in plan.steps:
+                if step.step_id == step_id:
+                    step.status = status
+                    break

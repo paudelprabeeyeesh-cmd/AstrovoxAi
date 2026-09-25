@@ -1,57 +1,61 @@
-"""Tool registry and execution."""
+"""Tool registry for AI agent tools."""
 
-from __future__ import annotations
-
-import logging
+from typing import Dict, Any, Optional, List, Callable
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, Callable, Dict, List, Optional
+from datetime import datetime, timezone
+from enum import Enum
+import inspect
 
-logger = logging.getLogger(__name__)
+
+class ToolCategory(Enum):
+    SEARCH = "search"
+    CALCULATOR = "calculator"
+    DATABASE = "database"
+    API = "api"
+    FILE_SYSTEM = "file_system"
+    CODE_EXECUTION = "code_execution"
+    CUSTOM = "custom"
 
 
 @dataclass
-class Tool:
+class ToolDefinition:
     name: str
     description: str
+    category: ToolCategory
     parameters: Dict[str, Any]
-    handler: Callable[[Dict[str, Any]], Any]
-    requires_permission: bool = False
+    required_permissions: List[str] = field(default_factory=list)
+    rate_limit: Optional[int] = None
     timeout: int = 30
+    cacheable: bool = False
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class ToolRegistry:
-    """Registry for executable tools."""
+    _tools: Dict[str, ToolDefinition] = {}
+    _handlers: Dict[str, Callable] = {}
 
-    def __init__(self) -> None:
-        self._tools: Dict[str, Tool] = {}
+    @classmethod
+    def register(cls, tool: ToolDefinition, handler: Callable) -> None:
+        cls._tools[tool.name] = tool
+        cls._handlers[tool.name] = handler
 
-    def register(self, tool: Tool) -> None:
-        self._tools[tool.name] = tool
-        logger.info(f"Registered tool: {tool.name}")
+    @classmethod
+    def get(cls, name: str) -> Optional[ToolDefinition]:
+        return cls._tools.get(name)
 
-    def get(self, name: str) -> Optional[Tool]:
-        return self._tools.get(name)
+    @classmethod
+    def get_handler(cls, name: str) -> Optional[Callable]:
+        return cls._handlers.get(name)
 
-    def list_tools(self) -> List[Dict[str, Any]]:
-        return [
-            {
-                "name": tool.name,
-                "description": tool.description,
-                "parameters": tool.parameters,
-            }
-            for tool in self._tools.values()
-        ]
+    @classmethod
+    def list_tools(cls) -> List[ToolDefinition]:
+        return list(cls._tools.values())
 
-    def execute(self, name: str, arguments: Dict[str, Any]) -> Any:
-        tool = self._tools.get(name)
-        if not tool:
-            raise ValueError(f"Tool not found: {name}")
-        return tool.handler(arguments)
+    @classmethod
+    def list_by_category(cls, category: ToolCategory) -> List[ToolDefinition]:
+        return [t for t in cls._tools.values() if t.category == category]
 
-
-_tool_registry = ToolRegistry()
-
-
-def get_tool_registry() -> ToolRegistry:
-    return _tool_registry
+    @classmethod
+    def unregister(cls, name: str) -> None:
+        cls._tools.pop(name, None)
+        cls._handlers.pop(name, None)
