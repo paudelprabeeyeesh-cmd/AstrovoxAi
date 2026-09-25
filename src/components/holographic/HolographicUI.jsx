@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
 import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../../utils/holographic/HolographicConfig'
 import { useWebGLHolographicRenderer } from '../../hooks/holographic/useWebGLHolographicRenderer'
-import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognizer'
+import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognition'
 import { useDepthAwareInteractions } from '../../hooks/holographic/useDepthAwareInteractions'
 
 export function HolographicCanvas({ children, className = '', style = {}, interactive = true, depthEnabled = true }) {

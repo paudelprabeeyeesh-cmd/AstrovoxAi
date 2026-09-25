@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { A11Y_SPECS } from '../../design/AccessibilitySpecs'
-import Icon from '../design/Iconography.jsx'
+import Icon from '../../design/Iconography.jsx'
 
 const CATEGORIES = {
   navigation: 'Navigation',

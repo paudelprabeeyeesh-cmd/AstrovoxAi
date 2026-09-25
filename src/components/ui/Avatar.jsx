@@ -1,6 +1,6 @@
 import React from 'react'
 import { getInitials, stringToColor, getContrastColor } from '../../utils/avatar'
-import Icon from '../design/Iconography.jsx'
+import Icon from '../../design/Iconography.jsx'
 
 export function Avatar({
   name = '',

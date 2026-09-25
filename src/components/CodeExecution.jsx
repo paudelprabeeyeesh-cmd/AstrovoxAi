@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import Icon from '../../design/Iconography'
+import Icon from '../design/Iconography'
 
 const SUPPORTED_LANGUAGES = [
   { id: 'javascript', label: 'JavaScript', ext: 'js' },

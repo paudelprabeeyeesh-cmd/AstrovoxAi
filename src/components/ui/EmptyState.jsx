@@ -1,5 +1,5 @@
 import React from 'react'
-import Icon from '../design/Iconography.jsx'
+import Icon from '../../design/Iconography.jsx'
 
 const ILLUSTRATIONS = {
   chat: (

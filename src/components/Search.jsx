@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
-import Icon from '../../design/Iconography'
+import Icon from '../design/Iconography'
 
 export default function Search({ onResultSelect, placeholder = 'Search conversations, messages, files...' }) {
   const [query, setQuery] = useState('')

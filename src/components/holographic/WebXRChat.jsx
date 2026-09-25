@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../../utils/holographic/HolographicConfig'
 import { useWebXRIntegration } from '../../hooks/holographic/useWebXRIntegration'
-import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognizer'
+import { useGestureRecognizer } from '../../hooks/holographic/useGestureRecognition'
 
 export function WebXRChatExperience({ messages = [], onSendMessage, className = '', style = {} }) {
   const { isSupported, isInSession, startVRSession, endSession, handTracking, spatialAudio, haptics, mode } = useWebXRIntegration()

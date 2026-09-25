@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { HOLOGRAPHIC_CONFIG } from '../utils/holographic/HolographicConfig'
+import { HOLOGRAPHIC_CONFIG } from '../../utils/holographic/HolographicConfig'
 
 export function useEyeTracking() {
   const [isTracking, setIsTracking] = useState(false)

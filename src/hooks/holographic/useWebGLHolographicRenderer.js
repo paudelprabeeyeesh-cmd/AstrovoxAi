@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react'
-import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS } from '../utils/holographic/HolographicConfig'
+import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS } from '../../utils/holographic/HolographicConfig'
 
 export function useWebGLHolographicRenderer() {
   const canvasRef = useRef(null)

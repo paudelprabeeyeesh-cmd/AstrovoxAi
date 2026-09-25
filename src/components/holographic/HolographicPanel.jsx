@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../utils/holographic/HolographicConfig'
+import { HOLOGRAPHIC_COLORS, HOLOGRAPHIC_LAYOUTS } from '../../utils/holographic/HolographicConfig'
 import {
   HolographicCanvas,
   VolumetricDisplay,
@@ -16,7 +16,7 @@ import {
   KnowledgeGraphExplorer,
   QuantumStateVisualization,
   DreamStateInterface
-} from '../components/holographic'
+} from './index'
 
 const TABS = [
   { id: 'renderer', label: 'Holographic Renderer', icon: '💎' },

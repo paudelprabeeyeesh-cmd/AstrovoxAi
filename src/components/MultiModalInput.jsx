@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import Icon from '../../design/Iconography'
-import VoiceInput from './VoiceInput'
-import FileUpload from './FileUpload'
-import CameraCapture from './CameraCapture'
-import ScreenShare from './ScreenShare'
+import Icon from '../design/Iconography'
+import VoiceInput from './chat/VoiceInput'
+import FileUpload from './chat/FileUpload'
+import CameraCapture from './chat/CameraCapture'
+import ScreenShare from './chat/ScreenShare'
 
 export default function MultiModalInput({ onSend, onFileUpload, disabled = false }) {
   const [input, setInput] = useState('')

@@ -1,4 +1,4 @@
-import MarkdownRenderer from './MarkdownRenderer'
+import MarkdownRenderer from './components/chat/MarkdownRenderer'
 
 export default function MessageContent({ content }) {
   if (!content) return null

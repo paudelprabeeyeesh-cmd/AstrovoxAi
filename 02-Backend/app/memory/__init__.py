@@ -24,6 +24,7 @@ from .vector_store import VectorStore
 from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceScoringEngine
 from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
 from .memory_ranking import MemoryRanker, RankedMemory
+from .memory_manager import MemoryManager, get_memory_manager
 
 __all__ = [
     "ContextMemory",
@@ -42,4 +43,6 @@ __all__ = [
     "ConsolidatedMemory",
     "MemoryRanker",
     "RankedMemory",
+    "MemoryManager",
+    "get_memory_manager",
 ]
