@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def tokenize(text: str) -> list[str]:
     lines = [line.strip() for line in text.splitlines() if line.strip()]

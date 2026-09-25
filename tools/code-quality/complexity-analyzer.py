@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def complexity(node: ast.AST) -> int:
     return sum(
@@ -19,7 +21,7 @@ def complexity(node: ast.AST) -> int:
 
 def analyze_file(path: Path) -> list[dict[str, Any]]:
     try:
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
     except SyntaxError:
         return []
     results = []

@@ -25,6 +25,13 @@ class EscalationAction(str, Enum):
     SLACK = "slack"
 
 
+class IncidentSeverity(str, Enum):
+    P1_CRITICAL = "p1_critical"
+    P2_HIGH = "p2_high"
+    P3_MEDIUM = "p3_medium"
+    P4_LOW = "p4_low"
+
+
 @dataclass
 class OnCallPerson:
     person_id: str
@@ -41,7 +48,7 @@ class OnCallPerson:
 class EscalationRule:
     rule_id: str
     name: str
-    incident_severity: IncidentSeverity  # type: ignore[name-defined]
+    incident_severity: str
     max_response_minutes: int
     levels: List[EscalationLevel] = field(default_factory=lambda: [EscalationLevel.L1, EscalationLevel.L2, EscalationLevel.L3])
     enabled: bool = True

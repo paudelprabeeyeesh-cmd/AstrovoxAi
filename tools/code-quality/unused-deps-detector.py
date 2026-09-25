@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def scan_python_deps(requirements: Path, src: Path) -> dict[str, Any]:
     if not requirements.exists():

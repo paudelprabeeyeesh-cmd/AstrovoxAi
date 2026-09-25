@@ -1,19 +1,18 @@
-"""Enterprise Compliance — GDPR, data export, right-to-delete, retention."""
+"""Enterprise Compliance — GDPR, data export, right-to-delete, retention, reporting."""
 
 import json
 import time
 import logging
 import secrets
-from typing import Optional
+from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class DataExport:
-    """A user data export request."""
     id: str
     user_id: str
     status: str = "pending"
@@ -24,17 +23,17 @@ class DataExport:
 
 @dataclass
 class RetentionPolicy:
-    """Data retention policy."""
     id: str
     name: str
     data_type: str
     retention_days: int
     is_active: bool = True
+    action: str = "delete"
+    created_at: float = field(default_factory=datetime.now(timezone.utc).timestamp)
 
 
 @dataclass
 class ConsentRecord:
-    """User consent record."""
     id: str
     user_id: str
     consent_type: str
@@ -44,8 +43,6 @@ class ConsentRecord:
 
 
 class ComplianceManager:
-    """Manage GDPR compliance and data protection."""
-
     def __init__(self):
         self._exports: dict[str, DataExport] = {}
         self._retention_policies: dict[str, RetentionPolicy] = {}
@@ -53,7 +50,6 @@ class ComplianceManager:
         self._setup_default_policies()
 
     def _setup_default_policies(self):
-        """Setup default retention policies."""
         self._retention_policies["messages"] = RetentionPolicy(
             id="messages", name="Chat Messages", data_type="messages", retention_days=365
         )
@@ -65,7 +61,6 @@ class ComplianceManager:
         )
 
     def request_data_export(self, user_id: str) -> DataExport:
-        """Request a GDPR data export."""
         export = DataExport(
             id=secrets.token_hex(8),
             user_id=user_id,
@@ -76,40 +71,29 @@ class ComplianceManager:
         return export
 
     def generate_data_export(self, export_id: str, user_data: dict) -> Optional[DataExport]:
-        """Generate the actual data export."""
         export = self._exports.get(export_id)
         if not export:
             return None
-
         export.data = {
             "export_id": export.id,
             "user_id": export.user_id,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "format": "JSON",
             "data": user_data,
         }
         export.status = "completed"
         export.completed_at = time.time()
-
         return export
 
     def get_export(self, export_id: str) -> Optional[DataExport]:
         return self._exports.get(export_id)
 
     def request_data_deletion(self, user_id: str) -> dict:
-        """Request right-to-delete (GDPR Article 17)."""
         return {
             "user_id": user_id,
             "status": "pending",
-            "requested_at": datetime.now().isoformat(),
-            "items_to_delete": [
-                "profile",
-                "conversations",
-                "messages",
-                "memory",
-                "analytics",
-                "sessions",
-            ],
+            "requested_at": datetime.now(timezone.utc).isoformat(),
+            "items_to_delete": ["profile", "conversations", "messages", "memory", "analytics", "sessions"],
             "estimated_completion": "24 hours",
         }
 
@@ -120,7 +104,6 @@ class ComplianceManager:
         granted: bool,
         ip_address: str = "",
     ) -> ConsentRecord:
-        """Record user consent."""
         record = ConsentRecord(
             id=secrets.token_hex(8),
             user_id=user_id,
@@ -133,13 +116,11 @@ class ComplianceManager:
         return record
 
     def get_consent(self, user_id: str, consent_type: str) -> Optional[ConsentRecord]:
-        """Get latest consent for a type."""
         records = self._consent_records.get(user_id, [])
         matching = [r for r in records if r.consent_type == consent_type]
         return matching[-1] if matching else None
 
     def has_consent(self, user_id: str, consent_type: str) -> bool:
-        """Check if user has given consent."""
         record = self.get_consent(user_id, consent_type)
         return record.granted if record else False
 
@@ -149,7 +130,6 @@ class ComplianceManager:
         retention_days: int,
         name: str = "",
     ) -> RetentionPolicy:
-        """Set a retention policy."""
         policy = RetentionPolicy(
             id=data_type,
             name=name or data_type,
@@ -163,16 +143,13 @@ class ComplianceManager:
         return self._retention_policies.get(data_type)
 
     def get_expired_data(self, data_type: str) -> list[str]:
-        """Get data types that have expired based on retention policy."""
         policy = self._retention_policies.get(data_type)
         if not policy:
             return []
-
         cutoff = time.time() - (policy.retention_days * 86400)
         return [data_type]
 
     def get_compliance_status(self, user_id: str) -> dict:
-        """Get compliance status for a user."""
         return {
             "data_export_available": any(
                 e.user_id == user_id and e.status == "completed"
@@ -189,11 +166,10 @@ class ComplianceManager:
         }
 
     def generate_privacy_report(self, user_id: str) -> dict:
-        """Generate a privacy report for the user."""
         consents = self._consent_records.get(user_id, [])
         return {
             "user_id": user_id,
-            "generated_at": datetime.now().isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
             "consents": [
                 {
                     "type": c.consent_type,
@@ -202,17 +178,8 @@ class ComplianceManager:
                 }
                 for c in consents
             ],
-            "data_processed": [
-                "chat_messages",
-                "ai_memory",
-                "usage_analytics",
-            ],
-            "third_party_processors": [
-                "OpenAI",
-                "Anthropic",
-                "Google",
-                "Supabase",
-            ],
+            "data_processed": ["chat_messages", "ai_memory", "usage_analytics"],
+            "third_party_processors": ["OpenAI", "Anthropic", "Google", "Supabase"],
             "rights": [
                 "right_to_access",
                 "right_to_rectification",
@@ -222,6 +189,28 @@ class ComplianceManager:
             ],
         }
 
+    def generate_compliance_report(self, tenant_id: str = None) -> Dict[str, Any]:
+        report = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "tenant_id": tenant_id,
+            "summary": {
+                "total_exports": len(self._exports),
+                "total_consent_records": sum(len(v) for v in self._consent_records.values()),
+                "active_policies": len([p for p in self._retention_policies.values() if p.is_active]),
+            },
+            "retention_policies": [
+                {
+                    "name": p.name,
+                    "data_type": p.data_type,
+                    "retention_days": p.retention_days,
+                    "action": p.action,
+                    "is_active": p.is_active,
+                }
+                for p in self._retention_policies.values()
+            ],
+            "compliance_status": "compliant",
+        }
+        return report
+
 
 compliance_manager = ComplianceManager()
-

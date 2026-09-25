@@ -66,10 +66,12 @@ class PasswordStrengthEnforcer:
             pool += 32
         return pool or 1.0
 
+import math
+
     def compute_entropy(self, password: str) -> float:
         pool = self._char_pool_size(password)
         length = len(password)
-        return length * (pool.bit_length() if pool > 0 else 0)
+        return length * (math.log2(pool) if pool > 0 else 0)
 
     def score_strength(self, password: str) -> int:
         score = 0

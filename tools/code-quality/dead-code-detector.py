@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 class DeadCodeVisitor(ast.NodeVisitor):
     def __init__(self) -> None:
@@ -57,7 +59,7 @@ class DeadCodeVisitor(ast.NodeVisitor):
 
 def scan_file(path: Path) -> list[str]:
     try:
-        tree = ast.parse(path.read_text())
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="ignore"))
     except SyntaxError:
         return []
     visitor = DeadCodeVisitor()

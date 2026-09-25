@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def check_docstrings(node: ast.AST, path: Path) -> tuple[int, int, list[dict[str, Any]]]:
     total = 0
@@ -36,7 +38,7 @@ def scan_directory(base: Path) -> dict[str, Any]:
     all_missing: list[dict[str, Any]] = []
     for py_file in sorted(base.rglob("*.py")):
         try:
-            tree = ast.parse(py_file.read_text())
+            tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
         except SyntaxError:
             continue
         t, c, missing = check_docstrings(tree, py_file)

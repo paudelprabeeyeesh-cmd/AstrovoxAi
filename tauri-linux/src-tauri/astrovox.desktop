@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Astrovox AI
+Comment=AI-powered chat assistant
+Exec=astrovox-tauri
+Icon=astrovox-tauri
+Type=Application
+Categories=Development;IDE;
+Terminal=false
+StartupWMClass=astrovox-tauri

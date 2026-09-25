@@ -54,6 +54,7 @@ from app.api.routers.tasks_router import router as tasks_router
 from app.api.routers.webhook_router import router as webhook_router
 from app.api.routers.feature_flags_router import router as feature_flags_router
 from app.api.routers.admin_metrics_router import router as admin_metrics_router
+from app.observability.endpoints import router as observability_router
 
 load_dotenv()
 
@@ -146,6 +147,7 @@ app.include_router(tasks_router)
 app.include_router(webhook_router)
 app.include_router(feature_flags_router)
 app.include_router(admin_metrics_router)
+app.include_router(observability_router)
 
 
 # Prometheus metrics middleware
@@ -212,5 +214,10 @@ async def _startup():
     try:
         from app.background_workers import BackgroundWorker
         await BackgroundWorker.start(num_workers=4)
+    except Exception:
+        pass
+    try:
+        from app.observability import start_observability
+        await start_observability()
     except Exception:
         pass

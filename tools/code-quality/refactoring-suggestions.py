@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 SUGGESTIONS = []
 
@@ -65,7 +67,7 @@ def scan_directory(base: Path) -> list[dict[str, Any]]:
     SUGGESTIONS = []
     for py_file in sorted(base.rglob("*.py")):
         try:
-            tree = ast.parse(py_file.read_text())
+            tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
         except SyntaxError:
             continue
         suggest_long_functions(py_file, tree)

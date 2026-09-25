@@ -11,8 +11,6 @@ from typing import Any
 
 REPORT_DIR = Path("code-quality-reports")
 REPORT_DIR.mkdir(exist_ok=True)
-
-
 class QualityRunner:
     def __init__(self) -> None:
         self.results: dict[str, Any] = {

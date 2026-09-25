@@ -1,15 +1,17 @@
-
 import uuid
 import json
 import time
+import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from urllib.parse import urlencode
 
 import httpx
 from repositories.database.client import get_db
 from services.auth.auth import hash_password
 from .audit import log_action
+
+logger = logging.getLogger(__name__)
 
 
 class SSOProviderType:
@@ -106,33 +108,27 @@ class SSOService:
         provider_data = self.get_provider(org_id, SSOProviderType.OIDC)
         if not provider_data:
             raise ValueError("OIDC provider not configured for this organization")
-
         provider = OIDCProvider(provider_data["config"])
         userinfo = await provider.get_userinfo(token)
-
         return self._find_or_create_sso_user(org_id, SSOProviderType.OIDC, userinfo)
 
     async def authenticate_with_saml(self, org_id: str, assertion: str) -> dict:
         provider_data = self.get_provider(org_id, SSOProviderType.SAML)
         if not provider_data:
             raise ValueError("SAML provider not configured for this organization")
-
         provider = SAMLProvider(provider_data["config"])
         parsed = await provider.parse_assertion(assertion)
-
         return self._find_or_create_sso_user(org_id, SSOProviderType.SAML, parsed)
 
     def _find_or_create_sso_user(self, org_id: str, provider_type: str, profile: Dict[str, Any]) -> dict:
         email = profile.get("email") or profile.get("mail", "")
         if not email:
             raise ValueError("Email not found in SSO profile")
-
         with get_db() as conn:
             row = conn.execute(
                 "SELECT * FROM sso_users WHERE org_id = ? AND provider = ? AND email = ?",
                 (org_id, provider_type, email),
             ).fetchone()
-
             if row:
                 user_id = row["user_id"]
             else:
@@ -147,7 +143,6 @@ class SSOService:
                     row2 = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
                     if row2:
                         user_id = row2["id"]
-
                 conn.execute(
                     "INSERT INTO sso_users (id, org_id, provider, provider_user_id, email, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
@@ -167,7 +162,6 @@ class SSOService:
         email = scim_data.get("emails", [{}])[0].get("value", "")
         if not email:
             raise ValueError("Email required for SCIM provisioning")
-
         with get_db() as conn:
             row = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
             if row:

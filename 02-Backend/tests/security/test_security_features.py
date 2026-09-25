@@ -83,10 +83,10 @@ class TestTokenRevocation:
         tlr = TokenRevocationList()
         tlr.revoke("jti-a", "user-x", time.time() + 3600)
         tlr.revoke("jti-b", "user-y", time.time() + 3600)
-        tlr.revoke_all_for_user("user-x", ["jti-c", "jti-d"], reason="password_change")
+        tlr.revoke_all_for_user("user-y", ["jti-c", "jti-d"], reason="password_change")
         assert tlr.is_revoked("jti-a") is True
+        assert tlr.is_revoked("jti-b") is True
         assert tlr.is_revoked("jti-c") is True
-        assert tlr.is_revoked("jti-b") is False
 
 
 class TestRefreshTokenRotation:

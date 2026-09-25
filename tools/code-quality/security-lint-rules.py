@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 SECRET_PATTERNS = [
     re.compile(r"sk-[a-zA-Z0-9]{20,}"),
@@ -32,7 +34,7 @@ UNSAFE_PATTERNS = [
 def scan_file(path: Path) -> list[dict[str, Any]]:
     issues = []
     try:
-        text = path.read_text(errors="ignore")
+        text = path.read_text(encoding="utf-8", errors="ignore")
     except Exception:
         return []
     lines = text.splitlines()

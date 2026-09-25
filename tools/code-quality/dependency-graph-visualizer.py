@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def extract_imports(path: Path, base: Path) -> list[str]:
     deps = []

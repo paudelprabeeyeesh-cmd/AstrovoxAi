@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def find_py_circular(base: Path) -> list[dict[str, Any]]:
     graph: dict[str, set[str]] = {}
@@ -15,8 +17,8 @@ def find_py_circular(base: Path) -> list[dict[str, Any]]:
         rel = str(py_file.relative_to(base))
         graph.setdefault(rel, set())
         try:
-            tree = ast.parse(py_file.read_text())
-        except SyntaxError:
+            tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
+        except (SyntaxError, UnicodeDecodeError):
             continue
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
@@ -32,7 +34,7 @@ def find_ts_circular(base: Path) -> list[dict[str, Any]]:
     for ts_file in sorted(base.rglob("*.ts")):
         rel = str(ts_file.relative_to(base))
         graph.setdefault(rel, set())
-        text = ts_file.read_text()
+        text = ts_file.read_text(encoding="utf-8", errors="ignore")
         for line in text.splitlines():
             line = line.strip()
             if line.startswith("import "):

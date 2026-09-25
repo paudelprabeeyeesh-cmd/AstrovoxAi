@@ -8,6 +8,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def check_annotations(node: ast.AST, path: Path) -> list[dict[str, Any]]:
     issues = []
@@ -40,7 +42,7 @@ def scan_directory(base: Path) -> list[dict[str, Any]]:
     all_issues = []
     for py_file in sorted(base.rglob("*.py")):
         try:
-            tree = ast.parse(py_file.read_text())
+            tree = ast.parse(py_file.read_text(encoding="utf-8", errors="ignore"))
         except SyntaxError:
             continue
         all_issues.extend(check_annotations(tree, py_file))

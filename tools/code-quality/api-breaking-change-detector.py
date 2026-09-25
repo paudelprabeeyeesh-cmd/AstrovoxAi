@@ -9,11 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def extract_routes_from_file(path: Path) -> list[dict[str, Any]]:
     routes = []
     try:
-        text = path.read_text()
+        text = path.read_text(encoding="utf-8", errors="ignore")
         tree = ast.parse(text)
     except Exception:
         return routes

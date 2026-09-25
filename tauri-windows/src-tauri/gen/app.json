@@ -1,0 +1,68 @@
+{
+  "identifier": "ai.astrovox.desktop",
+  "description": "Astrovox AI Desktop App",
+  "windows": [
+    {
+      "title": "Astrovox AI",
+      "width": 1200,
+      "height": 800,
+      "resizable": true,
+      "fullscreen": false,
+      "hiddenTitle": false
+    }
+  ],
+  "security": {
+    "csp": null
+  },
+  "bundles": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "DeveloperTool",
+    "shortDescription": "Astrovox AI Desktop",
+    "longDescription": "AI-powered chat assistant desktop application",
+    "linux": {
+      "desktopTemplate": "./astrovox.desktop"
+    },
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com"
+    },
+    "macos": {
+      "frameworks": [],
+      "minimumSystemVersion": "11.0",
+      "exceptionDomain": ""
+    }
+  },
+  "updater": {
+    "active": true,
+    "endpoints": [
+      "https://releases.astrovox.ai/stable/latest.json",
+      "https://releases.astrovox.ai/beta/latest.json",
+      "https://releases.astrovox.ai/nightly/latest.json"
+    ],
+    "dialog": true,
+    "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pa2U6IDNHOThCOUUxMjE0NjMzMUVFNkFDQTMwQTNGMDM4OTM1RkJDQkRFNkQK"
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "notification": {
+      "all": true
+    },
+    "fs": {
+      "scope": {
+        "allow": ["$APP_DATA/*", "$DOCUMENT/*"],
+        "deny": ["$APP_DATA/*/secret"]
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "version": "2",
+  "capabilities": {
+    "shell:allow-open": {},
+    "notification:default": {
+      "all": true
+    },
+    "fs:allow-read": {
+      "scope": ["$APP_DATA/*", "$DOCUMENT/*"]
+    },
+    "fs:allow-write": {
+      "scope": ["$APP_DATA/*", "$DOCUMENT/*"]
+    },
+    "window:default": {
+      "default": true
+    }
+  }
+}

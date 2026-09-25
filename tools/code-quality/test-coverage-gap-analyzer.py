@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+Path("code-quality-reports").mkdir(exist_ok=True)
+
 
 def find_test_files(base: Path) -> set[str]:
     tests = set()

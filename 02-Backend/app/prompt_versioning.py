@@ -1,22 +1,34 @@
-import uuid
-import os
+"""System prompt versioning with A/B testing and rollback support."""
+
+from __future__ import annotations
+
+import json
 import logging
+import os
+import re
+import uuid
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional
 
 from repositories.database.client import get_db
+
+from .prompt_validation import PromptTemplateValidator, PromptValidationResult
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
 class PromptVersion:
-    def __init__(self, id: str, name: str, template: str, version: str, description: str, created_at: str):
-        self.id = id
-        self.name = name
-        self.template = template
-        self.version = version
-        self.description = description
-        self.created_at = created_at
+    id: str
+    name: str
+    template: str
+    version: str
+    description: str
+    created_at: str
+    is_active: bool = True
+    metadata: dict = field(default_factory=dict)
+    validation_errors: list[str] = field(default_factory=list)
 
 
 class PromptVersionManager:

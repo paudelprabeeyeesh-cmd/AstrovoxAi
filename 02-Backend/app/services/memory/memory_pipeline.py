@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from .services.memory.memory_service import services.memory.memory_service
+from .memory_service import memory_service as _memory_service
 
 logger = logging.getLogger(__name__)
 
