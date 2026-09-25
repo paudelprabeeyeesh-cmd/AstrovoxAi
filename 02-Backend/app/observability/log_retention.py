@@ -80,6 +80,10 @@ class LogRetentionPolicy:
         with self._lock:
             self._rules.pop(rule_id, None)
 
+    def get_rules(self) -> Dict[str, RetentionRule]:
+        with self._lock:
+            return dict(self._rules)
+
     def set_dry_run(self, dry_run: bool) -> None:
         with self._lock:
             self._dry_run = dry_run

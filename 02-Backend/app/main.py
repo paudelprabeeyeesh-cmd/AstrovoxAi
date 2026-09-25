@@ -54,7 +54,7 @@ from app.api.routers.tasks_router import router as tasks_router
 from app.api.routers.webhook_router import router as webhook_router
 from app.api.routers.feature_flags_router import router as feature_flags_router
 from app.api.routers.admin_metrics_router import router as admin_metrics_router
-from app.support_routes import router as support_router
+from app.api.routers.support_router import router as support_router
 from app.observability.endpoints import router as observability_router
 
 load_dotenv()
