@@ -10,6 +10,8 @@ from .forecasting import FutureEventForecaster
 from .translation import UniversalTranslator
 from .monitoring import OmnipresentMonitor
 from .infinite_scroll import InfiniteScrollWithInfiniteData
+from .reality_warping import RealityWarpingSearch
+from .sandbox import UniverseSandbox
 
 __all__ = [
     "UniversalKnowledgeGraph",
@@ -24,4 +26,6 @@ __all__ = [
     "UniversalTranslator",
     "OmnipresentMonitor",
     "InfiniteScrollWithInfiniteData",
+    "RealityWarpingSearch",
+    "UniverseSandbox",
 ]

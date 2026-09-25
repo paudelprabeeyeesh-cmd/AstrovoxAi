@@ -33,6 +33,7 @@ class MoralReasoningCore:
             MoralPrinciple.CARE_ETHICS.value: 0.1,
         }
         self.reasoning_history: list[dict[str, Any]] = []
+        self.ethical_rules: list[str] = []
 
     def evaluate_action(self, action: MoralAction) -> dict[str, Any]:
         scores = {}
@@ -75,6 +76,9 @@ class MoralReasoningCore:
             "principle": best["dominant_principle"],
             "all_evaluations": evaluations,
         }
+
+    def add_ethical_rule(self, rule: str):
+        self.ethical_rules.append(rule)
 
     def _utilitarian_score(self, action: MoralAction) -> float:
         return 0.7 if "positive" in action.outcome.lower() or "benefit" in action.outcome.lower() else 0.3

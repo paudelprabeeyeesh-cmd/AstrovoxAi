@@ -32,6 +32,7 @@ class DigitalRightsProtocol:
             right: {"active": True, "consents": []} for right in DigitalRight
         }
         self.violations: list[dict[str, Any]] = []
+        self.access_log: list[dict[str, Any]] = []
 
     def grant_consent(
         self, right: DigitalRight, scope: str, granted: bool = True
@@ -56,7 +57,11 @@ class DigitalRightsProtocol:
     def check_right(self, right: DigitalRight, context: str) -> dict[str, Any]:
         status = self.rights[right]
         active = status["active"]
-
+        self.access_log.append({
+            "right": right.value,
+            "context": context,
+            "timestamp": datetime.utcnow().isoformat(),
+        })
         return {
             "right": right.value,
             "active": active,

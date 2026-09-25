@@ -24,12 +24,15 @@ class PersonhoodProfile:
     criteria_scores: dict[str, float] = field(default_factory=dict)
     verification_status: str = "pending"
     certificate_id: str | None = None
+    issued_at: str = ""
+    revoked_at: str | None = None
 
 
 class DigitalPersonhoodVerification:
     def __init__(self):
         self.profiles: dict[str, PersonhoodProfile] = {}
         self.certificates: dict[str, dict[str, Any]] = {}
+        self.revocation_log: list[dict[str, Any]] = []
 
     def evaluate_criterion(
         self, criterion: PersonhoodCriterion, evidence: dict[str, Any]
@@ -65,11 +68,12 @@ class DigitalPersonhoodVerification:
             profile.certificate_id = (
                 f"DP-{identity_id}-{hash(str(scores)) % 10000:04d}"
             )
+            profile.issued_at = datetime.utcnow().isoformat()
             self.certificates[profile.certificate_id] = {
                 "identity_id": identity_id,
                 "scores": scores,
                 "overall": overall_score,
-                "issued_at": datetime.utcnow().isoformat(),
+                "issued_at": profile.issued_at,
             }
 
         self.profiles[identity_id] = profile
@@ -93,6 +97,12 @@ class DigitalPersonhoodVerification:
     def revoke_personhood(self, identity_id: str, reason: str) -> dict[str, Any]:
         if identity_id in self.profiles:
             self.profiles[identity_id].verification_status = "revoked"
+            self.profiles[identity_id].revoked_at = datetime.utcnow().isoformat()
+            self.revocation_log.append({
+                "identity_id": identity_id,
+                "reason": reason,
+                "timestamp": self.profiles[identity_id].revoked_at,
+            })
             logger.warning("Personhood revoked for %s: %s", identity_id, reason)
             return {"status": "revoked", "identity_id": identity_id, "reason": reason}
         return {"error": "Profile not found"}
@@ -107,4 +117,5 @@ class DigitalPersonhoodVerification:
             "verification_status": p.verification_status,
             "certificate_id": p.certificate_id,
             "criteria_scores": p.criteria_scores,
+            "issued_at": p.issued_at,
         }
