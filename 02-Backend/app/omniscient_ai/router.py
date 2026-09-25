@@ -18,6 +18,7 @@ from app.omniscient_ai.reality_warping import RealityWarpingSearch
 from app.omniscient_ai.sandbox import UniverseSandbox
 from app.omniscient_ai.omnipotent_assistant import OmnipotentAssistant
 from app.omniscient_ai.omnipresent_notifications import OmnipresentNotificationSystem
+from app.omniscient_ai.translation_matrix import UniversalTranslationMatrix
 
 router = APIRouter(prefix="/omniscient", tags=["omniscient-ai"])
 
@@ -34,6 +35,7 @@ _reality_warping = RealityWarpingSearch()
 _sandbox = UniverseSandbox()
 _assistant = OmnipotentAssistant()
 _notifications = OmnipresentNotificationSystem()
+_translation_matrix = UniversalTranslationMatrix()
 
 
 class KnowledgeEntityRequest(BaseModel):
@@ -118,6 +120,16 @@ class BroadcastRequest(BaseModel):
 class CapabilityRequest(BaseModel):
     user_id: str
     capability: str
+    context: Optional[dict] = None
+
+
+class TranslationMatrixRequest(BaseModel):
+    text: str
+    source_language: str
+    target_language: str
+    source_reality: int = 0
+    target_reality: int = 0
+    dimension: str = "physical"
     context: Optional[dict] = None
 
 
@@ -530,6 +542,53 @@ async def get_channel_stats():
     return {"channels": _notifications.get_channel_stats()}
 
 
+@router.post("/translation-matrix/translate")
+async def translate_matrix(request: TranslationMatrixRequest):
+    entry = _translation_matrix.translate_across_matrix(
+        text=request.text,
+        source_lang=request.source_language,
+        target_lang=request.target_language,
+        source_reality=request.source_reality,
+        target_reality=request.target_reality,
+        dimension=request.dimension,
+    )
+    return {
+        "entry_id": entry.entry_id,
+        "source_text": entry.source_text,
+        "target_text": entry.target_text,
+        "source_language": entry.source_language,
+        "target_language": entry.target_language,
+        "source_reality": entry.source_reality,
+        "target_reality": entry.target_reality,
+        "dimension": entry.dimension,
+        "confidence": entry.confidence,
+        "warp_factor": entry.warp_factor,
+    }
+
+
+@router.post("/translation-matrix/bridges")
+async def create_reality_bridge(source_reality: int, target_reality: int, bridge_type: str = "standard"):
+    bridge_id = _translation_matrix.create_reality_bridge(source_reality, target_reality, bridge_type)
+    return {"bridge_id": bridge_id, "source_reality": source_reality, "target_reality": target_reality}
+
+
+@router.get("/translation-matrix/bridges")
+async def list_reality_bridges():
+    return {"bridges": _translation_matrix.get_reality_bridges()}
+
+
+@router.post("/translation-matrix/anchors")
+async def create_dimension_anchor(dimension: str, anchor_data: dict):
+    anchor_id = _translation_matrix.anchor_dimension(dimension, anchor_data)
+    return {"anchor_id": anchor_id, "dimension": dimension}
+
+
+@router.get("/translation-matrix/anchors")
+async def list_dimension_anchors(dimension: Optional[str] = None):
+    anchors = _translation_matrix.get_dimension_anchors(dimension)
+    return {"anchors": anchors}
+
+
 @router.get("/stats")
 async def get_omniscient_stats():
     return {
@@ -547,4 +606,5 @@ async def get_omniscient_stats():
         "sandbox": _sandbox.get_stats(),
         "assistant": _assistant.get_stats(),
         "notifications": _notifications.get_stats(),
+        "translation_matrix": _translation_matrix.get_stats(),
     }

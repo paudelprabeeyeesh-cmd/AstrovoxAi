@@ -38,6 +38,14 @@ from .temporal_db import (
     Query,
     QueryResult,
 )
+from .cqrs import (
+    CQRS,
+    CommandBus,
+    QueryBus,
+    EventSourcedAggregate,
+    CommandError,
+    Middleware,
+)
 from .temporal_ai import (
     TimeAwareContextWindow,
     TemporalToken,
@@ -67,6 +75,7 @@ from .timeline import (
     TimelineExporter,
     TimelineNode,
 )
+from .engine import TemporalEngine
 
 __all__ = [
     "TimeTravelDebugger",
@@ -117,4 +126,11 @@ __all__ = [
     "HistoricalPatternRecognizer",
     "TemporalPattern",
     "TimeSeriesForecaster",
+    "TemporalEngine",
+    "CQRS",
+    "CommandBus",
+    "QueryBus",
+    "EventSourcedAggregate",
+    "CommandError",
+    "Middleware",
 ]

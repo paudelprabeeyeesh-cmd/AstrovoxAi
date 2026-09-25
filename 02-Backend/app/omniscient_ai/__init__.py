@@ -14,6 +14,7 @@ from .reality_warping import RealityWarpingSearch
 from .sandbox import UniverseSandbox
 from .omnipotent_assistant import OmnipotentAssistant
 from .omnipresent_notifications import OmnipresentNotificationSystem
+from .translation_matrix import UniversalTranslationMatrix
 
 __all__ = [
     "UniversalKnowledgeGraph",
@@ -32,4 +33,5 @@ __all__ = [
     "UniverseSandbox",
     "OmnipotentAssistant",
     "OmnipresentNotificationSystem",
+    "UniversalTranslationMatrix",
 ]

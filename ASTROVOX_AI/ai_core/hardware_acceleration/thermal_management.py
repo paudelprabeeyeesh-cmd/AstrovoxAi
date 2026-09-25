@@ -1,19 +1,22 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any, List
+import math
+from typing import Optional, Dict, Any, List, Tuple
 import torch
 
 logger = logging.getLogger(__name__)
 
 
 class ThermalManager:
-    def __init__(self, max_temp_c: float = 95.0, ambient_temp_c: float = 25.0):
+    def __init__(self, max_temp_c: float = 95.0, ambient_temp_c: float = 25.0, thermal_resistance: float = 0.5):
         self.max_temp_c = max_temp_c
         self.ambient_temp_c = ambient_temp_c
         self.current_temp_c = ambient_temp_c
+        self.thermal_resistance = thermal_resistance
         self.thermal_zones: Dict[str, float] = {}
         self.cooling_capacity: Dict[str, float] = {}
+        self.temp_history: List[float] = []
 
     def read_temperature(self, zone: str = "gpu") -> float:
         return self.thermal_zones.get(zone, self.current_temp_c)
@@ -21,6 +24,9 @@ class ThermalManager:
     def update_temperature(self, zone: str, temp_c: float) -> None:
         self.thermal_zones[zone] = temp_c
         self.current_temp_c = max(self.thermal_zones.values()) if self.thermal_zones else temp_c
+        self.temp_history.append(self.current_temp_c)
+        if len(self.temp_history) > 1000:
+            self.temp_history = self.temp_history[-1000:]
 
     def is_throttling_required(self) -> bool:
         return self.current_temp_c >= self.max_temp_c
@@ -30,12 +36,19 @@ class ThermalManager:
             return max(0.1, 1.0 - (self.current_temp_c - self.max_temp_c) / 50.0)
         return 1.0
 
+    def estimate_temperature_rise(self, power_watts: float, time_seconds: float) -> float:
+        return power_watts * self.thermal_resistance * time_seconds
+
+    def get_thermal_headroom(self) -> float:
+        return max(0.0, self.max_temp_c - self.current_temp_c)
+
 
 class ThermalThrottlingController:
     def __init__(self, thermal_manager: ThermalManager, power_manager: Any):
         self.thermal_manager = thermal_manager
         self.power_manager = power_manager
         self.throttle_steps = 8
+        self.throttle_history: List[float] = []
 
     def should_throttle(self) -> bool:
         return self.thermal_manager.is_throttling_required()
@@ -44,18 +57,31 @@ class ThermalThrottlingController:
         if not self.should_throttle():
             return current_freq_ghz
         factor = self.thermal_manager.estimate_throttle_factor()
-        return current_freq_ghz * factor
+        throttled = current_freq_ghz * factor
+        self.throttle_history.append(throttled)
+        return throttled
 
     def step(self, current_freq_ghz: float) -> float:
         if self.should_throttle():
             return self.apply_throttle(current_freq_ghz)
         return current_freq_ghz
 
+    def get_throttle_severity(self) -> str:
+        factor = self.thermal_manager.estimate_throttle_factor()
+        if factor >= 0.9:
+            return "none"
+        if factor >= 0.7:
+            return "mild"
+        if factor >= 0.5:
+            return "moderate"
+        return "severe"
+
 
 class CoolingOptimizer:
     def __init__(self, fan_curves: Optional[Dict[str, List[Tuple[float, float]]]] = None):
         self.fan_curves = fan_curves or {
-            "gpu": [(30.0, 0.3), (50.0, 0.5), (70.0, 0.7), (85.0, 1.0)]
+            "gpu": [(30.0, 0.3), (50.0, 0.5), (70.0, 0.7), (85.0, 1.0)],
+            "cpu": [(40.0, 0.2), (60.0, 0.5), (80.0, 0.8)],
         }
         self.fan_speeds: Dict[str, float] = {}
 
@@ -72,3 +98,11 @@ class CoolingOptimizer:
 
     def estimate_cooling_effectiveness(self, temp_c: float, fan_speed: float) -> float:
         return max(0.0, min(1.0, fan_speed * (1.0 - (temp_c / 100.0))))
+
+    def recommend_cooling_action(self, temp_c: float, fan_speed: float) -> str:
+        effectiveness = self.estimate_cooling_effectiveness(temp_c, fan_speed)
+        if effectiveness < 0.3:
+            return "increase_fan_speed"
+        if effectiveness < 0.6:
+            return "monitor"
+        return "optimal"
