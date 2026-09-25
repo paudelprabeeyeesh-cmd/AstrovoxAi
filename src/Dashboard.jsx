@@ -12,6 +12,8 @@ import TerminalConsole from './terminalconsole'
 import MemoryPanel from './MemoryPanel'
 // eslint-disable-next-line no-unused-vars
 import SettingsPanel from './SettingsPanel'
+// eslint-disable-next-line no-unused-vars
+import MultiversePanel from './components/multiverse/MultiversePanel'
 
 export default function Dashboard({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -253,6 +255,12 @@ export default function Dashboard({ session }) {
           {activePanel === 'quantum' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <QuantumHolographicSystem />
+            </div>
+          )}
+
+          {activePanel === 'holographic' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <HolographicPanel />
             </div>
           )}
 

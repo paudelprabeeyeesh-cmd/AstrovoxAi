@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.temporal.snapshots import SnapshotEngine, SnapshotStrategy
-from app.temporal.cqrs import CommandBus, QueryBus, Command, Event, Query, CQRS
+from app.temporal.cqrs import CommandBus, QueryBus, Command, Event, Query, QueryResult, CQRS
 from app.temporal.reverse_debugger import ReverseDebugger, DebugDirection
 from app.temporal.branching import BranchTimelineManager, BranchType, BranchStatus
 from app.temporal.causal import CausalChainAnalyzer, CausalEvent, CausalEdge

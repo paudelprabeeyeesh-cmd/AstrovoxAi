@@ -1,6 +1,6 @@
-import { useState, useEffect } = 'react'
-import { motion } = 'framer-motion'
-import { runScenario } = '../../services/multiverseService'
+import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
+import { runScenario } from '../../services/multiverseService'
 
 export default function ScenarioEngine({ universeId, onResult }) {
   const [scenarioId, setScenarioId] = useState('')

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 const GATES = {
   H: { name: 'Hadamard', symbol: 'H', color: '#06b6d4', matrix: [[1/Math.sqrt(2), 1/Math.sqrt(2)], [1/Math.sqrt(2), -1/Math.sqrt(2)]] },
   X: { name: 'Pauli-X', symbol: 'X', color: '#f472b6', matrix: [[0, 1], [1, 0]] },
-  Y: { name: 'Pauli-Y', symbol: 'Y', color: '#a78bfa', matrix: [[0, -1j], [1j, 0]] },
+  Y: { name: 'Pauli-Y', symbol: 'Y', color: '#a78bfa', matrix: [[0, -1], [1, 0]] },
   Z: { name: 'Pauli-Z', symbol: 'Z', color: '#34d399', matrix: [[1, 0], [0, -1]] },
   CNOT: { name: 'CNOT', symbol: '⊕', color: '#fbbf24', matrix: null }
 }

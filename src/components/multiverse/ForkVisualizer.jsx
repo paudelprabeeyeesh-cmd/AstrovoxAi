@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { createTimeline, forkUniverse, getVisualization } from '../../services/multiverseService'
+import { getVisualization } from '../../services/multiverseService'
 
 const STATUS_COLORS = {
   active: '#34d399',

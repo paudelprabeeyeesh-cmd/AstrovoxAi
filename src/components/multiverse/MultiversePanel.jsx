@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
 import MultiverseDashboard from './MultiverseDashboard'
 import TimelineVisualizer from './TimelineVisualizer'
 import ForkVisualizer from './ForkVisualizer'

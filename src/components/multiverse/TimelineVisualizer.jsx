@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { getUniverseMessages, sendUniverseMessage } from '../../services/multiverseService'
 
 export default function TimelineVisualizer({ universeId, onBack }) {
