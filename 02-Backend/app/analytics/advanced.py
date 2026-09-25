@@ -960,6 +960,7 @@ class AdvancedAnalyticsEngine:
 
     def track_ab_event(self, event: ABTestEvent):
         self._ab_events.append(event)
+        self._persist_ab_event(event)
 
     def get_ab_test_analytics(self, test_id: str) -> dict:
         test = self._ab_tests.get(test_id)
@@ -1044,6 +1045,7 @@ class AdvancedAnalyticsEngine:
 
     def add_cohort_member(self, member: CohortMember):
         self._cohort_members.append(member)
+        self._persist_cohort_member(member)
 
     def get_cohort_analysis(self, cohort_id: str, days: int = 30) -> dict:
         cohort = self._cohorts.get(cohort_id)
@@ -1104,6 +1106,7 @@ class AdvancedAnalyticsEngine:
 
     def track_funnel_event(self, event: FunnelEvent):
         self._funnel_events.append(event)
+        self._persist_funnel_event(event)
 
     def get_funnel_analytics(self, funnel_id: str, days: int = 30) -> dict:
         funnel = self._funnels.get(funnel_id)
@@ -1164,6 +1167,7 @@ class AdvancedAnalyticsEngine:
     def update_retention_snapshot(self, snapshot: RetentionSnapshot):
         key = f"{snapshot.user_id}:{snapshot.cohort_date}"
         self._retention_snapshots[key] = snapshot
+        self._persist_retention_snapshot(snapshot)
 
     def get_retention_analytics(self, cohort_date: str, days: int = 90) -> dict:
         snapshots = [s for s in self._retention_snapshots.values() if s.cohort_date == cohort_date]
@@ -1196,6 +1200,7 @@ class AdvancedAnalyticsEngine:
     # ------------------------------------------------------------------
     def track_revenue(self, event: RevenueEvent):
         self._revenue_events.append(event)
+        self._persist_revenue_event(event)
 
     def get_revenue_analytics(self, days: int = 30, user_id: Optional[str] = None) -> dict:
         cutoff = time.time() - (days * 86400)
@@ -1241,6 +1246,7 @@ class AdvancedAnalyticsEngine:
     # ------------------------------------------------------------------
     def create_custom_report(self, report: CustomReport):
         self._custom_reports[report.report_id] = report
+        self._persist_custom_report(report)
 
     def run_custom_report(self, report_id: str, days: int = 30) -> dict:
         report = self._custom_reports.get(report_id)
@@ -1334,6 +1340,8 @@ class AdvancedAnalyticsEngine:
             self._sessions[user_id] = {"started_at": now, "last_activity": now, "event_count": 0}
         self._sessions[user_id]["last_activity"] = now
         self._sessions[user_id]["event_count"] += 1
+
+        self._persist_event("user_action", user_id, event.metadata)
 
     def get_usage_stats(self, days: int = 7) -> dict:
         cutoff = time.time() - (days * 86400)

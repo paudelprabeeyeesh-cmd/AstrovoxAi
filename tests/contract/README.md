@@ -1,46 +1,24 @@
 # Contract Tests
 
-Contract tests verify that the API matches the expected interface.
+## Overview
 
-## Running Contract Tests
+API contract tests verify that the client SDK and backend API agree on request/response shapes.
+
+## Running
 
 ```bash
 npm run test:contract
 ```
 
-## API Contracts
+## Coverage
 
-### POST /chat/message
-Request: `{ conversation_id: string, message: string, model?: string }`
-Response: `{ ai_message: { id, role, content, created_at } }`
+- `sendMessage` - POST /chat/message
+- `createConversation` - POST /conversations
+- `listConversations` - GET /conversations
+- Error handling - 401, 429 responses
 
-### POST /conversations
-Request: `{ title?: string, model?: string }`
-Response: `{ id, title, model, created_at }`
+## Adding New Contracts
 
-### GET /conversations
-Response: `Conversation[]`
-
-## Client SDK Contracts
-
-### Python SDK
-```python
-client = AstrovoxClient(api_key="...")
-client.send_message(conv_id, message)
-client.create_conversation(title="...")
-```
-
-### TypeScript SDK
-```typescript
-const client = new AstrovoxClient({ apiKey: "..." })
-await client.sendMessage({ conversationId, message })
-await client.createConversation({ title })
-```
-
-## Breaking Changes
-
-When modifying API contracts:
-1. Update OpenAPI spec
-2. Regenerate SDKs
-3. Update all tests
-4. Update migration guides
+1. Add a new `it` block in `api-contract.test.ts`
+2. Mock `global.fetch` with the expected response shape
+3. Assert request shape and response schema
