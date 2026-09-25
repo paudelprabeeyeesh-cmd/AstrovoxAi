@@ -31,7 +31,7 @@ export function NpsSurvey({ onComplete }: NpsSurveyProps) {
     if (score === null) return;
     setSubmitting(true);
     try {
-      await api.post('/support/nps', { score, comment, survey_type: 'in-app' });
+      await api.submitNps(score, comment, 'in-app');
       setSubmitted(true);
       onComplete?.();
       setTimeout(() => setOpen(false), 2000);

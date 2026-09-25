@@ -43,7 +43,7 @@ export function LiveChatWidget() {
 
   const loadMessages = async (sessionId: string) => {
     try {
-      const data = await api.get<{ messages: ChatMessage[] }>(`/support/chat/sessions/${sessionId}/messages`);
+      const data = await api.getChatMessages(sessionId);
       setMessages(data.messages || []);
     } catch {
       // ignore
@@ -54,7 +54,7 @@ export function LiveChatWidget() {
     if (!input.trim() || !session) return;
     setSending(true);
     try {
-      const data = await api.post<{ message: ChatMessage }>(`/support/chat/sessions/${session.id}/messages`, { message: input });
+      const data = await api.sendChatMessage(session.id, input);
       setMessages((prev) => [...prev, data.message]);
       setInput('');
     } catch {
@@ -66,7 +66,7 @@ export function LiveChatWidget() {
 
   const endSession = async () => {
     if (!session) return;
-    await api.post(`/support/chat/sessions/${session.id}/end`, {});
+    await api.endChatSession(session.id);
     setOpen(false);
     setSession(null);
     setMessages([]);
