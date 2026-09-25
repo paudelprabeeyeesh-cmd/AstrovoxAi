@@ -254,6 +254,18 @@ class ImmutableAuditStore:
                 "newest_entry": self._entries[-1].created_at if self._entries else None,
             }
 
+    def get_integrity_report(self) -> Dict[str, Any]:
+        """Generate an integrity report for the audit log."""
+        is_valid, broken_index = self.verify_chain()
+        return {
+            "is_valid": is_valid,
+            "broken_index": broken_index,
+            "total_entries": self.count(),
+            "total_checkpoints": len(self._checkpoints),
+            "last_checkpoint": self._checkpoints[-1] if self._checkpoints else None,
+            "verified_at": datetime.now(timezone.utc).isoformat(),
+        }
+
 
 immutable_audit_store = ImmutableAuditStore()
 
