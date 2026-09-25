@@ -74,10 +74,11 @@ export function CRDTProvider({ children, documentId, userId }) {
             author: op.userId
           }
         }
-      case 'delete':
+      case 'delete': {
         const next = { ...state }
         delete next[op.path]
         return next
+      }
       case 'update':
         return {
           ...state,
@@ -113,7 +114,7 @@ export function CRDTProvider({ children, documentId, userId }) {
     return sendOperation('insert', { path, value })
   }, [sendOperation])
 
-  const delete = useCallback((path) => {
+  const remove = useCallback((path) => {
     return sendOperation('delete', { path })
   }, [sendOperation])
 
@@ -140,7 +141,7 @@ export function CRDTProvider({ children, documentId, userId }) {
     peers: Array.from(peers.values()),
     localState,
     insert,
-    delete,
+    remove,
     update,
     addPeer,
     removePeer,
