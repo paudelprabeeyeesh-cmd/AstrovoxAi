@@ -149,6 +149,24 @@ class ConversationTimeline:
         for nid in nodes_a:
             if nid in nodes_b:
                 return nid
+        for nid, node in nodes_a.items():
+            current = node
+            while current.parent_node_id:
+                if current.parent_node_id in nodes_b:
+                    return current.parent_node_id
+                parent = self._nodes.get(current.parent_node_id)
+                if parent is None:
+                    break
+                current = parent
+        for nid, node in nodes_b.items():
+            current = node
+            while current.parent_node_id:
+                if current.parent_node_id in nodes_a:
+                    return current.parent_node_id
+                parent = self._nodes.get(current.parent_node_id)
+                if parent is None:
+                    break
+                current = parent
         return None
 
     def visualize(self, branch_id: Optional[str] = None) -> Dict[str, Any]:

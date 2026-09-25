@@ -4,6 +4,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
+import time
 from dotenv import load_dotenv
 
 from services.auth.auth import router as auth_router
@@ -41,6 +42,7 @@ from api.routers.temporal_route import router as temporal_router
 from middleware.security.security_headers import SecurityHeadersMiddleware
 from middleware.security.rate_limit_hardened import rate_limit_middleware
 from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
+from .core.cache_enhanced import get_cached_response, cache_response
 
 load_dotenv()
 

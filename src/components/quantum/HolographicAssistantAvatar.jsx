@@ -48,7 +48,8 @@ export default function HolographicAssistantAvatar() {
       const pupilOffsetX = listening ? Math.sin(time * 2) * 3 : 0
       const pupilOffsetY = mood === 'thinking' ? Math.sin(time * 1.5) * 2 : 0
 
-      [{ x: cx - eyeSpacing, color: '#06b6d4' }, { x: cx + eyeSpacing, color: '#06b6d4' }].forEach(eye => {
+      const eyes = [{ x: cx - eyeSpacing, color: '#06b6d4' }, { x: cx + eyeSpacing, color: '#06b6d4' }]
+      eyes.forEach(eye => {
         ctx.beginPath()
         ctx.ellipse(eye.x, eyeY, 10, eyeHeight, 0, 0, Math.PI * 2)
         ctx.fillStyle = 'rgba(6, 182, 212, 0.15)'

@@ -23,6 +23,15 @@ def _ensure_column(
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
 
 
+def _ensure_index(
+    conn: sqlite3.Connection, table: str, name: str, cols: str
+) -> None:
+    try:
+        conn.execute(f"CREATE INDEX IF NOT EXISTS {name} ON {table}({cols})")
+    except sqlite3.OperationalError:
+        pass
+
+
 def _ensure_tables(conn: sqlite3.Connection) -> None:
     cur = conn.cursor()
     cur.execute("""
@@ -56,12 +65,17 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
+    _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
+    _ensure_index(conn, "chats", "idx_chats_conversation", "conversation_id, created_at")
+    _ensure_index(conn, "usage", "idx_usage_user_kind", "user_id, kind")
 
 
 def init_db() -> None:
     _ensure_db_dir()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     _ensure_tables(conn)
     conn.close()
     print(f"[db] Initialized SQLite DB at {DB_PATH}")
@@ -71,6 +85,8 @@ def get_db() -> sqlite3.Connection:
     _ensure_db_dir()
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
     _ensure_tables(conn)
     return conn
 

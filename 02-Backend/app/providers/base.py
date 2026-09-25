@@ -13,14 +13,12 @@ from typing import Optional, AsyncIterator, Any
 
 @dataclass
 class ChatMessage:
-    __slots__ = ("role", "content")
     role: str
     content: str
 
 
 @dataclass
 class ChatResponse:
-    __slots__ = ("content", "model", "tokens_used", "finish_reason", "provider", "metadata")
     content: str
     model: str
     tokens_used: Optional[int] = None
@@ -32,7 +30,6 @@ class ChatResponse:
 @dataclass
 class EmbeddingVector:
     """Result from an embedding request."""
-    __slots__ = ("vector", "model", "tokens_used")
     vector: list[float]
     model: str
     tokens_used: Optional[int] = None
@@ -40,7 +37,6 @@ class EmbeddingVector:
 
 @dataclass
 class ProviderConfig:
-    __slots__ = ("api_key", "base_url", "timeout", "max_retries")
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     timeout: int = 60
