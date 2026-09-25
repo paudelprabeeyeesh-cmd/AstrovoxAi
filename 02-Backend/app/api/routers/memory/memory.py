@@ -7,9 +7,9 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from ...schemas import MemoryCreate, MemoryUpdate, MemoryOut, MemoryClassifyRequest, MemoryClassifyResponse
-from ..memory_service import services.memory.memory_service
+from ..services import memory as memory_service
 from ..auth import require_verified_email, get_current_user
-from repositories.database.client import get_db
+from ...repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 
