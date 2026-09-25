@@ -212,6 +212,25 @@ class TokenRevocationList:
         logger.warning("Bulk revoked %d tokens for user %s due to %s", count, user_id, reason.value)
         return count
 
+    def get_revocation_trends(self, hours: int = 24) -> Dict[str, Any]:
+        """Get revocation trends over time."""
+        cutoff = time.time() - (hours * 3600)
+        with self._lock:
+            recent = [entry for entry in self._revoked.values() if entry.revoked_at > cutoff]
+        by_reason: Dict[str, int] = {}
+        by_hour: Dict[str, int] = {}
+        for entry in recent:
+            reason = entry.reason.value
+            by_reason[reason] = by_reason.get(reason, 0) + 1
+            hour = datetime.fromtimestamp(entry.revoked_at, tz=timezone.utc).hour
+            by_hour[str(hour)] = by_hour.get(str(hour), 0) + 1
+        return {
+            "period_hours": hours,
+            "total_revocations": len(recent),
+            "by_reason": by_reason,
+            "by_hour": by_hour,
+        }
+
 
 token_revocation_list = TokenRevocationList()
 
