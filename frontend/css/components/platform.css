@@ -1,8 +1,19 @@
 /* ============================================
+   Frontend Platform CSS Components
    Group 1: Accessible Component Primitives
+   Group 2: Animation/Transition System
+   Group 6: Command Palette, Modals, Toasts, Tooltips
+   Group 8: Resizable Split Pane
+   Group 9: Global Search
+   Group 10: Code Execution UI
+   Group 11: Multi-modal Input
+   Group 12: Collaboration Cursors
+   Group 13: Dashboard Shell and Widgets
+   Group 14: Responsive Breakpoints
+   Group 7: Theme Engine Variables
    ============================================ */
 
-/* Focus visible ring */
+/* Group 1: Accessible Component Primitives */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -12,7 +23,6 @@
   outline: none;
 }
 
-/* Skip link */
 .skip-link {
   position: absolute;
   top: -40px;
@@ -32,7 +42,6 @@
   top: 0;
 }
 
-/* Screen reader only */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -45,10 +54,7 @@
   border: 0;
 }
 
-/* ============================================
-   Group 2: Animation/Transition System
-   ============================================ */
-
+/* Group 2: Animation/Transition System */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -60,11 +66,7 @@
   }
 }
 
-/* ============================================
-   Group 6: Command Palette, Modals, Toasts, Tooltips
-   ============================================ */
-
-/* Command Palette */
+/* Group 6: Command Palette, Modals, Toasts, Tooltips */
 .command-palette-overlay {
   position: fixed;
   inset: 0;
@@ -338,10 +340,7 @@
   opacity: 1;
 }
 
-/* ============================================
-   Group 8: Resizable Split Pane
-   ============================================ */
-
+/* Group 8: Resizable Split Pane */
 .split-pane {
   display: flex;
   width: 100%;
@@ -385,10 +384,7 @@
   outline: none;
 }
 
-/* ============================================
-   Group 9: Global Search
-   ============================================ */
-
+/* Group 9: Global Search */
 .global-search-overlay {
   position: fixed;
   inset: 0;
@@ -554,10 +550,7 @@
   color: var(--text-secondary);
 }
 
-/* ============================================
-   Group 10: Code Execution UI
-   ============================================ */
-
+/* Group 10: Code Execution UI */
 .code-executor {
   background: var(--bg-primary);
   border: 1px solid var(--border);
@@ -702,10 +695,7 @@
   word-break: break-word;
 }
 
-/* ============================================
-   Group 11: Multi-modal Input
-   ============================================ */
-
+/* Group 11: Multi-modal Input */
 .multimodal-input {
   background: var(--bg-secondary);
   border: 1px solid var(--border);
@@ -813,10 +803,7 @@
   color: var(--accent);
 }
 
-/* ============================================
-   Group 12: Collaboration Cursors
-   ============================================ */
-
+/* Group 12: Collaboration Cursors */
 .collaboration-cursor {
   position: fixed;
   z-index: 500;
@@ -845,10 +832,7 @@
   white-space: nowrap;
 }
 
-/* ============================================
-   Group 13: Dashboard Shell and Widgets
-   ============================================ */
-
+/* Group 13: Dashboard Shell and Widgets */
 .dashboard-shell {
   display: grid;
   gap: 1rem;
@@ -945,10 +929,7 @@
   font-size: 0.875rem;
 }
 
-/* ============================================
-   Group 14: Responsive Breakpoints
-   ============================================ */
-
+/* Group 14: Responsive Breakpoints */
 @media (max-width: 1200px) {
   .dashboard-shell {
     grid-template-columns: repeat(6, 1fr);
@@ -1017,10 +998,7 @@
   }
 }
 
-/* ============================================
-   Group 7: Theme Engine Variables (Extended)
-   ============================================ */
-
+/* Group 7: Theme Engine Variables (Extended) */
 [data-theme="light"] {
   --bg-primary: #ffffff;
   --bg-secondary: #f8fafc;

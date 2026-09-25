@@ -153,8 +153,8 @@ app.include_router(webhook_router)
 app.include_router(feature_flags_router)
 app.include_router(admin_metrics_router)
 app.include_router(support_router)
+app.include_router(cx_router)
 app.include_router(observability_router)
-app.include_router(support_router)
 app.include_router(search_knowledge_router)
 
 
