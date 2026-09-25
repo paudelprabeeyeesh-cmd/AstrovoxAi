@@ -6,7 +6,9 @@ metadata:
   labels:
     {{- include "astrovox.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "astrovox.selectorLabels" . | nindent 6 }}
@@ -14,13 +16,29 @@ spec:
     metadata:
       labels:
         {{- include "astrovox.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ include "astrovox.fullname" . }}
+      {{- end }}
+      automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
-        - containerPort: 8000
+        - name: http
+          containerPort: 8000
+          protocol: TCP
         envFrom:
         - configMapRef:
             name: {{ include "astrovox.fullname" . }}
@@ -28,15 +46,63 @@ spec:
             name: {{ include "astrovox.fullname" . }}
         resources:
           {{- toYaml .Values.resources | nindent 12 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
         livenessProbe:
           httpGet:
-            path: /health
-            port: 8000
-          initialDelaySeconds: 30
+            path: /health/live
+            port: http
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /health
-            port: 8000
+            path: /health/ready
+            port: http
           initialDelaySeconds: 5
           periodSeconds: 5
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+        - name: storage
+          mountPath: /app/storage
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      - name: storage
+        emptyDir: {}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}

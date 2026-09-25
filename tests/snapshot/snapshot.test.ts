@@ -1,49 +1,89 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-
-const mockSnapshots = {
-  ChatInterface: () => <div data-testid="chat-interface">Chat Interface</div>,
-  StreamingMessage: () => <div data-testid="streaming-message">Streaming Message</div>,
-  ThemeEngine: () => <div data-testid="theme-engine">Theme Engine</div>,
-}
+import userEvent from '@testing-library/user-event'
+import { SnapshotAssert, snapshotAssert } from '../lib/snapshot-assert'
+import { VisualRegressionBaseline } from '../lib/visual-baseline'
 
 describe('Snapshot Tests', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('ChatInterface renders correctly', () => {
-    const { container } = render(<mockSnapshots.ChatInterface />)
-    expect(container.firstChild).toMatchSnapshot()
+  it('SnapshotAssert captures and asserts component markup', () => {
+    const assert = new SnapshotAssert()
+    const markup = '<div data-testid="chat-interface">Chat Interface</div>'
+    assert.register('chat-interface', markup)
+    assert.assert('chat-interface', markup)
   })
 
-  it('StreamingMessage renders correctly', () => {
-    const { container } = render(<mockSnapshots.StreamingMessage />)
-    expect(container.firstChild).toMatchSnapshot()
+  it('SnapshotAssert throws on unregistered snapshot', () => {
+    const assert = new SnapshotAssert()
+    expect(() => assert.assert('missing', '<div />')).toThrow('not registered')
   })
 
-  it('ThemeEngine renders correctly', () => {
-    const { container } = render(<mockSnapshots.ThemeEngine />)
-    expect(container.firstChild).toMatchSnapshot()
+  it('snapshotAssert helper asserts matching values', () => {
+    expect(snapshotAssert.assert('test', '<div>Hello</div>')).toBeUndefined()
   })
 
-  it('ChatInterface with messages matches snapshot', () => {
-    const { container } = render(
-      <div>
-        <mockSnapshots.ChatInterface />
-        <div data-testid="message">Hello AI</div>
-        <div data-testid="message">How are you?</div>
-      </div>
-    )
-    expect(container.innerHTML).toMatchSnapshot()
+  it('SnapshotAssert supports ignoreFields', () => {
+    const assert = new SnapshotAssert()
+    const obj = { id: '1', name: 'Widget', updated_at: '2025-01-01T00:00:00Z' }
+    assert.register('widget', obj)
+    assert.assert('widget', { id: '1', name: 'Widget', updated_at: 'ignored' }, { ignoreFields: ['updated_at'] })
   })
 
-  it('ThemeEngine in dark mode matches snapshot', () => {
-    const { container } = render(
-      <div data-theme="dark">
-        <mockSnapshots.ThemeEngine />
-      </div>
-    )
-    expect(container.innerHTML).toMatchSnapshot()
+  it('VisualRegressionBaseline compares strings', () => {
+    const baseline = new VisualRegressionBaseline()
+    baseline.register('homepage', '<header>Astrovox Prime</header>')
+    expect(baseline.compare('homepage', '<header>Astrovox Prime</header>')).toBe(true)
+    expect(baseline.compare('homepage', '<header>Astrovox Prime v2</header>')).toBe(false)
+  })
+
+  it('VisualRegressionBaseline returns baseline for unknown snapshots', () => {
+    const baseline = new VisualRegressionBaseline()
+    expect(baseline.compare('unknown', '<div />')).toBe(true)
+    expect(baseline.getBaseline('unknown')).toBe('<div />')
+  })
+
+  it('VisualRegressionBaseline clears stored snapshots', () => {
+    const baseline = new VisualRegressionBaseline()
+    baseline.register('widget', '<widget />')
+    baseline.clear()
+    expect(baseline.getBaseline('widget')).toBeUndefined()
+  })
+
+  it('VisualRegressionBaseline respects custom threshold', () => {
+    const baseline = new VisualRegressionBaseline()
+    const longBase = 'A'.repeat(1000)
+    const longChanged = 'A'.repeat(999) + 'B'
+    baseline.register('long', longBase)
+    expect(baseline.compare('long', longChanged, { threshold: 0.01 })).toBe(true)
+    expect(baseline.compare('long', longChanged, { threshold: 0.0 })).toBe(false)
+  })
+
+  it('captures inline component snapshots via SnapshotAssert', () => {
+    const Widget = () => <div data-testid="widget">Widget</div>
+    const { container } = render(<Widget />)
+    const assert = new SnapshotAssert()
+    assert.register('widget', container.innerHTML)
+    assert.assert('widget', container.innerHTML)
+  })
+
+  it('handles empty markup snapshots', () => {
+    const assert = new SnapshotAssert()
+    assert.register('empty', '')
+    assert.assert('empty', '')
+  })
+
+  it('SnapshotAssert supports deep equality for numbers within tolerance', () => {
+    const assert = new SnapshotAssert()
+    assert.register('perf', 100)
+    assert.assert('perf', 101, { tolerance: 2, deepEqual: true })
+  })
+
+  it('SnapshotAssert rejects number outside tolerance', () => {
+    const assert = new SnapshotAssert()
+    assert.register('perf', 100)
+    expect(() => assert.assert('perf', 105, { tolerance: 2, deepEqual: true })).toThrow()
   })
 })
