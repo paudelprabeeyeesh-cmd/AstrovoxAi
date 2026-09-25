@@ -1,64 +1,27 @@
-# Playwright Configuration
+# E2E Tests
 
-E2E tests use Playwright.
+## Overview
 
-## Setup
+End-to-end tests verify complete user workflows through the browser.
 
-```bash
-npm init playwright@latest
-npx playwright install
-```
-
-## Config
-
-```typescript
-// playwright.config.ts
-import { defineConfig, devices } from '@playwright/test'
-
-export default defineConfig({
-  testDir: './tests/e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  use: {
-    baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry',
-  },
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-  ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: !process.env.CI,
-  },
-})
-```
-
-## Running Tests
+## Running
 
 ```bash
-# All E2E tests
 npm run test:e2e
-
-# Specific browser
-npx playwright test --project=chromium
-
-# Headed mode
-npx playwright test --headed
-
-# Debug mode
-npx playwright test --debug
 ```
 
-## Accessibility Tests
+## Test Files
+
+- `chat.spec.js` - Core chat flows
+- `navigation.spec.js` - Navigation and routing
+- `advanced-flows.spec.js` - Edit, delete, error states
+- `auth.spec.js` - Authentication flows
+- `themes.test.js` - Theme switching (visual regression)
+
+## CI
+
+Run in CI with:
 
 ```bash
-npm run test:accessibility
+npx playwright test --project=chromium
 ```
-
-Uses `@axe-core/playwright` for automated accessibility testing.

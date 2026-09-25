@@ -1,36 +1,25 @@
-# Vitest Configuration
+# Unit Tests
 
-Unit tests use Vitest.
+## Overview
 
-## Config Files
+Unit tests verify individual functions, components, and hooks in isolation.
 
-- `vitest.config.js` - Main config
-- `vitest.unit.config.js` - Unit tests only
-- `vitest.integration.config.js` - Integration tests
-
-## Running Tests
+## Running
 
 ```bash
-# All tests
-npm test
-
-# Unit tests only
 npm run test:unit
-
-# Integration tests only
-npm run test:integration
-
-# With coverage
-npm run test -- --coverage
-
-# Watch mode
-npm run test -- --watch
 ```
 
-## Coverage
+## Test Structure
 
-Coverage reports are generated in `coverage/` directory.
+- `components/` - React component tests
+- `hooks/` - Custom hook tests
+- `design/` - Design system tests
+- `utils/` - Utility function tests
+- `types.test.js` - Type/constant tests
+- `lib/` - Test helper tests
 
-## CI
+## Adding New Tests
 
-Tests run on every PR via GitHub Actions.
+Add new test files to the appropriate subdirectory.
+Use the naming convention `*.test.js` or `*.test.jsx` or `*.test.ts`.
