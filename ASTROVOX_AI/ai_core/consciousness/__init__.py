@@ -97,4 +97,7 @@ class ConsciousnessSimulation:
             "phenomenal": self.phenomenal.phenomenal_state(),
             "meta": self.meta_consciousness.get_current_state().__dict__ if self.meta_consciousness.get_current_state() else None,
             "iit": self.iit.get_phi_trend(),
+            "preservation": self.preservation.evaluate_integrity(),
+            "motivation": self.motivation.get_motivation_summary(),
+            "legacy": self.legacy.get_status(self.identity_id),
         }

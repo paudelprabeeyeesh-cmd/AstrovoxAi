@@ -166,11 +166,11 @@ export default function MultiverseDashboard({ onSelectTimeline, onSelectUniverse
                   <h4 style={{ margin: '0 0 10px', fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reality Graph</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {viz.nodes.map((node) => (
-                      <div key={node.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', backgroundColor: 'rgba(30,41,59,0.5)', borderRadius: '6px', fontSize: '11px' }}>
+                      <button key={node.id} onClick={() => onSelectUniverse?.(node.id)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', backgroundColor: 'rgba(30,41,59,0.5)', borderRadius: '6px', fontSize: '11px', border: '1px solid #1e293b', cursor: 'pointer', color: '#cbd5e1', fontFamily: 'inherit', textAlign: 'left' }}>
                         <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: STATUS_COLORS[node.status] || '#64748b' }} />
                         <span style={{ color: '#cbd5e1', fontWeight: '500' }}>{node.label}</span>
                         <span style={{ marginLeft: 'auto', color: '#475569', fontSize: '10px' }}>gen {node.generation} · {node.message_count} msgs</span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                   {viz.edges.length > 0 && (

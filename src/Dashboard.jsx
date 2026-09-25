@@ -20,6 +20,7 @@ import StatusPage from './components/support/StatusPage'
 import AnalyticsPanel from './components/support/AnalyticsPanel'
 import HealthScore from './components/support/HealthScore'
 import NpsSurvey from './components/support/NpsSurvey'
+import OmnipresentSystem from './components/omnipresent/OmnipresentSystem'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -385,6 +386,22 @@ function DashboardInner({ session }) {
               📋 NPS
             </button>
             <button
+              onClick={() => setActivePanel('omnipresent')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'omnipresent' ? '#a78bfa' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'omnipresent' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🌐 OMNIPRESENT
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -508,6 +525,12 @@ function DashboardInner({ session }) {
           {activePanel === 'nps' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <NpsSurvey />
+            </div>
+          )}
+
+          {activePanel === 'omnipresent' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <OmnipresentSystem session={session} />
             </div>
           )}
 
