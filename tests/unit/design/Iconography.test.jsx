@@ -1,35 +1,34 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { Icon } from '../../src/design/Iconography'
+import { describe, it, expect } from 'vitest'
+import Icon, { ICONS } from '../../src/design/Iconography'
 
 describe('Iconography', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+  it('ICONS has expected icon names', () => {
+    expect(ICONS).toHaveProperty('chat')
+    expect(ICONS).toHaveProperty('send')
+    expect(ICONS).toHaveProperty('settings')
+    expect(ICONS).toHaveProperty('search')
+    expect(ICONS).toHaveProperty('user')
   })
 
-  it('renders chat icon', () => {
-    render(<Icon name="chat" size={20} />)
-    const svg = document.querySelector('svg')
-    expect(svg).toBeDefined()
+  it('Icon renders component for valid name', () => {
+    const { container } = render(<Icon name="chat" />)
+    expect(container.querySelector('svg')).not.toBeNull()
   })
 
-  it('renders different icons', () => {
-    const icons = ['send', 'copy', 'edit', 'trash', 'settings', 'bell', 'user', 'code', 'mic', 'camera']
-    for (const icon of icons) {
-      render(<Icon name={icon} size={20} />)
-      expect(document.querySelector('svg')).toBeDefined()
-    }
+  it('Icon returns null for unknown name', () => {
+    const { container } = render(<Icon name="unknown-icon" />)
+    expect(container.firstChild).toBeNull()
   })
 
-  it('applies correct size', () => {
-    render(<Icon name="chat" size={32} />)
-    const svg = document.querySelector('svg')
-    expect(svg).toHaveAttribute('width', '32')
-    expect(svg).toHaveAttribute('height', '32')
+  it('Icon applies custom className', () => {
+    const { container } = render(<Icon name="send" className="my-icon" />)
+    expect(container.querySelector('.my-icon')).not.toBeNull()
   })
 
-  it('applies custom className', () => {
-    const { container } = render(<Icon name="chat" size={20} className="custom-class" />)
-    expect(container.firstChild).toHaveClass('custom-class')
+  it('Icon applies custom size', () => {
+    const { container } = render(<Icon name="send" size={32} />)
+    const span = container.querySelector('span')
+    expect(span?.style.width).toBe('32px')
+    expect(span?.style.height).toBe('32px')
   })
 })
