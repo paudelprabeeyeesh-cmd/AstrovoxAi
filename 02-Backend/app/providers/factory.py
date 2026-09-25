@@ -17,7 +17,7 @@ class ProviderFactory:
     def _ensure_initialized(cls) -> None:
         if cls._initialized:
             return
-        cls._initialize_providers()
+        _initialize_providers()
         cls._initialized = True
 
     @classmethod

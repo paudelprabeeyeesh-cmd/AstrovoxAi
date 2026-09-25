@@ -7,42 +7,40 @@ import os
 import time
 from dotenv import load_dotenv
 
-from services.auth.auth import router as auth_router
-from .chat import router as chat_router
-from .storage import router as storage_router
-from .telemetry import router as telemetry_router
-from .terminal import router as terminal_router
-from services.vector.embeddings_route import router as embeddings_router
-from api.routers.memory.router import router as memory_engine_router
-from api.routers.router import router as enterprise_router
-from .enterprise.ws_router import router as ws_router
-from api.routers.workspace_route import router as workspace_router
-from api.routers.jobs_router import router as jobs_router, events_router
-from api.routers.analytics_route import router as analytics_router
-from api.routers.knowledge_route import router as knowledge_router
-from api.routers.agent_route import router as agent_router
-from api.routers.monitoring_route import router as monitoring_router
-from api.routers.auth.security_route import router as security_router
-from api.routers.admin_route import router as admin_router
-from api.routers.realtime_route import router as realtime_router
-from api.routers.dashboard_route import router as dashboard_router
-from api.v1 import router as api_v1_router
-from api.routers.platform_route import router as platform_router
-from api.routers.knowledge_route_v2 import router as knowledge_v2_router
-from api.routers.realtime_route import tools_router
-from api.routers.realtime_route import security_router as scan_router
-from api.routers.agents_route import router as agents_router
-from api.routers.agents_route import memory_router as memory_v2_router
-from api.routers.automation_route import router as automation_router
-from .kernel.api import router as kernel_router
-from .aios.api import router as aios_router
-from .multiverse.api import router as multiverse_router
-from api.routers.document_route import router as document_router
-from api.routers.temporal_route import router as temporal_router
-from middleware.security.security_headers import SecurityHeadersMiddleware
-from middleware.security.rate_limit_hardened import rate_limit_middleware
-from .middleware import GlobalExceptionMiddleware, InputValidationMiddleware
-from .core.cache_enhanced import get_cached_response, cache_response
+from app.services.auth.auth import router as auth_router
+from app.chat import router as chat_router
+from app.storage import router as storage_router
+from app.telemetry import router as telemetry_router
+from app.terminal import router as terminal_router
+from app.services.vector.embeddings_route import router as embeddings_router
+from app.api.routers.memory.router import router as memory_engine_router
+from app.api.routers.router import router as enterprise_router
+from app.enterprise.ws_router import router as ws_router
+from app.api.routers.workspace_route import router as workspace_router
+from app.api.routers.jobs_router import router as jobs_router, events_router
+from app.api.routers.analytics_route import router as analytics_router
+from app.api.routers.knowledge_route import router as knowledge_router
+from app.api.routers.agent_route import router as agent_router
+from app.api.routers.monitoring_route import router as monitoring_router
+from app.api.routers.auth.security_route import router as security_router
+from app.api.routers.admin_route import router as admin_router
+from app.api.routers.realtime_route import router as realtime_router
+from app.api.routers.dashboard_route import router as dashboard_router
+from app.api.v1 import router as api_v1_router
+from app.api.routers.platform_route import router as platform_router
+from app.api.routers.knowledge_route_v2 import router as knowledge_v2_router
+from app.api.routers.realtime_route import tools_router
+from app.api.routers.realtime_route import security_router as scan_router
+from app.api.routers.agents_route import router as agents_router
+from app.api.routers.agents_route import memory_router as memory_v2_router
+from app.api.routers.automation_route import router as automation_router
+from app.kernel.api import router as kernel_router
+from app.aios.api import router as aios_router
+from app.api.routers.document_route import router as document_router
+from app.middleware.security.security_headers import SecurityHeadersMiddleware
+from app.middleware.security.rate_limit_hardened import rate_limit_middleware
+from app.middleware import GlobalExceptionMiddleware, InputValidationMiddleware
+from app.core.cache_enhanced import get_cached_response, cache_response
 
 load_dotenv()
 
@@ -109,8 +107,6 @@ app.include_router(automation_router)
 app.include_router(document_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
-app.include_router(multiverse_router)
-app.include_router(temporal_router)
 
 
 # Prometheus metrics middleware
@@ -122,67 +118,41 @@ async def metrics_middleware(request: Request, call_next):
     duration = time.time() - start_time
 
     try:
-        from ...metrics import track_request
+        from app.metrics import track_request
         track_request(
             method=request.method,
-            endpoint=request.url.path,
+            path=request.url.path,
             status=response.status_code,
-            duration=duration
+            duration=duration,
         )
     except Exception:
         pass
 
-    response.headers["X-Response-Time"] = f"{duration:.3f}s"
     return response
 
 
-# Prometheus metrics endpoint
-@app.get("/metrics")
-async def metrics():
-    """Prometheus metrics endpoint."""
-    try:
-        from ...metrics import get_metrics, CONTENT_TYPE_LATEST
-        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
-    except ImportError:
-        return Response(
-            content=b"# Prometheus client not installed\n",
-            media_type="text/plain"
-        )
-
-
-# Health check endpoints
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "service": "astravox-ai-backend", "version": "2.0.0"}
-
-
-@app.get("/health/readiness")
-async def readiness_check():
-    """Kubernetes readiness probe"""
-    return {"status": "ready", "timestamp": datetime.now(timezone.utc).isoformat()}
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
 
 
 @app.get("/health/liveness")
-async def liveness_check():
-    """Kubernetes liveness probe"""
-    return {"status": "alive", "timestamp": datetime.now(timezone.utc).isoformat()}
+async def liveness():
+    return {"status": "alive"}
 
 
-@app.get("/")
-async def root():
-    return {
-        "message": "🚀 ASTRAVOX PRIME Backend v1.0.0",
-        "status": "operational",
-        "endpoints": {
-            "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
-            "health": "/health, /health/readiness, /health/liveness",
-            "docs": "/docs",
-        },
-    }
+@app.get("/health/readiness")
+async def readiness():
+    return {"status": "ready"}
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )

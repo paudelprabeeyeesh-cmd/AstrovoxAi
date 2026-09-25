@@ -20,8 +20,9 @@ export default function LightFieldRenderer() {
     const height = h / 2
 
     let frame = 0
+    let animating = true
     const draw = () => {
-      if (!running) return
+      if (!animating) return
       ctx.fillStyle = 'rgba(2, 4, 10, 0.15)'
       ctx.fillRect(0, 0, width, height)
 

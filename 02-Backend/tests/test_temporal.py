@@ -165,7 +165,7 @@ class TestTimeline:
     def test_divergence_detection(self):
         n1 = self.timeline.add_message("user", "hello")
         branch = self.timeline.branch("alt", n1.node_id)
-        self.timeline.add_message("assistant", "hi", branch_id=branch)
+        self.timeline.add_message("assistant", "hi", parent_node_id=n1.node_id, branch_id=branch)
         divergence = self.timeline.detect_divergence("main", branch)
         assert divergence is not None
 
