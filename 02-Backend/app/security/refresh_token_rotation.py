@@ -325,6 +325,14 @@ class RefreshTokenRotation:
                 "total_rotations": len(self._rotation_audit),
             }
 
+    def get_user_rotation_history(self, user_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get rotation history for a user."""
+        with self._lock:
+            return [
+                entry for entry in self._rotation_audit
+                if entry.get("user_id") == user_id
+            ][-limit:]
+
 
 refresh_token_rotation = RefreshTokenRotation()
 
