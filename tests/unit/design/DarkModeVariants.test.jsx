@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import DARK_VARIANTS, { useDarkVariants } from '../src/design/DarkModeVariants'
+import DARK_VARIANTS, { useDarkVariants } from '../../src/design/DarkModeVariants'
 
 describe('DarkModeVariants', () => {
   it('exports theme variants', () => {
