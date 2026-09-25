@@ -1,0 +1,77 @@
+{
+  "name": "astrovox-vscode",
+  "displayName": "Astrovox AI",
+  "description": "AI-powered code assistant for VS Code",
+  "version": "1.0.0",
+  "publisher": "astrovox",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": ["Other", "Machine Learning", "Snippets"],
+  "keywords": ["ai", "assistant", "code", "chat", "llm"],
+  "activationEvents": [
+    "onCommand:astrovox.startChat",
+    "onView:astrovox.chatView"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "astrovox.startChat",
+        "title": "Astrovox: Start Chat"
+      },
+      {
+        "command": "astrovox.explainCode",
+        "title": "Astrovox: Explain Selected Code"
+      },
+      {
+        "command": "astrovox.generateTests",
+        "title": "Astrovox: Generate Tests"
+      },
+      {
+        "command": "astrovox.refactorCode",
+        "title": "Astrovox: Refactor Code"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "astrovox.chatView",
+          "name": "Astrovox Chat"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "astrovox.startChat",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      }
+    ],
+    "configuration": {
+      "title": "Astrovox",
+      "properties": {
+        "astrovox.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Astrovox API key"
+        },
+        "astrovox.model": {
+          "type": "string",
+          "default": "gpt-4",
+          "description": "Default model"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.70.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<idea-plugin>
+  <id>ai.astrovox.jetbrains</id>
+  <name>Astrovox AI</name>
+  <version>1.0.0</version>
+  <vendor email="support@astrovox.ai" url="https://astrovox.ai">Astrovox Team</vendor>
+  <description>AI-powered code assistant for JetBrains IDEs</description>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow
+      id="Astrovox Chat"
+      anchor="right"
+      factoryClass="ai.astrovox.ChatToolWindowFactory"
+      secondary="true"
+    />
+    <action
+      id="Astrovox.StartChat"
+      class="ai.astrovox.actions.StartChatAction"
+      text="Astrovox: Start Chat"
+      description="Open Astrovox AI chat"
+    >
+      <keyboard-shortcut first-keystroke="ctrl shift A" second-keystroke="ctrl shift A" keymap="$default"/>
+    </action>
+    <action
+      id="Astrovox.ExplainCode"
+      class="ai.astrovox.actions.ExplainCodeAction"
+      text="Astrovox: Explain Code"
+      description="Explain selected code with AI"
+    />
+    <action
+      id="Astrovox.GenerateTests"
+      class="ai.astrovox.actions.GenerateTestsAction"
+      text="Astrovox: Generate Tests"
+      description="Generate unit tests for selected code"
+    />
+  </extensions>
+</idea-plugin>

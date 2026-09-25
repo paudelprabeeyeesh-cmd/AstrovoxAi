@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Astrovox AI",
+  "version": "1.0.0",
+  "description": "Astrovox AI assistant for Firefox",
+  "permissions": ["storage", "activeTab", "contextMenus", "scripting"],
+  "host_permissions": ["https://*/*", "http://*/*"],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"]
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "astrovox@astrovox.ai",
+      "strict_min_version": "109.0"
+    }
+  }
+}

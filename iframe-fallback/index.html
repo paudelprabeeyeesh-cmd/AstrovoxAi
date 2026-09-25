@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astrovox AI - iFrame Embed</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #02040a;
+      color: #e2e8f0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .header {
+      padding: 16px 24px;
+      background: rgba(4, 8, 20, 0.7);
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #67e8f9, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      overflow: hidden;
+    }
+    .chat-frame {
+      flex: 1;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #02040a;
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .config-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 12px;
+      border: 1px solid #1e293b;
+    }
+    input, select {
+      padding: 8px 12px;
+      background: #02040a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    label {
+      font-size: 12px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">🛸 ASTROVOX AI</div>
+    <div style="font-size: 12px; color: #64748b;">iFrame Embed</div>
+  </div>
+  <div class="container">
+    <div class="config-bar">
+      <div>
+        <label>API Key:</label>
+        <input type="text" id="apiKey" placeholder="Enter your API key" style="width: 250px; margin-left: 8px;" />
+      </div>
+      <div>
+        <label>Theme:</label>
+        <select id="theme" style="margin-left: 8px;">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="high-contrast">High Contrast</option>
+        </select>
+      </div>
+      <div>
+        <label>Height:</label>
+        <select id="height" style="margin-left: 8px;">
+          <option value="400px">400px</option>
+          <option value="600px" selected>600px</option>
+          <option value="800px">800px</option>
+          <option value="100%">Full</option>
+        </select>
+      </div>
+    </div>
+    <div class="chat-frame" id="chatFrame">
+      <iframe
+        id="chatIframe"
+        src="https://chat.astrovox.ai/embed"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        title="Astrovox AI Chat"
+      ></iframe>
+    </div>
+  </div>
+  <script>
+    const iframe = document.getElementById('chatIframe')
+    const apiKeyInput = document.getElementById('apiKey')
+    const themeSelect = document.getElementById('theme')
+    const heightSelect = document.getElementById('height')
+
+    function updateIframe() {
+      const apiKey = apiKeyInput.value
+      const theme = themeSelect.value
+      const height = heightSelect.value
+      const src = `https://chat.astrovox.ai/embed?apiKey=${encodeURIComponent(apiKey)}&theme=${theme}&height=${height}`
+      iframe.src = src
+      document.getElementById('chatFrame').style.height = height === '100%' ? '100%' : height
+    }
+
+    apiKeyInput?.addEventListener('input', updateIframe)
+    themeSelect?.addEventListener('change', updateIframe)
+    heightSelect?.addEventListener('change', updateIframe)
+
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://chat.astrovox.ai') return
+      if (event.data.type === 'resize') {
+        document.getElementById('chatFrame').style.height = event.data.height + 'px'
+      }
+    })
+  </script>
+</body>
+</html>
