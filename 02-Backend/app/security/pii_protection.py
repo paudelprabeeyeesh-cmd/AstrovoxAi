@@ -369,6 +369,16 @@ class PIIDetector:
             "reidentification_risk": self.assess_reidentification_risk(text),
         }
 
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get PII detection statistics."""
+        with self._lock:
+            return {
+                "total_tokens": len(self._token_map),
+                "min_entropy": self._min_entropy,
+                "max_entropy": self._max_entropy,
+                "pattern_count": sum(len(patterns) for patterns in self._patterns.values()),
+            }
+
 
 pii_detector = PIIDetector()
 
