@@ -2,8 +2,8 @@ from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 
-from .auth_utils import get_user_id_from_token
-from .database import (
+from utils.auth.auth_utils import get_user_id_from_token
+from repositories.database.client import (
     save_memory,
     get_user_memory,
     get_recent_messages,

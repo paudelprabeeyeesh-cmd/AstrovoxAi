@@ -8,7 +8,7 @@ from slowapi.util import get_remote_address
 from typing import Optional
 
 from .supabase_client import get_supabase
-from .security_hardening import get_audit_log
+from middleware.security.security_hardening import get_audit_log
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()

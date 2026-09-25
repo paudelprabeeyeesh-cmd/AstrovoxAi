@@ -2,7 +2,7 @@ import os
 import logging
 import re
 
-from .config import settings
+from ...config import settings
 
 logger = logging.getLogger(__name__)
 

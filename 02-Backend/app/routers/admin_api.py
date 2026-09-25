@@ -4,8 +4,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_admin
-from ..database import get_db
-from ..schemas import AdminStatsResponse, UsageResponse
+from repositories.database.client import get_db
+from ...schemas import AdminStatsResponse, UsageResponse
 
 logger = logging.getLogger(__name__)
 

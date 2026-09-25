@@ -2,7 +2,7 @@ import json
 import uuid
 from datetime import datetime, timezone
 
-from .database import get_db
+from repositories.database.client import get_db
 
 
 def create_sdk_key(user_id: str, name: str) -> dict:

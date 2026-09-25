@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Header
 
-from .analytics import analytics
-from .auth_utils import get_user_id_from_token
+from ...analytics import analytics
+from utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 

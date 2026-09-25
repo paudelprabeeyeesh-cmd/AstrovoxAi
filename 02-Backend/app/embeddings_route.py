@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from .embeddings import embedding_service
+from services.vector.embeddings import embedding_service
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 

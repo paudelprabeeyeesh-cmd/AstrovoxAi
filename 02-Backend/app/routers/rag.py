@@ -13,7 +13,7 @@ from ..documents import (
     get_document,
     delete_document,
 )
-from ..schemas import (
+from ...schemas import (
     DocumentOut, DocumentChunkOut, RAGSearchResult,
     RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
 )

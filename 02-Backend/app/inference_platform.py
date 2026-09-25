@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, AsyncIterator, Awaitable, Callable, Deque, Dict, List, Optional, Tuple
 
-from .security_hardening import AuditLog, get_audit_log
+from middleware.security.security_hardening import AuditLog, get_audit_log
 
 
 class RequestState(str, Enum):

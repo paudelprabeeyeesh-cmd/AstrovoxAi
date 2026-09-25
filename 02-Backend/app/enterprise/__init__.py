@@ -9,7 +9,7 @@ from .models import (
     WORKSPACE_ROLES,
 )
 from .service import org_service, OrganizationService
-from .rbac import rbac, RBACEnforcer
+from middleware.security.rbac import rbac, RBACEnforcer
 from .websocket import ws_manager, ConnectionManager
 from .notifications import notification_service, NotificationService
 from .search import EnterpriseSearch, SearchResult

@@ -6,8 +6,8 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException, UploadFile, File, status
 from pydantic import BaseModel, Field
 
-from .auth_utils import get_user_id_from_token
-from .document_intelligence import (
+from utils.auth.auth_utils import get_user_id_from_token
+from ...document_intelligence import (
     SUPPORTED_FORMATS,
     CitationGenerator,
     DocumentIntelligence,

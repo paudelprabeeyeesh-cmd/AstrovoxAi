@@ -4,7 +4,7 @@ from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 
-from ..auth_utils import get_user_id_from_token
+from utils.auth.auth_utils import get_user_id_from_token
 from .service import EmbeddingService
 
 router = APIRouter(prefix="/api/embedding", tags=["embedding"])
@@ -131,7 +131,7 @@ async def list_embedding_providers(authorization: str = Header(None)):
     """List available embedding providers."""
     get_user_id_from_token(authorization)
 
-    from .embedding.providers import EmbeddingProviderFactory
+    from ..services.vector.providers import EmbeddingProviderFactory
     configured = EmbeddingProviderFactory.list_configured()
 
     return {

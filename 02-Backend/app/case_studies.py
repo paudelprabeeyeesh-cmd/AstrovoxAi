@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from .database import get_db
+from repositories.database.client import get_db
 
 
 def create_case_study(title: str, content: str, user_id: str) -> dict:

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..auth_utils import get_current_user
+from utils.auth.auth_utils import get_current_user
 
 from .api_platform import (
     ApiErrorCode,
@@ -21,7 +21,7 @@ from .api_platform import (
     get_oauth_server,
     get_rate_limiter,
 )
-from .integrations import (
+from ..integrations import (
     IntegrationClient,
     IntegrationConnection,
     IntegrationProvider,
@@ -37,7 +37,7 @@ from .marketplace import (
     get_marketplace_catalog,
     seed_default_catalog,
 )
-from .monitoring import (
+from ...monitoring import (
     DependencyScanner,
     get_audit_log,
     get_ecosystem_monitor,

@@ -55,10 +55,10 @@ class UnifiedPlatform:
 
     def get_health(self) -> SystemHealth:
         """Get health of all subsystems."""
-        from .multi_agent import agent_orchestrator
-        from .workflow_engine import workflow_engine
-        from .tool_execution import tool_executor
-        from .shared_memory import shared_memory
+        from ...multi_agent import agent_orchestrator
+        from ...workflow_engine import workflow_engine
+        from ...tool_execution import tool_executor
+        from services.memory.shared_memory import shared_memory
 
         agent_health = agent_orchestrator.get_health()
         wf_analytics = workflow_engine.get_analytics()
@@ -75,9 +75,9 @@ class UnifiedPlatform:
 
     def get_stats(self) -> PlatformStats:
         """Get overall platform statistics."""
-        from .multi_agent import agent_orchestrator
-        from .workflow_engine import workflow_engine
-        from .tool_execution import tool_executor
+        from ...multi_agent import agent_orchestrator
+        from ...workflow_engine import workflow_engine
+        from ...tool_execution import tool_executor
 
         analytics = agent_orchestrator.get_analytics()
         wf_analytics = workflow_engine.get_analytics()

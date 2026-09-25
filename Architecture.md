@@ -22,6 +22,70 @@ graph TD
     E -->|AI Responses| C
 ```
 
+### AI Core Architecture
+
+```mermaid
+graph TD
+    subgraph ASTROVOX_AI[ASTROVOX_AI / ai_core]
+        direction LR
+        A[Tokenization] --> B[Transformers]
+        B --> C[Attention]
+        C --> D[Search]
+        D --> E[Security]
+        E --> F[Code Execution]
+        F --> G[Analytics]
+        G --> H[Evaluation]
+    end
+
+    subgraph Tokenization[Tokenization & Vocab]
+        A1[CustomTokenizer]
+        A2[BPETrainer]
+        A3[VocabularyBuilder]
+    end
+
+    subgraph Transformers[Transformer Architectures]
+        B1[TransformerXL]
+        B2[Reformer]
+        B3[Performer]
+        B4[GQA/MQA/MoE]
+    end
+
+    subgraph Search[Search Engines]
+        D1[WebSearch]
+        D2[ImageSearch]
+        D3[NewsSearch]
+        D4[SemanticCache]
+    end
+
+    subgraph Security[Security]
+        E1[ContentModerator]
+        E2[PIIDetector]
+        E3[IPBlocker]
+        E4[SecretScanner]
+    end
+
+    subgraph CodeExec[Code Execution]
+        F1[CodeExecutor]
+        F2[SecureExecutor]
+        F3[ContainerSandbox]
+        F4[CodeDebugger]
+    end
+
+    subgraph Analytics[Analytics]
+        G1[TokenAnalytics]
+        G2[RealtimeAnalytics]
+        G3[BatchProcessor]
+        G4[LazyLoader]
+    end
+
+    A --> Tokenization
+    B --> Transformers
+    D --> Search
+    E --> Security
+    F --> CodeExec
+    G --> Analytics
+```
+
 ## 3. Component Breakdown
 
 ### 3.1. Frontend

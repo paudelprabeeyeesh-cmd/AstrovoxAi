@@ -72,6 +72,10 @@ jobs:
         run: |
           pytest tests/ -k "benchmark" --benchmark-only --benchmark-json=benchmark-report.json || echo "Benchmark tests failed or not found"
 
+      - name: Run security regression tests
+        run: |
+          pytest tests/security/ -v --tb=short || echo "Security tests completed"
+
       - name: Check dependency vulnerabilities
         run: |
           safety check -r requirements.txt --full-report || echo "Dependency check completed"
@@ -79,28 +83,6 @@ jobs:
 
       - name: Run static security analysis
         run: bandit -r app/ -f json -o bandit-report.json -ll || echo "Bandit scan completed"
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          file: 02-Backend/coverage.xml
-          fail_ci_if_error: false
-          flags: unittests
-          name: codecov-umbrella
-
-      - name: Upload benchmark results
-        if: always() && steps.run-benchmark-tests.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-report
-          path: 02-Backend/benchmark-report.json
-
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: 02-Backend/.pytest_cache/
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
@@ -110,6 +92,41 @@ jobs:
             02-Backend/bandit-report.json
             02-Backend/pip-audit-report.json
           if: always()
+
+  # ============================================================================
+  # Security Tests
+  # ============================================================================
+  security-tests:
+    name: Security regression tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./02-Backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('02-Backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Run security regression tests
+        run: |
+          pytest tests/security/ -v --tb=short || echo "Security tests completed"
 
   # ============================================================================
   # Frontend Quality Checks
@@ -170,7 +187,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Scan for secrets
+      - name: Scan for secrets with gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Scan for secrets (fallback grep)
         run: |
           echo "Scanning for potential secrets..."
           if grep -r "sk-" --include="*.py" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.md" . 2>/dev/null | grep -v ".env.example" | grep -v "sk-your" | grep -v "sb_publishable" | head -5; then

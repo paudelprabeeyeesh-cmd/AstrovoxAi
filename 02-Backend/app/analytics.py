@@ -959,7 +959,7 @@ class AnalyticsTracker:
     def _get_knowledge_graph_stats(self) -> dict:
         """Get knowledge graph stats from the knowledge system."""
         try:
-            from .knowledge_system import knowledge_system
+            from services.knowledge.knowledge_system import knowledge_system
             return knowledge_system.get_stats()
         except Exception:
             return {"total_nodes": 0, "total_edges": 0}
@@ -995,7 +995,7 @@ class AnalyticsTracker:
         """Get budget alerts from cost tracker."""
         alerts = []
         try:
-            from .cost_management import cost_tracker
+            from ...cost_management import cost_tracker
             for budget_id, budget in cost_tracker._budgets.items():
                 for user_id in list(cost_tracker._user_usage.keys())[:10]:
                     check = cost_tracker.check_budget(budget_id, user_id)

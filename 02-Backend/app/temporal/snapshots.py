@@ -256,7 +256,7 @@ class SnapshotEngine:
             return 0
         before = len(self._snapshots[aggregate_id])
         self._snapshots[aggregate_id] = self._snapshots[aggregate_id][-keep_n:]
-        after = len(self._snapshots[aggregate_id]))
+        after = len(self._snapshots[aggregate_id])
         logger.info("compacted %d -> %d snapshots for %s", before, after, aggregate_id)
         return before - after
 

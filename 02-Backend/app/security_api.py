@@ -14,13 +14,13 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from ..auth_utils import get_current_user
-from .security_hardening import Principal, principal_from_jwt_claims
-from .secure_executor import (
+from utils.auth.auth_utils import get_current_user
+from middleware.security.security_hardening import Principal, principal_from_jwt_claims
+from ..secure_executor import (
     SandboxConfig,
     execute_user_code,
 )
-from .iam import require_admin
+from ...iam import require_admin
 
 
 router = APIRouter(prefix="/sandbox", tags=["sandbox"])

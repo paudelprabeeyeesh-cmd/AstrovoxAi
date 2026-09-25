@@ -1,7 +1,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from .database import get_db
+from repositories.database.client import get_db
 
 def configure_sso(user_id: str, provider: str, config: str) -> dict:
     conn_id = str(uuid.uuid4())

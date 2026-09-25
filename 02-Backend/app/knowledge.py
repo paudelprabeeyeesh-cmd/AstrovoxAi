@@ -2,8 +2,8 @@ import hashlib
 import uuid
 from datetime import datetime, timezone
 
-from .database import get_db
-from .schemas import KnowledgeDocCreate, KnowledgeDocOut
+from repositories.database.client import get_db
+from ...schemas import KnowledgeDocCreate, KnowledgeDocOut
 
 
 def create_doc(user_id: str, data: KnowledgeDocCreate) -> KnowledgeDocOut:

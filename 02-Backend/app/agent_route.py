@@ -4,8 +4,8 @@ from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from .agent import agent_manager
-from .auth_utils import get_user_id_from_token
+from ...agent import agent_manager
+from utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 

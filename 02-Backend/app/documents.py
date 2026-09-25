@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from .database import get_db
+from repositories.database.client import get_db
 
 
 def create_document(user_id, filename, content_type, size):

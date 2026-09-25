@@ -21,8 +21,8 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, Optional, Tuple
 
-from .security_hardening import AuditLog, get_audit_log
-from .metrics import track_rate_limit
+from middleware.security.security_hardening import AuditLog, get_audit_log
+from ...metrics import track_rate_limit
 
 
 # ---------------------------------------------------------------------------
@@ -396,7 +396,7 @@ def rate_limit(policy: str, *, amount: int = 1):
         request: Request,
         principal=None,
     ) -> Dict[str, Any]:
-        from .iam import get_current_principal
+        from ...iam import get_current_principal
 
         if principal is None:
             principal = await get_current_principal(request=request)

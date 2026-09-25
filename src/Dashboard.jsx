@@ -228,6 +228,12 @@ export default function Dashboard({ session }) {
             </div>
           )}
 
+          {activePanel === 'multiverse' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <MultiversePanel />
+            </div>
+          )}
+
           {activePanel === 'quantum' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <QuantumHolographicSystem />

@@ -18,10 +18,10 @@ from .semantic_memory import SemanticMemory
 from .episodic_memory import EpisodicMemory
 from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory
-from .memory_manager import MemoryManager, get_memory_manager
-from .importance_scorer import ImportanceScorer
-from .retrieval_engine import RetrievalEngine
-from .vector_store import VectorStore
+from services.memory.memory_manager import MemoryManager, get_memory_manager
+from .services.memory.importance_scorer import ImportanceScorer
+from .services.memory.retrieval_engine import RetrievalEngine
+from .services.memory.vector_store import VectorStore
 from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceScoringEngine
 from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
 from .memory_ranking import MemoryRanker, RankedMemory

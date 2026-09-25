@@ -94,7 +94,7 @@ export default function LightFieldRenderer() {
       }
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
     return () => { running = false }

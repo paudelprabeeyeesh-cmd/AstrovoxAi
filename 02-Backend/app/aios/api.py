@@ -7,18 +7,18 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..auth_utils import get_current_user
+from utils.auth.auth_utils import get_current_user
 
 from .consensus import Node, get_consensus
 from .healing import HealthProbe, get_self_healing
-from .memory import MemoryTier, get_memory_manager
+from services.memory.memory import MemoryTier, get_memory_manager
 from .mesh import ServiceInstance, ServiceState, get_service_registry, seed_default_services
 from .observability import SLO, get_aios_observability
 from .resources import ResourceUsage, get_resource_manager
 from .runtime import DelegationRequest, get_ai_runtime
 from .scheduler import Job, get_distributed_scheduler
 from .search import SearchDocument, SearchModality, get_universal_search
-from .security import (
+from middleware.security.security import (
     Policy,
     PolicyAction,
     SecurityContext,

@@ -1,12 +1,12 @@
 import logging
 from typing import Any
 
-from .memory_pipeline import get_relevant_memories
-from .knowledge import search_docs
+from services.memory.memory_pipeline import get_relevant_memories
+from services.knowledge.knowledge import search_docs
 from .cost import count_tokens
-from .database import get_db
+from repositories.database.client import get_db
 from .core.llm import LLMClient
-from .tools import get_builtin_tools
+from ...tools import get_builtin_tools
 from .thinking import ThinkingConfig
 
 logger = logging.getLogger(__name__)

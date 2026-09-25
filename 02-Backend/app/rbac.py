@@ -3,8 +3,8 @@ from enum import Enum
 from typing import List
 from fastapi import Depends, HTTPException
 
-from .auth import get_current_user
-from .database import get_db
+from services.auth.auth import get_current_user
+from repositories.database.client import get_db
 
 
 class Role(str, Enum):

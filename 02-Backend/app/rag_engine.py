@@ -23,7 +23,7 @@ try:
 except ImportError:
     DocxDocument = None
 
-from .documents import (
+from ...documents import (
     create_document,
     delete_document_chunks,
     create_document_chunk,
@@ -31,7 +31,7 @@ from .documents import (
     list_documents,
     get_document,
 )
-from .config import settings
+from ...config import settings
 
 
 class _LazyOpenAIClient:
@@ -78,7 +78,7 @@ class RAGEngine:
         return [item.embedding for item in response.data]
 
     def store_chunks(self, chunks, embeddings, user_id, source_type, filename=None):
-        from .database import get_db
+        from repositories.database.client import get_db
         with get_db() as conn:
             row = conn.execute(
                 "SELECT id FROM documents WHERE user_id = ? AND filename = ? ORDER BY created_at DESC LIMIT 1",
@@ -216,7 +216,7 @@ class RAGEngine:
         return reranked
 
     def _sparse_search(self, query, user_id, limit=10):
-        from .knowledge import search_docs
+        from services.knowledge.knowledge import search_docs
         docs = search_docs(user_id, query, limit=limit)
         results = []
         for doc in docs:

@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from .database import get_db
+from repositories.database.client import get_db
 from .audit import log_action
 
 

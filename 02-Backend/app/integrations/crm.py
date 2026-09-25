@@ -1,7 +1,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from ..database import get_db
+from repositories.database.client import get_db
 
 def connect_crm(user_id: str, crm_type: str, config: str) -> dict:
     integration_id = str(uuid.uuid4())

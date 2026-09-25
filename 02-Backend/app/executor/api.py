@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..auth_utils import get_current_user
+from utils.auth.auth_utils import get_current_user
 
 from .cluster import Worker, get_worker_registry, seed_default_workers
 from .compiler import Compiler, ExecutionGraph, Step, compile_program

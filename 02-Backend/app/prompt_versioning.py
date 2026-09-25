@@ -4,7 +4,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 
-from .database import get_db
+from repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

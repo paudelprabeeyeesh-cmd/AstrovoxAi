@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email
 from ..core.llm import LLMClient
-from ..schemas import StructuredOutputRequest, StructuredOutputResponse, CitationRequest, CitationResponse
+from ...schemas import StructuredOutputRequest, StructuredOutputResponse, CitationRequest, CitationResponse
 
 logger = logging.getLogger(__name__)
 

@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-from .database import get_db
-from .schemas import FeedbackCreate, FeedbackOut
+from repositories.database.client import get_db
+from ...schemas import FeedbackCreate, FeedbackOut
 
 
 def create_feedback(user_id: str, data: FeedbackCreate) -> FeedbackOut:

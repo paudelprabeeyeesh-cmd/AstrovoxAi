@@ -19,7 +19,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple
 
-from .security_hardening import AuditLog, get_audit_log
+from middleware.security.security_hardening import AuditLog, get_audit_log
 
 
 # ---------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 """Job handlers and event subscribers — wires the job queue and event bus."""
 
-from .jobs import job_queue, Job, JobPriority, JobStatus
-from .events import event_bus
-from .metrics import track_ai_request
+from ...jobs import job_queue, Job, JobPriority, JobStatus
+from ...events import event_bus
+from ...metrics import track_ai_request
 
 
 # ============================================================================

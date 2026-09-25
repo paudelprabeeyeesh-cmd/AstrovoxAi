@@ -16,11 +16,11 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
-from .auth_utils import get_user_id_from_token
-from .multi_agent import agent_orchestrator, CollaborationManager
-from .workflow_engine import workflow_engine, WorkflowStep, StepAction
-from .tool_execution import tool_executor
-from .dashboard import dashboard_service
+from utils.auth.auth_utils import get_user_id_from_token
+from ...multi_agent import agent_orchestrator, CollaborationManager
+from ...workflow_engine import workflow_engine, WorkflowStep, StepAction
+from ...tool_execution import tool_executor
+from ...dashboard import dashboard_service
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ async def get_agent(role: str, authorization: str = Header(None)):
     """Get detailed information about a specific agent."""
     user_id = get_user_id_from_token(authorization)
 
-    from .multi_agent import AgentRole
+    from ...multi_agent import AgentRole
     try:
         agent_role = AgentRole(role)
     except ValueError:
@@ -422,4 +422,4 @@ async def run_collaboration(session_id: str, authorization: str = Header(None)):
 
 
 # Import collaboration manager at module level
-from .multi_agent import collaboration_manager
+from ...multi_agent import collaboration_manager

@@ -5,8 +5,8 @@ from typing import Optional
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from .auth_utils import get_user_id_from_token
-from .database import (
+from utils.auth.auth_utils import get_user_id_from_token
+from repositories.database.client import (
     create_conversation,
     get_conversations,
     get_conversation,
@@ -26,7 +26,7 @@ from .providers import (
     get_model_info,
     get_provider_for_model,
 )
-from .metrics import track_ai_request
+from ...metrics import track_ai_request
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 limiter = Limiter(key_func=get_remote_address)

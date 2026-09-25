@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import types
 from unittest.mock import patch, MagicMock
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
@@ -21,6 +22,50 @@ os.environ.setdefault("STRIPE_PRO_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_TEAM_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_EMBED_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_dummy")
+
+# Create mock modules for missing imports before importing app.main
+_missing_modules = [
+    "services",
+    "services.auth",
+    "services.auth.auth",
+    "services.vector",
+    "services.vector.embeddings_route",
+    "api",
+    "api.routers",
+    "api.routers.memory",
+    "api.routers.memory.router",
+    "api.routers.router",
+    "api.routers.workspace_route",
+    "api.routers.jobs_router",
+    "api.routers.analytics_route",
+    "api.routers.knowledge_route",
+    "api.routers.agent_route",
+    "api.routers.monitoring_route",
+    "api.routers.auth",
+    "api.routers.auth.security_route",
+    "api.routers.admin_route",
+    "api.routers.realtime_route",
+    "api.routers.dashboard_route",
+    "api.v1",
+    "api.routers.platform_route",
+    "api.routers.knowledge_route_v2",
+    "api.routers.neural_router",
+    "api.routers.temporal_route",
+]
+
+for mod_name in _missing_modules:
+    if mod_name not in sys.modules:
+        sys.modules[mod_name] = types.ModuleType(mod_name)
+
+# Ensure nested modules have parent attributes
+for mod_name in _missing_modules:
+    mod = sys.modules[mod_name]
+    parts = mod_name.split(".")
+    for i in range(len(parts) - 1):
+        parent_name = ".".join(parts[:i + 1])
+        child_name = ".".join(parts[:i + 2])
+        if child_name in sys.modules and not hasattr(sys.modules[parent_name], parts[i + 1]):
+            setattr(sys.modules[parent_name], parts[i + 1], sys.modules[child_name])
 
 import pytest
 from app.database import init_db

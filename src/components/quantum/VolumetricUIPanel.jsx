@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { motion } from 'framer-motion'
 
 function generateVolumetricPanel(x, y, z, color) {
-  return Array.from({ length: 8 }, (_, i) => ({
+  return Array.from({ length: 8 }, () => ({
     x: x + (Math.random() - 0.5) * 60,
     y: y + (Math.random() - 0.5) * 40,
     z: z + (Math.random() - 0.5) * 20,
@@ -30,7 +29,9 @@ export default function VolumetricUIPanel({ title, children, color = '#06b6d4' }
     const height = h / 2
 
     let frame = 0
+    let running = true
     const draw = () => {
+      if (!running) return
       ctx.fillStyle = 'rgba(2, 4, 10, 0.15)'
       ctx.fillRect(0, 0, width, height)
 
@@ -76,9 +77,10 @@ export default function VolumetricUIPanel({ title, children, color = '#06b6d4' }
       })
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
+    return () => { running = false }
   }, [panels, rotation, depth, glow, color])
 
   const addPanel = useCallback(() => {
@@ -97,7 +99,7 @@ export default function VolumetricUIPanel({ title, children, color = '#06b6d4' }
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, fontSize: '14px', color, letterSpacing: '1px', fontWeight: '600' }}>
-          📦 3D VOLUMETRIC UI PANELS
+          {title || '📦 3D VOLUMETRIC UI PANELS'}
         </h3>
         <button onClick={addPanel} style={{
           padding: '4px 10px', backgroundColor: color, color: '#02040a',

@@ -12,11 +12,11 @@ from ..core.moderation import check_moderation
 from ..core.pii import redact_pii
 from ..core.tracing import start_trace, get_prompt_hash, log_llm_call
 from ..cost import count_tokens
-from ..schemas import SolveRequest, SolveResponse
+from ...schemas import SolveRequest, SolveResponse
 from ..auth import require_verified_email
 from ..circuit_breaker import llm_circuit_breaker
 from ..retry import retry_with_backoff
-from ..database import get_db
+from repositories.database.client import get_db
 from ..memory import search_memories
 from ..knowledge import search_docs
 from ..interactions import create_interaction
@@ -37,7 +37,7 @@ router = APIRouter(tags=["solve"])
 @router.post("/solve", response_model=SolveResponse)
 async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email)):
     from ..main import llm_client, context_builder
-    from ..database import init_db
+    from repositories.database.client import init_db
 
     init_db()
 
@@ -165,7 +165,7 @@ async def solve(req: SolveRequest, user_id: str = Depends(require_verified_email
 @router.post("/solve/stream")
 async def solve_stream(req: SolveRequest, user_id: str = Depends(require_verified_email)):
     from ..main import llm_client, context_builder
-    from ..database import init_db
+    from repositories.database.client import init_db
 
     init_db()
     sanitized, injection_detected = sanitize_input(req.text)

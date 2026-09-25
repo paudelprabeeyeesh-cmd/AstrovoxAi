@@ -17,7 +17,7 @@ from enum import Enum
 from typing import Any, BinaryIO, Callable, Dict, Iterator, List, Optional, Tuple
 
 from . import make_id, now, now_iso
-from ..logging_config import get_logger
+from ...logging_config import get_logger
 
 logger = get_logger(__name__)
 

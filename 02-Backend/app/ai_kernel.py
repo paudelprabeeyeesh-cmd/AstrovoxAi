@@ -30,7 +30,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from app.utils import now
 
-from .security_hardening import AuditLog, get_audit_log
+from middleware.security.security_hardening import AuditLog, get_audit_log
 
 
 class KernelState(str, Enum):

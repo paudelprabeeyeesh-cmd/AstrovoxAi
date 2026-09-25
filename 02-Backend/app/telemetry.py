@@ -8,8 +8,8 @@ from typing import Optional, Dict, Any
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 
-from .analytics import analytics
-from .auth_utils import get_user_id_from_token
+from ...analytics import analytics
+from utils.auth.auth_utils import get_user_id_from_token
 from .logging_config import logger
 from .supabase_client import get_supabase
 

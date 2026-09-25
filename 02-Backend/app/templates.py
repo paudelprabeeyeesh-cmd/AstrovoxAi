@@ -1,8 +1,8 @@
 import uuid
 from datetime import datetime
 
-from .database import get_db
-from .schemas import TemplateCreate, TemplateOut
+from repositories.database.client import get_db
+from ...schemas import TemplateCreate, TemplateOut
 
 
 def create_template(user_id: str, data: TemplateCreate) -> TemplateOut:

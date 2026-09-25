@@ -30,7 +30,7 @@ class GDPRCompliance:
         }
 
     def verify_right_to_erasure(self, org_id: str, user_id: str) -> dict:
-        from ..compliance import delete_user_data
+        from ...compliance import delete_user_data
         result = delete_user_data(user_id)
         return {
             "right": "right_to_erasure",
@@ -41,7 +41,7 @@ class GDPRCompliance:
         }
 
     def verify_data_portability(self, org_id: str, user_id: str, format: str = "json") -> dict:
-        from ..compliance import export_user_data
+        from ...compliance import export_user_data
         data = export_user_data(user_id)
         return {
             "right": "right_to_data_portability",

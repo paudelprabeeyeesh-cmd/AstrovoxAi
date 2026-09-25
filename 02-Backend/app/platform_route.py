@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Header
 
-from .unified_platform import unified_platform
-from .auth_utils import get_user_id_from_token
+from ...unified_platform import unified_platform
+from utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/api/platform", tags=["platform"])
 

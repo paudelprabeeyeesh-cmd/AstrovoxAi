@@ -21,8 +21,8 @@ from __future__ import annotations
 import os
 from typing import Any, Dict, Optional
 
-from .iam import get_jwt_secret
-from .security_hardening import Principal
+from ...iam import get_jwt_secret
+from middleware.security.security_hardening import Principal
 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")

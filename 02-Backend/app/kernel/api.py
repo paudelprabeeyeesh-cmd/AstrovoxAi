@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from ..auth_utils import get_current_user
+from utils.auth.auth_utils import get_current_user
 from .agents import AgentSpec, get_agent_registry
 from .artifacts import Artifact, ArtifactType, get_artifact_registry
 from .bus import get_event_bus

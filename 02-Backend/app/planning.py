@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from .config import settings
+from ...config import settings
 
 logger = logging.getLogger(__name__)
 

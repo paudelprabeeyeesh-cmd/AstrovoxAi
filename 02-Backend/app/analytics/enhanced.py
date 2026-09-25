@@ -5,7 +5,7 @@ import io
 import json
 from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
-from ..database import get_db
+from repositories.database.client import get_db
 
 
 def _get_org_members(org_id: str) -> List[str]:

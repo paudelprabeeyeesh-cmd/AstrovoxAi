@@ -11,8 +11,8 @@ from fastapi import APIRouter, Header, HTTPException, status
 from openai import OpenAI
 from pydantic import BaseModel, Field
 
-from .auth_utils import get_user_id_from_token
-from .database import get_recent_messages, get_user_memory, save_memory
+from utils.auth.auth_utils import get_user_id_from_token
+from repositories.database.client import get_recent_messages, get_user_memory, save_memory
 
 router = APIRouter(prefix="/memory", tags=["memory"])
 
@@ -24,7 +24,7 @@ class MemoryEntry(BaseModel):
 
 async def _get_owned_messages(conversation_id: int, user_id: str):
     """Return messages only after confirming the requester owns the conversation."""
-    from .database import get_conversation
+    from repositories.database.client import get_conversation
 
     conversation = await get_conversation(conversation_id, user_id)
     if not conversation:

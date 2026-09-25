@@ -89,7 +89,7 @@ export default function HolographicGestureControls() {
       ctx.fillText(`GESTURE: ${gesture.toUpperCase()}`, width / 2, height - 20)
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
   }, [trail, gesture, active])

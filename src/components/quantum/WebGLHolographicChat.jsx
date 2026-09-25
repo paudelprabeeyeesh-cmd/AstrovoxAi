@@ -21,7 +21,9 @@ export default function WebGLHolographicChat() {
     const height = h / 2
 
     let frame = 0
+    let activeHologram = true
     const draw = () => {
+      if (!activeHologram) return
       ctx.fillStyle = 'rgba(2, 4, 10, 0.95)'
       ctx.fillRect(0, 0, width, height)
 
@@ -63,10 +65,10 @@ export default function WebGLHolographicChat() {
       }
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
-    return () => { hologramActive = false }
+    return () => { activeHologram = false }
   }, [messages, scanlineIntensity, chromaticAberration, depth, hologramActive])
 
   const handleSend = useCallback((e) => {

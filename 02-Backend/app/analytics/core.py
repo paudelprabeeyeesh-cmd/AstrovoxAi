@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List
 
-from ..database import get_db
+from repositories.database.client import get_db
 
 
 def record_event(event_type: str, properties: dict):

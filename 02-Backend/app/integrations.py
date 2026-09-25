@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from .core.encryption import decrypt, encrypt
-from .database import get_db
+from repositories.database.client import get_db
 
 
 def create_integration(user_id: str, type_: str, config: str) -> dict:

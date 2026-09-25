@@ -7,7 +7,7 @@ from typing import Any
 
 import redis
 
-from .database import get_db
+from repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

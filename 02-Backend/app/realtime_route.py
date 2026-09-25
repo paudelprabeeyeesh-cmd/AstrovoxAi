@@ -4,11 +4,11 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, st
 from pydantic import BaseModel
 from typing import Optional
 
-from .realtime import connection_manager, background_worker
-from .tools import tool_registry
-from .ai_security_enhanced import pii_detector, secret_detector, conversation_limiter
-from .auth_utils import get_user_id_from_token
-from .security_hardening import Principal
+from ...realtime import connection_manager, background_worker
+from ...tools import tool_registry
+from middleware.security.ai_security_enhanced import pii_detector, secret_detector, conversation_limiter
+from utils.auth.auth_utils import get_user_id_from_token
+from middleware.security.security_hardening import Principal
 
 router = APIRouter(prefix="/realtime", tags=["realtime"])
 
@@ -25,7 +25,7 @@ async def websocket_endpoint(
         return
 
     try:
-        from .auth_utils import get_user_id_from_token
+        from utils.auth.auth_utils import get_user_id_from_token
         user_id = get_user_id_from_token(f"Bearer {token}")
     except Exception:
         await websocket.close(code=4001, reason="Invalid token")

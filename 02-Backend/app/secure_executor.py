@@ -34,7 +34,7 @@ try:
 except ImportError:  # pragma: no cover - Windows fallback
     resource = None  # type: ignore[assignment]
 
-from .security_hardening import (
+from middleware.security.security_hardening import (
     CodeExecutionError,
     Principal,
     SAFE_BUILTINS,

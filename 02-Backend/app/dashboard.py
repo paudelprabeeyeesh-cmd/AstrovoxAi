@@ -95,8 +95,8 @@ class DashboardService:
 
     def get_stats(self) -> DashboardStats:
         """Get overall platform statistics."""
-        from .multi_agent import agent_orchestrator
-        from .workflow_engine import workflow_engine
+        from ...multi_agent import agent_orchestrator
+        from ...workflow_engine import workflow_engine
 
         analytics = agent_orchestrator.get_analytics()
         wf_analytics = workflow_engine.get_analytics()
@@ -120,7 +120,7 @@ class DashboardService:
 
     def get_running_tasks(self) -> list[TaskView]:
         """Get list of currently running tasks."""
-        from .multi_agent import agent_orchestrator
+        from ...multi_agent import agent_orchestrator
         tasks = []
 
         sessions = agent_orchestrator._sessions.values() if hasattr(agent_orchestrator, '_sessions') else []
@@ -139,7 +139,7 @@ class DashboardService:
 
     def get_workflow_status(self) -> list[WorkflowView]:
         """Get status of workflow executions."""
-        from .workflow_engine import workflow_engine
+        from ...workflow_engine import workflow_engine
         views = []
         for execution in workflow_engine._executions.values():
             wf = workflow_engine.get_workflow(execution.workflow_id)

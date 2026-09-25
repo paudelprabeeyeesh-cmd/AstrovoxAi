@@ -118,7 +118,7 @@ export default function HolographicAssistantAvatar() {
       }
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
   }, [mood, speaking, listening, energy])
