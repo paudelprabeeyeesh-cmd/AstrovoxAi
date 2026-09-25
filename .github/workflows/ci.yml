@@ -83,24 +83,52 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
       - name: Cache pip
         uses: actions/cache@v4
         with:
-          path: ~/.cache/pip
+          path: |
+            ~/.cache/pip
+            ~/.local/lib/python3.12/site-packages
           key: ${{ runner.os }}-pip-${{ hashFiles('02-Backend/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: '02-Backend/requirements.txt'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install safety bandit pip-audit
+          pip install --no-deps -r requirements.txt
+          pip install safety bandit pip-audit mypy ruff
+
+      - name: Restore pytest cache
+        uses: actions/cache@v4
+        with:
+          path: .pytest_cache
+          key: ${{ runner.os }}-pytest-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-pytest-
+
+      - name: Restore mypy cache
+        uses: actions/cache@v4
+        with:
+          path: .mypy_cache
+          key: ${{ runner.os }}-mypy-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-mypy-
+
+      - name: Restore ruff cache
+        uses: actions/cache@v4
+        with:
+          path: .ruff_cache
+          key: ${{ runner.os }}-ruff-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ruff-
 
       - name: Check formatting (black)
         run: black --check app tests --diff --color-only || echo "Formatting issues found"
@@ -201,9 +229,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
+
+      - name: Restore npm cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+
+      - name: Restore npx cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-trivy-
 
       - name: Check formatting (prettier)
         run: npm run format:check || echo "Formatting issues found"
@@ -310,12 +357,31 @@ jobs:
         if: secrets.DOCKER_HUB_TOKEN != ''
         run: |
           docker pull aquasec/trivy:latest || true
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --format json -o backend-trivy.json astrovoxai/backend:ci-${{ github.sha }} || echo "Trivy scan completed"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+            --severity ${{ env.TRIVY_SEVERITY }} \
+            --exit-code ${{ env.TRIVY_EXIT_CODE }} \
+            --format json -o backend-trivy.json astrovoxai/backend:ci-${{ github.sha }} || echo "Trivy scan completed"
 
       - name: Scan frontend image for vulnerabilities
         if: secrets.DOCKER_HUB_TOKEN != ''
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --format json -o frontend-trivy.json astrovoxai/frontend:ci-${{ github.sha }} || echo "Trivy scan completed"
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image \
+            --severity ${{ env.TRIVY_SEVERITY }} \
+            --exit-code ${{ env.TRIVY_EXIT_CODE }} \
+            --format json -o frontend-trivy.json astrovoxai/frontend:ci-${{ github.sha }} || echo "Trivy scan completed"
+
+      - name: Scan backend image with Grype
+        if: secrets.DOCKER_HUB_TOKEN != ''
+        run: |
+          docker pull anchore/grype:latest || true
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest \
+            --scope Sarif -o backend-grype.sarif astrovoxai/backend:ci-${{ github.sha }} || echo "Grype scan completed"
+
+      - name: Scan frontend image with Grype
+        if: secrets.DOCKER_HUB_TOKEN != ''
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock anchore/grype:latest \
+            --scope Sarif -o frontend-grype.sarif astrovoxai/frontend:ci-${{ github.sha }} || echo "Grype scan completed"
 
       - name: Upload Docker security scans
         if: always()
@@ -324,7 +390,16 @@ jobs:
           name: docker-security-scans
           path: |
             *-trivy.json
+            *-grype.sarif
             !**/node_modules/*
+
+      - name: Restore Docker buildx cache
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Test backend container
         run: |
