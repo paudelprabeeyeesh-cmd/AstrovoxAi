@@ -1,0 +1,82 @@
+name: AstrovoxAI Stale Issue Management
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    name: Close stale issues and PRs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close stale issues
+        uses: actions/stale@v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: |
+            👋 Hello! This issue has been automatically marked as stale because it has not had recent activity. It will be closed in 7 days if no further activity occurs.
+
+            If this issue is still relevant:
+            - Add a comment with an update
+            - Remove the stale label
+            - Reopen the issue
+
+            If this issue is no longer relevant, thank you for reporting it!
+          stale-pr-message: |
+            👋 Hello! This pull request has been automatically marked as stale because it has not had recent activity. It will be closed in 14 days if no further activity occurs.
+
+            If this PR is still relevant:
+            - Address any review comments
+            - Push new commits
+            - Remove the stale label
+
+            Thank you for your contribution!
+          close-issue-message: This issue has been closed due to inactivity. Feel free to reopen if still relevant.
+          close-pr-message: This PR has been closed due to inactivity. Feel free to reopen if still relevant.
+
+          # Stale issue settings
+          days-before-issue-stale: 60
+          days-before-issue-close: 7
+          days-before-pr-stale: 30
+          days-before-pr-close: 14
+
+          # Exemptions
+          exempt-issue-labels: "pinned,security,bug,enhancement,in-progress"
+          exempt-pr-labels: "pinned,security,in-progress,blocked"
+
+          # Labels
+          stale-issue-label: "stale"
+          stale-pr-label: "stale"
+
+          # Only operate on open items
+          only-issue-labels: "needs-triage,needs-reproduction,question"
+          only-pr-labels: "needs-review,needs-changes"
+
+          # Dry run mode (set to false to enable)
+          dry-run: false
+
+      - name: Clean old milestones
+        run: |
+          echo "Cleaning old milestones..."
+          echo "Note: This requires the gh CLI with repo write permissions"
+          # Uncomment when gh CLI is available:
+          # gh milestone list --state open --limit 100 --json title,dueOn --jq '.[] | select(.dueOn < (now | todate)) | .title' | while read milestone; do
+          #   echo "Closing milestone: $milestone"
+          #   gh milestone close "$milestone" --reason "Overdue"
+          # done
+
+      - name: Triage stale issues report
+        run: |
+          echo "📊 Stale issues report:"
+          echo "  - Issues stale for 60+ days will be closed in 7 days"
+          echo "  - PRs stale for 30+ days will be closed in 14 days"
+          echo "  - Labels exempting from stale: pinned, security, bug, enhancement, in-progress"
+          echo ""
+          echo "To manually manage stale issues:"
+          echo "  gh issue list --label stale --state open"
+          echo "  gh pr list --label stale --state open"

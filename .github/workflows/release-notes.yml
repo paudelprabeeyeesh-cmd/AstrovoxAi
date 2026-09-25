@@ -1,0 +1,93 @@
+name: AstrovoxAI Release Notes
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release-notes:
+    name: Generate release notes
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = context.ref.replace('refs/tags/', '');
+            const previousTag = `v${tag.replace(/^v/, '').split('.').slice(0, 3).join('.')}`;
+
+            const { data: compare } = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: previousTag,
+              head: tag
+            });
+
+            const commits = compare.commits || [];
+
+            let body = `## ${tag}\n\n`;
+            body += `**Release Date**: ${new Date().toISOString().split('T')[0]}\n\n`;
+
+            const categories = {
+              'feat': '### 🚀 Features',
+              'fix': '### 🐛 Bug Fixes',
+              'docs': '### 📚 Documentation',
+              'style': '### 🎨 Style',
+              'refactor': '### ♻️ Refactor',
+              'test': '### ✅ Tests',
+              'chore': '### 🔧 Chore',
+              'perf': '### ⚡ Performance',
+              'ci': '### 🔄 CI',
+              'build': '### 📦 Build',
+              'revert': '### ⏪ Revert',
+              'ops': '### 🛠️ Operations',
+              'devops': '### 🛠️ DevOps'
+            };
+
+            const categorized = {};
+
+            for (const commit of commits) {
+              const subject = commit.commit.message.split('\n')[0];
+              const match = subject.match(/^(\w+)(\([^)]*\))?:\s*(.+)/);
+              if (match) {
+                const type = match[1];
+                if (!categorized[type]) categorized[type] = [];
+                categorized[type].push(match[3].trim());
+              }
+            }
+
+            for (const [type, messages] of Object.entries(categorized)) {
+              if (categories[type]) {
+                body += categories[type] + '\n\n';
+                for (const msg of messages) {
+                  body += `- ${msg}\n`;
+                }
+                body += '\n';
+              }
+            }
+
+            if (Object.keys(categorized).length === 0) {
+              body += `- ${commits.length} commits included in this release\n`;
+            }
+
+            body += `\n### 📊 Stats\n\n`;
+            body += `- **Commits**: ${commits.length}\n`;
+            body += `- **Compare**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tag}\n`;
+
+            await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: tag,
+              name: tag,
+              body: body,
+              draft: false,
+              prerelease: false
+            });
