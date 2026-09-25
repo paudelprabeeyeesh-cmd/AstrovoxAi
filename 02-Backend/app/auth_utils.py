@@ -42,13 +42,16 @@ async def get_current_user(
 ) -> Dict[str, Any]:
     """FastAPI dependency that resolves the authenticated user.
 
-    Falls back to a synthetic ``anonymous`` identity when the request does
-    not carry a Bearer token.  This makes the dependency safe to use on
-    optional-auth endpoints without sacrificing a clear contract.
+    Returns the authenticated user or raises 401 when credentials are
+    provided but invalid. Endpoints that allow anonymous access should
+    use a separate optional-auth dependency.
     """
 
     if credentials is None or not credentials.credentials:
-        return {"id": "anonymous", "email": "anonymous@astrovox.ai", "role": "user"}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+        )
 
     token = credentials.credentials
     try:
@@ -61,7 +64,9 @@ async def get_current_user(
                 "role": getattr(user, "role", "user"),
             }
     except Exception:
-        # Treat invalid/expired tokens as anonymous so ecosystem endpoints
-        # remain accessible without auth for public catalog/metadata paths.
         pass
-    return {"id": "anonymous", "email": "anonymous@astrovox.ai", "role": "user"}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired token",
+    )

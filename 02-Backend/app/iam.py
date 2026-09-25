@@ -37,10 +37,10 @@ from .security_hardening import (
 def get_jwt_secret() -> str:
     secret = os.getenv("JWT_SECRET", "")
     if not secret:
-        # Development fallback. In production this must be set.
-        import secrets
-
-        secret = secrets.token_urlsafe(32)
+        raise RuntimeError(
+            "JWT_SECRET environment variable must be set. "
+            "Application startup aborted."
+        )
     return secret
 
 
