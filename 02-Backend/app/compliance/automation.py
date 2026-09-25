@@ -407,6 +407,19 @@ class ComplianceAutomation:
             "priority_gaps": gap_data["gaps"][:10],
         }
 
+    def get_control_details(self, control_id: str) -> Optional[Dict[str, Any]]:
+        """Get detailed information about a specific control."""
+        with self._lock:
+            control = self._controls.get(control_id)
+        if not control:
+            return None
+        evidence = self._evidence_store.get(control_id, [])
+        return {
+            "control": control.__dict__,
+            "evidence_count": len(evidence),
+            "latest_evidence": evidence[-1] if evidence else None,
+        }
+
 
 compliance_automation = ComplianceAutomation()
 
