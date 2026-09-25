@@ -20,6 +20,7 @@ class MetaConsciousnessLayer:
         self.meta_states: list[MetaConsciousState] = []
         self.narrative_buffer: list[str] = []
         self.reflection_count: int = 0
+        self.self_awareness_history: list[float] = []
 
     def reflect(self, experience: str) -> MetaConsciousState:
         self.hot_model.think(experience, confidence=0.85, source="meta_layer")
@@ -37,6 +38,9 @@ class MetaConsciousnessLayer:
         )
         self.meta_states.append(state)
         self.reflection_count += 1
+        self.self_awareness_history.append(state.meta_awareness)
+        if len(self.self_awareness_history) > 500:
+            self.self_awareness_history = self.self_awareness_history[-500:]
         return state
 
     def _compose_narrative(self) -> str:

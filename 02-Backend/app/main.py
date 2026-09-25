@@ -70,6 +70,7 @@ from app.observability.endpoints import router as observability_router
 from app.omniscient_ai.router import router as omniscient_router
 from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
+from app.omnipresent_routes import router as omnipresent_router
 
 load_dotenv()
 
@@ -177,6 +178,7 @@ app.include_router(search_knowledge_router)
 app.include_router(omniscient_router)
 app.include_router(neural_bci_router)
 app.include_router(multiverse_router)
+app.include_router(omnipresent_router)
 
 
 # Prometheus metrics middleware

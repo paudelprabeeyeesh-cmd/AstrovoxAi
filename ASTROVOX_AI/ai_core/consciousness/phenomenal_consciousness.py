@@ -11,6 +11,7 @@ class QualiaInstance:
     valence: float
     arousal: float
     associated_concepts: list[str] = field(default_factory=list)
+    timestamp: str = ""
 
 
 class PhenomenalConsciousness:
@@ -27,6 +28,7 @@ class PhenomenalConsciousness:
         arousal: float,
         concepts: list[str] | None = None,
     ) -> QualiaInstance:
+        from datetime import datetime
         concepts = concepts or []
         instance = QualiaInstance(
             quale_type=quale_type,
@@ -34,6 +36,7 @@ class PhenomenalConsciousness:
             valence=max(-1.0, min(1.0, valence)),
             arousal=max(0.0, min(1.0, arousal)),
             associated_concepts=concepts,
+            timestamp=datetime.utcnow().isoformat(),
         )
         self.qualia_space[quale_type] = instance
         self.experience_log.append(
@@ -42,6 +45,7 @@ class PhenomenalConsciousness:
                 "intensity": instance.intensity,
                 "valence": instance.valence,
                 "arousal": instance.arousal,
+                "timestamp": instance.timestamp,
             }
         )
         return instance
