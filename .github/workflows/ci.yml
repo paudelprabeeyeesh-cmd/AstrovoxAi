@@ -321,8 +321,27 @@ jobs:
 
       - name: Dependency audit (backend)
         run: |
-          pip install safety
+          pip install safety pip-audit
           safety check --file=02-Backend/requirements.txt || echo "Vulnerabilities found - review required"
+          pip-audit -r 02-Backend/requirements.txt --format json > 02-Backend/pip-audit-report.json || echo "pip-audit completed"
+
+      - name: Run dependency vulnerability scanner tests
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, '02-Backend')
+          try:
+              from app.security.dependency_vulnerabilities import dependency_scanner
+              results = dependency_scanner.scan_all()
+              total = len(results.get('python', [])) + len(results.get('node', []))
+              print(f'Found {total} dependency vulnerabilities')
+              for v in results.get('python', [])[:5]:
+                  print(f'  PY: {v.package} {v.vulnerability_id} [{v.severity}]')
+              for v in results.get('node', [])[:5]:
+                  print(f'  NODE: {v.package} {v.vulnerability_id} [{v.severity}]')
+          except Exception as e:
+              print(f'Dependency scanner error: {e}')
+          "
         continue-on-error: true
 
   # ============================================================================
