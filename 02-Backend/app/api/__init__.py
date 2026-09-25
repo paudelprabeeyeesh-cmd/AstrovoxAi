@@ -1,3 +1,3 @@
-from app.api.solve import Solver
+from app.api.solve import router, Solver
 
-__all__ = ["Solver"]
+__all__ = ["router", "Solver"]

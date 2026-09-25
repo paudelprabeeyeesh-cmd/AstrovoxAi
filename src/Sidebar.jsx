@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { useState, useEffect, useCallback } from 'react'
-=======
-import { useState, useEffect, useRef } from 'react'
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 
 export default function Sidebar({ session, onSelectConversation, currentConversationId }) {

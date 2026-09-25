@@ -49,13 +49,8 @@ load_dotenv()
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
-<<<<<<< HEAD
     title="AstravoxAi Engine",
     version="1.0.0",
-=======
-    title="AstrovoxAi Engine",
-    version="2.0.0",
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
     description="Production-grade asynchronous stateless backend for AI chat",
 )
 app.state.limiter = limiter
@@ -192,3 +187,4 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+

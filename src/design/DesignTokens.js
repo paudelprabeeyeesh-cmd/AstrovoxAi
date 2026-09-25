@@ -1,3 +1,5 @@
+import { useState, useCallback } from 'react'
+
 export const THEMES = {
   astrovox: {
     name: 'Astrovox Prime',

@@ -26,6 +26,17 @@ const MOCK_NOTIFICATIONS = [
   { id: '3', title: 'Usage warning', message: 'You are approaching your monthly limit', type: 'warning', timestamp: Date.now() - 7200000, read: true }
 ]
 
+const buttonStyle = {
+  padding: '4px 10px',
+  backgroundColor: 'var(--astrovox-surface-hover)',
+  color: 'var(--astrovox-text)',
+  border: '1px solid var(--astrovox-border)',
+  borderRadius: 'var(--astrovox-radius-sm)',
+  cursor: 'pointer',
+  fontSize: '11px',
+  fontFamily: 'inherit'
+}
+
 export default function ChatInterface({ session, conversationId, model = 'gpt-4' }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')

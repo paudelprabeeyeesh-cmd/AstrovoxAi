@@ -1,9 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException, status
-<<<<<<< HEAD
 from pydantic import BaseModel
-=======
-from pydantic import BaseModel, Field
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 from typing import Optional
 
 from .auth_utils import get_user_id_from_token
@@ -199,13 +195,11 @@ async def auto_extract_memory(conversation_id: int, authorization: str = Header(
         memory = await save_memory(user_id, extracted_text, importance=3)
 
         return {"status": "OK", "extracted": extracted_text, "memory": memory}
-<<<<<<< HEAD
-=======
     except HTTPException:
         raise
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to auto-extract memory: {str(e)}",
         )
+

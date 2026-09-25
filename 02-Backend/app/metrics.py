@@ -63,7 +63,6 @@ if PROMETHEUS_AVAILABLE:
         buckets=[0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0]
     )
 
-<<<<<<< HEAD
     rate_limit_total = Counter(
         "rate_limit_total",
         "Total rate limit checks",
@@ -76,54 +75,18 @@ if PROMETHEUS_AVAILABLE:
         ["policy", "identity"]
     )
 
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
-
-def track_request(method: str, endpoint: str, status: int, duration: float):
-    """Track an HTTP request."""
-    if PROMETHEUS_AVAILABLE:
-        http_requests_total.labels(method=method, endpoint=endpoint, status=status).inc()
-        http_request_duration.labels(method=method, endpoint=endpoint).observe(duration)
-
-
-def track_ai_request(model: str, status: str, tokens: int = 0):
-    """Track an AI API request."""
-    if PROMETHEUS_AVAILABLE:
-        ai_requests_total.labels(model=model, status=status).inc()
-        if tokens > 0:
-            ai_tokens_total.labels(model=model).inc(tokens)
-
-
-def track_cache_hit(backend_type: str):
-    """Track a cache hit."""
-    if PROMETHEUS_AVAILABLE:
-        cache_hits_total.labels(backend_type=backend_type).inc()
-
-
-def track_cache_miss(backend_type: str):
-    """Track a cache miss."""
-    if PROMETHEUS_AVAILABLE:
-        cache_misses_total.labels(backend_type=backend_type).inc()
-
-
-def track_db_query(operation: str, duration: float):
-    """Track a database query."""
-    if PROMETHEUS_AVAILABLE:
-        db_query_duration.labels(operation=operation).observe(duration)
-
-
-<<<<<<< HEAD
-def track_rate_limit(policy: str, identity: str, allowed: bool, remaining: int = 0):
-    """Track a rate limit check."""
-    if PROMETHEUS_AVAILABLE:
-        rate_limit_total.labels(policy=policy, identity=identity, allowed=str(allowed)).inc()
-        rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
-
-
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 def get_metrics():
     """Get Prometheus-formatted metrics."""
     if PROMETHEUS_AVAILABLE:
         return generate_latest()
     return b"# Prometheus client not available\n"
+
+
+def track_ai_request(model: str, status: str, tokens: int = 0):
+    """Track AI request metrics."""
+    if not PROMETHEUS_AVAILABLE:
+        return
+    ai_requests_total.labels(model=model, status=status).inc()
+    if tokens > 0:
+        ai_tokens_total.labels(model=model).inc(tokens)
+

@@ -1,28 +1,18 @@
 import os
-<<<<<<< HEAD
 import logging
 
 from fastapi import APIRouter, HTTPException, status, Header, Depends
-=======
-
-from fastapi import APIRouter, HTTPException, status
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 from pydantic import BaseModel, EmailStr
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from typing import Optional
 
 from .supabase_client import get_supabase
-<<<<<<< HEAD
 from .security_hardening import get_audit_log
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()
 _audit = get_audit_log()
-=======
-
-supabase = get_supabase()
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
@@ -74,25 +64,28 @@ async def sign_up(request: SignUpRequest):
             }
         )
 
-<<<<<<< HEAD
         _audit.record(
             actor=request.email,
             action="auth_signup",
             target="user",
             outcome="success",
         )
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return {
             "status": "OK",
-            "message": "User registered successfully. Please verify your email.",
-            "user": {
-                "id": response.user.id if response.user else None,
-                "email": response.user.email if response.user else None,
+            "message": "Signup successful",
+            "user": {"id": response.user.id, "email": response.user.email},
+            "session": {
+                "access_token": (
+                    response.session.access_token if response.session else None
+                ),
+                "refresh_token": (
+                    response.session.refresh_token if response.session else None
+                ),
             },
         }
+    except HTTPException:
+        raise
     except Exception as e:
-<<<<<<< HEAD
         _audit.record(
             actor=request.email,
             action="auth_signup",
@@ -100,11 +93,9 @@ async def sign_up(request: SignUpRequest):
             outcome="failed",
             metadata={"error": str(e)[:100]},
         )
-        logger.warning(f"Signup failed: {str(e)[:100]}")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Registration failed")
-=======
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Signup failed"
+        )
 
 
 @router.post("/login")
@@ -117,7 +108,6 @@ async def login(request: LoginRequest):
         )
 
         if not response.user:
-<<<<<<< HEAD
             _audit.record(
                 actor=request.email,
                 action="auth_login",
@@ -135,12 +125,6 @@ async def login(request: LoginRequest):
             target="user",
             outcome="success",
         )
-=======
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
-            )
-
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return {
             "status": "OK",
             "message": "Login successful",
@@ -154,7 +138,6 @@ async def login(request: LoginRequest):
                 ),
             },
         }
-<<<<<<< HEAD
     except HTTPException:
         raise
     except Exception as e:
@@ -165,9 +148,6 @@ async def login(request: LoginRequest):
             outcome="failed",
             metadata={"error": str(e)[:100]},
         )
-=======
-    except Exception:
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
@@ -194,7 +174,6 @@ async def reset_password(request: ResetPasswordRequest):
                 "redirect_to": f"{os.getenv('FRONTEND_URL', 'http://localhost:5173')}/reset-password"
             },
         )
-<<<<<<< HEAD
         _audit.record(
             actor=request.email,
             action="auth_password_reset",
@@ -212,12 +191,6 @@ async def reset_password(request: ResetPasswordRequest):
         )
         logger.warning(f"Password reset failed: {str(e)[:100]}")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password reset failed")
-=======
-
-        return {"status": "OK", "message": "Password reset email sent successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 
 @router.get("/me")
@@ -231,11 +204,7 @@ async def get_current_user(authorization: str = None):
 
     try:
         token = authorization.replace("Bearer ", "")
-<<<<<<< HEAD
-=======
 
-        # Get user from token
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         response = supabase.auth.get_user(token)
 
         if not response.user:
@@ -251,16 +220,12 @@ async def get_current_user(authorization: str = None):
                 detail="Invalid or expired token",
             )
 
-<<<<<<< HEAD
         _audit.record(
             actor=response.user.id,
             action="auth_get_me",
             target="user",
             outcome="success",
         )
-=======
-        # Fetch user profile
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         profile_response = (
             supabase.table("profiles").select("*").eq("id", response.user.id).execute()
         )
@@ -277,73 +242,15 @@ async def get_current_user(authorization: str = None):
     except HTTPException:
         raise
     except Exception:
-<<<<<<< HEAD
         _audit.record(
             actor="anonymous",
             action="auth_get_me",
             target="user",
             outcome="failed",
-=======
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         )
-
-
-@router.post("/oauth")
-async def oauth_login(request: OAuthRequest):
-    """A lightweight OAuth-compatible endpoint that forwards to Supabase if supported."""
-    try:
-        response = supabase.auth.sign_in_with_otp(
-            {"email": request.email or "", "create_user": True}
-        )
-        _audit.record(
-            actor=request.email or "anonymous",
-            action="auth_oauth",
-            target="user",
-            outcome="success",
-        )
-        return {
-            "status": "OK",
-            "provider": request.provider,
-            "message": "OAuth flow initiated",
-            "otp_sent": bool(response),
-        }
-    except Exception as exc:
-        _audit.record(
-            actor=request.email or "anonymous",
-            action="auth_oauth",
-            target="user",
-            outcome="failed",
-            metadata={"error": str(exc)[:100]},
-        )
-        logger.warning(f"OAuth failed: {str(exc)[:100]}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="OAuth authentication failed"
-        ) from exc
-
-
-
-@router.post("/oauth")
-async def oauth_login(request: OAuthRequest):
-    """A lightweight OAuth-compatible endpoint that forwards to Supabase if supported."""
-    try:
-        response = supabase.auth.sign_in_with_otp(
-            {"email": request.email or "", "create_user": True}
-        )
-        return {
-            "status": "OK",
-            "provider": request.provider,
-            "message": "OAuth flow initiated",
-            "otp_sent": bool(response),
-        }
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
-        ) from exc
 
 
 @router.post("/refresh")
@@ -353,7 +260,6 @@ async def refresh_token(refresh_token: str):
         response = supabase.auth.refresh_session(refresh_token)
 
         if not response.session:
-<<<<<<< HEAD
             _audit.record(
                 actor="anonymous",
                 action="auth_refresh",
@@ -371,12 +277,6 @@ async def refresh_token(refresh_token: str):
             target="session",
             outcome="success",
         )
-=======
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-            )
-
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         return {
             "status": "OK",
             "session": {
@@ -387,15 +287,13 @@ async def refresh_token(refresh_token: str):
     except HTTPException:
         raise
     except Exception:
-<<<<<<< HEAD
         _audit.record(
             actor="anonymous",
             action="auth_refresh",
             target="session",
             outcome="failed",
         )
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Failed to refresh token"
         )
+

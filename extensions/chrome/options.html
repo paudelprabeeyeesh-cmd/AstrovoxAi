@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Astrovox AI Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="options-container">
+    <h1>Astrovox AI Settings</h1>
+    <div class="option-group">
+      <label for="apiUrl">API Base URL</label>
+      <input type="text" id="apiUrl" placeholder="https://api.astrovox.ai/v1">
+    </div>
+    <div class="option-group">
+      <label for="apiKey">API Key</label>
+      <input type="password" id="apiKey" placeholder="Enter your API key">
+    </div>
+    <div class="option-group">
+      <label>
+        <input type="checkbox" id="autoSuggest"> Enable auto-suggest
+      </label>
+    </div>
+    <div class="option-group">
+      <label>
+        <input type="checkbox" id="showHighlights"> Show text highlights
+      </label>
+    </div>
+    <button id="save" class="save-button">Save Settings</button>
+    <span id="status" style="margin-left: 12px; font-size: 12px; color: #34d399;"></span>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>

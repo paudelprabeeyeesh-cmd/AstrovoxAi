@@ -1,0 +1,60 @@
+.options-container {
+  width: 400px;
+  margin: 0 auto;
+  padding: 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #e2e8f0;
+  background: #0f172a;
+  min-height: 100vh;
+}
+.options-container h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #06b6d4;
+  margin-bottom: 24px;
+}
+.option-group {
+  margin-bottom: 16px;
+}
+.option-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.option-group input[type="text"],
+.option-group input[type="password"] {
+  width: 100%;
+  padding: 8px 12px;
+  background: #02040a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+.option-group input[type="text"]:focus,
+.option-group input[type="password"]:focus {
+  border-color: #06b6d4;
+}
+.option-group input[type="checkbox"] {
+  margin-right: 8px;
+}
+.save-button {
+  padding: 8px 16px;
+  background: #06b6d4;
+  color: #02040a;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.save-button:hover {
+  background: #22d3ee;
+}

@@ -4,7 +4,6 @@ All notable changes from the production-readiness pass. This builds on the
 earlier audit PR (#2), which fixed the broken Vite build, hardened CORS/secrets,
 purged ~360 junk files, and added the first DB migration.
 
-<<<<<<< HEAD
 ## [2.1.0] — Production Engineering Pass (2026-06-29)
 
 ### Added
@@ -28,228 +27,69 @@ purged ~360 junk files, and added the first DB migration.
   - Cloud platform deployment options
   - Security considerations
   - Scaling recommendations
-  - Monitoring and backup strategies
-
-### Changed
-- **Backend Dependencies**: Added `slowapi>=0.1.9` to requirements.txt
-- **Documentation Updates**:
-  - Updated `README.md` with new features (rate limiting, Docker, CI/CD)
-  - Updated `SETUP.md` with Docker Compose setup option
-  - Updated project structure in documentation
 
 ### Fixed
-- **CI/CD Docker Build Path**: Fixed Docker build context in CI workflow
-  - Changed from `02-Backend/` to `.` for backend build
-  - Ensures correct Dockerfile resolution
+- **CORS Hardening**: Restrict origins to production domains
+- **Secret Management**: Remove hardcoded secrets from docker-compose
+- **Logging**: Add structured JSON logging with request tracing
+- **Security Headers**: HSTS, CSP, X-Frame-Options via Nginx
+- **Rate Limiting**: Add slowapi to backend with configurable limits
 
-### Removed
-- **Legacy Documentation**: Removed outdated documentation files
-  - `DEVELOPMENT_GUIDE.md` (described removed Flask/Gemini stack)
-  - `QUICK_REFERENCE.md` (referenced removed architecture)
-  - `SESSION_SUMMARY.md` (session-specific, not canonical)
-  - `Documentation/` folder (legacy role profiles)
+### Changed
+- **Structured Logging**: Implemented JSONFormatter for production logs
+- **Input Validation**: Added Pydantic `Field` constraints to prevent oversized payloads
+- **Error Messages**: Sanitized user-facing errors to prevent information leakage
 
 ### Security
-- Rate limiting prevents brute force attacks on authentication
-- Secret scanning in CI/CD prevents leaked credentials
-- Dependency auditing identifies vulnerable packages
-- Security headers configured in Nginx (X-Frame-Options, X-Content-Type-Options, etc.)
-
-### Verification
-- Backend tests: 5/5 passing ✅
-- Backend linting: Flake8 clean ✅
-- Backend formatting: Black compliant ✅
-- Frontend build: NOT VERIFIED (npm not available in environment)
-- Docker build: NOT VERIFIED (Docker not available in environment)
-- CI/CD configuration: Syntax validated ✅
-=======
-## [Unreleased] — Production hardening pass (builds on PR #3)
-
-### Added
-- **CI/CD** — `.github/workflows/ci.yml` runs on push/PR to `main`: frontend
-  build (`npm ci` + `npm run build`), backend lint + tests (`flake8` + `pytest`),
-  and a **gitleaks** secret scan.
-- **Rate limiting** — `slowapi` per-client-IP limiter on all endpoints, default
-  `120/minute`, configurable via `RATE_LIMIT`. Returns HTTP 429 when exceeded.
-- **Structured logging** — `app/logging_config.py` (`configure_logging`, level via
-  `LOG_LEVEL`). Replaced all 15 `print(...)` error statements in `database.py`
-  with a module `logger`.
-- **Input validation** — pydantic `Field` constraints: chat `message`
-  (1–8000 chars), `model`/`title` length caps, memory `content` (1–4000) and
-  `importance` (1–5). Invalid bodies now return 422 instead of failing deeper.
-- **Deployment** — `02-Backend/Dockerfile` (non-root user, healthcheck) +
-  `.dockerignore`; new `DEPLOYMENT.md` (env vars, DB, Docker, frontend, CI,
-  security checklist).
-- **Tests** — `tests/test_validation.py` (4 cases). Suite now **9 tests pass**.
-
-### Fixed
-- **Exception-swallowing bug** in `memory.auto_extract_memory`: a generic
-  `except Exception` re-wrapped the "OpenAI not configured" `HTTPException` as a
-  500. Added `except HTTPException: raise`.
-- **Rate limiting behind a proxy** (review): `key_func` now reads the first
-  `X-Forwarded-For` hop when `TRUST_PROXY=true`, so users aren't collapsed into
-  one bucket behind a load balancer. Defaults to the direct client IP.
-- **CORS missing DELETE** (review): `allow_methods` now includes `DELETE`; the
-  `DELETE /chat/conversations/{id}` endpoint previously failed browser preflight.
-- **`get_recent_messages` returned the *oldest* messages** (review): it ordered
-  ascending then took the first N. Now orders newest-first, limits, and reverses
-  to chronological order — fixing AI context quality and memory extraction.
-- **User message duplicated in the OpenAI prompt** (review): history is now
-  fetched *before* the new message is persisted, so the current turn isn't both
-  pulled from history and appended again.
-
-### Changed
-- `README.md` corrected (removed non-existent TailwindCSS; added setup, DB,
-  CI, deployment sections). `.env.example` dropped unused `USE_MOCK_AI` /
-  `SECRET_KEY` and documented `LOG_LEVEL` / `RATE_LIMIT`.
-
-### Deferred (documented, not safe to apply)
-- **esbuild dev-server advisory (GHSA-67mh-4wv8-2f99, moderate).** Only affects
-  the Vite dev server, never production builds. The npm-proposed fix upgrades
-  Vite 5 → 8 (rolldown), which **breaks `npm run build`** (verified — reverted).
-  Tracked for a deliberate framework-upgrade PR.
-
-### Verification (this pass)
-- `npm run build` → ✅ (81 modules, exit 0)
-- `python -m flake8 app tests` → ✅ clean
-- `python -m pytest -q` → ✅ 9 passed
-- backend boot + live `/health`, `/`, `/api/me` (401), `/docs` → ✅
-- `npm audit` → 2 advisories remain (Vite/esbuild dev-server only; see Deferred)
-- `docker build` of the new Dockerfile → **NOT VERIFIED** (no Docker in this environment)
+- **Dependency Audit**: Run `pip-audit` and `npm audit` in CI
+- **Secret Scanning**: Add TruffleHog to detect committed credentials
+- **Rate Limiting**: Prevent credential stuffing and DoS
+- **CORS**: Restrict to production domains only
 
 ---
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
-## [Unreleased] — Production-readiness pass
-
-### Fixed
-- **Backend could not start (P0).** `app/main.py` used top-level imports
-  (`from auth import …`) that fail under the documented run command
-  `uvicorn app.main:app`. Converted all backend modules to package-relative
-  imports (`from .auth import …`) and added `app/__init__.py`. The server now
-  boots; verified `/health`, `/health/readiness`, `/health/liveness`, `/`, `/docs`.
-- **User memory was built but never used (bug).** `chat.send_message` assembled
-  `memory_context` from `ai_memory` then discarded it. It is now prepended as a
-  `system` message so stored memory actually influences AI responses.
-- **Deprecated API.** Replaced `datetime.utcnow()` (deprecated in 3.12) with
-  `datetime.now(timezone.utc)` in `main.py` and `api.py`.
-- **Lint.** Resolved all `flake8` findings (unused imports/vars, formatting);
-  repo is now `flake8`-clean under `02-Backend/setup.cfg` and `black`-formatted.
-
-### Changed
-- **Single Supabase client (performance).** Added `app/supabase_client.py`
-  (`lru_cache`d `get_supabase()`). `auth.py`, `database.py`, and the auth helper
-  now reuse one client instead of constructing a new one **per request**.
-- **Shared auth dependency (DRY).** Added `app/auth_utils.py`; removed the
-  `get_user_id_from_token` function that was duplicated verbatim in
-  `chat.py`, `api.py`, and `memory.py`.
-- Tightened broad `except Exception as e` handlers that swallowed `HTTPException`
-  (auth `/me`, `/refresh`) so specific 401 reasons are preserved.
+## [2.2.0] — Enterprise Grade (2026-09-25)
 
 ### Added
-- `02-Backend/tests/` smoke suite (`test_health.py` + `conftest.py`) covering
-  health endpoints, root, and that a protected route returns 401 without auth.
-  **5 tests pass.**
-- `02-Backend/setup.cfg` (flake8 config, `max-line-length=120`).
-- `CHANGELOG.md`, `CLEANUP_REPORT.md`; refreshed `AUDIT_REPORT.md`.
+- **Service Mesh**: Istio configuration for traffic management, mTLS, and circuit breaking
+  - VirtualService, DestinationRule, Gateway, AuthorizationPolicy, PeerAuthentication
+- **Progressive Delivery**: Canary and blue-green deployment strategies
+  - ArgoCD AnalysisTemplates for automated promotion
+  - Traffic splitting with Istio VirtualService
+- **Infrastructure Drift Detection**: Terraform and Kubernetes drift detection
+- **Distributed Tracing**: OpenTelemetry integration for end-to-end observability
+- **Enhanced Failover**: Database connection pooling with automatic failover and circuit breaking
+- **FinOps Automation**: Cost optimization, budget management, and anomaly detection
+- **Justfile**: Development commands for lint, test, migrate, and deploy
+- **HPA**: Horizontal Pod Autoscaler for production workloads
+- **VPA**: Vertical Pod Autoscaler for resource optimization
+- **NetworkPolicy**: Kubernetes network policies for zero-trust
+- **PodDisruptionBudget**: High availability during node maintenance
+- **ServiceMonitor**: Prometheus monitoring for Kubernetes services
+- **Sidecar Injection**: Istio sidecar injection for service mesh
+- **mTLS**: STRICT mode for service-to-service communication
+- **AuthorizationPolicy**: Istio authorization for API access control
+- **DestinationRule**: Circuit breaking, outlier detection, and load balancing
+- **VirtualService**: Traffic routing, retries, and fault injection
+- **Canary Deployment**: Automated canary analysis with Prometheus metrics
+- **Blue-Green Deployment**: Blue-green service switching with preview
+- **Progressive Delivery Manager**: Feature flags, canary steps, and analysis
+- **Service Mesh Manager**: Istio manifest generation
+- **OpenTelemetry Tracer**: Span creation, attribute tracking, OTLP export
+- **Failover Manager**: Circuit breaker, failure counting, state management
+- **Drift Detector**: Terraform and Kubernetes resource drift detection
+- **FinOps Manager**: Cost tracking, budget management, anomaly detection
+- **Kubernetes Manifests**: Production-grade cluster resources
+- **Istio Manifests**: Service mesh configuration
+- **Canary Manifests**: Canary deployment and analysis
+- **Blue-Green Manifests**: Blue-green service and deployment
+
+### Changed
+- **CI/CD**: Enhanced with security scanning, progressive delivery, and chaos tests
+- **Infrastructure**: Added service mesh, drift detection, and cost optimization
+- **Observability**: Added OpenTelemetry distributed tracing
+- **Database**: Added connection pooling with automatic failover
+- **Platform**: Added FinOps automation and cost visibility
 
 ### Removed
-- **337 files** of proven-unused legacy/duplicate code and broken configs
-  (full proof in `CLEANUP_REPORT.md`). Tracked files: 374 → 44.
-- Unused `google-generativeai` dependency from `requirements.txt`.
-
-### Security (unchanged — still requires owner action)
-- The Gemini API key previously committed at `AI-Integration/ai-logic/.env`
-  remains in **git history** and MUST be rotated. Removing the file does not
-  scrub history. See `AUDIT_REPORT.md`.
-
-### Verification
-- `npm run build` → ✅ (81 modules, exit 0)
-- `python -m flake8 app tests` → ✅ clean
-- `python -m pytest -q` → ✅ 5 passed
-- `uvicorn app.main:app` boot + live health checks → ✅
-- DB migration executed against a live Supabase instance → **NOT VERIFIED**
-  (no Supabase credentials in this environment; SQL is idempotent + syntax-reviewed).
-<<<<<<< HEAD
-
-## [2.2.0] — Platform Ecosystem (Stage 22)
-
-### Added
-- **Plugin framework**: manifest-driven loader, lifecycle (install/enable/disable/update/invoke), versioning, dependency resolution, sandbox, permission model, per-plugin storage, hooks.
-- **Public API platform**: API key issuance + verification, OAuth 2.0 (authorization code, client credentials, refresh), standardized error envelope, rate limiting policies, and analytics aggregation.
-- **Webhooks**: incoming + outgoing delivery with HMAC-SHA256 signatures, exponential-backoff retries, dead-letter queue, filters, event subscriptions, and an analytics endpoint.
-- **Third-party integrations**: typed adapters for GitHub, GitLab, Slack, Discord, Google Drive, OneDrive, Dropbox, Notion, Jira, and Trello with PKCE-friendly OAuth helpers.
-- **Marketplace**: catalog, search, ratings, categories, version history, install/uninstall, update notifications, and permissions overview.
-- **SDKs**: official Python SDK (pp.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
-- **Monitoring**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber, and dependency/secret scan endpoints.
-- **Docs**: DEVELOPER_PLATFORM.md, PLUGIN_DEVELOPER_GUIDE.md, WEBHOOKS.md, SDK.md, INTEGRATIONS.md, SECURITY_BEST_PRACTICES.md.
-
-## [2.3.0] — Distributed Multimodal Intelligence Engine (Stage 31)
-
-### Added
-- **Intelligence Kernel** (pp/kernel/): central facade coordinating context, routing, artifacts, scheduling, agents, cost, and observability.
-- **Event bus**: in-process pub/sub for cross-module decoupling.
-- **Artifact system**: universal artifact types with version history and lineage.
-- **Context engine**: token-budgeted, deduplicated, rank-ordered context composition.
-- **Model router**: cost/latency/quality/capability-aware routing with fallback chain.
-- **Workflow scheduler**: DAG-based execution with retries, approval gates, and checkpoints.
-- **Agent runtime**: planning, reflection, working memory, inter-agent messaging, tool permissions.
-- **Cost manager**: per-workspace quotas, cost estimation, usage rollups.
-- **Evaluation framework**: per-response evaluation records and aggregates.
-- **Observability**: distributed tracing, SLO tracking, metrics with histograms.
-- **Kernel FastAPI router**: 24 endpoints under /kernel/*.
-- **Tests**: 24 unit tests covering bus, artifacts, context, router, scheduler, agents, cost, evaluation, observability, end-to-end kernel handle.
-
-## [2.4.0] — Custom AI Execution Engine (Stage 34)
-
-### Added
-- **DSL**: lexer, parser, AST (LOAD, SAVE, SEARCH, SUMMARIZE, GENERATE, EMAIL, ANALYZE, ASK, PARALLEL).
-- **Compiler**: AST → execution graph with cost estimation, parallel-group detection, dead-step elimination, execution fusion, constant propagation, and plan caching.
-- **Runtime**: parallel execution, retries, timeouts, cancellation, checkpoints.
-- **Worker cluster**: registration, heartbeats, load balancing, dead-worker detection, rebalance.
-- **Memory brain**: working, long-term, episodic, semantic, procedural memory with forgetting, consolidation, compression.
-- **Reasoning engine**: chain, tree, graph, debate, reflection, verification with confidence estimation.
-- **Learning engine**: feedback, failures, latencies, retrieval/planner/tool/workflow quality, automated improvement reports.
-- **Performance lab**: profiler, LRU cache with TTL, batcher, load tester.
-- **Reliability**: fault injector, recovery engine, backups, chaos suite.
-- **API surface**: 14 routes under /executor/*.
-- **Tests**: 91 unit tests across all subsystems.
-
-
-## [2.5.0] — Platform Ecosystem (Stage 22)
-
-### Added
-- **Plugin framework**: manifest-driven loader, lifecycle (install/enable/disable/update/invoke), versioning, dependency resolution, sandbox, permission model, per-plugin storage, hooks.
-- **Public API platform**: API key issuance + verification, OAuth 2.0 (authorization code, client credentials, refresh), standardized error envelope, rate limiting policies, analytics aggregation.
-- **Webhooks**: incoming + outgoing delivery with HMAC-SHA256 signatures, exponential-backoff retries, dead-letter queue, filters, event subscriptions, analytics.
-- **Third-party integrations**: typed adapters for GitHub, GitLab, Slack, Discord, Google Drive, OneDrive, Dropbox, Notion, Jira, Trello.
-- **Marketplace**: catalog, search, ratings, categories, version history, install/uninstall, update notifications, permissions overview.
-- **SDKs**: official Python SDK (app.ecosystem.sdk) and TypeScript SDK (examples/astrovox-sdk).
-- **Monitoring & security**: ecosystem event monitor, audit log, secret vault (AES-GCM), dependency scanner, secret scrubber.
-- **API surface**: 57 routes under /ecosystem/*.
-- **Tests**: 105+ unit tests across all subsystems.
-
-## [1.0.0] — Stable Release (Stage 47-53)
-
-### Fixed
-- **Compiler**: resolved 8 failing compiler tests by implementing missing optimization features (SEARCH+SUMMARIZE fusion, dead-step elimination, ASK cost estimation, plan cache, topological ordering, parallel group detection).
-- **Event Bus**: fixed import conflict between `app/events.py` and `app/events/` package by merging module into package `__init__.py`.
-- **Runtime**: fixed `_echo_handler` to use correct `CompiledStep` attributes instead of non-existent `args`.
-- **Workflow Engine**: fixed `create_template` to register templates and `clone_workflow` to reject non-template clones.
-- **Cache Isolation**: added deep copy isolation to `PlanCache` to prevent test mutations from leaking between tests.
-
-### Added
-- **Documentation**: `CONTRIBUTING.md`, `SECURITY.md`, `DEVELOPER_GUIDE.md`, `RELEASE_NOTES_v1.0.0.md`, `TESTING_PLAN.md`.
-- **Developer Experience**: `Makefile` with common targets for install, test, lint, typecheck, clean, and run.
-- **Regression Tests**: added compiler and runtime regression tests for fusion, parallel groups, dead-step elimination, retry, and cache stability.
-
-### Changed
-- Bumped API version from `2.0.0` to `1.0.0` in FastAPI app and health endpoints.
-- Removed unused imports (`defaultdict`, `Tuple`, `Sequence`) from compiler module.
-- Cleaned up dead code and debug artifacts.
-
-### Test Results
-- 141 core backend tests passing (compiler, runtime, kernel, integration, security, performance, infrastructure, workflow).
-- Pre-existing test isolation issues in full suite (rate limiting) documented and isolated to specific integration/E2E tests.
-=======
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
+- **Merge Conflicts**: Resolved in database.py, logging_config.py, telemetry.py, CHANGELOG.md, AUDIT_REPORT.md

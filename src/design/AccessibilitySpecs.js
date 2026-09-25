@@ -1,3 +1,5 @@
+import { useState, useCallback } from 'react'
+
 export const A11Y_SPECS = {
   WCAG_LEVEL: 'AA',
   MIN_CONTRAST_RATIO: 4.5,

@@ -1,0 +1,6 @@
+/* Astrovox AI - Firefox Extension Content Styles */
+.astrovox-highlight {
+  background-color: rgba(6, 182, 212, 0.1);
+  border-bottom: 2px solid #06b6d4;
+  cursor: pointer;
+}

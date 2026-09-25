@@ -1,0 +1,118 @@
+/* Astrovox AI - Chrome Extension Content Styles */
+
+.astrovox-extension-highlight {
+  background-color: rgba(6, 182, 212, 0.1);
+  border-bottom: 2px solid #06b6d4;
+  cursor: pointer;
+}
+
+.astrovox-extension-popup {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 320px;
+  max-height: 400px;
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  font-family: 'Inter', system-ui, sans-serif;
+  color: #e2e8f0;
+  z-index: 2147483647;
+  overflow: hidden;
+}
+
+.astrovox-extension-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #02040a;
+  border-bottom: 1px solid #1e293b;
+}
+
+.astrovox-extension-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #06b6d4;
+}
+
+.astrovox-extension-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.astrovox-extension-body {
+  padding: 12px 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.astrovox-extension-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #02040a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  margin-bottom: 8px;
+}
+
+.astrovox-extension-input:focus {
+  border-color: #06b6d4;
+}
+
+.astrovox-extension-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px;
+  background: #06b6d4;
+  color: #02040a;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.astrovox-extension-button:hover {
+  background: #22d3ee;
+}
+
+.astrovox-extension-response {
+  margin-top: 12px;
+  padding: 12px;
+  background: #02040a;
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.astrovox-extension-error {
+  color: #ef4444;
+}
+
+.astrovox-extension-menu-item {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.astrovox-extension-menu-item:hover {
+  background: #1e293b;
+}

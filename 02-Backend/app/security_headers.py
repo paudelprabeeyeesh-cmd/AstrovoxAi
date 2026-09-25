@@ -20,30 +20,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         # Enable XSS protection
         response.headers["X-XSS-Protection"] = "1; mode=block"
 
-<<<<<<< HEAD
         # Content Security Policy (strict - no unsafe-inline)
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self'; "
             "style-src 'self'; "
-=======
-        # Content Security Policy
-        response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
-            "style-src 'self' 'unsafe-inline'; "
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
             "img-src 'self' data: https:; "
             "font-src 'self'; "
             "connect-src 'self' https://api.openai.com https://*.supabase.co; "
             "form-action 'self'; "
-<<<<<<< HEAD
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "object-src 'none';"
-=======
-            "frame-ancestors 'none';"
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
         )
 
         # Referrer Policy
@@ -60,3 +48,4 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         )
 
         return response
+

@@ -5,20 +5,21 @@ import Icon from '../design/Iconography'
 export default function NotificationCenter({ notifications = [] }) {
   const [isOpen, setIsOpen] = useState(false)
   const [filter, setFilter] = useState('all')
-  const unreadCount = notifications.filter(n => !n.read).length
+  const [internalNotifications, setInternalNotifications] = useState(notifications)
+  const unreadCount = internalNotifications.filter(n => !n.read).length
 
-  const filtered = notifications.filter(n => {
+  const filtered = internalNotifications.filter(n => {
     if (filter === 'all') return true
     if (filter === 'unread') return !n.read
     return n.type === filter
   })
 
   const markAsRead = useCallback((id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    setInternalNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
   }, [])
 
   const markAllAsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    setInternalNotifications(prev => prev.map(n => ({ ...n, read: true })))
   }, [])
 
   return (

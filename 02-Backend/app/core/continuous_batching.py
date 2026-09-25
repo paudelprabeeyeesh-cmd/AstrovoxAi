@@ -1,111 +1,65 @@
 """
-Continuous batching scheduler with preemption and KV cache swapping.
+Continuous batching for high-throughput LLM inference with dynamic request scheduling.
 """
 
 from __future__ import annotations
 
 import logging
-from collections import OrderedDict
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-
-from app.core.paged_attention import KVCache
+import time
+from typing import Optional, Dict, Any, List, Tuple
+import torch
+import torch.nn as nn
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ScheduledRequest:
-    request_id: str
-    prompt_ids: List[int]
-    max_new_tokens: int
-    priority: int = 0
-    batch_id: str = "default"
-    state: str = "waiting"
-    generated_tokens: List[int] = field(default_factory=list)
-    kv_cache_state: Optional[Dict[str, Any]] = None
-
-
 class ContinuousBatchScheduler:
-    """Admits new requests the moment a slot opens."""
+    def __init__(self, max_batch_size: int = 32, max_seq_len: int = 4096, eos_token_id: int = 2):
+        self.max_batch_size = max_batch_size
+        self.max_seq_len = max_seq_len
+        self.eos_token_id = eos_token_id
+        self.waiting: List[Dict[str, Any]] = []
+        self.running: Dict[int, Dict[str, Any]] = {}
+        self.finished: List[Dict[str, Any]] = []
 
-    def __init__(self, max_active: int = 32, max_queue: int = 128, max_preempted: int = 16):
-        self.max_active = max_active
-        self.max_queue = max_queue
-        self.max_preempted = max_preempted
-        self.active: Dict[str, ScheduledRequest] = {}
-        self.queue: List[ScheduledRequest] = []
-        self.preempted: Dict[str, ScheduledRequest] = {}
-        self.kv_caches: Dict[str, KVCache] = {}
+    def add_request(self, request_id: int, input_ids: torch.Tensor, max_new_tokens: int, temperature: float = 1.0, top_p: float = 0.9) -> None:
+        self.waiting.append({'id': request_id, 'input_ids': input_ids, 'max_new_tokens': max_new_tokens, 'temperature': temperature, 'top_p': top_p, 'generated_tokens': 0, 'finished': False})
 
-    def submit(self, request: ScheduledRequest) -> str:
-        if len(self.active) < self.max_active:
-            self.active[request.request_id] = request
-            request.state = "active"
-            return request.request_id
-        if len(self.queue) < self.max_queue:
-            self.queue.append(request)
-            request.state = "queued"
-            return request.request_id
-        if len(self.preempted) < self.max_preempted:
-            self._preempt_lowest_priority()
-            self.active[request.request_id] = request
-            request.state = "active"
-            return request.request_id
-        raise RuntimeError("Scheduler at capacity")
+    def get_batch(self) -> Tuple[torch.Tensor, List[int]]:
+        batch = []
+        batch_ids = []
+        while self.waiting and len(batch) < self.max_batch_size:
+            req = self.waiting.pop(0)
+            self.running[req['id']] = req
+            batch_ids.append(req['id'])
+            batch.append(req['input_ids'])
+        if not batch:
+            return torch.empty(0), []
+        max_len = max(t.shape[1] for t in batch)
+        padded = torch.zeros(len(batch), max_len, dtype=batch[0].dtype)
+        for i, t in enumerate(batch):
+            padded[i, :t.shape[1]] = t
+        return padded, batch_ids
 
-    def on_token_complete(self, request_id: str) -> Optional[str]:
-        req = self.active.pop(request_id, None)
-        if req is None:
-            return None
-        req.state = "completed"
-        admitted = self._admit_from_queue()
-        return admitted
+    def update(self, generated_tokens: torch.Tensor, request_ids: List[int]) -> None:
+        for i, req_id in enumerate(request_ids):
+            req = self.running.get(req_id)
+            if req is None:
+                continue
+            new_token = generated_tokens[i, -1].item()
+            req['input_ids'] = torch.cat([req['input_ids'], torch.tensor([[new_token]], dtype=req['input_ids'].dtype)], dim=1)
+            req['generated_tokens'] += 1
+            if new_token == self.eos_token_id or req['generated_tokens'] >= req['max_new_tokens']:
+                req['finished'] = True
+                self.finished.append(self.running.pop(req_id))
 
-    def _admit_from_queue(self) -> Optional[str]:
-        while self.queue and len(self.active) < self.max_active:
-            req = self.queue.pop(0)
-            self.active[req.request_id] = req
-            req.state = "active"
-            return req.request_id
-        while self.preempted and len(self.active) < self.max_active:
-            req = self.preempted.pop(next(iter(self.preempted)))
-            self.active[req.request_id] = req
-            req.state = "active"
-            return req.request_id
-        return None
+    def is_full(self) -> bool:
+        return len(self.running) >= self.max_batch_size
 
-    def _preempt_lowest_priority(self):
-        if not self.active:
-            return
-        victim_id = min(self.active, key=lambda rid: self.active[rid].priority)
-        victim = self.active.pop(victim_id)
-        victim.state = "preempted"
-        self.preempted[victim_id] = victim
-        logger.info("Preempted request %s", victim_id)
+    def has_waiting(self) -> bool:
+        return len(self.waiting) > 0
 
-    def get_stats(self) -> dict:
-        return {
-            "active": len(self.active),
-            "queued": len(self.queue),
-            "preempted": len(self.preempted),
-            "max_active": self.max_active,
-            "utilization": round(len(self.active) / self.max_active * 100, 1),
-        }
-
-    def save_kv_state(self, request_id: str):
-        req = self.active.get(request_id)
-        if req is not None:
-            cache = self.kv_caches.get(request_id)
-            req.kv_cache_state = cache.get_memory_usage() if cache else None
-
-    def restore_kv_state(self, request_id: str):
-        req = self.preempted.get(request_id)
-        if req is not None and req.kv_cache_state:
-            self.kv_caches[request_id] = KVCache(
-                num_layers=32,
-                num_heads=32,
-                head_dim=128,
-                page_size=16,
-                max_pages=1024,
-            )
+    def get_finished(self) -> List[Dict[str, Any]]:
+        finished = self.finished[:]
+        self.finished = []
+        return finished
