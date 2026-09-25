@@ -57,6 +57,7 @@ from app.api.routers.webhook_router import router as webhook_router
 from app.api.routers.feature_flags_router import router as feature_flags_router
 from app.api.routers.admin_metrics_router import router as admin_metrics_router
 from app.api.routers.support_router import router as support_router
+from app.enterprise.ticket_routing_router import router as enterprise_ticket_routing_router
 from app.enterprise.billing_router import router as enterprise_billing_router
 from app.enterprise.admin_router import router as enterprise_admin_router
 from app.enterprise.sso_router import router as enterprise_sso_router
@@ -128,6 +129,7 @@ app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(enterprise_sso_router)
 app.include_router(enterprise_billing_router)
+app.include_router(enterprise_ticket_routing_router)
 app.include_router(enterprise_admin_router)
 app.include_router(ws_router)
 app.include_router(workspace_router)

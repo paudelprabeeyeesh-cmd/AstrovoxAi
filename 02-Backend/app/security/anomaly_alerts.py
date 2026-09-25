@@ -424,6 +424,28 @@ class APIAnomalyDetector:
                 "high_risk_users": sum(1 for p in self._profiles.values() if p.risk_score > 0.5),
             }
 
+    def get_user_behavior_report(self, user_id: str) -> Dict[str, Any]:
+        """Get behavioral report for a specific user."""
+        with self._lock:
+            profile = self._profiles.get(user_id)
+            user_events = [e for e in self._events if e.user_id == user_id][-100:]
+            user_alerts = [a for a in self._alerts if a.user_id == user_id][-50:]
+        if not profile:
+            return {"user_id": user_id, "status": "not_found"}
+        return {
+            "user_id": user_id,
+            "first_seen": profile.first_seen,
+            "last_seen": profile.last_seen,
+            "total_requests": profile.request_count,
+            "typical_countries": list(profile.typical_countries),
+            "typical_hours": sorted(set(profile.typical_hours)),
+            "baseline_rph": round(profile.baseline_requests_per_hour, 2),
+            "risk_score": round(profile.risk_score, 2),
+            "is_anomalous": profile.is_anomalous,
+            "recent_events_count": len(user_events),
+            "recent_alerts_count": len(user_alerts),
+        }
+
 
 api_anomaly_detector = APIAnomalyDetector()
 
