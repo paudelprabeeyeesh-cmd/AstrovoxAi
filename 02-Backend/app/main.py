@@ -45,6 +45,7 @@ from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.security.rate_limit_hardened import rate_limit_middleware
 from app.middleware import GlobalExceptionMiddleware, InputValidationMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
+from app.core.structured_logging import StructuredLoggingMiddleware
 from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware

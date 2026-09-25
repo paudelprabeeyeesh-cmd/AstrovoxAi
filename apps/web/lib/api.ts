@@ -135,8 +135,8 @@ export const api = {
   // Help Center
   getHelpArticles: (category?: string) =>
     request<{ articles: HelpArticle[] }>(`/support/articles${category ? `?category=${category}` : ''}`),
-  getHelpArticle: (id: string) =>
-    request<{ article: HelpArticle }>(`/support/articles/${id}`),
+  getHelpArticle: (slug: string) =>
+    request<{ article: HelpArticle }>(`/support/articles/${encodeURIComponent(slug)}`),
   searchHelpArticles: (query: string) =>
     request<{ articles: HelpArticle[] }>(`/support/articles/search?q=${encodeURIComponent(query)}`),
   markArticleHelpful: (id: string, helpful: boolean) =>
