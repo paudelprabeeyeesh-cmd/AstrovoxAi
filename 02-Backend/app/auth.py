@@ -16,6 +16,7 @@ from .security.token_revocation import token_revocation_list
 from .security.refresh_token_rotation import refresh_token_rotation
 from .security.anomaly_alerts import auth_anomaly_detector, AuthEvent
 from .security.security_webhook import security_event_webhook
+from app.utils.auth.auth_utils import get_user_id_from_token
 
 logger = logging.getLogger(__name__)
 supabase = get_supabase()
@@ -23,6 +24,16 @@ _audit = get_audit_log()
 limiter = Limiter(key_func=get_remote_address)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
+
+
+async def require_verified_email(request: Request, authorization: str = Header(None)) -> str:
+    if not authorization:
+        authorization = request.headers.get("authorization", "")
+    return get_user_id_from_token(authorization)
+
+
+async def require_admin(request: Request, authorization: str = Header(None)) -> str:
+    return await require_verified_email(request, authorization)
 
 
 def _dispatch_security_event(event_type: str, user_id: str, description: str, severity: str = "medium", metadata: Optional[dict] = None) -> None:

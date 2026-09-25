@@ -13,8 +13,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from app.utils import BackoffStrategy, now
-from ..events import event_bus, Event
-from ..jobs import job_queue, JobPriority
+from app.events import event_bus, Event
+from app.jobs import job_queue, JobPriority
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +41,6 @@ class StepAction(Enum):
 @dataclass
 class WorkflowStep:
     """A single step in a workflow."""
-    __slots__ = (
-        "id", "name", "action", "config", "dependencies", "condition",
-        "retry_count", "max_retries", "timeout_seconds", "backoff_strategy",
-        "status", "result", "error", "started_at", "completed_at",
-    )
     id: str
     name: str
     action: StepAction
@@ -66,11 +61,6 @@ class WorkflowStep:
 @dataclass
 class Workflow:
     """A reusable workflow definition."""
-    __slots__ = (
-        "id", "name", "description", "steps", "triggers", "schedule",
-        "is_template", "status", "created_at", "last_run", "run_count",
-        "owner_id", "shared",
-    )
     id: str
     name: str
     description: str
@@ -89,10 +79,6 @@ class Workflow:
 @dataclass
 class WorkflowTemplate:
     """A workflow template that can be instantiated."""
-    __slots__ = (
-        "id", "name", "description", "steps", "tags", "category",
-        "shared", "created_at", "usage_count",
-    )
     id: str
     name: str
     description: str
@@ -107,10 +93,6 @@ class WorkflowTemplate:
 @dataclass
 class WorkflowSchedule:
     """A schedule for running a workflow."""
-    __slots__ = (
-        "id", "workflow_id", "cron", "run_at", "recurring", "interval_seconds",
-        "enabled", "next_run", "last_run", "run_count", "created_at",
-    )
     id: str
     workflow_id: str
     cron: str = ""
@@ -127,10 +109,6 @@ class WorkflowSchedule:
 @dataclass
 class EventTrigger:
     """An event-driven trigger for a workflow."""
-    __slots__ = (
-        "id", "workflow_id", "event_type", "filter_conditions",
-        "enabled", "triggered_count", "created_at",
-    )
     id: str
     workflow_id: str
     event_type: str
@@ -143,7 +121,6 @@ class EventTrigger:
 @dataclass
 class StepLog:
     """Detailed log for a single step execution."""
-    __slots__ = ("step_id", "execution_id", "timestamp", "level", "message", "metadata")
     step_id: str
     execution_id: str
     timestamp: float
@@ -155,10 +132,6 @@ class StepLog:
 @dataclass
 class ApprovalRequest:
     """A pending approval request for a workflow step."""
-    __slots__ = (
-        "id", "execution_id", "step_id", "workflow_id", "requested_at",
-        "expires_at", "status", "approver_id", "decision_note", "auto_action",
-    )
     id: str
     execution_id: str
     step_id: str
@@ -174,7 +147,6 @@ class ApprovalRequest:
 @dataclass
 class NotificationRule:
     """Rule for sending notifications on workflow events."""
-    __slots__ = ("id", "workflow_id", "event", "channel", "target", "enabled")
     id: str
     workflow_id: str
     event: str
@@ -186,10 +158,6 @@ class NotificationRule:
 @dataclass
 class WorkflowExecution:
     """A single execution of a workflow."""
-    __slots__ = (
-        "id", "workflow_id", "status", "step_results", "errors",
-        "started_at", "completed_at", "triggered_by", "trigger_data", "logs",
-    )
     id: str
     workflow_id: str
     status: WorkflowStatus = WorkflowStatus.PENDING

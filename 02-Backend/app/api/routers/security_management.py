@@ -94,3 +94,6 @@ async def dependency_vulnerabilities():
         "python": [v.__dict__ for v in results.get("python", [])],
         "node": [v.__dict__ for v in results.get("node", [])],
     }
+
+
+router = security_router

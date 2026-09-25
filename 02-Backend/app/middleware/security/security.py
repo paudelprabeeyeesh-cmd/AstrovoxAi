@@ -209,3 +209,30 @@ def verify_request_signature(payload: str, signature: str, secret: str) -> bool:
 audit_logger = AuditLogger()
 rate_limiter = RateLimiter()
 
+
+class Policy:
+    ALLOW = "allow"
+    DENY = "deny"
+    AUDIT = "audit"
+
+
+class PolicyAction:
+    ALLOW = "allow"
+    DENY = "deny"
+    AUDIT = "audit"
+
+
+class SecurityContext:
+    def __init__(self, user_id: str = "anonymous", roles: Optional[List[str]] = None):
+        self.user_id = user_id
+        self.roles = roles or []
+
+
+def get_security_layer():
+    return {
+        "audit_logger": audit_logger,
+        "rate_limiter": rate_limiter,
+        "policy": Policy,
+        "context": SecurityContext,
+    }
+

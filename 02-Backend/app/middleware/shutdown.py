@@ -51,7 +51,10 @@ def register_lifecycle_handlers(app) -> None:
     global _shutdown_event
     _shutdown_event = asyncio.Event()
 
-    loop = asyncio.get_running_loop()
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
 
     def _signal_handler():
         logger.info("Shutdown signal received, draining requests (timeout=%ss)", _drain_timeout)

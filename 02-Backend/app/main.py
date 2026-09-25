@@ -23,7 +23,7 @@ from app.api.routers.knowledge_route import router as knowledge_router
 from app.api.routers.agent_route import router as agent_router
 from app.api.routers.monitoring_route import router as monitoring_router
 from app.api.routers.auth.security_route import router as security_router
-from app.api.routers.security_management import router as security_management_router
+from app.api.routers.security_management import security_router as security_management_router
 from app.safety_routes import router as safety_router
 from app.middleware.security.ip_ua_enforcement import IPEnforcementMiddleware, UserAgentMiddleware
 from app.api.routers.admin_route import router as admin_router

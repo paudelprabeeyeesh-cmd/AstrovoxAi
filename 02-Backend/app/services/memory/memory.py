@@ -76,3 +76,30 @@ _memory = Memory()
 
 def get_memory() -> Memory:
     return _memory
+
+
+class VectorIndex:
+    def __init__(self) -> None:
+        self._store: Dict[str, List[float]] = {}
+
+    def add(self, key: str, vector: List[float]) -> None:
+        self._store[key] = vector
+
+    def search(self, query: List[float], top_k: int = 5) -> List[Tuple[str, float]]:
+        results = []
+        for key, vec in self._store.items():
+            score = _cosine(query, vec)
+            results.append((key, score))
+        results.sort(key=lambda x: x[1], reverse=True)
+        return results[:top_k]
+
+
+def _cosine(a: List[float], b: List[float]) -> float:
+    if not a or not b:
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    mag_a = sum(x * x for x in a) ** 0.5
+    mag_b = sum(y * y for y in b) ** 0.5
+    if mag_a == 0 or mag_b == 0:
+        return 0.0
+    return dot / (mag_a * mag_b)

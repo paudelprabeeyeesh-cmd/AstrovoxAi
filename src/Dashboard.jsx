@@ -30,6 +30,7 @@ import InfiniteScroll from './components/transcendent/InfiniteScroll'
 import RealityWarpingSearch from './components/transcendent/RealityWarpingSearch'
 import UniverseSandbox from './components/transcendent/UniverseSandbox'
 import OmnipotentAssistant from './components/transcendent/OmnipotentAssistant'
+import UniversalTranslationMatrix from './components/transcendent/UniversalTranslationMatrix'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -507,6 +508,22 @@ function DashboardInner({ session }) {
               🛐 OMNIPOTENT
             </button>
             <button
+              onClick={() => setActivePanel('translation-matrix')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'translation-matrix' ? '#ec4899' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'translation-matrix' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🌌 TRANSLATION MATRIX
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -673,6 +690,12 @@ function DashboardInner({ session }) {
           {activePanel === 'omnipotent' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <OmnipotentAssistant />
+            </div>
+          )}
+
+          {activePanel === 'translation-matrix' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <UniversalTranslationMatrix userId={session.user.id} />
             </div>
           )}
 

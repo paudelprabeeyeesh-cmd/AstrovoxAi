@@ -15,34 +15,19 @@ from pydantic import BaseModel
 
 from app.temporal import (
     BreakpointType,
-    Command,
-    CommandHandler,
-    ConsistencyLevel,
     ConversationTimeline,
     CausalChainAnalyzer,
-    DecisionTree,
-    Direction,
-    GSet,
     HistoricalPatternRecognizer,
     ImmutableStateTree,
-    LWWRegister,
-    ORSet,
-    PNCounter,
     OperationType,
-    Query,
-    QueryHandler,
-    QueryResult,
     ScenarioAnalyzer,
     StatePredictor,
-    StateSnapshot,
     TemporalAttention,
     TemporalBreakpoint,
     TemporalDatabase,
     TimeAwareContextWindow,
     TimeSeriesForecaster,
-    TimeTravelDebugger,
     TimelineExporter,
-    TimelineNode,
     get_debugger,
 )
 
@@ -556,3 +541,45 @@ def temporal_stats():
         "context_window": {"size": _context_window.size()},
         "patterns": _pattern_recognizer.stats(),
     }
+
+
+# ---------------------------------------------------------------------------
+# Batch operations
+# ---------------------------------------------------------------------------
+
+
+@router.post("/batch/apply")
+def batch_apply(operations: List[Dict[str, Any]]):
+    from app.temporal import TemporalEngine
+    engine = TemporalEngine()
+    result = engine.batch_apply(operations)
+    return {
+        "batch_id": result.batch_id,
+        "success_count": result.success_count,
+        "failure_count": result.failure_count,
+        "results": result.results,
+        "errors": result.errors,
+        "took_ms": result.took_ms,
+    }
+
+
+@router.post("/batch/query")
+def batch_query(queries: List[Dict[str, Any]]):
+    from app.temporal import TemporalEngine
+    engine = TemporalEngine()
+    result = engine.batch_query(queries)
+    return {
+        "batch_id": result.batch_id,
+        "success_count": result.success_count,
+        "failure_count": result.failure_count,
+        "results": result.results,
+        "errors": result.errors,
+        "took_ms": result.took_ms,
+    }
+
+
+@router.get("/engine/stats")
+def engine_stats():
+    from app.temporal import TemporalEngine
+    engine = TemporalEngine()
+    return engine.get_stats()

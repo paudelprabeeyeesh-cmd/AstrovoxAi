@@ -448,6 +448,8 @@ class APIAnomalyDetector:
 
 
 api_anomaly_detector = APIAnomalyDetector()
+auth_anomaly_detector = api_anomaly_detector
+AuthEvent = APIEvent
 
 
 def record_api_event(event: APIEvent) -> List[AnomalyAlert]:

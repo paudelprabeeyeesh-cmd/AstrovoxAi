@@ -56,3 +56,32 @@ export async function getKnowledgeStats() {
 export async function getOmniscientStats() {
   return api('/omniscient/stats')
 }
+
+export async function translateMatrix(data) {
+  return api('/omniscient/translation-matrix/translate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function createRealityBridge(sourceReality, targetReality, bridgeType = 'standard') {
+  return api(`/omniscient/translation-matrix/bridges?source_reality=${sourceReality}&target_reality=${targetReality}&bridge_type=${bridgeType}`, {
+    method: 'POST',
+  })
+}
+
+export async function getRealityBridges() {
+  return api('/omniscient/translation-matrix/bridges')
+}
+
+export async function createDimensionAnchor(dimension, anchorData) {
+  return api('/omniscient/translation-matrix/anchors', {
+    method: 'POST',
+    body: JSON.stringify({ dimension, anchor_data: anchorData }),
+  })
+}
+
+export async function getDimensionAnchors(dimension = null) {
+  const qs = dimension ? `?dimension=${encodeURIComponent(dimension)}` : ''
+  return api(`/omniscient/translation-matrix/anchors${qs}`)
+}
