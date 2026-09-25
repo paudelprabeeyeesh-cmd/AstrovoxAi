@@ -1,7 +1,6 @@
-<<<<<<< HEAD
-# Contributing to AstrovoxAI
+# CONTRIBUTING
 
-Thank you for your interest in contributing!
+Contribution guidelines, PR process, code style, testing requirements, and community code of conduct.
 
 ## Getting Started
 
@@ -16,6 +15,7 @@ Thank you for your interest in contributing!
 ## Development Setup
 
 ### Backend
+
 ```bash
 cd 02-Backend
 python -m venv venv
@@ -25,45 +25,19 @@ python -m uvicorn app.main:app --reload
 ```
 
 ### Frontend
+
 ```bash
 npm install
 npm run dev
 ```
 
-## Coding Standards
-
-- Python: Follow PEP 8, use type hints
-- JavaScript/React: Follow ESLint config
-- Write tests for new features
-- Document public APIs
-
-## Testing
-
-```bash
-# Backend tests
-cd 02-Backend
-pytest
-
-# Frontend lint
-npm run lint
-
-# Frontend typecheck
-npm run typecheck
-```
-
 ## Pull Request Process
 
-1. Update documentation if needed
-2. Add tests for new features
+1. Update documentation for any changed functionality
+2. Add tests for any new functionality
 3. Ensure all tests pass
-4. Fill out the PR template
-5. Request review
+4. Request review
 
 ## Code of Conduct
 
 Be respectful and constructive. We welcome all contributors.
-=======
-# CONTRIBUTING
-
-Contribution guidelines, PR process, code style, testing requirements, and community code of conduct.
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

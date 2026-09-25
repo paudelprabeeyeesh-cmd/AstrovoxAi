@@ -1,5 +1,6 @@
-<<<<<<< HEAD
-# ASTROVOX AI — DEPLOYMENT GUIDE
+# DEPLOYMENT_GUIDE
+
+Deployment instructions: environment variables, secrets, database migrations, backup and restore, and rolling deploys.
 
 ## Prerequisites
 
@@ -20,93 +21,40 @@ docker-compose up --build
 
 ## Environment Variables
 
-```env
-# Required
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-OPENAI_API_KEY=sk-your-key
+See `.env.example` for all available options.
 
-# Optional
-ANTHROPIC_API_KEY=your_key
-GEMINI_API_KEY=your_key
-REDIS_URL=redis://localhost:6379
-ALLOWED_ORIGINS=https://yourdomain.com
-RATE_LIMIT=120/minute
-LOG_LEVEL=INFO
-```
+### Required
 
-## Database Setup
+- `DATABASE_URL` - PostgreSQL connection string
+- `REDIS_URL` - Redis connection string
+- `JWT_SECRET_KEY` - Secret key for JWT signing
+- `OPENAI_API_KEY` - OpenAI API key
 
-1. Create a Supabase project
-2. Run `database/schemas/supabase_setup.sql` in the SQL editor
-3. Run migrations in `database/migrations/`
+### Optional
 
-## Production Deployment
+- `ANTHROPIC_API_KEY` - Anthropic API key
+- `GROQ_API_KEY` - Groq API key
+- `GEMINI_API_KEY` - Google Gemini API key
+- `STRIPE_SECRET_KEY` - Stripe API key
 
-### Fly.io
+## Database Migrations
 
 ```bash
-flyctl launch
-flyctl secrets set OPENAI_API_KEY=sk-...
-flyctl deploy
+cd 02-Backend
+alembic upgrade head
 ```
 
-### Railway
+## Health Checks
 
-1. Connect GitHub repo
-2. Add environment variables
-3. Deploy automatically on push
-
-### Render
-
-1. Create new Web Service
-2. Connect GitHub repo
-3. Set build command: `pip install -r requirements.txt && cd 02-Backend`
-4. Set start command: `cd 02-Backend && uvicorn app.main:app --host 0.0.0.0 --port 8000`
-
-### VPS (Ubuntu)
-
-```bash
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-
-# Clone and deploy
-git clone https://github.com/yourusername/AstrovoxAi.git
-cd AstrovoxAi
-nano .env  # Add your values
-docker-compose -f docker-compose.yml up -d
-```
-
-## SSL/TLS
-
-Use Let's Encrypt with Nginx:
-
-```bash
-sudo apt install certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com
-```
-
-## Monitoring
-
-Access Prometheus at `:9090` and Grafana at `:3000`.
-
-## Backup Strategy
-
-```bash
-# Database (Supabase handles this automatically)
-# Files
-tar -czf backup-$(date +%Y%m%d).tar.gz storage/
-```
+- `GET /health` - Basic health check
+- `GET /health/detailed` - Detailed health check
+- `GET /health/ready` - Kubernetes readiness probe
+- `GET /health/live` - Kubernetes liveness probe
+- `GET /metrics` - Prometheus metrics
+- `GET /alerts` - Active alerts
 
 ## Scaling
 
-- Add Redis for caching and session storage
 - Use a load balancer for multiple backend instances
 - Enable database connection pooling
 - Use CDN for static assets
-=======
-# DEPLOYMENT_GUIDE
-
-Deployment instructions: environment variables, secrets, database migrations, backup and restore, and rolling deploys.
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
