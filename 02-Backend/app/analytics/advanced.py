@@ -247,6 +247,196 @@ class AdvancedAnalyticsEngine:
             "api_access": "Enterprise",
             "custom_models": "Enterprise",
         }
+        self._load_from_db()
+
+    def _load_from_db(self) -> None:
+        try:
+            with get_db() as conn:
+                rows = conn.execute(
+                    "SELECT id, event_type, properties, created_at FROM analytics_events"
+                ).fetchall()
+                for r in rows:
+                    try:
+                        props = json.loads(r["properties"])
+                    except Exception:
+                        props = {}
+                    self._events.append(AnalyticsEvent(
+                        event_type=r["event_type"],
+                        user_id=props.get("user_id", ""),
+                        timestamp=datetime.fromisoformat(r["created_at"]).timestamp() if r["created_at"] else time.time(),
+                        metadata=props,
+                    ))
+        except Exception:
+            pass
+
+    def _persist_event(self, event_type: str, user_id: str, metadata: dict) -> None:
+        try:
+            event_id = str(uuid.uuid4())
+            payload = json.dumps(metadata or {})
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO analytics_events (id, event_type, properties, created_at) VALUES (?, ?, ?, ?)",
+                    (event_id, event_type, payload, datetime.now(timezone.utc).isoformat()),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_ab_event(self, event: "ABTestEvent") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO ab_events (id, test_id, user_id, variant, event_name, event_value, properties, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        str(uuid.uuid4()),
+                        event.test_id,
+                        event.user_id,
+                        event.variant,
+                        event.event_name,
+                        event.event_value,
+                        json.dumps(event.properties or {}),
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_funnel_event(self, event: "FunnelEvent") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO funnel_events (id, funnel_id, user_id, session_id, step_index, step_name, entered_at, exited_at, completed, drop_off_reason, properties) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        str(uuid.uuid4()),
+                        event.funnel_id,
+                        event.user_id,
+                        event.session_id,
+                        event.step_index,
+                        event.step_name,
+                        datetime.fromtimestamp(event.entered_at, tz=timezone.utc).isoformat() if event.entered_at else None,
+                        datetime.fromtimestamp(event.exited_at, tz=timezone.utc).isoformat() if event.exited_at else None,
+                        1 if event.completed else 0,
+                        event.drop_off_reason,
+                        json.dumps(event.properties or {}),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_cohort_member(self, member: "CohortMember") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO cohort_members (id, cohort_id, user_id, joined_at, left_at, is_active) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        str(uuid.uuid4()),
+                        member.cohort_id,
+                        member.user_id,
+                        datetime.fromtimestamp(member.joined_at, tz=timezone.utc).isoformat() if member.joined_at else datetime.now(timezone.utc).isoformat(),
+                        datetime.fromtimestamp(member.left_at, tz=timezone.utc).isoformat() if member.left_at else None,
+                        1 if member.is_active else 0,
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_retention_snapshot(self, snapshot: "RetentionSnapshot") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO retention_snapshots (id, user_id, cohort_date, day_0, day_1, day_3, day_7, day_14, day_30, day_60, day_90, last_active_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        str(uuid.uuid4()),
+                        snapshot.user_id,
+                        snapshot.cohort_date,
+                        1 if snapshot.day_0 else 0,
+                        1 if snapshot.day_1 else 0,
+                        1 if snapshot.day_3 else 0,
+                        1 if snapshot.day_7 else 0,
+                        1 if snapshot.day_14 else 0,
+                        1 if snapshot.day_30 else 0,
+                        1 if snapshot.day_60 else 0,
+                        1 if snapshot.day_90 else 0,
+                        snapshot.last_active_date,
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_revenue_event(self, event: "RevenueEvent") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO revenue_events (id, user_id, event_type, amount, currency, plan_name, plan_interval, payment_method, stripe_invoice_id, stripe_customer_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        str(uuid.uuid4()),
+                        event.user_id,
+                        event.event_type,
+                        event.amount,
+                        event.currency,
+                        event.plan_name,
+                        event.plan_interval,
+                        event.payment_method,
+                        event.stripe_invoice_id,
+                        event.stripe_customer_id,
+                        json.dumps(event.metadata or {}),
+                        datetime.fromtimestamp(event.timestamp, tz=timezone.utc).isoformat() if event.timestamp else datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_custom_report(self, report: "CustomReport") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO custom_reports (id, report_name, description, created_by, config, schedule, recipients, last_run_at, is_public, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        report.report_id,
+                        report.report_name,
+                        report.description,
+                        report.created_by,
+                        json.dumps(report.config or {}),
+                        report.schedule,
+                        json.dumps(report.recipients or []),
+                        datetime.fromtimestamp(report.last_run_at, tz=timezone.utc).isoformat() if report.last_run_at else None,
+                        1 if report.is_public else 0,
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_conversation(self, conv: "ConversationRecord") -> None:
+        try:
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO analytics_events (id, event_type, properties, created_at) VALUES (?, ?, ?, ?)",
+                    (
+                        conv.conversation_id,
+                        "conversation",
+                        json.dumps({
+                            "user_id": conv.user_id,
+                            "model": conv.model,
+                            "provider": conv.provider,
+                            "message_count": conv.message_count,
+                            "total_tokens": conv.total_tokens,
+                            "total_cost": conv.total_cost,
+                            "sentiment": conv.sentiment,
+                            "satisfaction_score": conv.satisfaction_score,
+                        }),
+                        datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # 1. Real-time Analytics Dashboard
