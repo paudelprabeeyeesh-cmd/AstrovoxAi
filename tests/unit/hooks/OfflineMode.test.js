@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { useOfflineMode } from '../../offline/OfflineManager'
+import { useOfflineMode } from '../../../src/offline/OfflineManager'
 
 describe('OfflineMode', () => {
   beforeEach(() => {
