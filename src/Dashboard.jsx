@@ -16,6 +16,8 @@ import SettingsPanel from './SettingsPanel'
 import MultiversePanel from './components/multiverse/MultiversePanel'
 // eslint-disable-next-line no-unused-vars
 import HolographicPanel from './components/holographic/HolographicPanel'
+// eslint-disable-next-line no-unused-vars
+import QuantumHolographicSystem from './components/quantum/QuantumHolographicSystem'
 
 export default function Dashboard({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
