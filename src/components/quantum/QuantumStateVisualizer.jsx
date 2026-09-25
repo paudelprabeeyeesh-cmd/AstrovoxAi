@@ -82,8 +82,9 @@ export default function QuantumStateVisualizer() {
     const h = height / 2
 
     let frame = 0
+    let animating = true
     const draw = () => {
-      if (!animation) return
+      if (!animating) return
       ctx.fillStyle = 'rgba(2, 4, 10, 0.15)'
       ctx.fillRect(0, 0, w, h)
 
