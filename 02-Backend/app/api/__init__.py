@@ -1,3 +1,3 @@
-from app.api.solve import router, Solver
+"""API package for AstrovoxAi backend."""
 
-__all__ = ["router", "Solver"]
+__all__: list[str] = []
