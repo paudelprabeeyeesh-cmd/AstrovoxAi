@@ -33,7 +33,6 @@ from .realtime_route import security_router as scan_router
 from .agents_route import router as agents_router
 from .agents_route import memory_router as memory_v2_router
 from .automation_route import router as automation_router
-from .ecosystem.router import router as ecosystem_router
 from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
 from .document_route import router as document_router
