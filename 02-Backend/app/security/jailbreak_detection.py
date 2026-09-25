@@ -85,6 +85,7 @@ class JailbreakDetector:
         self._user_profiles: Dict[str, UserBehaviorProfile] = {}
         self._session_history: Dict[str, List[Dict[str, Any]]] = {}
         self._blocked_ips: Dict[str, float] = {}
+        self._blocked_ip_duration: float = 3600.0
         self._lock = __import__('threading').Lock()
         self._feedback_log: List[Dict[str, Any]] = []
 
@@ -296,7 +297,7 @@ class JailbreakDetector:
         # Block IP for repeated severe violations
         if ip_address and any(f.severity == JailbreakSeverity.CRITICAL for f in findings):
             with self._lock:
-                self._blocked_ips[ip_address] = time.time() + 3600
+                self._blocked_ips[ip_address] = time.time() + self._blocked_ip_duration
 
         return findings
 
@@ -352,15 +353,11 @@ class JailbreakDetector:
                 del self._blocked_ips[ip]
             return list(self._blocked_ips.keys())
 
-    def configure(self, blocked_ip_duration: Optional[float] = None, risk_threshold: Optional[float] = None) -> None:
+    def configure(self, blocked_ip_duration: Optional[float] = None) -> None:
         """Configure detector parameters at runtime."""
-        with self._lock:
-            if blocked_ip_duration is not None:
-                self._blocked_ip_duration = blocked_ip_duration
-            if risk_threshold is not None:
-                self._risk_threshold = risk_threshold
-        logger.info("Jailbreak detector configured: blocked_ip_duration=%s, risk_threshold=%s",
-                   blocked_ip_duration, risk_threshold)
+        if blocked_ip_duration is not None:
+            self._blocked_ip_duration = blocked_ip_duration
+            logger.info("Jailbreak detector configured: blocked_ip_duration=%s", blocked_ip_duration)
 
 
 jailbreak_detector = JailbreakDetector()
