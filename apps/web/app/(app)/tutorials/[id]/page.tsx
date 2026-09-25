@@ -26,9 +26,9 @@ export default function TutorialDetailPage() {
   const loadTutorial = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ tutorial: Tutorial }>(`/support/tutorials/${tutorialId}`);
+      const data = await api.get<{ tutorial: Tutorial }>(`/cx/tutorials/${tutorialId}`);
       setTutorial(data.tutorial);
-      const progressData = await api.get<{ progress: TutorialProgress[] }>('/support/tutorials/progress');
+      const progressData = await api.get<{ progress: TutorialProgress[] }>('/cx/tutorials/progress');
       const userProgress = progressData.progress?.find((p: TutorialProgress) => p.tutorial_id === tutorialId);
       if (userProgress) {
         setProgress(userProgress);
@@ -43,7 +43,7 @@ export default function TutorialDetailPage() {
   };
 
   const startTutorial = async () => {
-    await api.post(`/support/tutorials/${tutorialId}/start`, null);
+    await api.startTutorial(tutorialId);
     setProgress({
       id: '',
       user_id: '',
@@ -57,7 +57,7 @@ export default function TutorialDetailPage() {
   const nextStep = async () => {
     const next = currentStep + 1;
     setCurrentStep(next);
-    const data = await api.post<{ progress: TutorialProgress }>(`/support/tutorials/${tutorialId}/progress`, { currentStep: next });
+    const data = await api.updateTutorialProgress(tutorialId, next);
     if (data.progress?.completed) {
       setCompleted(true);
     }

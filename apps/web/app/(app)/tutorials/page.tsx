@@ -23,7 +23,7 @@ export default function TutorialsPage() {
   const loadTutorials = async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ tutorials: Tutorial[] }>(`/support/tutorials${difficulty ? `?difficulty=${difficulty}` : ''}`);
+      const data = await api.get<{ tutorials: Tutorial[] }>(`/cx/tutorials${difficulty ? `?difficulty=${difficulty}` : ''}`);
       setTutorials(data.tutorials || []);
     } catch {
       setTutorials([]);
