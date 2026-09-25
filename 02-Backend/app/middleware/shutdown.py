@@ -14,7 +14,7 @@ from typing import Set
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-logger = logging.getLogger("astrovox.shutdown")
+logger = logging.getLogger("astravox.shutdown")
 
 _shutdown_event: asyncio.Event | None = None
 _active_requests: Set[asyncio.Task] = set()

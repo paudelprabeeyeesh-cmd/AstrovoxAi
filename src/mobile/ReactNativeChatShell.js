@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, Alert } from 'react-native'
 import { useChatHistory } from '../hooks/useChatHistory'
 import { useOfflineMode } from '../offline/OfflineManager'
-import { isMobile, getDeviceType } from '../utils/platform'
-import { createStorage } from '../utils/storage'
+import { createRNStorage } from './storageAdapter'
 
-const MOBILE_STORAGE = createStorage('mobile')
+const RN_STORAGE = createRNStorage('mobile_chat')
 
 export function ReactNativeChatShell({
   session,
@@ -16,24 +16,36 @@ export function ReactNativeChatShell({
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [deviceType, setDeviceType] = useState(getDeviceType())
-  const messagesEndRef = useRef(null)
-  const inputRef = useRef(null)
+  const [streaming, setStreaming] = useState(false)
+  const flatListRef = useRef(null)
   const { history } = useChatHistory()
   const { isOnline, saveMessageOffline } = useOfflineMode()
 
   useEffect(() => {
-    const handleResize = () => setDeviceType(getDeviceType())
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    loadMessages()
+  }, [conversationId])
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  const loadMessages = useCallback(async () => {
+    try {
+      const saved = await RN_STORAGE.get(`messages:${conversationId}`)
+      if (Array.isArray(saved)) {
+        setMessages(saved)
+      }
+    } catch (e) {
+      console.error('Failed to load messages:', e)
+    }
+  }, [conversationId])
+
+  const persistMessages = useCallback(async (msgs) => {
+    try {
+      await RN_STORAGE.set(`messages:${conversationId}`, msgs.slice(-200))
+    } catch (e) {
+      console.error('Failed to persist messages:', e)
+    }
+  }, [conversationId])
 
   const sendMessage = useCallback(async (e) => {
-    e?.preventDefault()
+    e?.preventDefault?.()
     if (!input.trim() || loading) return
 
     const userMessage = {
@@ -44,20 +56,26 @@ export function ReactNativeChatShell({
       offline: false
     }
 
-    setMessages(prev => [...prev, userMessage])
+    setMessages(prev => {
+      const next = [...prev, userMessage]
+      persistMessages(next)
+      return next
+    })
     setInput('')
     setLoading(true)
+    setStreaming(true)
 
     try {
-      const { data: { session: currentSession } } = await MOBILE_STORAGE.get('supabase') || { data: { session: null } }
-      const token = currentSession?.access_token
-
+      const token = session?.access_token
       if (!token) {
         throw new Error('No authentication token available')
       }
 
-      const apiBase = import.meta.env.VITE_API_URL || '/api'
-      const response = await fetch(`${apiBase}/chat/message`, {
+      const apiBase = __DEV__ ? 'http://localhost:8000' : 'https://api.astrovox.ai'
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 30000)
+
+      const response = await fetch(`${apiBase}/v1/chat/message`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -66,22 +84,72 @@ export function ReactNativeChatShell({
         body: JSON.stringify({
           conversation_id: conversationId,
           message: userMessage.content,
-          model
-        })
+          model,
+          stream: true
+        }),
+        signal: controller.signal
       })
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: response.statusText }))
         throw new Error(errorData.detail || 'Failed to send message')
       }
 
-      const result = await response.json()
-      if (result.ai_message) {
-        setMessages(prev => [...prev, {
-          ...result.ai_message,
-          id: result.ai_message.id || Date.now() + 1,
-          timestamp: new Date(result.ai_message.created_at).toISOString()
-        }])
+      const reader = response.body?.getReader()
+      if (reader) {
+        const aiMessage = {
+          role: 'assistant',
+          content: '',
+          timestamp: new Date().toISOString(),
+          id: Date.now() + 1,
+          offline: false
+        }
+
+        setMessages(prev => {
+          const next = [...prev, aiMessage]
+          return next
+        })
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = new TextDecoder().decode(value)
+          const lines = chunk.split('\n').filter(line => line.startsWith('data: '))
+          for (const line of lines) {
+            const data = line.slice(6).trim()
+            if (data === '[DONE]') continue
+            try {
+              const parsed = JSON.parse(data)
+              const delta = parsed.choices?.[0]?.delta?.content || ''
+              if (delta) {
+                setMessages(prev => {
+                  const updated = prev.map(m =>
+                    m.id === aiMessage.id ? { ...m, content: m.content + delta } : m
+                  )
+                  persistMessages(updated)
+                  return updated
+                })
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
+      } else {
+        const result = await response.json()
+        if (result.ai_message) {
+          setMessages(prev => {
+            const next = [...prev, {
+              ...result.ai_message,
+              id: result.ai_message.id || Date.now() + 1,
+              timestamp: new Date(result.ai_message.created_at).toISOString()
+            }]
+            persistMessages(next)
+            return next
+          })
+        }
       }
     } catch (err) {
       if (!isOnline) {
@@ -90,177 +158,162 @@ export function ReactNativeChatShell({
       onError?.(err)
     } finally {
       setLoading(false)
+      setStreaming(false)
     }
-  }, [input, loading, conversationId, model, isOnline, saveMessageOffline, onError])
+  }, [input, loading, conversationId, model, isOnline, saveMessageOffline, onError, session, persistMessages])
 
-  const isPhone = deviceType === 'phone'
-  const fontSize = isPhone ? 14 : 13
-  const padding = isPhone ? 16 : 20
-  const borderRadius = isPhone ? 24 : 12
+  useEffect(() => {
+    if (flatListRef.current && messages.length > 0) {
+      flatListRef.current.scrollToEnd({ animated: true })
+    }
+  }, [messages])
+
+  const renderMessage = useCallback(({ item }) => {
+    const isUser = item.role === 'user'
+    return (
+      <View style={{
+        alignSelf: isUser ? 'flex-end' : 'flex-start',
+        maxWidth: '80%',
+        padding: 12,
+        borderRadius: 16,
+        backgroundColor: isUser ? '#06b6d4' : '#0f172a',
+        borderTopRightRadius: isUser ? 4 : 16,
+        borderTopLeftRadius: isUser ? 16 : 4,
+        marginVertical: 4,
+        marginHorizontal: 12
+      }}>
+        <Text style={{
+          fontSize: 14,
+          lineHeight: 20,
+          color: isUser ? '#02040a' : '#e2e8f0'
+        }}>
+          {item.content}
+        </Text>
+        <Text style={{
+          fontSize: 10,
+          color: isUser ? 'rgba(0,0,0,0.5)' : '#64748b',
+          marginTop: 4,
+          textAlign: 'right'
+        }}>
+          {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </Text>
+      </View>
+    )
+  }, [])
 
   return (
-    <div style={{
-      display: 'flex',
-      flexDirection: 'column',
-      height: '100%',
-      backgroundColor: '#02040a',
-      borderRadius,
-      border: '1px solid #1e293b',
-      overflow: 'hidden',
-      fontFamily: 'monospace',
-      maxWidth: isPhone ? '100%' : '100%'
-    }}>
-      <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid #1e293b',
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: '#02040a' }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <View style={{
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: '#1e293b',
         backgroundColor: 'rgba(4, 8, 20, 0.9)',
-        display: 'flex',
+        flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <h3 style={{
-          margin: 0,
+        <Text style={{
           fontSize: 13,
           color: '#67e8f9',
-          letterSpacing: '1px',
-          fontWeight: 600
+          letterSpacing: 1,
+          fontWeight: '600'
         }}>
           ASTROVOX CHAT
-        </h3>
-        <span style={{
-          fontSize: 10,
-          color: isOnline ? '#34d399' : '#f87171',
-          display: 'flex',
+        </Text>
+        <View style={{
+          flexDirection: 'row',
           alignItems: 'center',
-          gap: '4px'
+          gap: 6
         }}>
-          <span style={{
+          {streaming && (
+            <ActivityIndicator size="small" color="#06b6d4" />
+          )}
+          <View style={{
             width: 6,
             height: 6,
-            borderRadius: '50%',
+            borderRadius: 3,
             backgroundColor: isOnline ? '#34d399' : '#f87171'
           }} />
-          {isOnline ? 'ONLINE' : 'OFFLINE'}
-        </span>
-      </div>
+          <Text style={{
+            fontSize: 10,
+            color: isOnline ? '#34d399' : '#f87171'
+          }}>
+            {isOnline ? 'ONLINE' : 'OFFLINE'}
+          </Text>
+        </View>
+      </View>
 
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: `${padding}px`,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 12
+      <FlatList
+        ref={flatListRef}
+        data={messages}
+        renderItem={renderMessage}
+        keyExtractor={item => String(item.id)}
+        contentContainerStyle={{ paddingVertical: 12, flexGrow: 1 }}
+        ListEmptyComponent={
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 60 }}>
+            <Text style={{ color: '#64748b', fontSize: 12, textAlign: 'center' }}>
+              Start a conversation with Astrovox AI
+            </Text>
+          </View>
+        }
+      />
+
+      <View style={{
+        padding: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#1e293b',
+        backgroundColor: 'rgba(4, 8, 20, 0.9)',
+        flexDirection: 'row',
+        gap: 8,
+        alignItems: 'center'
       }}>
-        {messages.length === 0 && (
-          <div style={{
-            textAlign: 'center',
-            color: '#64748b',
-            padding: '40px 20px',
-            fontSize: 12
-          }}>
-            Start a conversation with Astrovox AI
-          </div>
-        )}
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            style={{
-              alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-              maxWidth: '80%',
-              padding: '10px 14px',
-              borderRadius,
-              backgroundColor: msg.role === 'user' ? '#06b6d4' : '#0f172a',
-              color: msg.role === 'user' ? '#02040a' : '#e2e8f0',
-              border: msg.role === 'user' ? 'none' : '1px solid #1e293b',
-              fontSize,
-              lineHeight: 1.5,
-              wordWrap: 'break-word'
-            }}
-          >
-            <div>{msg.content}</div>
-            <div style={{
-              fontSize: 9,
-              color: msg.role === 'user' ? 'rgba(0,0,0,0.5)' : '#64748b',
-              marginTop: 4,
-              textAlign: 'right'
-            }}>
-              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </div>
-          </div>
-        ))}
-        {loading && (
-          <div style={{
-            display: 'flex',
-            gap: 6,
-            padding: '12px 16px',
-            backgroundColor: '#0f172a',
-            borderRadius,
-            width: 'fit-content'
-          }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#06b6d4', animation: 'bounce 1.4s infinite' }} />
-            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#06b6d4', animation: 'bounce 1.4s infinite 0.2s' }} />
-            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#06b6d4', animation: 'bounce 1.4s infinite 0.4s' }} />
-          </div>
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      <form
-        onSubmit={sendMessage}
-        style={{
-          padding: '12px 16px',
-          borderTop: '1px solid #1e293b',
-          backgroundColor: 'rgba(4, 8, 20, 0.9)',
-          display: 'flex',
-          gap: 8
-        }}
-      >
-        <input
-          ref={inputRef}
-          type="text"
+        <TextInput
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChangeText={setInput}
           placeholder="Type your message..."
-          disabled={loading}
+          placeholderTextColor="#64748b"
+          editable={!loading}
           style={{
             flex: 1,
-            padding: isPhone ? '12px 16px' : '10px 14px',
-            border: '1px solid #1e293b',
+            padding: 12,
+            borderWidth: 1,
+            borderColor: '#1e293b',
             borderRadius: 24,
             backgroundColor: '#050a18',
             color: '#67e8f9',
-            fontSize: isPhone ? 14 : 13,
-            fontFamily: 'inherit',
-            outline: 'none'
+            fontSize: 14,
+            fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
+            maxHeight: 100
           }}
+          onSubmitEditing={sendMessage}
+          returnKeyType="send"
+          blurOnSubmit={false}
         />
-        <button
-          type="submit"
+        <TouchableOpacity
+          onPress={sendMessage}
           disabled={loading || !input.trim()}
           style={{
-            padding: '0 20px',
-            background: '#06b6d4',
-            color: '#02040a',
-            border: 'none',
+            padding: 12,
+            backgroundColor: '#06b6d4',
             borderRadius: 24,
-            cursor: 'pointer',
-            fontWeight: 700,
-            fontSize: 12,
-            fontFamily: 'inherit',
             opacity: loading || !input.trim() ? 0.5 : 1
           }}
         >
-          SEND
-        </button>
-      </form>
-
-      <style>{`
-        @keyframes bounce {
-          0%, 80%, 100% { transform: translateY(0); }
-          40% { transform: translateY(-8px); }
-        }
-      `}</style>
-    </div>
+          <Text style={{
+            color: '#02040a',
+            fontWeight: '700',
+            fontSize: 12
+          }}>
+            SEND
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   )
 }
+
+export default ReactNativeChatShell

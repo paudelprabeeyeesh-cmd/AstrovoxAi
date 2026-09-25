@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
-import Icon from '../design/Iconography'
+import Icon from '../design/Iconography.jsx'
 import { useReducedMotion } from '../../design/DesignTokens'
 import { useA11y } from './A11yProvider'
 

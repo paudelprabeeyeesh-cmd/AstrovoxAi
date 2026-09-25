@@ -12,6 +12,7 @@ import QuantumHolographicSystem from './components/quantum/QuantumHolographicSys
 import { ToastProvider, useToast } from './components/ui/Toast'
 import { CommandPalette } from './components/ui/CommandPalette'
 import { KeyboardShortcutCheatsheet } from './components/ui/KeyboardShortcutCheatsheet'
+import SupportPanel from './components/support/SupportPanel'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -249,6 +250,22 @@ function DashboardInner({ session }) {
               💎 HOLOGRAPHIC
             </button>
             <button
+              onClick={() => setActivePanel('support')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'support' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'support' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🛟 SUPPORT
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -324,6 +341,12 @@ function DashboardInner({ session }) {
           {activePanel === 'holographic' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <HolographicPanel />
+            </div>
+          )}
+
+          {activePanel === 'support' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <SupportPanel session={session} />
             </div>
           )}
 

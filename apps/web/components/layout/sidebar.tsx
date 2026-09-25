@@ -17,6 +17,11 @@ import {
   Network,
   Wrench,
   Shield,
+  HelpCircle,
+  BookOpen,
+  LifeBuoy,
+  BarChart3,
+  Activity,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -114,6 +119,11 @@ export function Sidebar({ open, setOpen, collapsed, setCollapsed }: SidebarProps
             <NavItem href="/knowledge" icon={Network} label="Knowledge" />
             <NavItem href="/tools" icon={Wrench} label="Tools" />
             <NavItem href="/security" icon={Shield} label="Security" />
+            <NavItem href="/help" icon={HelpCircle} label="Help Center" />
+            <NavItem href="/tutorials" icon={BookOpen} label="Tutorials" />
+            <NavItem href="/support" icon={LifeBuoy} label="Support" />
+            <NavItem href="/status" icon={BarChart3} label="Status" />
+            <NavItem href="/portal" icon={Activity} label="Portal" />
             <NavItem href="/admin" icon={Shield} label="Admin" />
           </div>
         )}

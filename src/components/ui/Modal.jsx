@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useFocusManagement, useKeyboardShortcuts } from './KeyboardShortcuts'
-import Icon from '../design/Iconography'
+import Icon from '../design/Iconography.jsx'
 import { useReducedMotion } from '../../design/DesignTokens'
 
 export function Modal({ isOpen, onClose, title, children, width = '480px', showClose = true, closeOnOverlay = true }) {

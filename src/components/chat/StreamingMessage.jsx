@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import Icon from '../design/Iconography'
+import Icon from '../design/Iconography.jsx'
 
 export default function StreamingMessage({ content, isComplete, onRetry, model }) {
   const [displayedContent, setDisplayedContent] = useState('')

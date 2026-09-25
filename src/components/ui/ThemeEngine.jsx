@@ -1,4 +1,4 @@
-import { THEMES, useTheme } from '../design/DesignTokens'
+import { THEMES, useTheme } from '../design/DesignTokens.js'
 import { ThemeSwitcher } from './ThemeSwitcher'
 
 export function ThemeEngine({ children }) {

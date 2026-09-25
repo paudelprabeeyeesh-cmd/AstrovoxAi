@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Icon from '../design/Iconography'
+import Icon from '../design/Iconography.jsx'
 
 export default function NotificationCenter({ notifications = [] }) {
   const [isOpen, setIsOpen] = useState(false)
