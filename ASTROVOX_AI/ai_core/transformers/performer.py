@@ -45,8 +45,10 @@ class PerformerAttention(nn.Module):
         v = self.v_proj(x).view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
         q_prime = self.feature_map(q)
         k_prime = self.feature_map(k)
-        q_prime = q_prime / (q_prime.norm(dim=-1, keepdim=True) + 1e-6)
-        k_prime = k_prime / (k_prime.norm(dim=-1, keepdim=True) + 1e-6)
+        q_norm = q_prime.norm(dim=-1, keepdim=True).clamp_min(1e-6)
+        k_norm = k_prime.norm(dim=-1, keepdim=True).clamp_min(1e-6)
+        q_prime = q_prime / q_norm
+        k_prime = k_prime / k_norm
         kv = torch.matmul(k_prime.transpose(-2, -1), v)
         z = k_prime.sum(dim=-2, keepdim=True).clamp_min(1e-6)
         out = torch.matmul(q_prime, kv) / z

@@ -7,6 +7,16 @@ class RAGService:
     def __init__(self, db_client=None, vector_client=None):
         self.db = db_client
         self.vector = vector_client
+        self._openai_client = None
+
+    def _get_openai_client(self):
+        if self._openai_client is None:
+            try:
+                from openai import OpenAI
+                self._openai_client = OpenAI()
+            except Exception:
+                pass
+        return self._openai_client
 
     def hybrid_search(self, query: str, user_id: str, top_k: int = 5) -> list[dict]:
         vector_results = self._vector_search(query, user_id, top_k=top_k * 2)
@@ -59,10 +69,10 @@ class RAGService:
             return []
 
     def _embed(self, text: str) -> list[float]:
+        client = self._get_openai_client()
+        if client is None:
+            return [0.0] * 1536
         try:
-            import openai
-
-            client = openai.OpenAI()
             response = client.embeddings.create(
                 input=text, model="text-embedding-3-small"
             )
@@ -72,14 +82,14 @@ class RAGService:
 
     def rerank(self, query: str, results: list[dict], top_k: int = 5) -> list[dict]:
         try:
-            import requests
+            import httpx
 
             docs = [r.get("content", "") for r in results]
-            response = requests.post(
-                "http://localhost:8000/rerank",
-                json={"query": query, "documents": docs, "top_k": top_k},
-                timeout=10,
-            )
+            with httpx.Client(timeout=10) as client:
+                response = client.post(
+                    "http://localhost:8000/rerank",
+                    json={"query": query, "documents": docs, "top_k": top_k},
+                )
             if response.status_code == 200:
                 reranked = response.json().get("results", [])
                 return [results[i] for i in reranked if i < len(results)]
