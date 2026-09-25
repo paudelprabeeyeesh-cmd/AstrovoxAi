@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react'
 import { motion } from 'framer-motion'
-import Icon from '../../design/Iconography'
+import Icon from '../../design/Iconography.jsx'
 import { useA11y } from './A11yProvider'
 
 export function MonacoEditor({
