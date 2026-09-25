@@ -1,4 +1,4 @@
-export type SecurityScanType = 'xss' | 'csrf' | 'sqli' | 'auth' | 'headers'
+export type SecurityScanType = 'xss' | 'csrf' | 'sqli' | 'auth' | 'headers' | 'cookies'
 
 export interface SecurityScanOptions {
   types?: SecurityScanType[]
@@ -7,13 +7,14 @@ export interface SecurityScanOptions {
 
 export class SecurityScanHelper {
   async scan(page: Page, options: SecurityScanOptions = {}): Promise<unknown> {
-    const types = options.types ?? ['headers', 'xss', 'csrf', 'auth']
+    const types = options.types ?? ['headers', 'xss', 'csrf', 'auth', 'cookies']
     const results: Record<string, unknown> = {}
     if (types.includes('headers')) results.headers = await this.checkHeaders(page)
     if (types.includes('xss')) results.xss = await this.checkXSS(page)
     if (types.includes('csrf')) results.csrf = await this.checkCSRF(page)
     if (types.includes('auth')) results.auth = await this.checkAuth(page)
     if (types.includes('sqli')) results.sqli = await this.checkSQLInjection(page)
+    if (types.includes('cookies')) results.cookies = await this.checkCookies(page)
     return results
   }
 
@@ -56,5 +57,11 @@ export class SecurityScanHelper {
     await page.click('button:has-text("SEND")')
     const content = await page.content()
     return !content.includes('SQL') && !content.includes('syntax error')
+  }
+
+  private async checkCookies(page: Page): Promise<boolean> {
+    const cookies = await page.context().cookies()
+    const sensitiveCookies = cookies.filter(c => c.name?.toLowerCase().includes('session') || c.name?.toLowerCase().includes('token'))
+    return sensitiveCookies.every(c => c.httpOnly && c.secure)
   }
 }

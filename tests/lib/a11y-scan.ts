@@ -43,4 +43,32 @@ export class AccessibilityScanHelper {
     }))
     expect(landmarks.main).toBe(true)
   }
+
+  async checkImagesHaveAlt(page: Page): Promise<void> {
+    const imagesWithoutAlt = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('img')).filter(img => !img.hasAttribute('alt')).length
+    })
+    expect(imagesWithoutAlt).toBe(0)
+  }
+
+  async checkButtonsHaveNames(page: Page): Promise<void> {
+    const unnamedButtons = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('button')).filter(btn => {
+        const label = btn.getAttribute('aria-label') || btn.textContent?.trim()
+        return !label
+      }).length
+    })
+    expect(unnamedButtons).toBe(0)
+  }
+
+  async checkFocusIndicators(page: Page): Promise<void> {
+    await page.keyboard.press('Tab')
+    const hasFocusStyle = await page.evaluate(() => {
+      const el = document.activeElement
+      if (!el) return false
+      const style = window.getComputedStyle(el)
+      return style.outline !== 'none' || style.outlineWidth !== '0px' || style.boxShadow !== 'none'
+    })
+    expect(hasFocusStyle).toBe(true)
+  }
 }
