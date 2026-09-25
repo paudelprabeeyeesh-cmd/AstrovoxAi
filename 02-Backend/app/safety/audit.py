@@ -7,7 +7,7 @@ import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class SafetyAuditEntry:
 
     @property
     def iso_timestamp(self) -> str:
-        return datetime.fromtimestamp(self.timestamp, datetime.UTC).isoformat().replace("+00:00", "Z")
+        return datetime.fromtimestamp(self.timestamp, timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class SafetyAuditLogger:
