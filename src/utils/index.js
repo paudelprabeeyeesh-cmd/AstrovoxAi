@@ -1,3 +1,5 @@
 export { relativeTime, formatDateTime, formatNumber, formatBytes, debounce, throttle, classNames, generateId } from './format'
 export { getInitials, stringToColor, getContrastColor } from './avatar'
 export { copyToClipboard, useClipboard } from './clipboard'
+export { detectPlatform, isMobile, isDesktop, isOnline, supportsServiceWorker, supportsPush, supportsShare, getDeviceType } from './platform'
+export { StorageAdapter, createStorage } from './storage'
