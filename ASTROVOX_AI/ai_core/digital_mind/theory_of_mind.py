@@ -17,6 +17,7 @@ class TheoryOfMindEngine:
         )
         self.other_models: dict[str, MentalState] = {}
         self.mentalizing_accuracy: dict[str, float] = {}
+        self.perspective_history: list[dict[str, Any]] = []
 
     def model_other(self, entity_id: str, initial_beliefs: dict[str, float] | None = None) -> MentalState:
         self.other_models[entity_id] = MentalState(
@@ -51,4 +52,5 @@ class TheoryOfMindEngine:
             "predicted_emotion": max(model.emotions, key=model.emotions.get) if model.emotions else "neutral",
             "confidence": confidence,
         }
+        self.perspective_history.append(prediction)
         return prediction

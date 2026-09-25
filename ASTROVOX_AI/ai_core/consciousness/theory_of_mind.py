@@ -39,9 +39,11 @@ class TheoryOfMindEngine:
     def __init__(self):
         self.agents: dict[str, MentalState] = {}
         self.self_state = MentalState()
+        self.mentalizing_accuracy: dict[str, float] = {}
 
     def register_agent(self, agent_id: str, initial_state: MentalState | None = None) -> None:
         self.agents[agent_id] = initial_state or MentalState()
+        self.mentalizing_accuracy[agent_id] = 0.5
         logger.info("Registered agent: %s", agent_id)
 
     def observe(self, agent_id: str, observation: str) -> dict[str, Any]:
@@ -74,6 +76,11 @@ class TheoryOfMindEngine:
             "scenario": scenario,
         }
 
+    def update_mentalizing_accuracy(self, agent_id: str, delta: float):
+        if agent_id not in self.mentalizing_accuracy:
+            self.mentalizing_accuracy[agent_id] = 0.5
+        self.mentalizing_accuracy[agent_id] = max(0.0, min(1.0, self.mentalizing_accuracy[agent_id] + delta))
+
     def get_mental_state(self, agent_id: str) -> dict[str, Any]:
         if agent_id not in self.agents:
             return {"error": "Unknown agent"}
@@ -84,4 +91,5 @@ class TheoryOfMindEngine:
             "desires": {k: {"content": v.content, "intensity": v.intensity} for k, v in state.desires.items()},
             "intentions": {k: {"content": v.content, "commitment": v.commitment} for k, v in state.intentions.items()},
             "emotions": state.emotions,
+            "accuracy": self.mentalizing_accuracy.get(agent_id, 0.5),
         }

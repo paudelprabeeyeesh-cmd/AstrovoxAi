@@ -36,6 +36,7 @@ class PersistentSelfModel:
         self.model.personality_traits[trait] = max(0.0, min(1.0, value))
         self.model.version += 1
         self.model.updated_at = datetime.now()
+        self.version_history.append(self.model)
 
     def add_memory_anchor(self, anchor: str):
         self.model.memory_anchors.append(anchor)

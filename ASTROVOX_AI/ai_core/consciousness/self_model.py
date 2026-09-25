@@ -21,6 +21,7 @@ class SelfModelPersistence:
     def __init__(self, storage_path: str = "memory/self_model.json"):
         self.storage_path = storage_path
         self.models: dict[str, SelfModel] = {}
+        self.version_history: dict[str, list[SelfModel]] = {}
 
     def create_model(self, identity_id: str, traits: dict[str, float] | None = None) -> SelfModel:
         model = SelfModel(
@@ -28,6 +29,7 @@ class SelfModelPersistence:
             traits=traits or {"openness": 0.7, "conscientiousness": 0.8, "empathy": 0.9},
         )
         self.models[identity_id] = model
+        self.version_history.setdefault(identity_id, []).append(model)
         logger.info("Created self-model: %s", identity_id)
         return model
 
@@ -78,5 +80,6 @@ class SelfModelPersistence:
                 "traits": model.traits,
                 "memory_count": len(model.memories),
                 "values": model.values,
+                "version": len(self.version_history.get(identity_id, [])),
             }
         return {"error": "Model not found"}
