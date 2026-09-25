@@ -1,9 +1,11 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '../../design/DesignTokens'
 
 export function Tooltip({ content, children, side = 'top', delay = 300 }) {
   const [isVisible, setIsVisible] = useState(false)
   const timerRef = useRef(null)
+  const reducedMotion = useReducedMotion()
 
   const show = useCallback(() => {
     timerRef.current = setTimeout(() => setIsVisible(true), delay)
@@ -37,10 +39,10 @@ export function Tooltip({ content, children, side = 'top', delay = 300 }) {
       <AnimatePresence>
         {isVisible && content && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={reducedMotion ? { opacity: 1 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
+            transition={{ duration: reducedMotion ? 0 : 0.15 }}
             style={{
               position: 'absolute',
               ...sideStyles[side],

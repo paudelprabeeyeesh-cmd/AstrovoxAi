@@ -14,10 +14,11 @@ from typing import Set
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
-logger = logging.getLogger("astravox.shutdown")
+logger = logging.getLogger("astrovox.shutdown")
 
 _shutdown_event: asyncio.Event | None = None
 _active_requests: Set[asyncio.Task] = set()
+_drain_timeout: float = 30.0
 
 
 class GracefulShutdownMiddleware(BaseHTTPMiddleware):
@@ -26,6 +27,8 @@ class GracefulShutdownMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, drain_timeout: float = 30.0) -> None:
         super().__init__(app)
         self._drain_timeout = drain_timeout
+        global _drain_timeout
+        _drain_timeout = drain_timeout
 
     async def dispatch(self, request: Request, call_next):
         if _shutdown_event is not None and _shutdown_event.is_set():
@@ -40,6 +43,10 @@ def get_shutdown_event() -> asyncio.Event | None:
     return _shutdown_event
 
 
+def get_active_request_count() -> int:
+    return len(_active_requests)
+
+
 def register_lifecycle_handlers(app) -> None:
     global _shutdown_event
     _shutdown_event = asyncio.Event()
@@ -47,7 +54,7 @@ def register_lifecycle_handlers(app) -> None:
     loop = asyncio.get_running_loop()
 
     def _signal_handler():
-        logger.info("Shutdown signal received, draining requests")
+        logger.info("Shutdown signal received, draining requests (timeout=%ss)", _drain_timeout)
         _shutdown_event.set()
 
     for sig in (signal.SIGTERM, signal.SIGINT):

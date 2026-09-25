@@ -2,7 +2,7 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +100,30 @@ class HealthCheckService:
                 )
         return results
 
+    def check_storage(self) -> ComponentHealth:
+        start = time.time()
+        try:
+            from app.storage import get_storage_backend
+            backend = get_storage_backend()
+            backend.health_check()
+            latency = (time.time() - start) * 1000
+            return ComponentHealth(
+                status=HealthStatus.HEALTHY,
+                message="Storage backend connected",
+                latency_ms=latency,
+            )
+        except Exception as e:
+            latency = (time.time() - start) * 1000
+            return ComponentHealth(
+                status=HealthStatus.DEGRADED,
+                message=str(e),
+                latency_ms=latency,
+            )
+
     def get_overall_health(self) -> Dict[str, Any]:
         db = self.check_database()
         redis = self.check_redis()
+        storage = self.check_storage()
         llm = self.check_llm_providers()
 
         components = {
@@ -116,6 +137,11 @@ class HealthCheckService:
                 "message": redis.message,
                 "latency_ms": redis.latency_ms,
             },
+            "storage": {
+                "status": storage.status.value,
+                "message": storage.message,
+                "latency_ms": storage.latency_ms,
+            },
             "llm_providers": {
                 name: {
                     "status": c.status.value,
@@ -126,7 +152,7 @@ class HealthCheckService:
             },
         }
 
-        statuses = [db.status, redis.status] + [
+        statuses = [db.status, redis.status, storage.status] + [
             c.status for c in llm.values()
         ]
         if all(s == HealthStatus.HEALTHY for s in statuses):

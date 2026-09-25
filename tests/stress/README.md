@@ -1,8 +1,10 @@
 # Stress Tests
 
-Stress tests evaluate system behavior under extreme load.
+## Overview
 
-## Running Stress Tests
+Stress tests push the system beyond normal operating conditions to identify breaking points and failure modes.
+
+## Running
 
 ```bash
 npm run test:stress
@@ -10,23 +12,18 @@ npm run test:stress
 
 ## Scenarios
 
-### Scenario 1: Extreme Concurrency
-- 1000 concurrent users
-- Duration: 5 minutes
-- Expected: Service remains available
+- `sustained` - 100 VUs for 2 minutes
+- `stress` - Ramps from 10 to 1000 VUs over 2 minutes
 
-### Scenario 2: Rapid Fire Requests
-- 10,000 requests/minute
-- Duration: 2 minutes
-- Expected: Rate limiting kicks in appropriately
+## Thresholds
 
-### Scenario 3: Large Payloads
-- 100KB message payloads
-- 500 concurrent requests
-- Expected: No crashes, reasonable latency
+- `p(99) < 2000ms` response time under stress
+- `error rate < 5%`
 
-## Results Interpretation
+## Environment
 
-- P95 latency < 2000ms: PASS
-- Error rate < 5%: PASS
-- No memory leaks: PASS
+Set `BASE_URL` and `AUTH_TOKEN`:
+
+```bash
+k6 run -e BASE_URL=http://localhost:8000 -e AUTH_TOKEN=token tests/stress/chat-stress-test.js
+```

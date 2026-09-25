@@ -1305,6 +1305,8 @@ class AdvancedAnalyticsEngine:
         self._sessions[user_id]["last_activity"] = now
         self._sessions[user_id]["event_count"] += 1
 
+        self._persist_event("ai_request", user_id, event.metadata)
+
     def track_error(self, user_id: str, error_type: str, details: str = "", session_id: str = ""):
         now = time.time()
         event = AnalyticsEvent(
@@ -1315,6 +1317,8 @@ class AdvancedAnalyticsEngine:
             session_id=session_id,
         )
         self._events.append(event)
+
+        self._persist_event("error", user_id, event.metadata)
 
     def track_user_action(self, user_id: str, action: str, metadata: dict = None, session_id: str = ""):
         now = time.time()

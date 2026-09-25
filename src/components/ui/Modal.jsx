@@ -1,11 +1,22 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useFocusManagement } from './KeyboardShortcuts'
+import { useFocusManagement, useKeyboardShortcuts } from './KeyboardShortcuts'
 import Icon from '../design/Iconography'
+import { useReducedMotion } from '../../design/DesignTokens'
 
-export function Modal({ isOpen, onClose, title, children, width = '480px', showClose = true }) {
+export function Modal({ isOpen, onClose, title, children, width = '480px', showClose = true, closeOnOverlay = true }) {
   const modalRef = useRef(null)
-  const { trapFocus } = useFocusManagement()
+  const previousFocusRef = useRef(null)
+  const { trapFocus, focusFirstInteractive } = useFocusManagement()
+  const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (isOpen) {
+      previousFocusRef.current = document.activeElement
+    } else if (previousFocusRef.current && previousFocusRef.current.focus) {
+      previousFocusRef.current.focus()
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isOpen && modalRef.current) {
@@ -15,13 +26,23 @@ export function Modal({ isOpen, onClose, title, children, width = '480px', showC
   }, [isOpen, trapFocus])
 
   useEffect(() => {
-    if (!isOpen) return
-    const handleEsc = (e) => {
-      if (e.key === 'Escape') onClose()
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        focusFirstInteractive(modalRef.current)
+      }, 50)
+      return () => clearTimeout(timer)
     }
-    document.addEventListener('keydown', handleEsc)
-    return () => document.removeEventListener('keydown', handleEsc)
-  }, [isOpen, onClose])
+  }, [isOpen, focusFirstInteractive])
+
+  const handleOverlayClick = useCallback((e) => {
+    if (closeOnOverlay && e.target === e.currentTarget) {
+      onClose()
+    }
+  }, [closeOnOverlay, onClose])
+
+  useKeyboardShortcuts({
+    'Escape': { keys: ['Escape'], ctrl: false, shift: false, handler: onClose }
+  })
 
   useEffect(() => {
     if (isOpen) {
@@ -35,11 +56,11 @@ export function Modal({ isOpen, onClose, title, children, width = '480px', showC
       {isOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }}>
           <motion.div
-            initial={{ opacity: 0 }}
+            initial={reducedMotion ? { opacity: 0.5 } : { opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.2 }}
+            onClick={handleOverlayClick}
             style={{
               position: 'absolute',
               inset: 0,
@@ -61,10 +82,10 @@ export function Modal({ isOpen, onClose, title, children, width = '480px', showC
           >
             <motion.div
               ref={modalRef}
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              initial={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 10 }}
+              animate={reducedMotion ? {} : { opacity: 1, scale: 1, y: 0 }}
+              exit={reducedMotion ? {} : { opacity: 0, scale: 0.95, y: 10 }}
+              transition={reducedMotion ? { duration: 0 } : { type: 'spring', damping: 25, stiffness: 300 }}
               role="dialog"
               aria-modal="true"
               aria-labelledby="modal-title"

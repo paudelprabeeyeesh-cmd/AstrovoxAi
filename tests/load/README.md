@@ -1,37 +1,31 @@
 # Load Tests
 
-Load tests verify system performance under expected traffic.
+## Overview
 
-## Running Load Tests
+Load tests verify that the system handles expected traffic volumes within performance thresholds.
+
+## Running
 
 ```bash
 npm run test:load
 ```
 
-## Configuration
+## Scenarios
 
-Set environment variables:
+- `smoke` - 1 VU for 10s, validates basic health and chat endpoints
+- `ramp` - Ramps from 0 to 100 VUs over 2 minutes
+- `spike` - Ramps to 500 VUs in 10s, then ramps down
+
+## Thresholds
+
+- `p(95) < 500ms` response time
+- `p(99) < 1000ms` response time
+- `error rate < 1%`
+
+## Environment
+
+Set `BASE_URL` and `AUTH_TOKEN`:
 
 ```bash
-export BASE_URL=https://api.astrovox.ai
-export AUTH_TOKEN=your-token
-k6 run tests/load/chat-load-test.js
+k6 run -e BASE_URL=http://localhost:8000 -e AUTH_TOKEN=token tests/load/chat-load-test.js
 ```
-
-## Test Scenarios
-
-### Ramp-up Test
-- 0 to 50 VUs over 30 seconds
-- Hold 50 VUs for 1 minute
-- Ramp down to 0
-
-### Spike Test
-- Sudden spike to 200 VUs
-- Verify auto-scaling kicks in
-- Measure recovery time
-
-## Success Criteria
-
-- P95 latency < 500ms
-- Error rate < 1%
-- No timeouts

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from '../../design/DesignTokens'
 import Icon from '../design/Iconography'
 
 const ToastContext = createContext(null)
@@ -7,6 +8,7 @@ const ToastContext = createContext(null)
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
   const idRef = useRef(0)
+  const reducedMotion = useReducedMotion()
 
   const addToast = useCallback((message, options = {}) => {
     const id = ++idRef.current
@@ -15,7 +17,8 @@ export function ToastProvider({ children }) {
       message,
       type: options.type || 'info',
       duration: options.duration ?? 4000,
-      action: options.action || null
+      action: options.action || null,
+      createdAt: Date.now()
     }
     setToasts(prev => [...prev, toast])
     return id
@@ -28,7 +31,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      <ToastContainer toasts={toasts} onDismiss={removeToast} />
+      <ToastContainer toasts={toasts} onDismiss={removeToast} reducedMotion={reducedMotion} />
     </ToastContext.Provider>
   )
 }
@@ -39,7 +42,7 @@ export function useToast() {
   return context
 }
 
-function ToastContainer({ toasts, onDismiss }) {
+function ToastContainer({ toasts, onDismiss, reducedMotion }) {
   const typeConfig = {
     success: { bg: 'rgba(52, 211, 153, 0.15)', border: '#34d399', icon: 'check', color: '#34d399' },
     error: { bg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444', icon: 'x', color: '#ef4444' },
@@ -48,27 +51,32 @@ function ToastContainer({ toasts, onDismiss }) {
   }
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: '20px',
-      right: '20px',
-      zIndex: 9999,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      maxWidth: '400px',
-      width: 'calc(100% - 40px)'
-    }}>
+    <div
+      role="region"
+      aria-label="Notifications"
+      style={{
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        maxWidth: '400px',
+        width: 'calc(100% - 40px)'
+      }}
+    >
       <AnimatePresence>
         {toasts.map(toast => {
           const config = typeConfig[toast.type] || typeConfig.info
+          const progress = reducedMotion ? undefined : Math.max(0, 1 - (Date.now() - toast.createdAt) / (toast.duration || 4000))
           return (
             <motion.div
               key={toast.id}
-              initial={{ opacity: 0, x: 100, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 100, scale: 0.95 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+              initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 100, scale: 0.95 }}
+              animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
+              exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 100, scale: 0.95 }}
+              transition={reducedMotion ? { duration: 0 } : { type: 'spring', damping: 20, stiffness: 300 }}
               style={{
                 backgroundColor: config.bg,
                 border: `1px solid ${config.border}`,
@@ -78,11 +86,28 @@ function ToastContainer({ toasts, onDismiss }) {
                 alignItems: 'flex-start',
                 gap: '12px',
                 boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-                backdropFilter: 'blur(12px)'
+                backdropFilter: 'blur(12px)',
+                position: 'relative',
+                overflow: 'hidden'
               }}
               role="alert"
               aria-live="assertive"
             >
+              {progress !== undefined && (
+                <motion.div
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    height: '2px',
+                    backgroundColor: config.color,
+                    borderRadius: '1px'
+                  }}
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: (toast.duration || 4000) / 1000, ease: 'linear' }}
+                />
+              )}
               <div style={{
                 width: '20px',
                 height: '20px',
