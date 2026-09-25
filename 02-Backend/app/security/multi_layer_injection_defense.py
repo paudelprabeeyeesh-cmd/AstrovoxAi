@@ -346,6 +346,16 @@ class MultiLayerInjectionDefense:
             self._user_history.pop(user_id, None)
             self._context_anchors.pop(user_id, None)
 
+    def configure(self, max_input_length: Optional[int] = None, entropy_threshold: Optional[float] = None) -> None:
+        """Configure defense parameters at runtime."""
+        with self._lock:
+            if max_input_length is not None:
+                self._max_input_length = max_input_length
+            if entropy_threshold is not None:
+                self._entropy_threshold = entropy_threshold
+        logger.info("Prompt injection defense configured: max_length=%s, entropy_threshold=%s",
+                   self._max_input_length, self._entropy_threshold)
+
 
 prompt_injection_defense = MultiLayerInjectionDefense()
 
