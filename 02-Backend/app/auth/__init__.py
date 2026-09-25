@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token, get_current_user
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -29,4 +29,4 @@ async def require_admin(
     return user_id
 
 
-__all__ = ["require_verified_email", "require_admin"]
+__all__ = ["require_verified_email", "require_admin", "get_current_user"]
