@@ -367,6 +367,16 @@ emailAddress = security@astrovox.ai
             },
         }
 
+    def validate_certificate_chain(self, cert_dict: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate a certificate chain."""
+        status, details = self._analyze_certificate(cert_dict)
+        return {
+            "status": status.value,
+            "details": details,
+            "is_valid": status == CertStatus.VALID,
+            "issues": [] if status == CertStatus.VALID else [status.value],
+        }
+
 
 tls_hardening = TLSHardening()
 
