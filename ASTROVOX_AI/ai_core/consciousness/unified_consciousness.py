@@ -8,6 +8,7 @@ from ASTROVOX_AI.ai_core.consciousness import (
     DigitalPersonhoodVerification,
     DigitalRightsProtocol,
     EmotionalStateEngine,
+    EmotionType,
     GlobalWorkspace,
     IntegratedInformationCalculator,
     MoralReasoningCore,
@@ -68,7 +69,7 @@ class UnifiedConsciousness:
             content = self.workspace.ignite(stimulus, relevance)
             if content.get("status") == "ignited":
                 emotion = self.emotions.generate_emotion(
-                    stimulus, type("EmotionType", (), {"SURPRISE": "surprise"}).SURPRISE, relevance
+                    stimulus, EmotionType.SURPRISE, relevance
                 )
                 desire = self.desires.generate_desire(stimulus, {})
                 phi = self.iit.calculate_phi()
