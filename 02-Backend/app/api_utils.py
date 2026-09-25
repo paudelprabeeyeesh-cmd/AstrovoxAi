@@ -1,4 +1,4 @@
-"""API Maturity â€” pagination, field filtering, sparse responses, and response standards."""
+"""API Maturity — pagination, field filtering, sparse responses, and response standards."""
 
 from __future__ import annotations
 

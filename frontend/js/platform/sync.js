@@ -1,3 +1,4 @@
+// Frontend Platform - Group 4: Sync primitives for offline-first data
 const SyncPrimitives = {
   _operations: new Map(),
   _conflicts: [],

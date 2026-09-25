@@ -12,6 +12,8 @@ local state = {
     max_tokens = 2048,
     temperature = 0.7,
     auto_complete = false,
+    auto_update = true,
+    update_interval_hours = 24,
     keymaps = {
       chat = '<leader>ac',
       explain = '<leader>ae',
@@ -20,15 +22,21 @@ local state = {
       review = '<leader>av',
       document = '<leader>ad',
       fix = '<leader>af',
-      optimize = '<leader>ao'
+      optimize = '<leader>ao',
+      security = '<leader>as',
+      translate = '<leader>atrans'
     },
     ui = {
       width = 40,
       height = 15,
       border = 'rounded'
-    }
+    },
+    version = '1.1.0'
   }
 }
+
+local update_timer = nil
+local last_update_check = 0
 
 function M.setup(opts)
   opts = opts or {}
@@ -48,6 +56,8 @@ function M.setup(opts)
   vim.keymap.set('n', keymaps.document, M.document_code, { desc = 'Astrovox: Document Code' })
   vim.keymap.set('n', keymaps.fix, M.fix_bug, { desc = 'Astrovox: Fix Bug' })
   vim.keymap.set('n', keymaps.optimize, M.optimize_code, { desc = 'Astrovox: Optimize Code' })
+  vim.keymap.set('n', keymaps.security, M.detect_security, { desc = 'Astrovox: Detect Security Issues' })
+  vim.keymap.set('n', keymaps.translate, M.translate_code, { desc = 'Astrovox: Translate Code' })
 
   vim.api.nvim_create_user_command('AstrovoxChat', M.chat_command, { nargs = '*' })
   vim.api.nvim_create_user_command('AstrovoxExplain', M.explain_code, {})
@@ -57,13 +67,85 @@ function M.setup(opts)
   vim.api.nvim_create_user_command('AstrovoxDocument', M.document_code, {})
   vim.api.nvim_create_user_command('AstrovoxFix', M.fix_bug, {})
   vim.api.nvim_create_user_command('AstrovoxOptimize', M.optimize_code, {})
+  vim.api.nvim_create_user_command('AstrovoxSecurity', M.detect_security, {})
+  vim.api.nvim_create_user_command('AstrovoxTranslate', M.translate_code, { nargs = '?' })
   vim.api.nvim_create_user_command('AstrovoxClear', M.clear_history, {})
+  vim.api.nvim_create_user_command('AstrovoxCheckUpdate', M.check_for_updates, {})
+  vim.api.nvim_create_user_command('AstrovoxStatus', M.get_status, {})
 
   if state.config.auto_complete then
     M.setup_auto_complete()
   end
 
-  vim.notify('Astrovox AI plugin loaded successfully', vim.log.levels.INFO)
+  if state.config.auto_update then
+    M.start_update_checker()
+  end
+
+  vim.notify('Astrovox AI v' .. state.config.version .. ' loaded successfully', vim.log.levels.INFO)
+end
+
+function M.start_update_checker()
+  if update_timer then
+    vim.fn.timer_stop(update_timer)
+  end
+
+  local interval_ms = (state.config.update_interval_hours or 24) * 60 * 60 * 1000
+  update_timer = vim.fn.timer_start(interval_ms, function()
+    M.check_for_updates()
+  end)
+
+  vim.api.nvim_create_autocmd('VimLeave', {
+    callback = function()
+      if update_timer then
+        vim.fn.timer_stop(update_timer)
+      end
+    end
+  })
+end
+
+function M.check_for_updates()
+  local now = os.time()
+  if now - last_update_check < (state.config.update_interval_hours or 24) * 3600 then
+    return
+  end
+  last_update_check = now
+
+  M.api_request('/extensions/neovim/latest', {}, function(response)
+    if response and response.version then
+      if M.is_newer_version(response.version, state.config.version) then
+        local msg = string.format('Astrovox AI v%s is available (current: v%s)', response.version, state.config.version)
+        vim.notify(msg, vim.log.levels.WARN)
+
+        if response.changelog then
+          vim.notify('Changelog: ' .. vim.fn.strcharpart(response.changelog, 1, 200), vim.log.levels.INFO)
+        end
+
+        if response.download_url then
+          vim.notify('Update: ' .. response.download_url, vim.log.levels.INFO)
+        end
+      end
+    end
+  end)
+end
+
+function M.is_newer_version(remote, local)
+  if not remote or remote == local then return false end
+  local function normalize(v)
+    local parts = {}
+    for part in string.gmatch(v, '%d+') do
+      table.insert(parts, tonumber(part))
+    end
+    return parts
+  end
+  local remote_parts = normalize(remote)
+  local local_parts = normalize(local)
+  for i = 1, math.max(#remote_parts, #local_parts) do
+    local r = remote_parts[i] or 0
+    local l = local_parts[i] or 0
+    if r > l then return true end
+    if r < l then return false end
+  end
+  return false
 end
 
 function M.setup_auto_complete()
@@ -210,6 +292,26 @@ function M.optimize_code()
   M.chat('Optimize this code for performance:\n\n' .. selection)
 end
 
+function M.detect_security()
+  local selection = M.get_selection()
+  if not selection then
+    vim.notify('No code selected', vim.log.levels.WARN)
+    return
+  end
+  M.chat('Analyze this code for security vulnerabilities (OWASP Top 10):\n\n' .. selection)
+end
+
+function M.translate_code()
+  local selection = M.get_selection()
+  if not selection then
+    vim.notify('No code selected', vim.log.levels.WARN)
+    return
+  end
+  local language = vim.fn.input('Target language (e.g., Python, JavaScript): ')
+  if language == '' then return end
+  M.chat('Translate this code to ' .. language .. ':\n\n' .. selection)
+end
+
 function M.get_selection()
   local start_pos = vim.fn.getpos("'<")
   local end_pos = vim.fn.getpos("'>")
@@ -224,6 +326,18 @@ function M.clear_history()
   state.history = {}
   state.current_conversation = nil
   vim.notify('Astrovox conversation cleared', vim.log.levels.INFO)
+end
+
+function M.get_status()
+  return {
+    api_key_configured = state.config.api_key ~= '',
+    model = state.config.model,
+    conversation_id = state.current_conversation,
+    history_length = #state.history,
+    auto_complete = state.config.auto_complete,
+    version = state.config.version,
+    auto_update = state.config.auto_update
+  }
 end
 
 function M.api_request(endpoint, data, callback)
@@ -255,19 +369,20 @@ function M.api_request(endpoint, data, callback)
   return job
 end
 
-function M.get_status()
-  return {
-    api_key_configured = state.config.api_key ~= '',
-    model = state.config.model,
-    conversation_id = state.current_conversation,
-    history_length = #state.history,
-    auto_complete = state.config.auto_complete
-  }
+function M.stop_update_checker()
+  if update_timer then
+    vim.fn.timer_stop(update_timer)
+    update_timer = nil
+  end
 end
 
-vim.api.nvim_create_user_command('AstrovoxStatus', function()
-  local status = M.get_status()
-  vim.notify(vim.inspect(status), vim.log.levels.INFO)
-end, {})
+function M.update_config(opts)
+  state.config = vim.tbl_deep_extend('force', state.config, opts)
+  if opts.auto_update == false then
+    M.stop_update_checker()
+  elseif opts.auto_update == true then
+    M.start_update_checker()
+  end
+end
 
 return M

@@ -1,3 +1,4 @@
+// Frontend Platform - Group 7: Theme engine and design token system
 const ThemeEngine = {
   _currentTheme: 'dark',
   _themes: {

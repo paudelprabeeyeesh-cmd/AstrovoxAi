@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useReducedMotion } from '../../design/DesignTokens'
+import { useReducedMotion } from '../../design/DesignTokens.js'
 
 export function Tooltip({ content, children, side = 'top', delay = 300 }) {
   const [isVisible, setIsVisible] = useState(false)

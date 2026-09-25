@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { THEMES, useTheme } from '../../design/DesignTokens'
+import { THEMES, useTheme } from '../../design/DesignTokens.js'
 import Icon from '../design/Iconography.jsx'
 
 export function ThemeSwitcher({ currentTheme, onThemeChange, themes }) {

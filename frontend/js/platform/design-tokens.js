@@ -1,3 +1,4 @@
+// Frontend Platform - Group 7: Design token system
 const DesignTokens = {
   _customTokens: new Map(),
   _computedTokens: new Map(),

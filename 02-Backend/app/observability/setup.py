@@ -188,10 +188,4 @@ def setup_default_observability():
     )
 
 
-try:
-    setup_default_observability()
-except Exception as e:
-    print(f"Failed to setup default observability: {e}")
-
-
 __all__ = ["setup_default_observability"]

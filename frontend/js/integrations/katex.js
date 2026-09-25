@@ -1,3 +1,4 @@
+// Frontend Platform - Group 3: KaTeX math rendering integration
 const KaTeX = {
   _loaded: false,
 

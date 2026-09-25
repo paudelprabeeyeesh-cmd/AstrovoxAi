@@ -1,3 +1,4 @@
+// Frontend Platform - Group 4: Offline queue and sync primitives
 const OfflineQueue = {
   _queue: [],
   _isOnline: navigator.onLine,

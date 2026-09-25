@@ -2,258 +2,202 @@ package ai.astrovox.actions
 
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
+import com.intellij.openapi.actionSystem.CommonDataKeys
 import com.intellij.openapi.ui.Messages
-import com.intellij.openapi.editor.Editor
-import com.intellij.openapi.command.WriteCommandAction
-import com.intellij.openapi.project.Project
-import javax.swing.SwingWorker
-import java.net.HttpURLConnection
-import java.net.URL
-import java.io.OutputStreamWriter
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import ai.astrovox.services.AstrovoxSettingsService
 
-class AstrovoxClient {
-  companion object {
-    private const val API_BASE = "https://api.astrovox.ai/v1"
+abstract class BaseAstrovoxAction : AnAction() {
+  protected val settingsService = com.intellij.openapi.application.ApplicationManager.getApplication()
+    .getService(AstrovoxSettingsService::class.java)
 
-    fun getApiKey(): String {
-      return com.intellij.openapi.application.ApplicationManager.getApplication()
-        .getService(ai.astrovox.services.AstrovoxSettingsService::class.java)
-        ?.getApiKey() ?: ""
-    }
+  override fun update(e: AnActionEvent) {
+    e.presentation.isEnabledAndVisible = settingsService?.isConfigured() ?: false
+  }
 
-    fun callAPI(endpoint: String, data: Map<String, Any>): Map<String, Any> {
-      val apiKey = getApiKey()
-      if (apiKey.isEmpty()) {
-        throw IllegalStateException("API key not configured")
-      }
+  protected fun getSelectedCode(e: AnActionEvent): String? {
+    val editor = e.getData(CommonDataKeys.EDITOR) ?: return null
+    val selection = editor.selectionModel.selectedText
+    if (!selection.isNullOrEmpty()) return selection
+    return editor.document.text
+  }
 
-      val url = URL("$API_BASE$endpoint")
-      val conn = url.openConnection() as HttpURLConnection
-      conn.requestMethod = "POST"
-      conn.setRequestProperty("Content-Type", "application/json")
-      conn.setRequestProperty("Authorization", "Bearer $apiKey")
-      conn.doOutput = true
+  protected fun getLanguage(e: AnActionEvent): String {
+    val editor = e.getData(CommonDataKeys.EDITOR) ?: return "unknown"
+    return editor.document.languageID
+  }
+}
 
-      OutputStreamWriter(conn.outputStream).use { writer ->
-        writer.write(com.google.gson.Gson().toJson(data))
-        writer.flush()
-      }
+class StartChatAction : BaseAstrovoxAction() {
+  override fun actionPerformed(e: AnActionEvent) {
+    val toolWindowManager = com.intellij.openapi.wm.ToolWindowManager.getInstance(e.project!!)
+    val toolWindow = toolWindowManager.getToolWindow("Astrovox Chat")
+    toolWindow?.show(null)
+  }
+}
 
-      val response = StringBuilder()
-      BufferedReader(InputStreamReader(conn.inputStream)).use { reader ->
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-          response.append(line)
-        }
-      }
-
-      return com.google.gson.Gson().fromJson(response.toString(), Map::class.java) as Map<String, Any>
+class ExplainCodeAction : BaseAstrovoxAction() {
+  override fun actionPerformed(e: AnActionEvent) {
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("explain", code, language, e) { result ->
+      Messages.showInfoMessage(e.project, result, "Astrovox Explanation")
     }
   }
 }
 
-class StartChatAction : AnAction() {
+class GenerateTestsAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    Messages.showInfoMessage("Astrovox AI chat panel is available in the right sidebar.", "Astrovox AI")
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("generate-tests", code, language, e) { result ->
+      val editor = e.getData(CommonDataKeys.EDITOR)
+      val document = editor?.document
+      if (document != null) {
+        com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(e.project) {
+          document.insertString(document.textLength, "\n\n$result")
+        }
+      }
+    }
   }
 }
 
-class ExplainCodeAction : AnAction() {
+class RefactorCodeAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("refactor", code, language, e) { result ->
+      val editor = e.getData(CommonDataKeys.EDITOR) ?: return@performRequest
+      val selectionModel = editor.selectionModel
+      com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(e.project) {
+        editor.document.replaceString(selectionModel.selectionStart, selectionModel.selectionEnd, result)
+      }
     }
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/explain", mapOf("code" to code, "language" to editor.document.languageId))
-          result["explanation"]?.toString() ?: result["content"]?.toString() ?: "No explanation available"
-        } catch (ex: Exception) {
-          "Error: ${ex.message}"
-        }
-      }
-
-      override fun done() {
-        try {
-          Messages.showInfoMessage(get(), "Code Explanation")
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to show explanation: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }
 
-class GenerateTestsAction : AnAction() {
+class ReviewCodeAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("review", code, language, e) { result ->
+      Messages.showInfoMessage(e.project, result, "Astrovox Code Review")
     }
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/generate-tests", mapOf("code" to code, "language" to editor.document.languageId))
-          result["tests"]?.toString() ?: result["content"]?.toString() ?: "No tests generated"
-        } catch (ex: Exception) {
-          "Error: ${ex.message}"
-        }
-      }
-
-      override fun done() {
-        try {
-          val project = e.project
-          if (project != null) {
-            val doc = com.intellij.openapi.command.WriteCommandAction.writeCommandAction(project).compute {
-              com.intellij.openapi.fileEditor.FileDocumentManager.getInstance().getDocument(com.intellij.psi.PsiFileFactory.getInstance(project).createFileFromText("GeneratedTests.${editor.document.languageId}", get()))
-            }
-            com.intellij.openapi.wm.ToolWindowManager.getInstance(project).getEditorManager(project).openEditor(doc!!, true)
-          }
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to generate tests: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }
 
-class RefactorCodeAction : AnAction() {
+class DocumentCodeAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val project = e.project ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("document", code, language, e) { result ->
+      val editor = e.getData(CommonDataKeys.EDITOR) ?: return@performRequest
+      com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(e.project) {
+        editor.document.insertString(editor.caretModel.offset, result)
+      }
     }
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/refactor", mapOf("code" to code, "language" to editor.document.languageId))
-          result["refactored"]?.toString() ?: result["content"]?.toString() ?: code
-        } catch (ex: Exception) {
-          code
-        }
-      }
-
-      override fun done() {
-        try {
-          com.intellij.openapi.command.WriteCommandAction.writeCommandAction(project).run {
-            editor.document.replaceString(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd, get())
-          }
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to refactor code: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }
 
-class ReviewCodeAction : AnAction() {
+class FixBugAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    val bugDescription = Messages.showInputDialog(e.project, "Describe the bug:", "Fix Bug", null) ?: return
+    performRequest("fix-bug", code, language, e, mapOf("bug_description" to bugDescription)) { result ->
+      val editor = e.getData(CommonDataKeys.EDITOR) ?: return@performRequest
+      val selectionModel = editor.selectionModel
+      com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(e.project) {
+        editor.document.replaceString(selectionModel.selectionStart, selectionModel.selectionEnd, result)
+      }
     }
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/review", mapOf("code" to code, "language" to editor.document.languageId))
-          result["review"]?.toString() ?: result["content"]?.toString() ?: "No review available"
-        } catch (ex: Exception) {
-          "Error: ${ex.message}"
-        }
-      }
-
-      override fun done() {
-        try {
-          Messages.showInfoMessage(get(), "Code Review")
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to review code: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }
 
-class DocumentCodeAction : AnAction() {
+class OptimizeCodeAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val project = e.project ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    val code = getSelectedCode(e) ?: return
+    val language = getLanguage(e)
+    performRequest("optimize", code, language, e) { result ->
+      val editor = e.getData(CommonDataKeys.EDITOR) ?: return@performRequest
+      val selectionModel = editor.selectionModel
+      com.intellij.openapi.command.WriteCommandAction.runWriteCommandAction(e.project) {
+        editor.document.replaceString(selectionModel.selectionStart, selectionModel.selectionEnd, result)
+      }
     }
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/document", mapOf("code" to code, "language" to editor.document.languageId))
-          result["documentation"]?.toString() ?: result["content"]?.toString() ?: ""
-        } catch (ex: Exception) {
-          ""
-        }
-      }
-
-      override fun done() {
-        try {
-          com.intellij.openapi.command.WriteCommandAction.writeCommandAction(project).run {
-            editor.document.insertString(editor.selectionModel.selectionEnd, "\n\n" + get())
-          }
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to document code: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }
 
-class FixBugAction : AnAction() {
+class AstrovoxUpdateAction : BaseAstrovoxAction() {
   override fun actionPerformed(e: AnActionEvent) {
-    val editor = e.getData(com.intellij.openapi.actionSystem.CommonDataKeys.EDITOR) ?: return
-    val project = e.project ?: return
-    val code = editor.selectionModel.selectedText
-    if (code.isNullOrEmpty()) {
-      Messages.showWarningDialog("Please select some code first.", "Astrovox AI")
-      return
+    settingsService?.checkForUpdates()
+    Messages.showInfoMessage(e.project, "Checking for updates...", "Astrovox Update")
+  }
+}
+
+private fun performRequest(
+  endpoint: String,
+  code: String,
+  language: String,
+  e: AnActionEvent,
+  extraParams: Map<String, String> = emptyMap(),
+  onResult: (String) -> Unit
+) {
+  val service = settingsService ?: return
+  if (!service.isConfigured()) {
+    Messages.showWarningDialog(e.project, "Please configure your Astrovox API key in Settings.", "API Key Required")
+    return
+  }
+
+  val progressIndicator = com.intellij.openapi.progress.ProgressManager.getGlobalProgressIndicator()
+  if (progressIndicator != null) {
+    progressIndicator.isIndeterminate = true
+  }
+
+  com.intellij.openapi.application.ApplicationManager.getApplication().executeOnPooledThread {
+    try {
+      val client = okhttp3.OkHttpClient.Builder()
+        .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(120, java.util.concurrent.TimeUnit.SECONDS)
+        .build()
+
+      val bodyJson = org.json.JSONObject().apply {
+        put("code", code)
+        put("language", language)
+        extraParams.forEach { (k, v) -> put(k, v) }
+      }
+
+      val request = okhttp3.Request.Builder()
+        .url("https://api.astrovox.ai/v1/$endpoint")
+        .post(okhttp3.RequestBody.create(bodyJson.toString(), okhttp3.MediaType.parse("application/json")))
+        .addHeader("Authorization", "Bearer ${service.apiKey}")
+        .addHeader("Content-Type", "application/json")
+        .build()
+
+      client.newCall(request).execute().use { response ->
+        val responseBody = response.body?.string() ?: ""
+        val data = org.json.JSONObject(responseBody)
+        val result = when {
+          data.has("content") -> data.getString("content")
+          data.has("explanation") -> data.getString("explanation")
+          data.has("refactored") -> data.getString("refactored")
+          data.has("tests") -> data.getString("tests")
+          data.has("review") -> data.getString("review")
+          data.has("fixed_code") -> data.getString("fixed_code")
+          data.has("optimized_code") -> data.getString("optimized_code")
+          data.has("documentation") -> data.getString("documentation")
+          else -> responseBody
+        }
+
+        com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
+          onResult(result)
+        }
+      }
+    } catch (ex: Exception) {
+      com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
+        Messages.showErrorDialog(e.project, "Astrovox error: ${ex.message}", "Error")
+      }
+    } finally {
+      progressIndicator?.isIndeterminate = false
     }
-
-    val bugDescription = Messages.showInputDialog(project, "Describe the bug:", "Fix Bug with Astrovox", null)
-    if (bugDescription.isNullOrEmpty()) return
-
-    object : SwingWorker<String, Void>() {
-      override fun doInBackground(): String {
-        return try {
-          val result = AstrovoxClient.callAPI("/fix-bug", mapOf("code" to code, "bug_description" to bugDescription, "language" to editor.document.languageId))
-          result["fixed_code"]?.toString() ?: result["content"]?.toString() ?: code
-        } catch (ex: Exception) {
-          code
-        }
-      }
-
-      override fun done() {
-        try {
-          com.intellij.openapi.command.WriteCommandAction.writeCommandAction(project).run {
-            editor.document.replaceString(editor.selectionModel.selectionStart, editor.selectionModel.selectionEnd, get())
-          }
-        } catch (ex: Exception) {
-          Messages.showErrorDialog("Failed to fix bug: ${ex.message}", "Astrovox AI")
-        }
-      }
-    }.execute()
   }
 }

@@ -4,7 +4,7 @@ import hashlib
 import json
 import logging
 import time
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, Dict, List
 
 from fastapi import Request
 from fastapi.responses import Response
@@ -13,6 +13,36 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.performance import Cache
 
 logger = logging.getLogger("astravox.response_cache")
+
+
+class CacheInvalidationHook:
+    """Registry for cache invalidation hooks."""
+
+    def __init__(self) -> None:
+        self._hooks: Dict[str, List[Callable[[str], None]]] = {}
+
+    def register(self, path_prefix: str, hook: Callable[[str], None]) -> None:
+        """Register an invalidation hook for a path prefix."""
+        if path_prefix not in self._hooks:
+            self._hooks[path_prefix] = []
+        self._hooks[path_prefix].append(hook)
+
+    def trigger(self, path: str) -> None:
+        """Trigger all hooks matching a path."""
+        for prefix, hooks in self._hooks.items():
+            if path.startswith(prefix) or prefix in path:
+                for hook in hooks:
+                    try:
+                        hook(path)
+                    except Exception as exc:
+                        logger.debug("Cache invalidation hook error: %s", exc)
+
+    def clear(self) -> None:
+        """Clear all registered hooks."""
+        self._hooks.clear()
+
+
+cache_invalidation_hooks = CacheInvalidationHook()
 
 
 class ResponseCacheMiddleware(BaseHTTPMiddleware):
@@ -63,6 +93,7 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
                     "headers": dict(response.headers),
                     "media_type": response.media_type,
                 })
+                cache_invalidation_hooks.trigger(str(request.url.path))
                 return Response(
                     content=body,
                     status_code=response.status_code,
@@ -88,6 +119,7 @@ class ResponseCacheMiddleware(BaseHTTPMiddleware):
         ]
         for key in keys_to_delete:
             self._cache.invalidate(key)
+        cache_invalidation_hooks.trigger(path)
 
     def clear(self) -> None:
         self._cache.clear()

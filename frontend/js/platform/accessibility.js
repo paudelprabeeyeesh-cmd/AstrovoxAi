@@ -1,3 +1,4 @@
+// Frontend Platform - Group 1: Accessible component primitives and focus management
 const FOCUSABLE_SELECTOR = [
   'a[href]',
   'button:not([disabled])',

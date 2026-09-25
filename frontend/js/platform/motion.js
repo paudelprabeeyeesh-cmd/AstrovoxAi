@@ -1,3 +1,4 @@
+// Frontend Platform - Group 2: Animation/transition system with reduced-motion support
 const Motion = {
   _prefersReducedMotion() {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;

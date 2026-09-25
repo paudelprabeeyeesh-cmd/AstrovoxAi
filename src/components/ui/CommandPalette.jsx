@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useKeyboardShortcuts } from './KeyboardShortcuts'
 import Icon from '../design/Iconography.jsx'
-import { useReducedMotion } from '../../design/DesignTokens'
+import { useReducedMotion } from '../../design/DesignTokens.js'
 import { useA11y } from './A11yProvider'
 
 export function CommandPalette({ isOpen, onClose, onSelect, commands = [] }) {

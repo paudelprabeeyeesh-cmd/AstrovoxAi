@@ -1,3 +1,4 @@
+// Frontend Platform - Group 3: Monaco code editor integration
 const Monaco = {
   _editor: null,
   _container: null,

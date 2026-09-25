@@ -13,6 +13,7 @@ Vector search should be combined with keyword search, not used alone.
 
 from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
+from datetime import datetime
 import numpy as np
 
 

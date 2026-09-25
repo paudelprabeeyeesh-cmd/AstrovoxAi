@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useReducedMotion } from '../../design/DesignTokens'
+import { useReducedMotion } from '../../design/DesignTokens.js'
 import Icon from '../design/Iconography.jsx'
 
 const ToastContext = createContext(null)

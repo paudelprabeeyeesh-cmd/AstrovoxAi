@@ -1,3 +1,4 @@
+// Frontend Platform - Group 5: PWA install, update, and cache strategies
 const PWA = {
   _deferredPrompt: null,
   _isInstallable: false,

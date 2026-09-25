@@ -1,3 +1,4 @@
+// Frontend Platform - Group 3: Mermaid diagram integration
 const Mermaid = {
   _instances: new Map(),
 

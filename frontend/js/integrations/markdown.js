@@ -1,3 +1,4 @@
+// Frontend Platform - Group 3: Markdown/Mermaid/KaTeX/Monaco integrations
 const Markdown = {
   _escapeHtml(text) {
     const div = document.createElement('div');

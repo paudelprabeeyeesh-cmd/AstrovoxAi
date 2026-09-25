@@ -85,7 +85,7 @@ class BackgroundWorker:
 
     @classmethod
     async def _execute_task(cls, task: WorkerTask) -> Any:
-        """Execute a task's payload function or default to ack completion."""
+        """Execute a task payload function or default to ack completion."""
         func = task.payload.get("_func")
         if callable(func):
             return await func(task.payload)

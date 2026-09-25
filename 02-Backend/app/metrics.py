@@ -90,6 +90,14 @@ def get_metrics():
     return b"# Prometheus client not available\n"
 
 
+def track_request(method: str, path: str, status: int, duration: float):
+    """Track HTTP request metrics."""
+    if not PROMETHEUS_AVAILABLE:
+        return
+    http_requests_total.labels(method=method, endpoint=path, status=str(status)).inc()
+    http_request_duration.labels(method=method, endpoint=path).observe(duration)
+
+
 def track_ai_request(model: str, status: str, tokens: int = 0):
     """Track AI request metrics."""
     if not PROMETHEUS_AVAILABLE:

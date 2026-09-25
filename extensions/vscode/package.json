@@ -2,7 +2,7 @@
   "name": "astrovox-vscode",
   "displayName": "Astrovox AI",
   "description": "AI-powered code assistant for VS Code with chat, explain, refactor, and test generation",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "astrovox",
   "engines": {
     "vscode": "^1.70.0"
@@ -50,6 +50,22 @@
       {
         "command": "astrovox.optimizeCode",
         "title": "Astrovox: Optimize Code"
+      },
+      {
+        "command": "astrovox.detectSecurityIssues",
+        "title": "Astrovox: Detect Security Issues"
+      },
+      {
+        "command": "astrovox.translateCode",
+        "title": "Astrovox: Translate Code"
+      },
+      {
+        "command": "astrovox.checkForUpdates",
+        "title": "Astrovox: Check for Updates"
+      },
+      {
+        "command": "astrovox.viewChangelog",
+        "title": "Astrovox: View Changelog"
       }
     ],
     "views": {
@@ -129,6 +145,21 @@
           "type": "boolean",
           "default": true,
           "description": "Show status bar item"
+        },
+        "astrovox.autoUpdate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for extension updates"
+        },
+        "astrovox.updateCheckInterval": {
+          "type": "number",
+          "default": 24,
+          "description": "Update check interval in hours"
+        },
+        "astrovox.enablePushNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable push notifications for chat"
         }
       }
     },

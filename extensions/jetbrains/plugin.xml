@@ -2,9 +2,9 @@
 <idea-plugin>
   <id>ai.astrovox.jetbrains</id>
   <name>Astrovox AI</name>
-  <version>1.0.0</version>
+  <version>1.1.0</version>
   <vendor email="support@astrovox.ai" url="https://astrovox.ai">Astrovox Team</vendor>
-  <description>AI-powered code assistant for JetBrains IDEs</description>
+  <description>AI-powered code assistant for JetBrains IDEs with chat, explain, refactor, test generation, and security analysis</description>
 
   <depends>com.intellij.modules.platform</depends>
 
@@ -15,57 +15,49 @@
       factoryClass="ai.astrovox.ChatToolWindowFactory"
       secondary="true"
     />
-    <action
-      id="Astrovox.StartChat"
-      class="ai.astrovox.actions.StartChatAction"
-      text="Astrovox: Start Chat"
-      description="Open Astrovox AI chat"
-    >
-      <keyboard-shortcut first-keystroke="ctrl shift A" second-keystroke="ctrl shift A" keymap="$default"/>
-    </action>
-    <action
-      id="Astrovox.ExplainCode"
-      class="ai.astrovox.actions.ExplainCodeAction"
-      text="Astrovox: Explain Code"
-      description="Explain selected code with AI"
-    />
-    <action
-      id="Astrovox.GenerateTests"
-      class="ai.astrovox.actions.GenerateTestsAction"
-      text="Astrovox: Generate Tests"
-      description="Generate unit tests for selected code"
-    />
-    <action
-      id="Astrovox.RefactorCode"
-      class="ai.astrovox.actions.RefactorCodeAction"
-      text="Astrovox: Refactor Code"
-      description="Refactor selected code with AI"
-    />
-    <action
-      id="Astrovox.ReviewCode"
-      class="ai.astrovox.actions.ReviewCodeAction"
-      text="Astrovox: Review Code"
-      description="Review selected code with AI"
-    />
-    <action
-      id="Astrovox.DocumentCode"
-      class="ai.astrovox.actions.DocumentCodeAction"
-      text="Astrovox: Document Code"
-      description="Generate documentation for selected code"
-    />
-    <action
-      id="Astrovox.FixBug"
-      class="ai.astrovox.actions.FixBugAction"
-      text="Astrovox: Fix Bug"
-      description="Fix bug in selected code"
-    />
     <applicationService serviceImplementation="ai.astrovox.services.AstrovoxSettingsService"/>
     <applicationConfigurable instance="ai.astrovox.settings.AstrovoxConfigurable" id="astrovox.settings" displayName="Astrovox AI"/>
+    <notificationGroup id="Astrovox Updates" displayType="STICKY_BALLOON"/>
   </extensions>
 
-  <project-components>
-    <component>
-      <interface className="ai.astrovox.services.AstrovoxClient"/>
-    </component>
-  </project-components>
+  <actions>
+    <action id="Astrovox.StartChat"
+      class="ai.astrovox.actions.StartChatAction"
+      text="Astrovox: Start Chat"
+      description="Open Astrovox AI chat">
+      <keyboard-shortcut first-keystroke="ctrl shift A" second-keystroke="ctrl shift A" keymap="$default"/>
+    </action>
+    <action id="Astrovox.ExplainCode"
+      class="ai.astrovox.actions.ExplainCodeAction"
+      text="Astrovox: Explain Selected Code"
+      description="Explain selected code with AI"/>
+    <action id="Astrovox.GenerateTests"
+      class="ai.astrovox.actions.GenerateTestsAction"
+      text="Astrovox: Generate Tests"
+      description="Generate unit tests for selected code"/>
+    <action id="Astrovox.RefactorCode"
+      class="ai.astrovox.actions.RefactorCodeAction"
+      text="Astrovox: Refactor Code"
+      description="Refactor selected code with AI"/>
+    <action id="Astrovox.ReviewCode"
+      class="ai.astrovox.actions.ReviewCodeAction"
+      text="Astrovox: Review Code"
+      description="Review selected code with AI"/>
+    <action id="Astrovox.DocumentCode"
+      class="ai.astrovox.actions.DocumentCodeAction"
+      text="Astrovox: Document Code"
+      description="Generate documentation for selected code"/>
+    <action id="Astrovox.FixBug"
+      class="ai.astrovox.actions.FixBugAction"
+      text="Astrovox: Fix Bug"
+      description="Fix bug in selected code"/>
+    <action id="Astrovox.OptimizeCode"
+      class="ai.astrovox.actions.OptimizeCodeAction"
+      text="Astrovox: Optimize Code"
+      description="Optimize selected code with AI"/>
+    <action id="Astrovox.CheckForUpdates"
+      class="ai.astrovox.actions.AstrovoxUpdateAction"
+      text="Astrovox: Check for Updates"
+      description="Check for extension updates"/>
+  </actions>
 </idea-plugin>
