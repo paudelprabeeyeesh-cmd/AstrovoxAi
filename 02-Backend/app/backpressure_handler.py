@@ -1,6 +1,7 @@
 """Backpressure handler for controlling throughput."""
 
 import asyncio
+import inspect
 import logging
 import threading
 import time
@@ -34,7 +35,7 @@ class BackpressureHandler:
             with self._lock:
                 self._active += 1
             try:
-                if asyncio.iscoroutinefunction(func):
+                if inspect.iscoroutinefunction(func):
                     return await func(*args, **kwargs)
                 return func(*args, **kwargs)
             finally:
