@@ -21,6 +21,7 @@ class OpenAIProvider(AIProvider):
             )
         super().__init__(config)
         self._client = None
+        self._async_client = None
 
     @property
     def client(self):
@@ -32,6 +33,17 @@ class OpenAIProvider(AIProvider):
                 max_retries=self.config.max_retries,
             )
         return self._client
+
+    @property
+    def async_client(self):
+        if self._async_client is None:
+            from openai import AsyncOpenAI
+            self._async_client = AsyncOpenAI(
+                api_key=self.config.api_key,
+                timeout=self.config.timeout,
+                max_retries=self.config.max_retries,
+            )
+        return self._async_client
 
     @property
     def is_configured(self) -> bool:
@@ -58,7 +70,7 @@ class OpenAIProvider(AIProvider):
             api_messages.append({"role": "system", "content": system_prompt})
         api_messages.extend([{"role": m.role, "content": m.content} for m in messages])
 
-        response = self.client.chat.completions.create(
+        response = await self.async_client.chat.completions.create(
             model=model,
             messages=api_messages,
             temperature=temperature,
@@ -90,7 +102,7 @@ class OpenAIProvider(AIProvider):
             api_messages.append({"role": "system", "content": system_prompt})
         api_messages.extend([{"role": m.role, "content": m.content} for m in messages])
 
-        stream = self.client.chat.completions.create(
+        stream = await self.async_client.chat.completions.create(
             model=model,
             messages=api_messages,
             temperature=temperature,
@@ -98,6 +110,6 @@ class OpenAIProvider(AIProvider):
             stream=True,
         )
 
-        for chunk in stream:
+        async for chunk in stream:
             if chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content

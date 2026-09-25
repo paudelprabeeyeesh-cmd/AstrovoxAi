@@ -8,7 +8,7 @@ from app.temporal.snapshots import SnapshotEngine, SnapshotStrategy
 from app.temporal.cqrs import CommandBus, QueryBus, Command, Event, Query, QueryResult, CQRS
 from app.temporal.reverse_debugger import ReverseDebugger, DebugDirection
 from app.temporal.branching import BranchTimelineManager, BranchType, BranchStatus
-from app.temporal.causal import CausalChainAnalyzer, CausalEvent, CausalEdge
+from app.temporal.causal import CausalChainAnalyzer, CausalEvent, CausalEdge, CausalEdgeType
 from app.temporal.diffing import StateDiffer, HistoricalDiff
 from app.temporal.rollback import RollbackAutomation, RollbackTrigger
 
