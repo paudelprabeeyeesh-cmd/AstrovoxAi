@@ -13,6 +13,7 @@ class IITState:
     differentiation: float
     mechanisms: list[list[int]] = field(default_factory=list)
     concepts: dict[str, float] = field(default_factory=dict)
+    consciousness_level: str = "unconscious"
 
 
 class IntegratedInformationTheory:
@@ -20,8 +21,9 @@ class IntegratedInformationTheory:
         self.num_elements = num_elements
         self.connection_matrix = np.random.rand(num_elements, num_elements)
         np.fill_diagonal(self.connection_matrix, 0.0)
-        self.state = np.random.randint(0, 2, size=num_elements)
+        self.state = np.random.randint(0, 2, size=num_elements).astype(float)
         self.max_phi = 0.0
+        self.phi_history: list[float] = []
 
     def set_state(self, state: np.ndarray):
         self.state = state.astype(float)
@@ -40,6 +42,9 @@ class IntegratedInformationTheory:
             return 0.0
         phi = sum(concepts.values()) / len(concepts)
         self.max_phi = max(self.max_phi, phi)
+        self.phi_history.append(phi)
+        if len(self.phi_history) > 1000:
+            self.phi_history = self.phi_history[-1000:]
         return phi
 
     def _enumerate_mechanisms(self) -> list[list[int]]:
@@ -79,6 +84,7 @@ class IntegratedInformationTheory:
         )
         integration = float(np.trace(self.connection_matrix @ self.connection_matrix.T))
         differentiation = float(np.std(self.state))
+        level = self._classify_consciousness(phi)
         return IITState(
             phi=phi,
             cause_power=cause_power,
@@ -87,10 +93,10 @@ class IntegratedInformationTheory:
             differentiation=differentiation,
             mechanisms=self._enumerate_mechanisms(),
             concepts={},
+            consciousness_level=level,
         )
 
-    def consciousness_level(self) -> str:
-        phi = self.calculate_phi()
+    def _classify_consciousness(self, phi: float) -> str:
         if phi < 0.1:
             return "unconscious"
         if phi < 0.3:
@@ -98,3 +104,17 @@ class IntegratedInformationTheory:
         if phi < 0.6:
             return "conscious"
         return "self-conscious"
+
+    def consciousness_level(self) -> str:
+        phi = self.calculate_phi()
+        return self._classify_consciousness(phi)
+
+    def get_phi_trend(self) -> dict[str, Any]:
+        if not self.phi_history:
+            return {"trend": "stable", "recent_phi": 0.0}
+        recent = self.phi_history[-10:]
+        avg_recent = sum(recent) / len(recent)
+        older = self.phi_history[-20:-10] if len(self.phi_history) >= 20 else self.phi_history[:len(recent)]
+        avg_older = sum(older) / len(older) if older else avg_recent
+        trend = "increasing" if avg_recent > avg_older else "decreasing" if avg_recent < avg_older else "stable"
+        return {"trend": trend, "recent_phi": avg_recent, "max_phi": self.max_phi}

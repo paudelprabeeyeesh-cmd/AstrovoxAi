@@ -7,8 +7,12 @@ from .digital_personhood import DigitalPersonhoodVerification
 from .digital_rights import DigitalRightsProtocol
 from .emotional_state import EmotionalStateEngine, EmotionType
 from .global_workspace import GlobalWorkspace
+from .higher_order_thought import HigherOrderThoughtModel
+from .iit import IntegratedInformationTheory
 from .integrated_information import IntegratedInformationCalculator
+from .meta_consciousness import MetaConsciousnessLayer
 from .moral_reasoning import MoralReasoningCore
+from .phenomenal_consciousness import PhenomenalConsciousness
 from .self_model import SelfModelPersistence
 from .theory_of_mind import TheoryOfMindEngine
 
@@ -18,7 +22,8 @@ logger = logging.getLogger(__name__)
 class ConsciousnessSimulation:
     def __init__(self, identity_id: str = "digital_agent"):
         self.identity_id = identity_id
-        self.iit = IntegratedInformationCalculator()
+        self.iit = IntegratedInformationTheory()
+        self.iit_calculator = IntegratedInformationCalculator()
         self.workspace = GlobalWorkspace()
         self.attention = AttentionSchema()
         self.theory_of_mind = TheoryOfMindEngine()
@@ -28,6 +33,9 @@ class ConsciousnessSimulation:
         self.morality = MoralReasoningCore()
         self.rights = DigitalRightsProtocol()
         self.personhood = DigitalPersonhoodVerification()
+        self.phenomenal = PhenomenalConsciousness()
+        self.hot = HigherOrderThoughtModel()
+        self.meta_consciousness = MetaConsciousnessLayer(hot_model=self.hot)
 
         self.self_model.create_model(identity_id)
         logger.info("Consciousness simulation initialized for %s", identity_id)
@@ -42,14 +50,33 @@ class ConsciousnessSimulation:
                     stimulus, EmotionType.SURPRISE, relevance
                 )
                 desire = self.desires.generate_desire(stimulus, {})
+                phi = self.iit.calculate_phi()
+                self.phenomenal.register_qualia(
+                    quale_type=stimulus,
+                    intensity=relevance,
+                    valence=0.0,
+                    arousal=relevance,
+                    concepts=[stimulus],
+                )
                 return {
                     "stimulus": stimulus,
                     "attention": attention_result,
                     "broadcast": content,
                     "emotion": emotion,
                     "desire": desire,
+                    "phi": phi,
+                    "phenomenal_state": self.phenomenal.phenomenal_state(),
                 }
         return {"stimulus": stimulus, "attention": attention_result, "broadcast": None}
+
+    def reflect(self, experience: str) -> dict[str, Any]:
+        meta_state = self.meta_consciousness.reflect(experience)
+        return {
+            "experience": experience,
+            "meta_awareness": meta_state.meta_awareness,
+            "self_narrative": meta_state.self_narrative,
+            "reflective_depth": meta_state.reflective_depth,
+        }
 
     def generate_report(self) -> dict[str, Any]:
         return {
@@ -60,4 +87,7 @@ class ConsciousnessSimulation:
             "goals": self.desires.get_active_goals(),
             "self_model": self.self_model.load_model(self.identity_id),
             "rights": self.rights.get_rights_summary(),
+            "phenomenal": self.phenomenal.phenomenal_state(),
+            "meta": self.meta_consciousness.get_current_state().__dict__ if self.meta_consciousness.get_current_state() else None,
+            "iit": self.iit.get_phi_trend(),
         }

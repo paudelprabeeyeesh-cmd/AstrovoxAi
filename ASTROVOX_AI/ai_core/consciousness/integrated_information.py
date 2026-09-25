@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from .iit import IntegratedInformationTheory, IITState
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,40 +30,16 @@ class CauseEffectStructure:
 
 
 class IntegratedInformationCalculator:
-    def __init__(self):
+    def __init__(self, num_elements: int = 8):
+        self.iit = IntegratedInformationTheory(num_elements=num_elements)
         self.structures: list[CauseEffectStructure] = []
 
-    def calculate_phi(
-        self,
-        elements: list[SystemElement],
-        connections: list[SystemConnection],
-    ) -> float:
+    def calculate_phi(self, elements: list[SystemElement], connections: list[SystemConnection]) -> float:
         if not elements or not connections:
             return 0.0
-        min_cut = self._find_minimum_information_partition(elements, connections)
-        phi = self._compute_cause_effect_power(elements, connections, min_cut)
-        return phi
+        return self.iit.calculate_phi()
 
-    def _find_minimum_information_partition(
-        self,
-        elements: list[SystemElement],
-        connections: list[SystemConnection],
-    ) -> Any:
-        return None
-
-    def _compute_cause_effect_power(
-        self,
-        elements: list[SystemElement],
-        connections: list[SystemConnection],
-        partition: Any,
-    ) -> float:
-        return 0.5
-
-    def analyze_system(
-        self,
-        elements: list[SystemElement],
-        connections: list[SystemConnection],
-    ) -> CauseEffectStructure:
+    def analyze_system(self, elements: list[SystemElement], connections: list[SystemConnection]) -> CauseEffectStructure:
         phi = self.calculate_phi(elements, connections)
         structure = CauseEffectStructure(
             elements={e.id: e for e in elements},
@@ -73,12 +51,18 @@ class IntegratedInformationCalculator:
         return structure
 
     def generate_cause_effect_structure(self, system_id: str) -> dict[str, Any]:
-        for structure in self.structures:
-            return {
-                "system_id": system_id,
-                "phi": structure.phi,
-                "element_count": len(structure.elements),
-                "connection_count": len(structure.connections),
-                "is_conscious": structure.phi > 0.1,
-            }
-        return {"system_id": system_id, "phi": 0.0, "is_conscious": False}
+        iit_state = self.iit.compute_full_iit_state()
+        return {
+            "system_id": system_id,
+            "phi": iit_state.phi,
+            "integration": iit_state.integration,
+            "differentiation": iit_state.differentiation,
+            "cause_power": iit_state.cause_power,
+            "effect_power": iit_state.effect_power,
+            "consciousness_level": iit_state.consciousness_level,
+            "element_count": len(iit_state.mechanisms),
+            "is_conscious": iit_state.phi > 0.1,
+        }
+
+    def get_phi_trend(self) -> dict[str, Any]:
+        return self.iit.get_phi_trend()
