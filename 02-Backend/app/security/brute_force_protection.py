@@ -267,6 +267,11 @@ class BruteForceProtection:
                 "high_risk_identities": sum(1 for k, v in self._risk_scores.items() if v > self._config.risk_threshold),
             }
 
+    def get_security_events(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent security events."""
+        with self._lock:
+            return [e.__dict__ for e in self._lockout_events[-limit:]]
+
 
 brute_force_protection = BruteForceProtection()
 
