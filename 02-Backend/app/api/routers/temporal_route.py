@@ -49,6 +49,12 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/temporal", tags=["temporal"])
 
+
+@router.get("/health")
+async def temporal_health():
+    return {"status": "ok", "module": "temporal"}
+
+
 # Shared instances
 _db = TemporalDatabase()
 _debugger = get_debugger("api")

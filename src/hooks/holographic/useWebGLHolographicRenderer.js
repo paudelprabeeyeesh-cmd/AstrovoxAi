@@ -101,6 +101,7 @@ export function useWebGLHolographicRenderer() {
       uniform vec3 u_primaryColor;
       uniform vec3 u_secondaryColor;
       uniform vec3 u_accentColor;
+      uniform vec3 u_quantumColor;
 
       float random(vec2 st) {
         return fract(sin(dot(st.xy, vec2(12.9898, 78.233))) * 43758.5453123);

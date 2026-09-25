@@ -73,6 +73,7 @@ from app.quantum.routes.router import router as quantum_router
 from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
+from app.routers.agi_router import router as agi_router
 
 load_dotenv()
 
@@ -183,6 +184,7 @@ app.include_router(quantum_router)
 app.include_router(neural_bci_router)
 app.include_router(multiverse_router)
 app.include_router(omnipresent_router)
+app.include_router(agi_router)
 
 
 # Prometheus metrics middleware

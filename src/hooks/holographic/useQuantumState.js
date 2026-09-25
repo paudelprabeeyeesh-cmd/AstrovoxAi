@@ -64,8 +64,8 @@ export function useQuantumState() {
           newPhase = qubit.phase + Math.sin(qubit.phase / 2)
           break
         case 'RY':
-          newAmplitude = qubit.amplitude * Math.cos(qubit.phase / 2)
           newAmplitude = qubit.amplitude * Math.sin(qubit.phase / 2)
+          newPhase = qubit.phase + Math.cos(qubit.phase / 2)
           break
         case 'RZ':
           newPhase = qubit.phase + qubit.amplitude
