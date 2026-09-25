@@ -27,3 +27,28 @@ document.getElementById('input').addEventListener('keydown', (e) => {
     document.getElementById('send').click()
   }
 })
+
+document.getElementById('copy').addEventListener('click', async () => {
+  const response = document.getElementById('response')
+  if (response && response.textContent) {
+    try {
+      await navigator.clipboard.writeText(response.textContent)
+      const btn = document.getElementById('copy')
+      const original = btn.textContent
+      btn.textContent = 'Copied!'
+      setTimeout(() => { btn.textContent = original }, 2000)
+    } catch (err) {
+      console.error('Copy failed:', err)
+    }
+  }
+})
+
+document.getElementById('clear').addEventListener('click', () => {
+  const response = document.getElementById('response')
+  if (response) {
+    response.style.display = 'none'
+    response.textContent = ''
+    response.className = 'popup-response'
+  }
+  document.getElementById('input').value = ''
+})

@@ -107,4 +107,15 @@ class WebhookDeliveryService:
         return events
 
 
-webhook_service = WebhookDeliveryService()
+_webhook_service: Optional["WebhookDeliveryService"] = None
+
+
+def get_webhook_service() -> WebhookDeliveryService:
+    global _webhook_service
+    if _webhook_service is None:
+        _webhook_service = WebhookDeliveryService()
+    return _webhook_service
+
+
+# Backward compatibility alias
+webhook_service = None  # initialized on first access via get_webhook_service()

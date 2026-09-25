@@ -12,7 +12,7 @@ import signal
 from typing import Set
 
 from fastapi import Request
-from starlette.middleware.base import BaseHTTPState
+from starlette.middleware.base import BaseHTTPMiddleware
 
 logger = logging.getLogger("astravox.shutdown")
 

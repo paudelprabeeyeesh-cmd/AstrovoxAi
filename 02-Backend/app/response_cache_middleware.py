@@ -10,7 +10,7 @@ from fastapi import Request
 from fastapi.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.cache import Cache
+from app.performance import Cache
 
 logger = logging.getLogger("astravox.response_cache")
 

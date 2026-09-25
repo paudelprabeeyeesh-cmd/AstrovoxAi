@@ -1,15 +1,18 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { A11Y_SPECS } from '../../design/AccessibilitySpecs'
 import { useFocusManagement } from './KeyboardShortcuts'
 
 const A11yContext = createContext(null)
 
-export function A11yProvider({ children, announce }) {
+export function A11yProvider({ children }) {
   const [screenReaderMode, setScreenReaderMode] = useState(false)
   const [highContrastMode, setHighContrastMode] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [focusVisible, setFocusVisible] = useState(false)
+  const [announcements, setAnnouncements] = useState([])
   const { focusFirstInteractive, trapFocus } = useFocusManagement()
+  const announcerRef = useRef(null)
+  const idRef = useRef(0)
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -27,6 +30,24 @@ export function A11yProvider({ children, announce }) {
     return () => mediaQuery.removeEventListener('change', handler)
   }, [])
 
+  const announce = useCallback((message, priority = 'polite') => {
+    const id = ++idRef.current
+    setAnnouncements(prev => [...prev, { id, message, priority, timestamp: Date.now() }])
+
+    if (announcerRef.current) {
+      announcerRef.current.textContent = ''
+      requestAnimationFrame(() => {
+        if (announcerRef.current) {
+          announcerRef.current.textContent = message
+        }
+      })
+    }
+
+    setTimeout(() => {
+      setAnnouncements(prev => prev.filter(a => a.id !== id))
+    }, 1000)
+  }, [])
+
   const value = {
     screenReaderMode,
     setScreenReaderMode,
@@ -37,11 +58,48 @@ export function A11yProvider({ children, announce }) {
     setFocusVisible,
     focusFirstInteractive,
     trapFocus,
-    announce: announce || (() => {}),
+    announce,
     specs: A11Y_SPECS
   }
 
-  return <A11yContext.Provider value={value}>{children}</A11yContext.Provider>
+  return (
+    <A11yContext.Provider value={value}>
+      {children}
+      <div
+        ref={announcerRef}
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0
+        }}
+        aria-live="polite"
+        aria-atomic="true"
+        role="status"
+      />
+      <div
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0
+        }}
+        aria-live="assertive"
+        aria-atomic="true"
+        role="alert"
+      />
+    </A11yContext.Provider>
+  )
 }
 
 export function useA11y() {

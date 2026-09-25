@@ -6,6 +6,7 @@
   let isOpen = false
   let messages = []
   let apiKey = ''
+  let theme = 'astrovox'
 
   function init() {
     loadSettings()
@@ -14,15 +15,21 @@
       return
     }
     injectSidebar()
+    setupKeyboardShortcuts()
   }
 
   function loadSettings() {
     try {
       const settings = JSON.parse(localStorage.getItem('astrovox-settings') || '{}')
       apiKey = settings.apiKey || ''
+      theme = settings.theme || 'astrovox'
     } catch (e) {
       console.error('Failed to load settings:', e)
     }
+  }
+
+  function saveSettings() {
+    localStorage.setItem('astrovox-settings', JSON.stringify({ apiKey, theme }))
   }
 
   function showSetupPrompt() {
@@ -35,7 +42,7 @@
       max-width: 300px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     `
     banner.innerHTML = `
-      <div style="font-weight: 600; margin-bottom: 8px; color: #67e8f9;">🛸 Astrovox AI</div>
+      <div style="font-weight: 600; margin-bottom: 8px; color: #67e8f9;">Astrovox AI</div>
       <div style="font-size: 12px; color: #94a3b8; margin-bottom: 12px;">
         Enter your API key to get started.
       </div>
@@ -53,11 +60,41 @@
       const key = document.getElementById('astrovox-api-key').value.trim()
       if (key) {
         apiKey = key
-        localStorage.setItem('astrovox-settings', JSON.stringify({ apiKey: key }))
+        saveSettings()
         banner.remove()
         init()
       }
     })
+  }
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        toggleSidebar()
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault()
+        toggleSidebar()
+      }
+    })
+  }
+
+  function getInitials(name) {
+    if (!name) return 'U'
+    const parts = name.trim().split(/\s+/)
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    }
+    return name.slice(0, 2).toUpperCase()
+  }
+
+  function formatRelativeTime(date) {
+    if (!date) return ''
+    const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000)
+    if (diff < 60) return 'Just now'
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+    return `${Math.floor(diff / 86400)}d ago`
   }
 
   function injectSidebar() {
@@ -74,7 +111,7 @@
     sidebar.innerHTML = `
       <div style="padding: 16px; border-bottom: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center;">
         <div style="font-size: 14px; font-weight: 600; color: #67e8f9;">ASTROVOX</div>
-        <button id="astrovox-close" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 18px;">×</button>
+        <button id="astrovox-close" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 18px;">x</button>
       </div>
       <div id="astrovox-messages" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;"></div>
       <div style="padding: 12px; border-top: 1px solid #1e293b; display: flex; gap: 8px;">

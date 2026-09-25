@@ -28,13 +28,24 @@ npm install @astrovox/components
 - `MultiChatTabs` - Multiple chat tabs
 - `ChatBranching` - Branch conversations
 - `FolderSystem` - Folder management
+- `DragDropList` - Drag-and-drop conversation reordering
 - `TeamWorkspace` - Team collaboration
 - `SharedConversations` - Shared content
 
 ### UI Components
 - `NotificationCenter` - Notification management
 - `KeyboardShortcuts` - Keyboard navigation
+- `KeyboardShortcutCheatsheet` - Keyboard shortcut reference overlay
 - `ThemeEngine` - Theme management
+- `ThemeSwitcher` - Enhanced theme switcher with live preview
+- `CommandPalette` - Global command palette (Cmd+K)
+- `Toast` - Toast notification system
+- `Modal` - Modal/dialog with focus trap
+- `Tooltip` - Tooltip system with positioning
+- `Skeleton` - Skeleton loading states
+- `EmptyState` - Empty-state illustrations
+- `Avatar` - Avatar/initials generator
+- `SplitPane` - Resizable split-pane layouts
 - `A11yProvider` - Accessibility context
 
 ### Admin Components

@@ -23,6 +23,7 @@ from app.api.routers.knowledge_route import router as knowledge_router
 from app.api.routers.agent_route import router as agent_router
 from app.api.routers.monitoring_route import router as monitoring_router
 from app.api.routers.auth.security_route import router as security_router
+from app.api.routers.security_management import router as security_management_router
 from app.api.routers.admin_route import router as admin_router
 from app.api.routers.realtime_route import router as realtime_router
 from app.api.routers.dashboard_route import router as dashboard_router
@@ -88,6 +89,8 @@ app.add_middleware(
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(IPEnforcementMiddleware)
+app.add_middleware(UserAgentMiddleware)
 
 # Request logging with correlation id propagation
 app.add_middleware(RequestLoggingMiddleware)
@@ -122,6 +125,7 @@ app.include_router(knowledge_router)
 app.include_router(agent_router)
 app.include_router(monitoring_router)
 app.include_router(security_router)
+app.include_router(security_management_router)
 app.include_router(admin_router)
 app.include_router(realtime_router)
 app.include_router(dashboard_router)

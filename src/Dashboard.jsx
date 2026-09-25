@@ -18,8 +18,16 @@ import MultiversePanel from './components/multiverse/MultiversePanel'
 import HolographicPanel from './components/holographic/HolographicPanel'
 // eslint-disable-next-line no-unused-vars
 import QuantumHolographicSystem from './components/quantum/QuantumHolographicSystem'
+// eslint-disable-next-line no-unused-vars
+import { ToastProvider, useToast } from './components/ui/Toast'
+// eslint-disable-next-line no-unused-vars
+import { CommandPalette } from './components/ui/CommandPalette'
+// eslint-disable-next-line no-unused-vars
+import { Modal } from './components/ui/Modal'
+// eslint-disable-next-line no-unused-vars
+import { Skeleton, EmptyState, Avatar, relativeTime } from './components/ui'
 
-export default function Dashboard({ session }) {
+function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
   const [terminalLogs, setTerminalLogs] = useState([
     '>> ASTROVOX OS v2.0.6 INITIALIZED SUCCESS',
@@ -53,6 +61,31 @@ export default function Dashboard({ session }) {
     }
   }, [session, loadUserStats])
 
+
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+  const { addToast } = useToast()
+
+  const handleCommandSelect = useCallback((cmd) => {
+    addToast(`Executing: ${cmd.label}`, { type: 'info' })
+    if (cmd.id === 'logout') {
+      supabase.auth.signOut()
+    }
+  }, [addToast])
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setShowCommandPalette(prev => !prev)
+      }
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
+        setShowShortcuts(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   return (
     <div style={{
@@ -109,6 +142,47 @@ export default function Dashboard({ session }) {
             </p>
           </div>
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <button
+              onClick={() => setShowCommandPalette(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: 'transparent',
+                border: '1px solid #1e293b',
+                color: '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              title="Command palette (Cmd+K)"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              Search
+            </button>
+            <button
+              onClick={() => setShowShortcuts(true)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: 'transparent',
+                border: '1px solid #1e293b',
+                color: '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+              title="Keyboard shortcuts (?)"
+            >
+              Shortcuts
+            </button>
             <button
               onClick={() => setActivePanel('chat')}
               style={{
