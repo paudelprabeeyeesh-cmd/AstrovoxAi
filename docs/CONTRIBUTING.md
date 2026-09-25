@@ -9,7 +9,7 @@ By participating, you agree to uphold our [Code of Conduct](./CODE_OF_CONDUCT.md
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/AstrovoxAi.git`
+2. Clone your fork: `git clone https://github.com/astrovox/astrovox.git`
 3. Create a branch: `git checkout -b feature/your-feature`
 4. Make your changes
 5. Run tests: `npm run test:all` and `npm run lint`
