@@ -388,6 +388,19 @@ class ContainerSecurityPolicy:
                 "blocked_events": sum(1 for e in self._runtime_events if e.blocked),
             }
 
+    def generate_security_report(self, container_contexts: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Generate a comprehensive container security report."""
+        reports = []
+        for ctx in container_contexts:
+            reports.append(self.generate_container_hardening_report(ctx))
+        return {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "containers_reviewed": len(reports),
+            "total_violations": sum(r["violations"] for r in reports),
+            "avg_hardening_score": round(sum(r["hardening_score"] for r in reports) / max(1, len(reports)), 2),
+            "container_reports": reports,
+        }
+
 
 container_security = ContainerSecurityPolicy()
 
