@@ -1,85 +1,62 @@
-import math
-import heapq
-import time
+import logging
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Any
 
-from .iit import IntegratedInformationTheory, IITState
+logger = logging.getLogger(__name__)
 
 
 @dataclass
-class BroadcastMessage:
+class WorkspaceContent:
+    id: str
     content: Any
-    source: str
-    timestamp: float = field(default_factory=time.time)
-    urgency: float = 0.5
-    attention_weight: float = 0.0
-    module_origin: str = "unknown"
+    activation: float = 0.0
+    source: str = ""
+    timestamp: float = 0.0
 
 
-class GlobalWorkspaceTheory:
-    def __init__(self, capacity: int = 7):
+class GlobalWorkspace:
+    def __init__(self, capacity: int = 10, threshold: float = 0.5):
         self.capacity = capacity
-        self.workspace: list[BroadcastMessage] = []
-        self.competition_history: list[dict[str, Any]] = []
-        self.iit = IntegratedInformationTheory()
-        self.conscious_threshold = 0.4
+        self.threshold = threshold
+        self.broadcast_queue: deque[WorkspaceContent] = deque(maxlen=capacity)
+        self.competitors: list[WorkspaceContent] = []
+        self.conscious_content: WorkspaceContent | None = None
 
-    def compete_for_access(self, candidates: list[BroadcastMessage]) -> BroadcastMessage | None:
-        scored = []
-        for candidate in candidates:
-            score = self._score_candidate(candidate)
-            scored.append((score, candidate))
-        scored.sort(key=lambda x: x[0], reverse=True)
-        if not scored:
+    def submit(self, content: WorkspaceContent) -> bool:
+        self.competitors.append(content)
+        logger.info("Content submitted: %s (activation=%.2f)", content.id, content.activation)
+        return True
+
+    def compete(self) -> WorkspaceContent | None:
+        if not self.competitors:
             return None
-        winner = scored[0][1]
-        self.workspace = [winner] + [m for _, m in scored[1 : self.capacity]]
-        self.competition_history.append(
-            {
-                "timestamp": time.time(),
-                "winner": winner.source,
-                "candidates": len(candidates),
-                "winner_score": scored[0][0],
+
+        winner = max(self.competitors, key=lambda c: c.activation)
+
+        if winner.activation >= self.threshold:
+            self.broadcast_queue.append(winner)
+            self.conscious_content = winner
+            self.competitors.clear()
+            logger.info("Broadcast winner: %s", winner.id)
+            return winner
+
+        self.competitors.clear()
+        return None
+
+    def get_conscious_content(self) -> dict[str, Any]:
+        if self.conscious_content:
+            return {
+                "id": self.conscious_content.id,
+                "content": self.conscious_content.content,
+                "activation": self.conscious_content.activation,
             }
-        )
-        return winner
+        return {"id": None, "content": None, "activation": 0.0}
 
-    def _score_candidate(self, candidate: BroadcastMessage) -> float:
-        base = candidate.urgency * 0.4 + candidate.attention_weight * 0.4
-        iit_state = self.iit.compute_full_iit_state()
-        consciousness_boost = iit_state.phi * 0.2
-        return base + consciousness_boost
-
-    def broadcast(self, message: BroadcastMessage):
-        self.workspace.append(message)
-        if len(self.workspace) > self.capacity:
-            self.workspace = sorted(
-                self.workspace,
-                key=lambda m: m.attention_weight + m.urgency,
-                reverse=True,
-            )[: self.capacity]
-
-    def get_conscious_contents(self) -> list[BroadcastMessage]:
-        contents = []
-        for msg in self.workspace:
-            iit_state = self.iit.compute_full_iit_state()
-            if iit_state.phi > self.conscious_threshold:
-                contents.append(msg)
-        return contents
-
-    def integrate_and_broadcast(self, modules: dict[str, Any]) -> BroadcastMessage | None:
-        candidates = []
-        for module_name, module in modules.items():
-            if hasattr(module, "generate_candidate"):
-                try:
-                    candidate = module.generate_candidate()
-                    candidates.append(candidate)
-                except Exception:
-                    continue
-        if not candidates:
-            return None
-        winner = self.compete_for_access(candidates)
+    def ignite(self, content_id: str, activation: float) -> dict[str, Any]:
+        content = WorkspaceContent(id=content_id, content=content_id, activation=activation)
+        self.submit(content)
+        winner = self.compete()
         if winner:
-            self.broadcast(winner)
-        return winner
+            return {"status": "ignited", "content_id": winner.id}
+        return {"status": "suppressed"}
