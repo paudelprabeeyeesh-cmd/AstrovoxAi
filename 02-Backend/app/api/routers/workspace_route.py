@@ -9,7 +9,7 @@ from typing import Optional
 
 from ...utils.auth.auth_utils import get_user_id_from_token
 from .enterprise.service import org_service
-from .enterprise.rbac import middleware.security.rbac
+from .enterprise import rbac
 from .workspace import workspace_manager
 
 

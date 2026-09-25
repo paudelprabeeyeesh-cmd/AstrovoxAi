@@ -30,7 +30,7 @@ class EncryptionEngine:
         self._key = AESGCM(digest)
 
     def encrypt(self, plaintext: str) -> str:
-        if plaintext is None:
+        if plaintext is None or plaintext == "":
             return ""
         nonce = os.urandom(12)
         ciphertext = self._key.encrypt(nonce, plaintext.encode("utf-8"), None)
@@ -40,7 +40,10 @@ class EncryptionEngine:
     def decrypt(self, ciphertext_b64: str) -> str:
         if not ciphertext_b64:
             return ""
-        payload = base64.b64decode(ciphertext_b64.encode("utf-8"))
+        try:
+            payload = base64.b64decode(ciphertext_b64.encode("utf-8"))
+        except Exception as exc:
+            raise EncryptionError(f"Invalid base64 ciphertext: {exc}") from exc
         nonce, ciphertext = payload[:12], payload[12:]
         try:
             plaintext = self._key.decrypt(nonce, ciphertext, None)

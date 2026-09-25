@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from sqlalchemy import create_engine, inspect, text
+from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import DeclarativeBase
 
 logger = logging.getLogger(__name__)
@@ -36,7 +37,7 @@ class SchemaDriftDetector:
         self._base = base
 
     def detect(self) -> DriftReport:
-        model_tables = {t.__tablename__ for t in self._base.metadata.tables.values()}
+        model_tables = {t.name for t in self._base.metadata.tables.values()}
         live_tables = set(self._inspector.get_table_names())
         missing = sorted(model_tables - live_tables)
         extra = sorted(live_tables - model_tables)
@@ -50,17 +51,21 @@ class SchemaDriftDetector:
 
     def _diff_columns(self, model_tables: set[str]) -> list[ColumnDiff]:
         diffs: list[ColumnDiff] = []
-        for table in model_tables:
-            model_cols = {c.name: c for c in self._base.metadata.tables[table].columns}
-            live_cols = {c["name"]: c for c in self._inspector.get_columns(table)}
+        for table_name in model_tables:
+            try:
+                live_cols = {c["name"]: c for c in self._inspector.get_columns(table_name)}
+            except NoSuchTableError:
+                diffs.append(ColumnDiff(table=table_name, column="*", issue="table_missing_in_db"))
+                continue
+            model_cols = {c.name: c for c in self._base.metadata.tables[table_name].columns}
             for name, col in model_cols.items():
                 live = live_cols.get(name)
                 if live is None:
-                    diffs.append(ColumnDiff(table=table, column=name, issue="missing_in_db"))
+                    diffs.append(ColumnDiff(table=table_name, column=name, issue="missing_in_db"))
                     continue
                 if str(col.type) != str(live.get("type")):
-                    diffs.append(ColumnDiff(table=table, column=name, issue=f"type_mismatch: model={col.type} db={live.get('type')}"))
+                    diffs.append(ColumnDiff(table=table_name, column=name, issue=f"type_mismatch: model={col.type} db={live.get('type')}"))
             for name in live_cols:
                 if name not in model_cols:
-                    diffs.append(ColumnDiff(table=table, column=name, issue="extra_in_db"))
+                    diffs.append(ColumnDiff(table=table_name, column=name, issue="extra_in_db"))
         return diffs

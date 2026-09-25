@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import create_engine, insert
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.sql import table as TableClause
+from sqlalchemy.inspection import inspect
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +50,19 @@ class SeedLoader:
         skipped = 0
         errors: list[str] = []
         try:
-            tbl = TableClause(table_name)
+            inspector = inspect(self._engine)
+            columns = [c["name"] for c in inspector.get_columns(table_name)]
             if truncate:
-                conn.execute(f"TRUNCATE TABLE {table_name} CASCADE")
+                conn.execute(text(f"DELETE FROM {table_name}"))
             for row in rows:
                 try:
-                    conn.execute(insert(tbl).values(**row))
+                    cols = [k for k in row.keys() if k in columns]
+                    if not cols:
+                        skipped += 1
+                        continue
+                    placeholders = ", ".join([f":{c}" for c in cols])
+                    sql = f"INSERT INTO {table_name} ({', '.join(cols)}) VALUES ({placeholders})"
+                    conn.execute(text(sql), {c: row[c] for c in cols})
                     inserted += 1
                 except Exception as exc:
                     skipped += 1

@@ -6,7 +6,7 @@ from typing import Optional
 
 from utils.auth.auth_utils import get_user_id_from_token
 from .service import org_service
-from .middleware.security.rbac import middleware.security.rbac
+from .middleware.security import rbac
 from .models import ORG_ROLES, WORKSPACE_ROLES
 
 router = APIRouter(prefix="/api/enterprise", tags=["enterprise"])

@@ -43,31 +43,35 @@ class PoolHealthCheck:
             latency = (time.perf_counter() - start) * 1000.0
             return PoolHealth(
                 status="unhealthy",
-                total_connections=getattr(self._pool, "size", 0),
-                checkedin=getattr(self._pool, "checkedin", 0),
-                checkedout=getattr(self._pool, "checkedout", 0),
-                invalid=getattr(self._pool, "invalid", 0),
-                overflow=getattr(self._pool, "overflow", 0),
+                total_connections=self._safe_pool_int("size") + self._safe_pool_int("overflow"),
+                checkedin=self._safe_pool_int("checkedin"),
+                checkedout=self._safe_pool_int("checkedout"),
+                invalid=self._safe_pool_int("invalid"),
+                overflow=self._safe_pool_int("overflow"),
                 latency_ms=latency,
                 checked_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             )
         status = "healthy"
         if latency > 500:
             status = "degraded"
-        if self._pool.checkedout > (self._pool.size + self._pool.overflow) * 0.9:
+        total = self._safe_pool_int("size") + self._safe_pool_int("overflow")
+        if total > 0 and self._safe_pool_int("checkedout") / total > 0.9:
             status = "saturated"
         return PoolHealth(
             status=status,
-            total_connections=getattr(self._pool, "size", 0) + getattr(self._pool, "overflow", 0),
-            checkedin=getattr(self._pool, "checkedin", 0),
-            checkedout=getattr(self._pool, "checkedout", 0),
-            invalid=getattr(self._pool, "invalid", 0),
-            overflow=getattr(self._pool, "overflow", 0),
+            total_connections=total,
+            checkedin=self._safe_pool_int("checkedin"),
+            checkedout=self._safe_pool_int("checkedout"),
+            invalid=self._safe_pool_int("invalid"),
+            overflow=self._safe_pool_int("overflow"),
             latency_ms=latency,
             checked_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         )
 
-    def summary(self) -> dict[str, Any]:
+    def _safe_pool_int(self, attr: str) -> int:
+        return int(getattr(self._pool, attr, 0))
+
+    def summary(self) -> dict:
         h = self.check()
         return {
             "status": h.status,

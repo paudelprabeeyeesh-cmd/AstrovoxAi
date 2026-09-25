@@ -1,31 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase'
-// eslint-disable-next-line no-unused-vars
 import Sidebar from './Sidebar'
-// eslint-disable-next-line no-unused-vars
 import Chat from './Chat'
-// eslint-disable-next-line no-unused-vars
 import Telemetry from './telemetry'
-// eslint-disable-next-line no-unused-vars
 import TerminalConsole from './terminalconsole'
-// eslint-disable-next-line no-unused-vars
 import MemoryPanel from './MemoryPanel'
-// eslint-disable-next-line no-unused-vars
 import SettingsPanel from './SettingsPanel'
-// eslint-disable-next-line no-unused-vars
 import MultiversePanel from './components/multiverse/MultiversePanel'
-// eslint-disable-next-line no-unused-vars
 import HolographicPanel from './components/holographic/HolographicPanel'
-// eslint-disable-next-line no-unused-vars
 import QuantumHolographicSystem from './components/quantum/QuantumHolographicSystem'
-// eslint-disable-next-line no-unused-vars
 import { ToastProvider, useToast } from './components/ui/Toast'
-// eslint-disable-next-line no-unused-vars
 import { CommandPalette } from './components/ui/CommandPalette'
-// eslint-disable-next-line no-unused-vars
-import { Modal } from './components/ui/Modal'
-// eslint-disable-next-line no-unused-vars
-import { Skeleton, EmptyState, Avatar, relativeTime } from './components/ui'
+import { KeyboardShortcutCheatsheet } from './components/ui/KeyboardShortcutCheatsheet'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -36,7 +22,11 @@ function DashboardInner({ session }) {
   const [totalConversations, setTotalConversations] = useState(0)
   const [dbStatus, setDbStatus] = useState('online')
   const [activePanel, setActivePanel] = useState('chat')
-  const [selectedModel, setSelectedModel] = useState('gpt-4') // 'chat', 'memory', 'settings'
+  const [selectedModel, setSelectedModel] = useState('gpt-4')
+  const [showCommandPalette, setShowCommandPalette] = useState(false)
+  const [showShortcuts, setShowShortcuts] = useState(false)
+
+  const { addToast } = useToast()
 
   const loadUserStats = useCallback(async () => {
     try {
@@ -60,11 +50,6 @@ function DashboardInner({ session }) {
       loadUserStats()
     }
   }, [session, loadUserStats])
-
-
-  const [showCommandPalette, setShowCommandPalette] = useState(false)
-  const [showShortcuts, setShowShortcuts] = useState(false)
-  const { addToast } = useToast()
 
   const handleCommandSelect = useCallback((cmd) => {
     addToast(`Executing: ${cmd.label}`, { type: 'info' })
@@ -379,6 +364,24 @@ function DashboardInner({ session }) {
           <span style={{ color: '#334155' }}>SYSTEM STATUS: {dbStatus === 'online' ? '🟢 OPERATIONAL' : '⚠️ DEGRADED'}</span>
         </div>
       </div>
+
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        onSelect={handleCommandSelect}
+      />
+      <KeyboardShortcutCheatsheet
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
+      />
     </div>
+  )
+}
+
+export default function Dashboard({ session }) {
+  return (
+    <ToastProvider>
+      <DashboardInner session={session} />
+    </ToastProvider>
   )
 }
