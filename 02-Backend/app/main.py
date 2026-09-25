@@ -104,10 +104,8 @@ app.include_router(agents_router)
 app.include_router(memory_v2_router)
 app.include_router(automation_router)
 app.include_router(document_router)
-app.include_router(ecosystem_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
-app.include_router(executor_router)
 
 
 # Prometheus metrics middleware
