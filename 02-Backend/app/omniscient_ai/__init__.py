@@ -12,6 +12,8 @@ from .monitoring import OmnipresentMonitor
 from .infinite_scroll import InfiniteScrollWithInfiniteData
 from .reality_warping import RealityWarpingSearch
 from .sandbox import UniverseSandbox
+from .omnipotent_assistant import OmnipotentAssistant
+from .omnipresent_notifications import OmnipresentNotificationSystem
 
 __all__ = [
     "UniversalKnowledgeGraph",
@@ -28,4 +30,6 @@ __all__ = [
     "InfiniteScrollWithInfiniteData",
     "RealityWarpingSearch",
     "UniverseSandbox",
+    "OmnipotentAssistant",
+    "OmnipresentNotificationSystem",
 ]

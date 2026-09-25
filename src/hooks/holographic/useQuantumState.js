@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS } from '../utils/holographic/HologographicConfig'
+import { HOLOGRAPHIC_CONFIG, HOLOGRAPHIC_COLORS } from '../utils/holographic/HolographicConfig'
 
 export function useQuantumState() {
   const [qubits, setQubits] = useState([])
@@ -227,14 +227,14 @@ export function useQuantumState() {
     if (!qubit) return []
 
     return qubit.entanglement.map(eId => {
-      const entanglement = entanglement.find(e => e.id === eId)
-      if (!entanglement) return null
+      const ent = entanglement.find(e => e.id === eId)
+      if (!ent) return null
 
-      const otherQubitIndex = entanglement.q1 === qubitIndex ? entanglement.q2 : entanglement.q1
+      const otherQubitIndex = ent.q1 === qubitIndex ? ent.q2 : ent.q1
       return {
         qubit: otherQubitIndex,
-        strength: entanglement.strength,
-        type: entanglement.type
+        strength: ent.strength,
+        type: ent.type
       }
     }).filter(Boolean)
   }, [qubits, entanglement])

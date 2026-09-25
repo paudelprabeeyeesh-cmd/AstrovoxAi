@@ -32,10 +32,18 @@ export default function MultiversePanel() {
       </div>
       <div style={{ width: '360px', display: 'flex', flexDirection: 'column', gap: '12px', overflow: 'auto' }}>
         {selectedTimelineId && (
-          <ForkVisualizer timelineId={selectedTimelineId} onSelectUniverse={(id) => { setSelectedUniverseId(id); setView('visualizer') }} />
+          <ForkVisualizer timelineId={selectedTimelineId} onSelectUniverse={setSelectedUniverseId} />
         )}
         {selectedUniverseId && (
           <>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setView('visualizer')} style={{ flex: 1, padding: '6px 12px', backgroundColor: 'rgba(6,182,212,0.15)', border: '1px solid #06b6d4', borderRadius: '6px', color: '#06b6d4', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit', fontWeight: '600' }}>
+                View Timeline
+              </button>
+              <button onClick={() => setSelectedUniverseId(null)} style={{ padding: '6px 12px', backgroundColor: 'rgba(239,68,68,0.1)', border: '1px solid #ef4444', borderRadius: '6px', color: '#f87171', cursor: 'pointer', fontSize: '11px', fontFamily: 'inherit' }}>
+                Clear
+              </button>
+            </div>
             <RealityEditor universeId={selectedUniverseId} />
             <TimeSpaceContinuum universeId={selectedUniverseId} />
             <ParallelAssistant universeId={selectedUniverseId} />

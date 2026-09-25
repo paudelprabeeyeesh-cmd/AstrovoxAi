@@ -16,6 +16,8 @@ from app.omniscient_ai.monitoring import OmnipresentMonitor
 from app.omniscient_ai.infinite_scroll import InfiniteScrollWithInfiniteData
 from app.omniscient_ai.reality_warping import RealityWarpingSearch
 from app.omniscient_ai.sandbox import UniverseSandbox
+from app.omniscient_ai.omnipotent_assistant import OmnipotentAssistant
+from app.omniscient_ai.omnipresent_notifications import OmnipresentNotificationSystem
 
 router = APIRouter(prefix="/omniscient", tags=["omniscient-ai"])
 
@@ -30,6 +32,8 @@ _monitor = OmnipresentMonitor()
 _infinite_scroll = InfiniteScrollWithInfiniteData()
 _reality_warping = RealityWarpingSearch()
 _sandbox = UniverseSandbox()
+_assistant = OmnipotentAssistant()
+_notifications = OmnipresentNotificationSystem()
 
 
 class KnowledgeEntityRequest(BaseModel):
@@ -87,6 +91,34 @@ class BugScanRequest(BaseModel):
 class ThoughtPredictRequest(BaseModel):
     user_id: str
     context: dict
+
+
+class AssistantModeRequest(BaseModel):
+    user_id: str
+    mode_name: str
+
+
+class NotificationRequest(BaseModel):
+    user_id: str
+    title: str
+    body: str
+    channels: Optional[List[str]] = None
+    reality_layers: Optional[List[int]] = None
+    priority: str = "normal"
+    metadata: Optional[dict] = None
+
+
+class BroadcastRequest(BaseModel):
+    title: str
+    body: str
+    channels: Optional[List[str]] = None
+    priority: str = "normal"
+
+
+class CapabilityRequest(BaseModel):
+    user_id: str
+    capability: str
+    context: Optional[dict] = None
 
 
 @router.post("/knowledge/entities")
@@ -390,6 +422,114 @@ async def destroy_universe(universe_id: str):
     return {"status": "destroyed", "universe_id": universe_id}
 
 
+@router.post("/assistant/modes/activate")
+async def activate_assistant_mode(request: AssistantModeRequest):
+    mode = _assistant.activate_mode(request.user_id, request.mode_name)
+    if not mode:
+        raise HTTPException(status_code=400, detail="Invalid mode")
+    return {
+        "user_id": request.user_id,
+        "mode_id": mode.mode_id,
+        "name": mode.name,
+        "power_level": mode.power_level,
+        "capabilities": mode.capabilities,
+    }
+
+
+@router.post("/assistant/modes/deactivate")
+async def deactivate_assistant_mode(user_id: str):
+    success = _assistant.deactivate_mode(user_id)
+    return {"user_id": user_id, "deactivated": success}
+
+
+@router.get("/assistant/modes/active/{user_id}")
+async def get_active_mode(user_id: str):
+    mode = _assistant.get_active_mode(user_id)
+    if not mode:
+        return {"user_id": user_id, "active": False}
+    return {
+        "user_id": user_id,
+        "active": True,
+        "mode_id": mode.mode_id,
+        "name": mode.name,
+        "power_level": mode.power_level,
+        "capabilities": mode.capabilities,
+    }
+
+
+@router.post("/assistant/capabilities/execute")
+async def execute_capability(request: CapabilityRequest):
+    result = _assistant.execute_capability(request.user_id, request.capability, request.context)
+    return result
+
+
+@router.get("/assistant/capabilities")
+async def list_capabilities(user_id: Optional[str] = None):
+    capabilities = _assistant.get_available_capabilities(user_id)
+    return {"capabilities": capabilities}
+
+
+@router.post("/notifications/send")
+async def send_notification(request: NotificationRequest):
+    notification = _notifications.send(
+        user_id=request.user_id,
+        title=request.title,
+        body=request.body,
+        channels=request.channels,
+        reality_layers=request.reality_layers,
+        priority=request.priority,
+        metadata=request.metadata,
+    )
+    return {
+        "notification_id": notification.notification_id,
+        "user_id": notification.user_id,
+        "channels": notification.channels,
+        "priority": notification.priority,
+        "delivered": notification.delivered,
+    }
+
+
+@router.post("/notifications/broadcast")
+async def broadcast_notification(request: BroadcastRequest):
+    notifications = _notifications.broadcast(request.title, request.body, request.channels, request.priority)
+    return {
+        "title": request.title,
+        "body": request.body,
+        "count": len(notifications),
+        "notification_ids": [n.notification_id for n in notifications],
+    }
+
+
+@router.get("/notifications/inbox/{user_id}")
+async def get_notification_inbox(user_id: str, unread_only: bool = False):
+    notifications = _notifications.get_inbox(user_id, unread_only)
+    return {
+        "user_id": user_id,
+        "notifications": [
+            {
+                "notification_id": n.notification_id,
+                "title": n.title,
+                "body": n.body,
+                "priority": n.priority,
+                "read": n.read,
+                "timestamp": n.timestamp,
+            }
+            for n in notifications
+        ],
+    }
+
+
+@router.post("/notifications/{notification_id}/read")
+async def mark_notification_read(notification_id: str):
+    success = _notifications.mark_read(notification_id)
+    return {"notification_id": notification_id, "read": success}
+
+
+@router.get("/notifications/channels")
+async def get_channel_stats():
+    return {"channels": _notifications.get_channel_stats()}
+
+
 @router.get("/stats")
 async def get_omniscient_stats():
     return {
@@ -405,4 +545,6 @@ async def get_omniscient_stats():
         "infinite_scroll": _infinite_scroll.get_stats(),
         "reality_warping": _reality_warping.get_stats(),
         "sandbox": _sandbox.get_stats(),
+        "assistant": _assistant.get_stats(),
+        "notifications": _notifications.get_stats(),
     }
