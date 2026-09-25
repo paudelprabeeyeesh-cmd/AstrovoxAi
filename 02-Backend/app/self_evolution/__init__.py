@@ -27,3 +27,12 @@ class SelfEvolutionService:
 
     def get(self, name: str) -> Any | None:
         return self.modules.get(name)
+
+    def act(self, module_name: str, action: str, args: dict[str, Any]) -> Any:
+        module = self.modules.get(module_name)
+        if not module:
+            raise ValueError(f"Module '{module_name}' not found")
+        handler = getattr(module, action, None)
+        if not callable(handler):
+            raise ValueError(f"Unsupported action '{action}' for module '{module_name}'")
+        return handler(**args)
