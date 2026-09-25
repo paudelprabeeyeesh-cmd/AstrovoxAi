@@ -52,8 +52,8 @@ export default function App() {
     <AstrovoxChat
       apiKey={process.env.NEXT_PUBLIC_ASTROVOX_API_KEY}
       theme="dark"
-      enableVoice={true}
-      enableBranching={true}
+      enableVoice
+      enableBranching
     />
   )
 }
@@ -111,9 +111,9 @@ const response = await supportBot.chat('How do I reset my password?')
 
 ```python
 review_assistant = client.create_agent(
-  name="Code Reviewer",
-  system_prompt="Review code for bugs, security issues, and best practices.",
-  enable_code_execution=True
+    name="Code Reviewer",
+    system_prompt="Review code for bugs, security issues, and best practices.",
+    enable_code_execution=True
 )
 
 response = review_assistant.chat(f"Review this code:\n```python\n{code}\n```")
@@ -151,7 +151,7 @@ result = workflow.execute()
 <AstrovoxChat
   apiKey={apiKey}
   theme="dark"
-  enableVoice={true}
+  enableVoice
   voiceProvider="elevenlabs"
   voiceId="your-voice-id"
 />
@@ -272,6 +272,7 @@ app.post('/webhooks/astrovox', (req, res) => {
 #!/usr/bin/env python3
 import astrovox
 import sys
+import os
 
 client = astrovox.AstrovoxClient(api_key=os.environ["ASTROVOX_API_KEY"])
 conv = client.create_conversation(title="CLI Chat")
@@ -324,4 +325,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true
   }
 })
+```
+
+### Scheduled Reports
+
+```python
+import schedule
+import time
+
+def generate_daily_report():
+    response = client.send_message(
+        conversation_id="report-conv",
+        message="Generate a daily summary of yesterday's activities."
+    )
+    send_email("team@example.com", "Daily Report", response['ai_message']['content'])
+
+schedule.every().day.at("09:00").do(generate_daily_report)
+
+while True:
+    schedule.run_pending()
+    time.sleep(60)
+```
+
+### Multi-Provider Fallback
+
+```typescript
+const providers = [
+  { provider: 'openai', model: 'gpt-4' },
+  { provider: 'anthropic', model: 'claude-3-5-sonnet-20240620' },
+  { provider: 'gemini', model: 'gemini-1.5-pro' }
+]
+
+for (const p of providers) {
+  try {
+    const response = await client.sendMessage({
+      conversationId: conv.id,
+      message: 'Hello',
+      provider: p.provider,
+      model: p.model
+    })
+    console.log(`Succeeded with ${p.provider}`)
+    break
+  } catch (error) {
+    console.log(`Failed with ${p.provider}, trying next...`)
+  }
+}
 ```

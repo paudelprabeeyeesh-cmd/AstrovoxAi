@@ -8,54 +8,64 @@ Official Python SDK for Astrovox AI.
 pip install astrovox
 ```
 
-## Usage
+## Quick Start
 
 ```python
-import astrovox
+import os
+from astrovox import AstrovoxClient
 
-# Initialize client
-client = astrovox.AstrovoxClient(
-    api_key="your-api-key",
-    base_url="https://api.astrovox.ai/v1"
-)
+client = AstrovoxClient(api_key=os.environ["ASTROVOX_API_KEY"])
 
-# Create conversation
-conversation = client.create_conversation(
-    title="My Conversation",
-    model="gpt-4"
-)
+# Create a conversation
+conversation = client.create_conversation(title="My First Chat")
 
-# Send message
-response = client.send_message(
-    conversation_id=conversation.id,
-    message="Hello, AI!"
-)
+# Send a message
+response = client.send_message(conversation.id, "Hello, AI!")
+print(response["ai_message"]["content"])
 
-print(response['ai_message']['content'])
+# Stream a response
+for chunk in client.stream_message(conversation.id, "Tell me a story"):
+    print(chunk, end="", flush=True)
 ```
 
-## Streaming
+## Advanced Usage
 
 ```python
-for chunk in client.stream_message(
-    conversation_id=conversation.id,
-    message="Write a story",
-    model="gpt-4"
-):
-    print(chunk, end='')
+from astrovox import AstrovoxClient, Agent, Tool
+
+client = AstrovoxClient(api_key=os.environ["ASTROVOX_API_KEY"])
+
+# Create an agent with tools
+agent = client.create_agent(
+    name="Assistant",
+    model="gpt-4",
+    tools=["web_search", "code_execution"],
+    system_prompt="You are a helpful assistant."
+)
+
+response = agent.chat("What's the weather in San Francisco?")
+
+# Upload documents for RAG
+client.upload_documents(["manual.pdf", "faq.md"])
+conversation = client.create_conversation(
+    title="Support Chat",
+    enable_rag=True
+)
 ```
 
 ## Error Handling
 
 ```python
-from astrovox.errors import RateLimitError, AuthenticationError
+from astrovox import AstrovoxError, RateLimitError, AuthenticationError
 
 try:
-    response = client.send_message(conv_id, "Hello")
+    response = client.send_message(conversation.id, "Hello")
 except RateLimitError as e:
     print(f"Rate limited. Retry after {e.retry_after}s")
 except AuthenticationError:
     print("Invalid API key")
+except AstrovoxError as e:
+    print(f"Error {e.status}: {e.message}")
 ```
 
 ## CLI
@@ -65,4 +75,15 @@ astrovox send <conversation_id> "Hello, AI!"
 astrovox conversations
 astrovox create --title "New Chat"
 astrovox health
+```
+
+## Configuration
+
+```python
+client = AstrovoxClient(
+    api_key=os.environ["ASTROVOX_API_KEY"],
+    base_url="https://api.astrovox.ai/v1",
+    timeout=30,
+    max_retries=3
+)
 ```

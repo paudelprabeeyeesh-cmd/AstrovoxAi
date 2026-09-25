@@ -6,8 +6,12 @@ Get up and running with Astrovox AI SDKs in minutes.
 
 - [Python](#python)
 - [TypeScript/JavaScript](#typescriptjavascript)
+- [React](#react)
+- [Vue](#vue)
 - [Go](#go)
 - [Rust](#rust)
+
+---
 
 ## Python
 
@@ -34,7 +38,7 @@ print(response["ai_message"]["content"])
 
 # Stream a response
 for chunk in client.stream_message(conversation.id, "Tell me a story"):
-    print(chunk["delta"], end="", flush=True)
+    print(chunk, end="", flush=True)
 ```
 
 ### Advanced Usage
@@ -65,12 +69,25 @@ conversation = client.create_conversation(
 ### Error Handling
 
 ```python
-from astrovox import AstrovoxError
+from astrovox import AstrovoxError, RateLimitError, AuthenticationError
 
 try:
     response = client.send_message(conversation.id, "Hello")
+except RateLimitError as e:
+    print(f"Rate limited. Retry after {e.retry_after}s")
+except AuthenticationError:
+    print("Invalid API key")
 except AstrovoxError as e:
     print(f"Error {e.status}: {e.message}")
+```
+
+### CLI
+
+```bash
+astrovox send <conversation_id> "Hello, AI!"
+astrovox conversations
+astrovox create --title "New Chat"
+astrovox health
 ```
 
 ---
@@ -113,7 +130,7 @@ for await (const chunk of client.streamMessage({
   conversationId: conversation.id,
   message: 'Tell me a story'
 })) {
-  process.stdout.write(chunk.delta)
+  process.stdout.write(chunk)
 }
 ```
 
@@ -127,8 +144,8 @@ export default function App() {
     <AstrovoxChat
       apiKey={process.env.NEXT_PUBLIC_ASTROVOX_API_KEY!}
       theme="dark"
-      enableVoice={true}
-      enableBranching={true}
+      enableVoice
+      enableBranching
     />
   )
 }
@@ -150,7 +167,7 @@ const apiKey = import.meta.env.VITE_ASTROVOX_API_KEY
 ### Error Handling
 
 ```typescript
-import { AstrovoxError } from '@astrovox/sdk'
+import { AstrovoxClient, AstrovoxError, RateLimitError, AuthenticationError } from '@astrovox/sdk'
 
 try {
   const response = await client.sendMessage({
@@ -158,11 +175,92 @@ try {
     message: 'Hello'
   })
 } catch (err) {
-  if (err instanceof AstrovoxError) {
+  if (err instanceof RateLimitError) {
+    console.error(`Rate limited. Retry after ${err.retryAfter}s`)
+  } else if (err instanceof AuthenticationError) {
+    console.error('Invalid API key')
+  } else if (err instanceof AstrovoxError) {
     console.error(`Error ${err.status}: ${err.message}`)
   }
 }
 ```
+
+---
+
+## React
+
+### Installation
+
+```bash
+npm install @astrovox/react-sdk @astrovox/sdk
+```
+
+### Basic Usage
+
+```tsx
+import { AstrovoxChat } from '@astrovox/react-sdk'
+
+export default function App() {
+  return (
+    <AstrovoxChat
+      apiKey={process.env.NEXT_PUBLIC_ASTROVOX_API_KEY}
+      theme="dark"
+      enableVoice
+      enableBranching
+      enableFileUpload
+    />
+  )
+}
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `apiKey` | `string` | required | Your Astrovox API key |
+| `theme` | `'dark' \| 'light' \| 'high-contrast'` | `'dark'` | UI theme |
+| `model` | `string` | `'gpt-4'` | Default AI model |
+| `enableVoice` | `boolean` | `false` | Enable voice input/output |
+| `enableBranching` | `boolean` | `false` | Enable conversation branching |
+| `enableFileUpload` | `boolean` | `true` | Enable file uploads |
+| `placeholder` | `string` | `'Type your message...'` | Input placeholder |
+| `height` | `string \| number` | `'600px'` | Component height |
+| `onMessageSent` | `(message: Message) => void` | - | Called when user sends a message |
+| `onMessageReceived` | `(message: Message) => void` | - | Called when AI responds |
+| `onError` | `(error: Error) => void` | - | Called on error |
+
+---
+
+## Vue
+
+### Installation
+
+```bash
+npm install @astrovox/vue-sdk @astrovox/sdk
+```
+
+### Basic Usage
+
+```vue
+<script setup>
+import { AstrovoxChat } from '@astrovox/vue-sdk'
+const apiKey = import.meta.env.VITE_ASTROVOX_API_KEY
+</script>
+
+<template>
+  <AstrovoxChat :api-key="apiKey" theme="dark" />
+</template>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `apiKey` | `string` | required | Your Astrovox API key |
+| `theme` | `string` | `'dark'` | UI theme |
+| `model` | `string` | `'gpt-4'` | Default AI model |
+| `placeholder` | `string` | `'Type your message...'` | Input placeholder |
+| `height` | `string` | `'600px'` | Component height |
 
 ---
 
@@ -183,6 +281,7 @@ import (
     "context"
     "fmt"
     "log"
+    "os"
 
     astrovox "github.com/astrovox/sdk/go"
 )
@@ -267,7 +366,7 @@ All SDKs support:
 - Tool/plugin integration
 - File uploads and RAG
 - Webhook signature verification
-- Error handling with typed exceptions
+- Typed error handling
 - Retry logic with exponential backoff
 - Request/response logging
 
@@ -277,15 +376,15 @@ All SDKs support:
 
 ```bash
 ASTROVOX_API_KEY=your-api-key
-ASTROVOX_BASE_URL=https://api.astrovox.ai  # Optional, defaults to production
+ASTROVOX_BASE_URL=https://api.astrovox.ai/v1  # Optional, defaults to production
 ```
 
 ### Custom Configuration
 
 ```typescript
 const client = new AstrovoxClient({
-  apiKey: process.env.ASTROVOX_API_KEY!,
-  baseUrl: 'https://api.astrovox.ai',
+  apiKey: process.env.ASTROVOX_API_KEY,
+  baseUrl: 'https://api.astrovox.ai/v1',
   timeout: 30000,
   retries: 3
 })
@@ -294,7 +393,7 @@ const client = new AstrovoxClient({
 ```python
 client = AstrovoxClient(
     api_key=os.environ["ASTROVOX_API_KEY"],
-    base_url="https://api.astrovox.ai",
+    base_url="https://api.astrovox.ai/v1",
     timeout=30,
     max_retries=3
 )
