@@ -24,15 +24,54 @@ os.environ.setdefault("STRIPE_EMBED_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_dummy")
 
 # Create mock modules for missing imports before importing app.main
-_missing_modules = [
-    "services",
-    "services.auth",
+def _make_mock_router():
+    from fastapi import APIRouter
+    return APIRouter()
+
+_missing_modules = {
+    "services": types.ModuleType("services"),
+    "services.auth": types.ModuleType("services.auth"),
+    "services.auth.auth": types.ModuleType("services.auth.auth"),
+    "services.vector": types.ModuleType("services.vector"),
+    "services.vector.embeddings_route": types.ModuleType("services.vector.embeddings_route"),
+    "api": types.ModuleType("api"),
+    "api.routers": types.ModuleType("api.routers"),
+    "api.routers.memory": types.ModuleType("api.routers.memory"),
+    "api.routers.memory.router": types.ModuleType("api.routers.memory.router"),
+    "api.routers.router": types.ModuleType("api.routers.router"),
+    "api.routers.workspace_route": types.ModuleType("api.routers.workspace_route"),
+    "api.routers.jobs_router": types.ModuleType("api.routers.jobs_router"),
+    "api.routers.analytics_route": types.ModuleType("api.routers.analytics_route"),
+    "api.routers.knowledge_route": types.ModuleType("api.routers.knowledge_route"),
+    "api.routers.agent_route": types.ModuleType("api.routers.agent_route"),
+    "api.routers.monitoring_route": types.ModuleType("api.routers.monitoring_route"),
+    "api.routers.auth": types.ModuleType("api.routers.auth"),
+    "api.routers.auth.security_route": types.ModuleType("api.routers.auth.security_route"),
+    "api.routers.admin_route": types.ModuleType("api.routers.admin_route"),
+    "api.routers.realtime_route": types.ModuleType("api.routers.realtime_route"),
+    "api.routers.dashboard_route": types.ModuleType("api.routers.dashboard_route"),
+    "api.v1": types.ModuleType("api.v1"),
+    "api.routers.platform_route": types.ModuleType("api.routers.platform_route"),
+    "api.routers.knowledge_route_v2": types.ModuleType("api.routers.knowledge_route_v2"),
+    "api.routers.neural_router": types.ModuleType("api.routers.neural_router"),
+    "api.routers.temporal_route": types.ModuleType("api.routers.temporal_route"),
+}
+
+for name, mod in _missing_modules.items():
+    sys.modules[name] = mod
+    parts = name.split(".")
+    for i in range(len(parts) - 1):
+        parent_name = ".".join(parts[:i + 1])
+        child_name = ".".join(parts[:i + 2])
+        if child_name in sys.modules:
+            if not hasattr(sys.modules[parent_name], parts[i + 1]):
+                setattr(sys.modules[parent_name], parts[i + 1], sys.modules[child_name])
+
+# Add router attributes to mock modules
+router = _make_mock_router()
+for mod_name in [
     "services.auth.auth",
-    "services.vector",
     "services.vector.embeddings_route",
-    "api",
-    "api.routers",
-    "api.routers.memory",
     "api.routers.memory.router",
     "api.routers.router",
     "api.routers.workspace_route",
@@ -41,7 +80,6 @@ _missing_modules = [
     "api.routers.knowledge_route",
     "api.routers.agent_route",
     "api.routers.monitoring_route",
-    "api.routers.auth",
     "api.routers.auth.security_route",
     "api.routers.admin_route",
     "api.routers.realtime_route",
@@ -51,21 +89,32 @@ _missing_modules = [
     "api.routers.knowledge_route_v2",
     "api.routers.neural_router",
     "api.routers.temporal_route",
-]
+]:
+    sys.modules[mod_name].router = router
+    sys.modules[mod_name].events_router = router
 
-for mod_name in _missing_modules:
-    if mod_name not in sys.modules:
-        sys.modules[mod_name] = types.ModuleType(mod_name)
+# Mock kernel.api
+kernel_mod = types.ModuleType("app.kernel")
+kernel_api_mod = types.ModuleType("app.kernel.api")
+kernel_api_mod.router = router
+sys.modules["app.kernel"] = kernel_mod
+sys.modules["app.kernel.api"] = kernel_api_mod
+setattr(kernel_mod, "api", kernel_api_mod)
 
-# Ensure nested modules have parent attributes
-for mod_name in _missing_modules:
-    mod = sys.modules[mod_name]
-    parts = mod_name.split(".")
-    for i in range(len(parts) - 1):
-        parent_name = ".".join(parts[:i + 1])
-        child_name = ".".join(parts[:i + 2])
-        if child_name in sys.modules and not hasattr(sys.modules[parent_name], parts[i + 1]):
-            setattr(sys.modules[parent_name], parts[i + 1], sys.modules[child_name])
+# Mock aios.api
+aios_mod = types.ModuleType("app.aios")
+aios_api_mod = types.ModuleType("app.aios.api")
+aios_api_mod.router = router
+sys.modules["app.aios"] = aios_mod
+sys.modules["app.aios.api"] = aios_api_mod
+setattr(aios_mod, "api", aios_api_mod)
+
+# Mock metrics
+metrics_mod = types.ModuleType("app.metrics")
+metrics_mod.track_request = MagicMock()
+metrics_mod.get_metrics = MagicMock(return_value="# HELP\n")
+metrics_mod.CONTENT_TYPE_LATEST = "text/plain"
+sys.modules["app.metrics"] = metrics_mod
 
 import pytest
 from app.database import init_db

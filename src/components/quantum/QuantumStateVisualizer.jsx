@@ -146,10 +146,10 @@ export default function QuantumStateVisualizer() {
       }
 
       frame++
-      requestAnimationFrame(draw)
+      window.requestAnimationFrame(draw)
     }
     draw()
-    return () => { animation = false }
+    return () => { animating = false }
   }, [stateVector, active, animation])
 
   return (
