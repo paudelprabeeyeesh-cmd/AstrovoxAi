@@ -30,7 +30,16 @@ __all__ = [
     "ToolRateLimiter",
     "ToolBuilder",
     "tool_registry",
+    "CalculatorTool",
 ]
+
+
+class CalculatorTool:
+    def calculate(self, expression):
+        allowed = "0123456789+-*/(). "
+        if any(c not in allowed for c in expression):
+            raise ValueError("Unsafe expression")
+        return {"result": eval(expression, {"__builtins__": {}}, {})}
 
 
 tool_registry = ToolRegistry()
