@@ -1,0 +1,15 @@
+server:
+  address: ":4040"
+
+auth:
+  no_auth: true
+
+storage:
+  path: /var/lib/pyroscope
+
+profiles:
+  - path: /tmp/profiles
+    application-name: astrovox
+    spy-name: default
+    sample-rate: 100
+    format: pprof

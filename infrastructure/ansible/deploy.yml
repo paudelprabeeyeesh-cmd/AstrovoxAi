@@ -1,0 +1,41 @@
+---
+- name: Deploy AstrovoxAI
+  hosts: astrovox
+  become: true
+  vars:
+    app_env: production
+    docker_image: astrovox:latest
+    replicas: 3
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create app directory
+      file:
+        path: /opt/astrovox
+        state: directory
+        owner: appuser
+        group: appuser
+        mode: '0755'
+
+    - name: Deploy with Docker Compose
+      shell: docker compose -f /opt/astrovox/docker-compose.yml up -d
+      args:
+        chdir: /opt/astrovox
+
+    - name: Wait for service
+      uri:
+        url: http://localhost:8000/health
+        status_code: 200
+      register: result
+      until: result.status == 200
+      retries: 30
+      delay: 10

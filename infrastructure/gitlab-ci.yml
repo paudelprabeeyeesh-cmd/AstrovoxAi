@@ -1,0 +1,36 @@
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+
+test:
+  stage: test
+  image: python:3.11
+  script:
+    - cd 02-Backend
+    - pip install -r requirements.txt
+    - pytest tests/ -v
+    - ruff check app/
+
+build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - docker build -t astrovox:$CI_COMMIT_SHA -f Dockerfile .
+    - docker tag astrovox:$CI_COMMIT_SHA registry.example.com/astrovox:$CI_COMMIT_SHA
+  only:
+    - main
+
+deploy:
+  stage: deploy
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl apply -f infrastructure/k8s/
+    - kubectl set image deployment/astrovox astrovox=astrovox:$CI_COMMIT_SHA -n astrovox
+  only:
+    - main

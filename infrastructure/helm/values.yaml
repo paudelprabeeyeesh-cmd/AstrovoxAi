@@ -1,0 +1,57 @@
+replicaCount: 3
+
+image:
+  repository: astrovox
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: astrovox.ai
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  tls:
+    enabled: true
+    secretName: astrovox-tls
+
+configmap:
+  data:
+    APP_ENV: production
+    LOG_LEVEL: info
+    REDIS_URL: redis://redis-master:6379/0
+    JAEGER_URL: http://jaeger:14268/api/traces
+
+secret:
+  data:
+    DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+    OPENAI_API_KEY: change-me
+    JWT_SECRET_KEY: change-me
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  storage: 20Gi
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  storage: 5Gi

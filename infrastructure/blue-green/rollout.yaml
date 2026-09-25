@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: astrovox
+  namespace: astrovox
+spec:
+  replicas: 3
+  strategy:
+    blueGreen:
+      activeService: astrovox
+      previewService: astrovox-preview
+      autoPromotionEnabled: true
+      autoPromotionMaxUnavailable: 1
+      scaleDownDelaySeconds: 30
+      prePromotionAnalysis:
+        templates:
+          - name: smoke-tests
+            spec:
+              successCondition: result[0] == "success"
+      postPromotionAnalysis:
+        templates:
+          - name: smoke-tests
+            spec:
+              successCondition: result[0] == "success"
+  selector:
+    matchLabels:
+      app: astrovox
+  template:
+    metadata:
+      labels:
+        app: astrovox
+        version: stable
+    spec:
+      containers:
+        - name: astrovox
+          image: astrovox:latest
+          ports:
+            - containerPort: 8000

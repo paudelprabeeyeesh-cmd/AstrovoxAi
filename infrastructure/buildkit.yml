@@ -1,0 +1,31 @@
+"""BuildKit configuration for Docker builds."""
+
+target "production" {
+  context = "."
+  dockerfile = "Dockerfile"
+  tags = ["astrovox:latest"]
+  cache-from = ["type=local,src=build-cache"]
+  cache-to = ["type=local,dest=build-cache"]
+  output = ["type=docker"]
+}
+
+target "staging" {
+  context = "."
+  dockerfile = "Dockerfile"
+  tags = ["astrovox:staging"]
+  output = ["type=docker"]
+}
+
+target "backend" {
+  context = "."
+  dockerfile = "Dockerfile.backend"
+  tags = ["astrovox/backend:latest"]
+}
+
+group "default" {
+  targets = ["production"]
+}
+
+group "all" {
+  targets = ["production", "backend"]
+}

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox
+  namespace: astrovox
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox
+  template:
+    metadata:
+      labels:
+        app: astrovox
+    spec:
+      containers:
+        - name: astrovox
+          image: astrovox:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: astrovox-config
+            - secretRef:
+                name: astrovox-secrets
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: astrovox
+                topologyKey: kubernetes.io/hostname

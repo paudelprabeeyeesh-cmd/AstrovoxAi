@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: astrovox
+  namespace: astrovox
+spec:
+  selector:
+    app: astrovox
+  ports:
+    - port: 80
+      targetPort: 8000
+  type: ClusterIP

@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: astrovox
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/astrovox/astrovox.git
+    targetRevision: HEAD
+    path: infrastructure/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: astrovox
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
