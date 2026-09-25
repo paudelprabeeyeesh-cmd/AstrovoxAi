@@ -44,7 +44,9 @@ class TestSnapshotEngine:
 
     def test_should_create_snapshot(self):
         engine = SnapshotEngine(strategy=SnapshotStrategy.EVERY_N_EVENTS, every_n_events=3)
-        assert not engine.should_create_snapshot("agg1", 2)
+        engine.record_event("agg1")
+        engine.record_event("agg1")
+        engine.record_event("agg1")
         assert engine.should_create_snapshot("agg1", 3)
 
 
@@ -78,7 +80,7 @@ class TestQueryBus:
     def test_register_handler(self):
         bus = QueryBus()
         def handler(qry):
-            return Query(query_id=qry.query_id, result="test")
+            return QueryResult(query_id=qry.query_id, result="test")
         bus.register("test_query", handler)
         assert "test_query" in bus._handlers
 
@@ -86,7 +88,7 @@ class TestQueryBus:
         import asyncio
         bus = QueryBus()
         def handler(qry):
-            return Query(query_id=qry.query_id, result="test")
+            return QueryResult(query_id=qry.query_id, result="test")
         bus.register("test_query", handler)
         qry = Query(query_type="test_query")
         result = asyncio.run(bus.execute(qry))

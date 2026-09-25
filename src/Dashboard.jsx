@@ -168,6 +168,22 @@ export default function Dashboard({ session }) {
               ⚛️ QUANTUM
             </button>
             <button
+              onClick={() => setActivePanel('holographic')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'holographic' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'holographic' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              💎 HOLOGRAPHIC
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
