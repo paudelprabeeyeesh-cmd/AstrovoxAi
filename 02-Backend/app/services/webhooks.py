@@ -132,7 +132,7 @@ class WebhookDeliveryService:
             logger.warning("DLQ item %s exhausted max retries", dlq_id)
             return False
         payload = item.payload
-        event_id = payload.get("dlq_id", dlq_id)
+        event_id = payload.get("event_id", dlq_id)
         original = payload.get("original_task_id", dlq_id)
         logger.info("Retrying DLQ item %s (original %s)", dlq_id, original)
         event = WebhookEvent(

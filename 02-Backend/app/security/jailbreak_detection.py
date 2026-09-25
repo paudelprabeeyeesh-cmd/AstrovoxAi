@@ -1,5 +1,6 @@
 """Jailbreak detection and behavioral analysis system.
 
+SECURITY_AGENT_MARKER: This file was enhanced by Security/Compliance Agent.
 This module implements advanced jailbreak detection with:
 
 1. Signature-based jailbreak pattern matching
