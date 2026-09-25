@@ -173,3 +173,30 @@ class TestTemporalStats:
         resp = client.get("/temporal/stats")
         assert resp.status_code == 200
         assert "debugger" in resp.json()
+
+
+class TestBatchOperations:
+    def test_batch_apply(self):
+        resp = client.post("/temporal/batch/apply", json=[
+            {"entity_id": "b1", "operation": "create", "data": {"x": 1}, "actor": "u1"},
+            {"entity_id": "b2", "operation": "create", "data": {"x": 2}, "actor": "u1"},
+        ])
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success_count"] == 2
+        assert body["failure_count"] == 0
+        assert "batch_id" in body
+
+    def test_batch_query(self):
+        client.post("/temporal/batch/apply", json=[{"entity_id": "bq1", "operation": "create", "data": {"y": 1}, "actor": "u1"}])
+        resp = client.post("/temporal/batch/query", json=[
+            {"entity_id": "bq1"},
+        ])
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["success_count"] == 1
+
+    def test_engine_stats(self):
+        resp = client.get("/temporal/engine/stats")
+        assert resp.status_code == 200
+        assert "debugger" in resp.json()

@@ -112,6 +112,7 @@ if "app.metrics" not in sys.modules:
     metrics_mod.get_metrics = MagicMock(return_value="# HELP\n")
     metrics_mod.CONTENT_TYPE_LATEST = "text/plain"
     metrics_mod.track_ai_request = MagicMock()
+    metrics_mod.track_rate_limit = MagicMock()
 
 # Create mock router for missing route modules
 from fastapi import APIRouter
