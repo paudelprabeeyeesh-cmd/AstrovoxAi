@@ -1,3 +1,6 @@
 export { ThoughtToText } from './ThoughtToText'
 export { EmotionMapper } from './EmotionMapper'
 export { AttentionAdapter } from './AttentionAdapter'
+export { MotorImagery } from './MotorImagery'
+export { Neurofeedback } from './Neurofeedback'
+export { MemoryPalace } from './MemoryPalace'
