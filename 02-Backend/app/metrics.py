@@ -75,6 +75,14 @@ if PROMETHEUS_AVAILABLE:
         ["policy", "identity"]
     )
 
+def track_rate_limit(policy, identity, allowed, remaining):
+    """Track rate limit metrics."""
+    if not PROMETHEUS_AVAILABLE:
+        return
+    rate_limit_total.labels(policy=policy, identity=identity, allowed=str(allowed)).inc()
+    rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
+
+
 def get_metrics():
     """Get Prometheus-formatted metrics."""
     if PROMETHEUS_AVAILABLE:
