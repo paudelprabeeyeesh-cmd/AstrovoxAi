@@ -98,7 +98,7 @@ export default function LightFieldRenderer() {
       window.requestAnimationFrame(draw)
     }
     draw()
-    return () => { running = false }
+    return () => { animating = false }
   }, [rays, refraction, waveMode, intensity, running])
 
   return (

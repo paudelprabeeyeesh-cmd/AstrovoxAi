@@ -4,6 +4,11 @@ import json
 import types
 from unittest.mock import patch, MagicMock
 
+# Ensure the backend root is on sys.path so 'app' package can be imported
+_backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
+
 os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
 os.environ.setdefault("ASTROVOX_DB", "test.db")
 os.environ.setdefault("ASTROVOX_TEST_MODE", "1")
