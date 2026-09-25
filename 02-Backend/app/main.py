@@ -24,6 +24,7 @@ from app.api.routers.agent_route import router as agent_router
 from app.api.routers.monitoring_route import router as monitoring_router
 from app.api.routers.auth.security_route import router as security_router
 from app.api.routers.security_management import router as security_management_router
+from app.safety_routes import router as safety_router
 from app.middleware.security.ip_ua_enforcement import IPEnforcementMiddleware, UserAgentMiddleware
 from app.api.routers.admin_route import router as admin_router
 from app.api.routers.realtime_route import router as realtime_router
@@ -56,6 +57,7 @@ from app.api.routers.webhook_router import router as webhook_router
 from app.api.routers.feature_flags_router import router as feature_flags_router
 from app.api.routers.admin_metrics_router import router as admin_metrics_router
 from app.api.routers.support_router import router as support_router
+from app.enterprise.billing_router import router as enterprise_billing_router
 from app.enterprise.admin_router import router as enterprise_admin_router
 from app.enterprise.sso_router import router as enterprise_sso_router
 from app.api.routers.cx_router import router as cx_router
@@ -125,6 +127,7 @@ app.include_router(embeddings_router)
 app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(enterprise_sso_router)
+app.include_router(enterprise_billing_router)
 app.include_router(enterprise_admin_router)
 app.include_router(ws_router)
 app.include_router(workspace_router)
@@ -136,6 +139,7 @@ app.include_router(agent_router)
 app.include_router(monitoring_router)
 app.include_router(security_router)
 app.include_router(security_management_router)
+app.include_router(safety_router)
 app.include_router(admin_router)
 app.include_router(realtime_router)
 app.include_router(dashboard_router)
