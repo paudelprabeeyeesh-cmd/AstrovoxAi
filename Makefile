@@ -1,4 +1,4 @@
-.PHONY: help test lint typecheck clean run dev install
+.PHONY: help test lint typecheck clean run dev install quality
 
 help:
 	@echo "AstravoxAi Backend — available targets:"
@@ -7,6 +7,7 @@ help:
 	@echo "  make test-quick — run core test suites only"
 	@echo "  make lint       — run linting"
 	@echo "  make typecheck  — run type checking"
+	@echo "  make quality    — run code quality dashboard"
 	@echo "  make clean      — remove caches and temp files"
 	@echo "  make run        — start development server"
 
@@ -24,6 +25,11 @@ lint:
 
 typecheck:
 	cd 02-Backend && mypy app
+
+quality:
+	mkdir -p code-quality-reports
+	python tools/code-quality/dashboard.py || true
+	@echo "Quality reports saved to code-quality-reports/"
 
 clean:
 	find 02-Backend -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

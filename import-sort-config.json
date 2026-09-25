@@ -1,0 +1,12 @@
+{
+  "importSort": {
+    "tsConfigPath": "./tsconfig.json",
+    "lineLength": 120,
+    "groupPattern": [
+      "^react$",
+      "^next$",
+      "^@?\\w",
+      "^[./]"
+    ]
+  }
+}

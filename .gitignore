@@ -39,3 +39,6 @@ logs/*.log
 # Backup / temp files
 *~
 *.bak
+
+# Code quality reports
+code-quality-reports/

@@ -2,15 +2,17 @@ import js from '@eslint/js';
 import tsParser from '@typescript-eslint/parser';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
 import reactPlugin from 'eslint-plugin-react';
+import securityPlugin from 'eslint-plugin-security';
 
 export default [
   js.configs.recommended,
   {
     files: ['src/**/*.{js,jsx,ts,tsx}'],
-    ignores: ['dist/**'],
+    ignores: ['dist/**', 'node_modules/**'],
     plugins: {
       react: reactPlugin,
       '@typescript-eslint': tsPlugin,
+      security: securityPlugin,
     },
     languageOptions: {
       parser: tsParser,
@@ -50,6 +52,12 @@ export default [
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       'react/jsx-uses-react': 'off',
       'react/react-in-jsx-scope': 'off',
+      'security/detect-object-injection': 'warn',
+      'security/detect-non-literal-fs-filename': 'warn',
+      'security/detect-eval-with-expression': 'error',
+      'security/detect-no-csrf-before-method-override': 'error',
+      'security/detect-possible-timing-attacks': 'warn',
+      'security/detect-pseudo-random-prng': 'warn',
     },
   },
 ];
