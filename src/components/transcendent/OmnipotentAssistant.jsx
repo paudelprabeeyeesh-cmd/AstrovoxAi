@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getOmniscientStats, createKnowledgeEntity, createKnowledgeRelationship } from '../../services/omniscientService'
 
 const GOD_MODES = [
   { id: 'creator', name: 'Creator Mode', icon: '🛐', description: 'Generate universes, physics, and reality frameworks' },
@@ -50,7 +51,7 @@ export default function OmnipotentAssistant() {
   const currentMode = GOD_MODES.find(m => m.id === activeMode)
   const currentPowers = POWER_MATRIX[activeMode] || {}
 
-  const executeOmnipotentAction = useCallback((action, target) => {
+  const executeOmnipotentAction = useCallback(async (action, target) => {
     const timestamp = new Date().toISOString()
     const newAction = {
       id: `oa_${Date.now()}`,
@@ -76,6 +77,16 @@ export default function OmnipotentAssistant() {
     ])
 
     if (activeMode === 'creator') {
+      try {
+        await createKnowledgeEntity({
+          entity_id: `ent_${Date.now()}`,
+          name: target || 'Omnipotent Entity',
+          entity_type: 'omnipotent_entity',
+          properties: { mode: activeMode, action, power: Infinity },
+        })
+      } catch (e) {
+        console.error('Failed to create entity:', e)
+      }
       setManifestedEntities(prev => [
         ...prev,
         { id: `ent_${Date.now()}`, type: target || 'Omnipotent Entity', power: Infinity, timestamp }

@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './supabase'
 import MessageContent from './MessageContent'
+import PredictiveText from './components/transcendent/PredictiveText'
+import ThoughtPrediction from './components/transcendent/ThoughtPrediction'
+import UniversalTranslation from './components/transcendent/UniversalTranslation'
+import AnticipatoryUI from './components/transcendent/AnticipatoryUI'
 
 export default function Chat({ session, conversationId, model = 'gpt-4' }) {
   const [messages, setMessages] = useState([])
@@ -395,6 +399,12 @@ export default function Chat({ session, conversationId, model = 'gpt-4' }) {
           SEND
         </button>
       </form>
+
+      {/* Transcendent overlays */}
+      <PredictiveText interface="chat" onSelectSuggestion={(s) => setInput(s.text)} />
+      {session && <ThoughtPrediction userId={session.user.id} />}
+      {input && <UniversalTranslation text={input} />}
+      {conversationId && <AnticipatoryUI userId={session.user.id} interface="chat" context={{ conversationId }} />}
 
       <style>{`
         @keyframes spin {
