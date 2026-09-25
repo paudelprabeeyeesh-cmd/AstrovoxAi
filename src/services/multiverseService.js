@@ -1,5 +1,3 @@
-import { useState, useEffect, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '../supabase'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'

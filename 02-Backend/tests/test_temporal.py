@@ -1,180 +1,319 @@
-"""Temporal time manipulation tests."""
+"""Temporal computing tests.
+
+Tests for:
+- Time-travel debugging
+- Temporal database with event sourcing, CQRS, and audit trail
+- Timeline-based systems with branching and merging
+- State management with CRDTs and immutable trees
+- Temporal AI with context windows and forecasting
+"""
 
 from __future__ import annotations
 
-import pytest
+import datetime
+import time
 
-from app.temporal.snapshots import SnapshotEngine, SnapshotStrategy
-from app.temporal.cqrs import CommandBus, QueryBus, Command, Event, Query, QueryResult, CQRS
-from app.temporal.reverse_debugger import ReverseDebugger, DebugDirection
-from app.temporal.branching import BranchTimelineManager, BranchType, BranchStatus
-from app.temporal.causal import CausalChainAnalyzer, CausalEvent, CausalEdge, CausalEdgeType
-from app.temporal.diffing import StateDiffer, HistoricalDiff
-from app.temporal.rollback import RollbackAutomation, RollbackTrigger
-
-
-class TestSnapshotEngine:
-    def test_create_snapshot(self):
-        engine = SnapshotEngine()
-        snapshot = engine.create_snapshot("agg1", "TestAggregate", 1, {"key": "value"}, 1)
-        assert snapshot.aggregate_id == "agg1"
-        assert snapshot.state["key"] == "value"
-        assert snapshot.version == 1
-
-    def test_get_latest_snapshot(self):
-        engine = SnapshotEngine()
-        engine.create_snapshot("agg1", "TestAggregate", 1, {"key": "value1"}, 1)
-        engine.create_snapshot("agg1", "TestAggregate", 2, {"key": "value2"}, 2)
-        latest = engine.get_latest_snapshot("agg1")
-        assert latest.version == 2
-
-    def test_get_snapshot_at_version(self):
-        engine = SnapshotEngine()
-        engine.create_snapshot("agg1", "TestAggregate", 1, {"key": "value1"}, 1)
-        engine.create_snapshot("agg1", "TestAggregate", 3, {"key": "value3"}, 3)
-        snap = engine.get_snapshot_at("agg1", 2)
-        assert snap.version == 1
-
-    def test_compact_snapshots(self):
-        engine = SnapshotEngine()
-        for i in range(1, 6):
-            engine.create_snapshot("agg1", "TestAggregate", i, {"key": f"value{i}"}, i)
-        engine.compact("agg1", keep_n=2)
-        assert len(engine.get_snapshots("agg1")) == 2
-
-    def test_should_create_snapshot(self):
-        engine = SnapshotEngine(strategy=SnapshotStrategy.EVERY_N_EVENTS, every_n_events=3)
-        engine.record_event("agg1")
-        engine.record_event("agg1")
-        engine.record_event("agg1")
-        assert engine.should_create_snapshot("agg1", 3)
+from app.temporal import (
+    BreakpointType,
+    ConsistencyLevel,
+    ConsistencyManager,
+    ConversationTimeline,
+    CausalChainAnalyzer,
+    CausalLink,
+    DecisionTree,
+    Direction,
+    GSet,
+    HistoricalPatternRecognizer,
+    ImmutableStateTree,
+    LWWRegister,
+    ORSet,
+    PNCounter,
+    ScenarioAnalyzer,
+    StateDiffer,
+    StatePredictor,
+    StateSnapshot,
+    TemporalAttention,
+    TemporalBreakpoint,
+    TemporalDatabase,
+    TimeAwareContextWindow,
+    TimeSeriesForecaster,
+    TimeTravelDebugger,
+    TimelineExporter,
+    TimelineNode,
+    get_debugger,
+)
 
 
-class TestCommandBus:
-    def test_register_handler(self):
-        bus = CommandBus()
-        def handler(cmd):
-            return [Event(event_type="test", aggregate_id="agg1", version=1)]
-        bus.register("test_command", handler)
-        assert "test_command" in bus._handlers
+class TestTimeTravelDebugger:
+    def setup_method(self):
+        self.debugger = get_debugger("test")
 
-    def test_dispatch(self):
-        import asyncio
-        bus = CommandBus()
-        def handler(cmd):
-            return [Event(event_type="test", aggregate_id="agg1", version=1)]
-        bus.register("test_command", handler)
-        cmd = Command(command_type="test_command")
-        result = asyncio.run(bus.dispatch(cmd))
-        assert len(result) == 1
+    def test_capture_and_restore_snapshot(self):
+        state = {"step": 1, "value": 42}
+        snap = self.debugger.capture_snapshot(state, label="init")
+        assert snap.state == state
+        restored = self.debugger.restore_snapshot(snap.snapshot_id)
+        assert restored["step"] == 1
 
-    def test_dispatch_no_handler(self):
-        import asyncio
-        bus = CommandBus()
-        cmd = Command(command_type="nonexistent")
-        with pytest.raises(Exception):
-            asyncio.run(bus.dispatch(cmd))
+    def test_branch_creation_and_switch(self):
+        branch = self.debugger.create_branch("experiment", created_by="test")
+        assert branch in self.debugger.list_branches()
+        self.debugger.switch_branch(branch)
+        assert self.debugger.get_current_branch() == branch
 
+    def test_breakpoint_lifecycle(self):
+        bp = TemporalBreakpoint(
+            breakpoint_id="bp-1",
+            breakpoint_type=BreakpointType.POSITION,
+            target=10,
+            description="stop at 10",
+        )
+        self.debugger.set_breakpoint(bp)
+        bps = self.debugger.list_breakpoints()
+        assert len(bps) == 1
+        assert bps[0]["breakpoint_id"] == "bp-1"
+        self.debugger.remove_breakpoint("bp-1")
+        assert len(self.debugger.list_breakpoints()) == 0
 
-class TestQueryBus:
-    def test_register_handler(self):
-        bus = QueryBus()
-        def handler(qry):
-            return QueryResult(query_id=qry.query_id, result="test")
-        bus.register("test_query", handler)
-        assert "test_query" in bus._handlers
+    def test_step_forward_and_backward(self):
+        self.debugger.capture_snapshot({"x": 0}, label="start")
+        evt = type("E", (), {"event_id": "e1", "timestamp": datetime.datetime.now(datetime.timezone.utc), "position": 1, "event_type": "tick", "payload": {}, "branch_id": "main"})()
+        state = self.debugger.step_forward(evt, lambda s, e: {"x": s.get("x", 0) + 1})
+        assert state["x"] == 1
+        self.debugger.step_backward(1)
+        assert self.debugger.get_current_position() == 0
 
-    def test_execute_query(self):
-        import asyncio
-        bus = QueryBus()
-        def handler(qry):
-            return QueryResult(query_id=qry.query_id, result="test")
-        bus.register("test_query", handler)
-        qry = Query(query_type="test_query")
-        result = asyncio.run(bus.execute(qry))
-        assert result.result == "test"
+    def test_state_comparison(self):
+        snap_a = self.debugger.capture_snapshot({"a": 1}, label="a")
+        snap_b = self.debugger.capture_snapshot({"a": 2, "b": 3}, label="b")
+        diff = self.debugger.compare_snapshots(snap_a.snapshot_id, snap_b.snapshot_id)
+        assert diff["summary"]["changed_count"] == 1
+        assert diff["summary"]["added_count"] == 1
 
-
-class TestCausalChainAnalyzer:
-    def test_add_events(self):
-        analyzer = CausalChainAnalyzer()
-        event = CausalEvent(event_id="e1", event_type="test", aggregate_id="a1", version=1, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-        analyzer.add_event(event)
-        assert "e1" in analyzer._events
-
-    def test_add_edge(self):
-        analyzer = CausalChainAnalyzer()
-        event1 = CausalEvent(event_id="e1", event_type="test", aggregate_id="a1", version=1, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-        event2 = CausalEvent(event_id="e2", event_type="test", aggregate_id="a1", version=2, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-        analyzer.add_events([event1, event2])
-        edge = CausalEdge(edge_id="ed1", source_event_id="e1", target_event_id="e2", edge_type=CausalEdgeType.CAUSED)
-        analyzer.add_edge(edge)
-        assert "ed1" in analyzer._edges
-
-    def test_build_chain(self):
-        analyzer = CausalChainAnalyzer()
-        event1 = CausalEvent(event_id="e1", event_type="test", aggregate_id="a1", version=1, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-        event2 = CausalEvent(event_id="e2", event_type="test", aggregate_id="a1", version=2, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc))
-        analyzer.add_events([event1, event2])
-        chain = analyzer.build_chain("c1", "Test Chain", ["e1", "e2"])
-        assert chain.chain_id == "c1"
-        assert len(chain.events) == 2
+    def test_point_in_time_query(self):
+        self.debugger.capture_snapshot({"v": 1}, label="v1")
+        t = datetime.datetime.now(datetime.timezone.utc)
+        self.debugger.capture_snapshot({"v": 2}, label="v2")
+        state = self.debugger.query_at_time(t)
+        assert state is not None
 
 
-class TestStateDiffer:
+class TestTemporalDatabase:
+    def setup_method(self):
+        self.db = TemporalDatabase(consistency=ConsistencyLevel.EVENTUAL)
+
+    def test_apply_and_query(self):
+        entity = self.db.apply("e1", "create", {"name": "test"}, actor="u1")
+        assert entity.version == 1
+        state = self.db.query("e1")
+        assert state["name"] == "test"
+
+    def test_point_in_time(self):
+        self.db.apply("e1", "create", {"v": 1}, actor="u1")
+        t = datetime.datetime.now(datetime.timezone.utc)
+        time.sleep(0.01)
+        self.db.apply("e1", "update", {"v": 2}, actor="u1")
+        state = self.db.query("e1", as_of=t)
+        assert state["v"] == 1
+
+    def test_history(self):
+        self.db.apply("e1", "create", {"v": 1}, actor="u1")
+        self.db.apply("e1", "update", {"v": 2}, actor="u1")
+        history = self.db.history("e1")
+        assert len(history) == 2
+
+    def test_audit_trail(self):
+        self.db.apply("e1", "create", {"v": 1}, actor="u1")
+        trail = self.db.audit_trail("e1")
+        assert len(trail) >= 1
+        assert trail[0]["operation"] == "create"
+
+    def test_lineage(self):
+        self.db.apply("e1", "create", {"v": 1}, actor="u1")
+        lineage = self.db.lineage("e1")
+        assert len(lineage) >= 1
+
+    def test_verify_audit_integrity(self):
+        self.db.apply("e1", "create", {"v": 1}, actor="u1")
+        assert self.db.verify_audit_integrity() is True
+
+    def test_constraint_violation(self):
+        self.db._constraints.register(
+            type("C", (), {"constraint_id": "c1", "entity_type": "entity", "rule": "x>0", "validator": lambda ns, _: ns.get("x", 0) > 0, "enabled": True, "description": ""})()
+        )
+        import pytest
+        with pytest.raises(ValueError):
+            self.db.apply("e1", "create", {"x": -1}, actor="u1", entity_type="entity")
+
+
+class TestTimeline:
+    def setup_method(self):
+        self.timeline = ConversationTimeline("conv-1")
+
+    def test_add_message(self):
+        node = self.timeline.add_message("user", "hello")
+        assert node.content["role"] == "user"
+
+    def test_branch_and_merge(self):
+        node = self.timeline.add_message("user", "hello")
+        branch = self.timeline.branch("alt", node.node_id)
+        self.timeline.add_message("assistant", "hi", branch_id=branch)
+        merged = self.timeline.merge(branch, "main", node.node_id)
+        assert merged.node_type == "merge"
+
+    def test_divergence_detection(self):
+        n1 = self.timeline.add_message("user", "hello")
+        branch = self.timeline.branch("alt", n1.node_id)
+        self.timeline.add_message("assistant", "hi", branch_id=branch)
+        divergence = self.timeline.detect_divergence("main", branch)
+        assert divergence is not None
+
+    def test_visualize(self):
+        self.timeline.add_message("user", "hello")
+        viz = self.timeline.visualize()
+        assert "nodes" in viz
+        assert len(viz["nodes"]) >= 1
+
+    def test_path_to_root(self):
+        node = self.timeline.add_message("user", "hello")
+        path = self.timeline.get_path_to_root(node.node_id)
+        assert len(path) >= 1
+
+    def test_decision_tree(self):
+        tree = DecisionTree("tree-1")
+        root = tree.add_decision(None, {"question": "go?"})
+        outcome = tree.add_outcome(root.node_id, {"result": "yes"})
+        viz = tree.visualize()
+        assert viz["node_count"] >= 2
+
+    def test_scenario_analysis(self):
+        analyzer = ScenarioAnalyzer(self.timeline)
+        result = analyzer.simulate("s1", "main", lambda nodes: {"score": 0.5})
+        assert result.scenario_id == "s1"
+
+    def test_causal_chain(self):
+        n1 = self.timeline.add_message("user", "hello")
+        n2 = self.timeline.add_message("assistant", "hi")
+        analyzer = CausalChainAnalyzer(self.timeline)
+        analyzer.add_link(n1.node_id, n2.node_id, "causes")
+        chain = analyzer.analyze(n1.node_id)
+        assert chain["start_node_id"] == n1.node_id
+
+    def test_export_json(self):
+        self.timeline.add_message("user", "hello")
+        exporter = TimelineExporter(self.timeline)
+        json_data = exporter.to_json()
+        assert "hello" in json_data
+
+    def test_export_csv(self):
+        self.timeline.add_message("user", "hello")
+        exporter = TimelineExporter(self.timeline)
+        csv_data = exporter.to_csv()
+        assert "hello" in csv_data
+
+
+class TestStateManager:
+    def setup_method(self):
+        self.tree = ImmutableStateTree()
+
+    def test_commit_and_get(self):
+        state = self.tree.commit("default", {"x": 1})
+        assert self.tree.get("default")["x"] == 1
+
+    def test_history(self):
+        self.tree.commit("default", {"x": 1})
+        self.tree.commit("default", {"x": 2})
+        hist = self.tree.history("default")
+        assert len(hist) == 2
+
+    def test_rollback(self):
+        self.tree.commit("default", {"x": 1})
+        self.tree.commit("default", {"x": 2})
+        self.tree.rollback("default", steps=1)
+        assert self.tree.get("default")["x"] == 1
+
     def test_diff(self):
-        differ = StateDiffer()
-        state_a = {"key1": "value1", "key2": "value2"}
-        state_b = {"key1": "value1_modified", "key3": "value3"}
-        diff = differ.diff(state_a, state_b)
-        assert len(diff._compute_field_diff()["additions"]) == 1
-        assert len(diff._compute_field_diff()["deletions"]) == 0
-        assert len(diff._compute_field_diff()["modifications"]) == 1
+        self.tree.commit("default", {"x": 1})
+        id_a = self.tree._latest["default"]
+        self.tree.commit("default", {"x": 2})
+        id_b = self.tree._latest["default"]
+        diff = self.tree.diff("default", id_a, id_b)
+        assert diff["summary"]["changed_count"] == 1
 
-    def test_diff_sequence(self):
-        differ = StateDiffer()
-        states = [
-            {"key": "value1"},
-            {"key": "value2"},
-            {"key": "value3"},
-        ]
-        diffs = differ.diff_sequence(states)
-        assert len(diffs) == 2
+    def test_optimize(self):
+        self.tree.commit("default", {"x": 1})
+        result = self.tree.optimize("default")
+        assert result["optimized"] is True
+
+    def test_state_differ(self):
+        diff = StateDiffer.diff({"a": 1}, {"a": 2, "b": 3})
+        assert diff["summary"]["changed_count"] == 1
+        assert diff["summary"]["added_count"] == 1
+
+    def test_state_predictor(self):
+        pred = StatePredictor()
+        pred.observe({"a": 1}, {"a": 2}, 1.0)
+        predictions = pred.predict({"a": 1}, steps=1)
+        assert len(predictions) == 1
+
+    def test_crdt_gset(self):
+        gset = GSet()
+        gset.add("a")
+        gset.add("b")
+        assert gset.has("a")
+        assert not gset.has("c")
+
+    def test_crdt_pncounter(self):
+        counter = PNCounter()
+        counter.increment()
+        counter.decrement()
+        assert counter.value() == 0
+
+    def test_crdt_lww(self):
+        reg = LWWRegister("n1")
+        reg.set("hello")
+        assert reg.get() == "hello"
+
+    def test_crdt_orset(self):
+        orset = ORSet()
+        orset.add("a")
+        assert orset.has("a")
+        orset.remove("a")
+        assert not orset.has("a")
+
+    def test_consistency_manager(self):
+        mgr = ConsistencyManager(consistency_level="eventual")
+        mgr.propose({"k": "v"})
+        assert len(mgr.get_pending()) == 0
 
 
-class TestBranchTimelineManager:
-    def test_create_branch(self):
-        manager = BranchTimelineManager()
-        branch = manager.create_branch("test_branch", BranchType.TIMELINE, "snap1", 1)
-        assert branch.name == "test_branch"
-        assert branch.branch_type == BranchType.TIMELINE
+class TestTemporalAI:
+    def test_context_window(self):
+        cw = TimeAwareContextWindow(max_tokens=10, decay_half_life_s=3600.0)
+        cw.add("hello")
+        cw.add("world")
+        text = cw.context_text()
+        assert "hello" in text
 
-    def test_append_snapshot(self):
-        manager = BranchTimelineManager()
-        branch = manager.create_branch("test_branch", BranchType.TIMELINE, "snap1", 1)
-        class FakeSnapshot:
-            version = 1
-            snapshot_id = "s1"
-            created_at = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
-        manager.append_snapshot(branch.branch_id, FakeSnapshot())
-        assert len(manager._branches[branch.branch_id].snapshots) == 1
+    def test_temporal_attention(self):
+        attn = TemporalAttention()
+        query = {"timestamp": datetime.datetime.now(datetime.timezone.utc), "text": "q"}
+        keys = [{"text": "a"}, {"text": "b"}]
+        ts = [datetime.datetime.now(datetime.timezone.utc), datetime.datetime.now(datetime.timezone.utc)]
+        results = attn.attend(query, keys, ts)
+        assert len(results) == 2
 
-    def test_get_visualization(self):
-        manager = BranchTimelineManager()
-        manager.create_branch("test_branch", BranchType.TIMELINE, "snap1", 1)
-        viz = manager.get_visualization()
-        assert len(viz["nodes"]) == 1
+    def test_pattern_recognizer(self):
+        pr = HistoricalPatternRecognizer()
+        pr.observe(["a", "b", "c"])
+        pr.observe(["a", "b", "c"])
+        patterns = pr.detect_patterns()
+        assert len(patterns) >= 1
 
-
-class TestRollbackAutomation:
-    def test_create_plan(self):
-        automation = RollbackAutomation(None, None, None)
-        plan = automation.create_plan("agg1", 5)
-        assert plan.aggregate_id == "agg1"
-        assert plan.target_version == 5
-
-    def test_execute_rollback(self):
-        automation = RollbackAutomation(None, None, None)
-        plan = automation.create_plan("agg1", 5)
-        result = automation.execute(plan.plan_id)
-        assert result.status.value == "completed"
+    def test_time_series_forecaster(self):
+        f = TimeSeriesForecaster()
+        now = datetime.datetime.now(datetime.timezone.utc)
+        f.observe("s1", now, 1.0)
+        f.observe("s1", datetime.datetime.fromtimestamp(now.timestamp() + 60, tz=datetime.timezone.utc), 2.0)
+        forecast = f.forecast("s1", horizon=2)
+        assert len(forecast) == 2

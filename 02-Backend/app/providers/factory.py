@@ -11,6 +11,14 @@ class ProviderFactory:
     """Factory for creating AI provider instances."""
 
     _providers: dict[str, AIProvider] = {}
+    _initialized: bool = False
+
+    @classmethod
+    def _ensure_initialized(cls) -> None:
+        if cls._initialized:
+            return
+        cls._initialize_providers()
+        cls._initialized = True
 
     @classmethod
     def register(cls, name: str, provider: AIProvider):
@@ -20,11 +28,13 @@ class ProviderFactory:
     @classmethod
     def get(cls, name: str) -> Optional[AIProvider]:
         """Get a provider by name."""
+        cls._ensure_initialized()
         return cls._providers.get(name)
 
     @classmethod
     def get_for_model(cls, model_id: str) -> Optional[AIProvider]:
         """Get the appropriate provider for a model."""
+        cls._ensure_initialized()
         provider_name = get_provider_for_model(model_id)
         if not provider_name:
             return None
@@ -33,12 +43,14 @@ class ProviderFactory:
     @classmethod
     def list_configured(cls) -> list[str]:
         """List names of all configured providers."""
+        cls._ensure_initialized()
         return [name for name, p in cls._providers.items() if p.is_configured]
 
     @classmethod
     def clear(cls):
         """Clear all registered providers (for testing)."""
         cls._providers.clear()
+        cls._initialized = False
 
 
 def _initialize_providers():
@@ -67,6 +79,4 @@ def _initialize_providers():
     ollama = OllamaProvider()
     ProviderFactory.register("ollama", ollama)
 
-
-# Auto-initialize on import
-_initialize_providers()
+    ProviderFactory._initialized = True
