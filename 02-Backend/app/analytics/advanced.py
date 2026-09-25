@@ -1344,6 +1344,20 @@ class AdvancedAnalyticsEngine:
 
         self._persist_event("user_action", user_id, event.metadata)
 
+    def record_event(self, event_type: str, user_id: str, metadata: dict = None):
+        self.track_user_action(user_id, event_type, metadata)
+
+    def get_user_stats(self, user_id: str) -> dict:
+        user_events = [e for e in self._events if e.user_id == user_id]
+        total_events = len(user_events)
+        event_type_counts: dict[str, int] = defaultdict(int)
+        for e in user_events:
+            event_type_counts[e.event_type] += 1
+        return {
+            "total_events": total_events,
+            "event_types": dict(sorted(event_type_counts.items(), key=lambda x: x[1], reverse=True)),
+        }
+
     def get_usage_stats(self, days: int = 7) -> dict:
         cutoff = time.time() - (days * 86400)
         events = [e for e in self._events if e.timestamp >= cutoff]

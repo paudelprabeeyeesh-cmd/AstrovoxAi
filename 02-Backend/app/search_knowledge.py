@@ -422,13 +422,14 @@ class IncrementalIndexer:
         for item in items:
             item_id = item.get("id", str(uuid.uuid4()))
             ts = item.get(self.watermark_key, "")
+            is_new = item_id not in self._indexed
             if ts > last_watermark and item_id not in self._deleted:
                 self._indexed[item_id] = item
                 new_items.append(item)
-                if item_id in self._indexed:
-                    updated_count += 1
-                else:
+                if is_new:
                     new_count += 1
+                else:
+                    updated_count += 1
         watermark = max((i.get(self.watermark_key, "") for i in items), default=last_watermark)
         self._watermarks[collection] = max(last_watermark, watermark)
         state = IncrementalIndexState(
@@ -690,7 +691,7 @@ class CitationEngine:
             parts.append(url)
         return " ".join(parts)
 
-    def _format_mla(self, authors, title, source, url, page):
+    def _format_mla(self, authors, year, title, source, url, page):
         author = ", ".join(authors) if authors else "Unknown Author"
         parts = [f'{author}. "{title}."']
         if source:
@@ -1345,7 +1346,7 @@ class MetadataExtractor:
     def extract(self, text: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         if not text:
             return {"word_count": 0, "char_count": 0}
-        words = text.split()
+        words = [w for w in re.findall(r"\b[a-zA-Z]+\b", text) if len(w) > 1]
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", text) if s.strip()]
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
         reading_time = round(len(words) / self.READING_WPM, 2)

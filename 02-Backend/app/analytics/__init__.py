@@ -15,6 +15,9 @@ from .core import (
 )
 from .advanced import AdvancedAnalyticsEngine
 
+AdvancedAnalyticsEngine = AdvancedAnalyticsEngine
+AnalyticsEngine = AdvancedAnalyticsEngine
+
 advanced_analytics = AdvancedAnalyticsEngine()
 
 

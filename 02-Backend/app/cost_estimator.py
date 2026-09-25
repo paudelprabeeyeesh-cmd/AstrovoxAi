@@ -63,7 +63,7 @@ class CostEstimator:
         estimate.estimated_cost = actual_cost
         return estimate
 
-    def get_total_estimated_cost(self, since: Optional[float] = None) -> float:
+cost_estimator = CostEstimator()
         if since is None:
             return sum(e.estimated_cost for e in self._history)
         return sum(e.estimated_cost for e in self._history if e.timestamp >= since)

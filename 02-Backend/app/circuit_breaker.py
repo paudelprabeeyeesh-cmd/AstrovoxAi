@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from app.exceptions import AstrovoxError
-from app.utils import CircuitState as _CircuitState
+from app.utils import CircuitState
 
 logger = logging.getLogger(__name__)
 
