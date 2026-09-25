@@ -1,15 +1,17 @@
 # ASTROVOX AI — API REFERENCE
 
 ## Base URL
+
 ```
 Development: http://localhost:8000
 Production: https://api.astrovox.ai
 ```
 
 ## Authentication
+
 All endpoints require a Bearer token in the Authorization header:
 ```
-Authorization: Bearer <supabase_jwt_token>
+Authorization: Bearer <token>
 ```
 
 ---

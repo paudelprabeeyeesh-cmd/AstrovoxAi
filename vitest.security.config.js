@@ -7,6 +7,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/security/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    snapshotFormat: {
+      escapeString: false,
+      printBasicPrototype: false
+    },
     coverage: {
       reporter: ['text', 'json']
     }

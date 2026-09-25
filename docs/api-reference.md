@@ -2,6 +2,9 @@
 
 Comprehensive reference for the Astrovox AI REST API.
 
+> **Note:** For the legacy endpoint listing, see [API_REFERENCE.md](./API_REFERENCE.md).
+> This document focuses on the v1 public API surface with request/response schemas.
+
 ## Base URL
 
 ```
@@ -244,7 +247,7 @@ Verify webhook delivery.
 
 Official SDKs are available for:
 - [Python](./SDK_QUICKSTART.md#python)
-- [TypeScript](./SDK_QUICKSTART.md#typescript)
+- [TypeScript](./SDK_QUICKSTART.md#typescriptjavascript)
 - [Go](./SDK_QUICKSTART.md#go)
 - [Rust](./SDK_QUICKSTART.md#rust)
 

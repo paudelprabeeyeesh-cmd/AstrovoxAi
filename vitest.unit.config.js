@@ -8,6 +8,10 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './tests/unit/setup.js',
     include: ['tests/unit/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    snapshotFormat: {
+      escapeString: false,
+      printBasicPrototype: false
+    },
     coverage: {
       reporter: ['text', 'json', 'html'],
       exclude: ['node_modules/', 'tests/']

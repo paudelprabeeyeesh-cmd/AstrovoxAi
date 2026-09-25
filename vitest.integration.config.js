@@ -7,6 +7,10 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['tests/integration/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    snapshotFormat: {
+      escapeString: false,
+      printBasicPrototype: false
+    },
     coverage: {
       reporter: ['text', 'json'],
       include: ['src/**/*.{js,jsx,ts,tsx}']
