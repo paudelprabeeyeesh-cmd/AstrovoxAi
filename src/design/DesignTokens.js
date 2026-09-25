@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 
 export const THEMES = {
   astrovox: {
@@ -32,6 +32,12 @@ export const THEMES = {
       lg: '12px',
       xl: '16px',
       full: '9999px'
+    },
+    shadows: {
+      sm: '0 1px 2px rgba(0,0,0,0.3)',
+      md: '0 4px 6px rgba(0,0,0,0.3)',
+      lg: '0 10px 15px rgba(0,0,0,0.3)',
+      xl: '0 20px 25px rgba(0,0,0,0.3)'
     }
   },
   light: {
@@ -65,6 +71,12 @@ export const THEMES = {
       lg: '12px',
       xl: '16px',
       full: '9999px'
+    },
+    shadows: {
+      sm: '0 1px 2px rgba(0,0,0,0.05)',
+      md: '0 4px 6px rgba(0,0,0,0.05)',
+      lg: '0 10px 15px rgba(0,0,0,0.05)',
+      xl: '0 20px 25px rgba(0,0,0,0.05)'
     }
   },
   highContrast: {
@@ -98,6 +110,12 @@ export const THEMES = {
       lg: '0px',
       xl: '0px',
       full: '0px'
+    },
+    shadows: {
+      sm: 'none',
+      md: 'none',
+      lg: 'none',
+      xl: 'none'
     }
   }
 }
@@ -116,5 +134,69 @@ export function useTheme() {
     }
   }, [])
 
-  return { theme, themeName, setTheme }
+  const cssVariables = useMemo(() => {
+    const vars = {}
+    for (const [key, value] of Object.entries(theme.colors)) {
+      vars[`--astrovox-${key}`] = value
+    }
+    for (const [key, value] of Object.entries(theme.fonts)) {
+      vars[`--astrovox-font-${key === 'sans' ? 'sans' : 'mono'}`] = value
+    }
+    for (const [key, value] of Object.entries(theme.radius)) {
+      vars[`--astrovox-radius-${key}`] = value
+    }
+    for (const [key, value] of Object.entries(theme.shadows || {})) {
+      vars[`--astrovox-shadow-${key}`] = value
+    }
+    return vars
+  }, [theme])
+
+  return { theme, themeName, setTheme, cssVariables }
 }
+
+export function useSystemTheme() {
+  const [systemTheme, setSystemTheme] = useState(() => {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'astrovox' : 'light'
+  })
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = (e) => setSystemTheme(e.matches ? 'astrovox' : 'light')
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
+  }, [])
+
+  return systemTheme
+}
+
+export function useReducedMotion() {
+  const [reduced, setReduced] = useState(() => {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  })
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const handler = (e) => setReduced(e.matches)
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
+  }, [])
+
+  return reduced
+}
+
+export function useHighContrast() {
+  const [highContrast, setHighContrast] = useState(() => {
+    return window.matchMedia('(prefers-contrast: more)').matches
+  })
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-contrast: more)')
+    const handler = (e) => setHighContrast(e.matches)
+    mediaQuery.addEventListener('change', handler)
+    return () => mediaQuery.removeEventListener('change', handler)
+  }, [])
+
+  return highContrast
+}
+
+import { useEffect } from 'react'

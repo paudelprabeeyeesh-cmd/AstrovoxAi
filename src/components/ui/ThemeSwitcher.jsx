@@ -81,7 +81,7 @@ export function ThemeSwitcher({ currentTheme, onThemeChange, themes }) {
                 gap: '10px',
                 width: '100%',
                 padding: '10px 12px',
-                backgroundColor: currentTheme === themeKey ? 'var(--astrovix-primary)' : 'transparent',
+                 backgroundColor: currentTheme === themeKey ? 'var(--astrovox-primary)' : 'transparent',
                 color: 'var(--astrovox-text)',
                 border: 'none',
                 borderRadius: 'var(--astrovox-radius-sm)',

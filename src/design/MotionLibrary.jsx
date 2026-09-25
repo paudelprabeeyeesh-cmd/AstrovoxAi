@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import { useReducedMotion } from './DesignTokens'
 
 export const MOTION_PRESETS = {
   fadeIn: {
@@ -46,11 +47,18 @@ export const MOTION_PRESETS = {
   }
 }
 
-export function AnimatedContainer({ children, preset = 'slideUp', className = '', ...props }) {
+export function AnimatedContainer({ children, preset = 'slideUp', className = '', respectReducedMotion = true, ...props }) {
+  const reducedMotion = useReducedMotion()
+  const motionPreset = MOTION_PRESETS[preset] || MOTION_PRESETS.slideUp
+
+  const motionProps = respectReducedMotion && reducedMotion
+    ? { initial: false, animate: { opacity: 1, x: 0, y: 0, scale: 1 }, transition: { duration: 0 } }
+    : motionPreset
+
   return (
     <motion.div
       className={className}
-      {...MOTION_PRESETS[preset]}
+      {...motionProps}
       {...props}
     >
       {children}
@@ -58,11 +66,18 @@ export function AnimatedContainer({ children, preset = 'slideUp', className = ''
   )
 }
 
-export function AnimatedList({ children, preset = 'stagger', className = '', ...props }) {
+export function AnimatedList({ children, preset = 'stagger', className = '', respectReducedMotion = true, ...props }) {
+  const reducedMotion = useReducedMotion()
+  const variants = MOTION_PRESETS[preset] || MOTION_PRESETS.stagger
+
+  const motionProps = respectReducedMotion && reducedMotion
+    ? { initial: false, animate: { opacity: 1, y: 0, x: 0, scale: 1 }, transition: { duration: 0 } }
+    : variants
+
   return (
     <motion.div
       className={className}
-      variants={MOTION_PRESETS[preset]}
+      variants={motionProps}
       initial="initial"
       animate="animate"
       {...props}
@@ -70,6 +85,16 @@ export function AnimatedList({ children, preset = 'stagger', className = '', ...
       {children}
     </motion.div>
   )
+}
+
+export function useAnimatedPresence() {
+  const reducedMotion = useReducedMotion()
+  return {
+    mode: reducedMotion ? 'wait' : 'popLayout',
+    initial: reducedMotion ? false : { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    exit: reducedMotion ? { opacity: 0 } : { opacity: 0, y: -10 }
+  }
 }
 
 export { motion, AnimatePresence }
