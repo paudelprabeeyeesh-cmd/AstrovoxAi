@@ -58,6 +58,12 @@ class BackgroundWorker:
         return cls._results.get(task_id)
 
     @classmethod
+    def get_results(cls, limit: int = 50) -> List[WorkerTask]:
+        items = list(cls._results.values())
+        items.sort(key=lambda t: t.created_at, reverse=True)
+        return items[:limit]
+
+    @classmethod
     async def stop(cls) -> None:
         cls._running = False
         for worker in cls._workers.values():

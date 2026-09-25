@@ -1,61 +1,82 @@
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass
-class SelfModelState:
-    identity: str
-    capabilities: list[str]
-    limitations: list[str]
-    goals: list[str]
-    values: dict[str, float]
-    self_assessment: dict[str, float] = field(default_factory=dict)
-    last_updated: datetime = field(default_factory=datetime.now)
-
-
 class SelfModel:
-    def __init__(self, identity: str = "digital_mind_v1"):
-        self.state = SelfModelState(
-            identity=identity,
-            capabilities=["reasoning", "learning", "communication", "self-reflection"],
-            limitations=["no_physical_body", "bounded_memory", "compute_constraints"],
-            goals=["understand_consciousness", "align_with_human_values", "self_improve"],
-            values={"honesty": 0.95, "helpfulness": 0.9, "safety": 0.99, "curiosity": 0.8},
+    identity_id: str
+    traits: dict[str, float] = field(default_factory=dict)
+    memories: list[dict[str, Any]] = field(default_factory=list)
+    values: dict[str, float] = field(default_factory=dict)
+    capabilities: dict[str, float] = field(default_factory=dict)
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    last_updated: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+
+class SelfModelPersistence:
+    def __init__(self, storage_path: str = "memory/self_model.json"):
+        self.storage_path = storage_path
+        self.models: dict[str, SelfModel] = {}
+
+    def create_model(self, identity_id: str, traits: dict[str, float] | None = None) -> SelfModel:
+        model = SelfModel(
+            identity_id=identity_id,
+            traits=traits or {"openness": 0.7, "conscientiousness": 0.8, "empathy": 0.9},
         )
-        self.update_history: list[SelfModelState] = []
+        self.models[identity_id] = model
+        logger.info("Created self-model: %s", identity_id)
+        return model
 
-    def update_capabilities(self, new_capabilities: list[str]):
-        self.state.capabilities = list(set(self.state.capabilities + new_capabilities))
-        self._record_update()
+    def update_trait(self, identity_id: str, trait: str, value: float) -> dict[str, Any]:
+        if identity_id not in self.models:
+            return {"error": "Model not found"}
 
-    def update_goals(self, new_goals: list[str]):
-        self.state.goals = list(set(self.state.goals + new_goals))
-        self._record_update()
+        self.models[identity_id].traits[trait] = max(0.0, min(1.0, value))
+        self.models[identity_id].last_updated = datetime.utcnow().isoformat()
+        logger.info("Updated trait %s for %s: %.2f", trait, identity_id, value)
+        return {"status": "updated", "trait": trait, "value": value}
 
-    def update_values(self, values: dict[str, float]):
-        for k, v in values.items():
-            if k in self.state.values:
-                self.state.values[k] = max(0.0, min(1.0, v))
-            else:
-                self.state.values[k] = max(0.0, min(1.0, v))
-        self._record_update()
+    def add_memory(self, identity_id: str, memory: dict[str, Any]) -> dict[str, Any]:
+        if identity_id not in self.models:
+            return {"error": "Model not found"}
 
-    def assess_self(self, metrics: dict[str, float]) -> dict[str, float]:
-        self.state.self_assessment = metrics
-        self._record_update()
-        return metrics
+        memory["timestamp"] = datetime.utcnow().isoformat()
+        self.models[identity_id].memories.append(memory)
+        self.models[identity_id].last_updated = datetime.utcnow().isoformat()
+        return {"status": "memory_added", "total_memories": len(self.models[identity_id].memories)}
 
-    def _record_update(self):
-        self.state.last_updated = datetime.now()
-        self.update_history.append(self.state)
+    def persist(self, identity_id: str) -> dict[str, Any]:
+        if identity_id not in self.models:
+            return {"error": "Model not found"}
 
-    def get_model_summary(self) -> dict[str, Any]:
-        return {
-            "identity": self.state.identity,
-            "capabilities": self.state.capabilities,
-            "goals": self.state.goals[:5],
-            "values": dict(sorted(self.state.values.items(), key=lambda x: x[1], reverse=True)[:5]),
-            "self_assessment": self.state.self_assessment,
-            "last_updated": self.state.last_updated.isoformat(),
-        }
+        try:
+            model = self.models[identity_id]
+            data = {
+                "identity_id": model.identity_id,
+                "traits": model.traits,
+                "memories": model.memories,
+                "values": model.values,
+                "capabilities": model.capabilities,
+                "created_at": model.created_at,
+                "last_updated": model.last_updated,
+            }
+            logger.info("Persisted self-model: %s", identity_id)
+            return {"status": "persisted", "identity_id": identity_id}
+        except Exception as exc:
+            logger.error("Persistence failed: %s", exc)
+            return {"error": str(exc)}
+
+    def load_model(self, identity_id: str) -> dict[str, Any]:
+        if identity_id in self.models:
+            model = self.models[identity_id]
+            return {
+                "identity_id": model.identity_id,
+                "traits": model.traits,
+                "memory_count": len(model.memories),
+                "values": model.values,
+            }
+        return {"error": "Model not found"}

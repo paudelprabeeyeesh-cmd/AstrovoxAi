@@ -24,13 +24,13 @@ export const A11Y_SPECS = {
     info: '#67e8f9'
   },
   KEYBOARD_SHORTCUTS: {
-    sendMessage: { keys: ['Enter'], ctrl: false, shift: false, description: 'Send message' },
-    newMessage: { keys: ['n'], ctrl: true, shift: false, description: 'New conversation' },
-    search: { keys: ['k'], ctrl: true, shift: false, description: 'Search conversations' },
-    toggleTheme: { keys: ['t'], ctrl: true, shift: false, description: 'Toggle theme' },
-    focusInput: { keys: ['i'], ctrl: true, shift: false, description: 'Focus message input' },
-    help: { keys: ['?'], ctrl: false, shift: false, description: 'Show keyboard shortcuts' },
-    escape: { keys: ['Escape'], ctrl: false, shift: false, description: 'Close dialog / Cancel' }
+    sendMessage: { keys: ['Enter'], ctrl: false, shift: false, description: 'Send message', category: 'editing' },
+    newMessage: { keys: ['n'], ctrl: true, shift: false, description: 'New conversation', category: 'navigation' },
+    search: { keys: ['k'], ctrl: true, shift: false, description: 'Search conversations', category: 'navigation' },
+    toggleTheme: { keys: ['t'], ctrl: true, shift: false, description: 'Toggle theme', category: 'actions' },
+    focusInput: { keys: ['i'], ctrl: true, shift: false, description: 'Focus message input', category: 'editing' },
+    help: { keys: ['?'], ctrl: false, shift: false, description: 'Show keyboard shortcuts', category: 'accessibility' },
+    escape: { keys: ['Escape'], ctrl: false, shift: false, description: 'Close dialog / Cancel', category: 'accessibility' }
   }
 }
 

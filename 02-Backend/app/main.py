@@ -40,7 +40,17 @@ from app.api.routers.document_route import router as document_router
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.security.rate_limit_hardened import rate_limit_middleware
 from app.middleware import GlobalExceptionMiddleware, InputValidationMiddleware
+from app.middleware.request_logging import RequestLoggingMiddleware
+from app.middleware.idempotency import IdempotencyMiddleware
+from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
+from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
+from app.middleware.error_handler import register_error_handlers
 from app.core.cache_enhanced import get_cached_response, cache_response
+from app.api.routers.bulk_router import router as bulk_router
+from app.api.routers.tasks_router import router as tasks_router
+from app.api.routers.webhook_router import router as webhook_router
+from app.api.routers.feature_flags_router import router as feature_flags_router
+from app.api.routers.admin_metrics_router import router as admin_metrics_router
 
 load_dotenv()
 
@@ -53,6 +63,9 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# Standardized error responses
+register_error_handlers(app)
 
 app.middleware("http")(rate_limit_middleware)
 
@@ -74,6 +87,20 @@ app.add_middleware(
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
+
+# Request logging with correlation id propagation
+app.add_middleware(RequestLoggingMiddleware)
+
+# Idempotency key enforcement for state-changing requests
+app.add_middleware(IdempotencyMiddleware)
+
+# Request timeout and payload size limits
+app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=30.0)
+app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
+
+# Graceful shutdown
+app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
+register_lifecycle_handlers(app)
 
 # Include routers
 app.include_router(auth_router)
@@ -107,6 +134,11 @@ app.include_router(automation_router)
 app.include_router(document_router)
 app.include_router(kernel_router)
 app.include_router(aios_router)
+app.include_router(bulk_router)
+app.include_router(tasks_router)
+app.include_router(webhook_router)
+app.include_router(feature_flags_router)
+app.include_router(admin_metrics_router)
 
 
 # Prometheus metrics middleware
@@ -143,7 +175,17 @@ async def liveness():
 
 @app.get("/health/readiness")
 async def readiness():
-    return {"status": "ready"}
+    checks = {}
+    try:
+        from app.database.database import get_db
+        with get_db() as conn:
+            conn.execute("SELECT 1")
+        checks["database"] = "healthy"
+    except Exception as exc:
+        checks["database"] = f"unhealthy: {exc}"
+
+    overall = "ready" if all(v == "healthy" for v in checks.values()) else "not_ready"
+    return {"status": overall, "checks": checks}
 
 
 if __name__ == "__main__":

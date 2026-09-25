@@ -1,23 +1,26 @@
-"""Request timeout and payload size enforcement middleware."""
+"""Enhanced request timeout and payload size enforcement."""
 
+from __future__ import annotations
+
+import asyncio
 import logging
+from typing import Optional
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-logger = logging.getLogger("astravox")
+logger = logging.getLogger("astravox.request_limits")
 
 
 class RequestTimeoutMiddleware(BaseHTTPMiddleware):
-    """Enforce a maximum request processing time."""
+    """Enforce a configurable maximum request processing time."""
 
     def __init__(self, app, timeout_seconds: float = 30.0) -> None:
         super().__init__(app)
         self.timeout_seconds = timeout_seconds
 
     async def dispatch(self, request: Request, call_next):
-        import asyncio
-
         try:
             response = await asyncio.wait_for(
                 call_next(request),
@@ -33,12 +36,12 @@ class RequestTimeoutMiddleware(BaseHTTPMiddleware):
             )
             return JSONResponse(
                 status_code=504,
-                content={"detail": "Request timeout"},
+                content={"detail": "Request timeout", "code": "REQUEST_TIMEOUT"},
             )
 
 
 class PayloadSizeLimitMiddleware(BaseHTTPMiddleware):
-    """Reject requests with payloads exceeding a size limit."""
+    """Reject requests with payloads exceeding a configurable size."""
 
     def __init__(self, app, max_bytes: int = 10 * 1024 * 1024) -> None:
         super().__init__(app)
@@ -52,7 +55,8 @@ class PayloadSizeLimitMiddleware(BaseHTTPMiddleware):
                     return JSONResponse(
                         status_code=413,
                         content={
-                            "detail": f"Payload too large. Maximum size is {self.max_bytes} bytes."
+                            "detail": f"Payload too large. Maximum size is {self.max_bytes} bytes.",
+                            "code": "PAYLOAD_TOO_LARGE",
                         },
                     )
             except ValueError:
@@ -63,7 +67,8 @@ class PayloadSizeLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=413,
                 content={
-                    "detail": f"Payload too large. Maximum size is {self.max_bytes} bytes."
+                    "detail": f"Payload too large. Maximum size is {self.max_bytes} bytes.",
+                    "code": "PAYLOAD_TOO_LARGE",
                 },
             )
 
