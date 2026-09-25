@@ -35,5 +35,37 @@
       text="Astrovox: Generate Tests"
       description="Generate unit tests for selected code"
     />
+    <action
+      id="Astrovox.RefactorCode"
+      class="ai.astrovox.actions.RefactorCodeAction"
+      text="Astrovox: Refactor Code"
+      description="Refactor selected code with AI"
+    />
+    <action
+      id="Astrovox.ReviewCode"
+      class="ai.astrovox.actions.ReviewCodeAction"
+      text="Astrovox: Review Code"
+      description="Review selected code with AI"
+    />
+    <action
+      id="Astrovox.DocumentCode"
+      class="ai.astrovox.actions.DocumentCodeAction"
+      text="Astrovox: Document Code"
+      description="Generate documentation for selected code"
+    />
+    <action
+      id="Astrovox.FixBug"
+      class="ai.astrovox.actions.FixBugAction"
+      text="Astrovox: Fix Bug"
+      description="Fix bug in selected code"
+    />
+    <applicationService serviceImplementation="ai.astrovox.services.AstrovoxSettingsService"/>
+    <applicationConfigurable instance="ai.astrovox.settings.AstrovoxConfigurable" id="astrovox.settings" displayName="Astrovox AI"/>
   </extensions>
+
+  <project-components>
+    <component>
+      <interface className="ai.astrovox.services.AstrovoxClient"/>
+    </component>
+  </project-components>
 </idea-plugin>

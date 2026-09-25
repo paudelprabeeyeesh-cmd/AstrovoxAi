@@ -1,17 +1,20 @@
 {
   "name": "astrovox-vscode",
   "displayName": "Astrovox AI",
-  "description": "AI-powered code assistant for VS Code",
+  "description": "AI-powered code assistant for VS Code with chat, explain, refactor, and test generation",
   "version": "1.0.0",
   "publisher": "astrovox",
   "engines": {
     "vscode": "^1.70.0"
   },
-  "categories": ["Other", "Machine Learning", "Snippets"],
-  "keywords": ["ai", "assistant", "code", "chat", "llm"],
+  "categories": ["Other", "Machine Learning", "Snippets", "Programming Languages"],
+  "keywords": ["ai", "assistant", "code", "chat", "llm", "astrovox", "copilot", "refactor", "tests"],
   "activationEvents": [
     "onCommand:astrovox.startChat",
-    "onView:astrovox.chatView"
+    "onView:astrovox.chatView",
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -31,6 +34,22 @@
       {
         "command": "astrovox.refactorCode",
         "title": "Astrovox: Refactor Code"
+      },
+      {
+        "command": "astrovox.reviewCode",
+        "title": "Astrovox: Review Code"
+      },
+      {
+        "command": "astrovox.documentCode",
+        "title": "Astrovox: Document Code"
+      },
+      {
+        "command": "astrovox.fixBug",
+        "title": "Astrovox: Fix Bug"
+      },
+      {
+        "command": "astrovox.optimizeCode",
+        "title": "Astrovox: Optimize Code"
       }
     ],
     "views": {
@@ -47,8 +66,37 @@
         "command": "astrovox.startChat",
         "key": "ctrl+shift+a",
         "mac": "cmd+shift+a"
+      },
+      {
+        "command": "astrovox.explainCode",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e"
+      },
+      {
+        "command": "astrovox.generateTests",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t"
       }
     ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "astrovox.explainCode",
+          "group": "astrovox",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "astrovox.refactorCode",
+          "group": "astrovox",
+          "when": "editorHasSelection"
+        },
+        {
+          "command": "astrovox.generateTests",
+          "group": "astrovox",
+          "when": "editorHasSelection"
+        }
+      ]
+    },
     "configuration": {
       "title": "Astrovox",
       "properties": {
@@ -61,17 +109,58 @@
           "type": "string",
           "default": "gpt-4",
           "description": "Default model"
+        },
+        "astrovox.maxTokens": {
+          "type": "number",
+          "default": 2048,
+          "description": "Maximum tokens per request"
+        },
+        "astrovox.temperature": {
+          "type": "number",
+          "default": 0.7,
+          "description": "Temperature for generation"
+        },
+        "astrovox.autoComplete": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable inline autocomplete"
+        },
+        "astrovox.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show status bar item"
         }
       }
-    }
+    },
+    "languages": [
+      {
+        "language": "astrovox-log",
+        "aliases": ["Astrovox Log", "astrovox-log"],
+        "extensions": [".astrovoxlog"]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "astrovox-log",
+        "scopeName": "text.astrovox-log",
+        "path": "./syntaxes/astrovox-log.tmLanguage.json"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
   },
   "devDependencies": {
     "@types/vscode": "^1.70.0",
     "@types/node": "^20.0.0",
-    "typescript": "^5.3.0"
+    "typescript": "^5.3.0",
+    "eslint": "^8.56.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.0"
   }
 }
