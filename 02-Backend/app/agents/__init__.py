@@ -6,6 +6,8 @@ from .writer import WriterAgent
 from .reviewer import ReviewerAgent
 from .debugger import DebuggerAgent
 from .orchestrator import AgentOrchestrator
+from .debate_system import MultiAgentDebateSystem, DebateResult, DebateArgument
+from .agent_marketplace import AgentMarketplace, AgentListing, AgentCapability, get_marketplace
 
 __all__ = [
     "BaseAgent",
@@ -19,4 +21,11 @@ __all__ = [
     "ReviewerAgent",
     "DebuggerAgent",
     "AgentOrchestrator",
+    "MultiAgentDebateSystem",
+    "DebateResult",
+    "DebateArgument",
+    "AgentMarketplace",
+    "AgentListing",
+    "AgentCapability",
+    "get_marketplace",
 ]
