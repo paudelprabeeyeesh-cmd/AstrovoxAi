@@ -1,62 +1,50 @@
-"""Storage abstraction layer."""
+"""Storage management."""
 
-from __future__ import annotations
-
-import hashlib
-import logging
-import os
-from pathlib import Path
-from typing import BinaryIO, Dict, Optional
-
-from app.core.config import get_config
-
-logger = logging.getLogger(__name__)
+from typing import Dict, Any, Optional, List
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
 
 
-class Storage:
-    """File storage abstraction with local filesystem backend."""
-
-    def __init__(self, base_path: Optional[str] = None) -> None:
-        self._config = get_config()
-        self._base_path = Path(base_path or os.getenv("STORAGE_PATH", "./storage"))
-        self._base_path.mkdir(parents=True, exist_ok=True)
-
-    def put(self, key: str, data: bytes, metadata: Optional[Dict[str, str]] = None) -> str:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        path = self._base_path / key_hash
-        path.write_bytes(data)
-        logger.info(f"Stored object: {key} -> {key_hash}")
-        return key_hash
-
-    def get(self, key: str) -> Optional[bytes]:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        path = self._base_path / key_hash
-        if not path.exists():
-            return None
-        return path.read_bytes()
-
-    def delete(self, key: str) -> bool:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        path = self._base_path / key_hash
-        if path.exists():
-            path.unlink()
-            return True
-        return False
-
-    def exists(self, key: str) -> bool:
-        key_hash = hashlib.sha256(key.encode()).hexdigest()[:16]
-        return (self._base_path / key_hash).exists()
-
-    def list_keys(self, prefix: str = "") -> list[str]:
-        keys = []
-        for path in self._base_path.iterdir():
-            if path.is_file():
-                keys.append(path.name)
-        return keys
+class StorageType(Enum):
+    BLOCK = "block"
+    OBJECT = "object"
+    FILE = "file"
+    CACHE = "cache"
 
 
-_storage = Storage()
+class StorageTier(Enum):
+    STANDARD = "standard"
+    INFREQUENT = "infrequent_access"
+    ARCHIVE = "archive"
+    GLACIER = "glacier"
 
 
-def get_storage() -> Storage:
-    return _storage
+@dataclass
+class StorageVolume:
+    volume_id: str
+    name: str
+    storage_type: StorageType
+    size_gb: int
+    tier: StorageTier = StorageTier.STANDARD
+    encrypted: bool = True
+    region: str = "us-east-1"
+    provider: str = "aws"
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+class StorageManager:
+    _volumes: Dict[str, StorageVolume] = {}
+
+    @classmethod
+    def create_volume(cls, volume: StorageVolume) -> StorageVolume:
+        cls._volumes[volume.volume_id] = volume
+        return volume
+
+    @classmethod
+    def get_volume(cls, volume_id: str) -> Optional[StorageVolume]:
+        return cls._volumes.get(volume_id)
+
+    @classmethod
+    def list_volumes(cls) -> List[StorageVolume]:
+        return list(cls._volumes.values())
