@@ -493,6 +493,9 @@ from app.observability.oncall_escalation import oncall
 from app.observability.cost_tracking import cost_tracker
 from app.observability.usage_analytics import usage_analytics
 from app.observability.error_budget_dashboard import error_budget_dashboard
+from app.observability.setup import setup_default_observability
+
+setup_default_observability()
 
 __all__ = [
     "MetricType",
