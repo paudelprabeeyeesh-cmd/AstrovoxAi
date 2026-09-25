@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
 
 from ..auth import require_verified_email, require_admin
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ...schemas import BatchJobCreate, BatchJobOut
 from ..core.tracing import start_trace
 

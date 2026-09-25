@@ -2,7 +2,7 @@ import uuid
 import hashlib
 from datetime import datetime, timezone
 from typing import Optional
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 class APIKey:

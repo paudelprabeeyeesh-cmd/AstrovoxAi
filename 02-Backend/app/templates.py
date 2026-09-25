@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ...schemas import TemplateCreate, TemplateOut
 
 

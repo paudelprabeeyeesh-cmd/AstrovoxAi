@@ -11,7 +11,7 @@ from ...cost_management import cost_tracker
 from ...compliance import compliance_manager
 from ...ai_evaluation import prompt_manager, quality_scorer, benchmark_suite
 from ...iam import require_admin
-from middleware.security.security_hardening import Principal, get_audit_log
+from app.middleware.security.security_hardening import Principal, get_audit_log
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def create_ama(user_id: str, title: str, description: str, scheduled_at: str) -> dict:

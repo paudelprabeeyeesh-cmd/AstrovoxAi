@@ -7,7 +7,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 
 from ..auth import require_verified_email
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

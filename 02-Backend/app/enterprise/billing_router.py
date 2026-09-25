@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from ..billing_meter import billing_meter
 from ..usage_quota import usage_quota_manager
 

@@ -1,7 +1,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 def connect_lms(user_id: str, lms_type: str, config: str) -> dict:
     integration_id = str(uuid.uuid4())

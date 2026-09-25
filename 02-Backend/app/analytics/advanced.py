@@ -13,7 +13,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 from .shared import MODEL_COSTS
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 # ============================================================================

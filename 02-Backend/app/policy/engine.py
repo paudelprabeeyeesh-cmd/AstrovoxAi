@@ -1,7 +1,7 @@
 
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timezone
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 class Policy:

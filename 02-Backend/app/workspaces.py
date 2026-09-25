@@ -3,7 +3,7 @@ import uuid
 import secrets
 from datetime import datetime, timezone
 from typing import List, Optional, Dict
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from .audit import log_action
 from .organizations import enforce_tenant_isolation
 

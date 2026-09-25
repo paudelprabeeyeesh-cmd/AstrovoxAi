@@ -1,10 +1,10 @@
 import logging
 from typing import Any
 
-from services.memory.memory_pipeline import get_relevant_memories
-from services.knowledge.knowledge import search_docs
+from app.services.memory.memory_pipeline import get_relevant_memories
+from app.services.knowledge.knowledge import search_docs
 from .cost import count_tokens
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from .core.llm import LLMClient
 from ...tools import get_builtin_tools
 from .thinking import ThinkingConfig

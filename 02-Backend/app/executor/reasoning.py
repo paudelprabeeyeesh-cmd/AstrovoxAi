@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tupl
 
 from . import make_id, now
 from .memory_brain import MemoryBrain, MemoryItem, MemoryType, get_memory_brain
-from ...logging_config import get_logger
+from ..logging_config import get_logger
 
 logger = get_logger(__name__)
 

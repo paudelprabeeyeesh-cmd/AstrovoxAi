@@ -16,7 +16,7 @@ from datetime import datetime
 
 from app.utils import now
 
-from services.vector.embeddings import embedding_service
+from app.services.vector.embeddings import embedding_service
 from ...providers.base import EmbeddingVector
 
 logger = logging.getLogger(__name__)

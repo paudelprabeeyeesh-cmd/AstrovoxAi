@@ -7,8 +7,8 @@ from typing import Optional, Dict, Any, List
 from urllib.parse import urlencode
 
 import httpx
-from repositories.database.client import get_db
-from services.auth.auth import hash_password
+from app.repositories.database.client import get_db
+from app.services.auth.auth import hash_password
 from .audit import log_action
 
 logger = logging.getLogger(__name__)

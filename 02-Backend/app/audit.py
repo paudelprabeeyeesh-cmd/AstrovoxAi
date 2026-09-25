@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def log_action(user_id: str, action: str, resource: str = "", details: Optional[dict] = None):

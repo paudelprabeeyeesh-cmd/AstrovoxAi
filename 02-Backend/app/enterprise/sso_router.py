@@ -4,7 +4,7 @@ from fastapi import APIRouter, Header, HTTPException, status, Request
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from .sso import enterprise_sso
 from .tenancy import tenant_manager
 

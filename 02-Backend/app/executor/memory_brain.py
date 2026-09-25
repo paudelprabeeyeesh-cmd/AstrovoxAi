@@ -21,7 +21,7 @@ from enum import Enum
 from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Tuple
 
 from . import make_id, now
-from ...logging_config import get_logger
+from ..logging_config import get_logger
 
 logger = get_logger(__name__)
 

@@ -25,7 +25,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import Depends, HTTPException, Request
 
-from middleware.security.security_hardening import (
+from app.middleware.security.security_hardening import (
     JWTError,
     Principal,
     is_admin_role,

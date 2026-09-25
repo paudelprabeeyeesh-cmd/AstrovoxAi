@@ -21,7 +21,7 @@ from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Deque, Dict, Optional, Tuple
 
-from middleware.security.security_hardening import AuditLog, get_audit_log
+from app.middleware.security.security_hardening import AuditLog, get_audit_log
 from ...metrics import track_rate_limit
 
 

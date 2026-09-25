@@ -12,7 +12,7 @@ from enum import Enum
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 from . import make_id, now
-from services.memory.memory import VectorIndex, _cosine
+from app.services.memory.memory import VectorIndex, _cosine
 
 
 class SearchModality(str, Enum):

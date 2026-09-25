@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Header, UploadFile, File
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from services.knowledge.knowledge_base import knowledge_base
+from app.services.knowledge.knowledge_base import knowledge_base
 from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Header, Depends
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from ..enterprise.abac import abac
 from ..enterprise.models import ORG_ROLES, WORKSPACE_ROLES
 

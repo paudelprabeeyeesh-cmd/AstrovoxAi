@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from .ticket_routing import support_router
 
 router = APIRouter(prefix="/api/enterprise/support", tags=["enterprise-support"])

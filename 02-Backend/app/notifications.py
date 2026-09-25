@@ -1,7 +1,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 def subscribe_to_notifications(user_id: str, endpoint: str, keys: str) -> dict:
     sub_id = str(uuid.uuid4())

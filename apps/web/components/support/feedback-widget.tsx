@@ -17,7 +17,7 @@ export function FeedbackWidget() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await api.post('/support/feedback', { type, rating, comment, page_url: window.location.pathname });
+      await api.submitFeedback(type, rating, comment, window.location.pathname);
       setOpen(false);
       setComment('');
       setRating(null);

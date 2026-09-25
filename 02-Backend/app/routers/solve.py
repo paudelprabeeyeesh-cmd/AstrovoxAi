@@ -16,7 +16,7 @@ from ...schemas import SolveRequest, SolveResponse
 from ..auth import require_verified_email
 from ..circuit_breaker import llm_circuit_breaker
 from ..retry import retry_with_backoff
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ..memory import search_memories
 from ..knowledge import search_docs
 from ..interactions import create_interaction

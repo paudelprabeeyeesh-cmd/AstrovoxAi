@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from utils.auth.auth_utils import get_current_user
+from app.utils.auth.auth_utils import get_current_user
 
 from .api_platform import (
     ApiErrorCode,

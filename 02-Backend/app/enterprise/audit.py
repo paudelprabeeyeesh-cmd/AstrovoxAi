@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from ...multi_agent import collaboration_manager, TaskStatus
-from services.memory.memory_enhanced import memory_store
+from app.services.memory.memory_enhanced import memory_store
 from app.utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/agents", tags=["agents"])

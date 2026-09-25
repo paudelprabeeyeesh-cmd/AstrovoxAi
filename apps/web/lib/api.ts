@@ -142,113 +142,113 @@ export const api = {
 
   // Tutorials
   getTutorials: (difficulty?: string) =>
-    request<{ tutorials: Tutorial[] }>(`/support/tutorials${difficulty ? `?difficulty=${difficulty}` : ''}`),
+    request<{ tutorials: Tutorial[] }>(`/cx/tutorials${difficulty ? `?difficulty=${difficulty}` : ''}`),
   startTutorial: (tutorialId: string) =>
-    request<{ progress: TutorialProgress }>(`/support/tutorials/${tutorialId}/start`, { method: 'POST' }),
+    request<{ progress: TutorialProgress }>(`/cx/tutorials/${tutorialId}/start`, { method: 'POST' }),
   updateTutorialProgress: (tutorialId: string, currentStep: number) =>
-    request<{ progress: TutorialProgress }>(`/support/tutorials/${tutorialId}/progress`, {
+    request<{ progress: TutorialProgress }>(`/cx/tutorials/${tutorialId}/progress`, {
       method: 'POST',
       body: JSON.stringify({ currentStep }),
     }),
   getTutorialProgress: () =>
-    request<{ progress: TutorialProgress[] }>('/support/tutorials/progress'),
+    request<{ progress: TutorialProgress[] }>('/cx/tutorials/progress'),
 
   // Feedback
   submitFeedback: (type: string, rating?: number, comment?: string, pageUrl?: string) =>
-    request<{ feedback: Feedback }>('/support/feedback', {
+    request<{ feedback: Feedback }>('/cx/feedback', {
       method: 'POST',
       body: JSON.stringify({ type, rating, comment, page_url: pageUrl }),
     }),
   getFeedback: (type?: string) =>
-    request<{ feedback: Feedback[] }>(`/support/feedback${type ? `?feedback_type=${type}` : ''}`),
+    request<{ feedback: Feedback[] }>(`/cx/feedback${type ? `?feedback_type=${type}` : ''}`),
 
   // NPS
   submitNps: (score: number, comment?: string, surveyType?: string) =>
-    request<{ survey: NpsSurvey }>('/support/nps', {
+    request<{ survey: NpsSurvey }>('/cx/nps', {
       method: 'POST',
       body: JSON.stringify({ score, comment, survey_type: surveyType }),
     }),
   getNpsStats: () =>
-    request<{ stats: NpsStats }>('/support/nps/stats'),
+    request<{ stats: NpsStats }>('/cx/nps/stats'),
 
   // Feature Requests
   createFeatureRequest: (title: string, description: string) =>
-    request<{ request: FeatureRequest }>('/support/features', {
+    request<{ request: FeatureRequest }>('/cx/features', {
       method: 'POST',
       body: JSON.stringify({ title, description }),
     }),
   getFeatureRequests: (status?: string) =>
-    request<{ requests: FeatureRequest[] }>(`/support/features${status ? `?status=${status}` : ''}`),
+    request<{ requests: FeatureRequest[] }>(`/cx/features${status ? `?status=${status}` : ''}`),
   voteFeatureRequest: (requestId: string) =>
-    request<{ request: FeatureRequest }>(`/support/features/${requestId}/vote`, { method: 'POST' }),
+    request<{ request: FeatureRequest }>(`/cx/features/${requestId}/vote`, { method: 'POST' }),
 
   // Bug Reports
   createBugReport: (title: string, description: string, severity?: string, stepsToReproduce?: string) =>
-    request<{ bug: BugReport }>('/support/bugs', {
+    request<{ bug: BugReport }>('/cx/bugs', {
       method: 'POST',
       body: JSON.stringify({ title, description, severity, steps_to_reproduce: stepsToReproduce }),
     }),
   getBugReports: (status?: string) =>
-    request<{ bugs: BugReport[] }>(`/support/bugs${status ? `?status=${status}` : ''}`),
+    request<{ bugs: BugReport[] }>(`/cx/bugs${status ? `?status=${status}` : ''}`),
   updateBugStatus: (bugId: string, status: string) =>
-    request<{ bug: BugReport }>(`/support/bugs/${bugId}`, {
+    request<{ bug: BugReport }>(`/cx/bugs/${bugId}`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     }),
 
   // Customer Health
   getCustomerHealth: (userId?: string) =>
-    request<{ health: CustomerHealth }>(`/support/health${userId ? `/${userId}` : ''}`),
+    request<{ health: CustomerHealth }>(`/cx/health${userId ? `/${userId}` : ''}`),
 
   // Support Analytics
   recordSupportAnalytic: (metricName: string, metricValue: number, period: string) =>
-    request<{ analytic: SupportAnalytic }>('/support/analytics', {
+    request<{ analytic: SupportAnalytic }>('/cx/analytics', {
       method: 'POST',
       body: JSON.stringify({ metric_name: metricName, metric_value: metricValue, period }),
     }),
   getSupportAnalytics: (metricName?: string, period?: string) =>
-    request<{ analytics: SupportAnalytic[] }>(`/support/analytics${metricName ? `?metric_name=${metricName}` : ''}${period ? `&period=${period}` : ''}`),
+    request<{ analytics: SupportAnalytic[] }>(`/cx/analytics${metricName ? `?metric_name=${metricName}` : ''}${period ? `&period=${period}` : ''}`),
 
   // Status Page
   getStatusSummary: () =>
-    request<{ summary: StatusSummary }>('/support/status'),
+    request<{ summary: StatusSummary }>('/cx/status'),
   getIncidents: (status?: string) =>
-    request<{ incidents: StatusIncident[] }>(`/support/incidents${status ? `?status=${status}` : ''}`),
+    request<{ incidents: StatusIncident[] }>(`/cx/incidents${status ? `?status=${status}` : ''}`),
 
   // Onboarding
   startOnboarding: () =>
-    request<{ progress: OnboardingProgress }>('/support/onboarding/start', { method: 'POST' }),
+    request<{ progress: OnboardingProgress }>('/cx/onboarding/start', { method: 'POST' }),
   completeOnboardingStep: (step: string) =>
-    request<{ progress: OnboardingProgress }>('/support/onboarding/step', {
+    request<{ progress: OnboardingProgress }>('/cx/onboarding/step', {
       method: 'POST',
       body: JSON.stringify({ step }),
     }),
   completeOnboarding: () =>
-    request<{ progress: OnboardingProgress }>('/support/onboarding/complete', { method: 'POST' }),
+    request<{ progress: OnboardingProgress }>('/cx/onboarding/complete', { method: 'POST' }),
   getOnboardingProgress: () =>
-    request<{ progress: OnboardingProgress | null }>('/support/onboarding'),
+    request<{ progress: OnboardingProgress | null }>('/cx/onboarding'),
 
   // Live Chat
   createChatSession: (agentId?: string) =>
-    request<{ session: LiveChatSession }>('/support/chat/sessions', {
+    request<{ session: LiveChatSession }>('/cx/chat/sessions', {
       method: 'POST',
       body: JSON.stringify({ agent_id: agentId }),
     }),
   sendChatMessage: (sessionId: string, message: string) =>
-    request<{ message: ChatMessage }>(`/support/chat/sessions/${sessionId}/messages`, {
+    request<{ message: ChatMessage }>(`/cx/chat/sessions/${sessionId}/messages`, {
       method: 'POST',
       body: JSON.stringify({ message }),
     }),
   getChatMessages: (sessionId: string) =>
-    request<{ messages: ChatMessage[] }>(`/support/chat/sessions/${sessionId}/messages`),
+    request<{ messages: ChatMessage[] }>(`/cx/chat/sessions/${sessionId}/messages`),
   endChatSession: (sessionId: string) =>
-    request<{ session: LiveChatSession }>(`/support/chat/sessions/${sessionId}/end`, { method: 'POST' }),
+    request<{ session: LiveChatSession }>(`/cx/chat/sessions/${sessionId}/end`, { method: 'POST' }),
   getChatSessions: () =>
-    request<{ sessions: LiveChatSession[] }>('/support/chat/sessions'),
+    request<{ sessions: LiveChatSession[] }>('/cx/chat/sessions'),
 
   // Customer Portal
   getCustomerPortal: () =>
-    request<{ portal: CustomerPortal }>('/support/portal'),
+    request<{ portal: CustomerPortal }>('/cx/portal'),
 }
 
 // ============================================================================

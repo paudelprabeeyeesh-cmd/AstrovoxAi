@@ -9,7 +9,7 @@ from slowapi.util import get_remote_address
 from typing import Optional
 
 from .supabase_client import get_supabase
-from middleware.security.security_hardening import get_audit_log
+from app.middleware.security.security_hardening import get_audit_log
 from .security.brute_force_protection import brute_force_protection
 from .security.password_strength import password_enforcer
 from .security.token_revocation import token_revocation_list

@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from ..enterprise.service import org_service
 from ..enterprise.rbac import rbac
 from ..enterprise.abac import abac

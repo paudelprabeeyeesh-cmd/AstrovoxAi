@@ -1,7 +1,7 @@
 
 from typing import List, Dict, Optional
 from datetime import datetime, timezone, timedelta
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ..audit import get_audit_log
 
 

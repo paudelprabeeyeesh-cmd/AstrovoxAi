@@ -1,6 +1,7 @@
 """Tests for search_knowledge.py — 15 features."""
 
 import pytest
+from datetime import datetime, timezone
 
 from app.search_knowledge import (
     BM25Index,

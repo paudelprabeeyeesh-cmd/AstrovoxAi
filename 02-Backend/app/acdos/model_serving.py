@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from . import make_id, now, now_iso
 from .control_plane import ClusterCoordinator, get_cluster_coordinator
-from ...logging_config import get_logger
+from ..logging_config import get_logger
 
 logger = get_logger(__name__)
 

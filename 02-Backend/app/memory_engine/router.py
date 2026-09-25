@@ -4,7 +4,7 @@ from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 
-from utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token
 from .engine import MemoryEngine
 
 router = APIRouter(prefix="/api/memory-v2", tags=["memory-engine"])

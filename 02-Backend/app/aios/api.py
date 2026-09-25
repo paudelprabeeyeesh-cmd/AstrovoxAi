@@ -18,7 +18,7 @@ from .resources import ResourceUsage, get_resource_manager
 from .runtime import DelegationRequest, get_ai_runtime
 from .scheduler import Job, get_distributed_scheduler
 from .search import SearchDocument, SearchModality, get_universal_search
-from middleware.security.security import (
+from app.middleware.security.security import (
     Policy,
     PolicyAction,
     SecurityContext,

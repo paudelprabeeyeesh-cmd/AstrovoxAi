@@ -22,7 +22,7 @@ export function HelpWidget() {
       }
       setLoading(true);
       try {
-        const data = await api.get<{ articles: HelpArticle[] }>(`/support/articles/search?q=${encodeURIComponent(query)}`);
+        const data = await api.searchHelpArticles(query);
         setResults(data.articles || []);
       } catch {
         setResults([]);

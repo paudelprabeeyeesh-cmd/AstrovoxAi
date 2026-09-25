@@ -3,7 +3,7 @@ import uuid
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from .collector import EvidenceCollector
 from .reporter import ComplianceReporter
 from .soc2 import SOC2Evidence

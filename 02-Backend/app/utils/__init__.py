@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-_utils_path = Path(__file__).parent.parent / "utils.py"
+_utils_path = Path(__file__).parent / "utils.py"
 _spec = importlib.util.spec_from_file_location("app._utils_module", _utils_path)
 _utils_module = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_utils_module)

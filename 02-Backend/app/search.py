@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 class SearchResult:

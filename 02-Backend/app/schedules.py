@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 
 from apscheduler.schedulers.background import BackgroundScheduler
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ...schemas import ScheduleCreate, ScheduleOut
 from .templates import get_template
 

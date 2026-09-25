@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_current_user
-from middleware.security.security_hardening import Principal, principal_from_jwt_claims
+from app.middleware.security.security_hardening import Principal, principal_from_jwt_claims
 from ..secure_executor import (
     SandboxConfig,
     execute_user_code,

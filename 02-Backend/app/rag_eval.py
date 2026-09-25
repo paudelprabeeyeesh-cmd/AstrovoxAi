@@ -2,7 +2,7 @@ import uuid
 import json
 from datetime import datetime, timedelta, timezone
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def create_evaluation(

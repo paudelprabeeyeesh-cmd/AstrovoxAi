@@ -19,7 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
 
-from middleware.security.security_hardening import AuditLog, get_audit_log
+from app.middleware.security.security_hardening import AuditLog, get_audit_log
 
 
 @dataclass

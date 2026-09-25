@@ -3,7 +3,7 @@ import uuid
 import logging
 from datetime import datetime, timezone
 from typing import List, Optional, Dict
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from .audit import log_action
 
 

@@ -23,7 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
-from ...logging_config import get_logger
+from ..logging_config import get_logger
 
 logger = get_logger(__name__)
 

@@ -2,7 +2,7 @@ import os
 import uuid
 from typing import Any
 
-from services.knowledge.knowledge_graph_neo4j import KnowledgeGraphNeo4j, Entity, Relationship
+from app.services.knowledge.knowledge_graph_neo4j import KnowledgeGraphNeo4j, Entity, Relationship
 
 
 class Chunk:

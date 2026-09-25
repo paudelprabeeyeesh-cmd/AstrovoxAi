@@ -5,7 +5,7 @@ import time
 from typing import Optional
 from dataclasses import dataclass, field
 
-from repositories.database.client import (
+from app.repositories.database.client import (
     save_memory,
     get_user_memory,
     get_recent_messages,

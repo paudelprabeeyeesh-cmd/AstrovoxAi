@@ -1,7 +1,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 def create_referral(user_id: str, email: str) -> dict:
     code = f"REF-{user_id[:6].upper()}-{uuid.uuid4().hex[:6].upper()}"

@@ -2,7 +2,7 @@ import json
 import random
 import uuid
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def create_test(name: str, variants: list[str], traffic_split: list[float]) -> str:

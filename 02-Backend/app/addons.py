@@ -1,6 +1,6 @@
 import uuid
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def create_addon(

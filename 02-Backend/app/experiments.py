@@ -2,7 +2,7 @@ import uuid
 import json
 from datetime import datetime, timezone
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 
 def create_experiment(name: str, hypothesis: str, variants: list[str], traffic_split: list[float], owner_id: str) -> dict:

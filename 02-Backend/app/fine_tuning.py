@@ -5,7 +5,7 @@ import logging
 from datetime import datetime, timezone
 from openai import OpenAI
 
-from repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 
