@@ -852,6 +852,7 @@ class AdvancedAnalyticsEngine:
     # ------------------------------------------------------------------
     def track_conversation(self, conv: ConversationRecord):
         self._conversations.append(conv)
+        self._persist_conversation(conv)
 
     def get_conversation_analytics(self, days: int = 7, user_id: Optional[str] = None) -> dict:
         cutoff = time.time() - (days * 86400)

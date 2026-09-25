@@ -188,6 +188,214 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS help_articles (
+            id TEXT PRIMARY KEY,
+            slug TEXT UNIQUE NOT NULL,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            category TEXT NOT NULL,
+            tags TEXT DEFAULT '[]',
+            views INTEGER DEFAULT 0,
+            helpful_count INTEGER DEFAULT 0,
+            not_helpful_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS tutorials (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            steps TEXT NOT NULL,
+            difficulty TEXT DEFAULT 'beginner',
+            estimated_time INTEGER DEFAULT 5,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS tutorial_progress (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            tutorial_id TEXT NOT NULL,
+            current_step INTEGER DEFAULT 0,
+            completed INTEGER DEFAULT 0,
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP,
+            UNIQUE(user_id, tutorial_id)
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS feedback (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            rating INTEGER,
+            comment TEXT,
+            page_url TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS nps_surveys (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            score INTEGER NOT NULL,
+            comment TEXT,
+            survey_type TEXT DEFAULT 'periodic',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS feature_requests (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            votes INTEGER DEFAULT 0,
+            status TEXT DEFAULT 'open',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS bug_reports (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            severity TEXT DEFAULT 'medium',
+            status TEXT DEFAULT 'open',
+            steps_to_reproduce TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS customer_health (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL UNIQUE,
+            score REAL DEFAULT 0,
+            factors TEXT DEFAULT '{}',
+            last_calculated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS support_analytics (
+            id TEXT PRIMARY KEY,
+            metric_name TEXT NOT NULL,
+            metric_value REAL NOT NULL,
+            period TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS status_page_incidents (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            status TEXT DEFAULT 'investigating',
+            affected_services TEXT DEFAULT '[]',
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS onboarding_progress (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL UNIQUE,
+            current_step INTEGER DEFAULT 0,
+            completed_steps TEXT DEFAULT '[]',
+            completed INTEGER DEFAULT 0,
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_at TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS live_chat_sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            agent_id TEXT,
+            status TEXT DEFAULT 'open',
+            started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            ended_at TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id TEXT PRIMARY KEY,
+            session_id TEXT NOT NULL,
+            sender_id TEXT NOT NULL,
+            sender_type TEXT NOT NULL,
+            message TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS support_tickets (
+            id TEXT PRIMARY KEY,
+            tenant_id TEXT,
+            user_id TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            description TEXT NOT NULL,
+            priority TEXT DEFAULT 'medium',
+            status TEXT DEFAULT 'open',
+            category TEXT DEFAULT 'general',
+            assigned_to TEXT,
+            tags TEXT DEFAULT '[]',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            resolved_at TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS ticket_comments (
+            id TEXT PRIMARY KEY,
+            ticket_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            comment TEXT NOT NULL,
+            is_internal INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS help_categories (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            parent_id TEXT,
+            sort_order INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS support_agents (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            role TEXT DEFAULT 'agent',
+            team TEXT DEFAULT 'support',
+            is_online INTEGER DEFAULT 0,
+            max_tickets INTEGER DEFAULT 10,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS contextual_help (
+            id TEXT PRIMARY KEY,
+            page TEXT NOT NULL,
+            element_selector TEXT,
+            title TEXT NOT NULL,
+            content TEXT NOT NULL,
+            trigger TEXT DEFAULT 'on_view',
+            sort_order INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
     _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
@@ -202,6 +410,31 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     _ensure_index(conn, "revenue_events", "idx_revenue_user", "user_id")
     _ensure_index(conn, "revenue_events", "idx_revenue_type", "event_type")
     _ensure_index(conn, "custom_reports", "idx_custom_reports_owner", "created_by")
+    _ensure_index(conn, "help_articles", "idx_help_articles_slug", "slug")
+    _ensure_index(conn, "help_articles", "idx_help_articles_category", "category")
+    _ensure_index(conn, "tutorials", "idx_tutorials_difficulty", "difficulty")
+    _ensure_index(conn, "tutorial_progress", "idx_tutorial_progress_user", "user_id")
+    _ensure_index(conn, "feedback", "idx_feedback_user", "user_id")
+    _ensure_index(conn, "feedback", "idx_feedback_type", "type")
+    _ensure_index(conn, "nps_surveys", "idx_nps_surveys_user", "user_id")
+    _ensure_index(conn, "feature_requests", "idx_feature_requests_user", "user_id")
+    _ensure_index(conn, "feature_requests", "idx_feature_requests_status", "status")
+    _ensure_index(conn, "bug_reports", "idx_bug_reports_user", "user_id")
+    _ensure_index(conn, "bug_reports", "idx_bug_reports_status", "status")
+    _ensure_index(conn, "customer_health", "idx_customer_health_user", "user_id")
+    _ensure_index(conn, "support_analytics", "idx_support_analytics_metric", "metric_name, period")
+    _ensure_index(conn, "status_page_incidents", "idx_status_incidents_status", "status")
+    _ensure_index(conn, "onboarding_progress", "idx_onboarding_user", "user_id")
+    _ensure_index(conn, "live_chat_sessions", "idx_live_chat_user", "user_id")
+    _ensure_index(conn, "live_chat_sessions", "idx_live_chat_status", "status")
+    _ensure_index(conn, "chat_messages", "idx_chat_messages_session", "session_id")
+    _ensure_index(conn, "support_tickets", "idx_support_tickets_user", "user_id")
+    _ensure_index(conn, "support_tickets", "idx_support_tickets_status", "status")
+    _ensure_index(conn, "support_tickets", "idx_support_tickets_assigned", "assigned_to")
+    _ensure_index(conn, "ticket_comments", "idx_ticket_comments_ticket", "ticket_id")
+    _ensure_index(conn, "help_categories", "idx_help_categories_parent", "parent_id")
+    _ensure_index(conn, "support_agents", "idx_support_agents_team", "team")
+    _ensure_index(conn, "contextual_help", "idx_contextual_help_page", "page")
 
 
 def init_db() -> None:

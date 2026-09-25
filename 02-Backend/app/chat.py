@@ -26,7 +26,7 @@ from .providers import (
     get_model_info,
     get_provider_for_model,
 )
-from ...metrics import track_ai_request
+from .metrics import track_ai_request
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 limiter = Limiter(key_func=get_remote_address)
