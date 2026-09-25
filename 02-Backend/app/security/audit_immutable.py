@@ -24,6 +24,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 

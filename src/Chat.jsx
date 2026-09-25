@@ -182,7 +182,7 @@ export default function Chat({ session, conversationId, model = 'gpt-4' }) {
           letterSpacing: '1px',
           fontWeight: '600'
         }}>
-          🤖 AI CHAT INTERFACE
+          ?? AI CHAT INTERFACE
         </h3>
       </div>
 
@@ -204,7 +204,7 @@ export default function Chat({ session, conversationId, model = 'gpt-4' }) {
             fontSize: '12px',
             color: '#f87171'
           }}>
-            ⚠️ {error}
+            ?? {error}
             <button type="button" onClick={retryLastPrompt} style={{ marginLeft: '10px', color: '#67e8f9', background: 'transparent', border: 0, cursor: 'pointer' }}>
               Retry
             </button>

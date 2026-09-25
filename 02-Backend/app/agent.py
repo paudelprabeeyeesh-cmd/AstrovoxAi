@@ -11,7 +11,7 @@ from app.utils import now
 from .providers.base import AIProvider, ChatMessage, ChatResponse
 from .providers.factory import ProviderFactory
 from .providers.models import get_model_info, get_provider_for_model
-from app.services.memory.memory_manager import memory_manager
+from app.services.memory.memory_manager import get_memory_manager as memory_manager
 from app.services.knowledge.knowledge_base import knowledge_base
 
 logger = logging.getLogger(__name__)

@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
-from ..multiverse.engine import MultiverseEngine
-from ..multiverse.models import (
+from .engine import MultiverseEngine
+from .models import (
     BranchType,
     RealityEditRequest,
     ContinuumManipulationRequest,
@@ -12,7 +12,7 @@ from ..multiverse.models import (
     RecursiveBranchRequest,
     PortalNavigateRequest,
 )
-from ...utils.auth.auth_utils import get_user_id_from_token
+from ..utils.auth.auth_utils import get_user_id_from_token
 
 router = APIRouter(prefix="/multiverse", tags=["multiverse"])
 engine = MultiverseEngine()

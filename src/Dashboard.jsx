@@ -21,6 +21,15 @@ import AnalyticsPanel from './components/support/AnalyticsPanel'
 import HealthScore from './components/support/HealthScore'
 import NpsSurvey from './components/support/NpsSurvey'
 import OmnipresentSystem from './components/omnipresent/OmnipresentSystem'
+import OmniscientSearch from './components/transcendent/OmniscientSearch'
+import ThoughtPrediction from './components/transcendent/ThoughtPrediction'
+import FutureForecast from './components/transcendent/FutureForecast'
+import UniversalTranslation from './components/transcendent/UniversalTranslation'
+import OmnipresentMonitoring from './components/transcendent/OmnipresentMonitoring'
+import InfiniteScroll from './components/transcendent/InfiniteScroll'
+import RealityWarpingSearch from './components/transcendent/RealityWarpingSearch'
+import UniverseSandbox from './components/transcendent/UniverseSandbox'
+import OmnipotentAssistant from './components/transcendent/OmnipotentAssistant'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -402,6 +411,102 @@ function DashboardInner({ session }) {
               🌐 OMNIPRESENT
             </button>
             <button
+              onClick={() => setActivePanel('omniscient')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'omniscient' ? '#f59e0b' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'omniscient' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              👁️ OMNISCIENT
+            </button>
+            <button
+              onClick={() => setActivePanel('prediction')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'prediction' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'prediction' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🔮 PREDICTION
+            </button>
+            <button
+              onClick={() => setActivePanel('translation')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'translation' ? '#22c55e' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'translation' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🌐 TRANSLATION
+            </button>
+            <button
+              onClick={() => setActivePanel('monitoring')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'monitoring' ? '#ef4444' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'monitoring' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📡 MONITORING
+            </button>
+            <button
+              onClick={() => setActivePanel('sandbox')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'sandbox' ? '#a78bfa' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'sandbox' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📦 SANDBOX
+            </button>
+            <button
+              onClick={() => setActivePanel('omnipotent')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'omnipotent' ? '#f59e0b' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'omnipotent' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🛐 OMNIPOTENT
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -531,6 +636,43 @@ function DashboardInner({ session }) {
           {activePanel === 'omnipresent' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <OmnipresentSystem session={session} />
+            </div>
+          )}
+
+          {activePanel === 'omniscient' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <OmniscientSearch />
+            </div>
+          )}
+
+          {activePanel === 'prediction' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <ThoughtPrediction userId={session.user.id} />
+              <FutureForecast />
+            </div>
+          )}
+
+          {activePanel === 'translation' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <UniversalTranslation />
+            </div>
+          )}
+
+          {activePanel === 'monitoring' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <OmnipresentMonitoring />
+            </div>
+          )}
+
+          {activePanel === 'sandbox' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <UniverseSandbox />
+            </div>
+          )}
+
+          {activePanel === 'omnipotent' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <OmnipotentAssistant />
             </div>
           )}
 

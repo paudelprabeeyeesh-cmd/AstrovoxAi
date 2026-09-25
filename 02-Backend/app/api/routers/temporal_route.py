@@ -517,7 +517,6 @@ def temporal_attention(query: Dict[str, Any] = Body(...), keys: List[Dict[str, A
 
 @router.post("/ai/patterns/detect")
 def detect_patterns(sequences: List[List[str]] = Body(...)):
-    _pattern_recognizer = HistoricalPatternRecognizer()
     for seq in sequences:
         _pattern_recognizer.observe(seq)
     patterns = _pattern_recognizer.detect_patterns()

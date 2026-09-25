@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 
 from .tenancy import tenant_manager
 from .audit import audit_exporter
-from .retention import retention_engine
+from ..retention import retention_engine
 from .compliance import compliance_generator
 from .export_import import export_import_service
 from .partners import partner_service
