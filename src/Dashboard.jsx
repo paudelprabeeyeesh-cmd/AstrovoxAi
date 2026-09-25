@@ -13,6 +13,13 @@ import { ToastProvider, useToast } from './components/ui/Toast'
 import { CommandPalette } from './components/ui/CommandPalette'
 import { KeyboardShortcutCheatsheet } from './components/ui/KeyboardShortcutCheatsheet'
 import SupportPanel from './components/support/SupportPanel'
+import OnboardingFlow from './components/support/OnboardingFlow'
+import TutorialsPanel from './components/support/TutorialsPanel'
+import CustomerPortal from './components/support/CustomerPortal'
+import StatusPage from './components/support/StatusPage'
+import AnalyticsPanel from './components/support/AnalyticsPanel'
+import HealthScore from './components/support/HealthScore'
+import NpsSurvey from './components/support/NpsSurvey'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -266,6 +273,118 @@ function DashboardInner({ session }) {
               🛟 SUPPORT
             </button>
             <button
+              onClick={() => setActivePanel('onboarding')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'onboarding' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'onboarding' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🚀 ONBOARDING
+            </button>
+            <button
+              onClick={() => setActivePanel('tutorials')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'tutorials' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'tutorials' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📖 TUTORIALS
+            </button>
+            <button
+              onClick={() => setActivePanel('portal')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'portal' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'portal' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              🏠 PORTAL
+            </button>
+            <button
+              onClick={() => setActivePanel('status')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'status' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'status' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📊 STATUS
+            </button>
+            <button
+              onClick={() => setActivePanel('analytics')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'analytics' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'analytics' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📈 ANALYTICS
+            </button>
+            <button
+              onClick={() => setActivePanel('health')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'health' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'health' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              ❤️ HEALTH
+            </button>
+            <button
+              onClick={() => setActivePanel('nps')}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activePanel === 'nps' ? '#06b6d4' : 'transparent',
+                border: '1px solid #1e293b',
+                color: activePanel === 'nps' ? '#02040a' : '#94a3b8',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: '600',
+                transition: 'all 0.2s'
+              }}
+            >
+              📋 NPS
+            </button>
+            <button
               onClick={() => supabase.auth.signOut()}
               style={{
                 padding: '8px 20px',
@@ -347,6 +466,48 @@ function DashboardInner({ session }) {
           {activePanel === 'support' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <SupportPanel session={session} />
+            </div>
+          )}
+
+          {activePanel === 'onboarding' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <OnboardingFlow onComplete={() => setActivePanel('chat')} />
+            </div>
+          )}
+
+          {activePanel === 'tutorials' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <TutorialsPanel />
+            </div>
+          )}
+
+          {activePanel === 'portal' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <CustomerPortal session={session} />
+            </div>
+          )}
+
+          {activePanel === 'status' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <StatusPage />
+            </div>
+          )}
+
+          {activePanel === 'analytics' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <AnalyticsPanel />
+            </div>
+          )}
+
+          {activePanel === 'health' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <HealthScore />
+            </div>
+          )}
+
+          {activePanel === 'nps' && (
+            <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              <NpsSurvey />
             </div>
           )}
 

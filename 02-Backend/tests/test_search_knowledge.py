@@ -25,6 +25,7 @@ from app.search_knowledge import (
     Chunk,
     Document,
     QueryAnalysis,
+    SearchAnalyticsEvent,
 )
 
 

@@ -1,7 +1,3 @@
-"""RAG package."""
+"""RAG services package."""
 
-from ..rag import RAGService
-
-__all__ = [
-    "RAGService",
-]
+__all__: list = []
