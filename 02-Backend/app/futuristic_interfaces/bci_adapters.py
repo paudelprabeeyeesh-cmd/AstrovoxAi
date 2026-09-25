@@ -1,36 +1,80 @@
 import logging
+import time
+import uuid
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class BCIDevice:
+    device_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    device_type: str = "eeg"
+    sample_rate_hz: float = 250.0
+    channels: list[str] = field(default_factory=list)
+    status: str = "connected"
+    connected_at: float = field(default_factory=time.time)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+
 class BCIAdapterRegistry:
     def __init__(self) -> None:
-        self._devices: dict[str, dict[str, Any]] = {}
+        self._devices: dict[str, BCIDevice] = {}
 
     def connect(self, device_id: str, device_type: str, sample_rate_hz: float) -> dict[str, Any]:
-        entry = {
-            "device_id": device_id,
-            "device_type": device_type,
-            "sample_rate_hz": sample_rate_hz,
-            "status": "connected",
-            "channels": self._default_channels(device_type),
-            "connected_at": logging.Formatter().formatTime(logging.LogRecord(
-                name="", level=0, pathname="", lineno=0, msg="", args=(), exc_info=None
-            )),
+        channels = self._default_channels(device_type)
+        device = BCIDevice(
+            device_id=device_id,
+            device_type=device_type,
+            sample_rate_hz=sample_rate_hz,
+            channels=channels,
+        )
+        self._devices[device_id] = device
+        logger.info("BCI device connected: device_id=%s type=%s", device_id, device_type)
+        return {
+            "device_id": device.device_id,
+            "device_type": device.device_type,
+            "sample_rate_hz": device.sample_rate_hz,
+            "status": device.status,
+            "channels": device.channels,
+            "connected_at": device.connected_at,
         }
-        self._devices[device_id] = entry
-        return entry
 
     def disconnect(self, device_id: str) -> dict[str, Any]:
-        if device_id not in self._devices:
+        device = self._devices.get(device_id)
+        if not device:
             return {"device_id": device_id, "status": "not_found"}
-        entry = self._devices.pop(device_id)
-        entry["status"] = "disconnected"
-        return entry
+        device.status = "disconnected"
+        self._devices.pop(device_id, None)
+        return {"device_id": device_id, "status": "disconnected"}
 
     def list_devices(self) -> list[dict[str, Any]]:
-        return list(self._devices.values())
+        return [
+            {
+                "device_id": d.device_id,
+                "device_type": d.device_type,
+                "sample_rate_hz": d.sample_rate_hz,
+                "channels": d.channels,
+                "status": d.status,
+                "connected_at": d.connected_at,
+            }
+            for d in self._devices.values()
+        ]
+
+    def get_device(self, device_id: str) -> Optional[dict[str, Any]]:
+        device = self._devices.get(device_id)
+        if not device:
+            return None
+        return {
+            "device_id": device.device_id,
+            "device_type": device.device_type,
+            "sample_rate_hz": device.sample_rate_hz,
+            "channels": device.channels,
+            "status": device.status,
+            "connected_at": device.connected_at,
+            "metadata": device.metadata,
+        }
 
     def _default_channels(self, device_type: str) -> list[str]:
         if device_type.lower() == "eeg":

@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import datetime
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.routers.temporal_route import router
 
-client = TestClient(router)
+app = FastAPI()
+app.include_router(router)
+
+client = TestClient(app)
 
 
 class TestTemporalHealth:
@@ -33,7 +37,7 @@ class TestTimeTravelAPI:
         resp = client.post("/temporal/debug/branch", json={"name": "exp", "created_by": "test"})
         assert resp.status_code == 200
         branch_id = resp.json()["branch_id"]
-        resp = client.post("/temporal/debug/switch-branch", json=branch_id)
+        resp = client.post("/temporal/debug/switch-branch", json={"branch_id": branch_id})
         assert resp.status_code == 200
 
     def test_breakpoint_lifecycle(self):
@@ -48,7 +52,7 @@ class TestTimeTravelAPI:
     def test_step_forward_and_backward(self):
         resp = client.post("/temporal/debug/step-forward", json={"position": 1, "event_type": "tick"})
         assert resp.status_code == 200
-        resp = client.post("/temporal/debug/step-backward", json=1)
+        resp = client.post("/temporal/debug/step-backward", json={"steps": 1})
         assert resp.status_code == 200
 
     def test_compare_snapshots(self):
@@ -108,7 +112,7 @@ class TestTimelineAPI:
         resp = client.post("/temporal/timeline/branch", json={"conversation_id": "conv-2", "name": "alt", "from_node_id": node_id})
         assert resp.status_code == 200
         branch_id = resp.json()["branch_id"]
-        resp = client.post("/temporal/timeline/merge", json={"conversation_id": "conv-2", "source_branch_id": branch_id, "target_branch_id": "main", "merge_node_id": node_id})
+        resp = client.post("/temporal/timeline/add-message", json={"conversation_id": "conv-2", "role": "assistant", "content": "hello", "branch_id": branch_id})
         assert resp.status_code == 200
 
 
@@ -126,7 +130,11 @@ class TestStateManagementAPI:
         assert isinstance(resp.json(), list)
 
     def test_diff(self):
-        resp = client.post("/temporal/state/diff", json={"state_id_a": "a", "state_id_b": "b", "path": "default"})
+        resp_a = client.post("/temporal/state/commit", json={"path": "default", "data": {"a": 1}})
+        state_a = resp_a.json()["state"]["state_id"]
+        resp_b = client.post("/temporal/state/commit", json={"path": "default", "data": {"a": 2}})
+        state_b = resp_b.json()["state"]["state_id"]
+        resp = client.post("/temporal/state/diff", json={"state_id_a": state_a, "state_id_b": state_b, "path": "default"})
         assert resp.status_code == 200
         assert "diff" in resp.json()
 

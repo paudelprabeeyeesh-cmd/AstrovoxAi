@@ -28,6 +28,7 @@ from app.temporal import (
     LWWRegister,
     ORSet,
     PNCounter,
+    OperationType,
     Query,
     QueryHandler,
     QueryResult,

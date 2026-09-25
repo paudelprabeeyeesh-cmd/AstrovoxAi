@@ -19,9 +19,9 @@ from .episodic_memory import EpisodicMemory
 from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory
 from app.services.memory.memory_manager import MemoryManager, get_memory_manager
-from .services.memory.importance_scorer import ImportanceScorer
-from .services.memory.retrieval_engine import RetrievalEngine
-from .services.memory.vector_store import VectorStore
+from app.memory.importance_scorer import ImportanceScorer
+from app.memory.retrieval_engine import RetrievalEngine
+from app.memory.vector_store import VectorStore
 from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceScoringEngine
 from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
 from .memory_ranking import MemoryRanker, RankedMemory

@@ -27,9 +27,9 @@ from .semantic_memory import SemanticMemory, FactCategory
 from .episodic_memory import EpisodicMemory, EventType
 from .procedural_memory import ProceduralMemory, ProcedureStatus
 from .workspace_memory import WorkspaceMemory, WorkspaceType
-from .importance_scorer import ImportanceScorer
-from .retrieval_engine import RetrievalEngine, RetrievalMethod
-from .vector_store import VectorStore
+from app.memory.importance_scorer import ImportanceScorer
+from app.memory.retrieval_engine import RetrievalEngine, RetrievalMethod
+from app.memory.vector_store import VectorStore
 
 
 class MemoryManager:
