@@ -1,26 +1,63 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Icon from '../../design/Iconography'
+import { useMathAndDiagrams } from '../../utils/mathAndDiagrams'
 
 export default function MermaidBlock({ content }) {
+  useMathAndDiagrams()
   const containerRef = useRef(null)
   const [svg, setSvg] = useState(null)
   const [error, setError] = useState(null)
+  const [mermaidLib, setMermaidLib] = useState(null)
 
   useEffect(() => {
-    const renderDiagram = async () => {
+    const loadMermaid = async () => {
       try {
         if (typeof window !== 'undefined' && window.mermaid) {
-          const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-          const { svg: renderedSvg } = await window.mermaid.render(id, content)
-          setSvg(renderedSvg)
+          setMermaidLib(window.mermaid)
+        } else {
+          const mermaid = await import('mermaid')
+          const lib = mermaid.default || mermaid
+          setMermaidLib(lib)
         }
       } catch (err) {
-        setError(err.message || 'Failed to render diagram')
+        setError('Mermaid library not available')
       }
     }
+    loadMermaid()
+  }, [])
+
+  useEffect(() => {
+    if (!mermaidLib || !content) return
+    let cancelled = false
+
+    const renderDiagram = async () => {
+      try {
+        if (!mermaidLib.initialized) {
+          mermaidLib.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            securityLevel: 'loose'
+          })
+          mermaidLib.initialized = true
+        }
+        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        const { svg: renderedSvg } = await mermaidLib.render(id, content)
+        if (!cancelled) {
+          setSvg(renderedSvg)
+          setError(null)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || 'Failed to render diagram')
+          setSvg(null)
+        }
+      }
+    }
+
     renderDiagram()
-  }, [content])
+    return () => { cancelled = true }
+  }, [content, mermaidLib])
 
   if (error) {
     return (

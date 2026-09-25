@@ -1,29 +1,44 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import Icon from '../../design/Iconography'
+import { useMathAndDiagrams } from '../../utils/mathAndDiagrams'
 
 export default function KaTeXBlock({ content, display = false }) {
+  useMathAndDiagrams()
   const containerRef = useRef(null)
   const [error, setError] = useState(null)
+  const [katexLib, setKatexLib] = useState(null)
 
   useEffect(() => {
-    const renderMath = async () => {
+    const loadKatex = async () => {
       try {
         if (typeof window !== 'undefined' && window.katex) {
-          if (containerRef.current) {
-            window.katex.render(content, containerRef.current, {
-              displayMode: display,
-              throwOnError: true,
-              output: 'html'
-            })
-          }
+          setKatexLib(window.katex)
+        } else {
+          const katex = await import('katex')
+          const lib = katex.default || katex
+          setKatexLib(lib)
         }
       } catch (err) {
-        setError(err.message)
+        setError('KaTeX library not available')
       }
     }
-    renderMath()
-  }, [content, display])
+    loadKatex()
+  }, [])
+
+  useEffect(() => {
+    if (!katexLib || !containerRef.current) return
+    try {
+      katexLib.render(content, containerRef.current, {
+        displayMode: display,
+        throwOnError: true,
+        output: 'html'
+      })
+      setError(null)
+    } catch (err) {
+      setError(err.message)
+    }
+  }, [content, display, katexLib])
 
   if (error) {
     return (
