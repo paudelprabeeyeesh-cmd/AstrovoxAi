@@ -1,20 +1,11 @@
-<<<<<<< HEAD
 # ASTRAVOX AI 🚀
-=======
-# ASTRAVOX Ai 
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 ## Advanced AI Chat Platform 🚀
 
-<<<<<<< HEAD
 ASTRAVOX AI is a cutting-edge AI chat platform with multi-provider support, featuring a modern React frontend, a robust FastAPI backend, and Supabase for database and authentication. The platform supports streaming responses, AI memory, embeddings, telemetry, and an interactive terminal console.
-=======
-ASTRAVOX Ai is a cutting-edge AI chat platform designed to provide an intelligent and interactive conversational experience. It features a modern React frontend, a robust FastAPI backend, and leverages Supabase for its database and authentication needs. The platform is built with scalability and maintainability in mind, ensuring a seamless experience for users and developers alike.
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 ## Features 
 
-<<<<<<< HEAD
 - **User Authentication**: Secure sign-up, login, logout, and password reset via Supabase Auth
 - **Multi-Provider AI Chat**: Support for OpenAI, Anthropic (Claude), Google Gemini, and Ollama (local models)
 - **Streaming Responses**: Real-time token streaming for all supported providers
@@ -27,30 +18,9 @@ ASTRAVOX Ai is a cutting-edge AI chat platform designed to provide an intelligen
 - **Security Headers**: CSP, HSTS, XSS protection, and more
 - **Docker Support**: Containerized deployment with Docker Compose
 - **CI/CD Pipeline**: Automated testing, linting, and security scanning via GitHub Actions
-=======
-- **User Authentication**: Secure sign-up, login, logout, and password reset functionalities powered by Supabase Auth.
-- **Persistent Sessions**: Users remain logged in across sessions, providing a continuous experience.
-- **Protected Routes**: Ensures that only authenticated users can access sensitive parts of the application.
-- **AI Chat Interface**: A dynamic chat environment where users can interact with an AI, create new conversations, and review past interactions.
-- **Conversation History**: All messages and conversations are saved and can be loaded for future reference.
-- **AI Memory System**: An intelligent memory system that stores important information from conversations, allowing the AI to provide more personalized and context-aware responses.
-- **Dashboard**: A comprehensive dashboard featuring:
-    - **Sidebar**: For managing and navigating between conversations.
-    - **Telemetry**: Real-time system diagnostics and statistics.
-    - **Terminal Console**: An interactive command-line interface for system interactions.
-    - **Memory Panel**: To view and manage AI memory entries.
-    - **Settings Panel**: For user-specific configurations, including AI model preferences and theme settings.
-- **Responsive UI**: Designed to provide an optimal viewing and interaction experience across a wide range of devices.
-- **Modular Backend**: A FastAPI backend with a clear, modular architecture for easy development and maintenance.
-- **Supabase Integration**: Utilizes Supabase for PostgreSQL database, authentication, and real-time capabilities.
-- **Rate Limiting**: Built-in rate limiting for authentication and chat endpoints to prevent abuse.
-- **Docker Support**: Containerized deployment with Docker and Docker Compose for easy production deployment.
-- **CI/CD Pipeline**: Automated testing, linting, and security scanning via GitHub Actions.
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 ## Technology Stack 🚀
 
-<<<<<<< HEAD
 - **Frontend**: React 18, Vite 6
 - **Backend**: FastAPI, Python 3.9+
 - **Database**: Supabase (PostgreSQL) with Row Level Security
@@ -146,21 +116,6 @@ docker-compose up --build
 | `ENVIRONMENT` | No | development, staging, production |
 
 *At least one AI provider key is required.
-=======
-- **Frontend**: React, Vite
-- **Backend**: FastAPI, Python 3.9+
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: Supabase Auth
-- **AI Integration**: OpenAI API
-- **Containerization**: Docker, Docker Compose
-- **CI/CD**: GitHub Actions
-
-## Getting Started
-
-To set up and run ASTRAVOX Ai locally, please refer to the [SETUP.md](SETUP.md) guide.
-
-For production deployment, see the [DEPLOYMENT.md](DEPLOYMENT.md) guide.
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 
 ## API Documentation
 
@@ -242,7 +197,6 @@ data: [DONE]
 
 ```
 AstrovoxAi/
-<<<<<<< HEAD
 ├── src/                        # React frontend
 │   ├── app.jsx                 # Main app component
 │   ├── auth.jsx                # Authentication UI
@@ -343,53 +297,6 @@ npm run build
                     │  - Gemini     │
                     │  - Ollama     │
                     └──────────────┘
-=======
-├── src/                    # React frontend components and logic
-│   ├── app.jsx            # Main application component
-│   ├── auth.jsx           # Authentication component
-│   ├── Dashboard.jsx      # Main dashboard
-│   ├── Chat.jsx           # Chat interface
-│   ├── Sidebar.jsx        # Conversation sidebar
-│   ├── MemoryPanel.jsx    # Memory management
-│   ├── SettingsPanel.jsx  # User settings
-│   ├── telemetry.jsx      # System telemetry
-│   ├── terminalconsole.jsx # Terminal console
-│   ├── supabase.js        # Supabase client
-│   └── main.jsx           # React entry point
-├── 02-Backend/            # FastAPI backend application
-│   ├── app/
-│   │   ├── main.py        # FastAPI app with CORS and rate limiting
-│   │   ├── auth.py        # Authentication routes
-│   │   ├── chat.py        # Chat routes with rate limiting
-│   │   ├── api.py         # API routes
-│   │   ├── memory.py      # Memory routes
-│   │   ├── database.py    # Database operations
-│   │   ├── supabase_client.py # Singleton Supabase client
-│   │   └── auth_utils.py  # Shared authentication utilities
-│   ├── tests/             # Backend tests
-│   └── requirements.txt    # Python dependencies
-├── database/               # Database schema and migration scripts
-│   ├── schemas/
-│   │   └── supabase_setup.sql # Database schema
-│   └── migrations/
-│       └── 0001_indexes_and_signup_trigger.sql # Performance indexes
-├── .github/               # GitHub Actions CI/CD
-│   └── workflows/
-│       └── ci.yml         # CI/CD pipeline
-├── .env.example            # Example environment variables
-├── Dockerfile.backend      # Backend Docker configuration
-├── Dockerfile.frontend     # Frontend Docker configuration
-├── docker-compose.yml      # Docker Compose configuration
-├── nginx.conf              # Nginx configuration for frontend
-├── package.json            # Frontend dependencies and scripts
-├── vite.config.js          # Vite build configuration
-├── index.html              # Frontend HTML entry point
-├── README.md               # Project overview
-├── SETUP.md                # Setup and installation guide
-├── DEPLOYMENT.md           # Deployment guide
-├── API.md                  # API documentation
-└── ROADMAP.md              # Future development roadmap
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838
 ```
 
 ## Contributing
@@ -403,7 +310,6 @@ MIT License
 ## Authors
 ## Prabesh Paudel
 
-<<<<<<< HEAD
 **Prabesh Paudel**  
 
 - ***Founder & Chief Executive Officer (CEO), Chief Technology Officer (CTO), Chief AI Architect, Product Vision Lead, Lead Software Architect, Full-Stack Developer, Backend Engineer, Frontend Engineer, AI Systems Engineer, Distributed Systems Engineer, Platform Engineer, AI Runtime Engineer, AI Compiler Engineer, Workflow Engine Developer, API Engineer, Cloud Infrastructure Engineer, DevOps Engineer, Site Reliability Engineer (SRE), Security Engineer, Identity & Access Management (IAM) Engineer, Performance Engineer, Reliability Engineer, Knowledge Systems Engineer, Memory Systems Engineer, Data Platform Engineer, SDK & Developer Experience Engineer, QA Automation Engineer, Test Infrastructure Engineer, Technical Documentation Lead, Research & Development Engineer, Open Source Maintainer, Lead System Integrator, Principal Software Engineer, Creator of AstrovoxAI.***
@@ -417,69 +323,3 @@ MIT License
 
 **Version**: 1.0.0
 **Status**: Production-ready
-=======
-    Founder & Chief Executive Officer (CEO)
-
-    Chief AI Architect
-
-    Principal Software Engineer
-
-    Lead Full-Stack Engineer
-
-    Software Solutions Architect
-
-    AI Systems Designer
-
-    DevOps Engineer
-
-    Product Strategist
-
-    Technical Lead
-
-Dipson Baral
-
-    Co-Founder
-
-    Senior Full-Stack Software Engineer
-
-    Backend Engineer
-
-    DevOps Engineer
-
-    API & Database Engineer
-
-Susanta Baral
-
-    AI Research Engineer
-
-    Machine Learning Engineer
-
-    Data & AI Engineer
-
-    AI Model Integration Engineer
-
-    Prompt Engineering Specialist
-
-## TOTAL TASKS COMPLETED 
-Project Architecture       ██████████ 100%
-
-Frontend Migration         ██████████ 100%
-
-Backend Migration          ██████████ 100%
-
-Developer Standards        ██████████ 100%
-
-Documentation              █████████░ 95%
-
-CLI Tools                  ██████████ 100%
-
-Telemetry Backend          ██████████ 100%
-
-Telemetry Frontend         ██████████ 100%
-
-Terminal Console           ██████████ 100%
-
-API Documentation          █████████░ 95%
-
-Production Readiness       █████████░ 95%
->>>>>>> d06d6f13ebb90117a65b970c3333bcc1c6546838

@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 
 from .auth import router as auth_router
 from .chat import router as chat_router
-from .memory import router as memory_router
 from .storage import router as storage_router
 from .telemetry import router as telemetry_router
 from .terminal import router as terminal_router
@@ -79,7 +78,6 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Include routers
 app.include_router(auth_router)
 app.include_router(chat_router)
-app.include_router(memory_router)
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
