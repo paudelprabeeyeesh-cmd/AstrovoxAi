@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { A11yProvider, useA11y, SkipLink } from '../src/components/ui/A11yProvider'
-import { A11Y_SPECS } from '../src/design/AccessibilitySpecs'
+import { A11yProvider, useA11y, SkipLink } from '../../src/components/ui/A11yProvider'
+import { A11Y_SPECS } from '../../src/design/AccessibilitySpecs'
 
 describe('Accessibility - Advanced', () => {
   beforeEach(() => {

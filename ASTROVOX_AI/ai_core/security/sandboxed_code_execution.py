@@ -1,10 +1,18 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List, Tuple
 import subprocess
 import tempfile
 import os
 import signal
-import resource
-import psutil
+import sys
+
+try:
+    import resource
+except ImportError:
+    resource = None  # type: ignore
+try:
+    import psutil
+except ImportError:
+    psutil = None  # type: ignore
 
 
 class SandboxedCodeExecution:

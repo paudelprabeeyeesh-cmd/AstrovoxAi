@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { useChatHistory } from '../src/hooks/useChatHistory'
+import { useChatHistory } from '../../src/hooks/useChatHistory'
 
 // Mock localStorage
 const localStorageMock = {

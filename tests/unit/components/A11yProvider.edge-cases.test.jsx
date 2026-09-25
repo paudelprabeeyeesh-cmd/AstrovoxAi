@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
-import { A11yProvider, useA11y } from '../src/components/ui/A11yProvider'
+import { A11yProvider, useA11y } from '../../src/components/ui/A11yProvider'
 
 describe('A11yProvider - Edge Cases', () => {
   beforeEach(() => {

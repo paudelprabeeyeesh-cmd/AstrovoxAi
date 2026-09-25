@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { useChatHistory } from '../src/hooks/useChatHistory'
+import { useChatHistory } from '../../src/hooks/useChatHistory'
 
 describe('useChatHistory - Edge Cases', () => {
   beforeEach(() => {
