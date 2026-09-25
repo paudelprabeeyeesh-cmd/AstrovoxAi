@@ -1,6 +1,9 @@
 import os
 import re
 import secrets
+from pathlib import Path
+
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/storage", tags=["storage"])
 
@@ -126,12 +129,15 @@ async def upload_storage_file(
                 detail="File too large",
             )
 
-        # Validate content type
-            content,
-            content_type=file.content_type,
-        )
+        safe_name = ALLOWED_BUCKETS.get(bucket, "general")
+        target = storage_service.storage_dir / safe_name / (path or file.filename)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+
+        result = storage_service._build_file_response(bucket, file.filename or "unknown")
         return JSONResponse(
-            status_code=status.HTTP_201_CREATED, content={"status": "OK", **result}
+            status_code=status.HTTP_201_CREATED,
+            content={"status": "OK", **result},
         )
     except HTTPException:
         raise
