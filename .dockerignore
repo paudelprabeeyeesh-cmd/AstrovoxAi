@@ -1,10 +1,18 @@
+# AstrovoxAI Docker Ignore
+# Optimizes Docker build context by excluding unnecessary files
+
 # Git
 .git
 .gitignore
+.github
+.gitattributes
 
 # Node
 node_modules
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store
 
 # Python
 __pycache__
@@ -19,35 +27,136 @@ env/
 *.egg-info
 .pytest_cache
 .mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+.coverage.*
+coverage.xml
 
-# Build
+# Build outputs
 dist
 build
+out
+.next
+.nuxt
+.vite
+.cache
 
-# IDE
+# IDE and editors
 .vscode
 .idea
 *.swp
 *.swo
+*~
+.project
+.settings
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Env files (keep .env.example)
+# Environment files
 .env
 .env.local
 .env.*.local
+.env.production
+.env.staging
+.env.development
+!.env.example
 
 # Logs
 logs
 *.log
+log/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
 
 # Docker
 Dockerfile*
 docker-compose*
 .docker
+docker/
 
-# Documentation
+# Infrastructure (not needed in image)
+infrastructure/
+helm/
+charts/
+k8s/
+terraform/
+ansible/
+argocd/
+blue-green/
+crossplane/
+fluxcd/
+gitlab-ci.yml
+pulumi/
+service-mesh/
+
+# Documentation (keep essential)
 *.md
 !README.md
+!SECURITY.md
+!CHANGELOG.md
+docs/
+Documentation/
+*.pdf
+*.docx
+*.txt
+
+# CI/CD
+.github/
+.pre-commit-config.yaml
+
+# Test artifacts
+test-results/
+coverage/
+playwright-report/
+test-output/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+.cache/
+.parcel-cache
+
+# Local development
+.local
+*.local
+.devcontainer
+.vscode-server
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+storage/
+backups/
+
+# Analytics and monitoring data
+monitoring/
+grafana-data/
+prometheus-data/
+
+# Package manager files (keep lock files)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+requirements.txt
+pyproject.toml
+
+# Misc
+kilo_local_recall
+k8s-cache

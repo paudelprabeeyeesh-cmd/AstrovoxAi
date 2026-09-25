@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=DEBUG
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - ./02-Backend/app:/app/app
+      - ./02-Backend/scripts:/app/scripts
+      - ./logs:/app/logs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stdin_open: true
+    tty: true
+    profiles: []
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_ENV=development
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    profiles: []
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+    profiles: []
+
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_PASSWORD: astrovox_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    profiles: []
+
+  prometheus:
+    ports:
+      - "127.0.0.1:9090:9090"
+    profiles: []
+
+  grafana:
+    ports:
+      - "127.0.0.1:3000:3000"
+    profiles: []
+
+volumes:
+  postgres_data:
+    driver: local
