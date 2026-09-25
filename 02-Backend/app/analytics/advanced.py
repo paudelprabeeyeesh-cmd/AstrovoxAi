@@ -1158,6 +1158,126 @@ class AdvancedAnalyticsEngine:
             "total_users": len(self._sessions),
         }
 
+    def get_provider_breakdown(self) -> dict:
+        breakdown: dict[str, int] = defaultdict(int)
+        for e in self._events:
+            if e.event_type == "ai_request":
+                provider = e.metadata.get("provider", "unknown")
+                breakdown[provider] += 1
+        return dict(sorted(breakdown.items(), key=lambda x: x[1], reverse=True))
+
+    def get_model_breakdown(self) -> dict:
+        breakdown: dict[str, int] = defaultdict(int)
+        for e in self._events:
+            if e.event_type == "ai_request":
+                model = e.metadata.get("model", "unknown")
+                breakdown[model] += 1
+        return dict(sorted(breakdown.items(), key=lambda x: x[1], reverse=True))
+
+    def get_daily_usage(self, days: int = 30) -> dict:
+        result: dict[str, int] = {}
+        cutoff = time.time() - (days * 86400)
+        events = [e for e in self._events if e.timestamp >= cutoff and e.event_type == "ai_request"]
+        for e in events:
+            day_key = datetime.fromtimestamp(e.timestamp).strftime("%Y-%m-%d")
+            result[day_key] = result.get(day_key, 0) + 1
+        return dict(sorted(result.items()))
+
+    def get_ai_usage_analytics(self, days: int = 7) -> dict:
+        cutoff = time.time() - (days * 86400)
+        events = [e for e in self._events if e.timestamp >= cutoff and e.event_type == "ai_request"]
+
+        by_model: dict[str, int] = defaultdict(int)
+        by_provider: dict[str, int] = defaultdict(int)
+        by_user: dict[str, int] = defaultdict(int)
+        total_success = 0
+        total_fail = 0
+        total_latency = 0.0
+
+        for e in events:
+            model = e.metadata.get("model", "unknown")
+            provider = e.metadata.get("provider", "unknown")
+            by_model[model] += 1
+            by_provider[provider] += 1
+            by_user[e.user_id] += 1
+            if e.metadata.get("success", True):
+                total_success += 1
+            else:
+                total_fail += 1
+            total_latency += e.metadata.get("latency", 0.0)
+
+        count = len(events)
+        return {
+            "period_days": days,
+            "total_requests": count,
+            "successful_requests": total_success,
+            "failed_requests": total_fail,
+            "success_rate": round(total_success / max(count, 1) * 100, 2),
+            "average_latency": round(total_latency / max(count, 1), 3),
+            "requests_by_model": dict(sorted(by_model.items(), key=lambda x: x[1], reverse=True)),
+            "requests_by_provider": dict(sorted(by_provider.items(), key=lambda x: x[1], reverse=True)),
+            "active_users": len(by_user),
+            "top_users": sorted(by_user.items(), key=lambda x: x[1], reverse=True)[:10],
+        }
+
+    def get_search_analytics(self, days: int = 7) -> dict:
+        return {
+            "period_days": days,
+            "total_queries": 0,
+            "click_through_rate": 0.0,
+            "zero_result_queries": 0,
+            "zero_result_rate": 0.0,
+            "avg_latency_ms": 0.0,
+            "top_queries": [],
+            "zero_result_query_list": [],
+        }
+
+    def get_knowledge_analytics(self, days: int = 7) -> dict:
+        return {
+            "period_days": days,
+            "documents_indexed": 0,
+            "entities_extracted": 0,
+            "relationships_created": 0,
+            "knowledge_base_size": 0,
+        }
+
+    def get_workflow_analytics(self, days: int = 7) -> dict:
+        return {
+            "period_days": days,
+            "total_executions": 0,
+            "completed_tasks": 0,
+            "failed_tasks": 0,
+            "success_rate": 0.0,
+            "agents": [],
+        }
+
+    def get_agent_analytics(self, days: int = 7) -> dict:
+        return {
+            "period_days": days,
+            "total_tasks": 0,
+            "completed_tasks": 0,
+            "failed_tasks": 0,
+            "success_rate": 0.0,
+            "agents": [],
+        }
+
+    def get_user_analytics(self, days: int = 7) -> dict:
+        cutoff = time.time() - (days * 86400)
+        events = [e for e in self._events if e.timestamp >= cutoff]
+
+        active_users = len({e.user_id for e in events})
+        event_counts: dict[str, int] = defaultdict(int)
+        for e in events:
+            event_counts[e.event_type] += 1
+
+        return {
+            "period_days": days,
+            "active_users": active_users,
+            "total_actions": len(events),
+            "top_users": [],
+            "engagement_by_category": dict(sorted(event_counts.items(), key=lambda x: x[1], reverse=True)[:10]),
+        }
+
     def get_dashboard_data(self, days: int = 7) -> dict:
         return {
             "realtime": self.get_realtime_dashboard(days=min(days, 1)),

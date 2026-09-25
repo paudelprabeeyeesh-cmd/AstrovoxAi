@@ -118,6 +118,36 @@ class _AnalyticsClient:
     def export_analytics(self, days=30, format="json"):
         return advanced_analytics.export_analytics(days=days, format=format)
 
+    def get_provider_breakdown(self):
+        return advanced_analytics.get_provider_breakdown()
+
+    def get_model_breakdown(self):
+        return advanced_analytics.get_model_breakdown()
+
+    def get_daily_usage(self, days=30):
+        return advanced_analytics.get_daily_usage(days=days)
+
+    def get_overview(self, days=7):
+        return advanced_analytics.get_overview(days=days)
+
+    def get_ai_usage_analytics(self, days=7):
+        return advanced_analytics.get_ai_usage_analytics(days=days)
+
+    def get_search_analytics(self, days=7):
+        return advanced_analytics.get_search_analytics(days=days)
+
+    def get_knowledge_analytics(self, days=7):
+        return advanced_analytics.get_knowledge_analytics(days=days)
+
+    def get_workflow_analytics(self, days=7):
+        return advanced_analytics.get_workflow_analytics(days=days)
+
+    def get_agent_analytics(self, days=7):
+        return advanced_analytics.get_agent_analytics(days=days)
+
+    def get_user_analytics(self, days=7):
+        return advanced_analytics.get_user_analytics(days=days)
+
 
 analytics = _AnalyticsClient()
 
