@@ -50,8 +50,9 @@ class PerformerAttention(nn.Module):
         q_prime = q_prime / q_norm
         k_prime = k_prime / k_norm
         kv = torch.matmul(k_prime.transpose(-2, -1), v)
-        z = k_prime.sum(dim=-2, keepdim=True).clamp_min(1e-6)
-        out = torch.matmul(q_prime, kv) / z
+        z = (q_prime * k_prime.sum(dim=-2, keepdim=True)).sum(dim=-1, keepdim=True)
+        out = torch.matmul(q_prime, kv)
+        out = out / z.clamp_min(1e-6)
         out = out.transpose(1, 2).contiguous().view(B, T, C)
         return self.out_proj(out)
 
