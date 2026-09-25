@@ -36,7 +36,6 @@ from .automation_route import router as automation_router
 from .ecosystem.router import router as ecosystem_router
 from .kernel.api import router as kernel_router
 from .aios.api import router as aios_router
-from .executor.api import router as executor_router
 from .document_route import router as document_router
 from .security_headers import SecurityHeadersMiddleware
 from .rate_limit_hardened import rate_limit_middleware

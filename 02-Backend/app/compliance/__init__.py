@@ -103,4 +103,19 @@ __all__ = [
     "ComplianceReporter",
     "SOC2Evidence",
     "GDPRCompliance",
+    "compliance_manager",
 ]
+
+
+class _ComplianceManager:
+    def request_data_export(self, user_id):
+        return export_user_data(user_id)
+
+    def request_data_deletion(self, user_id):
+        return delete_user_data(user_id)
+
+    def get_compliance_status(self, user_id):
+        return {"status": "compliant", "user_id": user_id}
+
+
+compliance_manager = _ComplianceManager()

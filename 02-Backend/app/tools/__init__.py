@@ -29,4 +29,8 @@ __all__ = [
     "ToolCache",
     "ToolRateLimiter",
     "ToolBuilder",
+    "tool_registry",
 ]
+
+
+tool_registry = ToolRegistry()
