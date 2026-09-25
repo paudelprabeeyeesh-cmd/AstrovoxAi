@@ -565,3 +565,6 @@ def get_audit_log() -> AuditLog:
         path = os.getenv("ASTROVOX_AUDIT_PATH")
         _GLOBAL_AUDIT = AuditLog(path=path)
     return _GLOBAL_AUDIT
+
+
+AuditLogger = AuditLog

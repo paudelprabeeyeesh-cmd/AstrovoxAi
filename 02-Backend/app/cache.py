@@ -207,3 +207,13 @@ class CacheManager:
 
 cache_manager = CacheManager()
 
+
+async def _async_cached(key: str, factory, ttl: int = 300):
+    return await cache_manager.get_or_set(key, factory, ttl)
+
+
+def cached(key: str, factory):
+    """Module-level cached helper for tests and simple usage."""
+    import asyncio
+    return asyncio.get_event_loop().run_until_complete(_async_cached(key, factory))
+
