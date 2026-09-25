@@ -207,7 +207,7 @@ async def list_feedback(feedback_type: Optional[str] = Query(None)):
 class BugReportRequest(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1, max_length=5000)
-    severity: str = Field(default="medium", regex="^(low|medium|high|critical)$")
+    severity: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
     steps_to_reproduce: Optional[str] = Field(default=None, max_length=5000)
 
 

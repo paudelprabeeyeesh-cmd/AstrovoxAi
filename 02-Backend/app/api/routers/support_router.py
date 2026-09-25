@@ -31,14 +31,14 @@ router = APIRouter(prefix="/api/support", tags=["support"])
 class CreateTicketRequest(BaseModel):
     subject: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1, max_length=5000)
-    priority: str = Field(default="medium", regex="^(low|medium|high|critical)$")
+    priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
     category: str = Field(default="general", max_length=50)
     tags: List[str] = Field(default_factory=list)
 
 
 class UpdateTicketRequest(BaseModel):
-    status: Optional[str] = Field(default=None, regex="^(open|assigned|in_progress|resolved|closed|reopened)$")
-    priority: Optional[str] = Field(default=None, regex="^(low|medium|high|critical)$")
+    status: Optional[str] = Field(default=None, pattern="^(open|assigned|in_progress|resolved|closed|reopened)$")
+    priority: Optional[str] = Field(default=None, pattern="^(low|medium|high|critical)$")
     assigned_to: Optional[str] = None
 
 

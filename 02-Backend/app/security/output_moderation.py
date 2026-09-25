@@ -356,6 +356,21 @@ class OutputModerator:
                     return True
         return False
 
+    def get_appeals(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Get recent moderation appeals."""
+        with self._lock:
+            return [
+                {
+                    "content_hash": r.content_hash,
+                    "user_id": r.user_id,
+                    "timestamp": r.details.get("appealed_at"),
+                    "reason": r.details.get("appeal_reason"),
+                    "action": r.action_taken.value,
+                }
+                for r in self._history
+                if r.is_appealed
+            ][-limit:]
+
 
 output_moderator = OutputModerator()
 

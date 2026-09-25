@@ -28,7 +28,7 @@ class SafetyAuditEntry:
 
     @property
     def iso_timestamp(self) -> str:
-        return datetime.utcfromtimestamp(self.timestamp).isoformat() + "Z"
+        return datetime.fromtimestamp(self.timestamp, datetime.UTC).isoformat().replace("+00:00", "Z")
 
 
 class SafetyAuditLogger:
