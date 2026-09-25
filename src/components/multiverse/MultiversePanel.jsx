@@ -10,10 +10,12 @@ import TimeSpaceContinuum from './TimeSpaceContinuum'
 import UniversalConstructor from './UniversalConstructor'
 import InfiniteRecursion from './InfiniteRecursion'
 import DimensionalPortal from './DimensionalPortal'
+import DivergenceTracker from './DivergenceTracker'
 
 export default function MultiversePanel() {
   const [selectedTimelineId, setSelectedTimelineId] = useState(null)
   const [selectedUniverseId, setSelectedUniverseId] = useState(null)
+  const [divergenceUniverseB, setDivergenceUniverseB] = useState('')
   const [view, setView] = useState('dashboard')
 
   if (view === 'visualizer' && selectedUniverseId) {
@@ -44,6 +46,8 @@ export default function MultiversePanel() {
                 Clear
               </button>
             </div>
+            <DivergenceTracker universeA={selectedUniverseId} universeB={divergenceUniverseB || undefined} />
+            <input value={divergenceUniverseB} onChange={(e) => setDivergenceUniverseB(e.target.value)} placeholder="Compare with universe B ID (optional)" style={{ padding: '8px 12px', backgroundColor: '#050a18', border: '1px solid #1e293b', borderRadius: '6px', color: '#94a3b8', fontSize: '11px', fontFamily: 'inherit' }} />
             <RealityEditor universeId={selectedUniverseId} />
             <TimeSpaceContinuum universeId={selectedUniverseId} />
             <ParallelAssistant universeId={selectedUniverseId} />
