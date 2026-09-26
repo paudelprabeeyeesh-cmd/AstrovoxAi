@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-reverse-proxy
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: nginx-reverse-proxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-reverse-proxy
+  template:
+    metadata:
+      labels:
+        app: nginx-reverse-proxy
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: ssl-certs
+          mountPath: /etc/ssl/certs
+          readOnly: true
+        - name: ssl-private
+          mountPath: /etc/ssl/private
+          readOnly: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-reverse-proxy-config
+      - name: ssl-certs
+        secret:
+          secretName: astrovox-tls
+      - name: ssl-private
+        secret:
+          secretName: astrovox-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-reverse-proxy
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: nginx-reverse-proxy
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  - port: 443
+    targetPort: 443
+    name: https
+  type: LoadBalancer

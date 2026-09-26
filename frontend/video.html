@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video AI - AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/video.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="chat.html" class="nav-link">Chat</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="video.html" class="nav-link active">Video AI</a>
+      </div>
+      <div class="nav-user">
+        <span id="nav-username" class="nav-username"></span>
+        <button class="btn btn-secondary" onclick="app.logout()">Logout</button>
+      </div>
+    </nav>
+    <main class="video-ai-page">
+      <header class="page-header">
+        <h1>Video AI Studio</h1>
+        <p class="page-subtitle">Generate, analyze, and enhance video with AI</p>
+      </header>
+      <div class="tabs">
+        <button class="tab active" data-tab="text-to-video">Text to Video</button>
+        <button class="tab" data-tab="summarize">Summarize</button>
+        <button class="tab" data-tab="scene-detect">Scene Detect</button>
+        <button class="tab" data-tab="subtitles">Subtitles</button>
+        <button class="tab" data-tab="lip-sync">Lip Sync</button>
+        <button class="tab" data-tab="motion-track">Motion Track</button>
+        <button class="tab" data-tab="interpolate">Interpolate</button>
+      </div>
+      <div class="tab-content">
+        <section id="tab-text-to-video" class="tab-panel active">
+          <div class="panel">
+            <h2>Text to Video</h2>
+            <div class="form-group">
+              <label>Prompt</label>
+              <textarea id="ttv-prompt" rows="3" placeholder="Describe the video you want to generate..."></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Duration (seconds)</label>
+                <input type="number" id="ttv-duration" value="4" min="1" max="60">
+              </div>
+              <div class="form-group">
+                <label>Width</label>
+                <input type="number" id="ttv-width" value="1024" min="256" max="2048" step="64">
+              </div>
+              <div class="form-group">
+                <label>Height</label>
+                <input type="number" id="ttv-height" value="576" min="256" max="2048" step="64">
+              </div>
+              <div class="form-group">
+                <label>FPS</label>
+                <input type="number" id="ttv-fps" value="24" min="1" max="60">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Reference Image (optional, base64 or URL)</label>
+              <input type="text" id="ttv-image" placeholder="Paste base64 image or URL...">
+            </div>
+            <button class="btn btn-primary" onclick="app.textToVideo()">Generate Video</button>
+            <div id="ttv-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-summarize" class="tab-panel">
+          <div class="panel">
+            <h2>Video Summarization</h2>
+            <div class="form-group">
+              <label>Upload Video</label>
+              <input type="file" id="sum-file" accept="video/*">
+            </div>
+            <div class="form-group">
+              <label>Prompt</label>
+              <textarea id="sum-prompt" rows="2" placeholder="Summarization instructions...">Summarize the key events and content in this video.</textarea>
+            </div>
+            <div class="form-group">
+              <label>Max Scenes</label>
+              <input type="number" id="sum-max-scenes" value="5" min="1" max="50">
+            </div>
+            <button class="btn btn-primary" onclick="app.summarize()">Summarize</button>
+            <div id="sum-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-scene-detect" class="tab-panel">
+          <div class="panel">
+            <h2>Scene Detection</h2>
+            <div class="form-group">
+              <label>Upload Video</label>
+              <input type="file" id="scene-file" accept="video/*">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Threshold</label>
+                <input type="number" id="scene-threshold" value="0.3" min="0" max="1" step="0.05">
+              </div>
+              <div class="form-group">
+                <label>Method</label>
+                <select id="scene-method">
+                  <option value="histogram">Histogram</option>
+                  <option value="pixel">Pixel</option>
+                  <option value="edge">Edge</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="app.detectScenes()">Detect Scenes</button>
+            <div id="scene-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-subtitles" class="tab-panel">
+          <div class="panel">
+            <h2>Subtitle Generation</h2>
+            <div class="form-group">
+              <label>Upload Video</label>
+              <input type="file" id="sub-file" accept="video/*">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Language (optional)</label>
+                <input type="text" id="sub-lang" placeholder="en">
+              </div>
+              <div class="form-group">
+                <label>Format</label>
+                <select id="sub-format">
+                  <option value="srt">SRT</option>
+                  <option value="vtt">VTT</option>
+                  <option value="ass">ASS</option>
+                  <option value="json">JSON</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="app.generateSubtitles()">Generate Subtitles</button>
+            <div id="sub-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-lip-sync" class="tab-panel">
+          <div class="panel">
+            <h2>Lip Sync</h2>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Upload Video</label>
+                <input type="file" id="ls-video" accept="video/*">
+              </div>
+              <div class="form-group">
+                <label>Upload Audio</label>
+                <input type="file" id="ls-audio" accept="audio/*">
+              </div>
+            </div>
+            <div class="form-group">
+              <label>FPS</label>
+              <input type="number" id="ls-fps" value="25" min="1" max="60">
+            </div>
+            <button class="btn btn-primary" onclick="app.lipSync()">Sync Lips</button>
+            <div id="ls-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-motion-track" class="tab-panel">
+          <div class="panel">
+            <h2>Motion Tracking</h2>
+            <div class="form-group">
+              <label>Upload Video</label>
+              <input type="file" id="mt-file" accept="video/*">
+            </div>
+            <div class="form-group">
+              <label>Initial Bounding Box (optional, JSON)</label>
+              <input type="text" id="mt-bbox" placeholder='{"x": 100, "y": 100, "width": 200, "height": 200}'>
+            </div>
+            <button class="btn btn-primary" onclick="app.trackMotion()">Track Motion</button>
+            <div id="mt-result" class="result-area"></div>
+          </div>
+        </section>
+        <section id="tab-interpolate" class="tab-panel">
+          <div class="panel">
+            <h2>Frame Interpolation</h2>
+            <div class="form-group">
+              <label>Upload Video</label>
+              <input type="file" id="int-file" accept="video/*">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Multiplier</label>
+                <input type="number" id="int-mult" value="2" min="2" max="16">
+              </div>
+              <div class="form-group">
+                <label>Method</label>
+                <select id="int-method">
+                  <option value="flow">Optical Flow</option>
+                  <option value="blend">Blend</option>
+                  <option value="linear">Linear</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="app.interpolate()">Interpolate</button>
+            <div id="int-result" class="result-area"></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <script src="js/app.js"></script>
+  <script src="js/video.js"></script>
+</body>
+</html>

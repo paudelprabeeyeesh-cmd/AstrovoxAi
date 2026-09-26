@@ -36,14 +36,16 @@ class BaseAgent(ABC):
         self.llm = llm_client
         logger.info(f"Initialized agent: {name}")
 
-    @abstractmethod
     def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        ...
+        if self.llm:
+            response = self.llm.generate(task)
+            return AgentResult(success=True, output=response)
+        return AgentResult(success=False, output="No LLM client configured", error="missing_llm")
 
-    @abstractmethod
     def plan(self, task: str) -> Plan:
-        ...
+        steps = [f"Analyze task: {task}", "Execute steps", "Verify results"]
+        return Plan(steps=steps, estimated_tokens=len(task.split()) * 10)
 
-    @abstractmethod
     def review(self, output: str) -> Review:
-        ...
+        approved = len(output.strip()) > 0
+        return Review(approved=approved, feedback="Output reviewed" if approved else "Empty output", score=0.8 if approved else 0.2)

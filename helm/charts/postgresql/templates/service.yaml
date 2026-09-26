@@ -1,0 +1,18 @@
+{{- if eq .Values.architecture "standalone" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: tcp-postgresql
+      protocol: TCP
+      name: tcp-postgresql
+  selector:
+    {{- include "postgresql.selectorLabels" . | nindent 4 }}
+{{- end }}

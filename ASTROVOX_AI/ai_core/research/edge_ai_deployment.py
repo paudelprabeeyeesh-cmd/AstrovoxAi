@@ -28,8 +28,8 @@ class EdgeAIDeployment:
             import torch_xla
             import torch_xla.core.xla_model as xm
             self.optimized_model = self.optimized_model.to(xm.xla_device())
-        except ImportError:
-            pass
+            except ImportError:
+                logger.warning("torch_xla not installed; TPU optimization skipped")
 
     def quantize_aware_training(self) -> nn.Module:
         self.model.qconfig = torch.quantization.get_default_qat_qconfig('fbgemm')

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Search — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    (function() {
+      try {
+        const stored = localStorage.getItem('api_base');
+        if (stored) {
+          window.__API_BASE__ = stored;
+          return;
+        }
+      } catch {}
+      const host = window.location.host;
+      if (host && host !== 'localhost:8000') {
+        window.__API_BASE__ = 'http://' + host;
+      } else {
+        window.__API_BASE__ = 'http://localhost:8000';
+      }
+    })();
+  </script>
+  <style>
+    .search-page { display: flex; flex-direction: column; height: 100vh; }
+    .search-navbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1.5rem; background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .search-layout { display: flex; flex: 1; overflow: hidden; }
+    .search-sidebar {
+      width: 260px; background: var(--bg-secondary); border-right: 1px solid var(--border);
+      padding: 1rem; overflow-y: auto; flex-shrink: 0;
+    }
+    .search-sidebar h3 { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.75rem; letter-spacing: 0.05em; }
+    .search-sidebar label { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; cursor: pointer; font-size: 0.875rem; color: var(--text-secondary); }
+    .search-sidebar label input { accent-color: var(--accent); }
+    .search-main { flex: 1; overflow-y: auto; padding: 1.5rem; }
+    .search-header { margin-bottom: 1.5rem; }
+    .search-header h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .search-header p { color: var(--text-muted); font-size: 0.875rem; }
+    .search-input-wrapper {
+      display: flex; gap: 0.5rem; background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 0.75rem; padding: 0.5rem; margin-bottom: 1rem;
+    }
+    .search-input-wrapper input { flex: 1; background: transparent; border: none; color: var(--text-primary); padding: 0.5rem; font-size: 1rem; outline: none; }
+    .search-input-wrapper input::placeholder { color: var(--text-muted); }
+    .search-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .search-filter-chip {
+      padding: 0.35rem 0.75rem; border-radius: 9999px; border: 1px solid var(--border);
+      background: var(--bg-secondary); color: var(--text-secondary); cursor: pointer; font-size: 0.8rem; transition: all 0.2s;
+    }
+    .search-filter-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .search-results { display: flex; flex-direction: column; gap: 0.75rem; }
+    .search-result-card {
+      background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 0.75rem;
+      padding: 1rem; transition: border-color 0.2s;
+    }
+    .search-result-card:hover { border-color: var(--accent); }
+    .search-result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+    .search-result-title { font-weight: 600; color: var(--accent); text-decoration: none; font-size: 0.95rem; }
+    .search-result-title:hover { text-decoration: underline; }
+    .search-result-source { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .search-result-badge {
+      display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.15rem 0.5rem;
+      border-radius: 9999px; font-size: 0.7rem; font-weight: 600;
+    }
+    .badge-verified { background: rgba(34,197,94,0.15); color: var(--success); }
+    .badge-unverified { background: rgba(100,116,139,0.15); color: var(--text-muted); }
+    .search-result-desc { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.5; margin-bottom: 0.5rem; }
+    .search-result-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+    .search-result-meta span { font-size: 0.75rem; color: var(--text-muted); }
+    .search-citation {
+      background: var(--bg-tertiary); border-left: 3px solid var(--accent); padding: 0.5rem 0.75rem;
+      border-radius: 0 0.5rem 0.5rem 0; font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;
+      font-style: italic;
+    }
+    .search-empty { text-align: center; padding: 3rem; color: var(--text-muted); }
+    .search-loading { display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 2rem; color: var(--text-muted); }
+    .spinner { width: 1.25rem; height: 1.25rem; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .search-stats { display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.8rem; color: var(--text-muted); }
+    .search-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+    .search-tab { padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; color: var(--text-secondary); font-size: 0.875rem; }
+    .search-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="search-page">
+      <div class="search-navbar">
+        <a href="/dashboard.html" class="navbar-brand">
+          <div class="logo">A</div>
+          <span>AstrovoxAI</span>
+        </a>
+        <nav class="navbar-nav">
+          <a href="/chat.html" class="nav-link">Chat</a>
+          <a href="/dashboard.html" class="nav-link">Dashboard</a>
+          <a href="/search.html" class="nav-link active">Search</a>
+          <div class="nav-user">
+            <span style="font-size: 0.875rem; color: var(--text-secondary);" id="user-email">User</span>
+            <button class="btn btn-sm btn-secondary" id="logout-btn">Logout</button>
+          </div>
+        </nav>
+      </div>
+      <div class="search-layout">
+        <aside class="search-sidebar">
+          <h3>Sources</h3>
+          <label><input type="checkbox" id="src-internal" checked> Internal Documents</label>
+          <label><input type="checkbox" id="src-web" checked> Web</label>
+          <label><input type="checkbox" id="src-images"> Images</label>
+          <label><input type="checkbox" id="src-videos"> Videos</label>
+          <label><input type="checkbox" id="src-news"> News</label>
+          <label><input type="checkbox" id="src-academic"> Academic</label>
+          <h3 style="margin-top: 1rem;">Options</h3>
+          <label><input type="checkbox" id="opt-rerank" checked> Rerank results</label>
+          <label><input type="checkbox" id="opt-citations" checked> Generate citations</label>
+          <label><input type="checkbox" id="opt-verify" checked> Verify sources</label>
+        </aside>
+        <main class="search-main">
+          <div class="search-header">
+            <h1>Advanced Search</h1>
+            <p>Hybrid BM25 + dense retrieval across internal documents, web, images, videos, news, and academic sources.</p>
+          </div>
+          <div class="search-input-wrapper">
+            <input type="text" id="search-input" placeholder="Search across documents, web, images, videos..." autocomplete="off" />
+            <button class="btn btn-primary" id="search-btn">Search</button>
+          </div>
+          <div class="search-stats" id="search-stats"></div>
+          <div class="search-tabs" id="search-tabs">
+            <div class="search-tab active" data-tab="all">All</div>
+            <div class="search-tab" data-tab="internal">Documents</div>
+            <div class="search-tab" data-tab="web">Web</div>
+            <div class="search-tab" data-tab="images">Images</div>
+            <div class="search-tab" data-tab="videos">Videos</div>
+            <div class="search-tab" data-tab="news">News</div>
+            <div class="search-tab" data-tab="academic">Academic</div>
+          </div>
+          <div class="search-results" id="search-results"></div>
+        </main>
+      </div>
+    </div>
+  </div>
+  <script src="js/app.js"></script>
+  <script src="js/search.js"></script>
+</body>
+</html>

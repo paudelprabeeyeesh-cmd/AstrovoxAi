@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cdn
+  labels:
+    app: cdn
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-config
+  namespace: cdn
+data:
+  CLOUDFLARE_ZONE_ID: "your-cloudflare-zone-id"
+  CLOUDFLARE_ACCOUNT_ID: "your-cloudflare-account-id"
+  CLOUDFLARE_API_TOKEN: ""
+  CACHE_TTL: "86400"
+  BROWSER_CACHE_TTL: "31536000"
+  EDGE_CACHE_TTL: "3600"
+  BYPASS_COOKIE: "session,auth_token"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdn-cache-rules
+  namespace: cdn
+data:
+  static-assets.json: |
+    {
+      "rules": [
+        {
+          "id": "1",
+          "action": "cache",
+          "expression": "(http.request.uri.path matches \"^/static/(.*)\\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|xml)$\")",
+          "cache": {
+            "edge_ttl": {"mode": "override", "default": 31536000},
+            "browser_ttl": {"mode": "override", "default": 31536000}
+          }
+        },
+        {
+          "id": "2",
+          "action": "cache",
+          "expression": "(http.request.uri.path starts_with \"/storage/uploads/\")",
+          "cache": {
+            "edge_ttl": {"mode": "override", "default": 86400},
+            "browser_ttl": {"mode": "override", "default": 3600}
+          }
+        },
+        {
+          "id": "3",
+          "action": "bypass",
+          "expression": "(http.request.cookie contains \"session\" or http.request.cookie contains \"auth_token\")",
+          "cache": {"bypass": true}
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-secret
+  namespace: cdn
+type: Opaque
+stringData:
+  CLOUDFLARE_API_TOKEN: "your-cloudflare-api-token"
+  CLOUDFLARE_ZONE_ID: "your-cloudflare-zone-id"
+  CLOUDFLARE_ACCOUNT_ID: "your-cloudflare-account-id"

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  namespace: astrovox
+spec:
+  serviceName: postgres
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgres-replica
+  template:
+    metadata:
+      labels:
+        app: postgres-replica
+    spec:
+      initContainers:
+      - name: init-config
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          cat > /tmp/postgresql.conf <<EOF
+          hot_standby = on
+          wal_level = replica
+          max_wal_senders = 10
+          wal_keep_size = 1GB
+          hot_standby_feedback = on
+          random_page_cost = 1.1
+          effective_cache_size = 2GB
+          shared_buffers = 512MB
+          work_mem = 64MB
+          maintenance_work_mem = 128MB
+          EOF
+        volumeMounts:
+        - name: postgres-config
+          mountPath: /tmp
+      containers:
+      - name: postgres
+        image: pgvector/pgvector:pg16
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: astrovox
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: astrovox-secrets
+              key: POSTGRES_PASSWORD
+        - name: POSTGRES_DB
+          value: astrovox
+        - name: PGUSER
+          value: astrovox
+        command:
+        - bash
+        - -c
+        - |
+          until pg_basebackup -h postgres-0.postgres.astrovox.svc.cluster.local -D /var/lib/postgresql/data -U astrovox -Fp -Xs -P -R; do
+            echo "Waiting for primary to be ready..."
+            sleep 5
+          done
+          exec postgres -c config_file=/tmp/postgresql.conf
+        volumeMounts:
+        - name: postgres-config
+          mountPath: /tmp
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-config
+        emptyDir: {}
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: astrovox
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres-replica

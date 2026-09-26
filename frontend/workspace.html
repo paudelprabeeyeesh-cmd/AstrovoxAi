@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/workspace.css">
+</head>
+<body>
+  <div id="app">
+    <nav class="workspace-nav">
+      <div class="nav-brand">
+        <h1>Workspace</h1>
+      </div>
+      <div class="nav-tabs">
+        <button class="tab active" data-tab="overview">Overview</button>
+        <button class="tab" data-tab="chat">Team Chat</button>
+        <button class="tab" data-tab="prompts">Shared Prompts</button>
+        <button class="tab" data-tab="agents">Shared Agents</button>
+        <button class="tab" data-tab="documents">Documents</button>
+        <button class="tab" data-tab="comments">Comments</button>
+        <button class="tab" data-tab="history">Version History</button>
+      </div>
+      <div class="nav-actions">
+        <span id="user-info"></span>
+      </div>
+    </nav>
+
+    <main class="workspace-main">
+      <section id="tab-overview" class="tab-panel active">
+        <div class="panel-header">
+          <h2>Workspace Overview</h2>
+          <button id="create-project-btn" class="btn btn-primary">New Project</button>
+        </div>
+        <div class="overview-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="stat-projects">0</div>
+            <div class="stat-label">Projects</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-tasks">0</div>
+            <div class="stat-label">Open Tasks</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-notes">0</div>
+            <div class="stat-label">Notes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="stat-members">0</div>
+            <div class="stat-label">Members</div>
+          </div>
+        </div>
+        <div class="activity-section">
+          <h3>Recent Activity</h3>
+          <ul id="activity-list" class="activity-list"></ul>
+        </div>
+      </section>
+
+      <section id="tab-chat" class="tab-panel">
+        <div class="chat-layout">
+          <div class="chat-sidebar">
+            <div class="sidebar-header">
+              <h3>Channels</h3>
+              <button id="create-channel-btn" class="btn btn-small">+</button>
+            </div>
+            <ul id="channel-list" class="channel-list"></ul>
+          </div>
+          <div class="chat-main">
+            <div class="chat-header" id="chat-header">Select a channel</div>
+            <div id="chat-messages" class="chat-messages"></div>
+            <div class="chat-input-bar">
+              <input type="text" id="chat-input" placeholder="Type a message..." disabled>
+              <button id="chat-send" class="btn btn-primary" disabled>Send</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-prompts" class="tab-panel">
+        <div class="panel-header">
+          <h2>Shared Prompts</h2>
+          <button id="create-prompt-btn" class="btn btn-primary">New Prompt</button>
+        </div>
+        <div id="prompts-list" class="list-grid"></div>
+      </section>
+
+      <section id="tab-agents" class="tab-panel">
+        <div class="panel-header">
+          <h2>Shared Agents</h2>
+          <button id="create-agent-btn" class="btn btn-primary">New Agent</button>
+        </div>
+        <div id="agents-list" class="list-grid"></div>
+      </section>
+
+      <section id="tab-documents" class="tab-panel">
+        <div class="panel-header">
+          <h2>Shared Documents</h2>
+          <button id="create-document-btn" class="btn btn-primary">New Document</button>
+        </div>
+        <div id="documents-list" class="list-grid"></div>
+      </section>
+
+      <section id="tab-comments" class="tab-panel">
+        <div class="panel-header">
+          <h2>Comments</h2>
+        </div>
+        <div class="comments-layout">
+          <div class="comments-sidebar">
+            <label>Resource Type</label>
+            <select id="comment-resource-type">
+              <option value="document">Document</option>
+              <option value="note">Note</option>
+              <option value="task">Task</option>
+              <option value="prompt">Prompt</option>
+            </select>
+            <label>Resource ID</label>
+            <input type="text" id="comment-resource-id" placeholder="Resource ID">
+            <button id="load-comments-btn" class="btn btn-secondary">Load Comments</button>
+          </div>
+          <div class="comments-main">
+            <div id="comments-list" class="comments-list"></div>
+            <div class="comment-input-bar">
+              <input type="text" id="comment-input" placeholder="Write a comment... @mention">
+              <button id="comment-submit" class="btn btn-primary">Comment</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-history" class="tab-panel">
+        <div class="panel-header">
+          <h2>Version History</h2>
+        </div>
+        <div class="history-controls">
+          <label>Resource Type</label>
+          <select id="history-resource-type">
+            <option value="document">Document</option>
+            <option value="prompt">Prompt</option>
+            <option value="agent">Agent</option>
+          </select>
+          <label>Resource ID</label>
+          <input type="text" id="history-resource-id" placeholder="Resource ID">
+          <button id="load-history-btn" class="btn btn-secondary">Load History</button>
+        </div>
+        <ul id="history-list" class="history-list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/workspace.js"></script>
+</body>
+</html>

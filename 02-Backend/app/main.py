@@ -77,6 +77,22 @@ from app.routers.agi_router import router as agi_router
 
 load_dotenv()
 
+
+class _LLMClientStub:
+    def call_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+
+    async def stream_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+        if False:
+            yield
+
+
+llm_client = _LLMClientStub()
+
+llm_client = LLMClient()
+context_builder = ContextBuilder(llm_client=llm_client)
+
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(
@@ -180,11 +196,18 @@ app.include_router(cx_router)
 app.include_router(observability_router)
 app.include_router(search_knowledge_router)
 app.include_router(omniscient_router)
+app.include_router(images_router)
 app.include_router(quantum_router)
+app.include_router(audio_router)
 app.include_router(neural_bci_router)
+app.include_router(team_chat_router)
+app.include_router(collaboration_router)
 app.include_router(multiverse_router)
 app.include_router(omnipresent_router)
 app.include_router(agi_router)
+app.include_router(search_router)
+app.include_router(core_assistant_router)
+app.include_router(video_router)
 
 
 # Prometheus metrics middleware
@@ -232,6 +255,28 @@ async def readiness():
 
     overall = "ready" if all(v == "healthy" for v in checks.values()) else "not_ready"
     return {"status": overall, "checks": checks}
+
+
+@app.websocket("/realtime/collaboration/{resource_type}/{resource_id}")
+async def collaboration_ws_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+
+
+@app.websocket("/realtime/collaboration/ws/{resource_type}/{resource_id}")
+async def collaboration_ws_alt_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
 
 
 if __name__ == "__main__":

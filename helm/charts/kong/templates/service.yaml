@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kong.fullname" . }}-proxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kong.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.proxy.type }}
+  ports:
+    - name: proxy
+      port: {{ .Values.proxy.http.servicePort }}
+      targetPort: proxy
+      protocol: TCP
+    - name: proxy-tls
+      port: {{ .Values.proxy.https.servicePort }}
+      targetPort: proxy-tls
+      protocol: TCP
+  selector:
+    {{- include "kong.selectorLabels" . | nindent 4 }}
+  {{- with .Values.proxy.serviceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kong.fullname" . }}-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kong.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.admin.type }}
+  ports:
+    - name: admin
+      port: {{ .Values.admin.http.servicePort }}
+      targetPort: admin
+      protocol: TCP
+  selector:
+    {{- include "kong.selectorLabels" . | nindent 4 }}

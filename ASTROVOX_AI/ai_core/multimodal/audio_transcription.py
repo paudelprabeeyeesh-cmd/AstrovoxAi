@@ -13,7 +13,7 @@ class AudioTranscriber:
                 import whisper
                 self.model = whisper.load_model('base', device=device)
             except ImportError:
-                pass
+                logger.warning("whisper not installed, audio transcription unavailable")
 
     def transcribe(self, audio_path: str, language: Optional[str] = None) -> Dict[str, Any]:
         if self.model is None:

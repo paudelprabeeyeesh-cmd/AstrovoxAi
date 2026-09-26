@@ -1,0 +1,68 @@
+{{- if eq .Values.architecture "standalone" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "redis.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "redis.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.replica.replicaCount }}
+  replicas: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "redis.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "redis.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - redis-server
+            - /etc/redis/redis.conf
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "redis.fullname" . }}
+                  key: {{ if .Values.auth.enabled }}auth-password{{ else }}sentinel-password{{ end }}
+          volumeMounts:
+            - name: redis-config
+              mountPath: /etc/redis
+              readOnly: true
+            - name: redis-data
+              mountPath: /data
+          resources:
+            {{- toYaml .Values.master.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.master.containerSecurityContext | nindent 12 }}
+      {{- with .Values.master.extraFlags }}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: redis-config
+          configMap:
+            name: {{ include "redis.fullname" . }}
+        - name: redis-data
+          {{- if .Values.master.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "redis.fullname" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

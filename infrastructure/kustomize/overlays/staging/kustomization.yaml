@@ -1,0 +1,20 @@
+resources:
+  - ../../base
+
+namePrefix: staging-
+namespace: astrovox-staging
+
+commonLabels:
+  environment: staging
+
+patches:
+  - target:
+      kind: Deployment
+      name: astrovox-backend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 2
+      - op: replace
+        path: /spec/template/spec/containers/0/image
+        value: ghcr.io/astrovoxai/backend:staging

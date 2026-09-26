@@ -1,0 +1,59 @@
+{{- if eq .Values.architecture "standalone" }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "postgresql.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  serviceName: {{ include "postgresql.fullname" . }}
+  selector:
+    matchLabels:
+      {{- include "postgresql.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "postgresql.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.primary.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: tcp-postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.auth.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "postgresql.fullname" . }}
+                  key: postgres-password
+            - name: POSTGRES_DB
+              value: {{ .Values.auth.database | quote }}
+          volumeMounts:
+            - name: data
+              mountPath: /bitnami/postgresql
+          resources:
+            {{- toYaml .Values.primary.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.primary.containerSecurityContext | nindent 12 }}
+      volumes:
+        - name: data
+          {{- if .Values.primary.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "postgresql.fullname" . }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+{{- end }}

@@ -14,7 +14,7 @@ class VideoCaptionExtractor:
                 self.processor = BlipProcessor.from_pretrained('Salesforce/blip-image-captioning-base')
                 self.model = BlipForConditionalGeneration.from_pretrained('Salesforce/blip-image-captioning-base')
             except ImportError:
-                pass
+                logger.warning("transformers not installed, video captioning unavailable")
 
     def extract_frames(self, video_path: str) -> List[np.ndarray]:
         cap = cv2.VideoCapture(video_path)

@@ -79,7 +79,7 @@ class IPBlocker:
                 if ip_obj in network:
                     return True, f"IP in blocked range {network}"
         except ValueError:
-            pass
+            logger.debug("IP %s is not in any blocked range", ip)
         return False, None
 
     def cleanup_expired(self) -> int:

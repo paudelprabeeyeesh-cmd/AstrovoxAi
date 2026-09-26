@@ -1,10 +1,12 @@
 stages:
   - test
   - build
+  - security
   - deploy
 
 variables:
   DOCKER_TLS_CERTDIR: "/certs"
+  IMAGE_TAG: $CI_COMMIT_SHA
 
 test:
   stage: test
@@ -12,8 +14,13 @@ test:
   script:
     - cd 02-Backend
     - pip install -r requirements.txt
-    - pytest tests/ -v
+    - pytest tests/ -v --cov=app --cov-report=xml
     - ruff check app/
+    - mypy app/
+  cache:
+    paths:
+      - .pytest_cache/
+      - .ruff_cache/
 
 build:
   stage: build
@@ -23,14 +30,28 @@ build:
   script:
     - docker build -t astrovox:$CI_COMMIT_SHA -f Dockerfile .
     - docker tag astrovox:$CI_COMMIT_SHA registry.example.com/astrovox:$CI_COMMIT_SHA
+    - docker push registry.example.com/astrovox:$CI_COMMIT_SHA
   only:
     - main
+    - develop
+
+security:
+  stage: security
+  image: python:3.11
+  script:
+    - pip install bandit pip-audit
+    - bandit -r 02-Backend/app -f json -o bandit-report.json || true
+    - pip-audit --requirement 02-Backend/requirements.txt || true
+  allow_failure: true
 
 deploy:
   stage: deploy
   image: bitnami/kubectl:latest
   script:
-    - kubectl apply -f infrastructure/k8s/
-    - kubectl set image deployment/astrovox astrovox=astrovox:$CI_COMMIT_SHA -n astrovox
+    - kubectl apply -f infrastructure/k8s/ -n astrovox
+    - kubectl set image deployment/astrovox-backend backend=astrovox:$CI_COMMIT_SHA -n astrovox
+    - kubectl rollout status deployment/astrovox-backend -n astrovox --timeout=300s
   only:
     - main
+  environment:
+    name: production

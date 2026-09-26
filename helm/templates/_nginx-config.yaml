@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-reverse-proxy-config
+  namespace: astrovox
+data:
+  nginx.conf: |
+    worker_processes auto;
+    error_log /var/log/nginx/error.log warn;
+    pid /var/run/nginx.pid;
+
+    events {
+      worker_connections 1024;
+    }
+
+    http {
+      log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+      access_log /var/log/nginx/access.log main;
+
+      sendfile on;
+      tcp_nopush on;
+      tcp_nodelay on;
+      keepalive_timeout 65;
+      types_hash_max_size 2048;
+      include /etc/nginx/mime.types;
+      default_type application/octet-stream;
+
+      gzip on;
+      gzip_vary on;
+      gzip_min_length 1024;
+      gzip_types text/plain text/css text/xml text/javascript application/javascript application/xml+rss application/json application/xml image/svg+xml;
+
+      limit_req_zone $binary_remote_addr zone=api:10m rate=120r/m;
+      limit_req_zone $binary_remote_addr zone=ws:10m rate=30r/m;
+
+      upstream backend {
+        server astrovox-service:8000 max_fails=3 fail_timeout=30s;
+        keepalive 32;
+      }
+
+      upstream minio {
+        server minio.minio.svc.cluster.local:9000 max_fails=3 fail_timeout=30s;
+      }
+
+      server {
+        listen 80;
+        server_name astrovox.ai www.astrovox.ai;
+        return 301 https://$host$request_uri;
+      }
+
+      server {
+        listen 443 ssl http2;
+        server_name astrovox.ai www.astrovox.ai;
+
+        ssl_certificate /etc/ssl/certs/astrovox-tls.crt;
+        ssl_certificate_key /etc/ssl/private/astrovox-tls.key;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+
+        client_max_body_size 50m;
+
+        add_header X-Content-Type-Options nosniff;
+        add_header X-Frame-Options DENY;
+        add_header X-XSS-Protection "1; mode=block";
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+        location / {
+          limit_req zone=api burst=20 nodelay;
+          proxy_pass http://backend;
+          proxy_http_version 1.1;
+          proxy_set_header Connection "";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_connect_timeout 60s;
+          proxy_send_timeout 60s;
+          proxy_read_timeout 60s;
+        }
+
+        location /health {
+          limit_req zone=api burst=10 nodelay;
+          proxy_pass http://backend/health;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+        }
+
+        location /ws {
+          limit_req zone=ws burst=10 nodelay;
+          proxy_pass http://backend;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection "upgrade";
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          proxy_connect_timeout 7d;
+          proxy_send_timeout 7d;
+          proxy_read_timeout 7d;
+        }
+
+        location /static/ {
+          limit_req zone=api burst=50 nodelay;
+          proxy_pass http://minio/static/;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          expires 1y;
+          add_header Cache-Control "public, immutable";
+        }
+
+        location /storage/ {
+          limit_req zone=api burst=20 nodelay;
+          proxy_pass http://minio/;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          add_header Cache-Control "no-cache";
+        }
+      }
+    }

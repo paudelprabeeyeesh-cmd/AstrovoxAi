@@ -117,8 +117,27 @@ class SearchEngine:
     def _score_embedding(self, query: str, embedding) -> float:
         if not embedding:
             return 0.0
-        query_hash = hash(query) % 1000 / 1000.0
-        return query_hash
+        try:
+            import json
+            import math
+            emb = json.loads(embedding) if isinstance(embedding, str) else embedding
+            q_emb = self._embed_query(query)
+            dot = sum(a * b for a, b in zip(q_emb, emb))
+            norm_q = math.sqrt(sum(v * v for v in q_emb))
+            norm_e = math.sqrt(sum(v * v for v in emb))
+            if norm_q == 0 or norm_e == 0:
+                return 0.0
+            return dot / (norm_q * norm_e)
+        except Exception:
+            return 0.0
+
+    def _embed_query(self, query: str) -> list:
+        try:
+            from app.rag_engine import RAGEngine
+            engine = RAGEngine()
+            return engine.embed_chunks([query])[0]
+        except Exception:
+            return [0.0] * 1536
 
     def _keyword_score(self, query: str, content: str) -> float:
         content_lower = content.lower()

@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgres
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "astrovoxai.fullname" . }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: postgres
+        {{- include "astrovoxai.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: postgres
+        image: "{{ .Values.image.registry }}/pgvector/pgvector:pg16"
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.postgres.username | quote }}
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "astrovoxai.fullname" . }}
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: {{ .Values.postgres.database | quote }}
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ .Values.postgres.username | quote }}]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ .Values.postgres.username | quote }}]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-data
+      labels:
+        {{- include "astrovoxai.labels" . | nindent 8 }}
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.postgres.storage }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgres
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+  selector:
+    app: postgres
+    {{- include "astrovoxai.selectorLabels" . | nindent 4 }}

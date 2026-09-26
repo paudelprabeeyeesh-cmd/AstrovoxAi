@@ -1,0 +1,72 @@
+# Default values for redis.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+architecture: standalone
+
+auth:
+  enabled: true
+  sentinel: true
+  sentinelPassword: ""
+  password: "astrovox_pass"
+
+master:
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+replica:
+  replicaCount: 1
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  persistence:
+    enabled: true
+    size: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+sentinel:
+  enabled: true
+  quorum: 2
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+
+commonConfiguration: |-
+  maxmemory 1gb
+  maxmemory-policy allkeys-lru
+
+service:
+  type: ClusterIP
+  port: 6379
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s

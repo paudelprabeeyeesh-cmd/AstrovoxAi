@@ -29,7 +29,9 @@ class FlashAttention2(nn.Module):
                 out = flash_attn_func(q, k, v, dropout_p=self.dropout.p, causal=True)
                 return self.out_proj(out.view(B, T, C))
             except ImportError:
-                pass
+                logger.warning("flash_attn not installed, falling back to SDPA")
+                attn = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=self.dropout.p if self.training else 0.0)
+                return self.out_proj(attn.transpose(1, 2).contiguous().view(B, T, C))
         attn = (q @ k.transpose(-2, -1)) * self.scale
         if mask is not None:
             attn = attn.masked_fill(mask == 0, float('-inf'))

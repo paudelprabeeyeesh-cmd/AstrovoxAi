@@ -29,6 +29,8 @@ class DatabaseEngine:
                 pool_size=self._config.database.pool_size,
                 max_overflow=self._config.database.max_overflow,
                 echo=self._config.database.echo,
+                pool_pre_ping=True,
+                pool_recycle=3600,
             )
             self._session_factory = sessionmaker(bind=self._engine)
             logger.info("Connected to database")
@@ -52,6 +54,22 @@ class DatabaseEngine:
             return True
         except Exception:
             return False
+
+    def get_replica_session(self) -> Session:
+        """Get a session connected to a read replica."""
+        if not hasattr(self._config, 'database_replica_url') or not self._config.database_replica_url:
+            return self.get_session()
+        try:
+            replica_engine = create_engine(
+                self._config.database_replica_url,
+                pool_size=5,
+                max_overflow=10,
+                pool_pre_ping=True,
+            )
+            return sessionmaker(bind=replica_engine)()
+        except Exception as exc:
+            logger.warning(f"Replica connection failed, using primary: {exc}")
+            return self.get_session()
 
 
 _db: Optional[DatabaseEngine] = None

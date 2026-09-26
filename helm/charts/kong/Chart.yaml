@@ -1,0 +1,14 @@
+apiVersion: v2
+name: astrovox-kong
+description: Kong API Gateway subchart for AstrovoxAI
+type: application
+version: 0.1.0
+appVersion: "3.5"
+keywords:
+  - kong
+  - api-gateway
+  - ingress
+  - astrovoxai
+maintainers:
+  - name: AstrovoxAi Team
+    email: dev@astrovoxai.com

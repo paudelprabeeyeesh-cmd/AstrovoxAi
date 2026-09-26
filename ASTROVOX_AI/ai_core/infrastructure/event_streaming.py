@@ -42,7 +42,7 @@ class EventStreaming:
                     try:
                         handler(msg.get('payload', {}))
                     except Exception:
-                        pass
+                        logger.warning("event handler failed", exc_info=True)
 
     def stop(self) -> None:
         self.running = False

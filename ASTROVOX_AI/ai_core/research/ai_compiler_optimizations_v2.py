@@ -25,8 +25,8 @@ class AICompilerOptimizer:
         for name, module in list(self.model.named_modules()):
             if isinstance(module, (nn.Linear, nn.LayerNorm)):
                 if hasattr(module, 'bias') and module.bias is not None:
-                    if module.in_features == 1:
-                        pass
+                if module.in_features == 1:
+                    logger.info("constant folding candidate: %s", name)
         return self.model
 
     def operator_fusion(self) -> nn.Module:

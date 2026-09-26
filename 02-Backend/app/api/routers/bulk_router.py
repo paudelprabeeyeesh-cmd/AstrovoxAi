@@ -69,7 +69,7 @@ def _get_engine() -> Any:
         from app.database_engine import connection_pool
         return connection_pool
     except Exception:
-        pass
+        logger.warning("_get_engine fallback failed", exc_info=True)
     try:
         from app.database import get_db
         return get_db()

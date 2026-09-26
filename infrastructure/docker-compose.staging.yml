@@ -1,40 +1,56 @@
-"""Docker Compose staging configuration."""
-
 version: "3.8"
 
 services:
   backend:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile.backend
-      target: staging
+      target: production
     ports:
       - "8000:8000"
     environment:
-      - APP_ENV=staging
-      - DATABASE_URL=postgresql://astrovox:astrovox_pass@postgres:5432/astrovox_staging
-      - REDIS_URL=redis://redis:6379/0
+      - APP_ENV=production
+      - DATABASE_URL=postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+      - DATABASE_REPLICA_URL=postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+      - REDIS_URL=redis://redis:6379
+      - REDIS_SENTINEL_URL=redis://redis-sentinel:26379
+      - RABBITMQ_URL=amqp://astrovox:astrovox_pass@rabbitmq:5672
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_BUCKET=astrovox-storage
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - API_GATEWAY_URL=http://kong:8000
+      - CDN_BASE_URL=https://cdn.astrovox.ai
     volumes:
-      - ../app:/app/app
+      - ./storage:/app/storage
+      - ./logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
     deploy:
-      replicas: 1
+      replicas: 3
       resources:
         limits:
-          cpus: "1.0"
-          memory: 1G
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
 
   postgres:
     image: pgvector/pgvector:pg16
     environment:
       - POSTGRES_USER=astrovox
       - POSTGRES_PASSWORD=astrovox_pass
-      - POSTGRES_DB=astrovox_staging
+      - POSTGRES_DB=astrovox
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -42,10 +58,39 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
+
+  postgres-replica:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=astrovox
+      - POSTGRES_PASSWORD=astrovox_pass
+      - POSTGRES_DB=astrovox
+      - PGUSER=astrovox
+    command: >
+      bash -c "
+        until pg_basebackup -h postgres -U astrovox -D /var/lib/postgresql/data -Fp -Xs -P -R;
+        do
+          echo 'Waiting for primary...';
+          sleep 5;
+        done;
+        exec postgres -c config_file=/etc/postgresql/postgresql.conf
+      "
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astrovox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
 
   redis:
     image: redis:7-alpine
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru --appendonly yes
     volumes:
       - redis_data:/data
     healthcheck:
@@ -53,8 +98,51 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  kong:
+    image: kong:3.5
+    environment:
+      - KONG_DATABASE=off
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PROXY_LISTEN=0.0.0.0:8000
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    restart: always
 
 volumes:
   postgres_data:
+  postgres_replica_data:
   redis_data:
+  minio_data:

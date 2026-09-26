@@ -120,7 +120,9 @@ def profile_code(code: str) -> Dict[str, Any]:
     try:
         exec(compile(ast.parse(code), '<profile>', 'exec'), {'__name__': '__main__'})
     except Exception:
-        pass
+        elapsed = (time.perf_counter() - start) * 1000
+        tb = traceback.format_exc()
+        logger.warning("profiling failed: %s", tb)
     pr.disable()
     buf = _io.StringIO()
     ps = pstats.Stats(pr, stream=buf).sort_stats('cumulative')

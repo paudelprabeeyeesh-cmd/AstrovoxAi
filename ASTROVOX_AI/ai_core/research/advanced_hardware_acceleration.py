@@ -62,7 +62,7 @@ class FPGAAcceleration:
             from pynq import Overlay
             self.available = True
         except ImportError:
-            pass
+            logger.warning("pynq not installed; FPGA acceleration unavailable")
 
     def load_bitstream(self, bitstream_path: str) -> None:
         if not self.available:
@@ -71,7 +71,7 @@ class FPGAAcceleration:
             from pynq import Overlay
             self.overlay = Overlay(bitstream_path)
         except ImportError:
-            pass
+            logger.warning("pynq not installed; FPGA bitstream load skipped")
 
     def run_inference(self, input_data: torch.Tensor) -> torch.Tensor:
         if not self.available or self.overlay is None:

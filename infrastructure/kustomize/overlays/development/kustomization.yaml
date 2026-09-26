@@ -1,0 +1,23 @@
+resources:
+  - ../../base
+
+namePrefix: dev-
+namespace: astrovox-dev
+
+commonLabels:
+  environment: development
+
+patches:
+  - target:
+      kind: Deployment
+      name: astrovox-backend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "500m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "512Mi"

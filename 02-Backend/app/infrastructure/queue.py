@@ -1,97 +1,118 @@
-"""Task queue with Redis/Celery support."""
+"""Message queue infrastructure with RabbitMQ support."""
 
 from __future__ import annotations
 
 import json
 import logging
 import uuid
+from typing import Any, Callable, Dict, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from typing import Any, Callable, Dict, Optional
+
+import pika
+from pika.connection import Connection
+from pika.channel import Channel
+
+from app.core.config import get_config
 
 logger = logging.getLogger(__name__)
 
 
-class TaskStatus(str, Enum):
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    CANCELLED = "cancelled"
-
-
 @dataclass
-class Task:
+class Message:
     id: str
-    name: str
+    queue: str
     payload: Dict[str, Any]
-    status: TaskStatus = TaskStatus.PENDING
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
-    result: Optional[Dict[str, Any]] = None
-    error: Optional[str] = None
-    retries: int = 0
-    max_retries: int = 3
+    headers: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
-class TaskQueue:
-    """Simple task queue with Redis backend."""
+class MessageQueue:
+    """RabbitMQ message queue client."""
 
     def __init__(self) -> None:
-        self._tasks: Dict[str, Task] = {}
+        self._config = get_config()
+        self._connection: Optional[Connection] = None
+        self._channel: Optional[Channel] = None
         self._handlers: Dict[str, Callable[[Dict[str, Any]], Any]] = {}
+        self._connect()
 
-    def register_handler(self, task_name: str, handler: Callable[[Dict[str, Any]], Any]) -> None:
-        self._handlers[task_name] = handler
-
-    def enqueue(self, task_name: str, payload: Dict[str, Any]) -> Task:
-        task = Task(
-            id=str(uuid.uuid4()),
-            name=task_name,
-            payload=payload,
-        )
-        self._tasks[task.id] = task
-        logger.info(f"Enqueued task {task.id}: {task_name}")
-        return task
-
-    def execute(self, task_id: str) -> Task:
-        task = self._tasks.get(task_id)
-        if not task:
-            raise KeyError(f"Task not found: {task_id}")
-        handler = self._handlers.get(task.name)
-        if not handler:
-            task.status = TaskStatus.FAILED
-            task.error = f"No handler registered for task: {task.name}"
-            return task
-        task.status = TaskStatus.RUNNING
-        task.started_at = datetime.utcnow().isoformat()
+    def _connect(self) -> None:
         try:
-            result = handler(task.payload)
-            task.status = TaskStatus.COMPLETED
-            task.result = result
-            task.completed_at = datetime.utcnow().isoformat()
+            params = pika.URLParameters(self._config.rabbitmq.url)
+            self._connection = pika.BlockingConnection(params)
+            self._channel = self._connection.channel()
+            logger.info("Connected to RabbitMQ")
         except Exception as exc:
-            task.status = TaskStatus.FAILED
-            task.error = str(exc)
-            task.completed_at = datetime.utcnow().isoformat()
-            logger.error(f"Task {task.id} failed: {exc}")
-        return task
+            logger.error(f"RabbitMQ connection failed: {exc}")
+            raise
 
-    def get_task(self, task_id: str) -> Optional[Task]:
-        return self._tasks.get(task_id)
+    def declare_queue(self, queue_name: str, durable: bool = True) -> None:
+        if self._channel:
+            self._channel.queue_declare(queue=queue_name, durable=durable)
 
-    def cancel(self, task_id: str) -> bool:
-        task = self._tasks.get(task_id)
-        if task and task.status == TaskStatus.PENDING:
-            task.status = TaskStatus.CANCELLED
-            return True
-        return False
+    def publish(self, queue: str, payload: Dict[str, Any], headers: Optional[Dict[str, Any]] = None) -> str:
+        message_id = str(uuid.uuid4())
+        message = Message(
+            id=message_id,
+            queue=queue,
+            payload=payload,
+            headers=headers or {},
+        )
+        if self._channel:
+            self._channel.basic_publish(
+                exchange='',
+                routing_key=queue,
+                body=json.dumps(payload),
+                properties=pika.BasicProperties(
+                    delivery_mode=2,
+                    message_id=message_id,
+                    headers=headers or {},
+                ),
+            )
+        logger.info(f"Published message {message_id} to {queue}")
+        return message_id
+
+    def consume(self, queue: str, handler: Callable[[Dict[str, Any]], Any]) -> None:
+        self._handlers[queue] = handler
+        if self._channel:
+            self._channel.basic_consume(
+                queue=queue,
+                on_message_callback=self._on_message,
+            )
+
+    def _on_message(self, channel: Channel, method, properties, body: bytes) -> None:
+        queue = method.routing_key
+        try:
+            payload = json.loads(body)
+            handler = self._handlers.get(queue)
+            if handler:
+                handler(payload)
+            channel.basic_ack(delivery_tag=method.delivery_tag)
+        except Exception as exc:
+            logger.error(f"Message processing failed: {exc}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+
+    def start_consuming(self) -> None:
+        if self._channel:
+            self._channel.start_consuming()
+
+    def stop_consuming(self) -> None:
+        if self._channel:
+            self._channel.stop_consuming()
+
+    def close(self) -> None:
+        if self._channel:
+            self._channel.close()
+        if self._connection:
+            self._connection.close()
 
 
-_task_queue = TaskQueue()
+_mq: Optional[MessageQueue] = None
 
 
-def get_task_queue() -> TaskQueue:
-    return _task_queue
+def get_message_queue() -> MessageQueue:
+    global _mq
+    if _mq is None:
+        _mq = MessageQueue()
+    return _mq

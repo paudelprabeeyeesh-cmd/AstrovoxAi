@@ -396,6 +396,40 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS audio_outputs (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            text TEXT DEFAULT '',
+            voice TEXT DEFAULT '',
+            output_path TEXT DEFAULT '',
+            filename TEXT DEFAULT '',
+            transcript TEXT DEFAULT '',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS voice_profiles (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            profile_path TEXT NOT NULL,
+            sample_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS speaker_profiles (
+            id TEXT PRIMARY KEY,
+            speaker_id TEXT NOT NULL UNIQUE,
+            user_id TEXT NOT NULL,
+            embedding_path TEXT NOT NULL,
+            metadata TEXT DEFAULT '{}',
+            sample_count INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
     _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
@@ -435,6 +469,11 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     _ensure_index(conn, "help_categories", "idx_help_categories_parent", "parent_id")
     _ensure_index(conn, "support_agents", "idx_support_agents_team", "team")
     _ensure_index(conn, "contextual_help", "idx_contextual_help_page", "page")
+_ensure_index(conn, "audio_outputs", "idx_audio_outputs_user", "user_id")
+_ensure_index(conn, "audio_outputs", "idx_audio_outputs_type", "type")
+_ensure_index(conn, "voice_profiles", "idx_voice_profiles_user", "user_id")
+_ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_user", "user_id")
+_ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_speaker_id", "speaker_id")
 
 
 def init_db() -> None:
