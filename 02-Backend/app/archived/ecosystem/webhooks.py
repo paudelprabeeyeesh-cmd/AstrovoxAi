@@ -15,6 +15,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 
+now = time.time
+
 from .api_platform import (
     DELIVERY_HEADER,
     EVENT_HEADER,

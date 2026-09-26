@@ -6,11 +6,14 @@ import base64
 import hashlib
 import hmac
 import secrets
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
+
+now = time.time
 
 
 class IntegrationProvider(str, Enum):

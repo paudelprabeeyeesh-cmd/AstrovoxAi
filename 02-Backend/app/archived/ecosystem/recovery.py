@@ -6,10 +6,13 @@ import copy
 import hashlib
 import json
 import os
+import time
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+
+now = time.time
 
 
 class OperationStatus(str, Enum):
