@@ -28,6 +28,18 @@ class InputValidationMiddleware(BaseHTTPMiddleware):
         r"INSERT\s+INTO",
         r"DELETE\s+FROM",
         r"UNION\s+SELECT",
+        r"\$where\s*:",
+        r"\$ne\s*:\s*(true|1|\"1\"|'1')",
+        r"\$gt\s*:\s*",
+        r"\$regex\s*:\s*",
+        r"\$or\s*:\s*\[",
+        r"\.{2,}(\/|\\\\)",
+        r"\b(exec|system|passthru|shell_exec|eval)\s*\(",
+        r"(;|\|\||\||&&|`|\$\(|\$\()\s*(cat|ls|whoami|id|uname|nc|curl|wget|python|bash|sh|cmd|powershell)",
+        r"\b(rm\s+-rf|chmod\s+|chown\s+)\b",
+        r"alert\s*\(",
+        r"document\.(cookie|location)",
+        r"window\.location",
     ]
 
     async def dispatch(self, request: Request, call_next):

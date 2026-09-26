@@ -2,4 +2,10 @@
 <resources>
     <string name="app_name">Astrovox AI</string>
     <string name="conversation_title_hint">New conversation</string>
+    <string name="error_generic">Something went wrong. Please try again.</string>
+    <string name="error_no_internet">No internet connection. Messages will sync when you are back online.</string>
+    <string name="notification_channel_messages">Messages</string>
+    <string name="notification_channel_messages_desc">New message notifications</string>
+    <string name="notification_new_message">New message</string>
+    <string name="sync_worker_name">Astrovox Sync Worker</string>
 </resources>

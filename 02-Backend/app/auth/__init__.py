@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -18,7 +18,14 @@ async def require_verified_email(
         auth_header = request.headers.get("authorization", authorization or "")
         if not authorization:
             authorization = auth_header
-    return get_user_id_from_token(authorization)
+    user_id = get_user_id_from_token(authorization)
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user_id
 
 
 async def require_admin(
@@ -29,4 +36,29 @@ async def require_admin(
     return user_id
 
 
-__all__ = ["require_verified_email", "require_admin", "get_current_user"]
+async def get_principal(
+    request: Request,
+) -> Any:
+    authorization = request.headers.get("authorization", "")
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = await get_current_user(request)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+__all__ = [
+    "require_verified_email",
+    "require_admin",
+    "get_current_user",
+    "get_principal",
+]

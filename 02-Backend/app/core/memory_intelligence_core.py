@@ -5,9 +5,10 @@ Memory intelligence with semantic search and importance scoring.
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -33,6 +34,8 @@ class MemoryIntelligence:
         self.memories: Dict[str, MemoryEntry] = {}
         self.max_memories = max_memories
         self.embedding_engine = None
+        self._search_cache: Dict[str, Tuple[List[MemoryEntry], float]] = {}
+        self._SEARCH_TTL = 30.0
 
     def add_memory(self, content: str, embedding: Optional[np.ndarray] = None, metadata: Optional[Dict[str, Any]] = None, importance: float = 0.5) -> str:
         if len(self.memories) >= self.max_memories:
@@ -43,15 +46,23 @@ class MemoryIntelligence:
         return memory_id
 
     def search(self, query_embedding: np.ndarray, top_k: int = 10, min_similarity: float = 0.0) -> List[MemoryEntry]:
+        cache_key = f"{query_embedding.tobytes()}:{top_k}:{min_similarity}"
+        now = time.time()
+        cached = self._search_cache.get(cache_key)
+        if cached and (now - cached[1]) < self._SEARCH_TTL:
+            return list(cached[0])
         results = []
+        query_norm = np.linalg.norm(query_embedding) + 1e-8
         for entry in self.memories.values():
             if entry.embedding is None:
                 continue
-            sim = float(np.dot(query_embedding, entry.embedding) / (np.linalg.norm(query_embedding) * np.linalg.norm(entry.embedding) + 1e-8))
+            sim = float(np.dot(query_embedding, entry.embedding) / (query_norm * (np.linalg.norm(entry.embedding) + 1e-8)))
             if sim >= min_similarity:
                 results.append((sim, entry))
         results.sort(key=lambda x: x[0], reverse=True)
-        return [entry for _, entry in results[:top_k]]
+        result = [entry for _, entry in results[:top_k]]
+        self._search_cache[cache_key] = (result, now)
+        return result
 
     def search_by_text(self, query_text: str, top_k: int = 5) -> List[MemoryEntry]:
         if self.embedding_engine is None:

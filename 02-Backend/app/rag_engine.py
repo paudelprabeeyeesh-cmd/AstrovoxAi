@@ -21,6 +21,9 @@ from typing import Any, List, Optional
 
 import requests
 
+from app.documents import create_document, delete_document_chunks, create_document_chunk, search_chunks
+from app.services.knowledge.knowledge import search_docs
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -122,8 +125,6 @@ class RAGEngine:
         source_type: str,
         filename: Optional[str] = None,
     ) -> str:
-        from app.documents import create_document, delete_document_chunks, create_document_chunk
-
         total_size = sum(len(c) for c in chunks)
         doc = create_document(user_id, filename or source_type, source_type, total_size)
         doc_id = doc["id"]
@@ -225,8 +226,6 @@ class RAGEngine:
         return [{"doc_id": doc_id, "chunks": len(chunks)}]
 
     def search(self, query: str, user_id: str, top_k: int = 5) -> List[dict]:
-        from app.documents import search_chunks
-
         query_embedding = self.embed_chunks([query])[0]
         embedding_bytes = self._serialize_embedding(query_embedding)
         dense_results = search_chunks(user_id, embedding_bytes, top_k * 2)

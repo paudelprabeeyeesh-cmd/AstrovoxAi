@@ -73,10 +73,12 @@ class ContinuousBatch:
         for req in self.active_requests:
             if req.get("id") == request_id:
                 self.active_requests.remove(req)
+                next_id = ""
                 if self.queued_requests:
                     next_req = self.queued_requests.pop(0)
                     self.active_requests.append(next_req)
-                return next_req.get("id", "") if self.queued_requests else ""
+                    next_id = next_req.get("id", "")
+                return next_id
         return ""
 
 

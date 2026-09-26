@@ -955,9 +955,19 @@ class AdvancedAnalyticsEngine:
     # 6. GPU Utilization Analytics
     # ------------------------------------------------------------------
     def get_gpu_analytics(self, days: int = 7) -> dict:
-        cutoff = time.time() - (days * 86400)
-        metrics = [m for m in self._gpu_metrics if m.timestamp >= cutoff]
-        if not metrics:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_iso = cutoff.isoformat()
+        with get_db() as conn:
+            rows = conn.execute(
+                """
+                SELECT device_id, utilization_percent, memory_used_mb, memory_total_mb, temperature_c, created_at
+                FROM gpu_metrics
+                WHERE created_at >= ?
+                ORDER BY created_at ASC
+                """,
+                (cutoff_iso,),
+            ).fetchall()
+        if not rows:
             return {
                 "period_days": days,
                 "gpu_available": False,
@@ -971,23 +981,26 @@ class AdvancedAnalyticsEngine:
                 "timeline": [],
             }
 
-        device_ids = sorted({m.device_id for m in metrics})
-        utilizations = [m.utilization_percent for m in metrics]
-        mem_used = [m.memory_used_mb for m in metrics]
-        mem_total = [m.memory_total_mb for m in metrics]
-        temps = [m.temperature_c for m in metrics]
+        device_ids = sorted({r["device_id"] for r in rows})
+        utilizations = [r["utilization_percent"] for r in rows]
+        mem_used = [r["memory_used_mb"] for r in rows]
+        mem_total = [r["memory_total_mb"] for r in rows]
+        temps = [r["temperature_c"] for r in rows]
 
         timeline = []
         day_groups: dict[str, list] = defaultdict(list)
-        for m in metrics:
-            day = datetime.fromtimestamp(m.timestamp).strftime("%Y-%m-%d")
-            day_groups[day].append(m)
+        for r in rows:
+            try:
+                day = datetime.fromisoformat(r["created_at"]).strftime("%Y-%m-%d")
+            except Exception:
+                continue
+            day_groups[day].append(r)
         for day, day_metrics in sorted(day_groups.items()):
             timeline.append({
                 "date": day,
-                "avg_utilization_percent": round(sum(m.utilization_percent for m in day_metrics) / len(day_metrics), 2),
-                "avg_memory_used_mb": round(sum(m.memory_used_mb for m in day_metrics) / len(day_metrics), 2),
-                "avg_temperature_c": round(sum(m.temperature_c for m in day_metrics) / len(day_metrics), 2),
+                "avg_utilization_percent": round(sum(m["utilization_percent"] for m in day_metrics) / len(day_metrics), 2),
+                "avg_memory_used_mb": round(sum(m["memory_used_mb"] for m in day_metrics) / len(day_metrics), 2),
+                "avg_temperature_c": round(sum(m["temperature_c"] for m in day_metrics) / len(day_metrics), 2),
             })
 
         return {
@@ -1010,9 +1023,19 @@ class AdvancedAnalyticsEngine:
     # 7. Memory Usage Analytics
     # ------------------------------------------------------------------
     def get_memory_analytics(self, days: int = 7) -> dict:
-        cutoff = time.time() - (days * 86400)
-        metrics = [m for m in self._memory_metrics if m.timestamp >= cutoff]
-        if not metrics:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_iso = cutoff.isoformat()
+        with get_db() as conn:
+            rows = conn.execute(
+                """
+                SELECT total_mb, used_mb, available_mb, percent, swap_used_mb, created_at
+                FROM memory_metrics
+                WHERE created_at >= ?
+                ORDER BY created_at ASC
+                """,
+                (cutoff_iso,),
+            ).fetchall()
+        if not rows:
             return {
                 "period_days": days,
                 "total_mb": 0,
@@ -1024,28 +1047,31 @@ class AdvancedAnalyticsEngine:
                 "timeline": [],
             }
 
-        used = [m.used_mb for m in metrics]
-        available = [m.available_mb for m in metrics]
-        percents = [m.percent for m in metrics]
-        swap = [m.swap_used_mb for m in metrics]
+        used = [r["used_mb"] for r in rows]
+        available = [r["available_mb"] for r in rows]
+        percents = [r["percent"] for r in rows]
+        swap = [r["swap_used_mb"] for r in rows]
 
         timeline = []
         day_groups: dict[str, list] = defaultdict(list)
-        for m in metrics:
-            day = datetime.fromtimestamp(m.timestamp).strftime("%Y-%m-%d")
-            day_groups[day].append(m)
+        for r in rows:
+            try:
+                day = datetime.fromisoformat(r["created_at"]).strftime("%Y-%m-%d")
+            except Exception:
+                continue
+            day_groups[day].append(r)
         for day, day_metrics in sorted(day_groups.items()):
             timeline.append({
                 "date": day,
-                "used_mb": round(sum(m.used_mb for m in day_metrics) / len(day_metrics), 2),
-                "available_mb": round(sum(m.available_mb for m in day_metrics) / len(day_metrics), 2),
-                "percent": round(sum(m.percent for m in day_metrics) / len(day_metrics), 2),
-                "swap_used_mb": round(sum(m.swap_used_mb for m in day_metrics) / len(day_metrics), 2),
+                "used_mb": round(sum(m["used_mb"] for m in day_metrics) / len(day_metrics), 2),
+                "available_mb": round(sum(m["available_mb"] for m in day_metrics) / len(day_metrics), 2),
+                "percent": round(sum(m["percent"] for m in day_metrics) / len(day_metrics), 2),
+                "swap_used_mb": round(sum(m["swap_used_mb"] for m in day_metrics) / len(day_metrics), 2),
             })
 
         return {
             "period_days": days,
-            "total_mb": round(metrics[-1].total_mb, 2),
+            "total_mb": round(rows[-1]["total_mb"], 2),
             "avg_used_mb": round(sum(used) / len(used), 2),
             "max_used_mb": round(max(used), 2),
             "min_used_mb": round(min(used), 2),
@@ -1062,46 +1088,51 @@ class AdvancedAnalyticsEngine:
     # 8. API Metrics Analytics
     # ------------------------------------------------------------------
     def get_api_metrics(self, days: int = 7, user_id: Optional[str] = None) -> dict:
-        cutoff = time.time() - (days * 86400)
-        metrics = [m for m in self._api_metrics if m.timestamp >= cutoff]
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff_iso = cutoff.isoformat()
+        query = "SELECT endpoint, method, status_code, latency_ms, user_id, model, provider, tokens, created_at FROM api_metrics WHERE created_at >= ?"
+        params: list = [cutoff_iso]
         if user_id:
-            metrics = [m for m in metrics if m.user_id == user_id]
+            query += " AND user_id = ?"
+            params.append(user_id)
+        with get_db() as conn:
+            rows = conn.execute(query, params).fetchall()
 
-        total = len(metrics)
-        errors = [m for m in metrics if m.status_code >= 400]
-        latencies = [m.latency_ms for m in metrics if m.latency_ms > 0]
+        total = len(rows)
+        errors = [r for r in rows if r["status_code"] >= 400]
+        latencies = [r["latency_ms"] for r in rows if r["latency_ms"] > 0]
 
         by_endpoint: dict[str, dict] = defaultdict(lambda: {"count": 0, "errors": 0, "total_latency": 0.0, "total_tokens": 0})
         by_method: dict[str, int] = defaultdict(int)
         by_status: dict[str, int] = defaultdict(int)
         by_model: dict[str, dict] = defaultdict(lambda: {"count": 0, "total_latency": 0.0, "total_tokens": 0})
 
-        for m in metrics:
-            by_endpoint[m.endpoint]["count"] += 1
-            by_method[m.method] += 1
-            by_status[str(m.status_code)] += 1
-            if m.status_code >= 400:
-                by_endpoint[m.endpoint]["errors"] += 1
-            by_endpoint[m.endpoint]["total_latency"] += m.latency_ms
-            by_endpoint[m.endpoint]["total_tokens"] += m.tokens
+        for r in rows:
+            ep = r["endpoint"]
+            by_endpoint[ep]["count"] += 1
+            by_method[r["method"]] += 1
+            by_status[str(r["status_code"])] += 1
+            if r["status_code"] >= 400:
+                by_endpoint[ep]["errors"] += 1
+            by_endpoint[ep]["total_latency"] += r["latency_ms"]
+            by_endpoint[ep]["total_tokens"] += r["tokens"]
 
-            if m.model:
-                by_model[m.model]["count"] += 1
-                by_model[m.model]["total_latency"] += m.latency_ms
-                by_model[m.model]["total_tokens"] += m.tokens
+            if r["model"]:
+                by_model[r["model"]]["count"] += 1
+                by_model[r["model"]]["total_latency"] += r["latency_ms"]
+                by_model[r["model"]]["total_tokens"] += r["tokens"]
 
         endpoint_summary = {}
         for ep, data in by_endpoint.items():
-            latencies_list = [m.latency_ms for m in metrics if m.endpoint == ep and m.latency_ms > 0]
-            latencies_sorted = sorted(latencies_list)
-            n = len(latencies_sorted)
+            ep_latencies = sorted([r["latency_ms"] for r in rows if r["endpoint"] == ep and r["latency_ms"] > 0])
+            n = len(ep_latencies)
             endpoint_summary[ep] = {
                 "count": data["count"],
                 "errors": data["errors"],
                 "error_rate": round(data["errors"] / max(data["count"], 1), 4),
                 "avg_latency_ms": round(data["total_latency"] / max(data["count"], 1), 2),
-                "p95_latency_ms": round(latencies_sorted[int(n * 0.95)], 2) if n > 0 else 0,
-                "p99_latency_ms": round(latencies_sorted[int(n * 0.99)], 2) if n > 0 else 0,
+                "p95_latency_ms": round(ep_latencies[int(n * 0.95)], 2) if n > 0 else 0,
+                "p99_latency_ms": round(ep_latencies[int(n * 0.99)], 2) if n > 0 else 0,
                 "total_tokens": data["total_tokens"],
             }
 

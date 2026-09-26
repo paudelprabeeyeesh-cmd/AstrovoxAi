@@ -81,6 +81,8 @@ from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router
 from app.routers.rag import router as rag_router
 from app.search_route import router as search_router
+from app.training.router import router as training_router
+from app.fine_tune.router import router as fine_tune_router
 
 load_dotenv()
 
@@ -217,6 +219,8 @@ app.include_router(code_agent_router)
 app.include_router(search_router)
 app.include_router(core_assistant_router)
 app.include_router(video_router)
+app.include_router(training_router)
+app.include_router(fine_tune_router)
 
 
 # Prometheus metrics middleware

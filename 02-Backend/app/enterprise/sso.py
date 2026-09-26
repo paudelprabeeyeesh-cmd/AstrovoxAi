@@ -33,3 +33,6 @@ class SSOManager:
             return None
         logger.info("Authenticated via %s", provider_key)
         return {"user_id": "sso_user", "provider": provider_key}
+
+
+enterprise_sso = SSOManager()
