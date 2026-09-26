@@ -160,14 +160,16 @@ class PagedAttentionKVCache:
             self.v_cache[block_id, :, start - slot_offset:end - slot_offset, :] = v[:, :, start:end, :]
 
 
-def paged_attention_forward(q: torch.Tensor, kv_cache: KVCache, page_table: Dict[int, PageTableEntry], scale: float = 1.0) -> torch.Tensor:
+def paged_attention_forward(q: Any, kv_cache: KVCache, page_table: Dict[int, PageTableEntry], scale: float = 1.0) -> torch.Tensor:
+    if not isinstance(q, torch.Tensor):
+        q = torch.tensor(q, dtype=torch.float32)
     batch_size, num_heads, seq_len, head_dim = q.shape
     k_blocks = []
     v_blocks = []
     for entry in page_table.values():
         page = kv_cache.pages[entry.physical_page_id]
-        k_blocks.append(page.k.transpose(0, 1))
-        v_blocks.append(page.v.transpose(0, 1))
+        k_blocks.append(page.k.transpose(0, 1).to(q.dtype))
+        v_blocks.append(page.v.transpose(0, 1).to(q.dtype))
     if not k_blocks:
         k = torch.zeros(batch_size, num_heads, 0, head_dim, device=q.device, dtype=q.dtype)
         v = torch.zeros(batch_size, num_heads, 0, head_dim, device=q.device, dtype=q.dtype)

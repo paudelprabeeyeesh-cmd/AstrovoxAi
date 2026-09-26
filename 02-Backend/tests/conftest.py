@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import types
+from contextlib import ExitStack
 from unittest.mock import patch, MagicMock
 
 # Ensure the backend root is on sys.path so 'app' package can be imported
@@ -227,10 +228,25 @@ def mock_external_services():
         patch('app.billing.stripe', mock_stripe),
         patch.object(billing_module, '_STRIPE_CONFIGURED', True),
         patch('openai.OpenAI', return_value=mock_openai_client),
-        patch('app.core.moderation.check_moderation', return_value=(False, None)),
-        patch('app.routers.solve.check_moderation', return_value=(False, None)),
-        patch('app.core.providers.get_active_providers', return_value=[]),
-    ] + _main_patches
+    ]
+    if 'app.core.moderation' in sys.modules:
+        _patches.append(patch('app.core.moderation.check_moderation', return_value=(False, None)))
+    if 'app.routers.solve' in sys.modules:
+        _patches.append(patch('app.routers.solve.check_moderation', return_value=(False, None)))
+    if 'app.core.providers' in sys.modules:
+        _patches.append(patch('app.core.providers.get_active_providers', return_value=[]))
+    if 'app.main' in sys.modules:
+        _patches.append(patch('app.main.llm_client.call_llm', return_value={
+            "text": "Mocked answer",
+            "provider": "test",
+            "model": "test-model",
+            "tokens": 10,
+            "confidence": 0.9,
+        }))
+        _patches.append(patch('app.main.llm_client.stream_llm', return_value=iter([
+            {"token": "Mocked", "provider": "test", "model": "test-model"},
+            {"token": " answer", "provider": "test", "model": "test-model"},
+        ])))
 
     with ExitStack() as stack:
         for p in _patches:

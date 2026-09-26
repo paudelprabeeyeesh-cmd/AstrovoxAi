@@ -13,7 +13,7 @@ from ..retention import retention_engine
 from .compliance import compliance_generator
 from .export_import import export_import_service
 from .partners import partner_service
-from .sso import enterprise_sso
+from .sso import SSOManager as enterprise_sso
 
 logger = logging.getLogger(__name__)
 
