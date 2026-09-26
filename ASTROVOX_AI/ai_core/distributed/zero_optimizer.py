@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Set
 
 import torch
@@ -86,19 +86,20 @@ class ZeroStage2Optimizer:
 
 
 class ZeroStage3Optimizer:
-    def __init__(self, model: nn.Module, optimizer: torch.optim.Optimizer, config: ZeroConfig):
+    def __init__(self, model: nn.Module,
+                 optimizer: torch.optim.Optimizer, config: ZeroConfig):
         self.model = model
         self.optimizer = optimizer
         self.config = config
         self.world_size = config.world_size
         self.rank = config.rank
-        self._param_map: Dict[str, torch.Tensor] = {}
-        self._local_param_shards: Dict[str, torch.Tensor] = {}
         self._owned_params: Set[str] = set()
         self._partition_parameters()
 
     def _partition_parameters(self) -> None:
-        all_param_names = [n for n, p in self.model.named_parameters() if p.requires_grad]
+        all_param_names = [
+            n for n, p in self.model.named_parameters() if p.requires_grad
+        ]
         for idx, name in enumerate(all_param_names):
             if idx % self.world_size == self.rank:
                 self._owned_params.add(name)
@@ -107,10 +108,10 @@ class ZeroStage3Optimizer:
         if name in self._owned_params:
             return
         full = torch.zeros_like(param.data)
-        shard = torch.zeros_like(param.data.view(-1)[:: self.world_size])
-        gathered = [torch.zeros_like(shard) for _ in range(self.world_size)]
-        dist.all_gather(gathered, shard)
-        full.view(-1)[:: self.world_size] = torch.cat(gathered)
+        shard = torch.zeros_like(param.data.view(-1)[::self.world_size])
+        gathered_list = [torch.zeros_like(shard) for _ in range(self.world_size)]
+        dist.all_gather(gathered_list, shard)
+        full.view(-1)[::self.world_size] = torch.cat(gathered_list)
         param.data.copy_(full)
 
     def _scatter_parameter(self, param: nn.Parameter, name: str) -> None:
@@ -118,9 +119,9 @@ class ZeroStage3Optimizer:
             param.data.zero_()
             return
         flat = param.data.view(-1)
-        shard = flat[:: self.world_size].clone()
+        shard = flat[::self.world_size].clone()
         param.data.zero_()
-        param.data.view(-1)[:: self.world_size] = shard
+        param.data.view(-1)[::self.world_size] = shard
 
     def step(self, loss: torch.Tensor) -> float:
         self.optimizer.zero_grad()

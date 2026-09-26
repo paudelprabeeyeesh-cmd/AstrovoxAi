@@ -35,6 +35,18 @@ class MultiQueryAttention(nn.Module):
         return self.out_proj(out)
 
 
+class FeedForward(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.fc1 = nn.Linear(config.hidden_size, config.intermediate_size)
+        self.fc2 = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.dropout = nn.Dropout(config.dropout)
+        self.activation = nn.GELU()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.fc2(self.dropout(self.activation(self.fc1(x))))
+
+
 class MQABlock(nn.Module):
     def __init__(self, config):
         super().__init__()

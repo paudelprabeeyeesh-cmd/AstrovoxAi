@@ -41,10 +41,9 @@ class ExpertParallelism:
         for local_idx, global_idx in enumerate(range(start, end)):
             self.expert_routing_table[global_idx] = local_idx
 
-    def route_tokens
-                     gate_logits: torch.Tensor) -> Tuple[torch.Tensor,
-                                                          torch.Tensor,
-                                                          torch.Tensor]:
+    def route_tokens(self, tokens: torch.Tensor,
+                     gate_logits: torch.Tensor
+                     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         topk_scores, topk_indices = torch.topk(
             gate_logits, self.top_k, dim=-1
         )

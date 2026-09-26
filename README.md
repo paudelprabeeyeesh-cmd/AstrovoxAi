@@ -187,7 +187,7 @@ AstrovoxAi/
 | Embeddings | `02-Backend/app/embeddings_route.py` | Text vectorization via Gemini |
 | Providers | `02-Backend/app/providers/` | OpenAI, Anthropic, Gemini, Ollama adapters |
 | Auth | `02-Backend/app/services/auth/` | Supabase authentication |
-| Enterprise | `02-Backend/app/enterprise/` | SSO, RBAC, billing, teams |
+| Enterprise | `backend/app/enterprise/` | SSO, RBAC, billing, teams |
 | Agents | `02-Backend/app/api/routers/agent_route.py` | Agent management and execution |
 | RAG | `02-Backend/app/routers/rag.py` | Retrieval-Augmented Generation |
 | Workspace | `02-Backend/app/api/routers/workspace_route.py` | Team workspaces and folders |
@@ -280,7 +280,7 @@ See [docs/README.md](docs/README.md) for the full documentation index and [docs/
 - [ ] Advanced analytics dashboard
 - [ ] Mobile apps (iOS, Android)
 - [ ] Desktop app (Tauri)
-- [ ] Enterprise SSO (SAML, OIDC)
+- [x] Enterprise SSO (SAML, OIDC)
 - [ ] HIPAA-compliant deployment
 
 ## License

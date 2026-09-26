@@ -57,7 +57,7 @@ class NewsSearch:
                     'published_at': pub_date.text if pub_date is not None else '',
                     'url': link.text if link is not None else '',
                     'description': '',
-                    'source': 'google_news_rss'
+                    'api_source': 'google_news_rss'
                 })
             return results
         except Exception:
