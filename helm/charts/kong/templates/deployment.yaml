@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kong.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kong.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.replicaCount }}
+  replicas: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kong.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kong.selectorLabels" . | nindent 8 }}
+      {{- with .Values.deployment.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: KONG_DATABASE
+              value: "{{ .Values.env.database }}"
+            - name: KONG_ADMIN_LISTEN
+              value: "{{ .Values.env.admin_listen }}"
+            - name: KONG_PROXY_LISTEN
+              value: "{{ .Values.env.proxy_listen }}"
+            - name: KONG_NGINX_WORKER_PROCESSES
+              value: "{{ .Values.env.nginx_worker_processes }}"
+          ports:
+            - name: proxy
+              containerPort: 8000
+              protocol: TCP
+            - name: proxy-tls
+              containerPort: 8443
+              protocol: TCP
+            - name: admin
+              containerPort: 8001
+              protocol: TCP
+            - name: admin-tls
+              containerPort: 8444
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.deployment.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            runAsUser: 1001
+            capabilities:
+              drop:
+              - ALL

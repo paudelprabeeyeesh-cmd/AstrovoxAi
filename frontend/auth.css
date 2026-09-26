@@ -1,0 +1,117 @@
+.auth-container {
+  max-width: 420px;
+  margin: 80px auto;
+  padding: 32px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  font-family: 'Inter', sans-serif;
+}
+
+.auth-container h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-align: center;
+  color: #111827;
+}
+
+.auth-container label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.auth-container input {
+  width: 100%;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.auth-container input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.auth-container button {
+  width: 100%;
+  padding: 12px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.auth-container button:hover {
+  background: #1d4ed8;
+}
+
+.auth-container button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
+}
+
+.auth-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.auth-links {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.auth-links a {
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.auth-links a:hover {
+  text-decoration: underline;
+}
+
+.password-strength {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.password-strength-bar {
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s, background 0.3s;
+}
+
+.session-warning {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+}

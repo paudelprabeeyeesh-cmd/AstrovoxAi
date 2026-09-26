@@ -1,0 +1,120 @@
+{{- if .Values.kong.enabled }}
+{{- $kong := .Values.kong }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-kong
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kong
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  admin-password: "change-me-in-production"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-kong
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kong
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  replicas: {{ $kong.deployment.replicas | default 2 }}
+  selector:
+    matchLabels:
+      app: kong
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: kong
+        {{- include "astrovoxai.selectorLabels" . | nindent 8 }}
+      annotations:
+        {{- toYaml $kong.deployment.podAnnotations | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      containers:
+      - name: kong
+        image: "{{ $kong.image.repository }}:{{ $kong.image.tag | default "3.5" }}"
+        env:
+        - name: KONG_DATABASE
+          value: "{{ $kong.env.database }}"
+        - name: KONG_ADMIN_LISTEN
+          value: "{{ $kong.env.admin_listen }}"
+        - name: KONG_PROXY_LISTEN
+          value: "{{ $kong.env.proxy_listen }}"
+        - name: KONG_NGINX_WORKER_PROCESSES
+          value: "{{ $kong.env.nginx_worker_processes }}"
+        ports:
+        - containerPort: 8000
+          name: proxy
+          protocol: TCP
+        - containerPort: 8443
+          name: proxy-tls
+          protocol: TCP
+        - containerPort: 8001
+          name: admin
+          protocol: TCP
+        resources:
+          {{- toYaml $kong.deployment.resources | nindent 12 }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-kong-proxy
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kong
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  type: {{ $kong.proxy.type }}
+  ports:
+  - port: {{ $kong.proxy.http.servicePort | default 80 }}
+    targetPort: proxy
+    protocol: TCP
+    name: proxy
+  - port: {{ $kong.proxy.https.servicePort | default 443 }}
+    targetPort: proxy-tls
+    protocol: TCP
+    name: proxy-tls
+  selector:
+    app: kong
+    {{- include "astrovoxai.selectorLabels" . | nindent 4 }}
+  {{- with $kong.proxy.serviceAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-kong-admin
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: kong
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  type: {{ $kong.admin.type }}
+  ports:
+  - port: {{ $kong.admin.http.servicePort | default 8001 }}
+    targetPort: admin
+    protocol: TCP
+    name: admin
+  selector:
+    app: kong
+    {{- include "astrovoxai.selectorLabels" . | nindent 4 }}
+{{- end }}

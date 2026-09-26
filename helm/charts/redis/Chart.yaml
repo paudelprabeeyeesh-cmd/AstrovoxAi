@@ -1,0 +1,13 @@
+apiVersion: v2
+name: astrovox-redis
+description: Redis subchart for AstrovoxAI
+type: application
+version: 0.1.0
+appVersion: "7.2"
+keywords:
+  - redis
+  - cache
+  - astrovoxai
+maintainers:
+  - name: AstrovoxAi Team
+    email: dev@astrovoxai.com

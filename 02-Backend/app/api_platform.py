@@ -94,12 +94,12 @@ class AstrovoxClient:
 """
         for ep in endpoints:
             method_name = ep.path.replace("/", "_").strip("_")
-            code += f"""
+            code += f'''
     def {method_name}(self, **kwargs):
-        \"\"\"{ep.description}\"\"\"
+        """{ep.description}"""
         return self.client.{ep.method.lower()}("{ep.path}", json=kwargs).json()
 
-"""
+'''
         return code
 
     @staticmethod
@@ -127,10 +127,79 @@ class AstrovoxClient {
     }}
 
 """
+    @staticmethod
+    def generate_typescript_sdk(endpoints: list[APIEndpoint]) -> str:
+        code = """// AstrovoxAI TypeScript SDK
+export class AstrovoxClient {
+  constructor(private baseUrl: string, private apiKey: string) {}
+"""
+        for ep in endpoints:
+            method_name = ep.path.replace("/", "_").strip("_")
+            code += f"""
+  async {method_name}(params: Record<string, any> = {{}}): Promise<any> {{
+    const response = await fetch(`${{this.baseUrl}}{ep.path}`, {{
+      method: '{ep.method}',
+      headers: {{ 'Authorization': `Bearer ${{this.apiKey}}`, 'Content-Type': 'application/json' }},
+      body: JSON.stringify(params),
+    }});
+    return response.json();
+  }}
+"""
+        code += "}\n"
         return code
 
+    @staticmethod
+    def generate_go_sdk(endpoints: list[APIEndpoint]) -> str:
+        code = """package astrovox\n\ntype Client struct {\n\tBaseURL string\n\tAPIKey  string\n\thttpClient *http.Client\n}\n\nfunc NewClient(baseURL, apiKey string) *Client {\n\treturn &Client{BaseURL: baseURL, APIKey: apiKey, httpClient: http.DefaultClient}\n}\n\n"""
+        for ep in endpoints:
+            method_name = ep.path.replace("/", "_").strip("_")
+            code += f"func (c *Client) {method_name}(params map[string]interface{{}}) (*http.Response, error) {{\n"
+            code += f'\treturn c.httpClient.Do(c.newRequest("{ep.method}", "{ep.path}", params))\n}}\n\n'
+        code += "func (c *Client) newRequest(method, path string, body interface{}) *http.Request {\n\t// implementation\n\treturn req\n}\n"
+        return code
 
-openapi_generator = OpenAPIGenerator("AstrovoxAI API", "2.0.0")
+    @staticmethod
+    def generate_graphql_schema(endpoints: list[APIEndpoint]) -> str:
+        schema = "type Query {\n"
+        for ep in endpoints:
+            if ep.method.lower() == "get":
+                name = ep.path.replace("/", "_").strip("_")
+                schema += f"  {name}: String\n"
+        schema += "}\n\ntype Mutation {\n"
+        for ep in endpoints:
+            if ep.method.lower() != "get":
+                name = ep.path.replace("/", "_").strip("_")
+                schema += f"  {name}(input: String): String\n"
+        schema += "}\n"
+        return schema
+
+    @staticmethod
+    def generate_grpc_proto(endpoints: list[APIEndpoint]) -> str:
+        proto = 'syntax = "proto3";\npackage astrovox;\nservice AstrovoxAPI {\n'
+        for ep in endpoints:
+            name = ep.path.replace("/", "_").strip("_")
+            proto += f'  rpc {name}({name}Request) returns ({name}Response);\n'
+        proto += "}\n\n"
+        for ep in endpoints:
+            name = ep.path.replace("/", "_").strip("_")
+            proto += f"message {name}Request {{ string input = 1; }}\nmessage {name}Response {{ string output = 1; }}\n\n"
+        return proto
+
+
+class GraphQLGateway:
+    def __init__(self, schema: str):
+        self.schema = schema
+
+    def resolve(self, query: str, variables: dict) -> dict:
+        return {"data": {"query": query, "variables": variables}, "errors": []}
+
+
+class GRPCGateway:
+    def __init__(self, proto_path: str):
+        self.proto_path = proto_path
+
+    def call(self, service: str, method: str, request: dict) -> dict:
+        return {"service": service, "method": method, "request": request, "response": "ok"}
 sdk_generator = SDKGenerator()
 
 

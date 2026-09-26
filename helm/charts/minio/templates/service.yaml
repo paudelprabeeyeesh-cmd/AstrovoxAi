@@ -1,0 +1,22 @@
+{{- if eq .Values.mode "standalone" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "minio.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "minio.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: api
+      port: {{ .Values.service.ports.api }}
+      targetPort: api
+      protocol: TCP
+    - name: console
+      port: {{ .Values.service.ports.console }}
+      targetPort: console
+      protocol: TCP
+  selector:
+    {{- include "minio.selectorLabels" . | nindent 4 }}
+{{- end }}

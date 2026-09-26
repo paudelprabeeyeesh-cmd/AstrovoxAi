@@ -18,6 +18,7 @@ class Environment(str, Enum):
 @dataclass
 class DatabaseConfig:
     url: str = "sqlite:///./astrovox.db"
+    replica_url: str = ""
     pool_size: int = 5
     max_overflow: int = 10
     echo: bool = False
@@ -26,9 +27,46 @@ class DatabaseConfig:
 @dataclass
 class RedisConfig:
     url: str = "redis://localhost:6379/0"
+    sentinel_url: str = ""
     max_connections: int = 50
     socket_timeout: int = 5
     socket_connect_timeout: int = 5
+
+
+@dataclass
+class RabbitMQConfig:
+    url: str = "amqp://guest:guest@localhost:5672"
+
+
+@dataclass
+class MinIOConfig:
+    endpoint: str = "localhost:9000"
+    access_key: str = "minioadmin"
+    secret_key: str = "minioadmin"
+    bucket: str = "astrovox-storage"
+    region: str = "us-east-1"
+
+
+@dataclass
+class APIGatewayConfig:
+    url: str = "http://localhost:8000"
+    api_key: str = ""
+
+
+@dataclass
+class CDNConfig:
+    zone_id: str = ""
+    api_token: str = ""
+    base_url: str = "https://cdn.astrovox.ai"
+
+
+@dataclass
+class StorageConfig:
+    endpoint: str = "localhost:9000"
+    access_key_id: str = "minioadmin"
+    secret_access_key: str = "minioadmin"
+    bucket: str = "astrovox-storage"
+    region: str = "us-east-1"
 
 
 @dataclass
@@ -88,6 +126,11 @@ class AppConfig:
     debug: bool = False
     database: DatabaseConfig = field(default_factory=DatabaseConfig)
     redis: RedisConfig = field(default_factory=RedisConfig)
+    rabbitmq: RabbitMQConfig = field(default_factory=RabbitMQConfig)
+    minio: MinIOConfig = field(default_factory=MinIOConfig)
+    storage: StorageConfig = field(default_factory=StorageConfig)
+    api_gateway: APIGatewayConfig = field(default_factory=APIGatewayConfig)
+    cdn: CDNConfig = field(default_factory=CDNConfig)
     vector_db: VectorDBConfig = field(default_factory=VectorDBConfig)
     llm: LLMConfig = field(default_factory=LLMConfig)
     security: SecurityConfig = field(default_factory=SecurityConfig)
@@ -105,12 +148,40 @@ class AppConfig:
             debug=env == Environment.DEVELOPMENT,
             database=DatabaseConfig(
                 url=os.getenv("DATABASE_URL", "sqlite:///./astrovox.db"),
+                replica_url=os.getenv("DATABASE_REPLICA_URL", ""),
                 pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
                 echo=env == Environment.DEVELOPMENT,
             ),
             redis=RedisConfig(
                 url=os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+                sentinel_url=os.getenv("REDIS_SENTINEL_URL", ""),
                 max_connections=int(os.getenv("REDIS_MAX_CONNECTIONS", "50")),
+            ),
+            rabbitmq=RabbitMQConfig(
+                url=os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672"),
+            ),
+            minio=MinIOConfig(
+                endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+                access_key=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+                secret_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+                bucket=os.getenv("MINIO_BUCKET", "astrovox-storage"),
+                region=os.getenv("MINIO_REGION", "us-east-1"),
+            ),
+            storage=StorageConfig(
+                endpoint=os.getenv("MINIO_ENDPOINT", "localhost:9000"),
+                access_key_id=os.getenv("MINIO_ACCESS_KEY", "minioadmin"),
+                secret_access_key=os.getenv("MINIO_SECRET_KEY", "minioadmin"),
+                bucket=os.getenv("MINIO_BUCKET", "astrovox-storage"),
+                region=os.getenv("MINIO_REGION", "us-east-1"),
+            ),
+            api_gateway=APIGatewayConfig(
+                url=os.getenv("API_GATEWAY_URL", "http://localhost:8000"),
+                api_key=os.getenv("KONG_ADMIN_API_KEY", ""),
+            ),
+            cdn=CDNConfig(
+                zone_id=os.getenv("CLOUDFLARE_ZONE_ID", ""),
+                api_token=os.getenv("CLOUDFLARE_API_TOKEN", ""),
+                base_url=os.getenv("CDN_BASE_URL", "https://cdn.astrovox.ai"),
             ),
             vector_db=VectorDBConfig(
                 provider=os.getenv("VECTOR_DB_PROVIDER", "pgvector"),

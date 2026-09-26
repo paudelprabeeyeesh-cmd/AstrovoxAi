@@ -1,0 +1,106 @@
+{{- if .Values.postgres.enabled }}
+{{- $postgres := .Values.postgres }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgres
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  postgres-password: "{{ $postgres.password }}"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgres
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "astrovoxai.fullname" . }}-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: postgres
+        {{- include "astrovoxai.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: postgresql
+        image: "{{ $postgres.image }}"
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          value: "{{ $postgres.username }}"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "astrovoxai.fullname" . }}-postgresql
+              key: postgres-password
+        - name: POSTGRES_DB
+          value: "{{ $postgres.database }}"
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /bitnami/postgresql
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ $postgres.username | quote }}]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", {{ $postgres.username | quote }}]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+      labels:
+        {{- include "astrovoxai.labels" . | nindent 8 }}
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ $postgres.storage | default "20Gi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgres
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+    name: postgres
+  selector:
+    app: postgres
+    {{- include "astrovoxai.selectorLabels" . | nindent 4 }}
+{{- end }}

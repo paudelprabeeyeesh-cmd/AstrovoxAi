@@ -24,12 +24,6 @@ class TrafficPolicy(str, Enum):
     PASSTHROUGH = "passthrough"
 
 
-class OutlierDetection(str, Enum):
-    CONSECUTIVE_GATEWAY_ERRORS = "consecutive_gateway_errors"
-    CONSECUTIVE_5XX = "consecutive_5xx"
-    INTERVAL_GATEWAY_ERRORS = "interval_gateway_errors"
-
-
 @dataclass
 class VirtualServiceHost:
     name: str
@@ -153,13 +147,11 @@ metadata:
   name: {name}
   namespace: {self._config.namespace}
 spec:
-  # ...
   routes:
   - name: default
     condition:
       method: GET
       pathRegex: /.*
-    # ...
 """
 
     def generate_sidecar_injection_label(self) -> Dict[str, str]:

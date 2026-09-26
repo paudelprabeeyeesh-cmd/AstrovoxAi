@@ -27,8 +27,9 @@ class SandboxedCodeExecution:
             if blocked in code:
                 return {'error': f'Blocked module: {blocked}', 'output': ''}
         for allowed in self.allowed_imports:
-            if f'import {allowed}' not in code and f'from {allowed}' not in code and allowed in code:
-                pass
+            if f'import {allowed}' not in code and f'from {allowed}' not in code:
+                if allowed in code:
+                    logger.warning("Code references allowed module %s without explicit import", allowed)
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             f.write(code)
             temp_path = f.name

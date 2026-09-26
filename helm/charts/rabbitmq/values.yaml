@@ -1,0 +1,33 @@
+# Default values for rabbitmq.
+# This is a YAML-formatted file.
+
+replicaCount: 3
+
+auth:
+  username: astrovox
+  password: astrovox_pass
+  erlangCookie: "secure-cookie-value"
+
+service:
+  type: ClusterIP
+  ports:
+    amqp: 5672
+    management: 15672
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s

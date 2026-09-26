@@ -37,7 +37,7 @@ _neurofeedback_service = NeurofeedbackDashboardService()
 try:
     _neural_api.create_pipeline(DecodingPipeline(pipeline_id="default-pipeline"))
 except Exception:
-    pass
+    logger.warning("default neural pipeline creation failed", exc_info=True)
 
 
 class PipelineCreateRequest(BaseModel):

@@ -1,0 +1,69 @@
+# Default values for postgresql.
+# This is a YAML-formatted file.
+
+architecture: standalone
+
+auth:
+  enablePostgresUser: false
+  username: astrovox
+  password: "astrovox_pass"
+  database: astrovox
+
+primary:
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 999
+    runAsGroup: 999
+  podSecurityContext:
+    enabled: true
+    fsGroup: 999
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  configuration:
+    params:
+      max_connections: "100"
+      shared_buffers: "256MB"
+      work_mem: "64MB"
+      maintenance_work_mem: "128MB"
+      effective_cache_size: "1GB"
+
+readReplicas:
+  replicaCount: 1
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 999
+    runAsGroup: 999
+  podSecurityContext:
+    enabled: true
+    fsGroup: 999
+  persistence:
+    enabled: true
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+service:
+  type: ClusterIP
+  port: 5432
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
+pgvector:
+  enabled: true

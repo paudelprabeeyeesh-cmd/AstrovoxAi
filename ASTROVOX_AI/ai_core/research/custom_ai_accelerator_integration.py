@@ -20,8 +20,8 @@ class CustomAIAcceleratorIntegration:
             import torch_xla
             import torch_xla.core.xla_model as xm
             self.device = xm.xla_device()
-        except ImportError:
-            pass
+            except ImportError:
+                logger.warning("torch_xla not installed; TPU initialization skipped")
 
     def _init_graphcore(self) -> None:
         try:
@@ -29,7 +29,7 @@ class CustomAIAcceleratorIntegration:
             self.device = 'ipu'
             self.poptorch = poptorch
         except ImportError:
-            pass
+            logger.warning("poptorch not installed; GraphCore IPU initialization skipped")
 
     def _init_cerebras(self) -> None:
         try:
@@ -37,7 +37,7 @@ class CustomAIAcceleratorIntegration:
             self.device = 'cerebras'
             self.cerebras = cbtorch
         except ImportError:
-            pass
+            logger.warning("cerebras_pytorch not installed; Cerebras initialization skipped")
 
     def to_accelerator(self, model: nn.Module) -> nn.Module:
         if self.device is None:

@@ -15,6 +15,23 @@ keywords:
   - automation
   - astrovoxai
   - llm
+dependencies:
+  - name: redis
+    version: "18.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+  - name: postgresql
+    version: "15.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+  - name: minio
+    version: "5.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: minio.enabled
+  - name: rabbitmq
+    version: "12.x.x"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: rabbitmq.enabled
 annotations:
   artifacthub.io/license: MIT
   artifacthub.io/links: |

@@ -1,0 +1,14 @@
+apiVersion: v2
+name: astrovox-rabbitmq
+description: RabbitMQ subchart for AstrovoxAI
+type: application
+version: 0.1.0
+appVersion: "3.13"
+keywords:
+  - rabbitmq
+  - message-queue
+  - amqp
+  - astrovoxai
+maintainers:
+  - name: AstrovoxAi Team
+    email: dev@astrovoxai.com

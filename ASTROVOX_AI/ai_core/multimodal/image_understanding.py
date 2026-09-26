@@ -18,7 +18,7 @@ class ImageUnderstanding:
                 self.processor = CLIPProcessor.from_pretrained('openai/clip-vit-base-patch32')
                 self.model.to(device)
             except ImportError:
-                pass
+                logger.warning("transformers not installed, image understanding unavailable")
 
     def encode_image(self, image_path: str) -> Optional[torch.Tensor]:
         if self.model is None:

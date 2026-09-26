@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enterprise Admin — AstrovoxAI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/enterprise.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Enterprise Admin</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="evaluation_dashboard.html">Evaluation</a>
+      <a href="safety_console.html">Safety</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="tabs">
+      <button class="tab active" data-tab="orgs">Organizations</button>
+      <button class="tab" data-tab="billing">Billing</button>
+      <button class="tab" data-tab="api-keys">API Keys</button>
+      <button class="tab" data-tab="permissions">Permissions</button>
+    </section>
+
+    <section id="orgs" class="tab-content">
+      <h2>Organization Management</h2>
+      <div class="card">
+        <canvas id="orgChart"></canvas>
+      </div>
+      <table class="data-table" id="orgTable">
+        <thead><tr><th>ID</th><th>Name</th><th>Plan</th><th>Members</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="billing" class="tab-content hidden">
+      <h2>Billing & Subscriptions</h2>
+      <div class="card">
+        <canvas id="billingChart"></canvas>
+      </div>
+    </section>
+
+    <section id="api-keys" class="tab-content hidden">
+      <h2>API Keys</h2>
+      <div class="card">
+        <table class="data-table" id="apiKeyTable">
+          <thead><tr><th>Name</th><th>Scopes</th><th>Created</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="permissions" class="tab-content hidden">
+      <h2>Team Permissions</h2>
+      <div class="card">
+        <table class="data-table" id="permTable">
+          <thead><tr><th>User</th><th>Role</th><th>Permissions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+  <script src="js/enterprise.js"></script>
+</body>
+</html>

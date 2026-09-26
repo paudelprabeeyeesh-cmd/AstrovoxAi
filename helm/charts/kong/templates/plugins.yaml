@@ -1,0 +1,20 @@
+{{- range $plugin := .Values.plugins }}
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: {{ $plugin.name }}
+  namespace: {{ $.Release.Namespace }}
+config:
+  {{- toYaml $plugin.config | nindent 2 }}
+{{- end }}
+---
+{{- range $plugin := .Values.plugins }}
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: {{ $plugin.name }}
+  labels:
+    global: "true"
+config:
+  {{- toYaml $plugin.config | nindent 2 }}
+{{- end }}

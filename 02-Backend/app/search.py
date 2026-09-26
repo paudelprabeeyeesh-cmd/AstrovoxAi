@@ -1,4 +1,7 @@
 import uuid
+import re
+import math
+import json
 from datetime import datetime
 from typing import Optional
 
@@ -117,8 +120,25 @@ class SearchEngine:
     def _score_embedding(self, query: str, embedding) -> float:
         if not embedding:
             return 0.0
-        query_hash = hash(query) % 1000 / 1000.0
-        return query_hash
+        try:
+            emb = json.loads(embedding) if isinstance(embedding, str) else embedding
+            q_emb = self._embed_query(query)
+            dot = sum(a * b for a, b in zip(q_emb, emb))
+            norm_q = math.sqrt(sum(v * v for v in q_emb))
+            norm_e = math.sqrt(sum(v * v for v in emb))
+            if norm_q == 0 or norm_e == 0:
+                return 0.0
+            return dot / (norm_q * norm_e)
+        except Exception:
+            return 0.0
+
+    def _embed_query(self, query: str) -> list:
+        vec = [0.0] * 384
+        words = re.findall(r"\b[a-zA-Z]{2,}\b", query.lower())
+        for i, word in enumerate(words[:384]):
+            vec[i % 384] += hash(word) % 100 / 100.0
+        norm = math.sqrt(sum(v * v for v in vec)) or 1.0
+        return [v / norm for v in vec]
 
     def _keyword_score(self, query: str, content: str) -> float:
         content_lower = content.lower()

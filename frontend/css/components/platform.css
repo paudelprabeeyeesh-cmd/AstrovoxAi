@@ -1359,3 +1359,117 @@ body.rbp-transcendent-active {
 body.rbp-transcendent-active .rbp-gravity-panel[data-gravity="zero"] {
   animation-duration: 2.5s;
 }
+
+/* Memory System Panel */
+#memory-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.memory-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.memory-item:hover {
+  border-color: var(--accent);
+}
+
+.memory-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.memory-category {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(14, 165, 233, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.memory-tier {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.memory-tier.critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.memory-tier.high {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.memory-tier.medium {
+  background: rgba(14, 165, 233, 0.15);
+  color: var(--accent);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+}
+
+.memory-tier.low {
+  background: rgba(148, 163, 184, 0.15);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.memory-tier.archived {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+  border: 1px solid rgba(100, 116, 139, 0.35);
+}
+
+.memory-content {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+}
+
+.memory-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.memory-importance {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.memory-date {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.memory-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}

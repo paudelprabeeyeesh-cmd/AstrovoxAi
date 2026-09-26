@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.prometheus.enabled }}
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    path: {{ .Values.monitoring.prometheus.path }}
+    interval: {{ .Values.monitoring.prometheus.serviceMonitor.interval }}
+{{- end }}

@@ -1,0 +1,42 @@
+# Default values for minio.
+# This is a YAML-formatted file.
+
+mode: standalone
+
+rootUser: minioadmin
+rootPassword: minioadmin
+
+auth:
+  rootUser: minioadmin
+  rootPassword: minioadmin
+
+persistence:
+  enabled: true
+  size: 20Gi
+
+buckets:
+  - name: astrovox-storage
+    policy: none
+    purge: false
+  - name: astrovox-uploads
+    policy: none
+    purge: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1Gi
+
+service:
+  type: ClusterIP
+  ports:
+    api: 9000
+    console: 9001
+
+metrics:
+  serviceMonitor:
+    enabled: true
+    interval: 30s

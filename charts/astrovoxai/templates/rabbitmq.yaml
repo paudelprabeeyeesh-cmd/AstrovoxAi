@@ -1,0 +1,109 @@
+{{- if .Values.rabbitmq.enabled }}
+{{- $rabbitmq := .Values.rabbitmq }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  rabbitmq-password: "{{ $rabbitmq.auth.password }}"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "astrovoxai.fullname" . }}-rabbitmq
+  replicas: {{ $rabbitmq.replicaCount | default 3 }}
+  selector:
+    matchLabels:
+      app: rabbitmq
+      {{- include "astrovoxai.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+        {{- include "astrovoxai.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+      containers:
+      - name: rabbitmq
+        image: "{{ $rabbitmq.image }}"
+        ports:
+        - containerPort: 5672
+          name: amqp
+        - containerPort: 15672
+          name: management
+        env:
+        - name: RABBITMQ_DEFAULT_USER
+          value: "{{ $rabbitmq.auth.username }}"
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "astrovoxai.fullname" . }}-rabbitmq
+              key: rabbitmq-password
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          exec:
+            command: ["rabbitmq-diagnostics", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command: ["rabbitmq-diagnostics", "check_port_connectivity"]
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbitmq-data
+      labels:
+        {{- include "astrovoxai.labels" . | nindent 8 }}
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ $rabbitmq.persistence.size | default "20Gi" }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5672
+    targetPort: 5672
+    name: amqp
+  - port: 15672
+    targetPort: 15672
+    name: management
+  selector:
+    app: rabbitmq
+    {{- include "astrovoxai.selectorLabels" . | nindent 4 }}
+{{- end }}

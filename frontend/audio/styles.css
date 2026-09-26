@@ -1,0 +1,9 @@
+.audio-ai-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+.audio-ai-page h1 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}

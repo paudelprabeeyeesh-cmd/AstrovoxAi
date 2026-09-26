@@ -1,0 +1,75 @@
+"""Docker Compose development configuration with hot reload."""
+
+from typing import Any
+import os
+
+services: dict[str, Any] = {
+    "backend": {
+        "build": {
+            "context": ".",
+            "dockerfile": "Dockerfile.backend",
+            "target": "development",
+        },
+        "ports": ["8000:8000"],
+        "environment": [
+            "APP_ENV=development",
+            "DATABASE_URL=${DATABASE_URL}",
+            "REDIS_URL=${REDIS_URL}",
+            "DEBUG=true",
+            "LOG_LEVEL=debug",
+        ],
+        "volumes": [
+            "./02-Backend:/app",
+            "./ASTROVOX_AI:/app/ASTROVOX_AI",
+            "./logs:/app/logs",
+        ],
+        "depends_on": {
+            "postgres": {"condition": "service_healthy"},
+            "redis": {"condition": "service_healthy"},
+        },
+        "healthcheck": {
+            "test": ["CMD", "curl", "-f", "http://localhost:8000/healthz"],
+            "interval": "30s",
+            "timeout": "10s",
+            "retries": 3,
+        },
+        "restart": "unless-stopped",
+    },
+    "postgres": {
+        "image": "pgvector/pgvector:pg16",
+        "environment": [
+            "POSTGRES_USER=${POSTGRES_USER}",
+            "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}",
+            "POSTGRES_DB=${POSTGRES_DB}",
+        ],
+        "volumes": ["postgres_data:/var/lib/postgresql/data"],
+        "healthcheck": {
+            "test": ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"],
+            "interval": "10s",
+            "timeout": "5s",
+            "retries": 5,
+        },
+        "restart": "unless-stopped",
+    },
+    "redis": {
+        "image": "redis:7-alpine",
+        "command": "redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru",
+        "volumes": ["redis_data:/data"],
+        "healthcheck": {
+            "test": ["CMD", "redis-cli", "ping"],
+            "interval": "10s",
+            "timeout": "5s",
+            "retries": 5,
+        },
+        "restart": "unless-stopped",
+    },
+    "jaeger": {
+        "image": "jaegertracing/all-in-one:1.50",
+        "ports": ["16686:16686", "14268:14268"],
+        "restart": "unless-stopped",
+    },
+}
+volumes: dict[str, Any] = {
+    "postgres_data": {},
+    "redis_data": {},
+}

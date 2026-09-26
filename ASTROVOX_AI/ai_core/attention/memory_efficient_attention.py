@@ -2,6 +2,9 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class MemoryEfficientAttention(nn.Module):
@@ -29,14 +32,34 @@ class MemoryEfficientAttention(nn.Module):
                 out = flash_attn_func(q, k, v, dropout_p=self.dropout.p, causal=True)
                 return self.out_proj(out.view(B, T, C))
             except ImportError:
-                pass
+                logger.warning("flash_attn not installed, falling back to xformers/SDPA")
+                if self.attention_method in ('xformers', 'auto'):
+                    try:
+                        import xformers.ops as xops
+                        out = xops.memory_efficient_attention(q, k, v, p=self.dropout.p if self.training else 0.0)
+                        return self.out_proj(out.view(B, T, C))
+                    except ImportError:
+                        logger.warning("xformers not installed, falling back to SDPA")
+                        with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=True):
+                            out = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=self.dropout.p if self.training else 0.0)
+                            return self.out_proj(out.transpose(1, 2).contiguous().view(B, T, C))
         if self.attention_method in ('xformers', 'auto'):
             try:
                 import xformers.ops as xops
                 out = xops.memory_efficient_attention(q, k, v, p=self.dropout.p if self.training else 0.0)
                 return self.out_proj(out.view(B, T, C))
             except ImportError:
-                pass
+                logger.warning("flash_attn not installed, falling back to xformers/SDPA")
+                if self.attention_method in ('xformers', 'auto'):
+                    try:
+                        import xformers.ops as xops
+                        out = xops.memory_efficient_attention(q, k, v, p=self.dropout.p if self.training else 0.0)
+                        return self.out_proj(out.view(B, T, C))
+                    except ImportError:
+                        logger.warning("xformers not installed, falling back to SDPA")
+                        with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=True):
+                            out = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=self.dropout.p if self.training else 0.0)
+                            return self.out_proj(out.transpose(1, 2).contiguous().view(B, T, C))
         if self.attention_method == 'sdpa':
             with torch.backends.cuda.sdp_kernel(enable_flash=True, enable_math=True, enable_mem_efficient=True):
                 out = F.scaled_dot_product_attention(q, k, v, attn_mask=mask, dropout_p=self.dropout.p if self.training else 0.0)

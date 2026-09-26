@@ -1,0 +1,129 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: autoscaling
+  labels:
+    app: autoscaling
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: autoscaling-config
+  namespace: autoscaling
+data:
+  DEFAULT_MIN_REPLICAS: "3"
+  DEFAULT_MAX_REPLICAS: "20"
+  CPU_TARGET_UTILIZATION: "70"
+  MEMORY_TARGET_UTILIZATION: "80"
+  SCALE_UP_STABILIZATION: "60"
+  SCALE_DOWN_STABILIZATION: "300"
+  SCALE_UP_PERCENT: "100"
+  SCALE_DOWN_PERCENT: "10"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: astrovox-backend-hpa
+  namespace: astrovox
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-backend
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: astrovox-frontend-hpa
+  namespace: astrovox
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-frontend
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+---
+apiVersion: autoscaling/v2beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: astrovox-vpa
+  namespace: astrovox
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-backend
+  updatePolicy:
+    updateMode: Auto
+  resourcePolicy:
+    containerPolicies:
+    - containerName: backend
+      minAllowed:
+        cpu: 100m
+        memory: 256Mi
+      maxAllowed:
+        cpu: 2000m
+        memory: 4Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keda-scaledobject
+  namespace: astrovox
+data:
+  scaledobject.yaml: |
+    apiVersion: keda.sh/v1alpha1
+    kind: ScaledObject
+    metadata:
+      name: astrovox-backend-scaler
+      namespace: astrovox
+    spec:
+      scaleTargetRef:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: astrovox-backend
+      minReplicaCount: 3
+      maxReplicaCount: 20
+      cooldownPeriod: 300
+      triggers:
+      - type: prometheus
+        metadata:
+          serverAddress: http://prometheus-server.monitoring.svc.cluster.local:9090
+          metricName: astrovox_active_connections
+          threshold: "50"

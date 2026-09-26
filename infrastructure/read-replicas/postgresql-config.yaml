@@ -1,0 +1,106 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgresql-config
+  namespace: read-replicas
+data:
+  postgresql.conf: |
+    hot_standby = on
+    wal_level = replica
+    max_wal_senders = 10
+    wal_keep_size = 1GB
+    hot_standby_feedback = on
+    random_page_cost = 1.1
+    effective_cache_size = 2GB
+    shared_buffers = 512MB
+    work_mem = 64MB
+    maintenance_work_mem = 128MB
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: read-replicas
+type: Opaque
+stringData:
+  password: astrovox_pass
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-replica
+  namespace: read-replicas
+spec:
+  serviceName: postgres-replica
+  replicas: 2
+  selector:
+    matchLabels:
+      app: postgres-replica
+  template:
+    metadata:
+      labels:
+        app: postgres-replica
+    spec:
+      initContainers:
+      - name: init-replica
+        image: postgres:16-alpine
+        command:
+        - sh
+        - -c
+        - |
+          until pg_basebackup -h postgres-0.postgres.astrovox.svc.cluster.local -D /var/lib/postgresql/data -U astrovox -Fp -Xs -P -R; do
+            echo "Waiting for primary to be ready..."
+            sleep 5
+          done
+          exec postgres -c config_file=/etc/postgresql/postgresql.conf
+        volumeMounts:
+        - name: postgresql-config
+          mountPath: /etc/postgresql
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+      containers:
+      - name: postgresql
+        image: pgvector/pgvector:pg16
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: astrovox
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        - name: POSTGRES_DB
+          value: astrovox
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+    spec:
+      accessModes: [ReadWriteOnce]
+      resources:
+        requests:
+          storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-replica
+  namespace: read-replicas
+spec:
+  clusterIP: None
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres-replica

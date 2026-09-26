@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflare-config
+  namespace: cdn
+data:
+  CLOUDFLARE_ZONE_ID: "your-cloudflare-zone-id"
+  CLOUDFLARE_ACCOUNT_ID: "your-cloudflare-account-id"
+  CLOUDFLARE_API_TOKEN: ""
+  CACHE_TTL: "86400"
+  BROWSER_CACHE_TTL: "31536000"
+  EDGE_CACHE_TTL: "3600"
+  BYPASS_COOKIE: "session,auth_token"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cdn-cache-rules
+  namespace: cdn
+data:
+  static-assets.json: |
+    {
+      "rules": [
+        {
+          "id": "1",
+          "action": "cache",
+          "expression": "(http.request.uri.path matches \"^/static/(.*)\\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|json|xml)$\")",
+          "cache": {
+            "edge_ttl": {"mode": "override", "default": 31536000},
+            "browser_ttl": {"mode": "override", "default": 31536000}
+          }
+        },
+        {
+          "id": "2",
+          "action": "cache",
+          "expression": "(http.request.uri.path starts_with \"/storage/uploads/\")",
+          "cache": {
+            "edge_ttl": {"mode": "override", "default": 86400},
+            "browser_ttl": {"mode": "override", "default": 3600}
+          }
+        },
+        {
+          "id": "3",
+          "action": "bypass",
+          "expression": "(http.request.cookie contains \"session\" or http.request.cookie contains \"auth_token\")",
+          "cache": {"bypass": true}
+        }
+      ]
+    }
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-secret
+  namespace: cdn
+type: Opaque
+stringData:
+  CLOUDFLARE_API_TOKEN: "your-cloudflare-api-token"
+  CLOUDFLARE_ZONE_ID: "your-cloudflare-zone-id"
+  CLOUDFLARE_ACCOUNT_ID: "your-cloudflare-account-id"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloudflare-cache-purge
+  namespace: cdn
+spec:
+  template:
+    spec:
+      containers:
+      - name: purge
+        image: curlimages/curl:latest
+        command:
+        - sh
+        - -c
+        - |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
+        env:
+        - name: CLOUDFLARE_ZONE_ID
+          valueFrom:
+            configMapKeyRef:
+              name: cloudflare-config
+              key: CLOUDFLARE_ZONE_ID
+        - name: CLOUDFLARE_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-secret
+              key: CLOUDFLARE_API_TOKEN
+      restartPolicy: Never
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cdn-cache-purge
+  namespace: cdn
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: purge
+            image: curlimages/curl:latest
+            command:
+            - sh
+            - -c
+            - |
+              curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data '{"purge_everything":true}'
+            env:
+            - name: CLOUDFLARE_ZONE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-config
+                  key: CLOUDFLARE_ZONE_ID
+            - name: CLOUDFLARE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-secret
+                  key: CLOUDFLARE_API_TOKEN
+          restartPolicy: OnFailure

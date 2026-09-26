@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-inference
+  namespace: astrovox
+  labels:
+    app: astrovox-inference
+    component: inference-engine
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: astrovox-inference
+  template:
+    metadata:
+      labels:
+        app: astrovox-inference
+        component: inference-engine
+    spec:
+      containers:
+        - name: inference
+          image: astrovox/inference:latest
+          ports:
+            - containerPort: 8001
+              name: http
+            - containerPort: 8002
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: astrovox-inference-config
+            - secretRef:
+                name: astrovox-inference-secrets
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8000m"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8001
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: nvidia.com/gpu
+                    operator: Exists

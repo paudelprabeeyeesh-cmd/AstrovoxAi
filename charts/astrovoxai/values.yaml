@@ -1,13 +1,10 @@
-# Default values for astrovoxai.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
 replicaCount: 2
 
+namespace: astrovox
+
 image:
-  repository: astrovoxai/backend
+  repository: ghcr.io/astrovoxai/backend
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
 imagePullSecrets: []
@@ -15,47 +12,103 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
+  automount: true
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
-podAnnotations: {}
-podLabels: {}
+podAnnotations:
+  sidecar.istio.io/inject: "false"
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8000"
+  prometheus.io/path: "/metrics"
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  runAsGroup: 1001
+  fsGroup: 1001
+  seccompProfile:
+    type: RuntimeDefault
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1001
+  capabilities:
+    drop:
+    - ALL
 
 service:
   type: ClusterIP
   port: 80
+  targetPort: 8000
+  annotations: {}
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
   hosts:
-    - host: astrovoxai.example.com
+    - host: astrovox.ai
       paths:
         - path: /
           pathType: Prefix
-  tls: []
-  #  - secretName: astrovoxai-tls
-  #    hosts:
-  #      - astrovoxai.example.com
+        - path: /api
+          pathType: Prefix
+        - path: /cdn
+          pathType: Prefix
+  tls:
+    - secretName: astrovox-tls
+      hosts:
+        - astrovox.ai
+
+configmap:
+  data:
+    APP_ENV: production
+    LOG_LEVEL: info
+    REDIS_URL: redis://redis-master:6379
+    REDIS_SENTINEL_URL: redis://redis-sentinel:26379
+    DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+    DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+    RABBITMQ_URL: amqp://astrovox:astrovox_pass@rabbitmq:5672
+    MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+    MINIO_BUCKET: astrovox-storage
+    MINIO_ACCESS_KEY: minioadmin
+    MINIO_SECRET_KEY: minioadmin
+    MINIO_REGION: us-east-1
+    CELERY_BROKER_URL: redis://redis-master:6379/1
+    CELERY_RESULT_BACKEND: redis://redis-master:6379/2
+    API_GATEWAY_URL: http://kong-kong-proxy.kong.svc.cluster.local:80
+    CDN_BASE_URL: https://cdn.astrovox.ai
+    ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai
+
+secret:
+  data:
+    DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+    DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+    REDIS_URL: redis://redis-master:6379
+    REDIS_SENTINEL_URL: redis://redis-sentinel:26379
+    RABBITMQ_URL: amqp://astrovox:astrovox_pass@rabbitmq:5672
+    RABBITMQ_ERLANG_COOKIE: secure-cookie-value
+    RABBITMQ_USER: astrovox
+    RABBITMQ_PASSWORD: astrovox_pass
+    MINIO_ACCESS_KEY: minioadmin
+    MINIO_SECRET_KEY: minioadmin
+    MINIO_BUCKET: astrovox-storage
+    MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+    OPENAI_API_KEY: change-me
+    ANTHROPIC_API_KEY: change-me
+    GOOGLE_API_KEY: change-me
+    JWT_SECRET: change-me-in-production
+    SECRET_KEY: change-me-in-production
+    KONG_ADMIN_API_KEY: change-me
+    CLOUDFLARE_API_TOKEN: change-me
+    CLOUDFLARE_ZONE_ID: your-zone-id
 
 resources:
   limits:
@@ -65,25 +118,39 @@ resources:
     cpu: 500m
     memory: 512Mi
 
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 30
+
 autoscaling:
-  enabled: false
-  minReplicas: 1
+  enabled: true
+  minReplicas: 2
   maxReplicas: 10
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
-# Additional volumes on the output Deployment definition.
-volumes: []
-# - name: foo
-#   secret:
-#     secretName: mysecret
-#     optional: false
-
-# Additional volumeMounts on the output Container definition.
-volumeMounts: []
-# - name: foo
-#   mountPath: "/etc/foo"
-#   readOnly: true
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
@@ -91,107 +158,134 @@ tolerations: []
 
 affinity: {}
 
-# Configuration for the AstrovoxAi application
+pdb:
+  create: true
+  minAvailable: 1
+  maxUnavailable: ""
+
+networkPolicy:
+  create: true
+
+postgres:
+  enabled: true
+  image: pgvector/pgvector:pg16
+  storage: 20Gi
+  storageClass: ""
+  username: astrovox
+  password: astrovox_pass
+  database: astrovox
+
+redis:
+  enabled: true
+  image: redis:7-alpine
+  storage: 8Gi
+  storageClass: ""
+  password: ""
+  master:
+    count: 1
+
+monitoring:
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s
+      path: /metrics
+  grafana:
+    enabled: true
+    adminPassword: admin
+
+# AstrovoxAi application configuration
 astrovoxai:
-  # Application configuration
   app:
     name: "AstrovoxAi"
     version: "1.0.0"
     debug: false
-    
-  # Server configuration
+
   server:
     host: "0.0.0.0"
     port: 8000
     workers: 4
-    
-  # Database configuration (if using external database)
+
   database:
     url: ""
     pool_size: 10
-    
-  # Redis configuration (if using external redis)
+
   redis:
     url: ""
-    
-  # Supabase configuration
+
   supabase:
     url: ""
     anon_key: ""
     service_role_key: ""
-    
-  # AI Provider API Keys
+
   openai:
     api_key: ""
   anthropic:
     api_key: ""
   google:
     api_key: ""
-    
-  # Feature flags
+
   features:
     enable_websocket: true
     enable_file_upload: true
     enable_email: true
     enable_webhooks: true
-    
-  # Rate limiting
+
   rate_limit:
     enabled: true
     default: "120/minute"
     auth: "5/minute"
-    
-  # Monitoring
+
   monitoring:
     enabled: true
     prometheus_port: 9090
     metrics_endpoint: "/metrics"
-    
-  # Logging
+
   logging:
     level: "INFO"
     format: "json"
-    
-  # Security
+
   security:
     jwt_secret: ""
     jwt_expiration_hours: 24
     bcrypt_rounds: 12
-    
-  # File storage
-  storage:
-    type: "local"  # local, s3, gcs
-    local_path: "./storage"
-    # For S3/GCS:
-    # bucket: ""
-    # region: ""
-    # access_key_id: ""
-    # secret_access_key: ""
 
-# Configuration for the frontend
+  storage:
+    type: "s3"
+    local_path: "./storage"
+    bucket: "astrovox-storage"
+    region: "us-east-1"
+    access_key_id: "minioadmin"
+    secret_access_key: "minioadmin"
+    endpoint: "minio.minio.svc.cluster.local:9000"
+
+# Frontend configuration
 frontend:
   replicaCount: 2
-  
+
   image:
     repository: astrovoxai/frontend
     pullPolicy: IfNotPresent
     tag: "latest"
-    
+
   service:
     type: ClusterIP
     port: 80
-    
-  ingress:
-    enabled: false
-    className: ""
     annotations: {}
+
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
     hosts:
-      - host: frontend.astrovoxai.example.com
+      - host: frontend.astrovox.ai
         paths:
           - path: /
             pathType: Prefix
     tls: []
-    
+
   resources:
     limits:
       cpu: 500m
@@ -199,9 +293,9 @@ frontend:
     requests:
       cpu: 250m
       memory: 128Mi
-      
+
   autoscaling:
-    enabled: false
-    minReplicas: 1
+    enabled: true
+    minReplicas: 2
     maxReplicas: 10
-    targetCPUUtilizationPercentage: 80
+    targetCPUUtilizationPercentage: 70

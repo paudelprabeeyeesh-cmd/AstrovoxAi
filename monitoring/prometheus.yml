@@ -15,6 +15,18 @@ scrape_configs:
     metrics_path: '/health'
     scheme: 'http'
 
+  - job_name: 'astravox-monitoring'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/monitoring/metrics'
+    scheme: 'http'
+
+  - job_name: 'astravox-analytics'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/analytics/metrics'
+    scheme: 'http'
+
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']

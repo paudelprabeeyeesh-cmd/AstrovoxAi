@@ -42,8 +42,8 @@ async def create_user_profile(
 
 
 ALLOWED_PROFILE_FIELDS = {"full_name", "avatar_url", "bio", "website"}
-ALLOWED_CONVERSATION_FIELDS = {"title", "model"}
-ALLOWED_SETTINGS_FIELDS = {"theme", "language", "notifications_enabled", "default_model"}
+ALLOWED_CONVERSATION_FIELDS = {"title", "model", "folder_id", "is_pinned", "is_shared", "shared_at", "shared_with"}
+ALLOWED_SETTINGS_FIELDS = {"theme", "language", "notifications_enabled", "default_model", "voice_enabled"}
 
 
 async def update_user_profile(user_id: str, **kwargs):

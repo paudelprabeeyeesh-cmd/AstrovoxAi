@@ -19,12 +19,12 @@ class CoderAgent:
 
     @classmethod
     def generate(cls, language: str, description: str, tests: bool = False) -> CodeArtifact:
-        code = f"# Generated {language} code for: {description}\npass"
+        code = f"# Generated {language} code for: {description}\ndef solution():\n    return '{description}'\n"
         artifact = CodeArtifact(
             language=language,
             code=code,
             description=description,
-            tests="# TODO: Add tests",
+            tests="def test_solution():\n    assert solution() is not None\n" if tests else "",
         )
         cls._artifacts[f"{language}:{description}"] = artifact
         return artifact

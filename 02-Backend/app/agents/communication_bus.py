@@ -48,7 +48,7 @@ class AgentCommunicationBus:
                 else:
                     callback(message)
             except Exception:
-                pass
+                logger.warning("agent callback failed", exc_info=True)
 
     @classmethod
     async def send(cls, sender_id: str, recipient_id: str, payload: Dict[str, Any], message_type: MessageType = MessageType.REQUEST) -> AgentMessage:

@@ -156,10 +156,22 @@ class App {
         return;
       }
       this._showChat();
+    } else if (path === '/image-ai.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showImageAI();
     } else {
       if (this.authState.isAuthenticated) {
         window.location.href = '/dashboard.html';
-      } else {
+    } else if (path === '/search.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showSearch();
+    } else {
         window.location.href = '/login.html';
       }
     }
@@ -338,6 +350,7 @@ class App {
         <nav class="navbar-nav">
           <a href="/chat.html" class="nav-link active">Chat</a>
           <a href="/dashboard.html" class="nav-link" data-reality-teleport>Dashboard</a>
+          <a href="/image-ai.html" class="nav-link">Image AI</a>
           <div class="nav-user">
             <span style="font-size: 0.875rem; color: var(--text-secondary);">${user?.email || 'User'}</span>
             <button class="btn btn-sm btn-secondary" id="logout-btn">Logout</button>
@@ -350,6 +363,12 @@ class App {
             <h2>Conversations</h2>
             <button class="btn btn-sm btn-primary" id="new-chat-btn">+ New</button>
           </div>
+          <div class="chat-sidebar-tools" style="padding: 0.5rem; border-bottom: 1px solid var(--border);">
+            <input type="text" id="conversation-search" placeholder="Search conversations..." class="search-input" />
+            <select id="folder-select" class="folder-select">
+              <option value="">All Folders</option>
+            </select>
+          </div>
           <div class="conversation-list" id="conversation-list">
             <div class="loading-container">
               <div class="spinner"></div>
@@ -358,6 +377,21 @@ class App {
           </div>
         </aside>
         <main class="chat-main rbp-rift">
+          <div class="chat-toolbar" style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); background: var(--bg-secondary);">
+            <div class="chat-toolbar-left" style="display: flex; align-items: center; gap: 0.5rem;">
+              <span id="active-conversation-title" style="font-weight: 600; font-size: 0.875rem;">Select a conversation</span>
+            </div>
+            <div class="chat-toolbar-actions" style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-sm btn-secondary" id="pin-conversation-btn" title="Pin">📌</button>
+              <button class="btn btn-sm btn-secondary" id="share-conversation-btn" title="Share">🔗</button>
+              <button class="btn btn-sm btn-secondary" id="export-conversation-btn" title="Export">📥</button>
+              <button class="btn btn-sm btn-secondary" id="upload-file-btn" title="Upload">📎</button>
+              <button class="btn btn-sm btn-secondary" id="voice-input-btn" title="Voice">🎤</button>
+              <button class="btn btn-sm btn-secondary" id="tts-btn" title="Read aloud">🔊</button>
+              <button class="btn btn-sm btn-secondary" id="theme-btn" title="Theme">🎨</button>
+              <button class="btn btn-sm btn-secondary" id="lang-btn" title="Language">🌐</button>
+            </div>
+          </div>
           <div class="chat-messages" id="chat-messages">
             <div class="chat-messages-inner">
               <div class="empty-state">
@@ -388,6 +422,12 @@ class App {
     document.getElementById('logout-btn')?.addEventListener('click', () => this._handleLogout());
     this._initRealityNav();
     this.chatApp = new ChatApp();
+  }
+
+  _showImageAI() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    const imgApp = new ImageAIApp();
   }
 
   _initRealityNav() {
@@ -454,6 +494,71 @@ class App {
     document.getElementById('logout-btn')?.addEventListener('click', () => this._handleLogout());
     this._initRealityNav();
     this.dashboardApp = new DashboardApp();
+  }
+
+  _showSearch() {
+    const app = document.getElementById('app');
+    if (!app) return;
+
+    const user = getUser();
+    app.innerHTML = `
+      <div class="search-page">
+        <div class="search-navbar">
+          <a href="/dashboard.html" class="navbar-brand">
+            <div class="logo">A</div>
+            <span>AstrovoxAI</span>
+          </a>
+          <nav class="navbar-nav">
+            <a href="/chat.html" class="nav-link">Chat</a>
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/search.html" class="nav-link active">Search</a>
+            <div class="nav-user">
+              <span style="font-size: 0.875rem; color: var(--text-secondary);">${user?.email || 'User'}</span>
+              <button class="btn btn-sm btn-secondary" id="logout-btn">Logout</button>
+            </div>
+          </nav>
+        </div>
+        <div class="search-layout">
+          <aside class="search-sidebar">
+            <h3>Sources</h3>
+            <label><input type="checkbox" id="src-internal" checked> Internal Documents</label>
+            <label><input type="checkbox" id="src-web" checked> Web</label>
+            <label><input type="checkbox" id="src-images"> Images</label>
+            <label><input type="checkbox" id="src-videos"> Videos</label>
+            <label><input type="checkbox" id="src-news"> News</label>
+            <label><input type="checkbox" id="src-academic"> Academic</label>
+            <h3 style="margin-top: 1rem;">Options</h3>
+            <label><input type="checkbox" id="opt-rerank" checked> Rerank results</label>
+            <label><input type="checkbox" id="opt-citations" checked> Generate citations</label>
+            <label><input type="checkbox" id="opt-verify" checked> Verify sources</label>
+          </aside>
+          <main class="search-main">
+            <div class="search-header">
+              <h1>Advanced Search</h1>
+              <p>Hybrid BM25 + dense retrieval across internal documents, web, images, videos, news, and academic sources.</p>
+            </div>
+            <div class="search-input-wrapper">
+              <input type="text" id="search-input" placeholder="Search across documents, web, images, videos..." autocomplete="off" />
+              <button class="btn btn-primary" id="search-btn">Search</button>
+            </div>
+            <div class="search-stats" id="search-stats"></div>
+            <div class="search-tabs" id="search-tabs">
+              <div class="search-tab active" data-tab="all">All</div>
+              <div class="search-tab" data-tab="internal">Documents</div>
+              <div class="search-tab" data-tab="web">Web</div>
+              <div class="search-tab" data-tab="images">Images</div>
+              <div class="search-tab" data-tab="videos">Videos</div>
+              <div class="search-tab" data-tab="news">News</div>
+              <div class="search-tab" data-tab="academic">Academic</div>
+            </div>
+            <div class="search-results" id="search-results"></div>
+          </main>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('logout-btn')?.addEventListener('click', () => this._handleLogout());
+    window.searchApp = new SearchApp();
   }
 
   async _handleLogout() {

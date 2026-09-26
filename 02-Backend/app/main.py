@@ -36,6 +36,7 @@ from app.api.routers.realtime_route import tools_router
 from app.api.routers.realtime_route import security_router as scan_router
 from app.api.routers.agents_route import router as agents_router
 from app.api.routers.agents_route import memory_router as memory_v2_router
+from app.api.routers.memory_system import router as memory_system_router
 from app.api.routers.automation_route import router as automation_router
 from app.kernel.api import router as kernel_router
 from app.aios.api import router as aios_router
@@ -51,6 +52,8 @@ from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
+from app.core.llm import LLMClient
+from app.context_builder import ContextBuilder
 from app.middleware.content_negotiation import ContentNegotiationMiddleware
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
@@ -70,12 +73,30 @@ from app.api.routers.search_knowledge_route import router as search_knowledge_ro
 from app.observability.endpoints import router as observability_router
 from app.omniscient_ai.router import router as omniscient_router
 from app.quantum.routes.router import router as quantum_router
+from app.routers.audio import router as audio_router
+from app.routers.audio_outputs import router as audio_outputs_router
 from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router
+from app.routers.rag import router as rag_router
+from app.search_route import router as search_router
 
 load_dotenv()
+
+
+class _LLMClientStub:
+    def call_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+
+    async def stream_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+        if False:
+            yield
+
+
+llm_client = _LLMClientStub()
+context_builder = ContextBuilder(llm_client=llm_client)
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
@@ -164,8 +185,10 @@ app.include_router(tools_router)
 app.include_router(scan_router)
 app.include_router(agents_router)
 app.include_router(memory_v2_router)
+app.include_router(memory_system_router)
 app.include_router(automation_router)
 app.include_router(document_router)
+app.include_router(rag_router)
 app.include_router(performance_router)
 app.include_router(temporal_router)
 app.include_router(kernel_router)
@@ -180,17 +203,26 @@ app.include_router(cx_router)
 app.include_router(observability_router)
 app.include_router(search_knowledge_router)
 app.include_router(omniscient_router)
+app.include_router(images_router)
 app.include_router(quantum_router)
+app.include_router(audio_router)
+app.include_router(audio_outputs_router)
 app.include_router(neural_bci_router)
+app.include_router(team_chat_router)
+app.include_router(collaboration_router)
 app.include_router(multiverse_router)
 app.include_router(omnipresent_router)
 app.include_router(agi_router)
+app.include_router(code_agent_router)
+app.include_router(search_router)
+app.include_router(core_assistant_router)
+app.include_router(video_router)
 
 
 # Prometheus metrics middleware
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
-    """Track request metrics for Prometheus."""
+    """Track request metrics for Prometheus, analytics, and monitoring."""
     start_time = time.time()
     response = await call_next(request)
     duration = time.time() - start_time
@@ -202,6 +234,37 @@ async def metrics_middleware(request: Request, call_next):
             path=request.url.path,
             status=response.status_code,
             duration=duration,
+        )
+    except Exception:
+        pass
+
+    try:
+        from app.monitoring import performance_monitor, error_tracker, RequestMetric
+        performance_monitor.record_request(
+            RequestMetric(
+                endpoint=request.url.path,
+                method=request.method,
+                status_code=response.status_code,
+                latency_ms=duration * 1000,
+            )
+        )
+        if response.status_code >= 500:
+            error_tracker.record_error(
+                error_type="http_error",
+                message=f"{request.method} {request.url.path} returned {response.status_code}",
+                endpoint=request.url.path,
+                severity="critical" if response.status_code >= 500 else "warning",
+            )
+    except Exception:
+        pass
+
+    try:
+        from app.analytics import advanced_analytics
+        advanced_analytics.track_api_metric(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            latency_ms=duration * 1000,
         )
     except Exception:
         pass
@@ -234,6 +297,28 @@ async def readiness():
     return {"status": overall, "checks": checks}
 
 
+@app.websocket("/realtime/collaboration/{resource_type}/{resource_id}")
+async def collaboration_ws_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+
+
+@app.websocket("/realtime/collaboration/ws/{resource_type}/{resource_id}")
+async def collaboration_ws_alt_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+
+
 if __name__ == "__main__":
     import uvicorn
 
@@ -258,3 +343,38 @@ async def _startup():
         await start_observability()
     except Exception:
         pass
+
+    async def _collect_system_metrics():
+        try:
+            from app.analytics import advanced_analytics
+            from app.monitoring import performance_monitor
+            while True:
+                try:
+                    stats = performance_monitor.get_system_stats()
+                    gpu = stats.get("gpu", {})
+                    if gpu.get("available") and gpu.get("devices"):
+                        for dev in gpu["devices"]:
+                            advanced_analytics.track_gpu_utilization(
+                                device_id=dev.get("device_id", 0),
+                                utilization_percent=dev.get("utilization_percent", 0.0),
+                                memory_used_mb=dev.get("memory_used_mb", 0.0),
+                                memory_total_mb=dev.get("memory_total_mb", 0.0),
+                                temperature_c=dev.get("temperature_c", 0.0),
+                            )
+                    memory_info = performance_monitor._get_memory_info()
+                    if memory_info:
+                        advanced_analytics.track_memory_usage(
+                            total_mb=memory_info.get("total_mb", 0.0),
+                            used_mb=memory_info.get("used_mb", 0.0),
+                            available_mb=memory_info.get("available_mb", 0.0),
+                            percent=memory_info.get("percent", 0.0),
+                        )
+                except Exception:
+                    pass
+                import asyncio
+                await asyncio.sleep(30)
+        except Exception:
+            pass
+
+    import asyncio
+    asyncio.create_task(_collect_system_metrics())

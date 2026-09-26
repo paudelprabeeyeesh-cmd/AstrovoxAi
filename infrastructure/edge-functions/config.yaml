@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: edge-functions
+  labels:
+    app: edge-functions
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-function-auth
+  namespace: edge-functions
+data:
+  main.js: |
+    export default {
+      async fetch(request, env, ctx) {
+        const url = new URL(request.url);
+        const authHeader = request.headers.get('Authorization');
+        if (!authHeader && url.pathname.startsWith('/api/')) {
+          return new Response('Unauthorized', { status: 401 });
+        }
+        const response = await fetch(request);
+        const modified = new Response(response.body, response);
+        modified.headers.set('Cache-Control', 'public, max-age=3600');
+        return modified;
+      }
+    };
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-function-rate-limit
+  namespace: edge-functions
+data:
+  main.js: |
+    export default {
+      async fetch(request, env, ctx) {
+        const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+        const key = `rate-limit:${ip}`;
+        const count = await env.KV.get(key);
+        if (count && parseInt(count) > 100) {
+          return new Response('Rate limit exceeded', { status: 429 });
+        }
+        await env.KV.put(key, (parseInt(count || '0') + 1).toString(), { expirationTtl: 60 });
+        return fetch(request);
+      }
+    };
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edge-function-cdn-purge
+  namespace: edge-functions
+data:
+  main.js: |
+    export default {
+      async fetch(request, env, ctx) {
+        if (request.method === 'POST') {
+          const cache = caches.default;
+          const url = new URL(request.url);
+          const purgeUrl = `${url.origin}/cdn-purge`;
+          await fetch(purgeUrl, { method: 'POST', body: await request.text() });
+          return new Response('CDN cache purged', { status: 200 });
+        }
+        return fetch(request);
+      }
+    };

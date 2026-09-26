@@ -1,0 +1,290 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: astrovox-config
+  namespace: astrovox
+data:
+  APP_ENV: production
+  LOG_LEVEL: info
+  REDIS_URL: redis://redis-master:6379
+  REDIS_SENTINEL_URL: redis://redis-sentinel:26379
+  DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+  DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+  RABBITMQ_URL: amqp://astrovox:astrovox_pass@rabbitmq:5672
+  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+  MINIO_BUCKET: astrovox-storage
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: minioadmin
+  MINIO_REGION: us-east-1
+  CELERY_BROKER_URL: redis://redis-master:6379/1
+  CELERY_RESULT_BACKEND: redis://redis-master:6379/2
+  API_GATEWAY_URL: http://kong-kong-proxy.kong.svc.cluster.local:80
+  CDN_BASE_URL: https://cdn.astrovox.ai
+  ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai,https://app.astrovox.ai
+  RATE_LIMIT: "120/minute"
+  DAILY_AI_LIMIT: "50"
+  PRIMARY_REGION: us-east-1
+  FAILOVER_TIMEOUT: "30"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: astrovox-secrets
+  namespace: astrovox
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+  DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+  REDIS_URL: redis://redis-master:6379
+  REDIS_SENTINEL_URL: redis://redis-sentinel:26379
+  RABBITMQ_URL: amqp://astrovox:astrovox_pass@rabbitmq:5672
+  RABBITMQ_ERLANG_COOKIE: secure-cookie-value
+  RABBITMQ_USER: astrovox
+  RABBITMQ_PASSWORD: astrovox_pass
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: minioadmin
+  MINIO_BUCKET: astrovox-storage
+  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+  OPENAI_API_KEY: change-me
+  ANTHROPIC_API_KEY: change-me
+  GOOGLE_API_KEY: change-me
+  JWT_SECRET: change-me-in-production
+  SECRET_KEY: change-me-in-production
+  KONG_ADMIN_API_KEY: change-me
+  CLOUDFLARE_API_TOKEN: change-me
+  CLOUDFLARE_ZONE_ID: your-zone-id
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-backend
+  namespace: astrovox
+  labels:
+    app: astrovox-backend
+    version: v1
+spec:
+  replicas: 3
+  minReadySeconds: 10
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: astrovox-backend
+  template:
+    metadata:
+      labels:
+        app: astrovox-backend
+        version: v1
+    spec:
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: backend
+        image: ghcr.io/astrovoxai/backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: astrovox-config
+        - secretRef:
+            name: astrovox-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          capabilities:
+            drop:
+            - ALL
+        startupProbe:
+          httpGet:
+            path: /health/startup
+            port: http
+          periodSeconds: 10
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: http
+          periodSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: http
+          periodSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        lifecycle:
+          preStop:
+            httpGet:
+              path: /health/prestop
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+        - name: storage
+          mountPath: /app/storage
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+      - name: storage
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: astrovox-service
+  namespace: astrovox
+  labels:
+    app: astrovox-backend
+spec:
+  selector:
+    app: astrovox-backend
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: astrovox-frontend
+  namespace: astrovox
+  labels:
+    app: astrovox-frontend
+spec:
+  selector:
+    app: astrovox-frontend
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: astrovox-hpa
+  namespace: astrovox
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: astrovox-backend
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+      - type: Percent
+        value: 10
+        periodSeconds: 60
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: astrovox-pdb
+  namespace: astrovox
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: astrovox-backend
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: astrovox-backend-netpol
+  namespace: astrovox
+spec:
+  podSelector:
+    matchLabels:
+      app: astrovox-backend
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: ingress-nginx
+    - podSelector:
+        matchLabels:
+          app.kubernetes.io/name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8000
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: astrovox
+    ports:
+    - protocol: TCP
+      port: 5432
+    - protocol: TCP
+      port: 6379
+    - protocol: TCP
+      port: 5672
+    - protocol: TCP
+      port: 9000
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+    ports:
+    - protocol: TCP
+      port: 443
+    - protocol: TCP
+      port: 80

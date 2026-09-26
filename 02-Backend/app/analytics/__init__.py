@@ -151,6 +151,24 @@ class _AnalyticsClient:
     def get_user_analytics(self, days=7):
         return advanced_analytics.get_user_analytics(days=days)
 
+    def get_gpu_analytics(self, days=7):
+        return advanced_analytics.get_gpu_analytics(days=days)
+
+    def get_memory_analytics(self, days=7):
+        return advanced_analytics.get_memory_analytics(days=days)
+
+    def get_api_metrics(self, days=7, user_id=None):
+        return advanced_analytics.get_api_metrics(days=days, user_id=user_id)
+
+    def track_gpu_utilization(self, device_id=0, utilization_percent=0.0, memory_used_mb=0.0, memory_total_mb=0.0, temperature_c=0.0):
+        return advanced_analytics.track_gpu_utilization(device_id=device_id, utilization_percent=utilization_percent, memory_used_mb=memory_used_mb, memory_total_mb=memory_total_mb, temperature_c=temperature_c)
+
+    def track_memory_usage(self, total_mb=0.0, used_mb=0.0, available_mb=0.0, percent=0.0, swap_used_mb=0.0):
+        return advanced_analytics.track_memory_usage(total_mb=total_mb, used_mb=used_mb, available_mb=available_mb, percent=percent, swap_used_mb=swap_used_mb)
+
+    def track_api_metric(self, endpoint, method, status_code, latency_ms=0.0, user_id="", model="", provider="", tokens=0):
+        return advanced_analytics.track_api_metric(endpoint=endpoint, method=method, status_code=status_code, latency_ms=latency_ms, user_id=user_id, model=model, provider=provider, tokens=tokens)
+
 
 analytics = _AnalyticsClient()
 

@@ -200,6 +200,253 @@ class ChatAPI {
     if (!res.ok) throw new Error('Failed to load messages');
     return res.json();
   }
+
+  static async getFolders() {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/folders`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to load folders');
+    return res.json();
+  }
+
+  static async createFolder(name, color = '#0ea5e9') {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/folders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ name, color }),
+    });
+    if (!res.ok) throw new Error('Failed to create folder');
+    return res.json();
+  }
+
+  static async moveConversationToFolder(conversationId, folderId) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/${encodeURIComponent(conversationId)}/folder`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ folder_id: folderId }),
+    });
+    if (!res.ok) throw new Error('Failed to move conversation');
+    return res.json();
+  }
+
+  static async pinConversation(conversationId) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/${encodeURIComponent(conversationId)}/pin`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to pin conversation');
+    return res.json();
+  }
+
+  static async unpinConversation(conversationId) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/${encodeURIComponent(conversationId)}/pin`, {
+      method: 'DELETE',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to unpin conversation');
+    return res.json();
+  }
+
+  static async shareConversation(conversationId, sharedWithUserIds = []) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/share`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ conversation_id: conversationId, shared_with_user_ids: sharedWithUserIds }),
+    });
+    if (!res.ok) throw new Error('Failed to share conversation');
+    return res.json();
+  }
+
+  static async getSharedConversations() {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/shared`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to load shared conversations');
+    return res.json();
+  }
+
+  static async searchConversations(query, limit = 20) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ query, limit }),
+    });
+    if (!res.ok) throw new Error('Search failed');
+    return res.json();
+  }
+
+  static async exportConversation(conversationId, fmt = 'json') {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/conversations/${encodeURIComponent(conversationId)}/export?fmt=${encodeURIComponent(fmt)}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Export failed');
+    return res;
+  }
+
+  static async uploadFile(file) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/api/core/upload`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    return res.json();
+  }
+
+  static async textToSpeech(text, voice = 'alloy') {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/voice/tts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ text, voice }),
+    });
+    if (!res.ok) throw new Error('TTS failed');
+    return res.blob();
+  }
+
+  static async speechToText(file) {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_BASE}/api/core/voice/stt`, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    if (!res.ok) throw new Error('STT failed');
+    return res.json();
+  }
+
+  static async analyzeImage(imageUrl, prompt) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/vision/analyze`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ image_url: imageUrl, prompt }),
+    });
+    if (!res.ok) throw new Error('Image analysis failed');
+    return res.json();
+  }
+
+  static async getProfile() {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/profile`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to load profile');
+    return res.json();
+  }
+
+  static async updateProfile(data) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/profile`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update profile');
+    return res.json();
+  }
+
+  static async getSettings() {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/settings`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!res.ok) throw new Error('Failed to load settings');
+    return res.json();
+  }
+
+  static async updateSettings(data) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/settings`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update settings');
+    return res.json();
+  }
+
+  static async getI18nPack(lang = 'en') {
+    const res = await fetch(`${API_BASE}/api/core/i18n?lang=${encodeURIComponent(lang)}`);
+    if (!res.ok) throw new Error('Failed to load translations');
+    return res.json();
+  }
+
+  static async getThemes() {
+    const res = await fetch(`${API_BASE}/api/core/themes`);
+    if (!res.ok) throw new Error('Failed to load themes');
+    return res.json();
+  }
+
+  static async saveMemory(content, importance = 1) {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/core/memory/hooks`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ content, importance }),
+    });
+    if (!res.ok) throw new Error('Failed to save memory');
+    return res.json();
+  }
 }
 
 class WebSocketManager {
@@ -324,13 +571,20 @@ class ChatApp {
   constructor() {
     this.messages = [];
     this.conversations = [];
+    this.folders = [];
     this.activeConversationId = null;
+    this.activeFolderId = null;
     this.isLoading = false;
     this.isStreaming = false;
     this.currentStreamingMsgId = null;
     this.wsManager = null;
     this.abortController = null;
     this.selectedModel = 'gpt-4o';
+    this.mediaRecorder = null;
+    this.audioChunks = [];
+    this.isRecording = false;
+    this.i18n = {};
+    this.currentLang = 'en';
 
     this.messageListEl = document.getElementById('chat-messages');
     this.messageInputEl = document.getElementById('message-input');
@@ -340,9 +594,24 @@ class ChatApp {
     this.newChatBtnEl = document.getElementById('new-chat-btn');
     this.connectionStatusEl = document.getElementById('connection-status');
     this.modelSelectEl = document.getElementById('model-select');
+    this.searchInputEl = document.getElementById('conversation-search');
+    this.folderSelectEl = document.getElementById('folder-select');
+    this.pinBtnEl = document.getElementById('pin-conversation-btn');
+    this.shareBtnEl = document.getElementById('share-conversation-btn');
+    this.exportBtnEl = document.getElementById('export-conversation-btn');
+    this.uploadBtnEl = document.getElementById('upload-file-btn');
+    this.voiceBtnEl = document.getElementById('voice-input-btn');
+    this.ttsBtnEl = document.getElementById('tts-btn');
+    this.themeBtnEl = document.getElementById('theme-btn');
+    this.langBtnEl = document.getElementById('lang-btn');
 
     this._bindEvents();
     this._init();
+  }
+
+  t(key, fallback) {
+    const pack = this.i18n.translations || {};
+    return pack[key] || fallback || key;
   }
 
   _bindEvents() {
@@ -368,6 +637,40 @@ class ChatApp {
         this.selectedModel = e.target.value;
       });
     }
+    if (this.searchInputEl) {
+      this.searchInputEl.addEventListener('input', (e) => {
+        this._handleSearch(e.target.value);
+      });
+    }
+    if (this.folderSelectEl) {
+      this.folderSelectEl.addEventListener('change', (e) => {
+        this._handleFolderChange(e.target.value);
+      });
+    }
+    if (this.pinBtnEl) {
+      this.pinBtnEl.addEventListener('click', () => this._togglePin());
+    }
+    if (this.shareBtnEl) {
+      this.shareBtnEl.addEventListener('click', () => this._handleShare());
+    }
+    if (this.exportBtnEl) {
+      this.exportBtnEl.addEventListener('click', () => this._handleExport());
+    }
+    if (this.uploadBtnEl) {
+      this.uploadBtnEl.addEventListener('click', () => this._handleUpload());
+    }
+    if (this.voiceBtnEl) {
+      this.voiceBtnEl.addEventListener('click', () => this._toggleVoiceRecording());
+    }
+    if (this.ttsBtnEl) {
+      this.ttsBtnEl.addEventListener('click', () => this._handleTTS());
+    }
+    if (this.themeBtnEl) {
+      this.themeBtnEl.addEventListener('click', () => this._cycleTheme());
+    }
+    if (this.langBtnEl) {
+      this.langBtnEl.addEventListener('click', () => this._cycleLanguage());
+    }
 
     this._initRealityBending();
   }
@@ -386,6 +689,9 @@ class ChatApp {
   async _init() {
     this._setLoading(true);
     try {
+      await this._loadI18n();
+      await this._loadSettings();
+      await this._loadFolders();
       await this._loadConversations();
       if (this.conversations.length > 0) {
         await this._loadConversation(this.conversations[0].id);
@@ -395,6 +701,51 @@ class ChatApp {
     } finally {
       this._setLoading(false);
     }
+  }
+
+  async _loadI18n() {
+    try {
+      const lang = localStorage.getItem('astrovox_lang') || 'en';
+      this.currentLang = lang;
+      const data = await ChatAPI.getI18nPack(lang);
+      this.i18n = data;
+      if (this.messageInputEl) {
+        this.messageInputEl.placeholder = this.t('search_placeholder', 'Send a message...');
+      }
+    } catch {}
+  }
+
+  async _loadSettings() {
+    try {
+      const data = await ChatAPI.getSettings();
+      const settings = data.settings || {};
+      if (settings.theme && typeof ThemeEngine !== 'undefined') {
+        ThemeEngine.apply(settings.theme);
+      }
+      if (settings.language) {
+        this.currentLang = settings.language;
+        localStorage.setItem('astrovox_lang', settings.language);
+        await this._loadI18n();
+      }
+    } catch {}
+  }
+
+  async _loadFolders() {
+    try {
+      const data = await ChatAPI.getFolders();
+      this.folders = data.folders || [];
+      this._renderFolderOptions();
+    } catch (err) {
+      console.error('Failed to load folders:', err);
+    }
+  }
+
+  _renderFolderOptions() {
+    if (!this.folderSelectEl) return;
+    this.folderSelectEl.innerHTML = `
+      <option value="">${this.t('folders', 'Folders')}</option>
+      ${this.folders.map(f => `<option value="${f.id}">${this._escapeHtml(f.name)}</option>`).join('')}
+    `;
   }
 
   async _loadConversations() {
@@ -416,6 +767,7 @@ class ChatApp {
         role: m.role,
         content: m.content,
         createdAt: m.created_at,
+        parts: m.parts,
       }));
       this._renderMessages();
     } catch (err) {
@@ -425,7 +777,8 @@ class ChatApp {
 
   async _newConversation() {
     try {
-      const conv = await ChatAPI.createConversation('New Chat');
+      const title = this.t('new_chat', 'New Chat');
+      const conv = await ChatAPI.createConversation(title);
       this.conversations.unshift(conv);
       this._renderConversationList();
       await this._loadConversation(conv.id);
@@ -494,6 +847,7 @@ class ChatApp {
     if (this.wsManager) {
       this.wsManager.close();
     }
+    this._stopRecording();
     this.isStreaming = false;
     this.currentStreamingMsgId = null;
     this.abortController = null;
@@ -549,7 +903,7 @@ class ChatApp {
       inner.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">💬</div>
-          <h3>Start a conversation</h3>
+          <h3>${this.t('new_chat', 'Start a conversation')}</h3>
           <p>Send a message to begin chatting with the AI assistant.</p>
         </div>
       `;
@@ -560,26 +914,71 @@ class ChatApp {
       const isUser = msg.role === 'user';
       const avatar = isUser ? 'U' : 'AI';
       const streamingClass = msg.isStreaming ? 'message-streaming' : '';
+      let renderedContent = this._escapeHtml(msg.content);
+      if (!isUser && typeof Markdown !== 'undefined') {
+        renderedContent = Markdown.render(msg.content);
+      }
+      if (!isUser && typeof Monaco !== 'undefined') {
+        renderedContent = renderedContent.replace(/<pre><code class="language-(\w+)">([\s\S]*?)<\/code><\/pre>/g, (match, lang, code) => {
+          const id = 'code-' + Math.random().toString(36).slice(2);
+          return `<div class="code-block" data-lang="${lang}" data-id="${id}"><pre><code>${code}</code></pre></div>`;
+        });
+      }
       return `
         <div class="message ${msg.role} ${streamingClass}">
           <div class="message-avatar">${avatar}</div>
           <div class="message-content">
-            <div class="message-bubble">${this._escapeHtml(msg.content)}</div>
+            <div class="message-bubble">${renderedContent}</div>
+            <div class="message-actions">
+              <button class="message-action-btn copy-btn" title="Copy">📋</button>
+              ${!isUser ? `<button class="message-action-btn tts-action-btn" title="Read aloud">🔊</button>` : ''}
+            </div>
             <div class="message-time">${formatTime(msg.createdAt)}</div>
           </div>
         </div>
       `;
     }).join('');
 
+    inner.querySelectorAll('.copy-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const bubble = e.target.closest('.message-content')?.querySelector('.message-bubble');
+        const text = bubble?.textContent || '';
+        navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard'));
+      });
+    });
+
+    inner.querySelectorAll('.tts-action-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const bubble = e.target.closest('.message-content')?.querySelector('.message-bubble');
+        const text = bubble?.textContent || '';
+        if (!text) return;
+        try {
+          const blob = await ChatAPI.textToSpeech(text);
+          const url = URL.createObjectURL(blob);
+          const audio = new Audio(url);
+          audio.play();
+        } catch (err) {
+          showError('TTS failed: ' + err.message);
+        }
+      });
+    });
+
     inner.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
   }
 
   _renderConversationList() {
     if (!this.conversationListEl) return;
-    this.conversationListEl.innerHTML = this.conversations.map(conv => `
-      <button class="conversation-item ${conv.id === this.activeConversationId ? 'active' : ''}"
-              data-id="${conv.id}">
-        ${this._escapeHtml(conv.title || 'Untitled Chat')}
+    const pinned = this.conversations.filter(c => c.is_pinned);
+    const unpinned = this.conversations.filter(c => !c.is_pinned);
+    const sorted = [...pinned, ...unpinned];
+
+    this.conversationListEl.innerHTML = sorted.map(conv => `
+      <button class="conversation-item ${conv.id === this.activeConversationId ? 'active' : ''} ${conv.is_pinned ? 'pinned' : ''}"
+              data-id="${conv.id}" data-folder="${conv.folder_id || ''}">
+        <span class="conv-title">${this._escapeHtml(conv.title || 'Untitled Chat')}</span>
+        <span class="conv-actions">
+          ${conv.is_pinned ? '<span class="pin-icon">📌</span>' : ''}
+        </span>
       </button>
     `).join('');
 
@@ -621,6 +1020,187 @@ class ChatApp {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  async _handleSearch(query) {
+    if (!query || query.length < 2) {
+      await this._loadConversations();
+      return;
+    }
+    try {
+      const data = await ChatAPI.searchConversations(query);
+      const results = data.results || [];
+      if (results.length === 0) {
+        this.conversations = [];
+      } else {
+        this.conversations = results.map(r => ({
+          id: r.id,
+          title: r.title || r.snippet ? (r.title || 'Match') : 'Untitled',
+          is_pinned: false,
+        }));
+      }
+      this._renderConversationList();
+    } catch (err) {
+      console.error('Search failed:', err);
+    }
+  }
+
+  async _handleFolderChange(folderId) {
+    if (!this.activeConversationId) return;
+    try {
+      await ChatAPI.moveConversationToFolder(this.activeConversationId, folderId || null);
+      showToast('Conversation moved');
+      await this._loadConversations();
+    } catch (err) {
+      showError('Failed to move conversation: ' + err.message);
+    }
+  }
+
+  async _togglePin() {
+    if (!this.activeConversationId) return;
+    const conv = this.conversations.find(c => c.id === this.activeConversationId);
+    if (!conv) return;
+    try {
+      if (conv.is_pinned) {
+        await ChatAPI.unpinConversation(this.activeConversationId);
+        showToast('Unpinned');
+      } else {
+        await ChatAPI.pinConversation(this.activeConversationId);
+        showToast('Pinned');
+      }
+      await this._loadConversations();
+    } catch (err) {
+      showError('Failed to update pin: ' + err.message);
+    }
+  }
+
+  async _handleShare() {
+    if (!this.activeConversationId) return;
+    const email = prompt('Enter email to share with:');
+    if (!email) return;
+    try {
+      await ChatAPI.shareConversation(this.activeConversationId, [email]);
+      showToast('Conversation shared');
+    } catch (err) {
+      showError('Failed to share: ' + err.message);
+    }
+  }
+
+  async _handleExport() {
+    if (!this.activeConversationId) return;
+    const fmt = confirm('Export as Markdown? Cancel for JSON.') ? 'markdown' : 'json';
+    try {
+      const res = await ChatAPI.exportConversation(this.activeConversationId, fmt);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `conversation_${this.activeConversationId}.${fmt === 'markdown' ? 'md' : 'json'}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Exported successfully');
+    } catch (err) {
+      showError('Export failed: ' + err.message);
+    }
+  }
+
+  async _handleUpload() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.pdf,.txt,.md';
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const data = await ChatAPI.uploadFile(file);
+        const url = data.file?.url || '';
+        if (url) {
+          this.messageInputEl.value += `\n[Uploaded: ${data.file.filename}](${url})\n`;
+        }
+        showToast('File uploaded');
+      } catch (err) {
+        showError('Upload failed: ' + err.message);
+      }
+    };
+    input.click();
+  }
+
+  async _toggleVoiceRecording() {
+    if (this.isRecording) {
+      this._stopRecording();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.audioChunks = [];
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) this.audioChunks.push(e.data);
+      };
+      this.mediaRecorder.onstop = async () => {
+        const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop());
+        try {
+          const data = await ChatAPI.speechToText(blob);
+          if (data.text) {
+            this.messageInputEl.value += (this.messageInputEl.value ? ' ' : '') + data.text;
+          }
+        } catch (err) {
+          showError('Transcription failed: ' + err.message);
+        }
+      };
+      this.mediaRecorder.start();
+      this.isRecording = true;
+      if (this.voiceBtnEl) this.voiceBtnEl.classList.add('recording');
+      showToast('Recording...');
+    } catch (err) {
+      showError('Microphone access denied');
+    }
+  }
+
+  _stopRecording() {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.isRecording = false;
+    if (this.voiceBtnEl) this.voiceBtnEl.classList.remove('recording');
+  }
+
+  async _handleTTS() {
+    if (!this.activeConversationId) return;
+    const msgs = this.messages.filter(m => m.role === 'assistant');
+    if (msgs.length === 0) return;
+    const last = msgs[msgs.length - 1];
+    try {
+      const blob = await ChatAPI.textToSpeech(last.content);
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.play();
+    } catch (err) {
+      showError('TTS failed: ' + err.message);
+    }
+  }
+
+  _cycleTheme() {
+    if (typeof ThemeEngine === 'undefined') return;
+    const themes = ThemeEngine.getAvailable();
+    const current = ThemeEngine.getCurrent();
+    const idx = themes.indexOf(current);
+    const next = themes[(idx + 1) % themes.length];
+    ThemeEngine.apply(next);
+    ChatAPI.updateSettings({ theme: next }).catch(() => {});
+  }
+
+  async _cycleLanguage() {
+    const langs = ['en', 'es', 'fr', 'de', 'ja', 'zh'];
+    const idx = langs.indexOf(this.currentLang);
+    const next = langs[(idx + 1) % langs.length];
+    this.currentLang = next;
+    localStorage.setItem('astrovox_lang', next);
+    await this._loadI18n();
+    this._renderConversationList();
+    this._renderMessages();
+    ChatAPI.updateSettings({ language: next }).catch(() => {});
   }
 }
 

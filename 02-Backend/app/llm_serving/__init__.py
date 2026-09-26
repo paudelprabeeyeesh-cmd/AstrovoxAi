@@ -15,6 +15,14 @@ from .sharding import ModelSharder, ShardConfig, ShardingStrategy, TensorParalle
 from .speculative_decoding import DraftModelHook, SpeculativeDecoder, SpeculativeStats
 from .adapters import AdapterRequest, AdapterResponse, BaseInferenceAdapter, LlamaCppAdapter, TensorRTLLMAdapter, VLLMAdapter
 
+try:
+    from app.inference.flash_attention import FlashAttention, FlashAttentionConfig
+    from app.inference.paged_attention import PagedAttention, PagedKVCache, BlockManager
+    from app.inference.parallelism import TensorParallelism, PipelineParallelism, ParallelConfig
+    from app.inference.sharding import ZeROSharding, HybridSharding, ShardConfig as InferenceShardConfig
+except ImportError:
+    pass
+
 __all__ = [
     "AdapterRequest",
     "AdapterResponse",
@@ -31,6 +39,8 @@ __all__ = [
     "GPUMemoryManager",
     "HealthProbe",
     "HealthProbeResult",
+    "HybridSharding",
+    "InferenceShardConfig",
     "InferenceTask",
     "KVCacheBlock",
     "KVCacheManager",
@@ -41,6 +51,8 @@ __all__ = [
     "ModelSharder",
     "NodeInfo",
     "ObservabilityHooks",
+    "ParallelConfig",
+    "PipelineParallelism",
     "PrefixCache",
     "PriorityScheduler",
     "QueueManager",
@@ -55,9 +67,11 @@ __all__ = [
     "ShardingStrategy",
     "SpeculativeDecoder",
     "SpeculativeStats",
+    "TensorParallelism",
     "TensorParallelSharder",
     "TensorRTLLMAdapter",
     "ThroughputTracker",
     "VLLMAdapter",
+    "ZeROSharding",
     "get_shard_config_from_env",
 ]

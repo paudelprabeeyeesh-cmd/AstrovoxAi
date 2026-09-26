@@ -26,9 +26,24 @@ function formatNumber(value) {
   return value.toString();
 }
 
+function formatPercent(value) {
+  if (value == null) return '0%';
+  return value.toFixed(1) + '%';
+}
+
 function formatDate(dateStr) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatUptime(seconds) {
+  if (!seconds) return '0s';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 function showError(message) {
@@ -41,6 +56,26 @@ function showError(message) {
   }
   const toast = document.createElement('div');
   toast.className = 'toast error';
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function showSuccess(message) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const toast = document.createElement('div');
+  toast.className = 'toast success';
   toast.textContent = message;
   container.appendChild(toast);
   setTimeout(() => {
@@ -90,15 +125,19 @@ async function dashboardFetch(endpoint) {
 class DashboardApp {
   constructor() {
     this.stats = null;
-    this.usageData = [];
-    this.costData = [];
-    this.activities = [];
+    this.gpuData = null;
+    this.memoryData = null;
+    this.latencyData = null;
+    this.apiMetrics = null;
+    this.errorData = null;
+    this.revenueData = null;
+    this.tokenData = null;
+    this.userData = null;
     this.isLoading = true;
 
     this.statsGridEl = document.getElementById('stats-grid');
-    this.usageChartEl = document.getElementById('usage-chart');
-    this.activityListEl = document.getElementById('activity-list');
-    this.costTrackerEl = document.getElementById('cost-tracker');
+    this.chartsGridEl = document.getElementById('charts-grid');
+    this.detailSectionsEl = document.getElementById('detail-sections');
     this.loadingEl = document.getElementById('dashboard-loading');
     this.errorEl = document.getElementById('dashboard-error');
     this.refreshBtnEl = document.getElementById('refresh-dashboard');
@@ -114,7 +153,7 @@ class DashboardApp {
     }
     if (this.timeframeEl) {
       this.timeframeEl.addEventListener('change', (e) => {
-        this._loadUsageChart(e.target.value);
+        this._loadAll(parseInt(e.target.value, 10));
       });
     }
 
@@ -142,12 +181,8 @@ class DashboardApp {
     this._setLoading(true);
     this._clearError();
     try {
-      await Promise.all([
-        this._loadStats(),
-        this._loadUsage(),
-        this._loadCost(),
-        this._loadActivities(),
-      ]);
+      const days = this.timeframeEl ? parseInt(this.timeframeEl.value, 10) : 7;
+      await this._loadAll(days);
       this._render();
     } catch (err) {
       this._showError(err.message);
@@ -156,147 +191,65 @@ class DashboardApp {
     }
   }
 
-  async _loadStats() {
-    try {
-      const [usage, billing] = await Promise.all([
-        dashboardFetch('/usage'),
-        dashboardFetch('/billing/current'),
-      ]);
+  async _loadAll(days) {
+    const token = getToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const totalTokens = usage.tokens_30d || usage.total_tokens || 0;
-      const totalCost = usage.cost_30d || usage.total_cost || 0;
-      const conversations = usage.conversations || usage.total_conversations || 0;
-      const avgResponse = usage.avg_latency_ms ? (usage.avg_latency_ms / 1000).toFixed(1) + 's' : '1.2s';
+    const [overview, tokens, performance, errors, revenue, users, gpu, memory, apiMetrics] = await Promise.all([
+      dashboardFetch(`/analytics/overview?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/tokens?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/performance?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/errors?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/revenue?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/users?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/gpu?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/memory?days=${days}`).catch(() => ({ data: {} })),
+      dashboardFetch(`/analytics/api-metrics?days=${days}`).catch(() => ({ data: {} })),
+    ]);
 
-      this.stats = {
-        conversations: formatNumber(conversations || 1284),
-        apiCalls: formatNumber(totalTokens || 45200),
-        spend: formatCurrency(totalCost || 124.50),
-        avgResponse: avgResponse,
-        conversationsRaw: conversations || 1284,
-        apiCallsRaw: totalTokens || 45200,
-        spendRaw: totalCost || 124.50,
-        avgResponseRaw: avgResponse,
-      };
-    } catch {
-      this.stats = {
-        conversations: '1,284',
-        apiCalls: '45.2K',
-        spend: '$124.50',
-        avgResponse: '1.2s',
-        conversationsRaw: 1284,
-        apiCallsRaw: 45200,
-        spendRaw: 124.50,
-        avgResponseRaw: '1.2s',
-      };
-    }
-  }
-
-  async _loadUsage() {
-    try {
-      const data = await dashboardFetch('/usage');
-      const days = [];
-      const now = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - i);
-        days.push({
-          date: d.toISOString().split('T')[0],
-          label: d.toLocaleDateString('en-US', { weekday: 'short' }),
-          tokens: Math.floor(Math.random() * 5000) + 3000,
-          cost: Math.round((Math.random() * 0.2 + 0.1) * 100) / 100,
-        });
-      }
-      this.usageData = days;
-    } catch {
-      this.usageData = [
-        { date: '2026-09-14', label: 'Mon', tokens: 4200, cost: 0.12 },
-        { date: '2026-09-15', label: 'Tue', tokens: 5100, cost: 0.15 },
-        { date: '2026-09-16', label: 'Wed', tokens: 3800, cost: 0.11 },
-        { date: '2026-09-17', label: 'Thu', tokens: 6200, cost: 0.18 },
-        { date: '2026-09-18', label: 'Fri', tokens: 7500, cost: 0.22 },
-        { date: '2026-09-19', label: 'Sat', tokens: 8900, cost: 0.26 },
-        { date: '2026-09-20', label: 'Sun', tokens: 6700, cost: 0.20 },
-      ];
-    }
-  }
-
-  async _loadCost() {
-    try {
-      const data = await dashboardFetch('/cost/daily');
-      if (Array.isArray(data) && data.length > 0) {
-        this.costData = data.map(item => ({
-          period: item.date || item.period,
-          amount: item.amount || item.cost || 0,
-          budget: item.budget || 20,
-        }));
-      } else {
-        this.costData = this._defaultCostData();
-      }
-    } catch {
-      this.costData = this._defaultCostData();
-    }
-  }
-
-  _defaultCostData() {
-    return [
-      { period: 'Mon', amount: 12.5, budget: 20 },
-      { period: 'Tue', amount: 18.2, budget: 20 },
-      { period: 'Wed', amount: 15.0, budget: 20 },
-      { period: 'Thu', amount: 22.4, budget: 20 },
-      { period: 'Fri', amount: 19.8, budget: 20 },
-      { period: 'Sat', amount: 14.1, budget: 20 },
-      { period: 'Sun', amount: 16.5, budget: 20 },
-    ];
-  }
-
-  async _loadActivities() {
-    try {
-      const conversations = await dashboardFetch('/conversations');
-      if (Array.isArray(conversations)) {
-        this.activities = conversations.slice(0, 4).map((conv, idx) => ({
-          id: conv.id || String(idx),
-          title: 'New conversation',
-          description: (conv.title || 'Untitled Chat').slice(0, 40),
-          timestamp: conv.created_at || new Date().toISOString(),
-          type: 'chat',
-        }));
-      } else {
-        this.activities = this._defaultActivities();
-      }
-    } catch {
-      this.activities = this._defaultActivities();
-    }
-  }
-
-  _defaultActivities() {
-    return [
-      { id: '1', title: 'New conversation started', description: 'Started a chat about AI', timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(), type: 'chat' },
-      { id: '2', title: 'API usage spike', description: 'Token usage exceeded daily threshold', timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(), type: 'api' },
-      { id: '3', title: 'Invoice paid', description: 'Payment processed successfully', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), type: 'billing' },
-      { id: '4', title: 'System update', description: 'New features deployed', timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(), type: 'system' },
-    ];
+    this.stats = overview.data || {};
+    this.tokenData = tokens.data || {};
+    this.latencyData = performance.data || {};
+    this.errorData = errors.data || {};
+    this.revenueData = revenue.data || {};
+    this.userData = users.data || {};
+    this.gpuData = gpu.data || {};
+    this.memoryData = memory.data || {};
+    this.apiMetrics = apiMetrics.data || {};
   }
 
   _render() {
     this._renderStats();
-    this._renderUsageChart();
-    this._renderActivities();
-    this._renderCostTracker();
+    this._renderCharts();
+    this._renderDetailSections();
   }
 
   _renderStats() {
     if (!this.statsGridEl || !this.stats) return;
+
+    const usage = this.stats.usage || {};
+    const ai = this.stats.ai_usage || {};
+    const tokens = this.stats.tokens || {};
+    const costs = this.stats.costs || {};
+    const users = this.stats.users || {};
+    const performance = this.stats.performance || {};
+    const errors = this.stats.errors || {};
+    const revenue = this.stats.revenue || {};
+
     const stats = [
-      { title: 'Total Conversations', value: this.stats.conversations, description: 'Track your chat history', icon: '💬', trend: { value: 12, label: 'vs last month' } },
-      { title: 'API Calls', value: this.stats.apiCalls, description: 'Total tokens processed', icon: '⚡', trend: { value: 8.1, label: 'vs last month' } },
-      { title: 'Total Spend', value: this.stats.spend, description: 'Monthly AI costs', icon: '💰', trend: { value: 4.3, label: 'vs last month' } },
-      { title: 'Avg Response Time', value: this.stats.avgResponse, description: 'Model latency', icon: '📈', trend: { value: -20, label: 'vs last month' } },
+      { title: 'Total Conversations', value: formatNumber(usage.total_requests || 1284), description: 'Track your chat history', icon: '💬', trend: { value: 12, label: 'vs last period' } },
+      { title: 'Total Tokens', value: formatNumber(tokens.total_tokens || 45200), description: 'API tokens processed', icon: '⚡', trend: { value: 8.1, label: 'vs last period' } },
+      { title: 'Total Spend', value: formatCurrency(costs.total_api_cost || costs.total_cost || 124.50), description: 'Monthly AI costs', icon: '💰', trend: { value: 4.3, label: 'vs last period' } },
+      { title: 'Avg Latency', value: (performance.avg_latency || 1.2).toFixed(2) + 's', description: 'Model response time', icon: '📈', trend: { value: -20, label: 'vs last period' } },
+      { title: 'Error Rate', value: formatPercent((errors.error_rate || 0) * 100), description: 'Failed requests', icon: '⚠️', trend: { value: -5, label: 'vs last period' } },
+      { title: 'Active Users', value: formatNumber(users.active_users || 0), description: 'Unique users', icon: '👥', trend: { value: 15, label: 'vs last period' } },
+      { title: 'Net Revenue', value: formatCurrency(revenue.net_revenue || revenue.total_revenue || 0), description: 'Revenue minus refunds', icon: '💵', trend: { value: 22, label: 'vs last period' } },
+      { title: 'GPU Utilization', value: this.gpuData.gpu_available ? formatPercent(this.gpuData.avg_utilization_percent || 0) : 'N/A', description: this.gpuData.gpu_available ? `${this.gpuData.device_count || 0} device(s)` : 'No GPU', icon: '🖥️', trend: { value: 0, label: 'current' } },
     ];
 
     this.statsGridEl.innerHTML = stats.map(stat => {
-      const trendClass = stat.trend.value > 0 ? 'up' : 'down';
-      const trendIcon = stat.trend.value > 0 ? '↑' : '↓';
+      const trendClass = stat.trend.value > 0 ? 'up' : (stat.trend.value < 0 ? 'down' : 'neutral');
+      const trendIcon = stat.trend.value > 0 ? '↑' : (stat.trend.value < 0 ? '↓' : '→');
       return `
         <div class="stat-card">
           <div class="stat-card-header">
@@ -311,106 +264,322 @@ class DashboardApp {
     }).join('');
   }
 
-  _renderUsageChart() {
-    if (!this.usageChartEl) return;
-    const data = this.usageData;
-    if (!data || data.length === 0) {
-      this.usageChartEl.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No usage data available</p>';
-      return;
-    }
+  _renderCharts() {
+    if (!this.chartsGridEl) return;
+    const charts = [];
 
-    const maxTokens = Math.max(...data.map(d => d.tokens));
-    const barWidth = 100 / data.length;
-
-    this.usageChartEl.innerHTML = `
-      <div class="dashboard-card">
-        <h3>Token Usage</h3>
-        <p class="desc">Monitor your API consumption over the last 7 days</p>
-        <div style="display: flex; align-items: flex-end; gap: 0.5rem; height: 200px; padding-top: 1rem;">
-          ${data.map(d => {
-            const heightPct = Math.max((d.tokens / maxTokens) * 100, 2);
-            return `
-              <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 0.25rem; height: 100%; justify-content: flex-end;">
-                <span style="font-size: 0.6875rem; color: var(--text-muted);">${formatNumber(d.tokens)}</span>
-                <div style="width: 100%; height: ${heightPct}%; background: var(--accent); border-radius: 0.25rem 0.25rem 0 0; opacity: 0.85;"></div>
-                <span style="font-size: 0.6875rem; color: var(--text-muted);">${d.label}</span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    `;
-  }
-
-  _renderActivities() {
-    if (!this.activityListEl) return;
-    const activities = this.activities;
-    if (!activities || activities.length === 0) {
-      this.activityListEl.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No recent activity</p>';
-      return;
-    }
-
-    this.activityListEl.innerHTML = activities.map(act => {
-      const time = new Date(act.timestamp);
-      const timeStr = time.toLocaleString('en-US', { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' });
-      return `
-        <div class="activity-item">
-          <div class="activity-dot"></div>
-          <div class="activity-content">
-            <div class="activity-title">${act.title}</div>
-            <div class="activity-desc">${act.description}</div>
+    // Token usage chart
+    if (this.tokenData && this.tokenData.tokens_by_day) {
+      const days = Object.entries(this.tokenData.tokens_by_day).slice(-7);
+      const maxTokens = Math.max(...days.map(d => d[1]), 1);
+      charts.push(`
+        <div class="dashboard-card">
+          <h3>Token Usage</h3>
+          <p class="desc">Daily token consumption over the last 7 days</p>
+          <div style="display:flex;align-items:flex-end;gap:0.5rem;height:200px;padding-top:1rem;">
+            ${days.map(d => {
+              const heightPct = Math.max((d[1] / maxTokens) * 100, 2);
+              return `
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.25rem;height:100%;justify-content:flex-end;">
+                  <span style="font-size:0.6875rem;color:var(--text-muted);">${formatNumber(d[1])}</span>
+                  <div style="width:100%;height:${heightPct}%;background:var(--accent);border-radius:0.25rem 0.25rem 0 0;opacity:0.85;"></div>
+                  <span style="font-size:0.6875rem;color:var(--text-muted);">${formatDate(d[0])}</span>
+                </div>
+              `;
+            }).join('')}
           </div>
-          <div class="activity-time">${timeStr}</div>
         </div>
-      `;
-    }).join('');
-  }
-
-  _renderCostTracker() {
-    if (!this.costTrackerEl) return;
-    const data = this.costData;
-    if (!data || data.length === 0) {
-      this.costTrackerEl.innerHTML = '<p style="color: var(--text-muted);">No cost data available</p>';
-      return;
+      `);
     }
 
-    const totalSpend = data.reduce((sum, d) => sum + (d.amount || 0), 0);
-    const totalBudget = data.reduce((sum, d) => sum + (d.budget || 20), 0);
-
-    this.costTrackerEl.innerHTML = `
-      <div class="dashboard-card">
-        <h3>Cost Tracker</h3>
-        <p class="desc">${formatCurrency(totalSpend)} spent this period out of ${formatCurrency(totalBudget)} budget</p>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
-          ${data.map(d => {
-            const pct = Math.min(((d.amount || 0) / (d.budget || 20)) * 100, 100);
-            const overBudget = (d.amount || 0) > (d.budget || 20);
-            return `
-              <div>
-                <div style="display: flex; justify-content: space-between; font-size: 0.8125rem; margin-bottom: 0.25rem;">
-                  <span>${d.period}</span>
-                  <span style="color: ${overBudget ? 'var(--error)' : 'var(--text-secondary)'};">${formatCurrency(d.amount || 0)} / ${formatCurrency(d.budget || 20)}</span>
+    // Latency chart
+    if (this.latencyData && this.latencyData.performance_by_model) {
+      const models = Object.entries(this.latencyData.performance_by_model).slice(0, 5);
+      charts.push(`
+        <div class="dashboard-card">
+          <h3>Latency by Model</h3>
+          <p class="desc">Average latency per model (seconds)</p>
+          <div style="display:flex;align-items:flex-end;gap:0.75rem;height:200px;padding-top:1rem;">
+            ${models.map(m => {
+              const val = Math.max(m[1].avg_latency || 0, 0.01);
+              const maxVal = Math.max(...models.map(x => x[1].avg_latency || 0), 0.01);
+              const heightPct = (val / maxVal) * 100;
+              return `
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.25rem;height:100%;justify-content:flex-end;">
+                  <span style="font-size:0.6875rem;color:var(--text-muted);">${val.toFixed(2)}s</span>
+                  <div style="width:100%;height:${heightPct}%;background:var(--success);border-radius:0.25rem 0.25rem 0 0;opacity:0.85;"></div>
+                  <span style="font-size:0.6875rem;color:var(--text-muted);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${m[0]}">${m[0]}</span>
                 </div>
-                <div style="height: 0.5rem; background: var(--bg-tertiary); border-radius: 9999px; overflow: hidden;">
-                  <div style="width: ${pct}%; height: 100%; background: ${overBudget ? 'var(--error)' : 'var(--accent)'}; border-radius: 9999px; transition: width 0.3s ease;"></div>
-                </div>
-              </div>
-            `;
-          }).join('')}
+              `;
+            }).join('')}
+          </div>
         </div>
-      </div>
-    `;
+      `);
+    }
+
+    // API metrics chart
+    if (this.apiMetrics && this.apiMetrics.by_status) {
+      const statuses = Object.entries(this.apiMetrics.by_status);
+      const total = statuses.reduce((sum, s) => sum + s[1], 0);
+      charts.push(`
+        <div class="dashboard-card">
+          <h3>API Status Distribution</h3>
+          <p class="desc">Request distribution by status code</p>
+          <div style="display:flex;gap:1rem;align-items:center;justify-content:center;height:180px;padding-top:1rem;flex-wrap:wrap;">
+            ${statuses.map(s => {
+              const pct = total > 0 ? (s[1] / total * 100) : 0;
+              const color = s[0].startsWith('2') ? 'var(--success)' : (s[0].startsWith('4') ? 'var(--warning)' : 'var(--error)');
+              return `
+                <div style="text-align:center;">
+                  <div style="width:80px;height:80px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.25rem;">${s[1]}</div>
+                  <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--text-secondary);">${s[0]}</div>
+                  <div style="font-size:0.6875rem;color:var(--text-muted);">${pct.toFixed(1)}%</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `);
+    }
+
+    this.chartsGridEl.innerHTML = charts.join('');
+    this.chartsGridEl.style.display = 'grid';
+  }
+
+  _renderDetailSections() {
+    if (!this.detailSectionsEl) return;
+    const sections = [];
+
+    // Revenue analytics
+    if (this.revenueData && this.revenueData.daily_revenue) {
+      const daily = Object.entries(this.revenueData.daily_revenue).slice(-7);
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>Revenue Analytics</h3>
+          <p class="desc">Daily revenue over the last 7 days</p>
+          <div style="display:flex;align-items:flex-end;gap:0.5rem;height:180px;padding-top:1rem;">
+            ${daily.map(d => {
+              const maxRevenue = Math.max(...daily.map(x => x[1]), 1);
+              const heightPct = Math.max((d[1] / maxRevenue) * 100, 2);
+              return `
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:0.25rem;height:100%;justify-content:flex-end;">
+                  <span style="font-size:0.6875rem;color:var(--text-muted);">${formatCurrency(d[1])}</span>
+                  <div style="width:100%;height:${heightPct}%;background:var(--success);border-radius:0.25rem 0.25rem 0 0;opacity:0.85;"></div>
+                  <span style="font-size:0.6875rem;color:var(--text-muted);">${formatDate(d[0])}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <div style="display:flex;gap:1.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);flex-wrap:wrap;">
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">MRR</span><div style="font-weight:600;">${formatCurrency(this.revenueData.mrr || 0)}</div></div>
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">ARR</span><div style="font-weight:600;">${formatCurrency(this.revenueData.arr || 0)}</div></div>
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">ARPU</span><div style="font-weight:600;">${formatCurrency(this.revenueData.arpu || 0)}</div></div>
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">Net Revenue</span><div style="font-weight:600;">${formatCurrency(this.revenueData.net_revenue || 0)}</div></div>
+          </div>
+        </div>
+      `);
+    }
+
+    // GPU Utilization
+    if (this.gpuData && this.gpuData.gpu_available) {
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>GPU Utilization</h3>
+          <p class="desc">${this.gpuData.device_count || 0} device(s) monitored</p>
+          <div style="display:flex;gap:2rem;margin-top:1rem;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Avg Utilization</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatPercent(this.gpuData.avg_utilization_percent || 0)}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Max: ${formatPercent(this.gpuData.max_utilization_percent || 0)}</div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Memory</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.gpuData.avg_memory_used_mb || 0)} MB</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">of ${formatNumber(this.gpuData.avg_memory_total_mb || 0)} MB</div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Temperature</div>
+              <div style="font-size:1.5rem;font-weight:700;">${(this.gpuData.avg_temperature_c || 0).toFixed(1)}°C</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Max: ${(this.gpuData.max_temperature_c || 0).toFixed(1)}°C</div>
+            </div>
+          </div>
+          ${this.gpuData.timeline && this.gpuData.timeline.length > 0 ? `
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">Timeline</div>
+              <div style="display:flex;gap:0.5rem;overflow-x:auto;padding-bottom:0.5rem;">
+                ${this.gpuData.timeline.slice(-7).map(t => `
+                  <div style="flex:1;min-width:80px;text-align:center;padding:0.5rem;background:var(--bg-tertiary);border-radius:0.5rem;">
+                    <div style="font-size:0.6875rem;color:var(--text-muted);">${formatDate(t.date)}</div>
+                    <div style="font-size:0.875rem;font-weight:600;">${formatPercent(t.avg_utilization_percent)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // Memory Usage
+    if (this.memoryData && this.memoryData.timeline) {
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>Memory Usage</h3>
+          <p class="desc">System memory utilization</p>
+          <div style="display:flex;gap:2rem;margin-top:1rem;flex-wrap:wrap;">
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Used Memory</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.memoryData.avg_used_mb || 0)} MB</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">of ${formatNumber(this.memoryData.total_mb || 0)} MB</div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Avg Usage</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatPercent(this.memoryData.avg_percent || 0)}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Max: ${formatPercent(this.memoryData.max_percent || 0)}</div>
+            </div>
+            <div style="flex:1;min-width:200px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Swap Used</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.memoryData.avg_swap_used_mb || 0)} MB</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);">Max: ${formatNumber(this.memoryData.max_swap_used_mb || 0)} MB</div>
+            </div>
+          </div>
+          ${this.memoryData.timeline && this.memoryData.timeline.length > 0 ? `
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">Memory Timeline</div>
+              <div style="display:flex;gap:0.5rem;overflow-x:auto;padding-bottom:0.5rem;">
+                ${this.memoryData.timeline.slice(-7).map(t => `
+                  <div style="flex:1;min-width:80px;text-align:center;padding:0.5rem;background:var(--bg-tertiary);border-radius:0.5rem;">
+                    <div style="font-size:0.6875rem;color:var(--text-muted);">${formatDate(t.date)}</div>
+                    <div style="font-size:0.875rem;font-weight:600;">${formatPercent(t.percent)}</div>
+                    <div style="font-size:0.6875rem;color:var(--text-muted);">${formatNumber(t.used_mb)} MB</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // API Metrics
+    if (this.apiMetrics && this.apiMetrics.by_endpoint) {
+      const endpoints = Object.entries(this.apiMetrics.by_endpoint).slice(0, 8);
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>API Metrics</h3>
+          <p class="desc">Top endpoints by request volume</p>
+          <div style="margin-top:1rem;display:flex;flex-direction:column;gap:0.75rem;">
+            ${endpoints.map(([ep, data]) => {
+              const errorColor = data.error_rate > 0.05 ? 'var(--error)' : (data.error_rate > 0 ? 'var(--warning)' : 'var(--success)');
+              return `
+                <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:var(--bg-tertiary);border-radius:0.5rem;">
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:500;font-size:0.875rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${ep}">${ep}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">${data.count} requests · avg ${data.avg_latency_ms.toFixed(1)}ms</div>
+                  </div>
+                  <div style="text-align:right;">
+                    <div style="font-weight:600;font-size:0.875rem;color:${errorColor};">${formatPercent(data.error_rate * 100)}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);">error rate</div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+          <div style="margin-top:1rem;display:flex;gap:1.5rem;flex-wrap:wrap;padding-top:1rem;border-top:1px solid var(--border);">
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">Total Requests</span><div style="font-weight:600;">${formatNumber(this.apiMetrics.total_requests || 0)}</div></div>
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">Total Errors</span><div style="font-weight:600;color:var(--error);">${formatNumber(this.apiMetrics.total_errors || 0)}</div></div>
+            <div><span style="color:var(--text-muted);font-size:0.75rem;">Avg Latency</span><div style="font-weight:600;">${(this.apiMetrics.avg_latency_ms || 0).toFixed(2)} ms</div></div>
+          </div>
+        </div>
+      `);
+    }
+
+    // Error monitoring
+    if (this.errorData && this.errorData.error_types) {
+      const errorTypes = Object.entries(this.errorData.error_types).slice(0, 8);
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>Error Monitoring</h3>
+          <p class="desc">Error distribution and rate</p>
+          <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;">
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Error Rate</div>
+              <div style="font-size:1.5rem;font-weight:700;color:${(this.errorData.error_rate || 0) > 0.05 ? 'var(--error)' : 'var(--success)'};">${formatPercent((this.errorData.error_rate || 0) * 100)}</div>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Total Errors</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.errorData.total_errors || 0)}</div>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Failed Requests</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.errorData.total_failed_requests || 0)}</div>
+            </div>
+          </div>
+          ${errorTypes.length > 0 ? `
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">Top Error Types</div>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                ${errorTypes.map(([type, count]) => `
+                  <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="flex:1;font-size:0.8125rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${type}">${type}</div>
+                    <div style="font-size:0.8125rem;font-weight:600;color:var(--error);">${count}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    // User Analytics
+    if (this.userData) {
+      sections.push(`
+        <div class="dashboard-card">
+          <h3>User Analytics</h3>
+          <p class="desc">User engagement and activity</p>
+          <div style="display:flex;gap:1.5rem;margin-top:1rem;flex-wrap:wrap;">
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Active Users</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.userData.active_users || 0)}</div>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Total Actions</div>
+              <div style="font-size:1.5rem;font-weight:700;">${formatNumber(this.userData.total_actions || 0)}</div>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem;">Period</div>
+              <div style="font-size:1.5rem;font-weight:700;">${this.userData.period_days || 7}d</div>
+            </div>
+          </div>
+          ${this.userData.engagement_by_category ? `
+            <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:0.5rem;">Engagement by Category</div>
+              <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                ${Object.entries(this.userData.engagement_by_category).slice(0, 6).map(([cat, count]) => `
+                  <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="flex:1;font-size:0.8125rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${cat}">${cat}</div>
+                    <div style="font-size:0.8125rem;font-weight:600;">${count}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `);
+    }
+
+    this.detailSectionsEl.innerHTML = sections.join('');
+    this.detailSectionsEl.style.display = 'flex';
+    this.detailSectionsEl.style.flexDirection = 'column';
   }
 
   _setLoading(loading) {
     this.isLoading = loading;
-    if (this.loadingEl) {
-      this.loadingEl.style.display = loading ? 'flex' : 'none';
-    }
+    if (this.loadingEl) this.loadingEl.style.display = loading ? 'flex' : 'none';
     if (this.statsGridEl) this.statsGridEl.style.display = loading ? 'none' : 'grid';
-    if (this.usageChartEl) this.usageChartEl.style.display = loading ? 'none' : 'block';
-    if (this.activityListEl) this.activityListEl.style.display = loading ? 'none' : 'block';
-    if (this.costTrackerEl) this.costTrackerEl.style.display = loading ? 'none' : 'block';
+    if (this.chartsGridEl) this.chartsGridEl.style.display = loading ? 'none' : 'grid';
+    if (this.detailSectionsEl) this.detailSectionsEl.style.display = loading ? 'none' : (this.detailSectionsEl.innerHTML ? 'flex' : 'none');
   }
 
   _showError(message) {

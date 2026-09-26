@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RAG Knowledge Base - AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="stylesheet" href="css/components/rag.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <button class="nav-link" onclick="window.location.href='/index.html'">Home</button>
+        <button class="nav-link" onclick="window.location.href='/chat.html'">Chat</button>
+        <button class="nav-link active">RAG</button>
+        <button class="nav-link" onclick="window.location.href='/dashboard.html'">Dashboard</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">RAG Knowledge Base</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Chunking, embeddings, retrieval, and citations</p>
+          </div>
+        </div>
+
+        <div class="rag-tabs">
+          <button class="rag-tab active" data-tab="chunking">Chunking</button>
+          <button class="rag-tab" data-tab="search">Search</button>
+          <button class="rag-tab" data-tab="citations">Citations</button>
+        </div>
+
+        <div id="tab-chunking"></div>
+        <div id="tab-search" style="display:none;"></div>
+        <div id="tab-citations" style="display:none;"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/ui/rag-panel.js"></script>
+  <script>
+    document.querySelectorAll('.rag-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.rag-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const target = tab.dataset.tab;
+        document.getElementById('tab-chunking').style.display = target === 'chunking' ? 'block' : 'none';
+        document.getElementById('tab-search').style.display = target === 'search' ? 'block' : 'none';
+        document.getElementById('tab-citations').style.display = target === 'citations' ? 'block' : 'none';
+      });
+    });
+
+    RAGPanel.initChunkingForm('tab-chunking');
+    RAGPanel.initSearchForm('tab-search');
+  </script>
+</body>
+</html>

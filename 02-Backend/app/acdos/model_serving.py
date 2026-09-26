@@ -417,7 +417,7 @@ class ModelServer:
             try:
                 await self._batching_task
             except asyncio.CancelledError:
-                pass
+                logger.debug("batching task cancelled")
             self._batching_task = None
 
 

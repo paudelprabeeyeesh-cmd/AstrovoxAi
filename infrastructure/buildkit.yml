@@ -22,10 +22,26 @@ target "backend" {
   tags = ["astrovox/backend:latest"]
 }
 
+target "frontend" {
+  context = "."
+  dockerfile = "Dockerfile.frontend"
+  tags = ["astrovox/frontend:latest"]
+}
+
+target "distroless" {
+  context = "."
+  dockerfile = "infrastructure/Dockerfile.distroless"
+  tags = ["astrovox:distroless"]
+}
+
 group "default" {
   targets = ["production"]
 }
 
 group "all" {
-  targets = ["production", "backend"]
+  targets = ["production", "backend", "frontend", "distroless"]
+}
+
+group "dev" {
+  targets = ["backend", "frontend"]
 }

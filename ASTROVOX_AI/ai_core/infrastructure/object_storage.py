@@ -15,7 +15,7 @@ class ObjectStorage:
                 import boto3
                 self.client = boto3.client('s3', endpoint_url=endpoint, aws_access_key_id=access_key, aws_secret_access_key=secret_key)
             except ImportError:
-                pass
+                logger.warning("boto3 not installed, using local cache only for object storage")
         self.local_cache: Dict[str, bytes] = {}
 
     def put(self, key: str, data: bytes, content_type: str = 'application/octet-stream') -> None:

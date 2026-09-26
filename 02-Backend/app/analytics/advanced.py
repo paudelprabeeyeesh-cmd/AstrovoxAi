@@ -207,6 +207,39 @@ class ConversationRecord:
     satisfaction_score: Optional[float] = None
 
 
+@dataclass
+class GPUMetric:
+    device_id: int
+    utilization_percent: float
+    memory_used_mb: float
+    memory_total_mb: float
+    temperature_c: float
+    timestamp: float = 0.0
+
+
+@dataclass
+class MemoryMetric:
+    total_mb: float
+    used_mb: float
+    available_mb: float
+    percent: float
+    swap_used_mb: float = 0.0
+    timestamp: float = 0.0
+
+
+@dataclass
+class APIMetric:
+    endpoint: str
+    method: str
+    status_code: int
+    latency_ms: float
+    user_id: str = ""
+    model: str = ""
+    provider: str = ""
+    tokens: int = 0
+    timestamp: float = 0.0
+
+
 # ============================================================================
 # Advanced Analytics Engine
 # ============================================================================
@@ -231,6 +264,9 @@ class AdvancedAnalyticsEngine:
         self._custom_reports: dict[str, CustomReport] = {}
         self._conversations: list[ConversationRecord] = []
         self._sessions: dict[str, dict] = {}
+        self._gpu_metrics: list[GPUMetric] = []
+        self._memory_metrics: list[MemoryMetric] = []
+        self._api_metrics: list[APIMetric] = []
 
         # Feature definitions for adoption tracking
         self._known_features = {
@@ -781,7 +817,181 @@ class AdvancedAnalyticsEngine:
         }
 
     # ------------------------------------------------------------------
-    # 7. Feature Adoption Analytics
+    # 6. GPU Utilization Analytics
+    # ------------------------------------------------------------------
+    def get_gpu_analytics(self, days: int = 7) -> dict:
+        cutoff = time.time() - (days * 86400)
+        metrics = [m for m in self._gpu_metrics if m.timestamp >= cutoff]
+        if not metrics:
+            return {
+                "period_days": days,
+                "gpu_available": False,
+                "device_count": 0,
+                "avg_utilization_percent": 0,
+                "max_utilization_percent": 0,
+                "avg_memory_used_mb": 0,
+                "avg_memory_total_mb": 0,
+                "avg_temperature_c": 0,
+                "max_temperature_c": 0,
+                "timeline": [],
+            }
+
+        device_ids = sorted({m.device_id for m in metrics})
+        utilizations = [m.utilization_percent for m in metrics]
+        mem_used = [m.memory_used_mb for m in metrics]
+        mem_total = [m.memory_total_mb for m in metrics]
+        temps = [m.temperature_c for m in metrics]
+
+        timeline = []
+        day_groups: dict[str, list] = defaultdict(list)
+        for m in metrics:
+            day = datetime.fromtimestamp(m.timestamp).strftime("%Y-%m-%d")
+            day_groups[day].append(m)
+        for day, day_metrics in sorted(day_groups.items()):
+            timeline.append({
+                "date": day,
+                "avg_utilization_percent": round(sum(m.utilization_percent for m in day_metrics) / len(day_metrics), 2),
+                "avg_memory_used_mb": round(sum(m.memory_used_mb for m in day_metrics) / len(day_metrics), 2),
+                "avg_temperature_c": round(sum(m.temperature_c for m in day_metrics) / len(day_metrics), 2),
+            })
+
+        return {
+            "period_days": days,
+            "gpu_available": True,
+            "device_count": len(device_ids),
+            "device_ids": device_ids,
+            "avg_utilization_percent": round(sum(utilizations) / len(utilizations), 2),
+            "max_utilization_percent": round(max(utilizations), 2),
+            "min_utilization_percent": round(min(utilizations), 2),
+            "avg_memory_used_mb": round(sum(mem_used) / len(mem_used), 2),
+            "avg_memory_total_mb": round(sum(mem_total) / len(mem_total), 2),
+            "avg_temperature_c": round(sum(temps) / len(temps), 2),
+            "max_temperature_c": round(max(temps), 2),
+            "min_temperature_c": round(min(temps), 2),
+            "timeline": timeline,
+        }
+
+    # ------------------------------------------------------------------
+    # 7. Memory Usage Analytics
+    # ------------------------------------------------------------------
+    def get_memory_analytics(self, days: int = 7) -> dict:
+        cutoff = time.time() - (days * 86400)
+        metrics = [m for m in self._memory_metrics if m.timestamp >= cutoff]
+        if not metrics:
+            return {
+                "period_days": days,
+                "total_mb": 0,
+                "avg_used_mb": 0,
+                "avg_available_mb": 0,
+                "avg_percent": 0,
+                "max_percent": 0,
+                "avg_swap_used_mb": 0,
+                "timeline": [],
+            }
+
+        used = [m.used_mb for m in metrics]
+        available = [m.available_mb for m in metrics]
+        percents = [m.percent for m in metrics]
+        swap = [m.swap_used_mb for m in metrics]
+
+        timeline = []
+        day_groups: dict[str, list] = defaultdict(list)
+        for m in metrics:
+            day = datetime.fromtimestamp(m.timestamp).strftime("%Y-%m-%d")
+            day_groups[day].append(m)
+        for day, day_metrics in sorted(day_groups.items()):
+            timeline.append({
+                "date": day,
+                "used_mb": round(sum(m.used_mb for m in day_metrics) / len(day_metrics), 2),
+                "available_mb": round(sum(m.available_mb for m in day_metrics) / len(day_metrics), 2),
+                "percent": round(sum(m.percent for m in day_metrics) / len(day_metrics), 2),
+                "swap_used_mb": round(sum(m.swap_used_mb for m in day_metrics) / len(day_metrics), 2),
+            })
+
+        return {
+            "period_days": days,
+            "total_mb": round(metrics[-1].total_mb, 2),
+            "avg_used_mb": round(sum(used) / len(used), 2),
+            "max_used_mb": round(max(used), 2),
+            "min_used_mb": round(min(used), 2),
+            "avg_available_mb": round(sum(available) / len(available), 2),
+            "avg_percent": round(sum(percents) / len(percents), 2),
+            "max_percent": round(max(percents), 2),
+            "min_percent": round(min(percents), 2),
+            "avg_swap_used_mb": round(sum(swap) / len(swap), 2),
+            "max_swap_used_mb": round(max(swap), 2),
+            "timeline": timeline,
+        }
+
+    # ------------------------------------------------------------------
+    # 8. API Metrics Analytics
+    # ------------------------------------------------------------------
+    def get_api_metrics(self, days: int = 7, user_id: Optional[str] = None) -> dict:
+        cutoff = time.time() - (days * 86400)
+        metrics = [m for m in self._api_metrics if m.timestamp >= cutoff]
+        if user_id:
+            metrics = [m for m in metrics if m.user_id == user_id]
+
+        total = len(metrics)
+        errors = [m for m in metrics if m.status_code >= 400]
+        latencies = [m.latency_ms for m in metrics if m.latency_ms > 0]
+
+        by_endpoint: dict[str, dict] = defaultdict(lambda: {"count": 0, "errors": 0, "total_latency": 0.0, "total_tokens": 0})
+        by_method: dict[str, int] = defaultdict(int)
+        by_status: dict[str, int] = defaultdict(int)
+        by_model: dict[str, dict] = defaultdict(lambda: {"count": 0, "total_latency": 0.0, "total_tokens": 0})
+
+        for m in metrics:
+            by_endpoint[m.endpoint]["count"] += 1
+            by_method[m.method] += 1
+            by_status[str(m.status_code)] += 1
+            if m.status_code >= 400:
+                by_endpoint[m.endpoint]["errors"] += 1
+            by_endpoint[m.endpoint]["total_latency"] += m.latency_ms
+            by_endpoint[m.endpoint]["total_tokens"] += m.tokens
+
+            if m.model:
+                by_model[m.model]["count"] += 1
+                by_model[m.model]["total_latency"] += m.latency_ms
+                by_model[m.model]["total_tokens"] += m.tokens
+
+        endpoint_summary = {}
+        for ep, data in by_endpoint.items():
+            latencies_list = [m.latency_ms for m in metrics if m.endpoint == ep and m.latency_ms > 0]
+            latencies_sorted = sorted(latencies_list)
+            n = len(latencies_sorted)
+            endpoint_summary[ep] = {
+                "count": data["count"],
+                "errors": data["errors"],
+                "error_rate": round(data["errors"] / max(data["count"], 1), 4),
+                "avg_latency_ms": round(data["total_latency"] / max(data["count"], 1), 2),
+                "p95_latency_ms": round(latencies_sorted[int(n * 0.95)], 2) if n > 0 else 0,
+                "p99_latency_ms": round(latencies_sorted[int(n * 0.99)], 2) if n > 0 else 0,
+                "total_tokens": data["total_tokens"],
+            }
+
+        model_summary = {}
+        for model, data in by_model.items():
+            model_summary[model] = {
+                "count": data["count"],
+                "avg_latency_ms": round(data["total_latency"] / max(data["count"], 1), 2),
+                "total_tokens": data["total_tokens"],
+            }
+
+        return {
+            "period_days": days,
+            "total_requests": total,
+            "total_errors": len(errors),
+            "error_rate": round(len(errors) / max(total, 1), 4),
+            "avg_latency_ms": round(sum(latencies) / max(len(latencies), 1), 2) if latencies else 0,
+            "by_endpoint": dict(sorted(endpoint_summary.items(), key=lambda x: x[1]["count"], reverse=True)[:20]),
+            "by_method": dict(sorted(by_method.items())),
+            "by_status": dict(sorted(by_status.items())),
+            "by_model": dict(sorted(model_summary.items(), key=lambda x: x[1]["count"], reverse=True)[:10]),
+        }
+
+    # ------------------------------------------------------------------
+    # 9. Feature Adoption Analytics
     # ------------------------------------------------------------------
     def track_feature_use(self, user_id: str, feature_name: str, category: str = "general"):
         now = time.time()
@@ -1346,6 +1556,42 @@ class AdvancedAnalyticsEngine:
 
     def record_event(self, event_type: str, user_id: str, metadata: dict = None):
         self.track_user_action(user_id, event_type, metadata)
+
+    def track_gpu_utilization(self, device_id: int = 0, utilization_percent: float = 0.0, memory_used_mb: float = 0.0, memory_total_mb: float = 0.0, temperature_c: float = 0.0):
+        metric = GPUMetric(
+            device_id=device_id,
+            utilization_percent=utilization_percent,
+            memory_used_mb=memory_used_mb,
+            memory_total_mb=memory_total_mb,
+            temperature_c=temperature_c,
+            timestamp=time.time(),
+        )
+        self._gpu_metrics.append(metric)
+
+    def track_memory_usage(self, total_mb: float = 0.0, used_mb: float = 0.0, available_mb: float = 0.0, percent: float = 0.0, swap_used_mb: float = 0.0):
+        metric = MemoryMetric(
+            total_mb=total_mb,
+            used_mb=used_mb,
+            available_mb=available_mb,
+            percent=percent,
+            swap_used_mb=swap_used_mb,
+            timestamp=time.time(),
+        )
+        self._memory_metrics.append(metric)
+
+    def track_api_metric(self, endpoint: str, method: str, status_code: int, latency_ms: float = 0.0, user_id: str = "", model: str = "", provider: str = "", tokens: int = 0):
+        metric = APIMetric(
+            endpoint=endpoint,
+            method=method,
+            status_code=status_code,
+            latency_ms=latency_ms,
+            user_id=user_id,
+            model=model,
+            provider=provider,
+            tokens=tokens,
+            timestamp=time.time(),
+        )
+        self._api_metrics.append(metric)
 
     def get_user_stats(self, user_id: str) -> dict:
         user_events = [e for e in self._events if e.user_id == user_id]

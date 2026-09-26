@@ -1,0 +1,33 @@
+resources:
+  - ../../base
+
+namePrefix: production-
+namespace: astrovox
+
+commonLabels:
+  environment: production
+
+patches:
+  - target:
+      kind: Deployment
+      name: astrovox-backend
+    patch: |
+      - op: replace
+        path: /spec/replicas
+        value: 5
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/cpu
+        value: "1000m"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1024Mi"
+  - target:
+      kind: HorizontalPodAutoscaler
+      name: astrovox-hpa
+    patch: |
+      - op: replace
+        path: /spec/minReplicas
+        value: 5
+      - op: replace
+        path: /spec/maxReplicas
+        value: 30

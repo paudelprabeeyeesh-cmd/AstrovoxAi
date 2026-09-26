@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kong
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: kong
+  namespace: kong-system
+spec:
+  repo: https://charts.konghq.com
+  chart: kong
+  targetNamespace: kong
+  valuesContent: |
+    env:
+      database: "off"
+      admin_listen: "0.0.0.0:8001"
+      proxy_listen: "0.0.0.0:8000"
+      nginx_worker_processes: "2"
+    deployment:
+      podAnnotations:
+        prometheus.io/port: "8000"
+        prometheus.io/path: "/metrics"
+    proxy:
+      type: LoadBalancer
+      tls:
+        enabled: true
+        serviceAnnotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: "arn:aws:acm:us-east-1:123456789:certificate/your-cert-id"
+          service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+    admin:
+      type: NodePort
+      http:
+        servicePort: 8001
+        containerPort: 8001
+      tls:
+        enabled: true
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-proxy
+  namespace: kong
+  labels:
+    app: kong
+spec:
+  selector:
+    app: kong
+  ports:
+  - name: proxy
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: proxy-tls
+    port: 443
+    targetPort: 8443
+    protocol: TCP
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-admin
+  namespace: kong
+  labels:
+    app: kong
+spec:
+  selector:
+    app: kong
+  ports:
+  - name: admin
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: rate-limiting
+  namespace: kong
+config:
+  minute: 120
+  hour: 7200
+  policy: local
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: cors
+  namespace: kong
+config:
+  origins:
+  - https://astrovox.ai
+  - https://www.astrovox.ai
+  methods:
+  - GET
+  - POST
+  - PUT
+  - DELETE
+  - OPTIONS
+  headers:
+  - Authorization
+  - Content-Type
+  - Accept
+  credentials: true
+  max_age: 86400
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: prometheus
+  labels:
+    global: "true"
+config:
+  latency_tokens: true
+  upstream_health: true
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: astrovox-api-ingress
+  namespace: astrovox
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/plugins: rate-limiting,cors
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - api.astrovox.ai
+    secretName: api-tls
+  rules:
+  - host: api.astrovox.ai
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: kong-proxy
+            port:
+              number: 80

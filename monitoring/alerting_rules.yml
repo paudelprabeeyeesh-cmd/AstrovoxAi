@@ -1,0 +1,42 @@
+groups:
+  - name: astrovox_api_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.path }}"
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, path)) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency above 1s on {{ $labels.path }}"
+
+      - alert: QueueDepthHigh
+        expr: queue_depth > 1000
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Queue depth is {{ $value }}"
+
+      - alert: SafetyViolationSpike
+        expr: rate(safety_violations_total[5m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Safety violation spike: {{ $value }}"
+
+      - alert: QuotaExceeded
+        expr: increase(quota_exceeded_total[10m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Quota exceeded for {{ $labels.resource_type }}"

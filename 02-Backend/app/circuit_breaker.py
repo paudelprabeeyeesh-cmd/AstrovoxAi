@@ -227,7 +227,7 @@ class ServiceDegradation:
             try:
                 hook(old_mode, mode)
             except Exception:
-                pass
+                logger.warning("degradation hook failed", exc_info=True)
 
     def disable_feature(self, feature: str):
         """Disable a specific feature."""
