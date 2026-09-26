@@ -392,7 +392,7 @@ async def export_conversation(conversation_id: str, authorization: str = Header(
             "format": fmt,
         }).execute()
     except Exception:
-        pass
+        logger.warning("chat export insert failed", exc_info=True)
     return StreamingResponse(
         io.StringIO(payload),
         media_type=media_type,

@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Optional
 from datetime import datetime
 
-from ..repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

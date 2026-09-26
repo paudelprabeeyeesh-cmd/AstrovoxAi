@@ -365,7 +365,7 @@ class MemorySystem:
                 continue
             frag.access()
             candidates.append(frag)
-        candidates.sort(key=lambda f: f.importance * math.exp(-(time.time() - f.accessed_at) / 86400), reverse=True)
+        candidates.sort(key=lambda f: f.importance * math.exp(-(datetime.now(timezone.utc).timestamp() - f.accessed_at.timestamp()) / 86400), reverse=True)
         return candidates[:limit]
 
     def get_memory(self, memory_id: str) -> Optional[MemoryFragment]:

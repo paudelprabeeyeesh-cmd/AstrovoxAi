@@ -51,7 +51,7 @@ class CronJobManager:
                     job.run_count += 1
                     job.next_run = cls._get_next_run(job.cron_expression)
                 except Exception:
-                    pass
+                    logger.warning("cron job %s failed", job.name, exc_info=True)
 
     @classmethod
     def start_scheduler(cls) -> None:

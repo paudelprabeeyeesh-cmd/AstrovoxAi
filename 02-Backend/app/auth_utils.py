@@ -64,7 +64,7 @@ async def get_current_user(
                 "role": getattr(user, "role", "user"),
             }
     except Exception:
-        pass
+        logger.warning("supabase auth verification failed", exc_info=True)
 
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
