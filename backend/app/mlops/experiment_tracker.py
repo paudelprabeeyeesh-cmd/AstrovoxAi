@@ -1,55 +1,32 @@
-"""Experiment tracking for ML training runs."""
-from __future__ import annotations
-
-import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
-logger = logging.getLogger(__name__)
+from typing import Dict, Any, List
+from datetime import datetime
 
 
 @dataclass
-class ExperimentRun:
-    run_id: str
+class Experiment:
     experiment_id: str
-    parameters: Dict[str, Any] = field(default_factory=dict)
-    metrics: Dict[str, Any] = field(default_factory=dict)
-    artifacts: Dict[str, str] = field(default_factory=dict)
+    name: str
+    params: Dict[str, Any]
+    metrics: Dict[str, float] = field(default_factory=dict)
     status: str = "running"
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    ended_at: Optional[datetime] = None
+    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class ExperimentTracker:
-    def __init__(self) -> None:
-        self._runs: Dict[str, ExperimentRun] = {}
+    def __init__(self):
+        self.experiments: Dict[str, Experiment] = {}
 
-    def start_run(self, experiment_id: str, parameters: Optional[Dict[str, Any]] = None) -> ExperimentRun:
-        run_id = uuid.uuid4().hex
-        run = ExperimentRun(run_id=run_id, experiment_id=experiment_id, parameters=parameters or {})
-        self._runs[run_id] = run
-        return run
+    def create_experiment(self, name: str, params: Dict[str, Any]) -> Experiment:
+        experiment = Experiment(experiment_id=str(uuid.uuid4()), name=name, params=params)
+        self.experiments[experiment.experiment_id] = experiment
+        return experiment
 
-    def log_metric(self, run_id: str, key: str, value: Any) -> None:
-        run = self._runs.get(run_id)
-        if run:
-            run.metrics[key] = value
+    def log_metric(self, experiment_id: str, key: str, value: float) -> None:
+        if experiment_id in self.experiments:
+            self.experiments[experiment_id].metrics[key] = value
 
-    def log_artifact(self, run_id: str, key: str, path: str) -> None:
-        run = self._runs.get(run_id)
-        if run:
-            run.artifacts[key] = path
-
-    def end_run(self, run_id: str, status: str = "completed") -> None:
-        run = self._runs.get(run_id)
-        if run:
-            run.status = status
-            run.ended_at = datetime.now(timezone.utc)
-
-    def get_run(self, run_id: str) -> Optional[ExperimentRun]:
-        return self._runs.get(run_id)
-
-
-experiment_tracker = ExperimentTracker()
+    def complete(self, experiment_id: str) -> None:
+        if experiment_id in self.experiments:
+            self.experiments[experiment_id].status = "completed"

@@ -1,0 +1,11 @@
+spark:
+  app_name: astrovox-data-engineering
+  master: "k8s://https://kubernetes.default.svc"
+  deploy_mode: cluster
+  executor:
+    instances: 10
+    memory: "8g"
+    cores: 2
+  driver:
+    memory: "4g"
+    cores: 1

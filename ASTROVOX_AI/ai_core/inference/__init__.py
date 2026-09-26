@@ -11,10 +11,15 @@ from .advanced_inference_server import AdvancedInferenceServer
 from .context_window_manager import ContextWindowManager, TruncationStrategy, ContextWindowConfig
 from .hallucination_detector import HallucinationDetector, HallucinationReport, HallucinationSignal
 from .flash_attention import FlashAttention, FlashAttentionConfig
+from .triton_optimized_attention import TritonFlashAttention, TritonAttentionConfig
 from .paged_attention import PagedAttention, PagedKVCache
 from .tensor_parallelism import TensorParallelism, TensorParallelConfig
 from .pipeline_parallelism import PipelineParallelism, PipelineConfig
 from .model_sharding import ModelSharder, ShardConfig, ShardingStrategy, ZeROSharding, TensorParallelSharding
+from .quantized_inference import QuantizedInferenceEngine, QuantizedInferenceConfig
+from .moe_inference_router import MoEInferenceRouter, MoEInferenceConfig
+from .async_inference_scheduler import AsyncInferenceScheduler, InferenceRequest, Priority
+from .cpu_gpu_balancer import CPUGPUBalancer, DeviceStats
 
 __all__ = [
     "AdvancedInferenceServer",

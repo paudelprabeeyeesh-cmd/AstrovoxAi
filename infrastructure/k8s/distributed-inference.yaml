@@ -1,0 +1,218 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: astrovox-distributed
+  labels:
+    app.kubernetes.io/name: astrovox-distributed
+    app.kubernetes.io/component: distributed-inference
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: distributed-config
+  namespace: astrovox-distributed
+data:
+  NUM_SHARDS: "4"
+  HEALTH_CHECK_INTERVAL: "10"
+  LEADER_ELECTION_TIMEOUT: "30"
+  KV_CACHE_SYNC_INTERVAL: "1"
+  AUTO_HEAL_INTERVAL: "15"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: distributed-inference-sa
+  namespace: astrovox-distributed
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: distributed-inference-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: distributed-inference-binding
+subjects:
+  - kind: ServiceAccount
+    name: distributed-inference-sa
+    namespace: astrovox-distributed
+roleRef:
+  kind: ClusterRole
+  name: distributed-inference-role
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: distributed-inference-gateway
+  namespace: astrovox-distributed
+  labels:
+    app: distributed-inference-gateway
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+  selector:
+    app: distributed-inference
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: distributed-inference
+  namespace: astrovox-distributed
+  labels:
+    app: distributed-inference
+spec:
+  serviceName: "distributed-inference"
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      app: distributed-inference
+  template:
+    metadata:
+      labels:
+        app: distributed-inference
+    spec:
+      serviceAccountName: distributed-inference-sa
+      containers:
+        - name: inference
+          image: astrovox/distributed-inference:latest
+          ports:
+            - containerPort: 8000
+              name: http
+            - containerPort: 9090
+              name: metrics
+          envFrom:
+            - configMapRef:
+                name: distributed-config
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8000m"
+              memory: "64Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: distributed-inference
+                topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        nvidia.com/gpu: "true"
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: distributed-inference-hpa
+  namespace: astrovox-distributed
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: StatefulSet
+    name: distributed-inference
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    - type: Pods
+      pods:
+        metric:
+          name: inference_queue_depth
+        target:
+          type: AverageValue
+          averageValue: "50"
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 300
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: distributed-inference-pdb
+  namespace: astrovox-distributed
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: distributed-inference
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: distributed-inference-headless
+  namespace: astrovox-distributed
+  labels:
+    app: distributed-inference
+spec:
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+  clusterIP: None
+  selector:
+    app: distributed-inference

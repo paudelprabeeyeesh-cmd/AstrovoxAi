@@ -1,0 +1,13 @@
+connection_pool:
+  min_connections: 2
+  max_connections: 20
+  timeout_seconds: 30
+  idle_timeout_seconds: 600
+replication:
+  primary: "postgres-primary:5432"
+  replicas:
+    - "postgres-replica-1:5432"
+    - "postgres-replica-2:5432"
+checkpoint:
+  base_path: "/mnt/checkpoints"
+  retention_days: 30

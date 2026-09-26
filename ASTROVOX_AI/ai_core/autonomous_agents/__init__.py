@@ -18,6 +18,7 @@ from ASTROVOX_AI.ai_core.autonomous_agents.multi_agent import (
     ConflictResolution,
 )
 from ASTROVOX_AI.ai_core.autonomous_agents.safety_layer import SafetyLayer, ToolGate
+from ASTROVOX_AI.ai_core.autonomous_agents.self_reflection_loop import SelfReflectionLoop
 
 __all__ = [
     "AgentRuntime",
@@ -37,4 +38,5 @@ __all__ = [
     "ConflictResolution",
     "SafetyLayer",
     "ToolGate",
+    "SelfReflectionLoop",
 ]

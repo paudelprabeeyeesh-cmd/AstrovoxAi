@@ -2,64 +2,14 @@
 
 ## Getting Started
 
-### Tutorial 1: Your First Chat
+- [Your First Chat](tutorials/getting-started.md)
+- [API Integration](tutorials/api-integration.md)
 
-Learn how to send your first message and explore the interface.
+## Advanced
 
-1. Sign up for an account
-2. Click "New Chat" in the sidebar
-3. Type a message in the input box
-4. Press Enter to send
-
-### Tutorial 2: Using Markdown
-
-Astrovox supports full Markdown rendering:
-
-```markdown
-# Heading
-**Bold** and *italic*
-- Lists
-- Like this
-
-```code block```
-```
-
-### Tutorial 3: Creating Branches
-
-Branch conversations to explore different response paths:
-
-1. Hover over an AI message
-2. Click the "Branch" button
-3. Continue the conversation in a new branch
-4. Switch between branches using the tree view
-
-### Tutorial 4: Voice Input
-
-1. Click the microphone icon
-2. Allow microphone permissions
-3. Speak your message
-4. Click again to stop
-
-### Tutorial 5: Team Collaboration
-
-1. Create a team workspace
-2. Invite team members via email
-3. Share conversations
-4. Collaborate in real-time
-
-## Advanced Topics
-
-### Custom Models
-
-Configure custom LLM models in settings.
-
-### API Integration
-
-Use the SDK to integrate Astrovox into your applications.
-
-### Plugin Development
-
-Create plugins for the Astrovox marketplace.
+- [Plugin Development](tutorials/plugin-development.md)
+- [Advanced Agents](tutorials/advanced-agents.md)
+- [RAG Pipeline](tutorials/rag-pipeline.md)
 
 ## Video Tutorials
 
