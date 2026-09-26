@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multi-region-config
+  namespace: astrovox-distributed
+data:
+  PRIMARY_REGION: us-east-1
+  SECONDARY_REGIONS: us-west-2,eu-west-1,ap-southeast-1
+  FAILOVER_TIMEOUT: "30"
+  HEALTH_CHECK_INTERVAL: "10"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: us-east-1-config
+  namespace: astrovox-distributed
+data:
+  REGION_ID: us-east-1
+  REGION_NAME: US East (N. Virginia)
+  PRIORITY: "100"
+  ENDPOINT: https://api-us-east-1.astrovox.ai
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: us-west-2-config
+  namespace: astrovox-distributed
+data:
+  REGION_ID: us-west-2
+  REGION_NAME: US West (Oregon)
+  PRIORITY: "90"
+  ENDPOINT: https://api-us-west-2.astrovox.ai
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: eu-west-1-config
+  namespace: astrovox-distributed
+data:
+  REGION_ID: eu-west-1
+  REGION_NAME: EU (Ireland)
+  PRIORITY: "80"
+  ENDPOINT: https://api-eu-west-1.astrovox.ai
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ap-southeast-1-config
+  namespace: astrovox-distributed
+data:
+  REGION_ID: ap-southeast-1
+  REGION_NAME: Asia Pacific (Singapore)
+  PRIORITY: "70"
+  ENDPOINT: https://api-ap-southeast-1.astrovox.ai
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: multi-region-dr
+  namespace: astrovox-distributed
+spec:
+  host: distributed-inference-gateway.astrovox-distributed.svc.cluster.local
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_REQUEST
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 30s
+      baseEjectionTime: 30s
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: multi-region-vs
+  namespace: astrovox-distributed
+spec:
+  hosts:
+    - api.astrovox.ai
+  gateways:
+    - astrovox-gateway
+  http:
+    - route:
+        - destination:
+            host: distributed-inference-gateway.astrovox-distributed.svc.cluster.local
+            port:
+              number: 8000
+          weight: 100
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: gateway-error,connect-failure,refused-stream
+      timeout: 30s

@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auto-healing-config
+  namespace: astrovox-distributed
+data:
+  HEALTH_CHECK_INTERVAL: "15"
+  FAILURE_THRESHOLD: "3"
+  HEALING_COOLDOWN: "60"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-healer
+  namespace: astrovox-distributed
+  labels:
+    app: auto-healer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auto-healer
+  template:
+    metadata:
+      labels:
+        app: auto-healer
+    spec:
+      serviceAccountName: distributed-inference-sa
+      containers:
+        - name: auto-healer
+          image: astrovox/auto-healer:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: auto-healing-config
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"

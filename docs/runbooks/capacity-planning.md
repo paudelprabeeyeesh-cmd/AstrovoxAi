@@ -62,6 +62,7 @@ curl -s https://api.astrovox.ai/metrics | grep http_requests_total
 ## Approval
 
 Capacity expansions require:
+
 1. Platform team review.
 2. Budget approval (if cost impact > $500/month).
 3. Change management ticket.

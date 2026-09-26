@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: replication-config
+  namespace: astrovox-distributed
+data:
+  REPLICATION_STRATEGY: "asynchronous"
+  SYNC_INTERVAL: "30"
+  MAX_REPLICAS: "5"
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: model-replication
+  namespace: astrovox-distributed
+  labels:
+    app: model-replication
+spec:
+  serviceName: "model-replication"
+  replicas: 3
+  selector:
+    matchLabels:
+      app: model-replication
+  template:
+    metadata:
+      labels:
+        app: model-replication
+    spec:
+      serviceAccountName: distributed-inference-sa
+      containers:
+        - name: replication
+          image: astrovox/model-replication:latest
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: replication-config
+          resources:
+            requests:
+              cpu: "1000m"
+              memory: "8Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "4000m"
+              memory: "32Gi"
+              nvidia.com/gpu: "1"
+          volumeMounts:
+            - name: model-storage
+              mountPath: /models
+      volumes:
+        - name: model-storage
+          persistentVolumeClaim:
+            claimName: model-replication-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-replication-pvc
+  namespace: astrovox-distributed
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: model-replication
+  namespace: astrovox-distributed
+spec:
+  ports:
+    - port: 8001
+      targetPort: 8001
+  selector:
+    app: model-replication

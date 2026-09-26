@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox
+  template:
+    metadata:
+      labels:
+        app: astrovox
+    spec:
+      containers:
+        - name: api
+          image: astrovox/backend:latest
+          ports:
+            - containerPort: 8000

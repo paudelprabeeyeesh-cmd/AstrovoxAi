@@ -16,9 +16,13 @@ A backup is considered valid when:
 
 ## Automated Validation
 
-```bash
-# Run backup validation module
-python -m app.reliability.backup
+```python
+from app.reliability.backup import BackupValidator
+
+validator = BackupValidator()
+result = validator.validate_latest()
+if not result.success:
+    alert_on_call_engineer(result.error)
 ```
 
 Expected output:

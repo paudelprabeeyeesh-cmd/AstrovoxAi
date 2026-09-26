@@ -1,0 +1,9 @@
+quality_gates:
+  - name: unit_tests
+    required: true
+  - name: integration_tests
+    required: true
+  - name: security_scan
+    required: true
+  - name: performance_baseline
+    required: true

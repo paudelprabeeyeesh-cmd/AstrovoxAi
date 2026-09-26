@@ -1,58 +1,27 @@
-"""Plugin registry and lifecycle management."""
-from __future__ import annotations
-
-import importlib.util
-import logging
-import os
-import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
-
-logger = logging.getLogger(__name__)
+from typing import Dict, List, Any
+import uuid
 
 
 @dataclass
-class PluginManifest:
+class Plugin:
     plugin_id: str
     name: str
     version: str
-    description: str
-    author: str
-    entrypoint: str
-    config_schema: Dict[str, Any] = field(default_factory=dict)
-    permissions: List[str] = field(default_factory=list)
+    capabilities: List[str]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        if not self.plugin_id:
+            self.plugin_id = str(uuid.uuid4())
 
 
 class PluginRegistry:
-    def __init__(self, plugins_dir: str = "/tmp/astrovox_plugins"):
-        self.plugins_dir = plugins_dir
-        self._plugins: Dict[str, PluginManifest] = {}
-        self._modules: Dict[str, Any] = {}
-        os.makedirs(plugins_dir, exist_ok=True)
+    def __init__(self):
+        self.plugins: Dict[str, Plugin] = {}
 
-    def register(self, manifest: PluginManifest) -> None:
-        self._plugins[manifest.plugin_id] = manifest
+    def register(self, plugin: Plugin) -> None:
+        self.plugins[plugin.plugin_id] = plugin
 
-    def load(self, plugin_id: str) -> Optional[Any]:
-        manifest = self._plugins.get(plugin_id)
-        if not manifest:
-            return None
-        if plugin_id in self._modules:
-            return self._modules[plugin_id]
-        module_path = os.path.join(self.plugins_dir, f"{plugin_id}.py")
-        if not os.path.exists(module_path):
-            return None
-        spec = importlib.util.spec_from_file_location(plugin_id, module_path)
-        if spec and spec.loader:
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)  # type: ignore
-            self._modules[plugin_id] = module
-            return module
-        return None
-
-    def list_plugins(self) -> List[PluginManifest]:
-        return list(self._plugins.values())
-
-
-plugin_registry = PluginRegistry()
+    def discover(self, capability: str) -> List[Plugin]:
+        return [p for p in self.plugins.values() if capability in p.capabilities]
