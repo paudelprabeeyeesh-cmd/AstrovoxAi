@@ -27,6 +27,12 @@ class AITester:
             return self._js_test(file_path, symbol_name, content)
         return {"file": file_path, "error": f"unsupported language: {ext}"}
 
+    def generate_batch(self, file_paths: list[str]) -> dict[str, Any]:
+        results = []
+        for fp in file_paths:
+            results.append(self.generate(fp, "sample_symbol"))
+        return {"files": len(file_paths), "results": results}
+
     def _python_test(self, file_path: str, symbol_name: str, content: str) -> dict[str, Any]:
         module = file_path.replace(os.sep, ".").replace("/", ".").rstrip(".py")
         test_name = f"test_{symbol_name}"

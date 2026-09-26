@@ -22,7 +22,7 @@ _TASK_PATTERNS = [
 
 class TaskPlanner:
     def plan(self, user_request: str, context: dict[str, Any] | None = None) -> dict[str, Any]:
-        steps = []
+        steps: list[dict[str, Any]] = []
         task_type = self._classify(user_request)
         if task_type == "index":
             steps.append({"action": "index", "description": "Build repository index and project graph"})

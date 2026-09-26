@@ -14,10 +14,18 @@ class AIArchitect:
         self.repo_path = os.path.abspath(repo_path)
 
     def analyze(self, summary: dict[str, Any], deps: dict[str, Any]) -> dict[str, Any]:
-        suggestions = []
+        suggestions: list[dict[str, Any]] = []
         if summary.get("total_files", 0) > 100:
             suggestions.append({"message": "Large codebase detected; consider modularization and bounded contexts.", "severity": "medium"})
         circular = deps.get("circular_dependencies", [])
         if circular:
             suggestions.append({"message": "Resolve circular dependencies to improve maintainability.", "severity": "high"})
-        return {"summary": summary, "dependencies": deps, "suggestions": suggestions, "health_score": max(0, 100 - len(suggestions) * 10)}
+        dep_count = len(deps.get("dependencies", {}))
+        if dep_count > 200:
+            suggestions.append({"message": "High coupling detected; consider interface segregation.", "severity": "medium"})
+        return {
+            "summary": summary,
+            "dependencies": deps,
+            "suggestions": suggestions,
+            "health_score": max(0, 100 - len(suggestions) * 10),
+        }

@@ -23,6 +23,18 @@ class AIDocGenerator:
         docs = self._build_docs(content, file_path)
         return {"file": file_path, "docs": docs}
 
+    def generate_module(self, file_paths: list[str]) -> dict[str, Any]:
+        docs: list[str] = ["# Module Documentation\n\n"]
+        for fp in file_paths:
+            full = os.path.join(self.repo_path, fp)
+            try:
+                with open(full, "r", encoding="utf-8") as f:
+                    content = f.read()
+                docs.append(self._build_docs(content, fp))
+            except Exception:
+                continue
+        return {"files": len(file_paths), "docs": "\n".join(docs)}
+
     def _build_docs(self, content: str, file_path: str) -> str:
         lines = content.splitlines()
         docs = [f"# {os.path.basename(file_path)}\n", "## Overview\n", "Auto-generated documentation.\n"]

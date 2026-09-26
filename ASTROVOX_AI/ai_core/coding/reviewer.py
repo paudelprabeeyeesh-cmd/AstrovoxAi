@@ -61,5 +61,6 @@ class AIReviewer:
     def _summarize(self, issues: list[dict[str, Any]], suggestions: list[dict[str, Any]]) -> dict[str, Any]:
         by_severity: dict[str, int] = {}
         for issue in issues:
-            by_severity[issue.get("severity", "unknown")] = by_severity.get(issue.get("severity", "unknown"), 0) + 1
+            sev = issue.get("severity", "unknown")
+            by_severity[sev] = by_severity.get(sev, 0) + 1
         return {"issues": len(issues), "suggestions": len(suggestions), "by_severity": by_severity, "passed": len(issues) == 0}
