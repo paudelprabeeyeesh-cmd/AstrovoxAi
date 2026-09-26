@@ -134,7 +134,7 @@ class LipSyncEngine:
                 mfcc = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
                 return mfcc.T
             except Exception:
-                pass
+                logger.warning("librosa audio processing failed", exc_info=True)
         return np.zeros((1, 13), dtype=np.float32)
 
     def _detect_face(self, frame: Any) -> Optional[Tuple[int, int, int, int]]:

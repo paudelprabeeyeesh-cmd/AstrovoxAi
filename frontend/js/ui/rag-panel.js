@@ -78,14 +78,14 @@ const RAGPanel = (() => {
   }
 
   async function compressContext(context, query, maxTokens = 4096) {
-    return request('/api/rag/compress', {
+    return request('/rag/compress', {
       method: 'POST',
       body: JSON.stringify({ context, query, max_tokens: maxTokens }),
     });
   }
 
   async function generateCitation(title, authors, style = 'apa') {
-    return request('/api/rag/citations', {
+    return request('/rag/citations', {
       method: 'POST',
       body: JSON.stringify({ title, authors, style }),
     });

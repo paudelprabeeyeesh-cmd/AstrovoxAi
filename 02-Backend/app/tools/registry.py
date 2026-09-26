@@ -21,13 +21,14 @@ class ToolCategory(Enum):
 class ToolDefinition:
     name: str
     description: str
-    category: ToolCategory
-    parameters: Dict[str, Any]
+    category: Optional[ToolCategory] = None
+    parameters: Dict[str, Any] = field(default_factory=dict)
     required_permissions: List[str] = field(default_factory=list)
     rate_limit: Optional[int] = None
     timeout: int = 30
     cacheable: bool = False
     metadata: Dict[str, Any] = field(default_factory=dict)
+    handler: Optional[Callable] = None
 
 
     def to_openai_schema(self) -> Dict[str, Any]:

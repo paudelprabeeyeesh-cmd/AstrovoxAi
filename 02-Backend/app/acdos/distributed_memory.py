@@ -134,7 +134,7 @@ class MemoryLayer:
                 try:
                     self._access_order.remove(item_id)
                 except ValueError:
-                    pass
+                    logger.debug("item_id %s not in access_order", item_id)
                 return True
             return False
 

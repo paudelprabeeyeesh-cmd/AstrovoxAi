@@ -181,7 +181,7 @@ class VideoSummarizationEngine:
             if fps_val > 0 and frame_count > 0:
                 return frame_count / fps_val
         except Exception:
-            pass
+            logger.warning("Failed to get video duration", exc_info=True)
         return 0.0
 
 

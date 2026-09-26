@@ -215,7 +215,7 @@ class SubtitleGenerationEngine:
             )
             return audio_path
         except Exception:
-            pass
+            logger.warning("Failed to extract audio", exc_info=True)
         return None
 
 
