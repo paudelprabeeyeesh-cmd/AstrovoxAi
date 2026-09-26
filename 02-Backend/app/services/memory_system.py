@@ -17,6 +17,8 @@ Coordinates all memory layers:
 
 from __future__ import annotations
 
+from app.schemas import MemoryType
+
 import logging
 import math
 import time

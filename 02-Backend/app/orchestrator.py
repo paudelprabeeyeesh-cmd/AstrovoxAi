@@ -12,7 +12,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-from ...multi_agent import AgentRole, AgentTask, AgentOrchestrator
+from app.multi_agent import AgentRole, AgentTask, AgentOrchestrator
 
 logger = logging.getLogger(__name__)
 

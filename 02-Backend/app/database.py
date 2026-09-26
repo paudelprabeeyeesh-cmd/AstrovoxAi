@@ -13,7 +13,26 @@ logger = logging.getLogger(__name__)
 
 try:
     from app.infrastructure.database import DatabaseEngine, get_database  # noqa: F401
-    from app.repositories.database.client import get_user_profile  # noqa: F401
+    from app.repositories.database.client import (
+        get_user_profile,
+        create_user_profile,
+        update_user_profile,
+        create_conversation,
+        get_conversations,
+        get_conversation,
+        update_conversation,
+        delete_conversation,
+        create_message,
+        get_messages,
+        get_recent_messages,
+        save_memory,
+        get_user_memory,
+        get_user_settings,
+        update_user_settings,
+        ALLOWED_PROFILE_FIELDS,
+        ALLOWED_CONVERSATION_FIELDS,
+        ALLOWED_SETTINGS_FIELDS,
+    )
 
     _db = get_database()
 

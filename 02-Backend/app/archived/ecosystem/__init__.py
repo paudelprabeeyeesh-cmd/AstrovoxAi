@@ -44,7 +44,7 @@ from .validation import (
     ValidationType,
     get_continuous_validator,
 )
-from ..dashboard import (
+from .dashboard import (
     AuditEvent,
     CompatibilityWarning,
     HealthStatus,

@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from app.utils.auth.auth_utils import get_user_id_from_token
 
 try:
-    from database.database import get_db
+    from app.database import get_db
 except ImportError:
     get_db = None
 

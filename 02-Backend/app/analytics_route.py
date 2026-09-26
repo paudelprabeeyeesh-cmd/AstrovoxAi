@@ -351,7 +351,7 @@ async def create_funnel(authorization: str = Header(None), payload: dict = Body(
 
 
 @router.post("/funnels/{funnel_id}/events")
-async def track_funnel_event(authorization: str = Header(None), funnel_id: str, payload: dict = Body(...)):
+async def track_funnel_event(funnel_id: str, authorization: str = Header(None), payload: dict = Body(...)):
     """Track a funnel event."""
     user_id = get_user_id_from_token(authorization)
     from app.analytics.advanced import FunnelEvent
@@ -372,7 +372,7 @@ async def track_funnel_event(authorization: str = Header(None), funnel_id: str, 
 
 
 @router.get("/funnels/{funnel_id}")
-async def get_funnel_analytics(authorization: str = Header(None), funnel_id: str, days: int = 30):
+async def get_funnel_analytics(funnel_id: str, authorization: str = Header(None), days: int = 30):
     """Get funnel analytics."""
     get_user_id_from_token(authorization)
     data = advanced_analytics.get_funnel_analytics(funnel_id=funnel_id, days=days)
@@ -468,7 +468,7 @@ async def create_report(authorization: str = Header(None), payload: dict = Body(
 
 
 @router.post("/reports/{report_id}/run")
-async def run_report(authorization: str = Header(None), report_id: str, days: int = 30):
+async def run_report(report_id: str, authorization: str = Header(None), days: int = 30):
     """Run a custom report."""
     get_user_id_from_token(authorization)
     result = advanced_analytics.run_custom_report(report_id=report_id, days=days)

@@ -22,7 +22,7 @@ from dataclasses import dataclass
 from typing import Any, Deque, Dict, Optional, Tuple
 
 from app.middleware.security.security_hardening import AuditLog, get_audit_log
-from ...metrics import track_rate_limit
+from app.metrics import track_rate_limit
 
 
 # ---------------------------------------------------------------------------
