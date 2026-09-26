@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AstrovoxAI Developer Portal</title>
+    <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #38bdf8;
+            --border: #334155;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { font-size: 1.25rem; color: var(--accent); }
+        .nav { display: flex; gap: 1.5rem; }
+        .nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+        .nav a:hover, .nav a.active { color: var(--accent); }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+        }
+        .card:hover { border-color: var(--accent); }
+        .card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+        .card p { font-size: 0.875rem; color: var(--text-secondary); }
+        .card a {
+            display: inline-block;
+            margin-top: 1rem;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 0.875rem;
+        }
+        .section { margin-bottom: 2rem; }
+        .section h2 { font-size: 1.125rem; margin-bottom: 1rem; }
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border); }
+        .tab {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab:hover { color: var(--text-primary); }
+        .code-editor {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-badge.healthy { background: #065f46; color: #6ee7b7; }
+        .status-badge.warning { background: #92400e; color: #fcd34d; }
+        .status-badge.critical { background: #991b1b; color: #fca5a5; }
+        .metric-value { font-size: 1.5rem; font-weight: 600; }
+        .metric-label { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+        .metrics-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>AstrovoxAI Developer Portal</h1>
+        <nav class="nav">
+            <a href="#" class="active" data-tab="playground">Playground</a>
+            <a href="#" data-tab="explorer">Explorer</a>
+            <a href="#" data-tab="sdk">SDKs</a>
+            <a href="#" data-tab="docs">Docs</a>
+            <a href="#" data-tab="monitoring">Monitoring</a>
+            <a href="#" data-tab="extensions">Extensions</a>
+            <a href="#" data-tab="runbooks">Runbooks</a>
+        </nav>
+    </div>
+    <div class="container">
+        <div id="tab-playground" class="tab-panel">
+            <div class="section">
+                <h2>API Playground</h2>
+                <div class="code-editor">
+                    <pre id="playground-code">POST /v1/chat/completions
+{
+  "model": "gpt-4",
+  "messages": [
+    {"role": "user", "content": "Explain quantum computing"}
+  ],
+  "temperature": 0.7,
+  "max_tokens": 256
+}</pre>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <button onclick="sendPlaygroundRequest()" style="background: var(--accent); color: var(--bg-primary); border: none; padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; font-weight: 500;">Send Request</button>
+                    <button onclick="clearPlayground()" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border); padding: 0.5rem 1rem; border-radius: 0.25rem; cursor: pointer; margin-left: 0.5rem;">Clear</button>
+                </div>
+                <div id="playground-response" class="code-editor" style="margin-top: 1rem; display: none;"></div>
+            </div>
+        </div>
+        <div id="tab-explorer" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>Live API Explorer</h2>
+                <div class="tabs">
+                    <button class="tab active" onclick="showExplorerTab('schema')">Schema</button>
+                    <button class="tab" onclick="showExplorerTab('data')">Live Data</button>
+                    <button class="tab" onclick="showExplorerTab('logs')">Logs</button>
+                </div>
+                <div id="explorer-schema">
+                    <div class="code-editor">
+                        <pre>GET /v1/chat/completions
+Parameters:
+  - model (string, required)
+  - messages (array, required)
+  - temperature (float, optional, default 0.7)
+  - max_tokens (int, optional, default 256)
+  - stream (bool, optional, default false)</pre>
+                    </div>
+                </div>
+                <div id="explorer-data" style="display: none;">
+                    <div class="code-editor">
+                        <pre>{"id": "chatcmpl-123", "object": "chat.completion", "choices": [{"message": {"role": "assistant", "content": "Hello!"}}]}</pre>
+                    </div>
+                </div>
+                <div id="explorer-logs" style="display: none;">
+                    <div class="code-editor">
+                        <pre>[2024-01-15 14:30:01] INFO  Request started: POST /v1/chat/completions
+[2024-01-15 14:30:01] INFO  Request completed: 200 OK (245ms)
+[2024-01-15 14:30:02] INFO  Request started: POST /v1/chat/completions
+[2024-01-15 14:30:02] WARN  Slow request: 1200ms</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-sdk" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>SDK Reference</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Python</h3>
+                        <p>pip install astrovox</p>
+                        <a href="../sdk/python/README.md">View Docs</a>
+                    </div>
+                    <div class="card">
+                        <h3>TypeScript</h3>
+                        <p>npm install @astrovox/sdk</p>
+                        <a href="../sdk/typescript/README.md">View Docs</a>
+                    </div>
+                    <div class="card">
+                        <h3>Go</h3>
+                        <p>go get github.com/astrovox/sdk/go</p>
+                        <a href="../sdk/go/README.md">View Docs</a>
+                    </div>
+                    <div class="card">
+                        <h3>Java</h3>
+                        <p>Maven: com.astrovox:astrovox-sdk</p>
+                        <a href="../sdk/java/pom.xml">View Docs</a>
+                    </div>
+                    <div class="card">
+                        <h3>Rust</h3>
+                        <p>cargo add astrovox-sdk</p>
+                        <a href="../sdk/rust/README.md">View Docs</a>
+                    </div>
+                    <div class="card">
+                        <h3>C#</h3>
+                        <p>NuGet: AstrovoxSDK</p>
+                        <a href="../sdk/csharp/AstrovoxSDK.csproj">View Docs</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-docs" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>Documentation</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>API Reference</h3>
+                        <p>Complete API endpoint reference.</p>
+                        <a href="../docs/API.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Getting Started</h3>
+                        <p>Quick start guide for new users.</p>
+                        <a href="../docs/getting-started.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Tutorials</h3>
+                        <p>Step-by-step tutorials for common tasks.</p>
+                        <a href="../docs/tutorials.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Architecture</h3>
+                        <p>System architecture and design docs.</p>
+                        <a href="../docs/ARCHITECTURE.md">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-monitoring" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>Monitoring & Observability</h2>
+                <div class="metrics-row">
+                    <div>
+                        <div class="metric-value" id="metric-availability">99.95%</div>
+                        <div class="metric-label">Availability</div>
+                    </div>
+                    <div>
+                        <div class="metric-value" id="metric-latency">245ms</div>
+                        <div class="metric-label">P95 Latency</div>
+                    </div>
+                    <div>
+                        <div class="metric-value" id="metric-errors">0.02%</div>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                    <div>
+                        <div class="metric-value" id="metric-rps">1,234</div>
+                        <div class="metric-label">Requests/sec</div>
+                    </div>
+                </div>
+                <div class="tabs">
+                    <button class="tab active" onclick="showMonitorTab('slo')">SLO/SLA</button>
+                    <button class="tab" onclick="showMonitorTab('errors')">Error Budgets</button>
+                    <button class="tab" onclick="showMonitorTab('perf')">Perf</button>
+                    <button class="tab" onclick="showMonitorTab('incidents')">Incidents</button>
+                </div>
+                <div id="monitor-slo">
+                    <div class="card">
+                        <h3>SLO Status</h3>
+                        <p>Availability: <span class="status-badge healthy">Healthy</span></p>
+                        <p>Latency P95: <span class="status-badge healthy">Healthy</span></p>
+                        <p>Error Rate: <span class="status-badge healthy">Healthy</span></p>
+                    </div>
+                </div>
+                <div id="monitor-errors" style="display: none;">
+                    <div class="card">
+                        <h3>Error Budget</h3>
+                        <p>Remaining: 85.2%</p>
+                        <p>Burn Rate: 0.5x</p>
+                        <p>Status: <span class="status-badge healthy">On Track</span></p>
+                    </div>
+                </div>
+                <div id="monitor-perf" style="display: none;">
+                    <div class="card">
+                        <h3>Performance</h3>
+                        <p>CPU: 45%</p>
+                        <p>Memory: 62%</p>
+                        <p>Throughput: 1,234 RPS</p>
+                    </div>
+                </div>
+                <div id="monitor-incidents" style="display: none;">
+                    <div class="card">
+                        <h3>Active Incidents</h3>
+                        <p>None</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-extensions" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>Extension Framework</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>VS Code</h3>
+                        <p>AstrovoxAI extension for Visual Studio Code.</p>
+                        <a href="../extensions/vscode/README.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>JetBrains</h3>
+                        <p>AstrovoxAI plugin for IntelliJ, PyCharm, etc.</p>
+                        <a href="../extensions/jetbrains/README.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Chrome</h3>
+                        <p>Browser extension for Chrome.</p>
+                        <a href="../extensions/chrome/README.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Firefox</h3>
+                        <p>Browser extension for Firefox.</p>
+                        <a href="../extensions/firefox/README.md">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="tab-runbooks" class="tab-panel" style="display: none;">
+            <div class="section">
+                <h2>Runbooks</h2>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Incident Response</h3>
+                        <p>Procedures for responding to production incidents.</p>
+                        <a href="../docs/runbooks/incident-response.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Automated Rollback</h3>
+                        <p>Automated rollback procedures based on SLO violations.</p>
+                        <a href="../docs/runbooks/automated-rollback.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Backup Validation</h3>
+                        <p>Backup validation and restore procedures.</p>
+                        <a href="../docs/runbooks/backup-validation.md">View</a>
+                    </div>
+                    <div class="card">
+                        <h3>Disaster Recovery</h3>
+                        <p>Disaster recovery drill procedures.</p>
+                        <a href="../docs/runbooks/disaster-recovery-drill.md">View</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const tabs = document.querySelectorAll('.nav a[data-tab]');
+        const panels = document.querySelectorAll('.tab-panel');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.preventDefault();
+                const target = tab.dataset.tab;
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                panels.forEach(p => {
+                    p.style.display = p.id === 'tab-' + target ? 'block' : 'none';
+                });
+            });
+        });
+        function sendPlaygroundRequest() {
+            const responseDiv = document.getElementById('playground-response');
+            responseDiv.style.display = 'block';
+            responseDiv.innerHTML = '<pre>{\n  "id": "chatcmpl-simulated",\n  "object": "chat.completion",\n  "choices": [\n    {\n      "message": {\n        "role": "assistant",\n        "content": "Simulated response from the API playground."\n      }\n    }\n  ]\n}</pre>';
+        }
+        function clearPlayground() {
+            document.getElementById('playground-response').style.display = 'none';
+        }
+        function showExplorerTab(name) {
+            ['schema', 'data', 'logs'].forEach(t => {
+                document.getElementById('explorer-' + t).style.display = t === name ? 'block' : 'none';
+            });
+            document.querySelectorAll('#tab-explorer .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+        function showMonitorTab(name) {
+            ['slo', 'errors', 'perf', 'incidents'].forEach(t => {
+                document.getElementById('monitor-' + t).style.display = t === name ? 'block' : 'none';
+            });
+            document.querySelectorAll('#tab-monitoring .tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

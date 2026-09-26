@@ -5,6 +5,7 @@
 | Runbook | Owner | Last Updated |
 |---------|-------|--------------|
 | [Incident Response](incident-response.md) | Platform | 2024-09-26 |
+| [Automated Rollback](automated-rollback.md) | DevOps | 2024-09-26 |
 | [Deployment](deployment.md) | DevOps | 2024-09-26 |
 | [Rollback](rollback.md) | DevOps | 2024-09-26 |
 | [Backup Validation](backup-validation.md) | Platform | 2024-09-26 |

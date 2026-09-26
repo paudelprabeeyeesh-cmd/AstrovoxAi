@@ -1,0 +1,9 @@
+{
+  "name": "@astrovox/sdk",
+  "version": "0.1.0",
+  "main": "client.js",
+  "types": "client.d.ts",
+  "scripts": {
+    "build": "tsc"
+  }
+}

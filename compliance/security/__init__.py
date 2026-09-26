@@ -9,6 +9,14 @@ from .prompt_injection_detection import PromptInjectionCompliance
 from .rate_limiting import RateLimitingCompliance
 from .abuse_detection import AbuseDetectionCompliance
 from .malware_scanning import MalwareScanningCompliance
+from .zero_trust import ZeroTrustCompliance
+from .supply_chain import SupplyChainCompliance
+from .secure_model_serving import SecureModelServingCompliance
+from .signed_artifacts import SignedArtifactsCompliance
+from .audit_dashboard import AuditDashboardCompliance
+from .chaos_security import ChaosSecurityCompliance
+from .pen_test import PenTestCompliance
+from .compliance_automation import ComplianceAutomationCompliance
 
 __all__ = [
     "AuthenticationCompliance",
@@ -21,4 +29,12 @@ __all__ = [
     "RateLimitingCompliance",
     "AbuseDetectionCompliance",
     "MalwareScanningCompliance",
+    "ZeroTrustCompliance",
+    "SupplyChainCompliance",
+    "SecureModelServingCompliance",
+    "SignedArtifactsCompliance",
+    "AuditDashboardCompliance",
+    "ChaosSecurityCompliance",
+    "PenTestCompliance",
+    "ComplianceAutomationCompliance",
 ]

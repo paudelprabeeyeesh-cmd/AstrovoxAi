@@ -1,58 +1,46 @@
-# Tutorial: Getting Started with AstrovoxAI
+# Getting Started Tutorial
+
+This tutorial walks you through your first AstrovoxAI integration.
 
 ## Prerequisites
-- Python 3.12+
-- Node.js 20+
-- Docker & Docker Compose
-- Git
 
-## Step 1: Clone Repository
+- An AstrovoxAI account and API key
+- Python 3.9+ or Node.js 18+
+
+## Step 1: Install the SDK
+
 ```bash
-git clone https://github.com/paudelprabeeyeesh-cmd/AstrovoxAi.git
-cd AstrovoxAi
+# Python
+pip install astrovox
+
+# TypeScript
+npm install @astrovox/sdk
 ```
 
-## Step 2: Start Backend
-```bash
-cd 02-Backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
+## Step 2: Initialize the Client
+
+```python
+import astrovox
+
+client = astrovox.AstrovoxClient(api_key="your-api-key")
 ```
 
-## Step 3: Start Frontend
-```bash
-cd apps/web
-npm install
-npm run dev
+## Step 3: Create a Conversation
+
+```python
+conversation = client.create_conversation(title="My First Chat")
+print(f"Conversation ID: {conversation.id}")
 ```
 
-## Step 4: Access Application
-- Frontend: http://localhost:3000
-- API docs: http://localhost:8000/docs
-- Health: http://localhost:8000/health
+## Step 4: Send a Message
 
-## Step 5: Make Your First Request
-```bash
-# Register
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"secure123"}'
-
-# Login
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"secure123"}'
-
-# Solve
-curl -X POST http://localhost:8000/solve \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Hello, world!"}'
+```python
+response = client.send_message(conversation.id, "Hello, AstrovoxAI!")
+print(response["ai_message"]["content"])
 ```
 
 ## Next Steps
-- Read [Architecture Overview](./architecture.md)
-- Explore [API Reference](../02-Backend/docs/sdk_reference.md)
-- Try [RAG Tutorial](./rag-tutorial.md)
+
+- Explore the [API Reference](../docs/API.md)
+- Try the [API Playground](../docs/API_PLAYGROUND.md)
+- Read the [Architecture Docs](../docs/ARCHITECTURE.md)

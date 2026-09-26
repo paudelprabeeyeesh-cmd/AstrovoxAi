@@ -9,6 +9,15 @@ from .prompt_injection_detection import PromptInjectionDetector, InjectionFindin
 from .rate_limiting import RateLimiter, RateLimitConfig
 from .abuse_detection import AbuseDetector, AbuseAlert
 from .malware_scanning import MalwareScanner, ScanResult
+from .zero_trust import ZeroTrustEngine, TrustContext, TrustLevel
+from .prompt_injection_benchmark import PromptInjectionBenchmark, BenchmarkCase, BenchmarkResult
+from .supply_chain import SupplyChainVerifier, DependencyRecord, SBOMEntry
+from .secure_model_serving import SecureModelServing, GuardrailResult, ServingAction
+from .signed_artifacts import SignedArtifactRegistry, SignedArtifact, SignatureStatus
+from .audit_dashboard import AuditDashboard, SecurityMetric
+from .chaos_security import ChaosSecurity, ChaosExperiment, ChaosAction
+from .pen_test import PenTester, Vulnerability, VulnSeverity, PenTestReport
+from .compliance_automation import ComplianceAutomation, ComplianceCheck, CheckResult, ComplianceFramework, CheckStatus
 
 __all__ = [
     "AuthenticationManager", "AuthorizationManager",
@@ -20,4 +29,13 @@ __all__ = [
     "RateLimiter", "RateLimitConfig",
     "AbuseDetector", "AbuseAlert",
     "MalwareScanner", "ScanResult",
+    "ZeroTrustEngine", "TrustContext", "TrustLevel",
+    "PromptInjectionBenchmark", "BenchmarkCase", "BenchmarkResult",
+    "SupplyChainVerifier", "DependencyRecord", "SBOMEntry",
+    "SecureModelServing", "GuardrailResult", "ServingAction",
+    "SignedArtifactRegistry", "SignedArtifact", "SignatureStatus",
+    "AuditDashboard", "SecurityMetric",
+    "ChaosSecurity", "ChaosExperiment", "ChaosAction",
+    "PenTester", "Vulnerability", "VulnSeverity", "PenTestReport",
+    "ComplianceAutomation", "ComplianceCheck", "CheckResult", "ComplianceFramework", "CheckStatus",
 ]

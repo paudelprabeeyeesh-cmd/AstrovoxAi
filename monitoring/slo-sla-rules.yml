@@ -1,0 +1,48 @@
+groups:
+  - name: astrovox_slo_sla
+    interval: 30s
+    rules:
+      - alert: SLOAvailabilityBurnRateFast
+        expr: |-
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+          / sum(rate(http_requests_total[5m])) > 14.4 * (1 - 0.99)
+        for: 2m
+        labels:
+          severity: critical
+          slo: availability
+        annotations:
+          summary: "Fast error budget burn detected for availability SLO"
+          description: "Availability burn rate is {{ $value }}x threshold"
+
+      - alert: SLOLatencyP95Violation
+        expr: |-
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+          > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          slo: latency_p95
+        annotations:
+          summary: "P95 latency SLO violation"
+          description: "P95 latency is {{ $value }}s, target is 0.5s"
+
+      - alert: SLOErrorRateViolation
+        expr: |-
+          sum(rate(errors_total[5m])) / sum(rate(http_requests_total[5m])) > 0.001
+        for: 3m
+        labels:
+          severity: critical
+          slo: error_rate
+        annotations:
+          summary: "Error rate SLO violation"
+          description: "Error rate is {{ $value }}, target is 0.001"
+
+      - alert: SLAErrorBudgetExhausted
+        expr: error_budget_remaining < 0
+        for: 1m
+        labels:
+          severity: critical
+          sla: api
+        annotations:
+          summary: "SLA error budget exhausted"
+          description: "Error budget remaining is {{ $value }}"
