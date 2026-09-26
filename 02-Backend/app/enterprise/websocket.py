@@ -114,8 +114,9 @@ class ConnectionManager:
             if conn.organization_id == organization_id:
                 try:
                     await conn.websocket.send_json(message)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning("Broadcast to organization failed for user %s: %s", conn.user_id, exc)
+                    self.disconnect(conn_id)
 
     def get_workspace_presence(self, workspace_id: str) -> list[dict]:
         """Get presence info for all users in a workspace."""
