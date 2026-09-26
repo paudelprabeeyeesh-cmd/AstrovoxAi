@@ -2,9 +2,11 @@ import os
 import re
 import json
 import hashlib
+import time
 import requests
 from datetime import datetime
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     import openai
@@ -51,6 +53,62 @@ class _LazyOpenAIClient:
 
 client = _LazyOpenAIClient()
 
+_embedding_cache: dict[str, list[float]] = {}
+_embedding_cache_ts: dict[str, float] = {}
+_EMBEDDING_TTL = 3600.0
+_MAX_WORKERS = 8
+
+
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _cached_embed(text: str) -> list[float]:
+    key = _sha256(text)
+    now = time.time()
+    cached = _embedding_cache.get(key)
+    ts = _embedding_cache_ts.get(key, 0.0)
+    if cached is not None and (now - ts) < _EMBEDDING_TTL:
+        return cached
+    response = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=[text],
+    )
+    vec = response.data[0].embedding
+    _embedding_cache[key] = vec
+    _embedding_cache_ts[key] = now
+    return vec
+
+
+def _batch_embed(texts: list[str], batch_size: int = 64) -> list[list[float]]:
+    results: list[list[float]] = [None] * len(texts)
+    to_fetch: list[tuple[int, str]] = []
+    now = time.time()
+    for i, text in enumerate(texts):
+        key = _sha256(text)
+        cached = _embedding_cache.get(key)
+        ts = _embedding_cache_ts.get(key, 0.0)
+        if cached is not None and (now - ts) < _EMBEDDING_TTL:
+            results[i] = cached
+        else:
+            to_fetch.append((i, text))
+    if not to_fetch:
+        return results
+    for start in range(0, len(to_fetch), batch_size):
+        batch = [t for _, t in to_fetch[start : start + batch_size]]
+        response = client.embeddings.create(
+            model="text-embedding-3-small",
+            input=batch,
+        )
+        for j, item in enumerate(response.data):
+            idx = to_fetch[start + j][0]
+            vec = item.embedding
+            key = _sha256(to_fetch[start + j][1])
+            _embedding_cache[key] = vec
+            _embedding_cache_ts[key] = now
+            results[idx] = vec
+    return results
+
 
 class RAGEngine:
     def chunk_text(self, text, chunk_size=1000, overlap=200):
@@ -71,11 +129,9 @@ class RAGEngine:
     def embed_chunks(self, chunks):
         if not chunks:
             return []
-        response = client.embeddings.create(
-            model="text-embedding-3-small",
-            input=chunks,
-        )
-        return [item.embedding for item in response.data]
+        if len(chunks) == 1:
+            return [_cached_embed(chunks[0])]
+        return _batch_embed(chunks)
 
     def store_chunks(self, chunks, embeddings, user_id, source_type, filename=None):
         from app.repositories.database.client import get_db

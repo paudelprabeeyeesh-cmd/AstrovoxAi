@@ -1,9 +1,11 @@
-"""SQLite connection pooling with thread-local cache.
+"""SQLite connection pooling with thread-local cache and HTTP session pooling.
 
 Uses a bounded pool of pre-opened connections per database path.
 Reduces connection setup overhead on hot paths like chat message inserts.
+Also provides a lightweight HTTP session pool for outbound API calls.
 """
 
+import logging
 import sqlite3
 import threading
 from typing import Optional
@@ -92,3 +94,62 @@ class PooledConnection:
                 pass
             self.pool.release(self.conn)
         return False
+
+
+try:
+    import requests as _requests_lib
+
+    _requests_available = True
+except ImportError:
+    _requests_available = False
+
+
+class HTTPSessionPool:
+    """Lightweight pool of reusable requests.Session objects."""
+
+    def __init__(self, max_sessions: int = 10):
+        self.max_sessions = max_sessions
+        self._sessions: list = []
+        self._lock = threading.Lock()
+        self._created = 0
+
+    def acquire(self):
+        if not _requests_available:
+            raise RuntimeError("requests is not installed")
+        with self._lock:
+            if self._sessions:
+                return self._sessions.pop()
+            if self._created < self.max_sessions:
+                self._created += 1
+                return _requests_lib.Session()
+            return _requests_lib.Session()
+
+    def release(self, session) -> None:
+        with self._lock:
+            if len(self._sessions) < self.max_sessions:
+                self._sessions.append(session)
+            else:
+                session.close()
+
+    def close_all(self) -> None:
+        with self._lock:
+            for session in self._sessions:
+                try:
+                    session.close()
+                except Exception:
+                    pass
+            self._sessions.clear()
+            self._created = 0
+
+
+_http_pool: Optional[HTTPSessionPool] = None
+_http_pool_lock = threading.Lock()
+
+
+def get_http_pool(max_sessions: int = 10) -> HTTPSessionPool:
+    global _http_pool
+    if _http_pool is None:
+        with _http_pool_lock:
+            if _http_pool is None:
+                _http_pool = HTTPSessionPool(max_sessions=max_sessions)
+    return _http_pool

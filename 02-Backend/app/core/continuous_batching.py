@@ -33,7 +33,7 @@ class ContinuousBatchScheduler:
         self.eos_token_id = eos_token_id
         self.active: Dict[str, Dict[str, Any]] = {}
         self.queued: List[ScheduledRequest] = []
-        self.preempted: List[ScheduledRequest] = []
+        self.preempted: List[str] = []
         self.finished: List[Dict[str, Any]] = []
 
     def submit(self, req: ScheduledRequest) -> None:
@@ -53,7 +53,7 @@ class ContinuousBatchScheduler:
             if lowest_priority[0] is not None and req.priority > lowest_priority[1]:
                 preempted_id = lowest_priority[0]
                 preempted_req = self.active.pop(preempted_id)
-                self.preempted.append(preempted_req["request"])
+                self.preempted.append(preempted_id)
                 self.active[req.request_id] = {
                     "request": req,
                     "tokens": list(req.prompt_ids),

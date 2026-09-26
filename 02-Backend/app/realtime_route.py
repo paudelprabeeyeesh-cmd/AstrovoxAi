@@ -4,8 +4,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, HTTPException, st
 from pydantic import BaseModel
 from typing import Optional
 
-from ...realtime import connection_manager, background_worker
-from ...tools import tool_registry
+from app.realtime import connection_manager, background_worker
+from app.tools import tool_registry
 from app.middleware.security.ai_security_enhanced import pii_detector, secret_detector, conversation_limiter
 from app.utils.auth.auth_utils import get_user_id_from_token
 from app.middleware.security.security_hardening import Principal
