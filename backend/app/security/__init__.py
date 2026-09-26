@@ -18,6 +18,7 @@ from .audit_dashboard import AuditDashboard, SecurityMetric
 from .chaos_security import ChaosSecurity, ChaosExperiment, ChaosAction
 from .pen_test import PenTester, Vulnerability, VulnSeverity, PenTestReport
 from .compliance_automation import ComplianceAutomation, ComplianceCheck, CheckResult, ComplianceFramework, CheckStatus
+from .api_attack_detection import APIAttackDetector, AttackFinding
 
 __all__ = [
     "AuthenticationManager", "AuthorizationManager",
@@ -38,4 +39,5 @@ __all__ = [
     "ChaosSecurity", "ChaosExperiment", "ChaosAction",
     "PenTester", "Vulnerability", "VulnSeverity", "PenTestReport",
     "ComplianceAutomation", "ComplianceCheck", "CheckResult", "ComplianceFramework", "CheckStatus",
+    "APIAttackDetector", "AttackFinding",
 ]

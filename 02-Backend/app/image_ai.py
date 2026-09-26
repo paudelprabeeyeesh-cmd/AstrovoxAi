@@ -7,16 +7,19 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import UploadFile
 
-from ASTROVOX_AI.ai_core.image import ImageAIPipelines
+try:
+    from ASTROVOX_AI.ai_core.image import ImageAIPipelines
+except ModuleNotFoundError:
+    ImageAIPipelines = None  # type: ignore[misc,assignment]
 
 logger = logging.getLogger(__name__)
 
-_image_pipelines: Optional[ImageAIPipelines] = None
+_image_pipelines: Optional[Any] = None
 
 
-def get_image_pipelines() -> ImageAIPipelines:
+def get_image_pipelines() -> Optional[Any]:
     global _image_pipelines
-    if _image_pipelines is None:
+    if _image_pipelines is None and ImageAIPipelines is not None:
         device = os.getenv("ASTROVOX_IMAGE_DEVICE", "cpu")
         _image_pipelines = ImageAIPipelines(device=device)
     return _image_pipelines

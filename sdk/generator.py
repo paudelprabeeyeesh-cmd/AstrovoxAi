@@ -9,6 +9,9 @@ from typing import Any, Dict, List, Optional
 from sdk.openapi.spec import OpenAPISpec
 
 
+TEMPLATES_DIR = Path(__file__).parent / "templates"
+
+
 @dataclass
 class ClientConfig:
     base_url: str
@@ -45,12 +48,24 @@ class SDKGenerator:
         generated["csharp"] = self._write_csharp(csharp_dir)
         return generated
 
+    def _read_template(self, relative_path: str) -> str:
+        template = TEMPLATES_DIR / relative_path
+        if template.exists():
+            return template.read_text(encoding="utf-8")
+        return ""
+
     def _write_python(self, target: Path) -> Path:
         main = target / "astrovox.py"
-        content = self._render_python_client()
+        content = self._read_template("python/client.py") or self._render_python_client()
         main.write_text(content, encoding="utf-8")
         init = target / "__init__.py"
         init.write_text("from .astrovox import AstrovoxClient\n", encoding="utf-8")
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox Python SDK\n\npip install astrovox\n\n"
+            "```python\nimport astrovox\nclient = astrovox.AstrovoxClient(api_key='your-key')\n```\n",
+            encoding="utf-8",
+        )
         return main
 
     def _render_python_client(self) -> str:
@@ -92,7 +107,7 @@ class SDKGenerator:
 
     def _write_typescript(self, target: Path) -> Path:
         main = target / "astrovox.ts"
-        content = self._render_typescript_client()
+        content = self._read_template("typescript/client.ts") or self._render_typescript_client()
         main.write_text(content, encoding="utf-8")
         pkg = target / "package.json"
         pkg.write_text(
@@ -107,6 +122,12 @@ class SDKGenerator:
                 indent=2,
             )
             + "\n",
+            encoding="utf-8",
+        )
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox TypeScript SDK\n\nnpm install @astrovox/sdk\n\n"
+            "```typescript\nimport { AstrovoxClient } from '@astrovox/sdk'\n```\n",
             encoding="utf-8",
         )
         return main
@@ -157,11 +178,17 @@ class SDKGenerator:
 
     def _write_go(self, target: Path) -> Path:
         main = target / "astrovox.go"
-        content = self._render_go_client()
+        content = self._read_template("go/client.go") or self._render_go_client()
         main.write_text(content, encoding="utf-8")
         mod = target / "go.mod"
         mod.write_text(
             "module github.com/astrovox/sdk/go\n\ngo 1.21\n\nrequire github.com/astrovox/sdk v0.1.0\n",
+            encoding="utf-8",
+        )
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox Go SDK\n\ngo get github.com/astrovox/sdk/go\n\n"
+            "```go\nclient := astrovox.NewClient('your-key')\n```\n",
             encoding="utf-8",
         )
         return main
@@ -283,7 +310,7 @@ class SDKGenerator:
 
     def _write_java(self, target: Path) -> Path:
         main = target / "AstrovoxClient.java"
-        content = self._render_java_client()
+        content = self._read_template("java/AstrovoxClient.java") or self._render_java_client()
         main.write_text(content, encoding="utf-8")
         pom = target / "pom.xml"
         pom.write_text(
@@ -296,6 +323,12 @@ class SDKGenerator:
             '    <artifactId>astrovox-sdk</artifactId>\n'
             '    <version>0.1.0</version>\n'
             "</project>\n",
+            encoding="utf-8",
+        )
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox Java SDK\n\nMaven: com.astrovox:astrovox-sdk\n\n"
+            "```java\nAstrovoxClient client = new AstrovoxClient('your-key');\n```\n",
             encoding="utf-8",
         )
         return main
@@ -361,7 +394,7 @@ class SDKGenerator:
     def _write_rust(self, target: Path) -> Path:
         main = target / "src" / "lib.rs"
         main.parent.mkdir(parents=True, exist_ok=True)
-        content = self._render_rust_client()
+        content = self._read_template("rust/src/lib.rs") or self._render_rust_client()
         main.write_text(content, encoding="utf-8")
         cargo = target / "Cargo.toml"
         cargo.write_text(
@@ -373,6 +406,12 @@ class SDKGenerator:
             'reqwest = { version = "0.11", features = ["json"] }\n'
             'serde_json = "1.0"\n'
             'tokio = { version = "1", features = ["full"] }\n',
+            encoding="utf-8",
+        )
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox Rust SDK\n\ncargo add astrovox-sdk\n\n"
+            "```rust\nuse astrovox_sdk::AstrovoxClient;\n```\n",
             encoding="utf-8",
         )
         return main
@@ -432,7 +471,7 @@ class SDKGenerator:
 
     def _write_csharp(self, target: Path) -> Path:
         main = target / "AstrovoxClient.cs"
-        content = self._render_csharp_client()
+        content = self._read_template("csharp/AstrovoxClient.cs") or self._render_csharp_client()
         main.write_text(content, encoding="utf-8")
         proj = target / "AstrovoxSDK.csproj"
         proj.write_text(
@@ -444,6 +483,12 @@ class SDKGenerator:
             '    <Version>0.1.0</Version>\n'
             "  </PropertyGroup>\n"
             "</Project>\n",
+            encoding="utf-8",
+        )
+        readme = target / "README.md"
+        readme.write_text(
+            "# Astrovox C# SDK\n\nNuGet: AstrovoxSDK\n\n"
+            "```csharp\nvar client = new Client(\"your-key\");\n```\n",
             encoding="utf-8",
         )
         return main
