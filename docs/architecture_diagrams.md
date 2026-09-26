@@ -318,3 +318,87 @@ astrovox/
 - **Tracing**: Jaeger
 - **CI/CD**: GitHub Actions
 
+## Reliability Architecture
+
+```mermaid
+graph TB
+    subgraph Monitoring
+        Prom[Prometheus]
+        Graf[Grafana]
+        Alert[Alertmanager]
+    end
+
+    subgraph SLO
+        SLO[SLO Tracker]
+        EB[Error Budget]
+        SLA[SLA Tracker]
+    end
+
+    subgraph Reliability
+        IM[Incident Manager]
+        AR[Automated Rollback]
+        BV[Backup Validator]
+        DR[DR Drill]
+        CP[Capacity Planner]
+        CO[Cost Optimizer]
+    end
+
+    subgraph App
+        API[FastAPI]
+        WS[WebSocket]
+        Workers[Background Workers]
+    end
+
+    API --> Prom
+    Prom --> Graf
+    Prom --> Alert
+    Alert --> IM
+    IM --> AR
+    AR --> API
+    SLO --> EB
+    EB --> AR
+    SLA --> SLO
+    BV --> DR
+    CP --> API
+    CO --> API
+```
+
+## Extension Architecture
+
+```mermaid
+graph TB
+    subgraph Hosts
+        VSC[VS Code]
+        JB[JetBrains]
+        CH[Chrome]
+        FF[Firefox]
+        SF[Safari]
+        NV[Neovim]
+    end
+
+    subgraph Framework
+        SDK[Extension SDK]
+        Registry[Extension Registry]
+        Core[Shared Core]
+    end
+
+    subgraph Platform
+        API[AstrovoxAI API]
+        Auth[Auth Service]
+        Plugin[Plugin Runtime]
+    end
+
+    VSC --> SDK
+    JB --> SDK
+    CH --> SDK
+    FF --> SDK
+    SF --> SDK
+    NV --> SDK
+
+    SDK --> Core
+    Core --> Registry
+    Registry --> Plugin
+    Plugin --> API
+    Plugin --> Auth
+```
+

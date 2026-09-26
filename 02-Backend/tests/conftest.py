@@ -9,6 +9,10 @@ _backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _backend_root not in sys.path:
     sys.path.insert(0, _backend_root)
 
+_project_root = os.path.dirname(_backend_root)
+if _project_root not in sys.path:
+    sys.path.insert(0, _project_root)
+
 os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
 os.environ.setdefault("ASTROVOX_DB", "test.db")
 os.environ.setdefault("ASTROVOX_TEST_MODE", "1")

@@ -25,6 +25,14 @@ Welcome to the AstrovoxAI documentation. This directory contains comprehensive g
 - [WEBHOOKS.md](WEBHOOKS.md) — Webhook configuration and events
 - [INTEGRATIONS.md](INTEGRATIONS.md) — Third-party integrations
 - [EXTENSIONS.md](extensions.md) — Browser and IDE extensions
+- [Extension Framework](extension-framework.md) — Extension SDK and manifest guide
+
+### Developer Experience
+- [API Playground](API_PLAYGROUND.md) — Interactive API explorer
+- [Analytics](analytics.md) — Platform analytics and usage insights
+- [Architecture Diagrams](architecture_diagrams.md) — System and data flow diagrams
+- [Tutorials](tutorials.md) — Step-by-step integration guides
+- [Docs Generator](docs_generator.py) — Automated documentation generation
 
 ### Operations
 - [TESTING.md](TESTING.md) — Test strategy and execution
@@ -33,6 +41,16 @@ Welcome to the AstrovoxAI documentation. This directory contains comprehensive g
 - [SECURITY_BEST_PRACTICES.md](SECURITY_BEST_PRACTICES.md) — Security hardening guide
 - [SECURITY_AUDIT.md](SECURITY_AUDIT.md) — Security audit reports
 - [ON_CALL.md](on_call.md) — On-call runbook
+
+### Production Readiness
+- [Runbooks Index](runbooks/production-runbook-index.md) — All operational runbooks
+- [Incident Response](runbooks/incident-response.md) — Incident management procedures
+- [Automated Rollback](runbooks/automated-rollback.md) — Rollback automation
+- [Backup Validation](runbooks/backup-validation.md) — Backup integrity checks
+- [Disaster Recovery](runbooks/disaster-recovery-drill.md) — DR drill procedures
+- [Cost Optimization](runbooks/cost-optimization.md) — Cost monitoring and optimization
+- [Capacity Planning](runbooks/capacity-planning.md) — Resource forecasting
+- [SLO Management](runbooks/slo-management.md) — SLO/SLA tracking and error budgets
 
 ### Specialized Guides
 - [DATABASE_DESIGN.md](DATABASE_DESIGN.md) — Schema design and migrations

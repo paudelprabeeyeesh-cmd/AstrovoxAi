@@ -1,0 +1,61 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: distributed-inference
+  namespace: astrovox-distributed
+spec:
+  replicas: 3
+  strategy:
+    blueGreen:
+      activeService: distributed-inference
+      previewService: distributed-inference-preview
+      autoPromotionEnabled: false
+      autoPromotionMaxUnavailable: 1
+      scaleDownDelaySeconds: 30
+      prePromotionAnalysis:
+        templates:
+          - name: smoke-tests
+            spec:
+              successCondition: result[0] == "success"
+      postPromotionAnalysis:
+        templates:
+          - name: smoke-tests
+            spec:
+              successCondition: result[0] == "success"
+  selector:
+    matchLabels:
+      app: distributed-inference
+  template:
+    metadata:
+      labels:
+        app: distributed-inference
+        version: stable
+    spec:
+      serviceAccountName: distributed-inference-sa
+      containers:
+        - name: inference
+          image: astrovox/distributed-inference:latest
+          ports:
+            - containerPort: 8000
+              name: http
+          resources:
+            requests:
+              cpu: "2000m"
+              memory: "16Gi"
+              nvidia.com/gpu: "1"
+            limits:
+              cpu: "8000m"
+              memory: "64Gi"
+              nvidia.com/gpu: "1"
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
