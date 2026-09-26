@@ -18,35 +18,122 @@
   </header>
   <main class="container">
     <section class="tabs">
-      <button class="tab active" data-tab="orgs">Organizations</button>
+      <button class="tab active" data-tab="sso">SSO</button>
+      <button class="tab" data-tab="ldap">LDAP</button>
+      <button class="tab" data-tab="orgs">Organizations</button>
       <button class="tab" data-tab="billing">Billing</button>
+      <button class="tab" data-tab="subscriptions">Subscriptions</button>
+      <button class="tab" data-tab="quotas">Usage Quotas</button>
       <button class="tab" data-tab="api-keys">API Keys</button>
       <button class="tab" data-tab="permissions">Permissions</button>
+      <button class="tab" data-tab="compliance">Compliance Logs</button>
     </section>
 
-    <section id="orgs" class="tab-content">
+    <section id="sso" class="tab-content">
+      <h2>SSO Providers</h2>
+      <div class="card">
+        <table class="data-table" id="ssoTable">
+          <thead><tr><th>Key</th><th>Type</th><th>Metadata / Issuer</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ldap" class="tab-content hidden">
+      <h2>LDAP Configuration</h2>
+      <div class="card">
+        <form id="ldapForm" class="form-grid">
+          <label>Server<input type="text" id="ldapServer" value="ldap://localhost"></label>
+          <label>Bind DN<input type="text" id="ldapBindDn" value="cn=admin,dc=example,dc=com"></label>
+          <label>Base DN<input type="text" id="ldapBaseDn" value="dc=example,dc=com"></label>
+          <label>Username<input type="text" id="ldapUser" value="jdoe"></label>
+          <label>Password<input type="password" id="ldapPass" value="secret"></label>
+          <button type="submit" class="btn-primary">Authenticate</button>
+        </form>
+        <pre id="ldapResult" class="result-block"></pre>
+      </div>
+    </section>
+
+    <section id="orgs" class="tab-content hidden">
       <h2>Organization Management</h2>
       <div class="card">
         <canvas id="orgChart"></canvas>
       </div>
-      <table class="data-table" id="orgTable">
-        <thead><tr><th>ID</th><th>Name</th><th>Plan</th><th>Members</th></tr></thead>
-        <tbody></tbody>
-      </table>
+      <div class="card">
+        <form id="orgForm" class="form-grid">
+          <label>Name<input type="text" id="orgName" required></label>
+          <label>Owner ID<input type="text" id="orgOwner" required></label>
+          <label>Plan<select id="orgPlan"><option>free</option><option>team</option><option>enterprise</option></select></label>
+          <button type="submit" class="btn-primary">Create Organization</button>
+        </form>
+        <table class="data-table" id="orgTable">
+          <thead><tr><th>ID</th><th>Name</th><th>Plan</th><th>Members</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </section>
 
     <section id="billing" class="tab-content hidden">
-      <h2>Billing & Subscriptions</h2>
+      <h2>Billing & Invoices</h2>
       <div class="card">
-        <canvas id="billingChart"></canvas>
+        <form id="invoiceForm" class="form-grid">
+          <label>Org ID<input type="text" id="invOrg" required></label>
+          <label>Amount<input type="number" id="invAmount" step="0.01" required></label>
+          <label>Currency<input type="text" id="invCurrency" value="USD"></label>
+          <button type="submit" class="btn-primary">Create Invoice</button>
+        </form>
+        <table class="data-table" id="invoiceTable">
+          <thead><tr><th>ID</th><th>Org</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="subscriptions" class="tab-content hidden">
+      <h2>Subscription Plans</h2>
+      <div class="card">
+        <form id="subForm" class="form-grid">
+          <label>Org ID<input type="text" id="subOrg" required></label>
+          <label>Plan<select id="subPlan"><option>free</option><option>team</option><option>enterprise</option></select></label>
+          <label>Seats<input type="number" id="subSeats" value="1" min="1"></label>
+          <label>Interval<select id="subInterval"><option>monthly</option><option>yearly</option></select></label>
+          <button type="submit" class="btn-primary">Create Subscription</button>
+        </form>
+        <table class="data-table" id="subTable">
+          <thead><tr><th>ID</th><th>Org</th><th>Plan</th><th>Seats</th><th>Status</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="quotas" class="tab-content hidden">
+      <h2>Usage Quotas</h2>
+      <div class="card">
+        <form id="quotaForm" class="form-grid">
+          <label>Org ID<input type="text" id="quotaOrg" required></label>
+          <label>Resource<select id="quotaResource"><option>api_requests</option><option>storage_gb</option><option>tokens</option></select></label>
+          <label>Limit<input type="number" id="quotaLimit" required></label>
+          <label>Period<select id="quotaPeriod"><option>monthly</option><option>daily</option><option>yearly</option></select></label>
+          <button type="submit" class="btn-primary">Set Quota</button>
+        </form>
+        <table class="data-table" id="quotaTable">
+          <thead><tr><th>ID</th><th>Org</th><th>Resource</th><th>Limit</th><th>Period</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
     <section id="api-keys" class="tab-content hidden">
       <h2>API Keys</h2>
       <div class="card">
+        <form id="keyForm" class="form-grid">
+          <label>Org ID<input type="text" id="keyOrg" required></label>
+          <label>Name<input type="text" id="keyName" required></label>
+          <label>Scopes (comma separated)<input type="text" id="keyScopes" value="read,execute"></label>
+          <button type="submit" class="btn-primary">Create Key</button>
+        </form>
         <table class="data-table" id="apiKeyTable">
-          <thead><tr><th>Name</th><th>Scopes</th><th>Created</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>Scopes</th><th>Expires</th><th>Created</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -55,8 +142,31 @@
     <section id="permissions" class="tab-content hidden">
       <h2>Team Permissions</h2>
       <div class="card">
+        <form id="permForm" class="form-grid">
+          <label>Org ID<input type="text" id="permOrg" required></label>
+          <label>User ID<input type="text" id="permUser" required></label>
+          <label>Role<select id="permRole"><option>owner</option><option>admin</option><option>manager</option><option>member</option><option>guest</option></select></label>
+          <button type="submit" class="btn-primary">Assign Role</button>
+        </form>
         <table class="data-table" id="permTable">
           <thead><tr><th>User</th><th>Role</th><th>Permissions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="compliance" class="tab-content hidden">
+      <h2>Compliance Logs</h2>
+      <div class="card">
+        <form id="complianceForm" class="form-grid">
+          <label>Actor<input type="text" id="compActor"></label>
+          <label>Action<input type="text" id="compAction"></label>
+          <button type="button" id="compQuery" class="btn-primary">Query Logs</button>
+          <button type="button" id="compGenerate" class="btn-secondary">Generate Report</button>
+        </form>
+        <pre id="complianceResult" class="result-block"></pre>
+        <table class="data-table" id="complianceTable">
+          <thead><tr><th>Timestamp</th><th>Actor</th><th>Action</th><th>Resource</th><th>Tenant</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>

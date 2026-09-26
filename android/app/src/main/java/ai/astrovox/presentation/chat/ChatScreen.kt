@@ -14,9 +14,13 @@ import androidx.compose.ui.unit.dp
 import ai.astrovox.domain.model.Message
 
 @Composable
-fun ChatScreen(viewModel: ChatViewModel, conversationId: String) {
+fun ChatScreen(viewModel: ChatViewModel, conversationId: String, onError: (String) -> Unit = {}) {
     val state by viewModel.state.collectAsState()
     var message by remember { mutableStateOf("") }
+
+    LaunchedEffect(state.error) {
+        state.error?.let { onError(it) }
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(

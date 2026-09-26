@@ -124,6 +124,7 @@ class TensorParallelSharding:
         self.world_size = config.world_size
         self.rank = config.rank
         self.shard_dim = config.shard_dim
+        self._shard_cache: Dict[int, nn.Module] = {}
 
     def shard_model(self, model: nn.Module) -> nn.Module:
         for name, module in model.named_modules():
@@ -142,6 +143,10 @@ class TensorParallelSharding:
     def _shard_linear(self, linear: nn.Linear) -> nn.Linear:
         in_features = linear.in_features
         out_features = linear.out_features
+        cache_key = (id(linear), self.shard_dim, self.rank, self.world_size)
+        cached = self._shard_cache.get(cache_key)
+        if cached is not None:
+            return cached
         if self.shard_dim == 0:
             assert out_features % self.world_size == 0, "Output features must be divisible by TP size"
             shard_out = out_features // self.world_size
@@ -153,6 +158,7 @@ class TensorParallelSharding:
             sharded.weight.data.copy_(weight_shard)
             if bias_shard is not None:
                 sharded.bias.data.copy_(bias_shard)
+            self._shard_cache[cache_key] = sharded
             return sharded
         if self.shard_dim == 1:
             assert in_features % self.world_size == 0, "Input features must be divisible by TP size"
@@ -162,6 +168,7 @@ class TensorParallelSharding:
             weight_shard = linear.weight.data[:, start:end].clone()
             sharded = nn.Linear(shard_in, out_features, bias=False)
             sharded.weight.data.copy_(weight_shard)
+            self._shard_cache[cache_key] = sharded
             return sharded
         raise ValueError(f"Unsupported shard_dim: {self.shard_dim}")
 

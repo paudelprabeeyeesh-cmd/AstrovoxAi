@@ -3,9 +3,10 @@ import re
 import math
 import json
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
 
 from app.repositories.database.client import get_db
+from app.search_knowledge import BM25Index
 
 
 class SearchResult:
@@ -41,17 +42,24 @@ class SearchEngine:
         return results[:top_k]
 
     def keyword_search(self, query: str, user_id: str, top_k: int = 10) -> list:
-        q = query.lower()
-        results = []
+        rows = []
         with get_db() as conn:
             rows = conn.execute(
                 """SELECT id, value, key, created_at FROM memories
                    WHERE user_id = ? AND (key LIKE ? OR value LIKE ?)
                    ORDER BY created_at DESC LIMIT ?""",
-                (user_id, f"%{q}%", f"%{q}%", top_k),
+                (user_id, f"%{query.lower()}%", f"%{query.lower()}%", top_k * 10),
             ).fetchall()
-            for r in rows:
-                score = self._keyword_score(q, r["value"])
+        if not rows:
+            return []
+        bm25 = BM25Index()
+        bm25.add_batch([(r["id"], r["value"]) for r in rows])
+        ranked = bm25.search(query, top_k=top_k)
+        score_map = {doc_id: score for doc_id, score in ranked}
+        results = []
+        for r in rows:
+            score = score_map.get(r["id"], 0.0)
+            if score > 0.0:
                 results.append({
                     "id": r["id"],
                     "content": r["value"],
@@ -59,7 +67,8 @@ class SearchEngine:
                     "metadata": {"key": r["key"], "created_at": r["created_at"]},
                     "source": "memory",
                 })
-        return results
+        results.sort(key=lambda x: x["score"], reverse=True)
+        return results[:top_k]
 
     def hybrid_search(self, query: str, user_id: str, top_k: int = 10, alpha: float = 0.7) -> list:
         semantic = self.semantic_search(query, user_id, top_k * 2)

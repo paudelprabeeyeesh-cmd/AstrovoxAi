@@ -133,6 +133,15 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 
+# Enforce HTTPS
+app.add_middleware(HTTPSRedirectMiddleware)
+
+# Input validation
+app.add_middleware(InputValidationMiddleware)
+
+# PII redaction
+app.add_middleware(PIIRedactionMiddleware)
+
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(IPEnforcementMiddleware)

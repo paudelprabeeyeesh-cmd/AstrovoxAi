@@ -1,8 +1,8 @@
+import hashlib
 import logging
+import random
 from dataclasses import dataclass
 from typing import List, Optional
-import hashlib
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +24,11 @@ class MinHash:
             return int(hashlib.sha256(bytes([seed]) + x).hexdigest(), 16)
         return hash_func
 
+    def _tokens_to_bytes(self, tokens: List[str]) -> bytes:
+        return " ".join(tokens).encode("utf-8")
+
     def signature(self, tokens: List[str]) -> List[int]:
-        joined = " ".join(tokens).encode("utf-8")
+        joined = self._tokens_to_bytes(tokens)
         return [min(h(joined) for h in self.hash_funcs) for _ in range(self.config.num_hashes)]
 
     def jaccard(self, sig1: List[int], sig2: List[int]) -> float:
@@ -37,25 +40,25 @@ class MinHash:
 class LSH:
     def __init__(self, config: Optional[MinHashConfig] = None):
         self.config = config or MinHashConfig()
-        self.buckets = {}
+        self.buckets: Dict[str, List[str]] = {}
 
     def _band_hash(self, band: List[int], band_id: int) -> str:
         return f"{band_id}:{hash(tuple(band))}"
 
-    def index(self, doc_id: str, signature: List[int]):
+    def index(self, doc_id: str, signature: List[int]) -> None:
         rows = self.config.bands_rows
         for band_id in range(self.config.num_bands):
             start = band_id * rows
-            band = signature[start:start + rows]
+            band = signature[start : start + rows]
             key = self._band_hash(band, band_id)
             self.buckets.setdefault(key, []).append(doc_id)
 
     def query(self, signature: List[int]) -> List[str]:
         rows = self.config.bands_rows
-        candidates = set()
+        candidates: set = set()
         for band_id in range(self.config.num_bands):
             start = band_id * rows
-            band = signature[start:start + rows]
+            band = signature[start : start + rows]
             key = self._band_hash(band, band_id)
             if key in self.buckets:
                 candidates.update(self.buckets[key])

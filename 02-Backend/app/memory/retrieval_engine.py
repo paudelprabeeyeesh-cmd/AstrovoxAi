@@ -166,7 +166,8 @@ class RetrievalEngine:
                 matches = self._retrieve_generic(store, query, method)
         
         except Exception as e:
-            # Log error but continue with other stores
+            logger.error("Retrieval error: %s", e)
+            matches = []
         
         return matches
     
@@ -334,20 +335,18 @@ class RetrievalEngine:
         """Generic retrieval for unknown store types"""
         # Try to call a search method if available
         if hasattr(store, 'search'):
-            try:
-                results = store.search(query)
-                return [
-                    MemoryMatch(
-                        memory_id=str(result.get('id', '')),
-                        content=str(result.get('content', '')),
-                        memory_type="generic",
-                        relevance_score=0.5,
-                    )
-                    for result in results
-                ]
-                return [
-    
-    def _calculate_keyword_relevance(self, query: str, content: str) -> float:
+            results = store.search(query)
+            return [
+                MemoryMatch(
+                    memory_id=str(result.get('id', '')),
+                    content=str(result.get('content', '')),
+                    memory_type="generic",
+                    relevance_score=0.5,
+                )
+                for result in results
+            ]
+        
+        return []
         """Calculate relevance based on keyword matching"""
         query_lower = query.lower()
         content_lower = content.lower()

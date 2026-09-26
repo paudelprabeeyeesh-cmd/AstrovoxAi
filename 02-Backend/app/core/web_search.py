@@ -5,9 +5,10 @@ Web search integration for real-time information retrieval.
 from __future__ import annotations
 
 import logging
+import os
 import time
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import httpx
 
@@ -69,7 +70,5 @@ class WebSearchEngine:
             formatted.append(f"[{i}] {result.title}\n{result.url}\n{result.snippet}\n")
         return "\n".join(formatted)
 
-
-import os
 
 web_search = WebSearchEngine()

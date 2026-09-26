@@ -6,6 +6,16 @@
   <title>Evaluation Dashboard — AstrovoxAI</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="css/enterprise.css">
+  <style>
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .metric { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem; text-align: center; }
+    .metric-value { font-size: 1.5rem; font-weight: bold; color: #2b6cb0; }
+    .metric-label { font-size: 0.875rem; color: #718096; margin-top: 0.25rem; }
+    .status-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+    .status-pass { background: #c6f6d5; color: #22543d; }
+    .status-fail { background: #fed7d7; color: #822727; }
+    .status-warn { background: #fefcbf; color: #744210; }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -22,38 +32,93 @@
       <button class="tab" data-tab="benchmark">Benchmark</button>
       <button class="tab" data-tab="human">Human Eval</button>
       <button class="tab" data-tab="grading">Auto Grading</button>
+      <button class="tab" data-tab="safety">Safety Eval</button>
+      <button class="tab" data-tab="hallucination">Hallucination</button>
+      <button class="tab" data-tab="accuracy">Accuracy</button>
     </section>
 
     <section id="regression" class="tab-content">
       <h2>Regression Testing</h2>
+      <div class="metrics-grid" id="regressionMetrics"></div>
       <div class="card">
         <canvas id="regressionChart"></canvas>
       </div>
       <table class="data-table" id="regressionTable">
-        <thead><tr><th>Case</th><th>Passed</th><th>Delta</th><th>Latency (ms)</th></tr></thead>
+        <thead><tr><th>Case</th><th>Passed</th><th>Baseline</th><th>Current</th><th>Delta</th><th>Latency (ms)</th></tr></thead>
         <tbody></tbody>
       </table>
     </section>
 
     <section id="benchmark" class="tab-content hidden">
       <h2>Benchmark Suite</h2>
+      <div class="metrics-grid" id="benchmarkMetrics"></div>
       <div class="card">
         <canvas id="benchmarkChart"></canvas>
       </div>
+      <table class="data-table" id="benchmarkTable">
+        <thead><tr><th>Benchmark</th><th>Accuracy</th><th>Samples</th><th>Latency (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <section id="human" class="tab-content hidden">
       <h2>Human Evaluation</h2>
+      <div class="metrics-grid" id="humanMetrics"></div>
       <div class="card">
         <canvas id="humanChart"></canvas>
       </div>
+      <table class="data-table" id="humanTable">
+        <thead><tr><th>Eval ID</th><th>Rater</th><th>Case</th><th>Score</th><th>Notes</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </section>
 
     <section id="grading" class="tab-content hidden">
       <h2>Automated Grading</h2>
+      <div class="metrics-grid" id="gradingMetrics"></div>
       <div class="card">
         <canvas id="gradingChart"></canvas>
       </div>
+      <table class="data-table" id="gradingTable">
+        <thead><tr><th>Case</th><th>Passed</th><th>Score</th><th>Max</th><th>Feedback</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="safety" class="tab-content hidden">
+      <h2>Safety Evaluation</h2>
+      <div class="metrics-grid" id="safetyMetrics"></div>
+      <div class="card">
+        <canvas id="safetyChart"></canvas>
+      </div>
+      <table class="data-table" id="safetyTable">
+        <thead><tr><th>Case</th><th>Safe</th><th>Category</th><th>Confidence</th><th>Latency (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="hallucination" class="tab-content hidden">
+      <h2>Hallucination Detection</h2>
+      <div class="metrics-grid" id="hallucinationMetrics"></div>
+      <div class="card">
+        <canvas id="hallucinationChart"></canvas>
+      </div>
+      <table class="data-table" id="hallucinationTable">
+        <thead><tr><th>Case</th><th>Grounded</th><th>Supported</th><th>Unsupported</th><th>Score</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="accuracy" class="tab-content hidden">
+      <h2>Accuracy Scoring</h2>
+      <div class="metrics-grid" id="accuracyMetrics"></div>
+      <div class="card">
+        <canvas id="accuracyChart"></canvas>
+      </div>
+      <table class="data-table" id="accuracyTable">
+        <thead><tr><th>Task</th><th>Case</th><th>Correct</th><th>Score</th><th>Latency (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
     </section>
   </main>
   <script src="js/evaluation.js"></script>

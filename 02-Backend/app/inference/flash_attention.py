@@ -84,6 +84,9 @@ class FlashAttention(nn.Module):
         scale = self.scale
         out = torch.empty_like(q)
 
+        if self.causal:
+            causal_mask = torch.triu(torch.ones(block_size, block_size, device=q.device, dtype=torch.bool), diagonal=1)
+
         for bi in range(B):
             for hi in range(H):
                 q_block = q[bi, hi]
@@ -101,7 +104,6 @@ class FlashAttention(nn.Module):
 
                     s_ij = torch.matmul(q_i, k_j.transpose(-2, -1)) * scale
                     if self.causal:
-                        causal_mask = torch.triu(torch.ones(block_size, block_size, device=q.device, dtype=torch.bool), diagonal=1)
                         s_ij = s_ij.masked_fill(causal_mask, -float("inf"))
 
                     m_prev = m_i.clone()

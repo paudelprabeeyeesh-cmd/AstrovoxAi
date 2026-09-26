@@ -43,6 +43,42 @@ class PolicyEngine:
             condition=lambda ctx: True,
             effect="deny",
         ))
+        self.add_policy(Policy(
+            id="p3",
+            name="require_mfa_for_admin",
+            description="Require MFA for admin actions",
+            resource_type="admin_action",
+            action="*",
+            condition=lambda ctx: not ctx.get("mfa_verified", False),
+            effect="deny",
+        ))
+        self.add_policy(Policy(
+            id="p4",
+            name="block_unencrypted_data_transfer",
+            description="Block data transfers over unencrypted channels",
+            resource_type="data_transfer",
+            action="write",
+            condition=lambda ctx: not ctx.get("encrypted", False),
+            effect="deny",
+        ))
+        self.add_policy(Policy(
+            id="p5",
+            name="rate_limit_api_keys",
+            description="Enforce rate limits on API key usage",
+            resource_type="api_key",
+            action="use",
+            condition=lambda ctx: ctx.get("rate_limit_remaining", 1) <= 0,
+            effect="deny",
+        ))
+        self.add_policy(Policy(
+            id="p6",
+            name="require_https",
+            description="Require HTTPS for all external requests",
+            resource_type="http_request",
+            action="send",
+            condition=lambda ctx: not ctx.get("https", False),
+            effect="deny",
+        ))
 
     def add_policy(self, policy: Policy):
         self._policies.append(policy)
@@ -50,7 +86,7 @@ class PolicyEngine:
     def evaluate_action(self, actor_id: str, action: str, resource_type: str, context: dict) -> dict:
         matches = []
         for policy in self._policies:
-            if policy.resource_type == resource_type and policy.action == action:
+            if policy.resource_type == resource_type and (policy.action == action or policy.action == "*"):
                 try:
                     if policy.condition(context):
                         matches.append(policy)

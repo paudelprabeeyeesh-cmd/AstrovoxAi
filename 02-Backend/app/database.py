@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from app.infrastructure.database import DatabaseEngine, get_database  # noqa: F401
+    from app.repositories.database.client import get_user_profile  # noqa: F401
 
     _db = get_database()
 

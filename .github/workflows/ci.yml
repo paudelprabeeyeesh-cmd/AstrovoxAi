@@ -418,11 +418,11 @@ jobs:
 
       - name: Build backend image
         run: |
-          docker build -f 02-Backend/Dockerfile.backend -t astrovoxai/backend:ci-${{ github.sha }} .
+          docker build -f Dockerfile.backend -t astrovoxai/backend:ci-${{ github.sha }} .
 
       - name: Build frontend image
         run: |
-          docker build -f 02-Backend/Dockerfile.frontend -t astrovoxai/frontend:ci-${{ github.sha }} .
+          docker build -f Dockerfile.frontend -t astrovoxai/frontend:ci-${{ github.sha }} .
 
       - name: Scan backend image for vulnerabilities
         if: secrets.DOCKER_HUB_TOKEN != ''

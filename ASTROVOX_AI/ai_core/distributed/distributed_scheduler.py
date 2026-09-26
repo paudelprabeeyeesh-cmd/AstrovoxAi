@@ -77,7 +77,7 @@ class DistributedScheduler:
             return self.completed[task_id].status
         return 'not_found'
 
-    def shutdown(self) -> None:
+    def shutdown_scheduler(self) -> None:
         self.shutdown.set()
         for t in self.workers:
             t.join()

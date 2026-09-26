@@ -138,6 +138,14 @@ class InferenceAdapter:
             "batch_utilization": round(admitted / batch.max_batch_size * 100, 1),
         }
 
+    def get_status(self) -> dict:
+        return {
+            "model_name": self.model_name,
+            "kv_cache_count": len(self.kv_caches),
+            "active_batches": len(self.batches),
+            "status": "ready",
+        }
+
 
 class SpeculativeDecoder:
     def __init__(self, draft_model: str, target_model: str):

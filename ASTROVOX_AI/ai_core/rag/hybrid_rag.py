@@ -1,42 +1,159 @@
-from typing import Optional, List, Dict, Any, Tuple
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from ASTROVOX_AI.ai_core.distributed.distributed_vector_database import DistributedVectorDatabase
-from ASTROVOX_AI.ai_core.rag.graph_rag import GraphRAG
+"""Hybrid RAG with dense retrieval, sparse retrieval, and fusion."""
+
+from __future__ import annotations
+
+import logging
+import math
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
+
+import numpy as np
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Document:
+    doc_id: str
+    text: str
+    embedding: Optional[np.ndarray] = None
+    metadata: Dict[str, Any] = None
+
+
+def _tokenize(text: str) -> List[str]:
+    return text.lower().split()
+
+
+def _compute_tf(tokens: List[str]) -> Dict[str, int]:
+    tf = {}
+    for token in tokens:
+        tf[token] = tf.get(token, 0) + 1
+    return tf
+
+
+def _compute_idf(documents: List[List[str]]) -> Dict[str, float]:
+    n = len(documents)
+    idf = {}
+    for doc_tokens in documents:
+        for token in set(doc_tokens):
+            idf[token] = idf.get(token, 0) + 1
+    for token, freq in idf.items():
+        idf[token] = math.log((n - freq + 0.5) / (freq + 0.5) + 1)
+    return idf
+
+
+def bm25_score(query: str, documents: List[str], k1: float = 1.5, b: float = 0.75) -> List[Tuple[int, float]]:
+    doc_tokens = [_tokenize(doc) for doc in documents]
+    idf = _compute_idf(doc_tokens)
+    avg_dl = sum(len(t) for t in doc_tokens) / max(len(doc_tokens), 1)
+    query_tokens = _tokenize(query)
+    scores = []
+    for idx, tokens in enumerate(doc_tokens):
+        tf = _compute_tf(tokens)
+        dl = len(tokens)
+        score = 0.0
+        for token in query_tokens:
+            if token not in tf:
+                continue
+            idf_val = idf.get(token, 0.0)
+            tf_val = tf[token]
+            score += idf_val * (tf_val * (k1 + 1)) / (tf_val + k1 * (1 - b + b * dl / max(avg_dl, 1)))
+        scores.append((idx, score))
+    return sorted(scores, key=lambda x: x[1], reverse=True)
+
+
+def dense_retrieval(query_embedding: np.ndarray, documents: List[Document], top_k: int = 10) -> List[Tuple[int, float]]:
+    scores = []
+    for idx, doc in enumerate(documents):
+        if doc.embedding is None:
+            continue
+        sim = cosine_similarity(query_embedding, doc.embedding)
+        scores.append((idx, float(sim)))
+    return sorted(scores, key=lambda x: x[1], reverse=True)[:top_k]
+
+
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    a_norm = np.linalg.norm(a)
+    b_norm = np.linalg.norm(b)
+    if a_norm == 0 or b_norm == 0:
+        return 0.0
+    return float(np.dot(a, b) / (a_norm * b_norm))
+
+
+def reciprocal_rank_fusion(results_list: List[List[Tuple[int, float]]], k: int = 60) -> List[Tuple[int, float]]:
+    scores: Dict[int, float] = {}
+    for results in results_list:
+        for rank, (doc_idx, _) in enumerate(results):
+            scores[doc_idx] = scores.get(doc_idx, 0.0) + 1.0 / (k + rank + 1)
+    return sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+
+class CrossEncoderReranker:
+    def __init__(self, embedding_dim: Optional[int] = None, hidden_dim: int = 32):
+        self.embedding_dim = embedding_dim
+        self.hidden_dim = hidden_dim
+        self.w1 = None
+        self.b1 = None
+        self.w2 = None
+        self.b2 = None
+        self._initialized = False
+
+    def _ensure_init(self, input_dim: int):
+        if not self._initialized or self.embedding_dim != input_dim:
+            self.embedding_dim = input_dim
+            self.w1 = np.random.randn(input_dim * 2, self.hidden_dim) * 0.01
+            self.b1 = np.zeros(self.hidden_dim)
+            self.w2 = np.random.randn(self.hidden_dim, 1) * 0.01
+            self.b2 = np.zeros(1)
+            self._initialized = True
+
+    def _relu(self, x: np.ndarray) -> np.ndarray:
+        return np.maximum(0, x)
+
+    def score(self, query_embedding: np.ndarray, doc_embedding: np.ndarray) -> float:
+        input_dim = query_embedding.shape[-1]
+        self._ensure_init(input_dim)
+        x = np.concatenate([query_embedding, doc_embedding])
+        h = self._relu(x @ self.w1 + self.b1)
+        logit = (h @ self.w2 + self.b2).item()
+        return float(1.0 / (1.0 + math.exp(-logit)))
+
+    def rerank(self, query_embedding: np.ndarray, documents: List[Document], candidate_ids: List[int], top_k: int = 5) -> List[int]:
+        scores = []
+        for doc_id in candidate_ids:
+            doc = documents[doc_id]
+            if doc.embedding is None:
+                continue
+            score = self.score(query_embedding, doc.embedding)
+            scores.append((doc_id, score))
+        scores.sort(key=lambda x: x[1], reverse=True)
+        return [doc_id for doc_id, _ in scores[:top_k]]
 
 
 class HybridRAG:
-    def __init__(self, embedding_dim: int = 768, vector_db: Optional[DistributedVectorDatabase] = None, graph_rag: Optional[GraphRAG] = None):
-        self.embedding_dim = embedding_dim
-        self.vector_db = vector_db or DistributedVectorDatabase(num_shards=4, embedding_dim=embedding_dim)
-        self.graph_rag = graph_rag or GraphRAG()
-        self.documents: Dict[str, Dict[str, str]] = {}
-        self.embeddings: Dict[str, torch.Tensor] = {}
+    def __init__(self, documents: List[Document], reranker: Optional[CrossEncoderReranker] = None, self_rag_threshold: float = 0.35):
+        self.documents = documents
+        self.reranker = reranker or CrossEncoderReranker()
+        self.doc_tokens = [_tokenize(doc.text) for doc in documents]
+        self.self_rag_threshold = self_rag_threshold
 
-    def index_document(self, doc_id: str, text: str, metadata: Optional[Dict[str, str]] = None) -> None:
-        self.documents[doc_id] = {'text': text, 'metadata': metadata or {}}
-        embedding = torch.randn(self.embedding_dim)
-        self.embeddings[doc_id] = embedding
-        shard_id = hash(doc_id) % self.vector_db.num_shards
-        self.vector_db.add_document(shard_id, self.documents[doc_id], embedding.numpy())
+    def _needs_retrieval(self, query_text: str, query_embedding: Optional[np.ndarray]) -> bool:
+        if query_embedding is None:
+            return True
+        best_dense = dense_retrieval(query_embedding, self.documents, top_k=1)
+        best_sparse = bm25_score(query_text, [doc.text for doc in self.documents])[:1]
+        dense_score = best_dense[0][1] if best_dense else 0.0
+        sparse_score = best_sparse[0][1] if best_sparse else 0.0
+        return max(dense_score, sparse_score) < self.self_rag_threshold
 
-    def retrieve(self, query: str, top_k: int = 5, use_graph: bool = False, alpha: float = 0.7) -> List[Dict[str, Any]]:
-        query_embedding = torch.randn(self.embedding_dim)
-        vector_results = self.vector_db.search(query_embedding.numpy(), top_k=top_k * 2)
-        vector_docs = []
-        for score, doc in vector_results:
-            vector_docs.append({**doc, 'score': score * alpha, 'source': 'vector'})
-        if use_graph:
-            graph_results = self.graph_rag.retrieve(query, top_k=top_k * 2)
-            graph_docs = [{**doc, 'score': doc.get('score', 0.0) * (1 - alpha), 'source': 'graph'} for doc in graph_results]
-            combined = vector_docs + graph_docs
-        else:
-            combined = vector_docs
-        combined.sort(key=lambda x: x.get('score', 0), reverse=True)
-        return combined[:top_k]
-
-    def batch_index(self, documents: List[Dict[str, str]]) -> None:
-        for doc in documents:
-            doc_id = doc.get('id', str(len(self.documents)))
-            self.index_document(doc_id, doc.get('text', ''), doc.get('metadata'))
+    def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> List[Document]:
+        if not self._needs_retrieval(query_text, query_embedding) and not query_embedding:
+            return []
+        dense_results = dense_retrieval(query_embedding, self.documents, top_k=top_k * 2) if query_embedding is not None else []
+        sparse_results = bm25_score(query_text, [doc.text for doc in self.documents])
+        fused = reciprocal_rank_fusion([dense_results, sparse_results])
+        candidate_ids = [doc_id for doc_id, _ in fused[:top_k * 2]]
+        if query_embedding is not None and candidate_ids:
+            reranked_ids = self.reranker.rerank(query_embedding, self.documents, candidate_ids, top_k=top_k)
+            return [self.documents[i] for i in reranked_ids]
+        return [self.documents[i] for i in candidate_ids[:top_k]]

@@ -33,7 +33,7 @@ class NewsSearch:
                     'published_at': article.get('publishedAt'),
                     'url': article.get('url'),
                     'description': article.get('description'),
-                    'source': 'newsapi'
+                    'api_source': 'newsapi'
                 })
             return results
         except Exception:
