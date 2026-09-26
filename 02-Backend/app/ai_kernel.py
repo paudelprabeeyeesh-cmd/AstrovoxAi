@@ -562,5 +562,5 @@ class HotReloader:
                 self.loader.reload(name)
                 reloaded.append(name)
             except Exception:
-                pass
+                logger.warning("failed to reload module %s", name, exc_info=True)
         return reloaded
