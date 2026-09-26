@@ -1,11 +1,14 @@
+import asyncio
 import json
 import logging
 import os
+import random
 import re
 import time
 from functools import lru_cache
+from typing import Any, Optional
 
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 
 from .providers import get_active_providers
 
@@ -15,7 +18,12 @@ CONFIDENCE_THRESHOLD = 0.7
 
 _client_cache: dict[str, OpenAI] = {}
 _client_ts: dict[str, float] = {}
-_CLIENT_TTL = 60.0
+_CLIENT_TTL = 120.0
+_async_client_cache: dict[str, AsyncOpenAI] = {}
+_async_client_ts: dict[str, float] = {}
+_ASYNC_CLIENT_TTL = 120.0
+_RETRY_LIMIT = 3
+_RETRY_BASE_DELAY = 0.5
 
 
 def _get_client_for(provider) -> OpenAI:
@@ -31,8 +39,40 @@ def _get_client_for(provider) -> OpenAI:
     return client
 
 
-def estimate_confidence(text: str, prompt: str) -> float:
-    """Heuristic confidence score based on response quality."""
+def _get_async_client_for(provider) -> AsyncOpenAI:
+    now = time.time()
+    cache_key = f"async:{provider.name}:{provider.base_url}:{os.getenv(provider.env_key, '')}"
+    cached = _async_client_cache.get(cache_key)
+    ts = _async_client_ts.get(cache_key, 0.0)
+    if cached is not None and (now - ts) < _ASYNC_CLIENT_TTL:
+        return cached
+    client = AsyncOpenAI(base_url=provider.base_url, api_key=os.getenv(provider.env_key, ""))
+    _async_client_cache[cache_key] = client
+    _async_client_ts[cache_key] = now
+    return client
+
+
+def _retryable(func):
+    import functools
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any):
+        attempt = 0
+        while attempt < _RETRY_LIMIT:
+            try:
+                return func(*args, **kwargs)
+            except Exception as exc:
+                attempt += 1
+                if attempt >= _RETRY_LIMIT:
+                    raise
+                delay = _RETRY_BASE_DELAY * (2 ** (attempt - 1)) + random.uniform(0, 0.1)
+                logger.warning(f"Attempt {attempt} failed for {func.__name__}: {exc}. Retrying in {delay:.2f}s")
+                time.sleep(delay)
+
+    return wrapper
+
+
+def _estimate_confidence(text: str, prompt: str) -> float:
     if not text or len(text.strip()) < 10:
         return 0.0
     score = 0.5
@@ -47,6 +87,37 @@ def estimate_confidence(text: str, prompt: str) -> float:
     return max(0.0, min(1.0, score))
 
 
+_MESSAGES_CACHE: dict[str, list[dict]] = {}
+_MESSAGES_TTL = 10.0
+_MESSAGES_TS: dict[str, float] = {}
+
+
+def _build_messages_cached(prompt: str, system: str) -> list[dict]:
+    key = f"{prompt}:{system}"
+    now = time.time()
+    ts = _MESSAGES_TS.get(key, 0.0)
+    if key in _MESSAGES_CACHE and (now - ts) < _MESSAGES_TTL:
+        return _MESSAGES_CACHE[key]
+    messages = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    if prompt:
+        messages.append({"role": "user", "content": prompt})
+    _MESSAGES_CACHE[key] = messages
+    _MESSAGES_TS[key] = now
+    return messages
+
+
+def _create_chat_completion_with_retry(client, messages: list[dict], provider, timeout: float, tools: list):
+    return client.chat.completions.create(
+        model=provider.default_model,
+        messages=messages,
+        timeout=timeout,
+        tools=tools,
+    )
+
+
+@_retryable
 def call_llm(
     prompt: str = None,
     system: str = "",
@@ -76,23 +147,13 @@ def call_llm(
         try:
             client = _get_client_for(provider)
             if messages is None:
-                messages = []
-                if system:
-                    messages.append({"role": "system", "content": system})
-                if prompt:
-                    messages.append({"role": "user", "content": prompt})
-
-            response = client.chat.completions.create(
-                model=provider.default_model,
-                messages=messages,
-                timeout=timeout,
-                tools=tools,
-            )
+                messages = _build_messages_cached(prompt or "", system)
+            response = _create_chat_completion_with_retry(client, messages, provider, timeout, tools)
 
             message = response.choices[0].message
             text = message.content or ""
             tokens = getattr(response.usage, "total_tokens", len((prompt or json.dumps(messages)).split()))
-            confidence = estimate_confidence(text, prompt or "")
+            confidence = _estimate_confidence(text, prompt or "")
 
             logger.info(
                 f"LLM call via {provider.name} ({provider.default_model}) "
@@ -157,11 +218,8 @@ async def call_llm_stream(
         if not api_key:
             continue
         try:
-            client = _get_client_for(provider)
-            messages = []
-            if system:
-                messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
+            client = _get_async_client_for(provider)
+            messages = _build_messages_cached(prompt or "", system)
             stream = client.chat.completions.create(
                 model=provider.default_model,
                 messages=messages,

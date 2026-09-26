@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-logger = logging.getLogger(__name____)
+logger = logging.getLogger(__name__)
 
 
 class ViolationSeverity(Enum):
