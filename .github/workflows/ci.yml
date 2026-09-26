@@ -2,16 +2,12 @@ name: AstrovoxAI CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
 
 env:
   PYTHON_VERSION: "3.12"
   NODE_VERSION: "20"
-  # Image vulnerability scan failure threshold (CRITICAL, HIGH, MEDIUM, LOW, UNKNOWN)
   TRIVY_SEVERITY: "CRITICAL,HIGH"
-  # Maximum allowed vulnerable count in Trivy scan (0 = fail if any found at threshold severity)
   TRIVY_EXIT_CODE: "1"
 
 concurrency:
@@ -19,9 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ============================================================================
-  # PR Size / Review Gates
-  # ============================================================================
   pr-gates:
     name: PR size / review gates
     runs-on: ubuntu-latest
@@ -71,9 +64,6 @@ jobs:
             fi
           fi
 
-  # ============================================================================
-  # Backend Quality Checks
-  # ============================================================================
   backend-checks:
     name: Backend (lint, format, test)
     runs-on: ubuntu-latest
@@ -131,18 +121,18 @@ jobs:
             ${{ runner.os }}-ruff-
 
       - name: Check formatting (black)
-        run: black --check app tests --diff --color-only || echo "Formatting issues found"
+        run: black --check app tests --diff --color-only
 
       - name: Check linting (flake8)
         run: flake8 app tests --max-line-length 120 --statistics --extend-ignore=E203,W503
 
       - name: Check linting (pylint)
-        run: pylint app tests --rcfile=./.pylintrc || echo "Linting issues found (continuing)"
+        run: pylint app tests --rcfile=./.pylintrc
 
       - name: Run type checking (mypy)
         run: |
           pip install mypy
-          mypy app --ignore-missing-imports --follow-imports=silent || echo "Type checking issues found (continuing)"
+          mypy app --ignore-missing-imports --follow-imports=silent
 
       - name: Run unit tests with coverage
         run: |
@@ -158,28 +148,25 @@ jobs:
 
       - name: Run security regression tests
         run: |
-          pytest tests/security/ -v --tb=short || echo "Security tests completed"
+          pytest tests/security/ -v --tb=short
 
       - name: Check dependency vulnerabilities
         run: |
-          safety check -r requirements.txt --full-report || echo "Dependency check completed"
-          pip-audit -r requirements.txt --format json > pip-audit-report.json || echo "pip-audit completed"
+          safety check -r requirements.txt --full-report
+          pip-audit -r requirements.txt --format json > pip-audit-report.json
 
       - name: Run static security analysis
-        run: bandit -r app/ -f json -o bandit-report.json -ll || echo "Bandit scan completed"
+        run: bandit -r app/ -f json -o bandit-report.json -ll
 
       - name: Upload security reports
         uses: actions/upload-artifact@v4
         with:
           name: security-reports
           path: |
-            02-Backend/bandit-report.json
-            02-Backend/pip-audit-report.json
+            bandit-report.json
+            pip-audit-report.json
           if: always()
 
-  # ============================================================================
-  # Security Tests
-  # ============================================================================
   security-tests:
     name: Security regression tests
     runs-on: ubuntu-latest
@@ -210,11 +197,8 @@ jobs:
 
       - name: Run security regression tests
         run: |
-          pytest tests/security/ -v --tb=short || echo "Security tests completed"
+          pytest tests/security/ -v --tb=short
 
-  # ============================================================================
-  # Frontend Quality Checks
-  # ============================================================================
   frontend-checks:
     name: Frontend (lint, typecheck, build)
     runs-on: ubuntu-latest
@@ -244,22 +228,11 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Restore npx cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/trivy
-          key: ${{ runner.os }}-trivy-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-trivy-
-
-      - name: Check formatting (prettier)
-        run: npm run format:check || echo "Formatting issues found"
-
       - name: Check linting (eslint)
-        run: npm run lint || echo "Linting issues found"
+        run: npm run lint
 
       - name: Check type types (typescript)
-        run: npm run typecheck || echo "Type checking issues found"
+        run: npm run typecheck
 
       - name: Run unit tests
         run: npm run test -- --ci --coverage --maxWorkers=50%
@@ -281,9 +254,6 @@ jobs:
             !**/node_modules/**
             !**/dist**
 
-  # ============================================================================
-  # Code Quality Dashboard
-  # ============================================================================
   code-quality:
     name: Code Quality Dashboard
     runs-on: ubuntu-latest
@@ -333,9 +303,6 @@ jobs:
         run: |
           radon mi 02-Backend/app -a -s || echo "Maintainability analysis completed"
 
-  # ============================================================================
-  # Security Scanning
-  # ============================================================================
   security-scan:
     name: Security scanning
     runs-on: ubuntu-latest
@@ -346,13 +313,13 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
       - name: Scan for secrets (fallback grep)
         run: |
           echo "Scanning for potential secrets..."
           if grep -r "sk-" --include="*.py" --include="*.js" --include="*.jsx" --include="*.ts" --include="*.tsx" --include="*.md" . 2>/dev/null | grep -v ".env.example" | grep -v "sk-your" | grep -v "sb_publishable" | head -5; then
-            echo "::warning::Potential secret found in source code"
+            echo "::error::Potential secret found in source code"
+            exit 1
           else
             echo "No obvious secrets detected in source"
           fi
@@ -368,14 +335,13 @@ jobs:
 
       - name: Dependency audit (frontend)
         run: |
-          npm audit --audit-level=high || echo "Vulnerabilities found - review required"
-        continue-on-error: true
+          npm audit --audit-level=high
 
       - name: Dependency audit (backend)
         run: |
           pip install safety pip-audit
-          safety check --file=02-Backend/requirements.txt || echo "Vulnerabilities found - review required"
-          pip-audit -r 02-Backend/requirements.txt --format json > 02-Backend/pip-audit-report.json || echo "pip-audit completed"
+          safety check --file=02-Backend/requirements.txt
+          pip-audit -r 02-Backend/requirements.txt --format json > 02-Backend/pip-audit-report.json
 
       - name: Run dependency vulnerability scanner tests
         run: |
@@ -394,11 +360,7 @@ jobs:
           except Exception as e:
               print(f'Dependency scanner error: {e}')
           "
-        continue-on-error: true
 
-  # ============================================================================
-  # Docker Build & Progressive Delivery Validation
-  # ============================================================================
   docker-build:
     name: Docker build and progressive delivery
     runs-on: ubuntu-latest
@@ -514,9 +476,6 @@ jobs:
           echo "Frontend started successfully"
           docker stop frontend-test
 
-  # ============================================================================
-  # Progressive Delivery Validation
-  # ============================================================================
   progressive-delivery:
     name: Progressive delivery validation
     runs-on: ubuntu-latest
@@ -579,9 +538,6 @@ jobs:
               print(f'Warning: Istio config validation failed: {e}')
           "
 
-  # ============================================================================
-  # Chaos Engineering Tests
-  # ============================================================================
   chaos-tests:
     name: Chaos Engineering Tests
     runs-on: ubuntu-latest
@@ -609,9 +565,6 @@ jobs:
           echo "Pod chaos tests would go here (requires Kubernetes cluster)"
           echo "Skipping for now - requires external cluster"
 
-  # ============================================================================
-  # SBOM Generation
-  # ============================================================================
   sbom-generation:
     name: SBOM and supply chain
     runs-on: ubuntu-latest
@@ -641,9 +594,6 @@ jobs:
             sbom-cyclonedx.json
           retention-days: 90
 
-  # ============================================================================
-  # Artifact Promotion Readiness
-  # ============================================================================
   promotion-readiness:
     name: Promotion readiness check
     runs-on: ubuntu-latest
@@ -688,9 +638,6 @@ jobs:
           path: promotion-manifest.yaml
           retention-days: 30
 
-  # ============================================================================
-  # Deployment to Staging
-  # ============================================================================
   deploy-staging:
     name: Deploy to staging
     runs-on: ubuntu-latest
@@ -731,9 +678,6 @@ jobs:
             -H 'Content-Type: application/json' \
             -d "{\"text\":\"✅ Staging deployment successful\\nVersion: ${{ github.sha }}\\nCommit: ${{ github.event.head_commit.message }}\"}" || true
 
-  # ============================================================================
-  # Deployment to Production (Blue-Green with Canary)
-  # ============================================================================
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
