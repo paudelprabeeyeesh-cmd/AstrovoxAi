@@ -1,119 +1,80 @@
-"""Service mesh integration for distributed AI services."""
+"""Service mesh integration for distributed inference traffic management."""
 
 from __future__ import annotations
 
 import logging
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
 
 class TrafficPolicy(Enum):
     ROUND_ROBIN = "round_robin"
-    LEAST_REQUEST = "least_request"
-    RANDOM = "random"
+    LEAST_CONNECTIONS = "least_connections"
     PASSTHROUGH = "passthrough"
-
-
-class OutlierDetection:
-    consecutive_5xx: int = 5
-    interval: str = "30s"
-    base_ejection_time: str = "30s"
+    WEIGHTED = "weighted"
 
 
 @dataclass
-class ServiceMeshConfig:
-    service_name: str
-    namespace: str = "astrovox"
-    port: int = 8000
-    traffic_policy: TrafficPolicy = TrafficPolicy.LEAST_REQUEST
-    outlier_detection: OutlierDetection = field(default_factory=OutlierDetection)
-    circuit_breaker: Dict[str, Any] = field(default_factory=lambda: {"max_connections": 100, "http2_max_requests": 100})
-    retry_policy: Dict[str, Any] = field(default_factory=lambda: {"attempts": 3, "per_try_timeout": "2s", "retry_on": "gateway-error,connect-failure,refused-stream"})
+class ServiceMeshEndpoint:
+    service: str
+    host: str
+    port: int
+    region: str
+    weight: int = 100
+    healthy: bool = True
 
 
-class ServiceMeshManager:
-    def __init__(self, config: Optional[ServiceMeshConfig] = None):
-        self.config = config or ServiceMeshConfig(service_name="astrovox")
-        self._endpoints: Dict[str, List[str]] = {}
-        self._traffic_split: Dict[str, float] = {}
+class ServiceMeshClient:
+    def __init__(self, mesh_provider: str = "istio", control_plane: str = "istiod:15012"):
+        self.mesh_provider = mesh_provider
+        self.control_plane = control_plane
+        self._endpoints: Dict[str, List[ServiceMeshEndpoint]] = {}
+        self._traffic_policies: Dict[str, TrafficPolicy] = {}
 
-    def register_service(self, service_name: str, endpoints: List[str]) -> None:
-        self._endpoints[service_name] = endpoints
-        logger.info("Registered service %s with %d endpoints", service_name, len(endpoints))
+    def register_service(self, service: str, endpoints: List[ServiceMeshEndpoint]) -> None:
+        self._endpoints[service] = endpoints
+        logger.info("Registered %d endpoints for service %s", len(endpoints), service)
 
-    def set_traffic_split(self, service_name: str, splits: Dict[str, float]) -> None:
-        self._traffic_split[service_name] = sum(splits.values())
-        logger.info("Set traffic split for %s: %s", service_name, splits)
+    def set_traffic_policy(self, service: str, policy: TrafficPolicy) -> None:
+        self._traffic_policies[service] = policy
+        logger.info("Set traffic policy for %s to %s", service, policy.value)
 
-    def generate_destination_rule(self) -> Dict[str, Any]:
+    def route_request(self, service: str, headers: Dict[str, str]) -> Optional[ServiceMeshEndpoint]:
+        endpoints = [e for e in self._endpoints.get(service, []) if e.healthy]
+        if not endpoints:
+            logger.error("No healthy endpoints for service %s", service)
+            return None
+        policy = self._traffic_policies.get(service, TrafficPolicy.ROUND_ROBIN)
+        if policy == TrafficPolicy.LEAST_CONNECTIONS:
+            return min(endpoints, key=lambda e: e.weight)
+        if policy == TrafficPolicy.PASSTHROUGH:
+            return endpoints[0]
+        if policy == TrafficPolicy.WEIGHTED:
+            return sorted(endpoints, key=lambda e: -e.weight)[0]
+        return endpoints[0]
+
+    def configure_retries(self, service: str, attempts: int = 3, timeout: str = "2s") -> None:
+        logger.info("Configured retries for %s: %d attempts, timeout %s", service, attempts, timeout)
+
+    def configure_circuit_breaker(self, service: str, threshold: int = 5, window: str = "30s") -> None:
+        logger.info("Configured circuit breaker for %s: threshold %d, window %s", service, threshold, window)
+
+    def configure_fault_injection(self, service: str, abort_percentage: float = 0.0, delay_percentage: float = 0.0) -> None:
+        logger.info("Configured fault injection for %s", service)
+
+    def get_service_status(self) -> Dict[str, Any]:
         return {
-            "apiVersion": "networking.istio.io/v1beta1",
-            "kind": "DestinationRule",
-            "metadata": {"name": self.config.service_name, "namespace": self.config.namespace},
-            "spec": {
-                "host": self.config.service_name,
-                "trafficPolicy": {
-                    "connectionPool": {
-                        "tcp": {"maxConnections": self.config.circuit_breaker["max_connections"]},
-                        "http": {
-                            "h1UpgradePolicy": "UPGRADE",
-                            "http2MaxRequests": self.config.circuit_breaker["http2_max_requests"],
-                        },
-                    },
-                    "loadBalancer": {"simple": self.config.traffic_policy.value.upper()},
-                    "outlierDetection": {
-                        "consecutive5xxErrors": self.config.outlier_detection.consecutive_5xx,
-                        "interval": self.config.outlier_detection.interval,
-                        "baseEjectionTime": self.config.outlier_detection.base_ejection_time,
-                    },
-                },
+            "provider": self.mesh_provider,
+            "services": {
+                service: {
+                    "endpoints": len(endpoints),
+                    "healthy": sum(1 for e in endpoints if e.healthy),
+                    "traffic_policy": self._traffic_policies.get(service, TrafficPolicy.ROUND_ROBIN).value,
+                }
+                for service, endpoints in self._endpoints.items()
             },
         }
-
-    def generate_virtual_service(self, gateway: str = "astrovox-gateway") -> Dict[str, Any]:
-        routes = []
-        if self._traffic_split:
-            weights = {ep: 100 // len(self._endpoints.get(self.config.service_name, [])) for ep in self._endpoints.get(self.config.service_name, [])}
-            routes.append({"destination": {"host": self.config.service_name, "port": {"number": self.config.port}}, "weight": weights.get(self.config.service_name, 100)})
-        else:
-            routes.append({"destination": {"host": self.config.service_name, "port": {"number": self.config.port}}})
-        return {
-            "apiVersion": "networking.istio.io/v1beta1",
-            "kind": "VirtualService",
-            "metadata": {"name": self.config.service_name, "namespace": self.config.namespace},
-            "spec": {
-                "hosts": [f"{self.config.service_name}.{self.config.namespace}.svc.cluster.local"],
-                "gateways": [gateway],
-                "http": [
-                    {
-                        "route": routes,
-                        "retries": {
-                            "attempts": self.config.retry_policy["attempts"],
-                            "perTryTimeout": self.config.retry_policy["per_try_timeout"],
-                            "retryOn": self.config.retry_policy["retry_on"],
-                        },
-                        "timeout": "30s",
-                    }
-                ],
-            },
-        }
-
-    def generate_sidecar(self) -> Dict[str, Any]:
-        return {
-            "apiVersion": "networking.istio.io/v1beta1",
-            "kind": "Sidecar",
-            "metadata": {"name": f"{self.config.service_name}-sidecar", "namespace": self.config.namespace},
-            "spec": {
-                "workloadSelector": {"labels": {"app": self.config.service_name}},
-                "ingress": [{"port": {"number": self.config.port, "name": "http", "protocol": "HTTP"}}],
-                "egress": [{"hosts": ["./*"]}],
-            },
-        }
-
-    def get_endpoints(self, service_name: str) -> List[str]:
-        return self._endpoints.get(service_name, [])

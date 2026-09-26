@@ -1,8 +1,9 @@
-"""Auto-healing for distributed inference nodes."""
+"""Auto-healing for distributed inference clusters."""
 
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,105 +14,113 @@ logger = logging.getLogger(__name__)
 
 
 class HealingAction(Enum):
-    RESTART = "restart"
+    RESTART_POD = "restart_pod"
     RESCHEDULE = "reschedule"
     SCALE_UP = "scale_up"
     DRAIN = "drain"
+    REPLACE = "replace"
 
 
 @dataclass
-class HealthEvent:
+class HealthIssue:
     node_id: str
-    event_type: str
-    timestamp: datetime
-    details: Dict[str, Any] = field(default_factory=dict)
-    action: Optional[HealingAction] = None
+    issue_type: str
+    severity: str
+    detected_at: datetime = field(default_factory=datetime.utcnow)
+    healed: bool = False
+    heal_action: Optional[HealingAction] = None
 
 
 class AutoHealer:
     def __init__(
         self,
         node_ids: List[str],
-        health_check_fn: Callable[[str], Dict[str, Any]],
-        heal_fn: Callable[[str, HealingAction], bool],
+        heal_fn: Optional[Callable[[str, HealingAction], bool]] = None,
+        check_interval: float = 15.0,
+        max_retries: int = 3,
     ):
         self.node_ids = node_ids
-        self.health_check_fn = health_check_fn
         self.heal_fn = heal_fn
-        self._event_history: List[HealthEvent] = []
-        self._node_states: Dict[str, Dict[str, Any]] = {nid: {"failures": 0, "last_failure": None, "healing": False} for nid in node_ids}
+        self.check_interval = check_interval
+        self.max_retries = max_retries
+        self._issues: Dict[str, HealthIssue] = {}
+        self._retry_counts: Dict[str, int] = {nid: 0 for nid in node_ids}
         self._running = False
+        self._thread: Optional[threading.Thread] = None
 
     def start(self) -> None:
         self._running = True
+        self._thread = threading.Thread(target=self._healing_loop, daemon=True)
+        self._thread.start()
         logger.info("Auto-healer started")
 
     def stop(self) -> None:
         self._running = False
+        if self._thread:
+            self._thread.join(timeout=5)
         logger.info("Auto-healer stopped")
 
-    def run_healing_cycle(self) -> List[HealthEvent]:
-        events = []
-        for node_id in self.node_ids:
+    def _healing_loop(self) -> None:
+        while self._running:
             try:
-                health = self.health_check_fn(node_id)
-                healthy = health.get("healthy", False)
+                self._detect_and_heal()
             except Exception:
-                healthy = False
-                health = {"error": "health check failed"}
-            node_state = self._node_states[node_id]
-            if not healthy:
-                node_state["failures"] += 1
-                node_state["last_failure"] = datetime.utcnow()
-                action = self._determine_healing_action(node_id, node_state)
-                event = HealthEvent(
-                    node_id=node_id,
-                    event_type="unhealthy",
-                    timestamp=datetime.utcnow(),
-                    details=health,
-                    action=action,
-                )
-                self._event_history.append(event)
-                if action and not node_state["healing"]:
-                    node_state["healing"] = True
-                    success = self.heal_fn(node_id, action)
-                    event.details["healed"] = success
-                    node_state["healing"] = False
-                    if success:
-                        node_state["failures"] = 0
-                events.append(event)
+                logger.exception("Auto-healing error")
+            time.sleep(self.check_interval)
+
+    def _detect_and_heal(self) -> None:
+        for node_id in self.node_ids:
+            if self._is_unhealthy(node_id):
+                if node_id not in self._issues or self._issues[node_id].healed:
+                    self._issues[node_id] = HealthIssue(node_id=node_id, issue_type="unhealthy", severity="high")
+                self._heal_node(node_id)
             else:
-                node_state["failures"] = max(0, node_state["failures"] - 1)
-        return events
+                if node_id in self._issues and not self._issues[node_id].healed:
+                    self._issues[node_id].healed = True
+                    logger.info("Node %s healed successfully", node_id)
+                    self._retry_counts[node_id] = 0
 
-    def _determine_healing_action(self, node_id: str, node_state: Dict[str, Any]) -> Optional[HealingAction]:
-        failures = node_state["failures"]
-        if failures == 1:
-            return HealingAction.RESTART
-        if failures == 2:
-            return HealingAction.RESCHEDULE
-        if failures >= 3:
-            return HealingAction.DRAIN
-        return None
+    def _is_unhealthy(self, node_id: str) -> bool:
+        return node_id in self._issues and not self._issues[node_id].healed
 
-    def get_healing_history(self, limit: int = 20) -> List[Dict[str, Any]]:
-        return [
-            {
-                "node_id": e.node_id,
-                "event_type": e.event_type,
-                "action": e.action.value if e.action else None,
-                "timestamp": e.timestamp.isoformat(),
-                "details": e.details,
-            }
-            for e in self._event_history[-limit:]
-        ]
+    def _heal_node(self, node_id: str) -> None:
+        issue = self._issues[node_id]
+        action = self._select_heal_action(issue)
+        logger.info("Healing node %s with action %s", node_id, action.value)
+        if self.heal_fn:
+            success = self.heal_fn(node_id, action)
+            if success:
+                issue.healed = True
+                issue.heal_action = action
+                self._retry_counts[node_id] = 0
+            else:
+                self._retry_counts[node_id] += 1
+                if self._retry_counts[node_id] >= self.max_retries:
+                    logger.error("Max retries reached for node %s", node_id)
+                    issue.severity = "critical"
 
-    def get_node_health(self) -> Dict[str, Any]:
+    def _select_heal_action(self, issue: HealthIssue) -> HealingAction:
+        if issue.severity == "critical":
+            return HealingAction.REPLACE
+        if issue.issue_type == "unhealthy":
+            return HealingAction.RESTART_POD
+        return HealingAction.RESTART_POD
+
+    def report_issue(self, node_id: str, issue_type: str, severity: str = "high") -> None:
+        self._issues[node_id] = HealthIssue(node_id=node_id, issue_type=issue_type, severity=severity)
+
+    def get_status(self) -> Dict[str, Any]:
         return {
-            node_id: {
-                "failures": state["failures"],
-                "healing": state["healing"],
-                "last_failure": state["last_failure"].isoformat() if state["last_failure"] else None,
-            }
-            for node_id, state in self._node_states.items()
+            "running": self._running,
+            "issues": [
+                {
+                    "node_id": i.node_id,
+                    "issue_type": i.issue_type,
+                    "severity": i.severity,
+                    "healed": i.healed,
+                    "heal_action": i.heal_action.value if i.heal_action else None,
+                }
+                for i in self._issues.values()
+            ],
+            "retry_counts": self._retry_counts,
         }

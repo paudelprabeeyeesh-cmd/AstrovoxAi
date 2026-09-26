@@ -17,6 +17,7 @@ from .audit_dashboard import AuditDashboardCompliance
 from .chaos_security import ChaosSecurityCompliance
 from .pen_test import PenTestCompliance
 from .compliance_automation import ComplianceAutomationCompliance
+from .api_attack_detection import APIAttackDetectionCompliance
 
 __all__ = [
     "AuthenticationCompliance",
@@ -37,4 +38,5 @@ __all__ = [
     "ChaosSecurityCompliance",
     "PenTestCompliance",
     "ComplianceAutomationCompliance",
+    "APIAttackDetectionCompliance",
 ]
