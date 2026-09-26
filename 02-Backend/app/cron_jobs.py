@@ -1,6 +1,6 @@
 """Cron jobs for scheduled execution."""
 
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from croniter import croniter

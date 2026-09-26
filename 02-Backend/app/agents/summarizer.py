@@ -1,6 +1,6 @@
 """Summarizer agent for content summarization."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 

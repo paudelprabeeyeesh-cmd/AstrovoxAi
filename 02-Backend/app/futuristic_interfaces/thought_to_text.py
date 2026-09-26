@@ -1,7 +1,7 @@
 import logging
 import time
 import uuid
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 

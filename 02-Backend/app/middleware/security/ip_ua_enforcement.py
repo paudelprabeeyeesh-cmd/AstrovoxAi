@@ -7,7 +7,6 @@ rejects blocked User-Agent strings before routing.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Optional
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware

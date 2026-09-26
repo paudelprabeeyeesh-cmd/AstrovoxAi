@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
-import hmac
 import logging
 import os
-from dataclasses import dataclass
 from typing import Any
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM

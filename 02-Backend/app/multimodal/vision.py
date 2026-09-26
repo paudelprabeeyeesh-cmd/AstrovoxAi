@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-import base64
-import io
-import re
 import struct
-import zlib
-from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from .core import MediaAsset, MultimodalChunk, Modality, make_id
 

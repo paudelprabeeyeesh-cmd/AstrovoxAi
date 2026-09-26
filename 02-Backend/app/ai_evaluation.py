@@ -10,7 +10,6 @@ release quality gates.
 """
 
 import time
-import json
 import logging
 import secrets
 from typing import Optional

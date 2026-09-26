@@ -8,14 +8,9 @@ from __future__ import annotations
 
 import hashlib
 import re
-import shutil
-import tempfile
-import uuid
-import zipfile
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 
 class PluginState(str, Enum):

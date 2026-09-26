@@ -1,9 +1,7 @@
 """Notifications & Activity system — unified notification delivery."""
 
-import time
 import uuid
 from typing import Optional
-from dataclasses import dataclass, field
 
 from .models import ActivityEvent, Notification
 

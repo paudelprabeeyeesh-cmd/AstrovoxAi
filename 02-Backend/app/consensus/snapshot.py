@@ -16,7 +16,6 @@ import logging
 import time
 import zlib
 from dataclasses import dataclass, field
-from typing import AsyncIterator, Optional
 
 from .types import (
     InstallSnapshotRequest,

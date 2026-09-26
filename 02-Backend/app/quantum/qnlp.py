@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple
 from dataclasses import dataclass
 from .circuit_simulator import QuantumCircuitSimulator
 import re

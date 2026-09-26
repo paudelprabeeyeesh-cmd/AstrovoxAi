@@ -1,6 +1,6 @@
 """Memory Engine API endpoints."""
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header
 from pydantic import BaseModel
 from typing import Optional
 

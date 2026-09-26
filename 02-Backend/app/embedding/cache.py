@@ -1,7 +1,6 @@
 """Embedding Cache — prevents duplicate embedding requests."""
 
 import hashlib
-import json
 import time
 from typing import Optional
 

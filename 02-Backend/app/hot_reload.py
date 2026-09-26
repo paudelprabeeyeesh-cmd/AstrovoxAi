@@ -1,13 +1,10 @@
 """Hot reload support for development."""
 
 import os
-import sys
-import time
-import threading
 from pathlib import Path
 from typing import Dict, List, Optional, Callable, Set
 from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileModifiedEvent
+from watchdog.events import FileSystemEventHandler
 
 _watchers: Dict[str, List[Callable[[str], None]]] = {}
 _observer: Optional[Observer] = None

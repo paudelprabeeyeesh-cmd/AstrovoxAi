@@ -1,8 +1,6 @@
 import logging
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from statistics import mean, stdev
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

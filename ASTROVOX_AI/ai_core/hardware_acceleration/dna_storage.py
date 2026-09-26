@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import base64
 import hashlib
 import logging
 import pickle
 import zlib
-from typing import Optional, Dict, Any, List, Union
+from typing import Optional, Dict, Any, List
 import torch
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,6 @@ from __future__ import annotations
 import logging
 from typing import List, Optional
 
-import torch
 import torch.nn as nn
 
 from ASTROVOX_AI.ai_core.training.checkpoint_merging import CheckpointMerger

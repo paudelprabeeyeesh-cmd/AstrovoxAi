@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Memory — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/memory.html" class="nav-link active">Memory</a>
+        <a href="/rag.html" class="nav-link">RAG</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">Memory</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Long-term memory for context-aware conversations</p>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1rem;margin-bottom:1.5rem;">
+          <form id="memory-add-form" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:2;min-width:250px;">
+              <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Memory</label>
+              <input name="content" required maxlength="10000" placeholder="Add a memory..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Category</label>
+              <select name="category" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                <option value="fact">Fact</option>
+                <option value="preference">Preference</option>
+                <option value="user_preference">User Preference</option>
+                <option value="goal">Goal</option>
+                <option value="context">Context</option>
+                <option value="knowledge">Knowledge</option>
+              </select>
+            </div>
+            <div style="flex:1;min-width:150px;">
+              <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Tier</label>
+              <select name="tier" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium" selected>Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Save Memory</button>
+          </form>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+          <input id="memory-search-input" type="search" placeholder="Search memories..." style="width:100%;max-width:400px;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+        </div>
+
+        <div id="memory-loading" style="display:flex;align-items:center;justify-content:center;padding:2rem;color:var(--text-secondary);">
+          <div class="spinner" style="width:1.5rem;height:1.5rem;border:2px solid var(--bg-tertiary);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <span style="margin-left:0.75rem;">Loading memories...</span>
+        </div>
+        <div id="memory-error" style="display:none;padding:1rem;background:rgba(239,68,68,0.1);border:1px solid var(--error);border-radius:0.5rem;color:var(--error);margin-bottom:1rem;"></div>
+
+        <div id="memory-list" style="display:none;flex-direction:column;gap:0.75rem;"></div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/memory.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

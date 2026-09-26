@@ -7,9 +7,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Optional
 
-from app.utils import auto_tag, auto_summary, generate_id
 
 
 # ============================================================================

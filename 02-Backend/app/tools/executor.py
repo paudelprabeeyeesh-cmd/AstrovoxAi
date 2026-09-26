@@ -1,6 +1,6 @@
 """Tool executor with sandboxing."""
 
-from typing import Dict, Any, Optional, Callable, Awaitable
+from typing import Dict, Any, Optional, Callable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import asyncio

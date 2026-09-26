@@ -4,13 +4,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
-import asyncio
 
 from app.observability import (
     get_observability,
-    register_metric,
-    register_health_check,
-    register_alert_rule,
     DashboardTemplatePack,
     IncidentTimelineVisualizer,
     oncall,
@@ -19,12 +15,7 @@ from app.observability import (
     error_budget_dashboard,
     log_retention,
     sampler,
-    AlertSeverity,
-    MetricType,
     HealthStatus,
-    Metric,
-    HealthCheck,
-    AlertRule,
 )
 
 router = APIRouter(prefix="/observability", tags=["observability"])

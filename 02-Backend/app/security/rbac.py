@@ -1,9 +1,8 @@
 """Role-Based Access Control (RBAC)."""
 
-from typing import Dict, List, Optional, Set
+from typing import Dict, Set
 from dataclasses import dataclass, field
 from enum import Enum
-import re
 
 
 class Role(Enum):

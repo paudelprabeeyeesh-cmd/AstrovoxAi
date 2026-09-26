@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 from typing import Optional, Dict, Any, List
-import torch
 import torch.nn as nn
 
 logger = logging.getLogger(__name__)

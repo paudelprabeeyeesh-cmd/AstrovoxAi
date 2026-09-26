@@ -7,7 +7,6 @@ import os
 from collections import defaultdict
 from typing import Any
 
-from .parser import parse
 
 logger = logging.getLogger(__name__)
 

@@ -1,5 +1,3 @@
-from typing import Optional, Dict, Any, List
-import torch
 import torch.nn as nn
 
 
@@ -20,8 +18,8 @@ class CustomAIAcceleratorIntegration:
             import torch_xla
             import torch_xla.core.xla_model as xm
             self.device = xm.xla_device()
-            except ImportError:
-                logger.warning("torch_xla not installed; TPU initialization skipped")
+        except ImportError:
+            logger.warning("torch_xla not installed; TPU initialization skipped")
 
     def _init_graphcore(self) -> None:
         try:

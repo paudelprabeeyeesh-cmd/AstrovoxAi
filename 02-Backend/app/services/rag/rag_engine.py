@@ -1,7 +1,5 @@
 import os
 import requests
-from typing import Any
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 try:
     import openai
@@ -25,8 +23,6 @@ from ...documents import (
     delete_document_chunks,
     create_document_chunk,
     search_chunks,
-    list_documents,
-    get_document,
 )
 from ...config import settings
 

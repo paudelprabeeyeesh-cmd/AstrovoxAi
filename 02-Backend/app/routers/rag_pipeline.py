@@ -2,11 +2,10 @@ import logging
 import uuid
 import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import require_verified_email, require_admin
+from ..auth import require_verified_email
 from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
@@ -62,7 +61,6 @@ async def ingest_document(req: dict, user_id: str = Depends(require_verified_ema
     title = req.get("title", "")
     content = req.get("content", "")
     chunk_size = req.get("chunk_size", 512)
-    import math
     chunks = [content[i:i + chunk_size] for i in range(0, len(content), chunk_size)]
     with get_db() as conn:
         conn.execute(

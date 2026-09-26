@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any, Tuple
+from typing import List, Dict, Tuple
 import hashlib
 from ASTROVOX_AI.ai_core.rag.incremental_indexing import IncrementalIndexer
 

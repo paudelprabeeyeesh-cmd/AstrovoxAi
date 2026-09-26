@@ -5,7 +5,7 @@ Distributed model orchestration with pipeline and tensor parallelism.
 from __future__ import annotations
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 import torch
 import torch.nn as nn
 
@@ -22,7 +22,6 @@ class ModelOrchestrator:
         self.tensor_parallel_groups: Optional[List[int]] = None
 
     def setup_pipeline_parallelism(self, num_stages: int) -> List[nn.Module]:
-        from ASTROVOX_AI.ai_core.cuda.cuda_pipeline_parallelism_v2 import EnhancedPipelineParallelism
         modules = list(self.model.children())
         stage_size = max(1, len(modules) // num_stages)
         stages = []

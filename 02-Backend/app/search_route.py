@@ -17,7 +17,7 @@ from fastapi import APIRouter, HTTPException, Header, status
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from app.search_unified import UnifiedSearchEngine, verify_source, video_search
+from app.search_unified import UnifiedSearchEngine, video_search
 from app.search_verifier import verify_sources_batch, get_verification_summary
 from app.rag_search import RAGSearchEngine
 

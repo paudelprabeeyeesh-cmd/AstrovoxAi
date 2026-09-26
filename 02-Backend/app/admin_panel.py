@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.repositories.database.client import get_db
-from app.services.auth.auth import get_current_user
 from app.services.auth.auth import require_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])

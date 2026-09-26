@@ -1,5 +1,4 @@
-from typing import Optional, Dict, Any, List, Callable
-import math
+from typing import Optional, Dict
 
 
 class AutomaticEarlyStopping:

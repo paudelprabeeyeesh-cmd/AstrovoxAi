@@ -4,7 +4,6 @@ import time
 import logging
 import hashlib
 from typing import Optional
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 

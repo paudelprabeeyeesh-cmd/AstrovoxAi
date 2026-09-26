@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 import torch
 import torch.nn as nn
 

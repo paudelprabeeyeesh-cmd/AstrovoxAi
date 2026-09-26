@@ -1,12 +1,9 @@
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, List, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 try:
-    import triton
-    import triton.language as tl
     TRITON_AVAILABLE = True
 except ImportError:
     TRITON_AVAILABLE = False

@@ -1,8 +1,7 @@
 import numpy as np
-from typing import List, Optional, Tuple
+from typing import List
 from dataclasses import dataclass
 from .circuit_simulator import QuantumCircuitSimulator
-from .vqc import VariationalQuantumCircuit
 
 @dataclass
 class QuantumLayer:

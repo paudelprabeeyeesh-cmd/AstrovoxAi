@@ -1,8 +1,8 @@
 """Memory TTL and pruning policies."""
 
 from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
 
 

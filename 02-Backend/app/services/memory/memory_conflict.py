@@ -2,7 +2,6 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from .memory_service import memory_service as _memory_service
 
 logger = logging.getLogger(__name__)
 

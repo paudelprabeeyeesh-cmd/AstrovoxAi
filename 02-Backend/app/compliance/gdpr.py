@@ -1,6 +1,5 @@
 
 from datetime import datetime, timezone
-from typing import Dict, List
 from .reporter import ComplianceReporter
 from .collector import EvidenceCollector
 

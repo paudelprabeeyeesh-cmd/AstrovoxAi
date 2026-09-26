@@ -1,11 +1,9 @@
 """AI Tools — calculator, web search, weather, code execution."""
 
-import re
 import ast
 import operator
 import logging
 import asyncio
-import json
 from typing import Optional
 from dataclasses import dataclass
 

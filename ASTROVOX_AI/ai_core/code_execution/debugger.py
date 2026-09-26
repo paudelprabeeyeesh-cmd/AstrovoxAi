@@ -1,6 +1,5 @@
 from typing import Optional, Dict, Any, List
 import ast
-import sys
 import traceback
 import time
 import io

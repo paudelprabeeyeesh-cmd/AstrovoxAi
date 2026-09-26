@@ -7,7 +7,6 @@ defined in `app.utils.error_schema`.
 from __future__ import annotations
 
 import logging
-import traceback
 from typing import Optional
 
 from fastapi import Request

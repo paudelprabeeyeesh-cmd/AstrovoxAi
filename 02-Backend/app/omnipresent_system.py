@@ -1,12 +1,11 @@
 """Omnipresent system for ubiquitous AI presence across devices, environments, and contexts."""
 
 import asyncio
-import math
 import random
 import time
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Awaitable, Callable, Dict, List, Optional
 

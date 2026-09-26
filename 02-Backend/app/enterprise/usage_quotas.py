@@ -2,12 +2,10 @@
 
 import logging
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Optional
 
-from app.repositories.database.client import get_db
-from app.usage_quota import usage_quota_manager, UsageQuotaExceeded
+from app.usage_quota import usage_quota_manager
 
 logger = logging.getLogger(__name__)
 

@@ -3,7 +3,7 @@
 import logging
 import json
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from datetime import datetime, timezone
 import traceback
 

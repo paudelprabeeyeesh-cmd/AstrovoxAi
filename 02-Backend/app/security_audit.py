@@ -1,9 +1,7 @@
 """Security audit — vulnerability scanning and security checks."""
 
-import re
 import os
 import logging
-from typing import Optional
 from dataclasses import dataclass
 from enum import Enum
 

@@ -1,5 +1,5 @@
 import boto3
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict
 from ..base_adapter import BaseCloudAdapter, DeploymentConfig, StorageCredentials
 
 

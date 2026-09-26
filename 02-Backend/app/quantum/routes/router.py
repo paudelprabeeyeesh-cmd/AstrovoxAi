@@ -1,23 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Optional
 import numpy as np
 import time
 
-from app.quantum.circuit_simulator import QuantumCircuitSimulator, simulate_circuit
+from app.quantum.circuit_simulator import simulate_circuit
 from app.quantum.qml_algorithms import QuantumMachineLearning
 from app.quantum.qnlp import QuantumNLP
-from app.quantum.crypto import QuantumCrypto
 from app.quantum.qkd import QuantumKeyDistribution
 from app.quantum.qrandom import QuantumRandomNumberGenerator
-from app.quantum.hybrid_workflows import HybridQuantumWorkflow
 from app.quantum.benchmarks import QuantumBenchmark
-from app.quantum.vqc import VariationalQuantumCircuit
-from app.quantum.qnn import QuantumNeuralNetwork
 from app.quantum.qaoa import QAOA
-from app.quantum.counting import QuantumApproximateCounting
-from app.quantum.amplitude_estimation import QuantumAmplitudeEstimation
-from app.quantum.phase_estimation import QuantumPhaseEstimation
 from app.quantum.hybrid_optimizer import HybridQuantumOptimizer
 
 router = APIRouter(prefix="/quantum", tags=["quantum"])

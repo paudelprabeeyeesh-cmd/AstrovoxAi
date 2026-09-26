@@ -1,4 +1,4 @@
-from typing import TypeVar, Callable, Iterable, List, Optional, Dict, Any
+from typing import Callable, Iterable, List, Dict, Any
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import asyncio

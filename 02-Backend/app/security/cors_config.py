@@ -1,6 +1,6 @@
 """CORS configuration."""
 
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 from dataclasses import dataclass
 from fastapi.middleware.cors import CORSMiddleware
 

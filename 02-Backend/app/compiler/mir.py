@@ -10,9 +10,9 @@ import hashlib
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from .hir import HIRFunction, HIRModule, HIRType, HIRVariable
+from .hir import HIRFunction, HIRModule, HIRType
 
 
 class MIROpcode(str, Enum):

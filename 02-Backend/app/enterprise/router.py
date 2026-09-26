@@ -1,15 +1,15 @@
 """Enterprise API endpoints — organizations, workspaces, memberships, tenancy, ABAC, audit, compliance."""
 
-from fastapi import APIRouter, Header, HTTPException, status, Request, Depends
+from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone
+from typing import Optional, Dict, Any
+from datetime import datetime
 
 from app.utils.auth.auth_utils import get_user_id_from_token
 from .service import org_service
 from .rbac import rbac
-from .abac import abac, ABACContext
-from .tenancy import tenant_manager, tenant_required, tenant_scoped
+from .abac import abac
+from .tenancy import tenant_manager
 from .encryption import tenant_encryption
 from .audit import audit_exporter
 from .compliance import compliance_generator

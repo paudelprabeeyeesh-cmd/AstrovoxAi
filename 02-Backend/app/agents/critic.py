@@ -1,6 +1,6 @@
 """Critic agent for evaluating outputs."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 

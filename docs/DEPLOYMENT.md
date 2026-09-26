@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide covers deploying AstrovoxAI to production using Docker Compose or Kubernetes. It includes environment setup, database configuration, health checks, scaling, backup/restore, and rolling deploys.
+This guide covers deploying AstrovoxAI to production using Docker Compose or Kubernetes. It includes environment setup, database configuration, health checks, scaling, backup/restore, rolling deploys, and security hardening.
 
 ## Prerequisites
 
@@ -525,3 +525,42 @@ logging:
 ```
 
 Kubernetes: Use a DaemonSet with Fluentd or Vector for log aggregation.
+
+---
+
+## Multi-Environment Setup
+
+### Environments
+
+| Environment | Purpose | URL |
+|-------------|---------|-----|
+| Development | Local development | http://localhost:5173 |
+| Staging | Pre-production testing | https://staging.astrovox.ai |
+| Production | Live environment | https://astrovox.ai |
+
+### Environment Promotion
+
+1. Merge to `main` triggers staging deploy
+2. Tag release triggers production deploy
+3. Manual approval gate before production
+
+---
+
+## Disaster Recovery
+
+### Recovery Time Objectives (RTO)
+
+- Database: < 4 hours
+- Application: < 30 minutes
+- Full system: < 1 hour
+
+### Recovery Point Objectives (RPO)
+
+- Database: < 24 hours (daily backups)
+- Messages: < 1 hour (Redis persistence)
+
+### Backup Schedule
+
+- Database: Daily at 2 AM UTC
+- Redis: Every 6 hours
+- Configuration: Every push to `main`

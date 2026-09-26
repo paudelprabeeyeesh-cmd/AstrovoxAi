@@ -10,8 +10,8 @@ shutdown, startup verification, configuration validation, production readiness.
 import time
 import logging
 import asyncio
-from typing import Optional, Any, Callable
-from dataclasses import dataclass, field
+from typing import Any, Callable
+from dataclasses import dataclass
 from enum import Enum
 
 from app.exceptions import AstrovoxError

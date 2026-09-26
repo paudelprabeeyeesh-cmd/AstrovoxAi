@@ -1,7 +1,6 @@
 import logging
 import os
 import subprocess
-import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional

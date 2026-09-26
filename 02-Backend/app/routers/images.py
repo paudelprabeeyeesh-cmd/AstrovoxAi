@@ -1,10 +1,7 @@
 import logging
-import uuid
-import json
-from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 
 from ..auth import require_verified_email
 from app.repositories.database.client import get_db

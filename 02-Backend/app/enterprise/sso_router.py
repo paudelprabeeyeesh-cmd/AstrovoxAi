@@ -1,12 +1,11 @@
 """Enterprise SSO integrations router."""
 
-from fastapi import APIRouter, Header, HTTPException, status, Request
+from fastapi import APIRouter, Header
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
 from app.utils.auth.auth_utils import get_user_id_from_token
 from .sso import enterprise_sso
-from .tenancy import tenant_manager
 
 router = APIRouter(prefix="/api/enterprise/sso", tags=["enterprise-sso"])
 

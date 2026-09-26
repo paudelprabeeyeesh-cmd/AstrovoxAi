@@ -1,10 +1,8 @@
-import re
 import time
 import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
-from urllib.parse import urljoin
 
 import requests
 

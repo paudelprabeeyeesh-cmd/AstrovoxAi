@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Callable, Optional
+from typing import Optional
 
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response

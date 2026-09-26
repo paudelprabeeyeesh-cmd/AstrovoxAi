@@ -4,8 +4,7 @@ import asyncio
 import inspect
 import logging
 import threading
-import time
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, TypeVar
+from typing import Any, AsyncIterator, Callable, List, Optional, TypeVar
 
 logger = logging.getLogger("astrovox.backpressure")
 

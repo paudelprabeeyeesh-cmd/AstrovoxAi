@@ -1,25 +1,27 @@
 # ASTROVOX AI
 
-> Advanced AI Chat Platform — Multi-provider support, persistent memory, agent systems, and enterprise-grade infrastructure.
+> Advanced AI Chat Platform — Multi-provider support, persistent memory, agent systems, enterprise-grade infrastructure, and cutting-edge AI research.
 
 ## What is AstrovoxAI?
 
-AstrovoxAI is a production-ready AI chat platform that unifies multiple LLM providers (OpenAI, Anthropic, Google Gemini, Ollama) behind a single modern interface. It includes persistent conversation memory, streaming responses, RAG, autonomous agent tool-use, team workspaces, and comprehensive monitoring — deployable via Docker or Kubernetes.
+AstrovoxAI is a production-ready AI chat platform that unifies multiple LLM providers (OpenAI, Anthropic, Google Gemini, Ollama, Groq) behind a single modern interface. It includes persistent conversation memory, streaming responses, RAG, autonomous agent tool-use, team workspaces, advanced safety systems, and comprehensive monitoring — deployable via Docker or Kubernetes.
 
 ## Key Features
 
-- **Multi-provider AI chat** — OpenAI, Anthropic Claude, Google Gemini, Ollama (local models)
+- **Multi-provider AI chat** — OpenAI, Anthropic Claude, Google Gemini, Ollama (local models), Groq
 - **Streaming responses** — Real-time SSE token streaming for all providers
-- **Persistent AI memory** — Long-term user memory with importance weighting
-- **RAG pipeline** — Retrieval-Augmented Generation with embeddings
-- **Autonomous agents** — Tool use, planning, multi-agent collaboration
-- **Team workspaces** — Shared conversations, folders, chat branching
+- **Persistent AI memory** — Long-term user memory with importance weighting and auto-extraction
+- **RAG pipeline** — Retrieval-Augmented Generation with vector embeddings
+- **Autonomous agents** — Tool use, planning, multi-agent collaboration, safety guards
+- **Team workspaces** — Shared conversations, folders, chat branching, real-time collaboration
 - **Terminal console** — Interactive CLI for power users
-- **Voice & multimodal** — Voice input/output, image understanding, code execution
-- **Enterprise ready** — SSO, RBAC, audit logging, SOC 2 controls, billing
-- **Observability** — Prometheus metrics, Grafana dashboards, structured logging
-- **SDKs** — Python and TypeScript SDKs with OpenAPI-generated clients
-- **Extensible** — Plugin marketplace, webhooks, custom tools
+- **Voice & multimodal** — Voice input/output, image understanding, code execution, audio transcription
+- **Enterprise ready** — SSO (SAML/OIDC), RBAC, audit logging, SOC 2 controls, billing
+- **Observability** — Prometheus metrics, Grafana dashboards, structured logging, distributed tracing
+- **SDKs** — Python, TypeScript, Go, Rust SDKs with OpenAPI-generated clients
+- **Extensible** — Plugin marketplace, webhooks, custom tools, IDE/browser extensions
+- **AI Safety** — Prompt injection defense, content moderation, PII detection, red teaming
+- **Advanced AI** — RLHF, Constitutional AI, distributed training, inference optimization
 
 ## Supported AI Providers
 
@@ -193,6 +195,9 @@ AstrovoxAi/
 | Workspace | `02-Backend/app/api/routers/workspace_route.py` | Team workspaces and folders |
 | Kernel | `02-Backend/app/kernel/` | Core AI kernel and orchestration |
 | AIOS | `02-Backend/app/aios/` | AI Operating System runtime |
+| Safety | `02-Backend/app/safety_routes.py` | Safety and moderation endpoints |
+| Training | `02-Backend/app/training/` | Model fine-tuning and RLHF |
+| Analytics | `02-Backend/app/api/routers/analytics_route.py` | Usage analytics |
 
 ## API Overview
 
@@ -270,6 +275,7 @@ See [docs/README.md](docs/README.md) for the full documentation index and [docs/
 - [x] Docker and Kubernetes deployment
 - [x] CI/CD pipeline
 - [x] Monitoring and observability
+- [x] Enterprise SSO (SAML, OIDC)
 
 ### Upcoming
 
@@ -280,7 +286,6 @@ See [docs/README.md](docs/README.md) for the full documentation index and [docs/
 - [ ] Advanced analytics dashboard
 - [ ] Mobile apps (iOS, Android)
 - [ ] Desktop app (Tauri)
-- [x] Enterprise SSO (SAML, OIDC)
 - [ ] HIPAA-compliant deployment
 
 ## License

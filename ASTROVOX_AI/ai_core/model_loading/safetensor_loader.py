@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 import torch
 import torch.nn as nn
 from safetensors import safe_open

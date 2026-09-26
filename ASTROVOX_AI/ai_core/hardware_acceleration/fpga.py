@@ -4,7 +4,6 @@ import logging
 import os
 from typing import Optional, Dict, Any, List, Tuple, Union
 import torch
-import torch.nn as nn
 import numpy as np
 
 logger = logging.getLogger(__name__)

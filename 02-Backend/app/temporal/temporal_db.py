@@ -16,7 +16,6 @@ import copy
 import hashlib
 import hmac
 import json
-import logging
 import threading
 import time
 import uuid

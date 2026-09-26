@@ -3,10 +3,9 @@
 import logging
 import time
 import uuid
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import dataclass
+from typing import Any
 
-from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

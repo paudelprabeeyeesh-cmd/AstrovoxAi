@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import threading
-import time
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set
+from typing import Any, Callable, Dict, List, Optional
 
-from . import make_id, now
+from . import now
 
 
 class DistributedLock:

@@ -1,6 +1,6 @@
 """Omniscient AI Router - All-knowing API endpoints."""
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 

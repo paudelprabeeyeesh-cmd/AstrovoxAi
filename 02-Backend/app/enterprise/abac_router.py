@@ -1,6 +1,6 @@
 """ABAC policy management APIs."""
 
-from fastapi import APIRouter, HTTPException, status, Header, Depends
+from fastapi import APIRouter, Header
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 

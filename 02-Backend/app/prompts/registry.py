@@ -1,6 +1,6 @@
 """System prompt registry."""
 
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

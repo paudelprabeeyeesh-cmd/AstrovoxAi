@@ -8,7 +8,6 @@ AI actions, external API actions, file actions, workflow analytics, execution
 history.
 """
 
-import json
 import time
 import logging
 import asyncio
@@ -16,7 +15,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 from collections import defaultdict
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audio AI — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/image-ai.html" class="nav-link">Image AI</a>
+        <a href="/video.html" class="nav-link">Video AI</a>
+        <a href="/audio.html" class="nav-link active">Audio AI</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">Audio AI</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Transcribe, synthesize, and analyze audio</p>
+          </div>
+        </div>
+
+        <div class="tabs" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);">
+          <button class="tab active" data-tab="transcribe" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);font-weight:600;background:none;border-top:none;border-left:none;border-right:none;">Transcribe</button>
+          <button class="tab" data-tab="synthesize" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-secondary);background:none;border-top:none;border-left:none;border-right:none;">Synthesize</button>
+          <button class="tab" data-tab="analyze" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-secondary);background:none;border-top:none;border-left:none;border-right:none;">Analyze</button>
+        </div>
+
+        <div id="tab-transcribe" class="tab-panel">
+          <div class="panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">Audio Transcription</h2>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Upload Audio</label>
+              <input type="file" id="audio-upload" accept="audio/*" style="padding:0.5rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);width:100%;">
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Language (optional)</label>
+              <input type="text" id="audio-language" placeholder="en" style="padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);width:100%;">
+            </div>
+            <button id="transcribe-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Transcribe</button>
+            <pre id="transcribe-result" style="margin-top:1rem;padding:0.75rem;background:var(--bg-primary);border-radius:0.5rem;font-family:monospace;font-size:0.875rem;color:var(--text-secondary);min-height:3rem;"></pre>
+          </div>
+        </div>
+
+        <div id="tab-synthesize" class="tab-panel" style="display:none;">
+          <div class="panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">Text to Speech</h2>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Text</label>
+              <textarea id="tts-text" rows="3" placeholder="Enter text to synthesize..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);resize:vertical;"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Voice</label>
+              <select id="tts-voice" style="padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);width:100%;">
+                <option value="alloy">Alloy</option>
+                <option value="echo">Echo</option>
+                <option value="fable">Fable</option>
+                <option value="onyx">Onyx</option>
+                <option value="nova">Nova</option>
+                <option value="shimmer">Shimmer</option>
+              </select>
+            </div>
+            <button id="synthesize-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Synthesize</button>
+            <audio id="tts-audio" controls style="margin-top:1rem;width:100%;display:none;"></audio>
+          </div>
+        </div>
+
+        <div id="tab-analyze" class="tab-panel" style="display:none;">
+          <div class="panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">Audio Analysis</h2>
+            <div class="form-group" style="margin-bottom:1rem;">
+              <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Upload Audio</label>
+              <input type="file" id="analyze-upload" accept="audio/*" style="padding:0.5rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);width:100%;">
+            </div>
+            <button id="analyze-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Analyze</button>
+            <pre id="analyze-result" style="margin-top:1rem;padding:0.75rem;background:var(--bg-primary);border-radius:0.5rem;font-family:monospace;font-size:0.875rem;color:var(--text-secondary);min-height:3rem;"></pre>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

@@ -5,11 +5,9 @@ Advanced inference server with continuous batching, speculative decoding, and KV
 from __future__ import annotations
 
 import logging
-import time
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from collections import deque
 
 logger = logging.getLogger(__name__)

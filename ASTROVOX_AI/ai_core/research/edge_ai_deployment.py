@@ -1,9 +1,5 @@
-from typing import Optional, Dict, Any, List
 import torch
 import torch.nn as nn
-from ASTROVOX_AI.ai_core.quantization.int8_quantization import INT8Quantizer
-from ASTROVOX_AI.ai_core.quantization.gptq import GPTQQuantizer
-from ASTROVOX_AI.ai_core.cuda.cuda_mixed_precision import CUDAMixedPrecision
 
 
 class EdgeAIDeployment:
@@ -28,8 +24,8 @@ class EdgeAIDeployment:
             import torch_xla
             import torch_xla.core.xla_model as xm
             self.optimized_model = self.optimized_model.to(xm.xla_device())
-            except ImportError:
-                logger.warning("torch_xla not installed; TPU optimization skipped")
+        except ImportError:
+            logger.warning("torch_xla not installed; TPU optimization skipped")
 
     def quantize_aware_training(self) -> nn.Module:
         self.model.qconfig = torch.quantization.get_default_qat_qconfig('fbgemm')

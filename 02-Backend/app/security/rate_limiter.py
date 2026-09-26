@@ -1,6 +1,6 @@
 """Rate limiting with sliding window."""
 
-from typing import Dict, Optional, Any, List
+from typing import Dict
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from collections import defaultdict, deque

@@ -2,12 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from dataclasses import dataclass
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional
 import logging
-import os
-import math
 
-from .transformers.transformer_from_scratch import TransformerConfig
 
 logger = logging.getLogger(__name__)
 

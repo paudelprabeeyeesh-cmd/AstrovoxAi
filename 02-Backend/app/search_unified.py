@@ -13,14 +13,12 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from app.search_knowledge import (
-    BM25Index,
     CrossEncoderReranker,
-    HybridSearchEngine,
     SearchResult as SKSearchResult,
     SearchKnowledgePlatform,
 )
 from app.rag_engine import RAGEngine
-from app.core.web_search import WebSearchEngine, web_search
+from app.core.web_search import web_search
 from app.search import SearchEngine as MemorySearchEngine
 
 try:

@@ -10,12 +10,7 @@ Implements Wav2Lip-style architecture:
 
 from __future__ import annotations
 
-import base64
-import io
-import json
 import logging
-import os
-import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 

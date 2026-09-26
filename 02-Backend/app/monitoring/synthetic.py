@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 import aiohttp
-import asyncio
 
 
 class CheckStatus(Enum):

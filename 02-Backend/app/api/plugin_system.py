@@ -3,10 +3,9 @@
 import importlib.util
 import json
 import logging
-import sys
 import uuid
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from app.repositories.database.client import get_db
 

@@ -12,7 +12,7 @@ from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from app.repositories.database.client import save_memory, get_user_memory
+from app.repositories.database.client import save_memory
 from .supabase_client import get_supabase
 from .usage import DailyUsageTracker
 

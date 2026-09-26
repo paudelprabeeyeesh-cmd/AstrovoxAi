@@ -3,7 +3,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
 from .websocket import ws_manager
-from .notifications import notification_service
 
 router = APIRouter(tags=["realtime"])
 

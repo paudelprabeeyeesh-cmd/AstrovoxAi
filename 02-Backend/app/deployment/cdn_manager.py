@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from dataclasses import dataclass
-from ..deployment.base_adapter import BaseCloudAdapter, DeploymentConfig
+from ..deployment.base_adapter import BaseCloudAdapter
 
 
 @dataclass

@@ -34,6 +34,15 @@ Tokens are obtained via `/auth/login` or `/auth/signup`. Supabase Auth is used f
 11. [Billing & Usage](#billing--usage)
 12. [Admin](#admin)
 13. [Monitoring & Metrics](#monitoring--metrics)
+14. [Safety](#safety)
+15. [Training](#training)
+16. [Audio](#audio)
+17. [Neural BCI](#neural-bci)
+18. [Quantum](#quantum)
+19. [Multiverse](#multiverse)
+20. [AGI](#agi)
+21. [Realtime](#realtime)
+22. [Search](#search)
 
 ---
 
@@ -49,8 +58,8 @@ Basic health check.
 }
 ```
 
-### `GET /health/liveness`
-Kubernetes liveness probe.
+### `GET /health/live`
+Container liveness probe.
 
 **Response:**
 ```json
@@ -59,7 +68,7 @@ Kubernetes liveness probe.
 }
 ```
 
-### `GET /health/readiness`
+### `GET /health/ready`
 Kubernetes readiness probe with dependency checks.
 
 **Response:**
@@ -70,6 +79,24 @@ Kubernetes readiness probe with dependency checks.
     "database": "healthy",
     "redis": "healthy"
   }
+}
+```
+
+### `GET /health/detailed`
+Detailed health check with all service statuses.
+
+**Response (200):**
+```json
+{
+  "status": "healthy",
+  "services": {
+    "database": "healthy",
+    "redis": "healthy",
+    "openai": "healthy",
+    "anthropic": "healthy",
+    "gemini": "healthy"
+  },
+  "uptime_seconds": 86400
 }
 ```
 
@@ -191,6 +218,20 @@ Refresh an expired access token.
 ```json
 {
   "refresh_token": "jwt"
+}
+```
+
+### `POST /auth/security/validate`
+Validate token security and check for anomalies.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response (200):**
+```json
+{
+  "status": "OK",
+  "valid": true,
+  "anomalies": []
 }
 ```
 
@@ -344,6 +385,25 @@ Soft-delete a conversation.
 }
 ```
 
+### `POST /chat/branch`
+Branch a conversation from a specific message.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "conversation_id": 1,
+  "message_id": 42,
+  "title": "Branch title"
+}
+```
+
+### `GET /chat/agents`
+List available agents.
+
+**Headers:** `Authorization: Bearer <token>`
+
 ---
 
 ## Memory
@@ -428,6 +488,11 @@ Get formatted memory context for injection into prompts.
 
 ### `POST /memory/auto-extract`
 LLM-powered memory extraction from conversation.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### `DELETE /memory/{id}`
+Delete a memory entry.
 
 **Headers:** `Authorization: Bearer <token>`
 
@@ -587,6 +652,26 @@ Execute an agent task.
 }
 ```
 
+### `POST /api/v1/agents/tools/register`
+Register a new tool.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "name": "web_search",
+  "description": "Search the web",
+  "parameters": [...],
+  "func": "search_web"
+}
+```
+
+### `GET /api/v1/agents/executions`
+List agent execution history.
+
+**Headers:** `Authorization: Bearer <token>`
+
 ---
 
 ## Workspace
@@ -636,6 +721,16 @@ List team members.
 
 ### `POST /api/v1/enterprise/billing/subscribe`
 Create a subscription.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### `GET /api/v1/enterprise/audit/logs`
+Get audit logs.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### `POST /api/v1/enterprise/compliance/export`
+GDPR data export.
 
 **Headers:** `Authorization: Bearer <token>`
 
@@ -765,6 +860,209 @@ Application metrics.
 
 ### `GET /api/v1/observability/alerts`
 Active alerts.
+
+---
+
+## Safety
+
+### `POST /api/v1/safety/moderate`
+Moderate content for safety violations.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "content": "User-generated content to moderate"
+}
+```
+
+**Response (200):**
+```json
+{
+  "flagged": false,
+  "categories": {
+    "toxicity": 0.01,
+    "harassment": 0.00,
+    "violence": 0.00
+  }
+}
+```
+
+### `POST /api/v1/safety/pii/detect`
+Detect PII in content.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "content": "My SSN is 123-45-6789"
+}
+```
+
+### `POST /api/v1/safety/redact`
+Redact sensitive information.
+
+**Headers:** `Authorization: Bearer <token>`
+
+---
+
+## Training
+
+### `POST /api/v1/training/fine-tune`
+Initiate a fine-tuning job.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "model": "llama-2-7b",
+  "dataset_id": "dataset-123",
+  "hyperparameters": {
+    "epochs": 3,
+    "batch_size": 8,
+    "learning_rate": 2e-4
+  }
+}
+```
+
+### `GET /api/v1/training/jobs`
+List training jobs.
+
+**Headers:** `Authorization: Bearer <token>`
+
+### `GET /api/v1/training/jobs/{id}`
+Get training job status.
+
+**Headers:** `Authorization: Bearer <token>`
+
+---
+
+## Audio
+
+### `POST /api/v1/audio/transcribe`
+Transcribe audio to text.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "audio_url": "https://example.com/audio.mp3",
+  "language": "en"
+}
+```
+
+### `POST /api/v1/audio/speak`
+Text-to-speech synthesis.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "text": "Hello, how can I help you?",
+  "voice": "alloy"
+}
+```
+
+---
+
+## Neural BCI
+
+### `POST /api/v1/neural/bci/input`
+Process brain-computer interface input.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "eeg_data": [...],
+  "device_type": "muse"
+}
+```
+
+---
+
+## Quantum
+
+### `POST /api/v1/quantum/simulate`
+Run quantum simulation.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "circuit": {
+    "gates": [
+      {"type": "H", "qubits": [0]},
+      {"type": "CNOT", "control": 0, "target": 1}
+    ]
+  },
+  "shots": 1024
+}
+```
+
+---
+
+## Multiverse
+
+### `POST /api/v1/multiverse/branch`
+Create a conversation branch in a parallel timeline.
+
+**Headers:** `Authorization: Bearer <token>`
+
+---
+
+## AGI
+
+### `POST /api/v1/agi/reason`
+Execute AGI reasoning task.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "task": "Solve this complex multi-step problem",
+  "context": {}
+}
+```
+
+---
+
+## Realtime
+
+### `WSS /api/v1/realtime`
+WebSocket endpoint for real-time updates.
+
+**Message Types:**
+- `message.created` — New message in conversation
+- `agent.status` — Agent execution status
+- `typing` — User typing indicator
+- `notification` — System notifications
+
+---
+
+## Search
+
+### `POST /api/v1/search/semantic`
+Semantic search across conversations and knowledge base.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Request:**
+```json
+{
+  "query": "How do I deploy to production?",
+  "limit": 10,
+  "collections": ["conversations", "documents"]
+}
+```
 
 ---
 

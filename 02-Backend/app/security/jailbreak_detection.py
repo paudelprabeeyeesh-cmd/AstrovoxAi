@@ -15,18 +15,15 @@ Threat model: MITRE ATLAS - LLM Jailbreak (T1588.005)
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import math
 import re
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
-from .multi_layer_injection_defense import InjectionFinding, DefenseLayer, analyze_input
+from .multi_layer_injection_defense import analyze_input
 
 logger = logging.getLogger(__name__)
 

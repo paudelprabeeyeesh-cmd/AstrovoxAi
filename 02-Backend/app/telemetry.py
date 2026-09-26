@@ -1,6 +1,5 @@
 """Telemetry and event tracking for AstrovoxAi backend."""
 
-import os
 import json
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any

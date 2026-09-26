@@ -12,19 +12,13 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-import weakref
-from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import (
-    Any,
-    Awaitable,
     Callable,
-    Dict,
     List,
     Optional,
     Set,
     Tuple,
-    Union,
 )
 
 from .types import (

@@ -2,10 +2,8 @@
 
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import hashlib
-import secrets
-import user_agents
 
 
 @dataclass

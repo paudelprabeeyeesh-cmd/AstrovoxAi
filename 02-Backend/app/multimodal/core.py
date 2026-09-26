@@ -7,21 +7,16 @@ multimodal retrieval service.
 
 from __future__ import annotations
 
-import base64
 import hashlib
-import io
 import math
 import os
-import struct
-import time
 import uuid
-import wave
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 from ..logging_config import get_logger
 

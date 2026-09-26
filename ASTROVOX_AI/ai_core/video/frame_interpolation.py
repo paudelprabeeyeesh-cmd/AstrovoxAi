@@ -9,12 +9,9 @@ Implements real interpolation algorithms:
 
 from __future__ import annotations
 
-import base64
-import io
 import logging
-import os
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 import numpy as np
 

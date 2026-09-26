@@ -12,7 +12,7 @@ Provides the foundation for all Expert AI Systems with:
 - Safety policies
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, List, Any, Optional
 from enum import Enum
 from datetime import datetime
 from dataclasses import dataclass, field

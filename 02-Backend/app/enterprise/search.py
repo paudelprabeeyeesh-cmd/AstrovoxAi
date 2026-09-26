@@ -1,6 +1,5 @@
 """Enterprise Search — global search across all resources."""
 
-from typing import Optional
 from dataclasses import dataclass, field
 
 from .service import org_service

@@ -1,4 +1,3 @@
-from typing import Optional
 from .base_adapter import BaseCloudAdapter, DeploymentConfig, CloudProvider
 from .aws_adapter import AWSAdapter
 from .azure_adapter import AzureAdapter

@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..audio import AudioFeatureExtractor, AudioAugmentor, AudioUtils
+from ..audio import AudioFeatureExtractor, AudioUtils
 
 logger = logging.getLogger(__name__)
 

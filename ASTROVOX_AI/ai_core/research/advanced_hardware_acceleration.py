@@ -77,7 +77,6 @@ class FPGAAcceleration:
         if not self.available or self.overlay is None:
             return input_data
         try:
-            import numpy as np
             output = self.overlay.post_process(input_data.cpu().numpy())
             return torch.tensor(output)
         except Exception:

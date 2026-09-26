@@ -104,7 +104,7 @@ class ResponseGenerator:
         try:
             json.loads(content.strip())
             return True
-        except:
+        except Exception:
             return False
     
     def _detect_code(self, content: str) -> bool:

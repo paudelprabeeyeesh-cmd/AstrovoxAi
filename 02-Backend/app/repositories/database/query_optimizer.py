@@ -1,10 +1,7 @@
 """Database engineering — connection pooling, query optimization, migrations."""
 
-import time
 import logging
-from typing import Optional
 from dataclasses import dataclass
-from contextlib import asynccontextmanager
 
 logger = logging.getLogger(__name__)
 

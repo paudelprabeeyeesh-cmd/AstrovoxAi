@@ -1,9 +1,9 @@
 """Safety API routes."""
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter
 
 from app.safety.injection_defense import prompt_injection_defense
-from app.safety.jailbreak import jailbreak_detector, jailbreak_mitigator
+from app.safety.jailbreak import jailbreak_mitigator
 from app.safety.pii_guard import pii_guard
 from app.safety.moderation_pipeline import moderation_pipeline
 from app.safety.red_team import red_team_runner, red_team_playbook

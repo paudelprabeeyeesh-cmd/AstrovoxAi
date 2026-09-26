@@ -4,7 +4,6 @@ Currently supports Google Gemini Embedding API with batch processing,
 retry handling, and timeout support.
 """
 
-import os
 import asyncio
 import logging
 from typing import Optional

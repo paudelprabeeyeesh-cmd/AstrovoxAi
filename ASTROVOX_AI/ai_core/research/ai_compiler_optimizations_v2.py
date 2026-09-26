@@ -6,10 +6,9 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Dict, Any, List
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +24,7 @@ class AICompilerOptimizer:
         for name, module in list(self.model.named_modules()):
             if isinstance(module, (nn.Linear, nn.LayerNorm)):
                 if hasattr(module, 'bias') and module.bias is not None:
+                    pass
                 if module.in_features == 1:
                     logger.info("constant folding candidate: %s", name)
         return self.model

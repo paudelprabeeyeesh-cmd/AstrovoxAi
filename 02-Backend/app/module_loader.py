@@ -2,8 +2,6 @@
 
 import importlib
 import sys
-import pkg_resources
-from pathlib import Path
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 

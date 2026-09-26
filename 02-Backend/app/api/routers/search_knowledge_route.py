@@ -9,7 +9,6 @@ from app.search_knowledge import (
     SearchResult,
     Chunk,
     Document,
-    QueryAnalysis,
 )
 
 router = APIRouter(prefix="/search-knowledge", tags=["search-knowledge"])

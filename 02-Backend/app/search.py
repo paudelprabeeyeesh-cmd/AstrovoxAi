@@ -1,9 +1,7 @@
-import uuid
 import re
 import math
 import json
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 from app.repositories.database.client import get_db
 from app.search_knowledge import BM25Index

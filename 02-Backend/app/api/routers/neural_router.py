@@ -2,7 +2,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
-import random
 
 from ..neural import (
     NeuralSignal,

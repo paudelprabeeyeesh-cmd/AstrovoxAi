@@ -5,10 +5,7 @@ Self-contained so it can be vendored or distributed via PyPI.
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
-import time
 import urllib.error
 import urllib.parse
 import urllib.request

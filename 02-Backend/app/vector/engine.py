@@ -5,7 +5,7 @@ metadata filtering, ranking, pagination, similarity thresholds.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional
 import time
 import math
 

@@ -1,8 +1,8 @@
 """Constitutional AI critique and revision loop."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from dataclasses import dataclass
+from typing import Callable
 
 logger = logging.getLogger(__name__)
 

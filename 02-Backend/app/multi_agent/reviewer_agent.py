@@ -1,10 +1,8 @@
 """Reviewer agent — code review and quality assessment."""
 
 import logging
-from typing import Any, Optional
 
 from app.multi_agent import Agent, AgentConfig, AgentRole
-from app.api.custom_tools import tool_registry
 
 logger = logging.getLogger(__name__)
 

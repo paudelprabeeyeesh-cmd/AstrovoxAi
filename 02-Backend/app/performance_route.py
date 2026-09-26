@@ -3,17 +3,11 @@
 from __future__ import annotations
 
 import logging
-import time
-import asyncio
-import gc
-import tracemalloc
 from typing import Any, Dict, List, Optional
-from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 
-from app.response_cache_middleware import ResponseCacheMiddleware, cache_invalidation_hooks
 from app.query_plan_analyzer import query_plan_analyzer
 from app.db_index_recommender import db_index_recommender
 from app.stream_buffering import StreamBuffer
@@ -23,15 +17,15 @@ from app.queue_depth_monitor import queue_depth_monitor
 from app.cpu_profiler import cpu_profiler
 from app.connection_reuse_checker import connection_reuse_checker
 from app.memory_leak_detection import memory_leak_detector
-from app.batch_processor import BatchProcessor, BatchResult
-from app.lazy_loader import get_lazy_module, get_lazy_module_async, get_lazy_module_stats, invalidate_lazy_module, invalidate_all_lazy_modules, register_lazy_module
-from app.middleware.security.rate_limit_hardened import get_rate_limiter, RateLimitConfig, DEFAULT_LIMITS
+from app.batch_processor import BatchProcessor
+from app.lazy_loader import get_lazy_module, get_lazy_module_stats, invalidate_lazy_module, invalidate_all_lazy_modules, register_lazy_module
+from app.middleware.security.rate_limit_hardened import get_rate_limiter, DEFAULT_LIMITS
 from app.circuit_breaker import circuit_breaker_manager, CircuitBreaker
 from app.retry_backoff import RetryWithBackoff, RetryConfig
-from app.retry_budget import retry_budget_manager, RetryBudget
+from app.retry_budget import retry_budget_manager
 from app.cost_management import cost_tracker
 from app.cost_estimator import cost_estimator
-from app.cost_analysis import cost_analysis_engine, COST_ANALYSIS_TEMPLATES, CostTemplate, CostPeriod
+from app.cost_analysis import cost_analysis_engine
 from app.horizontal_scaling import (
     get_gunicorn_config,
     get_scaling_patterns,
@@ -57,9 +51,6 @@ class CacheInvalidateRequest(BaseModel):
 async def invalidate_cache(request: CacheInvalidateRequest):
     """Invalidate cached responses by path prefix."""
     try:
-        from fastapi import Request
-        from starlette.middleware.base import BaseHTTPMiddleware
-        from app.performance import Cache
         from app.response_cache_middleware import ResponseCacheMiddleware
         middleware = ResponseCacheMiddleware(None)
         middleware.invalidate(request.path)

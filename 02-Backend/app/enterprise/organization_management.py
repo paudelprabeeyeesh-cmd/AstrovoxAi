@@ -3,7 +3,7 @@
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Optional
 
 from app.repositories.database.client import get_db
 from app.enterprise.service import OrganizationService

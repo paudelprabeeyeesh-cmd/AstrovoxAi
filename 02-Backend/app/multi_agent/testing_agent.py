@@ -2,7 +2,6 @@
 
 import logging
 import re
-from typing import Any, Optional
 
 from app.multi_agent import Agent, AgentConfig, AgentRole
 

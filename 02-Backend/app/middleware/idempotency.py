@@ -13,7 +13,7 @@ import logging
 import threading
 import time
 from collections import OrderedDict
-from typing import Optional, Tuple
+from typing import Optional
 
 from fastapi import Request
 from fastapi.responses import JSONResponse

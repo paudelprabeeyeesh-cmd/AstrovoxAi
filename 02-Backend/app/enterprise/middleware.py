@@ -1,7 +1,6 @@
 """Tenant isolation middleware."""
 
 import logging
-from typing import Optional
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 

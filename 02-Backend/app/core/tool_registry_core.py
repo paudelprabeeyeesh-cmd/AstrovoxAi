@@ -4,7 +4,6 @@ Tool Registry with permissions, sandboxing, and execution tracking.
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import time
 from dataclasses import dataclass, field

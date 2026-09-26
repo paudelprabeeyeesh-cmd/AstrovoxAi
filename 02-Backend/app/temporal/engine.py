@@ -10,13 +10,12 @@ Provides:
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 from app.logging_config import get_logger
 
@@ -63,7 +62,6 @@ class TemporalEngine:
 
     def __init__(self) -> None:
         from app.temporal import (
-            TimeTravelDebugger,
             TemporalDatabase,
             ImmutableStateTree,
             StatePredictor,
@@ -71,8 +69,6 @@ class TemporalEngine:
             TemporalAttention,
             HistoricalPatternRecognizer,
             TimeSeriesForecaster,
-            CausalChainAnalyzer,
-            ConversationTimeline,
             get_debugger,
         )
         self.debugger = get_debugger("engine")

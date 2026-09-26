@@ -16,8 +16,6 @@ Threat model: OWASP Top A07:2021 - Identification and Authentication Failures
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import threading
 import time

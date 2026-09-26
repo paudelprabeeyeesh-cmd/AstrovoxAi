@@ -1,8 +1,5 @@
 """Prometheus metrics for AstrovoxAI backend."""
 
-import time
-import os
-from functools import wraps
 
 # Prometheus availability flag
 PROMETHEUS_AVAILABLE = False

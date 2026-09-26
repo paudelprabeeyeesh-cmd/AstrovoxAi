@@ -1,6 +1,6 @@
 """Reviewer agent for code review and quality checks."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 

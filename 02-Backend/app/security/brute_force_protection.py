@@ -16,13 +16,11 @@ Threat model: OWASP Top A07:2021 - Identification and Authentication Failures
 
 from __future__ import annotations
 
-import hashlib
 import logging
 import random
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 

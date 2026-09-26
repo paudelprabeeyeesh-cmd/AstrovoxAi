@@ -1,8 +1,7 @@
 import numpy as np
-from typing import List, Dict, Optional, Union, Callable
+from typing import List, Dict, Optional, Union
 from dataclasses import dataclass, field
 from enum import Enum
-import json
 
 class GateType(Enum):
     H = "h"

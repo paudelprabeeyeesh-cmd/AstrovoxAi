@@ -2,10 +2,8 @@
 
 import logging
 import os
-import platform
 import threading
 import time
-from typing import Any, Dict, Optional
 
 logger = logging.getLogger("astrovox.resource_monitor")
 

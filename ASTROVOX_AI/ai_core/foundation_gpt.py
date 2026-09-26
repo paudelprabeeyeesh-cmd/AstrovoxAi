@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dataclasses import dataclass, field
-from typing import Optional, Dict, Any
+from dataclasses import dataclass
+from typing import Optional
 import logging
-import math
 import os
 
 from .transformers.transformer_from_scratch import TransformerFromScratch, TransformerConfig

@@ -9,16 +9,12 @@ Produces concise summaries of video content by:
 from __future__ import annotations
 
 import base64
-import hashlib
-import io
-import json
 import logging
 import os
-import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from ASTROVOX_AI.ai_core.video.scene_detection import SceneDetectionEngine, SceneChange
+from ASTROVOX_AI.ai_core.video.scene_detection import SceneDetectionEngine
 
 logger = logging.getLogger(__name__)
 

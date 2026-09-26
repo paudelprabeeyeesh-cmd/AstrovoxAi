@@ -1,9 +1,8 @@
 """Magic link authentication."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from datetime import datetime, timedelta, timezone
 import secrets
-import hashlib
 from dataclasses import dataclass
 
 

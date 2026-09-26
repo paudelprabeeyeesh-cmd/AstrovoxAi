@@ -1,6 +1,6 @@
 """Policy Engine with OPA integration."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 from dataclasses import dataclass
 from enum import Enum
 import json

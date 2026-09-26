@@ -18,12 +18,9 @@ Threat model: OWASP Top A02:2021 - Cryptographic Failures
 from __future__ import annotations
 
 import datetime
-import hashlib
 import logging
-import os
 import ssl
 import socket
-import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

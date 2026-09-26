@@ -6,8 +6,6 @@ or as part of a multi-agent workflow.
 
 import time
 import logging
-import asyncio
-from typing import Optional
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)

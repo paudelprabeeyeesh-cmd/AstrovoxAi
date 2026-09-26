@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set
 
 from .cfg import ControlFlowGraph, DominatorTree
 from .mir import MIRBlock, MIRFunction, MIRInstruction, MIROpcode, MIRValue

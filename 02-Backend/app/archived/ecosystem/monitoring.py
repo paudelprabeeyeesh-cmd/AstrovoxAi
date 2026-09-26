@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import os
 import re
 import threading
@@ -12,7 +11,7 @@ import uuid
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Set
+from typing import Any, Deque, Dict, List, Optional
 
 
 # ---------------------------------------------------------------------------
@@ -150,7 +149,6 @@ class AuditEntry:
 
 class AuditLog:
     def __init__(self, path: Optional[str] = None) -> None:
-        import json
         self.path = Path(
             path
             or os.getenv(

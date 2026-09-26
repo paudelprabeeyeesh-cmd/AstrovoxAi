@@ -3,7 +3,7 @@ import logging
 import uuid
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, HTTPException, status, Header, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Header, Request
 from pydantic import BaseModel, EmailStr
 from slowapi import Limiter
 from slowapi.util import get_remote_address

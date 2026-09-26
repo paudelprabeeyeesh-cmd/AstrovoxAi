@@ -1,7 +1,6 @@
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 import cv2
 import numpy as np
-from PIL import Image
 from ASTROVOX_AI.ai_core.multimodal.image_understanding import ImageUnderstanding
 
 

@@ -1,10 +1,8 @@
 """WebSocket gateway for real-time communication."""
 
-from typing import Dict, Any, Optional, List, Set
-from fastapi import WebSocket, WebSocketDisconnect
+from typing import Dict, Any, Optional, Set
+from fastapi import WebSocket
 from starlette.websockets import WebSocketState
-import json
-import asyncio
 import logging
 from datetime import datetime, timezone
 

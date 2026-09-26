@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List
 import torch
 import torch.cuda as cuda
 

@@ -2,7 +2,7 @@ import os
 import io
 import asyncio
 import openai
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator
 
 
 class VoiceService:

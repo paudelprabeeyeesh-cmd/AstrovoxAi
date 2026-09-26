@@ -1,8 +1,6 @@
 import logging
-from typing import Optional
 import torch
 import torch.nn as nn
-import math
 
 logger = logging.getLogger(__name__)
 

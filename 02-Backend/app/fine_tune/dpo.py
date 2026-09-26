@@ -5,9 +5,8 @@ DPO (Direct Preference Optimization) trainer.
 from __future__ import annotations
 
 import logging
-import math
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, Optional
 
 import torch
 import torch.nn.functional as F

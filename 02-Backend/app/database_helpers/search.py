@@ -6,8 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from sqlalchemy import Column, Index, text
-from sqlalchemy.sql import sqltypes
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 

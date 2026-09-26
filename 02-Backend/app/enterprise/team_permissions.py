@@ -1,7 +1,6 @@
 """Team permissions and RBAC."""
 
 import logging
-from typing import Any, Optional
 
 from app.repositories.database.client import get_db
 

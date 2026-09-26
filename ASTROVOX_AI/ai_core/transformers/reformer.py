@@ -3,7 +3,6 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 
 def _look_around(x: torch.Tensor, backward: int = 1, forward: int = 1) -> torch.Tensor:

@@ -1,7 +1,7 @@
 """Session store with Redis backing."""
 
 from typing import Dict, Optional, Any
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import json
 import redis
 

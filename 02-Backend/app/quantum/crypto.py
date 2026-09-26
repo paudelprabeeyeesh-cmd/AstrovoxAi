@@ -1,9 +1,7 @@
 import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import Tuple, Optional
 from dataclasses import dataclass
 import hashlib
-import secrets
-import struct
 from .circuit_simulator import QuantumCircuitSimulator
 @dataclass
 class QKDKeyPair:

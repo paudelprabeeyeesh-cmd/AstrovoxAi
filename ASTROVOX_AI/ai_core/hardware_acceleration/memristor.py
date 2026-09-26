@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Tuple
 import torch
-import torch.nn as nn
-import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +52,7 @@ class MemristorMemorySystem:
             return math.exp(-decay_rate * time_hours) * abs(self.memory[address].item())
         return self.retention_model(self.memory[address].item(), time_hours)
 
-    def simulate_ sneak_current(self, rows: int, cols: int) -> torch.Tensor:
+    def simulate_sneak_current(self, rows: int, cols: int) -> torch.Tensor:
         conductance = torch.rand(rows, cols) * self.conductance_levels
         sneak = torch.randn(rows, cols) * 0.01
         return conductance + sneak

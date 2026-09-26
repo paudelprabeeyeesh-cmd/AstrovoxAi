@@ -1,6 +1,6 @@
 """SSE streaming for server-sent events."""
 
-from typing import AsyncGenerator, Optional, Dict, Any
+from typing import AsyncGenerator, Dict, Any
 import asyncio
 import json
 from fastapi import Request

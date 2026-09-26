@@ -17,7 +17,6 @@ Provides:
 
 import time
 import logging
-import hashlib
 import re
 import difflib
 from typing import Optional

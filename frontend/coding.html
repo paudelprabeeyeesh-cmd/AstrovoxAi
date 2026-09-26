@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coding — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/agents.html" class="nav-link">Agents</a>
+        <a href="/tools.html" class="nav-link">Tools</a>
+        <a href="/coding.html" class="nav-link active">Coding</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">Coding Assistant</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Generate, review, and debug code with AI</p>
+          </div>
+        </div>
+
+        <div class="coding-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;height:calc(100vh - 200px);">
+          <div class="panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;display:flex;flex-direction:column;">
+            <div class="panel-header" style="padding:1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+              <h3 style="font-size:0.875rem;font-weight:600;">Prompt</h3>
+              <select id="code-language" style="padding:0.25rem 0.5rem;border-radius:0.375rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);font-size:0.75rem;">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+                <option value="rust">Rust</option>
+                <option value="go">Go</option>
+              </select>
+            </div>
+            <textarea id="code-prompt" style="flex:1;padding:1rem;background:transparent;color:var(--text-primary);border:none;resize:none;font-family:monospace;font-size:0.875rem;outline:none;" placeholder="Describe the code you want to generate..."></textarea>
+            <div style="padding:0.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;justify-content:flex-end;">
+              <button id="generate-code-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Generate</button>
+              <button id="explain-code-btn" class="btn btn-secondary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);cursor:pointer;font-weight:500;">Explain</button>
+              <button id="review-code-btn" class="btn btn-secondary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);cursor:pointer;font-weight:500;">Review</button>
+            </div>
+          </div>
+          <div class="panel" style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;display:flex;flex-direction:column;">
+            <div class="panel-header" style="padding:1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+              <h3 style="font-size:0.875rem;font-weight:600;">Output</h3>
+              <button id="copy-code-btn" class="btn btn-sm" style="padding:0.25rem 0.5rem;border-radius:0.375rem;background:var(--bg-tertiary);color:var(--text-primary);border:1px solid var(--border);cursor:pointer;font-size:0.75rem;">Copy</button>
+            </div>
+            <pre id="code-output" style="flex:1;padding:1rem;overflow:auto;font-family:monospace;font-size:0.875rem;color:var(--text-secondary);white-space:pre-wrap;">// Generated code will appear here...</pre>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/coding.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

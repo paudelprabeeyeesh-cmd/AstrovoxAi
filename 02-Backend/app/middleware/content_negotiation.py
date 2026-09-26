@@ -11,7 +11,6 @@ import logging
 
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 from app.utils.content_negotiation import negotiate_format
 

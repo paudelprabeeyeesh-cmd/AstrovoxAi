@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List, Tuple, Callable
+from typing import Dict, Any, List, Tuple
 import torch
 import torch.nn as nn
 import logging

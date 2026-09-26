@@ -10,7 +10,6 @@ from app.utils.auth.auth_utils import get_user_id_from_token
 from ...document_intelligence import (
     SUPPORTED_FORMATS,
     CitationGenerator,
-    DocumentIntelligence,
     DocumentParser,
     DuplicateDetector,
     IntelligentChunker,

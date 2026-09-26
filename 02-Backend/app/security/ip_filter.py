@@ -9,7 +9,7 @@ from __future__ import annotations
 import ipaddress
 import logging
 import threading
-from typing import List, Optional, Set, Tuple
+from typing import List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 

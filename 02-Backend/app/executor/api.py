@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,15 +9,15 @@ from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_current_user
 
-from .cluster import Worker, get_worker_registry, seed_default_workers
-from .compiler import Compiler, ExecutionGraph, Step, compile_program
+from .cluster import get_worker_registry, seed_default_workers
+from .compiler import compile_program
 from .dsl import parse
 from .learning import get_learning_engine
 from .memory_brain import MemoryType, get_memory_brain
 from .performance import get_cache, get_profiler
 from .reasoning import ReasoningStrategy, get_reasoning_engine
 from .reliability import FaultType, get_chaos_suite
-from .runtime import execute_plan, get_runtime
+from .runtime import execute_plan
 
 router = APIRouter(prefix="/executor", tags=["executor"])
 

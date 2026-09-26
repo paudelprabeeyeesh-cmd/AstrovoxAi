@@ -1,6 +1,6 @@
 """Priority-based context trimming."""
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

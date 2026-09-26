@@ -1,10 +1,9 @@
 """Provider factory — creates and manages AI provider instances."""
 
-import os
 from typing import Optional
 
-from .base import AIProvider, ProviderConfig
-from .models import get_provider_for_model, is_valid_model, list_models
+from .base import AIProvider
+from .models import get_provider_for_model
 
 
 class ProviderFactory:

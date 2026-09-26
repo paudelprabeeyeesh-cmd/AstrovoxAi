@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import BinaryIO, Dict, List, Optional
+from typing import BinaryIO, Optional
 
 import boto3
 from botocore.client import Config

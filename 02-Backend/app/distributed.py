@@ -9,12 +9,11 @@ global routing, edge routing, capacity planning, resource scheduling,
 infrastructure dashboards.
 """
 
-import json
 import time
 import logging
 import asyncio
 from typing import Optional, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from collections import defaultdict
 
 logger = logging.getLogger(__name__)

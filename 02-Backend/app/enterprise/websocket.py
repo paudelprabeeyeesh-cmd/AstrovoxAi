@@ -1,13 +1,10 @@
 """Real-time WebSocket service — presence, typing, notifications."""
 
-import asyncio
-import json
 import time
 import uuid
-from typing import Optional
 from dataclasses import dataclass, field
 
-from fastapi import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket
 
 
 @dataclass

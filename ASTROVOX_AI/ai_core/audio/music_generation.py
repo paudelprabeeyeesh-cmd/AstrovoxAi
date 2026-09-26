@@ -58,7 +58,6 @@ class MusicGenerator:
             import scipy.io.wavfile as wavfile
             from transformers import AutoProcessor, MusicgenForConditionalGeneration
             import torch
-            import librosa
             processor = AutoProcessor.from_pretrained(f"facebook/{self.model_name}")
             model_instance = MusicgenForConditionalGeneration.from_pretrained(f"facebook/{self.model_name}")
             model_instance.eval()

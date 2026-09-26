@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import re
 import threading
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass
 from typing import Deque, Dict, Optional, Set
 

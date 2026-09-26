@@ -1,6 +1,6 @@
 """SLO/SLI/SLA management with monitoring dashboards."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

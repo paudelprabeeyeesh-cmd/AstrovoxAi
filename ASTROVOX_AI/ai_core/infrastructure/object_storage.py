@@ -1,5 +1,4 @@
-from typing import Optional, Dict, Any, List, BinaryIO
-import os
+from typing import Optional, Dict, List
 
 
 class ObjectStorage:

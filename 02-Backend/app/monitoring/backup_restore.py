@@ -1,12 +1,10 @@
 """Backup and restore utilities."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-import os
 import shutil
-import json
 import gzip
 from pathlib import Path
 

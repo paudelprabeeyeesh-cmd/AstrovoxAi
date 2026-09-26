@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Developer Platform — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/developer-platform.html" class="nav-link active">Developer Platform</a>
+        <a href="/sdks.html" class="nav-link">SDKs</a>
+        <a href="/integrations.html" class="nav-link">Integrations</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="margin-bottom:1.5rem;">
+          <h1 style="font-size:1.75rem;font-weight:700;">Developer Platform</h1>
+          <p style="color:var(--text-secondary);font-size:0.875rem;">API keys, webhooks, logs, and playground</p>
+        </div>
+
+        <div class="tabs" style="display:flex;gap:0.5rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);">
+          <button class="tab active" data-tab="api-keys" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid var(--accent);color:var(--accent);font-weight:600;background:none;border-top:none;border-left:none;border-right:none;">API Keys</button>
+          <button class="tab" data-tab="webhooks" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-secondary);background:none;border-top:none;border-left:none;border-right:none;">Webhooks</button>
+          <button class="tab" data-tab="logs" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-secondary);background:none;border-top:none;border-left:none;border-right:none;">Logs</button>
+          <button class="tab" data-tab="playground" style="padding:0.5rem 1rem;cursor:pointer;border-bottom:2px solid transparent;color:var(--text-secondary);background:none;border-top:none;border-left:none;border-right:none;">Playground</button>
+        </div>
+
+        <div id="tab-api-keys" class="tab-panel">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+              <h2 style="font-size:1.125rem;font-weight:600;">API Keys</h2>
+              <button id="create-key-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Create Key</button>
+            </div>
+            <div id="api-keys-loading" style="display:flex;align-items:center;justify-content:center;padding:2rem;color:var(--text-secondary);">
+              <div class="spinner" style="width:1.5rem;height:1.5rem;border:2px solid var(--bg-tertiary);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
+              <span style="margin-left:0.75rem;">Loading keys...</span>
+            </div>
+            <table id="api-keys-table" class="data-table" style="display:none;width:100%;border-collapse:collapse;">
+              <thead><tr style="text-align:left;border-bottom:1px solid var(--border);"><th style="padding:0.75rem;">Name</th><th style="padding:0.75rem;">Key</th><th style="padding:0.75rem;">Created</th><th style="padding:0.75rem;">Expires</th><th style="padding:0.75rem;">Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="tab-webhooks" class="tab-panel" style="display:none;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">Webhooks</h2>
+            <div id="webhooks-list" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+          </div>
+        </div>
+
+        <div id="tab-logs" class="tab-panel" style="display:none;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">API Logs</h2>
+            <div id="logs-list" style="display:flex;flex-direction:column;gap:0.5rem;font-family:monospace;font-size:0.875rem;"></div>
+          </div>
+        </div>
+
+        <div id="tab-playground" class="tab-panel" style="display:none;">
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1.5rem;">
+            <h2 style="font-size:1.125rem;font-weight:600;margin-bottom:1rem;">API Playground</h2>
+            <div style="display:flex;flex-direction:column;gap:1rem;">
+              <div>
+                <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Endpoint</label>
+                <select id="playground-endpoint" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                  <option value="/solve">/solve</option>
+                  <option value="/agents">/agents</option>
+                  <option value="/models">/models</option>
+                </select>
+              </div>
+              <div>
+                <label style="display:block;font-size:0.875rem;color:var(--text-secondary);margin-bottom:0.25rem;">Request Body</label>
+                <textarea id="playground-body" rows="4" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);font-family:monospace;resize:vertical;">{"text": "Hello, world!"}</textarea>
+              </div>
+              <button id="playground-run" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;align-self:flex-start;">Send Request</button>
+              <pre id="playground-result" style="padding:0.75rem;background:var(--bg-primary);border-radius:0.5rem;font-family:monospace;font-size:0.875rem;color:var(--text-secondary);min-height:3rem;"></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/developer-platform.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

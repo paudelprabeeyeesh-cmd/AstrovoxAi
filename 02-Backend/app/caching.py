@@ -1,7 +1,6 @@
 """Multi-layer Caching + Circuit Breakers — production reliability patterns."""
 
 import time
-import asyncio
 from typing import Optional, Any
 
 from app.utils import CircuitState

@@ -1,9 +1,8 @@
 """Request routing with middleware support."""
 
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict, List, Optional, Callable
 from dataclasses import dataclass, field
 from enum import Enum
-from fastapi import Request, Response
 import re
 
 

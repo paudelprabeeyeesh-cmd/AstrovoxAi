@@ -1,11 +1,9 @@
 """Compression support for GZip and Brotli."""
 
-from typing import Optional, Dict, Any
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
 import gzip
 import brotli
-import io
 
 
 class CompressionMiddleware(BaseHTTPMiddleware):

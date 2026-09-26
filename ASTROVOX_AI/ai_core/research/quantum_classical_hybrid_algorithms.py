@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Dict, Any, List, Tuple, Callable
+from typing import Dict, Any, List, Tuple, Callable
 import numpy as np
 
 logger = logging.getLogger(__name__)

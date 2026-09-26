@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, List, Callable
+from typing import Dict, Any, Optional, List
 import time
 import threading
 import torch

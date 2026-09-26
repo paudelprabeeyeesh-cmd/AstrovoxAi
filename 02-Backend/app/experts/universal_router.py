@@ -15,7 +15,7 @@ from typing import Dict, List, Any, Optional
 from enum import Enum
 from dataclasses import dataclass
 
-from .expert_base import ExpertBase, ExpertProfile, ExpertCategory
+from .expert_base import ExpertBase
 
 
 class RoutingMode(Enum):

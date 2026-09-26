@@ -1,6 +1,5 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 import numpy as np
-import random
 
 
 class QuantumInspiredOptimizer:

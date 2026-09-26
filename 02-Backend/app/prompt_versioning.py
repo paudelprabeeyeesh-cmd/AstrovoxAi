@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -13,7 +12,7 @@ from typing import Any, Optional
 
 from app.repositories.database.client import get_db
 
-from .prompt_validation import PromptTemplateValidator, PromptValidationResult
+from .prompt_validation import PromptTemplateValidator
 
 logger = logging.getLogger(__name__)
 

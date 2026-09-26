@@ -1,6 +1,4 @@
-from typing import Optional, List, Dict, Any, Tuple
 import torch
-import numpy as np
 
 
 class MemoryCompressor:

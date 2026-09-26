@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Optional, Callable, Tuple
+from typing import Optional
 from dataclasses import dataclass
 from .circuit_simulator import QuantumCircuitSimulator
 

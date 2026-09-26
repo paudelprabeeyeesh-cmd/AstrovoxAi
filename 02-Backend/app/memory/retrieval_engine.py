@@ -13,10 +13,9 @@ Retrieval pipeline:
 The AI should retrieve only the most relevant memories to avoid unnecessary context.
 """
 
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 from enum import Enum
-import re
 
 
 class RetrievalMethod(Enum):

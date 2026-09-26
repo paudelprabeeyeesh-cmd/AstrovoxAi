@@ -1,10 +1,9 @@
 
-import uuid
 import csv
 import io
 import json
 from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional
+from typing import List
 from app.repositories.database.client import get_db
 
 

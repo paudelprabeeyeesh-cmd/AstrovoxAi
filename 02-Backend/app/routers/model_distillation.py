@@ -1,12 +1,10 @@
 import logging
 import uuid
-import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import require_verified_email, require_admin
+from ..auth import require_admin
 from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)

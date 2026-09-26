@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List, Callable
+from typing import Optional, Dict, Any, List
 import threading
 import queue
 from datetime import datetime

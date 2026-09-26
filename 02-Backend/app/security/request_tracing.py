@@ -5,7 +5,6 @@ import contextvars
 from typing import Optional, Dict, Any
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import Request
-import logging
 from datetime import datetime, timezone
 
 request_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("request_id", default=None)

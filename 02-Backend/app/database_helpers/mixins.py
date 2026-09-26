@@ -4,9 +4,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any
 
-from sqlalchemy import Column, DateTime, event
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 

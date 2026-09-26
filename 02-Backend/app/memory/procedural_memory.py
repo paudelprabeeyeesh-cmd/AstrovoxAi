@@ -13,7 +13,6 @@ Instead of repeating instructions, Astrovox can execute stored procedures.
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
 from enum import Enum
-import json
 
 
 class ProcedureStatus(Enum):

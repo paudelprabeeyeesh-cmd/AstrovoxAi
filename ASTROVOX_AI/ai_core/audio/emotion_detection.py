@@ -1,8 +1,7 @@
 import os
-import uuid
 import logging
 import tempfile
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -23,7 +22,6 @@ class EmotionDetector:
         if not os.path.exists(audio_path):
             raise FileNotFoundError(f"Audio file not found: {audio_path}")
         try:
-            import librosa
             import torch
             from transformers import AutoFeatureExtractor, AutoModelForAudioClassification
             feature_extractor = AutoFeatureExtractor.from_pretrained(self.model_name)

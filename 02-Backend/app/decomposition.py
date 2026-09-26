@@ -4,7 +4,6 @@ import uuid
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.config import settings
 from app.planning import PlanningEngine, SubTask
 
 logger = logging.getLogger(__name__)

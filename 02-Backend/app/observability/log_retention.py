@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 import os
-import time
 import shutil
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, Optional
 
 
 class RetentionAction(str, Enum):

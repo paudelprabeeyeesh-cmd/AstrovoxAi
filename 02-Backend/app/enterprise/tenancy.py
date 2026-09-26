@@ -1,7 +1,6 @@
 """Multi-tenant isolation, routing, and data residency."""
 
 import os
-import json
 import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field

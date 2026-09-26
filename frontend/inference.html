@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inference — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/inference.html" class="nav-link active">Inference</a>
+        <a href="/training.html" class="nav-link">Training</a>
+        <a href="/apps.html" class="nav-link">Apps</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">Inference</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Deploy, scale, and monitor model inference endpoints</p>
+          </div>
+          <button id="deploy-model-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Deploy Model</button>
+        </div>
+
+        <div id="inference-loading" style="display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--text-secondary);">
+          <div class="spinner" style="width:2rem;height:2rem;border:3px solid var(--bg-tertiary);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <span style="margin-left:0.75rem;">Loading inference endpoints...</span>
+        </div>
+        <div id="inference-error" style="display:none;padding:1rem;background:rgba(239,68,68,0.1);border:1px solid var(--error);border-radius:0.5rem;color:var(--error);margin-bottom:1rem;"></div>
+
+        <div id="endpoints-grid" style="display:none;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;"></div>
+
+        <div style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+          <h2 style="font-size:1.25rem;font-weight:600;margin-bottom:1rem;">Quick Test</h2>
+          <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1rem;">
+            <div style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+              <div style="flex:1;min-width:200px;">
+                <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Endpoint</label>
+                <select id="inference-endpoint-select" style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                  <option value="">Select an endpoint...</option>
+                </select>
+              </div>
+              <div style="flex:2;min-width:300px;">
+                <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Prompt</label>
+                <input id="inference-prompt" type="text" placeholder="Enter test prompt..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+              </div>
+              <button id="run-inference-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Run</button>
+            </div>
+            <pre id="inference-result" style="margin-top:1rem;padding:0.75rem;background:var(--bg-primary);border-radius:0.5rem;font-family:monospace;font-size:0.875rem;color:var(--text-secondary);min-height:3rem;"></pre>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/inference.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

@@ -2,13 +2,13 @@
 
 import time
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 from enum import Enum
 
-from .base import AIProvider, ChatMessage, ChatResponse, ProviderConfig
+from .base import AIProvider, ChatMessage, ChatResponse
 from .factory import ProviderFactory
-from .models import get_model_info, get_provider_for_model, is_valid_model
+from .models import get_model_info, get_provider_for_model
 from ..shared import MODEL_COSTS
 
 logger = logging.getLogger(__name__)

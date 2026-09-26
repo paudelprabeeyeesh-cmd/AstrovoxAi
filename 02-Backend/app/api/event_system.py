@@ -1,12 +1,11 @@
 """Event bus and pub/sub system."""
 
 import asyncio
-import json
 import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, Optional
 
 from app.repositories.database.client import get_db
 

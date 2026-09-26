@@ -1,8 +1,7 @@
 """Tool schema validation."""
 
-from typing import Dict, Any, Optional, List
-from pydantic import BaseModel, ValidationError, create_model
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
+from pydantic import ValidationError, create_model
 
 
 class SchemaValidator:

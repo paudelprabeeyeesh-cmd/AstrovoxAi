@@ -6,16 +6,13 @@ an optional set of facts retrieved from memory.
 
 from __future__ import annotations
 
-import math
 import re
-import time
-from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 from . import make_id, now
-from .memory_brain import MemoryBrain, MemoryItem, MemoryType, get_memory_brain
+from .memory_brain import MemoryBrain, MemoryItem, get_memory_brain
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)

@@ -5,7 +5,7 @@ Multi-vector retrieval with late interaction and ColBERT-style matching.
 from __future__ import annotations
 
 import logging
-from typing import Optional, List, Tuple
+from typing import Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

@@ -1,16 +1,15 @@
 """AI Agent system — autonomous multi-step reasoning and task execution."""
 
 import logging
-import re
 from typing import Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
 from app.utils import now
 
-from .providers.base import AIProvider, ChatMessage, ChatResponse
+from .providers.base import AIProvider, ChatMessage
 from .providers.factory import ProviderFactory
-from .providers.models import get_model_info, get_provider_for_model
+from .providers.models import get_model_info
 from app.services.memory.memory_manager import get_memory_manager as memory_manager
 from app.services.knowledge.knowledge_base import knowledge_base
 
@@ -153,7 +152,6 @@ class AIAgent:
 
     async def _tool_calculate(self, expression: str) -> str:
         import ast
-        import operator
         try:
             node = ast.parse(expression.strip(), mode='eval')
             allowed_ops = (

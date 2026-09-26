@@ -2,7 +2,7 @@ import os
 import logging
 import time
 
-from fastapi import APIRouter, HTTPException, status, Header, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Header, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address

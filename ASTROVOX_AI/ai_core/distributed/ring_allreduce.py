@@ -1,6 +1,5 @@
 from typing import Optional, List
 import torch
-import torch.nn as nn
 from ASTROVOX_AI.ai_core.distributed.nccl import NCCLBackend
 
 

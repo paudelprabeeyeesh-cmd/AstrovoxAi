@@ -21,9 +21,9 @@
 │  │  Frontend  │  │  Desktop   │  │  SDK / API Clients           │  │
 │  └─────┬──────┘  └─────┬──────┘  └──────────┬───────────────────┘  │
 └────────┼───────────────┼─────────────────────┼──────────────────────┘
-         │               │                     │
-         └───────────────┼─────────────────────┘
-                         │ HTTPS / WSS
+          │               │                     │
+          └───────────────┼─────────────────────┘
+                          │ HTTPS / WSS
 ┌────────────────────────┼───────────────────────────────────────────┐
 │                  API GATEWAY / INGRESS                              │
 │  ┌──────────────────────────────────────────────────────────────┐  │
@@ -33,7 +33,7 @@
 │  │  - Static asset serving                                      │  │
 │  └───────────────────────────┬──────────────────────────────────┘  │
 └──────────────────────────────┼──────────────────────────────────────┘
-                               │
+                                │
 ┌──────────────────────────────┼──────────────────────────────────────┐
 │                        FASTAPI BACKEND                              │
 │  ┌───────────────────────────┼──────────────────────────────────┐   │
@@ -57,7 +57,6 @@
 │  │  │   RAG        │  │   Billing    │  │   Admin          │   │  │
 │  │  │   Router     │  │   Router     │  │   Router         │   │  │
 │  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  │                                                               │  │
 │  │  Plus: Terminal, Embeddings, Audio, Neural, Quantum, ...      │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 │                               │                                     │
@@ -74,9 +73,9 @@
 │  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
 │  └───────────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
-                               │
-          ┌────────────────────┼────────────────────┐
-          │                    │                    │
+                                │
+           ┌────────────────────┼────────────────────┐
+           │                    │                    │
 ┌─────────┼─────────┐  ┌────────┼─────────┐  ┌──────┼──────────┐
 │ SUPABASE │         │  │  REDIS │         │  │  AI  │ PROVIDERS│
 │ PostgreSQL│         │  │ Cache  │         │  │      │          │
@@ -164,6 +163,9 @@
 8. **PayloadSizeLimitMiddleware** — 10MB payload limit
 9. **GracefulShutdownMiddleware** — Drain in-flight requests
 10. **ContentNegotiationMiddleware** — JSON/MessagePack negotiation
+11. **HTTPSRedirectMiddleware** — Force HTTPS in production
+12. **PIIRedactionMiddleware** — Redact sensitive data from logs
+13. **StructuredLoggingMiddleware** — JSON-formatted structured logs
 
 ### AI Provider Abstraction
 
@@ -296,6 +298,8 @@ Schema migrations are versioned in `database/migrations/`. The initial schema is
 - IP allowlisting/blocklisting support
 - Request payload size limits (10MB)
 - Request timeouts (30s)
+- HTTPS redirect in production
+- PII redaction from logs
 
 ### Rate Limiting
 - Per-IP: 120 requests/minute (configurable)
@@ -316,6 +320,7 @@ Schema migrations are versioned in `database/migrations/`. The initial schema is
 - JSON-formatted logs with correlation IDs
 - Request/response logging via middleware
 - Configurable log levels (DEBUG, INFO, WARNING, ERROR)
+- PII redaction from logs
 
 ### Metrics
 - Prometheus exposition format at `/metrics`
@@ -323,8 +328,8 @@ Schema migrations are versioned in `database/migrations/`. The initial schema is
 - Custom metrics for business events
 
 ### Health Checks
-- `/health/liveness` — Container health
-- `/health/readiness` — Dependency health (DB, Redis, providers)
+- `/health/live` — Container health
+- `/health/ready` — Dependency health (DB, Redis, providers)
 - `/healthz` — Simple OK response
 
 ### Dashboards
@@ -364,24 +369,24 @@ Schema migrations are versioned in `database/migrations/`. The initial schema is
 │                   Ingress NGINX                    │
 │                 (TLS termination)                  │
 └───────────────────────┬───────────────────────────┘
-                        │
-        ┌───────────────┼───────────────┐
-        │               │               │
-   ┌────┴────┐     ┌────┴────┐    ┌────┴────┐
-   │ Backend │     │ Backend │    │ Backend │
-   │  Pod 1  │     │  Pod 2  │    │  Pod N  │
-   └────┬────┘     └────┬────┘    └────┬────┘
-        │               │               │
-        └───────────────┼───────────────┘
-                        │
-              ┌─────────┴─────────┐
-              │    Redis Sentinel │
-              └─────────┬─────────┘
-                        │
-              ┌─────────┴─────────┐
-              │  PostgreSQL       │
-              │  (Primary + Replica)
-              └───────────────────┘
+                         │
+         ┌───────────────┼───────────────┐
+         │               │               │
+    ┌────┴────┐     ┌────┴────┐    ┌────┴────┐
+    │ Backend │     │ Backend │    │ Backend │
+    │  Pod 1  │     │  Pod 2  │    │  Pod N  │
+    └────┬────┘     └────┬────┘    └────┬────┘
+         │               │               │
+         └───────────────┼───────────────┘
+                         │
+               ┌─────────┴─────────┐
+               │    Redis Sentinel │
+               └─────────┬─────────┘
+                         │
+               ┌─────────┴─────────┐
+               │  PostgreSQL       │
+               │  (Primary + Replica)
+               └───────────────────┘
 ```
 
 Helm charts: `helm/`
@@ -411,6 +416,11 @@ Kubernetes manifests: `k8s/`
 | AGI Reasoning | `app/agi_reasoning/` | Advanced reasoning modules |
 | Analytics | `app/analytics/` | Usage analytics and reporting |
 | Observability | `app/observability/` | Monitoring endpoints |
+| Safety | `app/safety_routes.py` | Safety and moderation |
+| Training | `app/training/` | Fine-tuning and RLHF |
+| Audio | `app/routers/audio.py` | Speech-to-text and TTS |
+| Neural BCI | `app/routers/neural_bci.py` | Brain-computer interface |
+| Quantum | `app/quantum/` | Quantum computing simulation |
 
 ### Frontend Modules
 
@@ -446,3 +456,5 @@ Kubernetes manifests: `k8s/`
 - **Webhooks** — Configure event subscriptions
 - **Plugins** — Extend via plugin framework (`app/api/routers/plugin_framework.py`)
 - **SDK generation** — OpenAPI specs auto-generate clients
+- **Extensions** — IDE and browser extensions via extension SDK
+- **Middleware** — Custom middleware injection points

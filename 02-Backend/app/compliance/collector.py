@@ -1,8 +1,7 @@
 
-from typing import List, Dict, Optional
-from datetime import datetime, timezone, timedelta
+from typing import List, Dict
+from datetime import datetime
 from app.repositories.database.client import get_db
-from ..audit import get_audit_log
 
 
 class EvidenceCollector:

@@ -1,6 +1,5 @@
 """Attribute-Based Access Control (ABAC) engine."""
 
-import time
 import logging
 from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, field

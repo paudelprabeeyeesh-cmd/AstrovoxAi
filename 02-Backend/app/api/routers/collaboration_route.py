@@ -6,14 +6,11 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, Query, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.collaboration_platform import (
     ResourceType,
     CollaborationService,
-    SharedPrompt,
-    SharedAgent,
-    SharedDocument,
 )
 from app.utils.auth.auth_utils import get_user_id_from_token
 

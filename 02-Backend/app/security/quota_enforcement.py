@@ -1,6 +1,6 @@
 """Quota enforcement for API usage."""
 
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from enum import Enum

@@ -17,9 +17,9 @@ from __future__ import annotations
 import os
 import threading
 import time
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import Any, Callable, Deque, Dict, Optional, Tuple
+from collections import deque
+from dataclasses import dataclass
+from typing import Any, Deque, Dict, Optional, Tuple
 
 from app.middleware.security.security_hardening import AuditLog, get_audit_log
 from ...metrics import track_rate_limit
@@ -386,7 +386,7 @@ async def rate_limit_middleware(request: Request, call_next):
 # ---------------------------------------------------------------------------
 
 
-from fastapi import Depends, HTTPException, Request
+from fastapi import HTTPException, Request
 
 
 def rate_limit(policy: str, *, amount: int = 1):

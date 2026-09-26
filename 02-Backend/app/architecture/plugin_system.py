@@ -4,7 +4,7 @@ import json
 import importlib.util
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 import logging

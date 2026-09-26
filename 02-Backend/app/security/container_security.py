@@ -16,16 +16,12 @@ Threat model: NIST SP 800-190 - Application Container Security Guide
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
-import os
-import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

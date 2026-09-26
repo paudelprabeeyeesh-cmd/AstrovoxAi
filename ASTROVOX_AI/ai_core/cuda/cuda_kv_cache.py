@@ -1,6 +1,5 @@
-from typing import Optional, List
+from typing import List
 import torch
-import torch.nn as nn
 
 
 class KVCache:

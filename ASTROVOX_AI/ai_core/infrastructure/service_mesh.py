@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from ASTROVOX_AI.ai_core.distributed.distributed_tracing import DistributedTracer
 
 

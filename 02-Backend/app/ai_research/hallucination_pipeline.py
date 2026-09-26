@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Any
 
 from app.config import settings
 

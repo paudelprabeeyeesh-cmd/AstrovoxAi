@@ -16,12 +16,11 @@ import copy
 import csv
 import io
 import json
-import logging
 import threading
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 from app.logging_config import get_logger
 

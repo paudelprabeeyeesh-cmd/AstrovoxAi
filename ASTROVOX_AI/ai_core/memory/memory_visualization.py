@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import json
 from datetime import datetime
 import matplotlib.pyplot as plt

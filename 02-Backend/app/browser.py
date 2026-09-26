@@ -1,5 +1,3 @@
-import os
-import asyncio
 from typing import Optional
 from playwright.async_api import async_playwright, Browser, Page
 

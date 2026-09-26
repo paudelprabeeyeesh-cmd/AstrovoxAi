@@ -1,6 +1,6 @@
 """History summarization for long conversations."""
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 

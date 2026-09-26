@@ -1,8 +1,6 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from PIL import Image
 import torch
-import torch.nn as nn
-from ASTROVOX_AI.ai_core.cuda.cuda_inference_optimization import CUDAInferenceOptimizer
 
 
 class ImageUnderstanding:

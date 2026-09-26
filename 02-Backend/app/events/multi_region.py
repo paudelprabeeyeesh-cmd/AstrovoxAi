@@ -11,10 +11,9 @@ Implements:
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Set
+from typing import Dict, List
 
 from .event_store import EventEnvelope, EventStore
 

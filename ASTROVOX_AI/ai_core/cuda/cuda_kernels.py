@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,8 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 try:
-    import triton
-    import triton.language as tl
     TRITON_AVAILABLE = True
 except ImportError:
     TRITON_AVAILABLE = False

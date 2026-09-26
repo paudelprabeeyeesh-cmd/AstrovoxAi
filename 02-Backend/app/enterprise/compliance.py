@@ -8,7 +8,6 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 
 from .audit import audit_exporter
-from .tenancy import tenant_manager
 
 logger = logging.getLogger(__name__)
 

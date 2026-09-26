@@ -5,7 +5,6 @@ the API router and the layered memory domain can coexist without import shadowin
 """
 
 import os
-from typing import Optional
 
 from fastapi import APIRouter, Header, HTTPException, status
 from openai import OpenAI

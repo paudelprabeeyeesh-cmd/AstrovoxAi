@@ -1,7 +1,7 @@
 """Semantic versioning and package versioning."""
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Optional
 from enum import Enum
 import re
 

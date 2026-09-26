@@ -9,18 +9,15 @@ Provides endpoints for:
 - Agent configuration
 """
 
-import time
 import logging
-from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Header, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, HTTPException, Header
+from pydantic import BaseModel
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from ...multi_agent import agent_orchestrator, CollaborationManager
-from ...workflow_engine import workflow_engine, WorkflowStep, StepAction
+from ...multi_agent import agent_orchestrator
+from ...workflow_engine import workflow_engine, StepAction
 from ...tool_execution import tool_executor
-from ...dashboard import dashboard_service
 
 logger = logging.getLogger(__name__)
 

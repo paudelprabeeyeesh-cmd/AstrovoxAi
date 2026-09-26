@@ -1,10 +1,9 @@
 import numpy as np
-from typing import Dict, List, Callable, Any
+from typing import Dict, List
 from dataclasses import dataclass
 from .circuit_simulator import QuantumCircuitSimulator
 from .qml_algorithms import QuantumMachineLearning
 from .qaoa import QAOA
-from .qrandom import QuantumRandomNumberGenerator
 
 @dataclass
 class BenchmarkResult:
@@ -21,7 +20,6 @@ class QuantumBenchmark:
         self.results: List[BenchmarkResult] = []
 
     def benchmark_grover(self, target_state: int, num_qubits: int = 4) -> Dict:
-        import time
         sim = QuantumCircuitSimulator(num_qubits)
         for i in range(num_qubits):
             sim.h(i)

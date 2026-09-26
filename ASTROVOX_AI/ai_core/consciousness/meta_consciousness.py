@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
 
 from .higher_order_thought import HigherOrderThoughtModel
 

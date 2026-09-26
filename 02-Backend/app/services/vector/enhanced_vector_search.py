@@ -306,7 +306,7 @@ class EnhancedVectorSearch:
             boost = max(0, 1 - days_old / 90)
             return boost
         
-        except:
+        except Exception:
             return 0.0
     
     def source_ranking(

@@ -15,8 +15,7 @@ Connects all existing systems into a cohesive platform:
 
 import time
 import logging
-from typing import Optional, Any
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +56,6 @@ class UnifiedPlatform:
         """Get health of all subsystems."""
         from ...multi_agent import agent_orchestrator
         from ...workflow_engine import workflow_engine
-        from ...tool_execution import tool_executor
-        from services.memory.shared_memory import shared_memory
 
         agent_health = agent_orchestrator.get_health()
         wf_analytics = workflow_engine.get_analytics()

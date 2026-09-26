@@ -3,8 +3,6 @@
 import time
 import logging
 import json
-import secrets
-from typing import Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from collections import defaultdict

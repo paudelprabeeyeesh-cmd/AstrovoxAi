@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List, Callable
+from typing import Dict, List
 import numpy as np
 from abc import ABC, abstractmethod
 

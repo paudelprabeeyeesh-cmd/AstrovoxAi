@@ -8,7 +8,7 @@ import asyncio
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Optional, AsyncIterator, Any
+from typing import Optional, AsyncIterator
 
 
 @dataclass

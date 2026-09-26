@@ -7,8 +7,8 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, status, Header, UploadFile, File, Form, Query
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi import APIRouter, HTTPException, status, Header, UploadFile, File, Query
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from openai import OpenAI
 
@@ -18,13 +18,9 @@ from app.repositories.database.client import (
     update_user_profile,
     get_user_settings,
     update_user_settings,
-    get_conversations,
     get_conversation,
     update_conversation,
-    create_conversation,
     get_messages,
-    create_message,
-    delete_conversation,
     save_memory,
     get_user_memory,
 )

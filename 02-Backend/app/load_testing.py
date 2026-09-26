@@ -12,12 +12,11 @@ from __future__ import annotations
 
 import asyncio
 import math
-import random
 import statistics
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
+from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 from app.middleware.security.security_hardening import AuditLog, get_audit_log
 

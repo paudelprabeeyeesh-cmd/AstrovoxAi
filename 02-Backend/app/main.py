@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -45,19 +45,16 @@ from app.api.routers.temporal_route import router as temporal_router
 from app.performance_route import router as performance_router
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.middleware.security.rate_limit_hardened import rate_limit_middleware
-from app.middleware import GlobalExceptionMiddleware, InputValidationMiddleware
+from app.middleware import InputValidationMiddleware
 from app.middleware.request_logging import RequestLoggingMiddleware
 from app.middleware.https_redirect import HTTPSRedirectMiddleware
 from app.middleware.pii_redaction import PIIRedactionMiddleware
-from app.core.structured_logging import StructuredLoggingMiddleware
 from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
-from app.core.llm import LLMClient
 from app.context_builder import ContextBuilder
 from app.middleware.content_negotiation import ContentNegotiationMiddleware
-from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
 from app.api.routers.webhook_router import router as webhook_router

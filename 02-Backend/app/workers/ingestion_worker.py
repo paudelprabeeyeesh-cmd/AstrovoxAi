@@ -1,8 +1,6 @@
 
 import asyncio
 import logging
-import uuid
-from typing import Any
 
 from app.inference_queue import InferenceQueue
 from app.core.cache_enhanced import get_redis_client

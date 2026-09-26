@@ -1,11 +1,10 @@
 """Memory export and deletion utilities."""
 
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from datetime import datetime, timezone
 import json
 import io
 import csv
-from dataclasses import dataclass
 
 
 class MemoryExporter:

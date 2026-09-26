@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Dict, Any, List, Set, Callable
-import torch
-import torch.nn as nn
+from typing import Dict, Any, List, Set, Callable
 
 logger = logging.getLogger(__name__)
 

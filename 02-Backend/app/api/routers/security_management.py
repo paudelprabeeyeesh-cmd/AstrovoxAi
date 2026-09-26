@@ -3,17 +3,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter
 
 from app.security.audit_immutable import immutable_audit_store
 from app.security.brute_force_protection import brute_force_protection
-from app.security.ip_filter import ip_filter
-from app.security.user_agent_analytics import user_agent_analyzer
-from app.security.anomaly_alerts import auth_anomaly_detector
 from app.security.dependency_vulnerabilities import dependency_scanner
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 

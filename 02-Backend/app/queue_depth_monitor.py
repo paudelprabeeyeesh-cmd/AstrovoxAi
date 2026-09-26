@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 from collections import deque
-from typing import Any, Callable, Deque, Dict, List, Optional
+from typing import Any, Deque, Dict, List, Optional
 
 logger = logging.getLogger("astrovox.queue_depth")
 

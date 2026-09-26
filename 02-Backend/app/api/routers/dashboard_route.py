@@ -4,7 +4,6 @@ from fastapi import APIRouter, Header
 
 from app.dashboard import dashboard_service
 from app.multi_agent import agent_orchestrator
-from app.workflow_engine import workflow_engine
 from app.tool_execution import tool_executor
 from app.utils.auth.auth_utils import get_user_id_from_token
 

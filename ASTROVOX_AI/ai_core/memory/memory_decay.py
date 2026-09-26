@@ -1,6 +1,6 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 
 
 class MemoryDecay:

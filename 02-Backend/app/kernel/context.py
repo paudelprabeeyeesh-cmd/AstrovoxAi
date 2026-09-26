@@ -10,9 +10,8 @@ import time
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
-from .artifacts import Artifact, ArtifactType
 from .bus import get_event_bus
 
 

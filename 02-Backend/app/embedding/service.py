@@ -7,10 +7,7 @@ from .providers import (
     EmbeddingProvider,
     EmbeddingBatchResult,
     EmbeddingVector,
-    EmbeddingConfig,
     EmbeddingProviderFactory,
-    OpenAIEmbeddingProvider,
-    OllamaEmbeddingProvider,
 )
 from .cache import EmbeddingCache
 

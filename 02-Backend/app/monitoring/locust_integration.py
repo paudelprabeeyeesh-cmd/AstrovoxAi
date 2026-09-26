@@ -1,12 +1,10 @@
 """Locust integration for load testing."""
 
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass, field
+from typing import Dict, Optional
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 import subprocess
-import json
-import os
 
 
 class LoadTestType(Enum):

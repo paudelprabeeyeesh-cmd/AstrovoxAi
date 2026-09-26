@@ -2,7 +2,6 @@ from typing import Optional, Dict, Any, List
 import torch
 import torch.nn as nn
 import onnxruntime as ort
-from pathlib import Path
 
 
 class ONNXRuntimeLoader:

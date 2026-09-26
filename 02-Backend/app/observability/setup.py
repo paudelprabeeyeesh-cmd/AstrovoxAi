@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import datetime, timezone
 from app.observability import (
     get_observability,
@@ -19,12 +18,11 @@ from app.observability import (
     cost_tracker,
     error_budget_dashboard,
     oncall,
-    usage_analytics,
     IncidentTimelineVisualizer,
 )
 from app.observability.log_retention import RetentionRule, RetentionAction
 from app.observability.trace_sampling import SamplingStrategy
-from app.observability.oncall_escalation import RotationSchedule, OnCallPerson, EscalationLevel, EscalationAction
+from app.observability.oncall_escalation import RotationSchedule
 from app.observability.error_budget_dashboard import ErrorBudgetSnapshot
 from app.structured_logging import setup_logging
 

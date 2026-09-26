@@ -1,7 +1,6 @@
 """Configuration management with environment profiles."""
 
 import os
-from pathlib import Path
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from enum import Enum

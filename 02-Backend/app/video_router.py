@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Header, HTTPException, UploadFile, File, status
 from pydantic import BaseModel, Field

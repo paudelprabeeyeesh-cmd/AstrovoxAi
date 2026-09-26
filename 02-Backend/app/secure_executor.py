@@ -18,14 +18,12 @@ below provides defense-in-depth for development environments.
 
 from __future__ import annotations
 
-import json
 import os
 import subprocess
 import sys
 import tempfile
 import time
 import uuid
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -35,7 +33,6 @@ except ImportError:  # pragma: no cover - Windows fallback
     resource = None  # type: ignore[assignment]
 
 from app.middleware.security.security_hardening import (
-    CodeExecutionError,
     Principal,
     SAFE_BUILTINS,
     check_admin,

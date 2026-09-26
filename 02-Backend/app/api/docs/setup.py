@@ -3,7 +3,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse
-import os
 from pathlib import Path
 
 def setup_api_docs(app: FastAPI, docs_url: str = "/docs", openapi_url: str = "/openapi.json"):
@@ -50,7 +49,6 @@ def setup_api_docs(app: FastAPI, docs_url: str = "/docs", openapi_url: str = "/o
     @app.get(openapi_url)
     async def get_openapi_spec():
         """Serve the OpenAPI specification."""
-        import yaml
         from fastapi.responses import FileResponse
         
         openapi_path = docs_dir / "openapi.yaml"

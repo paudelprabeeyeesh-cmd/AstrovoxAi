@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import uuid
-import json
 import logging
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 
-from fastapi import APIRouter, HTTPException, status, Header, Query
+from fastapi import APIRouter, HTTPException, Header, Query
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token

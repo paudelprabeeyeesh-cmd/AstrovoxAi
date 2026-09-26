@@ -9,7 +9,6 @@ from typing import Optional, Dict, Any, List, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 logger = logging.getLogger(__name__)
 

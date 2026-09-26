@@ -1,14 +1,11 @@
 """REST API routes for the platform."""
 
 import logging
-from typing import Any
 
-from fastapi import APIRouter, HTTPException, Header, status
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from app.api.custom_tools import tool_registry
-from app.api.webhooks import webhook_manager
 from app.safety.input_moderation import input_moderator
 from app.safety.output_moderation import output_moderator
 

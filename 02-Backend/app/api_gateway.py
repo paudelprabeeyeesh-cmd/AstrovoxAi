@@ -1,6 +1,6 @@
 """API Gateway configuration and routing."""
 
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 

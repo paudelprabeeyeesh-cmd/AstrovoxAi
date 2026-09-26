@@ -1,7 +1,6 @@
 from typing import Optional
 import torch
 import torch.nn as nn
-import math
 
 
 class FlashAttention3CustomKernel(nn.Module):

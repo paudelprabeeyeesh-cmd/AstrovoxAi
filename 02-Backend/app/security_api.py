@@ -8,14 +8,12 @@ admin authentication.
 
 from __future__ import annotations
 
-import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
-from app.utils.auth.auth_utils import get_current_user
-from app.middleware.security.security_hardening import Principal, principal_from_jwt_claims
+from app.middleware.security.security_hardening import Principal
 from ..secure_executor import (
     SandboxConfig,
     execute_user_code,

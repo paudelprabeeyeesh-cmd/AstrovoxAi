@@ -1,6 +1,6 @@
 """Scoped API key management."""
 
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 import secrets

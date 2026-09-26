@@ -12,9 +12,8 @@ import logging
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -22,9 +21,7 @@ from app.collaboration_platform import (
     ResourceType,
     CollaborationService,
     LiveCollaboration,
-    LiveCollaborationRegistry,
 )
-from app.realtime import connection_manager
 
 logger = logging.getLogger(__name__)
 

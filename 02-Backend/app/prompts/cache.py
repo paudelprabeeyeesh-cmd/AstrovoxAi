@@ -1,6 +1,6 @@
 """Prompt caching for performance optimization."""
 
-from typing import Dict, Optional, Any, List
+from typing import Dict, Optional, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib

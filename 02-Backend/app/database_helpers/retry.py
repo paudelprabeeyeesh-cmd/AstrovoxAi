@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable, TypeVar
+from typing import Callable, TypeVar
 
 from sqlalchemy.exc import OperationalError, IntegrityError
 

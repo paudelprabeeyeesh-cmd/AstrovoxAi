@@ -15,7 +15,6 @@ All parsers are abstracted so they can be swapped with real libraries
 
 import csv
 import hashlib
-import io
 import logging
 import re
 import time

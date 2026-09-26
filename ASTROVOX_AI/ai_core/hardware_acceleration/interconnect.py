@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple
 import torch
 
 logger = logging.getLogger(__name__)

@@ -23,7 +23,6 @@ import logging
 import os
 import re
 import subprocess
-import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum

@@ -1,11 +1,9 @@
 """OpenID Connect (OIDC) provider."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 import secrets
-import hashlib
-import base64
 
 
 @dataclass

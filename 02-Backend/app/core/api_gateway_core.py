@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import defaultdict, deque
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from collections import deque
+from dataclasses import dataclass
+from typing import Callable, Dict, List
 
 logger = logging.getLogger(__name__)
 

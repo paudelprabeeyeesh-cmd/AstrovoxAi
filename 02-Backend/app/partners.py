@@ -3,7 +3,7 @@ import secrets
 import json
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 from dataclasses import dataclass, field
 from app.repositories.database.client import get_db
 

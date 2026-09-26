@@ -6,12 +6,11 @@ quality, and falls back to alternates when the primary model fails.
 
 from __future__ import annotations
 
-import asyncio
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 from .bus import get_event_bus
 

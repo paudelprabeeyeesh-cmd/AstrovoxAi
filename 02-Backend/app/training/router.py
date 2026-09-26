@@ -9,12 +9,11 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, UploadFile
 from pydantic import BaseModel
 
-from app.training.dataset_builder import DatasetBuilder, DatasetManifest
+from app.training.dataset_builder import DatasetBuilder
 from app.training.evaluation import EvaluationPipeline, EvalTask
-from app.training.merging import ModelMerger
 from app.training.tokenizer_trainer import TokenizerTrainer
 
 logger = logging.getLogger(__name__)

@@ -9,12 +9,11 @@ Provides utilities for:
 
 from __future__ import annotations
 
-import asyncio
 import time
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from .pipeline import E2EPipeline, PipelineRequest, get_e2e_pipeline
+from .pipeline import PipelineRequest, get_e2e_pipeline
 
 
 @dataclass

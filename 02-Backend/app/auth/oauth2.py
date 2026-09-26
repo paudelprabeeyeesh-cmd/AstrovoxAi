@@ -1,6 +1,6 @@
 """OAuth2 provider integrations."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
 

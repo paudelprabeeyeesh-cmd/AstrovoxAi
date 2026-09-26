@@ -1,14 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from azure.storage.blob import BlobServiceClient
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.containerservice import ContainerServiceClient
-from azure.mgmt.containerservice.models import (
-    ManagedCluster,
-    ManagedClusterAgentPoolProfile,
-    ContainerServiceLinuxProfile,
-    ContainerServiceNetworkProfile,
-)
 from ..base_adapter import BaseCloudAdapter, DeploymentConfig, StorageCredentials
 
 

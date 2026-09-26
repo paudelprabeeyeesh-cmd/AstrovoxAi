@@ -1,10 +1,9 @@
 """Enterprise Compliance — GDPR, data export, right-to-delete, retention, reporting."""
 
-import json
 import time
 import logging
 import secrets
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 

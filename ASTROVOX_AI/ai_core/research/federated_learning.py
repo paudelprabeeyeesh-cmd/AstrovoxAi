@@ -1,8 +1,7 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, List
 import torch
 import torch.nn as nn
 from ASTROVOX_AI.ai_core.distributed.nccl import NCCLBackend
-from ASTROVOX_AI.ai_core.distributed.parameter_server import ParameterServer
 
 
 class FederatedLearning:

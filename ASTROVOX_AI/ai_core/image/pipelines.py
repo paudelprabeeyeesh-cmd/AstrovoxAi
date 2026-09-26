@@ -1,8 +1,7 @@
 import os
 import io
-import base64
 import logging
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -274,7 +273,6 @@ class ImageAIPipelines:
 
     def remove_background(self, image_bytes: bytes) -> ImageResult:
         try:
-            from PIL import Image
             import cv2
             import numpy as np
             nparr = np.frombuffer(image_bytes, np.uint8)
@@ -298,7 +296,6 @@ class ImageAIPipelines:
         try:
             import cv2
             import numpy as np
-            from PIL import Image
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             if img is None:

@@ -15,9 +15,8 @@ from __future__ import annotations
 
 import ipaddress
 import logging
-import os
 import re
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)

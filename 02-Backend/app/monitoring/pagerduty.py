@@ -1,6 +1,6 @@
 """PagerDuty incident management integration."""
 
-from typing import Dict, Any, Optional
+from typing import Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import requests

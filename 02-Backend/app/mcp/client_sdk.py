@@ -1,10 +1,8 @@
 """MCP client SDK."""
 
-from typing import Dict, Any, Optional, List, AsyncGenerator
+from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 import aiohttp
-import json
 
 
 @dataclass

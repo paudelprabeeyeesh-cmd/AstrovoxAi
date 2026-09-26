@@ -1,7 +1,6 @@
-from typing import Optional, Dict, Any, List, Callable
+from typing import Dict, Any, List, Callable
 import torch
 import torch.nn as nn
-from ASTROVOX_AI.ai_core.distributed.distributed_scheduler import DistributedScheduler, DistributedTask
 
 
 class EvaluationSuite:

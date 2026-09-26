@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
 import torch
 import torch.nn as nn

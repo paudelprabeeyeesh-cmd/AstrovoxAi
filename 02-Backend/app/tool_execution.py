@@ -15,7 +15,6 @@ import time
 import logging
 import asyncio
 import functools
-import traceback
 from typing import Optional, Any, Callable
 from dataclasses import dataclass, field, asdict
 from enum import Enum
@@ -447,7 +446,6 @@ async def calculator(expression: str) -> str:
 def _eval_node(node, allowed_ops):
     """Safely evaluate an AST node."""
     import ast
-    import operator
 
     if isinstance(node, ast.Constant):
         return node.value

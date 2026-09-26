@@ -1,7 +1,7 @@
 """Token budget management for context windows."""
 
-from typing import Dict, Optional, List
-from dataclasses import dataclass, field
+from typing import Dict, Optional
+from dataclasses import dataclass
 from enum import Enum
 
 

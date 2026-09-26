@@ -1,7 +1,6 @@
 """Health check endpoints for the AstrovoxAi API."""
 
-from fastapi import APIRouter, Depends, HTTPException, Response
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, Response
 import asyncio
 
 from app.observability import get_observability, HealthStatus

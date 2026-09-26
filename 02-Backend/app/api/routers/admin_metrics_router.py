@@ -3,15 +3,13 @@
 from __future__ import annotations
 
 import logging
-import os
-import platform
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -135,13 +133,9 @@ async def aggregate_health():
 async def get_enterprise_metrics():
     try:
         from app.multi_tenancy import tenant_manager
-        from app.enterprise.service import org_service
         from app.repositories.database.client import get_db
         from app.support import support_ticket_service
         from app.partners import partner_service
-        from app.enterprise_audit import export_audit_logs
-        from app.billing_meter import billing_meter
-        from app.usage_quota import usage_quota_manager
 
         with get_db() as conn:
             total_users = conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]

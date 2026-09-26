@@ -13,10 +13,8 @@ Implements:
 from __future__ import annotations
 
 import asyncio
-import heapq
 import time
-import uuid
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, AsyncIterator, Awaitable, Callable, Deque, Dict, List, Optional, Tuple

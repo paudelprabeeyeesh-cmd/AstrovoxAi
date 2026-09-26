@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Header, Request
+from fastapi import APIRouter, HTTPException, status, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Optional

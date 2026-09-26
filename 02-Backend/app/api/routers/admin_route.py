@@ -1,12 +1,9 @@
 """Admin API routes — governance, billing, compliance, support, partners."""
 
-from fastapi import APIRouter, HTTPException, status, Depends, Header, Query
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
-from datetime import datetime, timezone
 
-from app.cost_management import cost_tracker
-from app.compliance import compliance_manager
 from app.enterprise_audit import export_audit_logs
 from ...retention import retention_engine
 from app.billing_meter import billing_meter

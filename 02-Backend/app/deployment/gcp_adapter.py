@@ -1,9 +1,8 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from google.cloud import storage
 from google.cloud import compute_v1
 from google.cloud import container_v1
 from google.cloud import dns
-from google.oauth2 import service_account
 from ..base_adapter import BaseCloudAdapter, DeploymentConfig, StorageCredentials
 
 

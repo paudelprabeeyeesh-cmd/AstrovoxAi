@@ -19,13 +19,12 @@ Manages the complete memory lifecycle including:
 """
 
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
 
 from .context_memory import ContextMemory, ContextType
 from .conversation_memory import ConversationMemory, MessageRole
 from .semantic_memory import SemanticMemory, FactCategory
 from .episodic_memory import EpisodicMemory, EventType
-from .procedural_memory import ProceduralMemory, ProcedureStatus
+from .procedural_memory import ProceduralMemory
 from .workspace_memory import WorkspaceMemory, WorkspaceType
 from .importance_scorer import ImportanceScorer
 from .retrieval_engine import RetrievalEngine, RetrievalMethod

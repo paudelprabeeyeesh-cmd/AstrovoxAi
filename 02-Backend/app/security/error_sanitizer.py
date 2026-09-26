@@ -1,9 +1,7 @@
 """Error sanitization to prevent information leakage."""
 
 import re
-import logging
-from typing import Optional, Any
-from dataclasses import dataclass
+from typing import Any
 
 
 SENSITIVE_PATTERNS = [

@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import math
 import re
-import time
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import make_id, now
-from app.services.memory.memory import VectorIndex, _cosine
+from app.services.memory.memory import VectorIndex
 
 
 class SearchModality(str, Enum):

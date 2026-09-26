@@ -2,7 +2,6 @@ import logging
 import uuid
 import json
 from datetime import datetime, timezone
-from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 

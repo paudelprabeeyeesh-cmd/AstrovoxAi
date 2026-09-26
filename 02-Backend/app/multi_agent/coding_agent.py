@@ -1,7 +1,6 @@
 """Coding agent — code generation, execution, linting."""
 
 import logging
-from typing import Any, Optional
 
 from app.multi_agent import Agent, AgentConfig, AgentRole
 from app.api.custom_tools import tool_registry

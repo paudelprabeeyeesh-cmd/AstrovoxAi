@@ -1,15 +1,12 @@
 """Secret management with rotation support."""
 
 import os
-import json
 import base64
 from typing import Dict, Optional, Any
-from pathlib import Path
 from datetime import datetime, timedelta
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
-import secrets
 
 
 class SecretManager:

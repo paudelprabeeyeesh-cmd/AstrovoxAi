@@ -4,8 +4,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 try:
-    import triton
-    import triton.language as tl
     TRITON_AVAILABLE = True
 except ImportError:
     TRITON_AVAILABLE = False

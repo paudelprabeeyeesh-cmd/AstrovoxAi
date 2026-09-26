@@ -2,7 +2,6 @@ import os
 import uuid
 import time
 from typing import Any
-from functools import lru_cache
 
 from ...services.knowledge.knowledge_graph_neo4j import KnowledgeGraphNeo4j, Entity, Relationship
 

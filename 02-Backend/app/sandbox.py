@@ -1,6 +1,5 @@
 import logging
 import os
-import shlex
 import subprocess
 import tempfile
 import time

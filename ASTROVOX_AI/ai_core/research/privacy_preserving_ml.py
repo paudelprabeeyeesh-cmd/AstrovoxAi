@@ -1,7 +1,6 @@
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict
 import torch
 import torch.nn as nn
-from ASTROVOX_AI.ai_core.distributed.federated_learning import FederatedLearning
 
 
 class PrivacyPreservingML:

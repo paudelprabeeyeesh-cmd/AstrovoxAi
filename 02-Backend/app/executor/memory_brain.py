@@ -13,12 +13,10 @@ Adds higher-level memory subsystems on top of the basic memory layer:
 from __future__ import annotations
 
 import math
-import time
-import uuid
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Deque, Dict, Iterable, List, Optional, Tuple
 
 from . import make_id, now
 from ..logging_config import get_logger

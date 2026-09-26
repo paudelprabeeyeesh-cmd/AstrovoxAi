@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from sqlalchemy import insert, text
+from sqlalchemy import insert
 from sqlalchemy.engine import Engine
 from sqlalchemy.sql import table as TableClause
 

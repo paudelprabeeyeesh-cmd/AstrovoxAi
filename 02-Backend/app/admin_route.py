@@ -3,9 +3,8 @@
 Security: All endpoints require admin role verification via Principal.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
 
 from .cost_management import cost_tracker
 from .compliance import compliance_manager

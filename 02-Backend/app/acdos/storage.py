@@ -6,17 +6,13 @@ deduplication, consistency verification.
 from __future__ import annotations
 
 import hashlib
-import json
-import os
 import threading
-import time
-import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, BinaryIO, Callable, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
-from . import make_id, now, now_iso
+from . import make_id, now
 from ..logging_config import get_logger
 
 logger = get_logger(__name__)

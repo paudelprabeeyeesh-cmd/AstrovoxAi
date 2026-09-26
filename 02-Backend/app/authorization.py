@@ -1,7 +1,6 @@
 """Authorization — Role-Based Access Control (RBAC) and permissions."""
 
 import logging
-import functools
 from typing import Optional
 from dataclasses import dataclass
 from enum import Enum

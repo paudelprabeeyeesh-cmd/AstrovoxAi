@@ -6,8 +6,6 @@ a unified memory interface with semantic search and expiration.
 
 import time
 import logging
-import hashlib
-import json
 from typing import Optional
 from dataclasses import dataclass, field
 from collections import defaultdict

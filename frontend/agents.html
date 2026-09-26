@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agents — AstrovoxAI</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components/platform.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <nav class="navbar">
+      <a href="/dashboard.html" class="navbar-brand">
+        <div class="logo">A</div>
+        <span>AstrovoxAI</span>
+      </a>
+      <div class="navbar-nav">
+        <a href="/chat.html" class="nav-link">Chat</a>
+        <a href="/dashboard.html" class="nav-link">Dashboard</a>
+        <a href="/agents.html" class="nav-link active">Agents</a>
+        <a href="/tools.html" class="nav-link">Tools</a>
+        <a href="/coding.html" class="nav-link">Coding</a>
+      </div>
+      <div class="nav-user">
+        <span id="user-display" class="nav-user-name">Guest</span>
+        <button id="logout-btn" class="nav-link" style="display:none;">Logout</button>
+      </div>
+    </nav>
+
+    <main class="page-content">
+      <div class="container">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+          <div>
+            <h1 style="font-size:1.75rem;font-weight:700;">AI Agents</h1>
+            <p style="color:var(--text-secondary);font-size:0.875rem;">Configure, deploy, and manage autonomous agents</p>
+          </div>
+          <button id="create-agent-btn" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Create Agent</button>
+        </div>
+
+        <div id="agents-loading" style="display:flex;align-items:center;justify-content:center;padding:3rem;color:var(--text-secondary);">
+          <div class="spinner" style="width:2rem;height:2rem;border:3px solid var(--bg-tertiary);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;"></div>
+          <span style="margin-left:0.75rem;">Loading agents...</span>
+        </div>
+        <div id="agents-error" style="display:none;padding:1rem;background:rgba(239,68,68,0.1);border:1px solid var(--error);border-radius:0.5rem;color:var(--error);margin-bottom:1rem;"></div>
+
+        <div id="agents-grid" style="display:none;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;"></div>
+      </div>
+    </main>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="js/auth.js"></script>
+    <script src="js/agents.js"></script>
+    <script src="js/app.js"></script>
+  </div>
+</body>
+</html>

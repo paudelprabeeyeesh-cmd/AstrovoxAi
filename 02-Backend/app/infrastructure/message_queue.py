@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import logging
 from typing import Any, Callable, Dict, Optional
-from dataclasses import dataclass, field
-from datetime import datetime
+from dataclasses import dataclass
 
-from app.infrastructure.queue import MessageQueue, Message
 
 logger = logging.getLogger(__name__)
 

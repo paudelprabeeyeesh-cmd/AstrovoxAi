@@ -1,8 +1,7 @@
 """gRPC internal service definitions."""
 
-from typing import Optional, AsyncIterator
+from typing import Optional
 from dataclasses import dataclass
-from datetime import datetime
 
 
 @dataclass

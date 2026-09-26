@@ -5,9 +5,8 @@ Model router with fallback, load balancing, and tier routing.
 from __future__ import annotations
 
 import logging
-import random
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

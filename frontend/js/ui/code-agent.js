@@ -349,6 +349,5 @@ const CodeAgentUI = {
   _setStatus(msg) {
     const el = this._container?.querySelector('.code-agent-status');
     if (el) el.textContent = msg;
-    console.log('[CodeAgent]', msg);
   },
 };

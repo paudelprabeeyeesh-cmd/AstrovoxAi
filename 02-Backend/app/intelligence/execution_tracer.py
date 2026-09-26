@@ -14,7 +14,6 @@ Provides explainability by tracking and exposing:
 from typing import Dict, List, Any, Optional
 from enum import Enum
 from datetime import datetime
-import json
 
 
 class TraceEventType(Enum):

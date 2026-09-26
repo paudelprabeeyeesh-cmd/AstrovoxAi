@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, status, Header
 from pydantic import BaseModel, Field
-from typing import Optional
 
 from app.agent import agent_manager
 from app.utils.auth.auth_utils import get_user_id_from_token

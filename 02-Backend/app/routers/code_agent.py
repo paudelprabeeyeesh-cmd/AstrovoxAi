@@ -1,12 +1,10 @@
 import logging
 import os
-from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email
 from ..coding.agent import CodingAgent
-from ..coding.project_graph import ProjectGraph
 
 logger = logging.getLogger(__name__)
 

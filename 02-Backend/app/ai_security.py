@@ -2,7 +2,6 @@
 
 import re
 import logging
-from typing import Optional
 from dataclasses import dataclass
 from enum import Enum
 

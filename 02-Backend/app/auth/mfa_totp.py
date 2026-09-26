@@ -1,9 +1,8 @@
 """MFA/TOTP authentication."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from datetime import datetime, timezone
 import pyotp
-import base64
 import secrets
 from dataclasses import dataclass
 

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional, List
 from dataclasses import dataclass
-from ..deployment.base_adapter import BaseCloudAdapter, DeploymentConfig, StorageCredentials
+from ..deployment.base_adapter import BaseCloudAdapter
 
 
 @dataclass

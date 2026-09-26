@@ -1,7 +1,7 @@
 """API versioning middleware and utilities."""
 
-from typing import Dict, Optional, Callable, Any
-from fastapi import Request, Response
+from typing import Dict, Optional, Callable
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from dataclasses import dataclass
 from enum import Enum

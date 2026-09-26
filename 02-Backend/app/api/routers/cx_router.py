@@ -8,16 +8,14 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from fastapi import APIRouter, HTTPException, status, Header, Query
+from fastapi import APIRouter, HTTPException, Header, Query
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from app.support import help_center_service
 
 try:
     from database.database import get_db
 except ImportError:
-    from app.support import support_ticket_service as _sts
     get_db = None
 
 logger = logging.getLogger(__name__)

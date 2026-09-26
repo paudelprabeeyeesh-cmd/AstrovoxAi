@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, List
 from datetime import datetime
 from ASTROVOX_AI.ai_core.memory.memory_decay import MemoryDecay
 from ASTROVOX_AI.ai_core.memory.memory_importance_scoring import MemoryImportanceScorer

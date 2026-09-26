@@ -6,12 +6,10 @@ from __future__ import annotations
 
 import logging
 import os
-import time
 from dataclasses import dataclass
 from typing import List, Optional
 
 import httpx
-import base64
 
 logger = logging.getLogger(__name__)
 

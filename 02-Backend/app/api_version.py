@@ -2,7 +2,6 @@
 
 import time
 import logging
-from typing import Optional
 from functools import wraps
 
 from fastapi import Request, HTTPException, status

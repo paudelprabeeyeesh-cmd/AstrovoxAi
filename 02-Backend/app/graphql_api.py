@@ -1,20 +1,18 @@
 """GraphQL API schema and resolvers."""
 
-from typing import Any, Optional, List
+from typing import Optional, List
 from datetime import datetime
 
 import strawberry
-from strawberry import type, field, mutation, query, input
+from strawberry import type, field, mutation, input
 from strawberry.asgi import GraphQL
 from fastapi import APIRouter
 
-from app.multi_agent import agent_orchestrator, AgentRole
+from app.multi_agent import agent_orchestrator
 from app.evaluation.benchmark_suite import benchmark_suite
-from app.evaluation.regression_testing import regression_suite
 from app.safety.jailbreak import jailbreak_detector
 from app.safety.input_moderation import input_moderator
 from app.enterprise.service import OrganizationService
-from app.enterprise.team_permissions import permission_manager
 
 router = APIRouter()
 

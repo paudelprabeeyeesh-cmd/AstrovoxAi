@@ -20,10 +20,9 @@ import secrets
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
-from .token_revocation import RevocationReason, TokenRevocationList, TokenFamily, token_revocation_list
+from .token_revocation import RevocationReason, TokenFamily, token_revocation_list
 
 logger = logging.getLogger(__name__)
 

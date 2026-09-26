@@ -1,9 +1,7 @@
 """Enterprise models — organizations, workspaces, memberships, roles, permissions."""
 
 from dataclasses import dataclass, field
-from typing import Optional
 import time
-import uuid
 
 
 # ============================================================================

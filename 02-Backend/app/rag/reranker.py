@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
 from typing import List, Tuple
 
 logger = logging.getLogger(__name__)

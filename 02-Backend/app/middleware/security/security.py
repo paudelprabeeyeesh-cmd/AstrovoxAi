@@ -4,7 +4,6 @@ import time
 import hashlib
 import hmac
 import logging
-import os
 import json
 from typing import Optional
 from dataclasses import dataclass, field

@@ -1,6 +1,4 @@
 import logging
-import uuid
-from datetime import datetime, timezone
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +14,6 @@ from app.futuristic_interfaces import (
     ConsciousnessReadoutEngine,
     DecodingPipeline,
     ElectrodeLocation,
-    BandPower,
 )
 from app.auth import require_verified_email
 

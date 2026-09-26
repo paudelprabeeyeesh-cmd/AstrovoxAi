@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
 import time
 from dataclasses import dataclass, field
-from typing import Dict, Optional, Set
+from typing import Optional, Set
 
-from .types import LogIndex, NodeId, NodeState, Term, VoteRequest, VoteResponse
-from .state_machine import RaftConfig, RaftNode
+from .types import NodeId, NodeState, Term, VoteRequest, VoteResponse
+from .state_machine import RaftNode
 
 logger = logging.getLogger(__name__)
 

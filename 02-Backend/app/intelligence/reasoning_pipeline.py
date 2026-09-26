@@ -12,10 +12,9 @@ A structured reasoning process that improves reliability through:
 - Generating responses
 """
 
-from typing import Dict, List, Any, Optional, Callable
+from typing import Dict, Any, Optional, Callable
 from enum import Enum
 from datetime import datetime
-import json
 
 
 class ReasoningStep(Enum):

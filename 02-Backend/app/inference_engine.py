@@ -4,10 +4,7 @@ This module implements the adapter that talks to the GPU for text generation.
 """
 
 import logging
-import asyncio
 from dataclasses import dataclass, field
-from typing import Optional
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +66,6 @@ class ContinuousBatch:
             return False
 
     def on_token_complete(self, request_id: str) -> str:
-        import uuid
         for req in self.active_requests:
             if req.get("id") == request_id:
                 self.active_requests.remove(req)
@@ -109,7 +105,6 @@ class InferenceAdapter:
         return tokens
 
     def batch_admit(self, requests: list, batch_id: str) -> dict:
-        import uuid
         batch = ContinuousBatch(batch_id=batch_id)
         for req in requests:
             batch.add_request(req)
@@ -121,7 +116,6 @@ class InferenceAdapter:
         }
 
     def simulate_continuous_batching(self, request_stream: list) -> dict:
-        import time
         batch_id = str(uuid.uuid4())
         batch = ContinuousBatch(batch_id=batch_id)
         admitted = 0

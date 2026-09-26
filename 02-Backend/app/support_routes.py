@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from realtime import Optional as RealtimeOptional
 
 from app.support_services import cx_service
 

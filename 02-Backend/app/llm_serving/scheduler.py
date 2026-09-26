@@ -6,9 +6,8 @@ import logging
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional
 
-from .queue_manager import Request, RequestPriority, QueueManager
+from .queue_manager import Request, QueueManager
 
 logger = logging.getLogger(__name__)
 

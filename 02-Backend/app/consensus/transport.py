@@ -8,26 +8,20 @@ implementation uses gRPC with Protobuf.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 from .types import (
     AppendEntriesRequest,
     AppendEntriesResponse,
     EvidenceRecord,
     GetLeaderRequest,
-    GetLeaderResponse,
     InstallSnapshotRequest,
-    InstallSnapshotResponse,
     MembershipChangeRequest,
-    MembershipChangeResponse,
     NodeId,
-    Term,
     TransferLeaderRequest,
-    TransferLeaderResponse,
     VoteRequest,
     VoteResponse,
 )

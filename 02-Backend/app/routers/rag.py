@@ -1,31 +1,27 @@
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 
 from ..rag_engine import RAGEngine
 from ..documents import (
-    create_document,
     delete_document_chunks,
-    create_document_chunk,
-    search_chunks,
     list_documents,
     get_document,
     delete_document,
 )
 from ...schemas import (
-    DocumentOut, DocumentChunkOut, RAGSearchResult,
+    DocumentOut, RAGSearchResult,
     RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
 )
 from ..auth import require_verified_email, get_current_user
-from app.rag.chunking import Chunk, ChunkingStrategies
+from app.rag.chunking import ChunkingStrategies
 from app.rag.embeddings import EmbeddingGenerator
-from app.rag.retrieval import HybridRetriever, MultiQueryRetriever
+from app.rag.retrieval import MultiQueryRetriever
 from app.rag.compression import ContextCompressor
 from app.rag.citation import CitationEngine
-from app.rag.metadata import MetadataExtractor
 
 logger = logging.getLogger(__name__)
 

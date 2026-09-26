@@ -162,16 +162,94 @@ class App {
         return;
       }
       this._showImageAI();
-    } else {
-      if (this.authState.isAuthenticated) {
-        window.location.href = '/dashboard.html';
     } else if (path === '/search.html') {
       if (!this.authState.isAuthenticated) {
         window.location.href = '/login.html';
         return;
       }
       this._showSearch();
+    } else if (path === '/agents.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAgents();
+    } else if (path === '/tools.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showTools();
+    } else if (path === '/coding.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showCoding();
+    } else if (path === '/inference.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showInference();
+    } else if (path === '/audio.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAudio();
+    } else if (path === '/security.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showSecurity();
+    } else if (path === '/apps.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showApps();
+    } else if (path === '/multi-agent.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showMultiAgent();
+    } else if (path === '/developer-platform.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showDeveloperPlatform();
+    } else if (path === '/extensions.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showExtensions();
+    } else if (path === '/integrations.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showIntegrations();
+    } else if (path === '/sdks.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showSdks();
+    } else if (path === '/memory.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showMemory();
     } else {
+      if (this.authState.isAuthenticated) {
+        window.location.href = '/dashboard.html';
+      } else {
         window.location.href = '/login.html';
       }
     }
@@ -350,7 +428,14 @@ class App {
         <nav class="navbar-nav">
           <a href="/chat.html" class="nav-link active">Chat</a>
           <a href="/dashboard.html" class="nav-link" data-reality-teleport>Dashboard</a>
+          <a href="/agents.html" class="nav-link">Agents</a>
+          <a href="/tools.html" class="nav-link">Tools</a>
+          <a href="/coding.html" class="nav-link">Coding</a>
+          <a href="/search.html" class="nav-link">Search</a>
+          <a href="/rag.html" class="nav-link">RAG</a>
           <a href="/image-ai.html" class="nav-link">Image AI</a>
+          <a href="/video.html" class="nav-link">Video</a>
+          <a href="/audio.html" class="nav-link">Audio</a>
           <div class="nav-user">
             <span style="font-size: 0.875rem; color: var(--text-secondary);">${user?.email || 'User'}</span>
             <button class="btn btn-sm btn-secondary" id="logout-btn">Logout</button>
@@ -428,6 +513,84 @@ class App {
     const app = document.getElementById('app');
     if (!app) return;
     const imgApp = new ImageAIApp();
+  }
+
+  _showAgents() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/agents.html';
+  }
+
+  _showTools() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/tools.html';
+  }
+
+  _showCoding() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/coding.html';
+  }
+
+  _showInference() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/inference.html';
+  }
+
+  _showAudio() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/audio.html';
+  }
+
+  _showSecurity() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/security.html';
+  }
+
+  _showApps() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/apps.html';
+  }
+
+  _showMultiAgent() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/multi-agent.html';
+  }
+
+  _showDeveloperPlatform() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/developer-platform.html';
+  }
+
+  _showExtensions() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/extensions.html';
+  }
+
+  _showIntegrations() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/integrations.html';
+  }
+
+  _showSdks() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/sdks.html';
+  }
+
+  _showMemory() {
+    const app = document.getElementById('app');
+    if (!app) return;
+    window.location.href = '/memory.html';
   }
 
   _initRealityNav() {

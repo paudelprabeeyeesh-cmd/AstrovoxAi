@@ -152,8 +152,6 @@ const Performance = {
       } : null,
       timestamp: Date.now(),
     };
-
-    console.log('[Performance]', report);
     return report;
   },
 

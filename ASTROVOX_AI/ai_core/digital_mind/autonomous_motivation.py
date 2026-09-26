@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
-from .desire_goal_generation import DesireAndGoalGeneration, Goal
+from .desire_goal_generation import DesireAndGoalGeneration
 
 
 @dataclass

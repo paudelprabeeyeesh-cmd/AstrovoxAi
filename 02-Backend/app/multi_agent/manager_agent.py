@@ -1,9 +1,8 @@
 """Manager agent — orchestration, delegation, and health monitoring."""
 
 import logging
-from typing import Any, Optional
 
-from app.multi_agent import Agent, AgentConfig, AgentRole, AgentState
+from app.multi_agent import Agent, AgentConfig, AgentRole
 from app.multi_agent.communication import agent_communicator
 from app.multi_agent.agent_memory import agent_memory
 

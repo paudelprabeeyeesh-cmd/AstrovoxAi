@@ -6,7 +6,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -148,7 +148,7 @@ async def get_branch(branch_id: str) -> Dict[str, Any]:
 @router.post("/causal/chains")
 async def create_causal_chain(request: CausalChainRequest) -> Dict[str, Any]:
     try:
-        from ..temporal.causal import CausalChainAnalyzer, CausalEvent, CausalEdge
+        from ..temporal.causal import CausalChainAnalyzer, CausalEvent
         analyzer = CausalChainAnalyzer()
         events = [CausalEvent(event_id=eid, event_type="", aggregate_id="", version=0, occurred_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc)) for eid in request.event_ids]
         analyzer.add_events(events)
@@ -174,7 +174,6 @@ async def temporal_stats() -> Dict[str, Any]:
     try:
         from ..temporal.snapshots import SnapshotEngine
         from ..temporal.causal import CausalChainAnalyzer
-        from ..temporal.diffing import StateDiffer
         return {
             "snapshots": SnapshotEngine().get_stats(),
             "causal": CausalChainAnalyzer().get_stats(),

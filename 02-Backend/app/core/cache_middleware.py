@@ -2,7 +2,6 @@ import hashlib
 import json
 import math
 import logging
-from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 

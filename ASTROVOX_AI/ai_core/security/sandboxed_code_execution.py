@@ -2,8 +2,6 @@ from typing import Optional, Dict, Any, List, Tuple
 import subprocess
 import tempfile
 import os
-import signal
-import sys
 
 try:
     import resource

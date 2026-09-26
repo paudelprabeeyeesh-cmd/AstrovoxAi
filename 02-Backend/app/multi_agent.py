@@ -16,12 +16,11 @@ import logging
 import secrets
 import asyncio
 import os
-from typing import Optional, Any
+from typing import Optional
 
 from app.utils import now
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
 

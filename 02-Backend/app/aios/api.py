@@ -4,23 +4,21 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app.utils.auth.auth_utils import get_current_user
 
 from .consensus import Node, get_consensus
-from .healing import HealthProbe, get_self_healing
+from .healing import get_self_healing
 from .memory import MemoryTier, get_memory_manager
-from .mesh import ServiceInstance, ServiceState, get_service_registry, seed_default_services
+from .mesh import ServiceInstance, get_service_registry, seed_default_services
 from .observability import SLO, get_aios_observability
 from .resources import ResourceUsage, get_resource_manager
-from .runtime import DelegationRequest, get_ai_runtime
+from .runtime import get_ai_runtime
 from .scheduler import Job, get_distributed_scheduler
 from .search import SearchDocument, SearchModality, get_universal_search
 from .security import (
     Policy,
-    PolicyAction,
     SecurityContext,
     get_security_layer,
 )
@@ -173,7 +171,6 @@ async def scheduler_status() -> Dict[str, Any]:
 
 @router.post("/scheduler/run")
 async def scheduler_run(deadline_s: float = 30.0) -> Dict[str, Any]:
-    import asyncio
     return await get_distributed_scheduler().run(deadline_s=deadline_s)
 
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import pickle
 from typing import Any, Dict, Optional

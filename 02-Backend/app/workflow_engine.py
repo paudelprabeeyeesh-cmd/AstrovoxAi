@@ -7,14 +7,12 @@ templates, approvals, notifications, and execution history.
 
 import logging
 import asyncio
-import json
 from typing import Optional, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
 from app.utils import BackoffStrategy, now
 from app.events import event_bus, Event
-from app.jobs import job_queue, JobPriority
 
 logger = logging.getLogger(__name__)
 
@@ -642,7 +640,6 @@ class WorkflowEngine:
 
     async def _execute_step(self, step: WorkflowStep, execution: WorkflowExecution):
         """Execute a single workflow step."""
-        import secrets
         step.status = "running"
         step.started_at = now()
         execution.logs.append(self._log(execution.id, step.id, "info", f"Step '{step.name}' started"))

@@ -1,10 +1,9 @@
 """Passkey / WebAuthn authentication."""
 
-from typing import Dict, Optional, Any
+from typing import Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import base64
-import hashlib
 import secrets
 
 

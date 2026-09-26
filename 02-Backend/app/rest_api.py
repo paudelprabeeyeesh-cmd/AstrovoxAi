@@ -1,7 +1,7 @@
 """REST API endpoints and utilities."""
 
-from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, HTTPException, status, Depends
+from typing import Any, Optional, List
+from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from datetime import datetime
 

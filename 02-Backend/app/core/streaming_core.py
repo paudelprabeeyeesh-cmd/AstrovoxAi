@@ -9,12 +9,11 @@ import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List
 
 import asyncio
 import json
 
-from fastapi import Request
 from sse_starlette import EventSourceResponse
 
 logger = logging.getLogger(__name__)

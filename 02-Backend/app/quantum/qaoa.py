@@ -1,6 +1,5 @@
 import numpy as np
-from typing import List, Dict, Callable, Optional
-from dataclasses import dataclass
+from typing import List, Dict, Optional
 from .circuit_simulator import QuantumCircuitSimulator
 
 class QAOA:

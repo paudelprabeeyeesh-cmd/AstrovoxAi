@@ -2,15 +2,12 @@ import logging
 import uuid
 import json
 from datetime import datetime, timezone
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import require_verified_email, require_admin
+from ..auth import require_verified_email
 from app.repositories.database.client import get_db
-from ...schemas import BatchJobCreate, BatchJobOut
-from ..core.tracing import start_trace
+from ...schemas import BatchJobCreate
 
 logger = logging.getLogger(__name__)
 

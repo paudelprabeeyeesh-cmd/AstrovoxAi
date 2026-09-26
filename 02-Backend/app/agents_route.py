@@ -1,10 +1,9 @@
 """Multi-Agent and Enhanced Memory API routes."""
 
-from fastapi import APIRouter, HTTPException, status, Header
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, Field
-from typing import Optional
 
-from .multi_agent import collaboration_manager, TaskStatus
+from .multi_agent import collaboration_manager
 from app.services.memory.memory_enhanced import memory_store
 from app.utils.auth.auth_utils import get_user_id_from_token
 

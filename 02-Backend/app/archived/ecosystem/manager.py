@@ -4,11 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
-import time
-import uuid
-import zipfile
 from collections import defaultdict
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
@@ -21,7 +17,6 @@ from .plugins import (
     PluginRecord,
     PluginRegistry,
     PluginState,
-    get_plugin_registry,
     meets_dependency,
     satisfies_range,
 )
