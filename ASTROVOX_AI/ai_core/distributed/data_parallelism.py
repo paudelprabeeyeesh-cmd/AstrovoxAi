@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import torch
@@ -24,11 +24,15 @@ class DataParallelConfig:
 
 
 class DataParallelism:
-    def __init__(self, model: nn.Module, config: DataParallelConfig, device_ids: Optional[List[int]] = None):
+    def __init__(self, model: nn.Module, config: DataParallelConfig,
+                 device_ids: Optional[List[int]] = None):
         self.config = config
         self.rank = config.rank
         self.world_size = config.world_size
-        self.device_ids = device_ids or ([0] if torch.cuda.device_count() == 0 else list(range(torch.cuda.device_count())))
+        self.device_ids = device_ids or (
+            [0] if torch.cuda.device_count() == 0
+            else list(range(torch.cuda.device_count()))
+        )
         if self.world_size > 1:
             self.model = nn.parallel.DistributedDataParallel(
                 model,
@@ -40,10 +44,12 @@ class DataParallelism:
         else:
             self.model = model
 
-    def train_step(self, batch: Dict[str, torch.Tensor], loss_fn: Any) -> float:
+    def train_step(self, batch: Dict[str, torch.Tensor],
+                   loss_fn: Any) -> float:
         self.model.train()
-        input_ids = batch["input_ids"].to(self.model.device if hasattr(self.model, "device") else next(self.model.parameters()).device)
-        labels = batch.get("labels", input_ids).to(input_ids.device)
+        device = next(self.model.parameters()).device
+        input_ids = batch["input_ids"].to(device)
+        labels = batch.get("labels", input_ids).to(device)
         logits = self.model(input_ids)
         loss = loss_fn(logits.view(-1, logits.size(-1)), labels.view(-1))
         self.model.zero_grad()

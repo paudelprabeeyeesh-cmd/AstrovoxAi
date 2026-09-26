@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn as nn
-import torch.distributed as dist
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +41,20 @@ class ExpertParallelism:
         for local_idx, global_idx in enumerate(range(start, end)):
             self.expert_routing_table[global_idx] = local_idx
 
-    def route_tokens(self, tokens: torch.Tensor, gate_logits: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        topk_scores, topk_indices = torch.topk(gate_logits, self.top_k, dim=-1)
+    def route_tokens
+                     gate_logits: torch.Tensor) -> Tuple[torch.Tensor,
+                                                          torch.Tensor,
+                                                          torch.Tensor]:
+        topk_scores, topk_indices = torch.topk(
+            gate_logits, self.top_k, dim=-1
+        )
         topk_scores = torch.softmax(topk_scores, dim=-1)
         flat_indices = topk_indices.view(-1)
         dispatched: Dict[int, List[torch.Tensor]] = {}
-        for token_idx, expert_idx in enumerate(flat_indices.tolist()):
-            if expert_idx not in dispatched:
-                dispatched[expert_idx] = []
-            dispatched[expert_idx].append(tokens[token_idx // self.top_k])
+        for token_idx, expert_id in enumerate(flat_indices.tolist()):
+            dispatched.setdefault(expert_id, []).append(
+                tokens[token_idx // self.top_k]
+            )
         return topk_scores, topk_indices, flat_indices
 
     def get_local_expert_output(self, expert_id: int, tokens: List[torch.Tensor]) -> torch.Tensor:
@@ -70,21 +74,37 @@ class ExpertParallelism:
         stacked = torch.stack(tokens)
         return expert(stacked.to(next(expert.parameters()).device))
 
-    def dispatch_and_combine(self, tokens: torch.Tensor, gate_logits: torch.Tensor) -> torch.Tensor:
-        topk_scores, topk_indices, flat_indices = self.route_tokens(tokens, gate_logits)
+    def dispatch_and_combine(self, tokens: torch.Tensor,
+                              gate_logits: torch.Tensor) -> torch.Tensor:
+        topk_scores, topk_indices, flat_indices = self.route_tokens(
+            tokens, gate_logits
+        )
         unique_experts = sorted(set(flat_indices.tolist()))
         expert_inputs: Dict[int, List[torch.Tensor]] = {}
         for token_idx, expert_id in enumerate(flat_indices.tolist()):
-            expert_inputs.setdefault(expert_id, []).append(tokens[token_idx // self.top_k])
+            expert_inputs.setdefault(expert_id, []).append(
+                tokens[token_idx // self.top_k]
+            )
         expert_outputs: Dict[int, torch.Tensor] = {}
         for expert_id in unique_experts:
             if expert_id in self.expert_routing_table:
-                expert_outputs[expert_id] = self.get_local_expert_output(expert_id, expert_inputs[expert_id])
+                expert_outputs[expert_id] = self.get_local_expert_output(
+                    expert_id, expert_inputs[expert_id]
+                )
             else:
-                expert_outputs[expert_id] = torch.stack(expert_inputs[expert_id]).sum(dim=0) if expert_inputs[expert_id] else torch.zeros_like(tokens[0])
+                expert_outputs[expert_id] = (
+                    torch.stack(expert_inputs[expert_id]).sum(dim=0)
+                    if expert_inputs[expert_id]
+                    else torch.zeros_like(tokens[0])
+                )
         combined = torch.zeros_like(tokens)
         for token_idx, expert_id in enumerate(flat_indices.tolist()):
-            combined[token_idx // self.top_k] = combined[token_idx // self.top_k] + topk_scores[token_idx // self.top_k, token_idx % self.top_k] * expert_outputs[expert_id]
+            k = token_idx % self.top_k
+            combined[token_idx // self.top_k] = (
+                combined[token_idx // self.top_k]
+                + topk_scores[token_idx // self.top_k, k]
+                * expert_outputs[expert_id]
+            )
         return combined
 
     def load_balance_loss(self, gate_logits: torch.Tensor) -> torch.Tensor:

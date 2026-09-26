@@ -63,13 +63,15 @@ class SequenceParallelism:
         orig_forward = attention.forward
         sp = self
 
-        def wrapped_forward(*args: Any, **kwargs: Any) -> Any:
+        def wrapped_forward(*args, **kwargs):
             if args:
                 args_list = list(args)
                 args_list[0] = sp.split_input(args_list[0])
                 args = tuple(args_list)
             elif "hidden_states" in kwargs:
-                kwargs["hidden_states"] = sp.split_input(kwargs["hidden_states"])
+                kwargs["hidden_states"] = sp.split_input(
+                    kwargs["hidden_states"]
+                )
             out = orig_forward(*args, **kwargs)
             if isinstance(out, tuple):
                 return (sp.gather_output(out[0]),) + out[1:]

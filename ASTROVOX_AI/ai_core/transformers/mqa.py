@@ -33,3 +33,18 @@ class MultiQueryAttention(nn.Module):
         out = attn @ v
         out = out.transpose(1, 2).contiguous().view(B, T, C)
         return self.out_proj(out)
+
+
+class MQABlock(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.attn = MultiQueryAttention(config.hidden_size, config.num_heads, config.dropout)
+        self.ffn = FeedForward(config)
+        self.ln1 = nn.LayerNorm(config.hidden_size)
+        self.ln2 = nn.LayerNorm(config.hidden_size)
+        self.dropout = nn.Dropout(config.dropout)
+
+    def forward(self, x, mask=None):
+        x = x + self.dropout(self.attn(self.ln1(x), mask))
+        x = x + self.dropout(self.ffn(self.ln2(x)))
+        return x

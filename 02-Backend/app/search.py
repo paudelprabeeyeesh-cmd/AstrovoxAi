@@ -83,8 +83,12 @@ class SearchEngine:
             else:
                 combined[r["id"]] = {"result": r, "semantic_score": 0.0, "keyword_score": r["score"]}
 
+        max_sem = max((v["semantic_score"] for v in combined.values()), default=1.0) or 1.0
+        max_kw = max((v["keyword_score"] for v in combined.values()), default=1.0) or 1.0
         for item in combined.values():
-            item["final_score"] = alpha * item["semantic_score"] + (1 - alpha) * item["keyword_score"]
+            ns = item["semantic_score"] / max_sem
+            nk = item["keyword_score"] / max_kw
+            item["final_score"] = alpha * ns + (1 - alpha) * nk
 
         sorted_results = sorted(combined.values(), key=lambda x: x["final_score"], reverse=True)[:top_k]
         return [item["result"] for item in sorted_results]

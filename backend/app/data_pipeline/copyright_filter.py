@@ -71,5 +71,3 @@ class CopyrightFilter:
             if not self.has_copyright_notice(doc.get("content", ""))
         ]
 
-
-from urllib.parse import urlparse

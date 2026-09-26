@@ -33,7 +33,9 @@ class AccuracyScorer:
             latency_ms=latency_ms,
         )
 
-    def score_fuzzy(self, task_type: str, case_id: str, prediction: str, reference: str, latency_ms: float = 0.0) -> AccuracyResult:
+    def score_fuzzy(
+        self, task_type: str, case_id: str, prediction: str, reference: str, latency_ms: float = 0.0
+    ) -> AccuracyResult:
         pred_tokens = set(prediction.lower().split())
         ref_tokens = set(reference.lower().split())
         if not ref_tokens:
@@ -56,9 +58,13 @@ class AccuracyScorer:
         for case in cases:
             mode = case.get("mode", "exact")
             if mode == "fuzzy":
-                result = self.score_fuzzy(case["task_type"], case["case_id"], case["prediction"], case["reference"])
+                result = self.score_fuzzy(
+                    case["task_type"], case["case_id"], case["prediction"], case["reference"]
+                )
             else:
-                result = self.score_exact(case["task_type"], case["case_id"], case["prediction"], case["reference"])
+                result = self.score_exact(
+                    case["task_type"], case["case_id"], case["prediction"], case["reference"]
+                )
             self._results.append(result)
             results.append(result)
         return self._summarize(results)
@@ -70,7 +76,9 @@ class AccuracyScorer:
         return {
             "total": len(results),
             "overall_accuracy": statistics.mean([r.score for r in results]) if results else 0.0,
-            "exact_match_rate": sum(1 for r in results if r.correct) / len(results) if results else 0.0,
+            "exact_match_rate": (
+                sum(1 for r in results if r.correct) / len(results) if results else 0.0
+            ),
             "by_task": {task: statistics.mean(scores) for task, scores in by_task.items()},
             "mean_latency_ms": statistics.mean([r.latency_ms for r in results]) if results else 0.0,
         }

@@ -1,15 +1,18 @@
+import logging
 from typing import Optional
 import torch
 import torch.nn as nn
+import math
+
+logger = logging.getLogger(__name__)
 
 
-class LongContextAttention(nn.Module):
-    def __init__(self, hidden_size: int, num_heads: int, max_seq_len: int = 32768, dropout: float = 0.0):
+class FlashAttention(nn.Module):
+    def __init__(self, hidden_size: int, num_heads: int, dropout: float = 0.0):
         super().__init__()
         self.hidden_size = hidden_size
         self.num_heads = num_heads
         self.head_dim = hidden_size // num_heads
-        self.max_seq_len = max_seq_len
         self.scale = self.head_dim ** -0.5
         self.q_proj = nn.Linear(hidden_size, hidden_size)
         self.k_proj = nn.Linear(hidden_size, hidden_size)
@@ -32,10 +35,10 @@ class LongContextAttention(nn.Module):
         return self.out_proj(out)
 
 
-class LongContextBlock(nn.Module):
-    def __init__(self, hidden_size: int, num_heads: int, intermediate_size: int, max_seq_len: int = 32768, dropout: float = 0.1):
+class FlashAttentionBlock(nn.Module):
+    def __init__(self, hidden_size: int, num_heads: int, intermediate_size: int, dropout: float = 0.1):
         super().__init__()
-        self.attn = LongContextAttention(hidden_size, num_heads, max_seq_len, dropout)
+        self.attn = FlashAttention(hidden_size, num_heads, dropout)
         self.ffn = nn.Sequential(
             nn.Linear(hidden_size, intermediate_size),
             nn.GELU(),
