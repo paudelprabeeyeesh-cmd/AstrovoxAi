@@ -45,8 +45,6 @@ class QuantumNeuralNetwork:
                 for layer in self.layers:
                     layer.weights -= lr * np.outer(output - y[i], X[i])
                     layer.bias -= lr * (output - y[i])
-            if epoch % 20 == 0:
-                print(f"Epoch {epoch}: loss={total_loss / len(X):.4f}")
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         return np.array([self.forward(x) for x in X])

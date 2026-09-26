@@ -309,7 +309,7 @@ async def create_cohort(authorization: str = Header(None), payload: dict = Body(
 
 
 @router.post("/cohorts/{cohort_id}/members")
-async def add_cohort_member(authorization: str = Header(None), cohort_id: str, payload: dict = Body(...)):
+async def add_cohort_member(cohort_id: str, authorization: str = Header(None), payload: dict = Body(...)):
     """Add a member to a cohort."""
     get_user_id_from_token(authorization)
     from app.analytics.advanced import CohortMember

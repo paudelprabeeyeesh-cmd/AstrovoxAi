@@ -42,4 +42,3 @@ class ModelDistiller:
                 optimizer.step()
                 optimizer.zero_grad()
                 total_loss += loss.item()
-            print(f'Epoch {epoch + 1}, Loss: {total_loss / len(train_loader):.4f}')

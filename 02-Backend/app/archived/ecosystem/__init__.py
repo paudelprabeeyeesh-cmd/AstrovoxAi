@@ -1,6 +1,12 @@
-"""Ecosystem platform: plugins, registry, lookup, compatibility, recovery, validation, dashboard, SDK, webhooks, integrations."""
-
 from __future__ import annotations
+
+__all__ = [
+    "annotations",
+    "LookupPermission",
+    "AstrovoxClient",
+]
+
+"""Ecosystem platform: plugins, registry, lookup, compatibility, recovery, validation, dashboard, SDK, webhooks, integrations."""
 
 from .registry import (
     CompatibilityMatrix,

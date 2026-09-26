@@ -74,7 +74,7 @@ async function multiAgentFetch(endpoint, options = {}) {
   return res.json();
 }
 
-document.addEventListener('DOMContentLoaded', () {
+document.addEventListener('DOMContentLoaded', () => {
   const loadingEl = document.getElementById('workflows-loading');
   const errorEl = document.getElementById('workflows-error');
   const listEl = document.getElementById('workflows-list');

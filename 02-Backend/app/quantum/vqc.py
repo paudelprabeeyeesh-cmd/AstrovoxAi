@@ -53,7 +53,6 @@ class VariationalQuantumCircuit:
             self.params -= lr * grads / len(X)
             if epoch % 20 == 0:
                 loss = np.mean([self.cost(self.params, X[i], y[i]) for i in range(len(X))])
-                print(f"Epoch {epoch}: loss={loss:.4f}")
         return self.params
 
     def _numerical_gradient(self, params: np.ndarray, x: np.ndarray, y: float, eps: float = 1e-5) -> np.ndarray:

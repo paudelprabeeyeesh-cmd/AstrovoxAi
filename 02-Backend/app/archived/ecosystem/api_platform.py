@@ -14,10 +14,13 @@ from __future__ import annotations
 import hashlib
 import hmac
 import secrets
+import time
 from collections import defaultdict, deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Deque, Dict, Iterable, List, Optional, Tuple
+
+now = time.time
 
 
 API_VERSION = "v1"

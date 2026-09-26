@@ -43,8 +43,6 @@ class QuantumMachineLearning:
                 error[target] -= 1
                 for j in range(len(self.weights)):
                     self.weights[j] -= lr * error[target] * 0.01
-            if epoch % 20 == 0:
-                print(f"Epoch {epoch}: loss={loss / n_samples:.4f}")
         return self.weights
 
     def predict(self, X: np.ndarray) -> np.ndarray:

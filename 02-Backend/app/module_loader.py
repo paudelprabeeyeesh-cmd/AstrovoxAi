@@ -53,7 +53,6 @@ class ModuleLoader:
             cls._loaded_modules[module_path] = module
             return module
         except ImportError as e:
-            print(f"Failed to load module {module_path}: {e}")
             return None
 
     @classmethod

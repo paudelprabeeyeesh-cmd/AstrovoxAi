@@ -38,7 +38,7 @@ class DynamicConfigManager:
                 _last_modified = stat.st_mtime
                 cls._notify_watchers()
         except Exception as e:
-            print(f"Failed to load dynamic config: {e}")
+            pass
         return _config
 
     @classmethod

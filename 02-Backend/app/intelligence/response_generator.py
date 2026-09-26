@@ -232,7 +232,7 @@ class ResponseGenerator:
             # Try to parse and pretty-print
             data = json.loads(content)
             return json.dumps(data, indent=2)
-        except:
+        except Exception:
             # If not valid JSON, return as-is
             return content
     
@@ -310,7 +310,7 @@ class ResponseGenerator:
                 data = json.loads(content)
                 metadata["json_keys"] = list(data.keys()) if isinstance(data, dict) else None
                 metadata["json_type"] = type(data).__name__
-            except:
+            except Exception:
                 pass
         
         return metadata

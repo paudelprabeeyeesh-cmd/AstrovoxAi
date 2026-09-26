@@ -1,6 +1,18 @@
 import logging
 from .supabase_client import get_supabase
 
+try:
+    from app.infrastructure.database import get_database
+
+    _db = get_database()
+
+    def get_db():
+        return _db.get_session()
+
+except Exception:
+    def get_db():
+        raise RuntimeError("Database not available")
+
 logger = logging.getLogger(__name__)
 supabase = get_supabase()
 
