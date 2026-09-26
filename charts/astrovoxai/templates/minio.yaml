@@ -1,3 +1,18 @@
+{{- if .Values.minio.enabled }}
+{{- $minio := .Values.minio }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-minio
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: minio
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  root-user: "{{ $minio.auth.rootUser }}"
+  root-password: "{{ $minio.auth.rootPassword }}"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,7 +40,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: minio
-        image: "{{ .Values.image.registry }}/minio/minio:latest"
+        image: "{{ $minio.image }}"
         args:
         - server
         - /data
@@ -38,9 +53,15 @@ spec:
           name: console
         env:
         - name: MINIO_ROOT_USER
-          value: {{ .Values.astrovoxai.storage.access_key_id | quote }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "astrovoxai.fullname" . }}-minio
+              key: root-user
         - name: MINIO_ROOT_PASSWORD
-          value: {{ .Values.astrovoxai.storage.secret_access_key | quote }}
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "astrovoxai.fullname" . }}-minio
+              key: root-password
         volumeMounts:
         - name: minio-data
           mountPath: /data
@@ -101,4 +122,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 20Gi
+      storage: {{ $minio.persistence.size | default "20Gi" }}
+{{- end }}

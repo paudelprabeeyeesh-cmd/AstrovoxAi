@@ -93,9 +93,6 @@ class _LLMClientStub:
 
 llm_client = _LLMClientStub()
 
-llm_client = LLMClient()
-context_builder = ContextBuilder(llm_client=llm_client)
-
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(

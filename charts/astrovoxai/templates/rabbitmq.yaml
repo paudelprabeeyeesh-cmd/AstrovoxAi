@@ -1,3 +1,17 @@
+{{- if .Values.rabbitmq.enabled }}
+{{- $rabbitmq := .Values.rabbitmq }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  rabbitmq-password: "{{ $rabbitmq.auth.password }}"
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -8,7 +22,7 @@ metadata:
     {{- include "astrovoxai.labels" . | nindent 4 }}
 spec:
   serviceName: {{ include "astrovoxai.fullname" . }}-rabbitmq
-  replicas: 3
+  replicas: {{ $rabbitmq.replicaCount | default 3 }}
   selector:
     matchLabels:
       app: rabbitmq
@@ -26,7 +40,7 @@ spec:
         fsGroup: 999
       containers:
       - name: rabbitmq
-        image: "{{ .Values.image.registry }}/rabbitmq:3.13-management-alpine"
+        image: "{{ $rabbitmq.image }}"
         ports:
         - containerPort: 5672
           name: amqp
@@ -34,11 +48,11 @@ spec:
           name: management
         env:
         - name: RABBITMQ_DEFAULT_USER
-          value: "{{ .Values.astrovoxai.rabbitmq.user }}"
+          value: "{{ $rabbitmq.auth.username }}"
         - name: RABBITMQ_DEFAULT_PASS
           valueFrom:
             secretKeyRef:
-              name: {{ include "astrovoxai.fullname" . }}
+              name: {{ include "astrovoxai.fullname" . }}-rabbitmq
               key: rabbitmq-password
         volumeMounts:
         - name: rabbitmq-data
@@ -70,7 +84,7 @@ spec:
       - ReadWriteOnce
       resources:
         requests:
-          storage: 20Gi
+          storage: {{ $rabbitmq.persistence.size | default "20Gi" }}
 ---
 apiVersion: v1
 kind: Service
@@ -92,3 +106,4 @@ spec:
   selector:
     app: rabbitmq
     {{- include "astrovoxai.selectorLabels" . | nindent 4 }}
+{{- end }}
