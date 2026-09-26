@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leader-election
+  namespace: astrovox
+  labels:
+    app: leader-election
+    component: cluster-coordination
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: leader-election
+  template:
+    metadata:
+      labels:
+        app: leader-election
+        component: cluster-coordination
+    spec:
+      containers:
+        - name: leader-election
+          image: astrovox/leader-election:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: ELECTION_TIMEOUT
+              value: "5s"
+            - name: HEARTBEAT_INTERVAL
+              value: "1s"
+            - name: NODE_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: leader-election
+                topologyKey: kubernetes.io/hostname

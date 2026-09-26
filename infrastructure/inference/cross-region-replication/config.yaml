@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cross-region-replication-config
+  namespace: astrovox
+data:
+  LOCAL_REGION: us-east-1
+  REMOTE_REGIONS: us-west-2,eu-west-1,ap-southeast-1
+  SYNC_INTERVAL: "5s"
+  CONSISTENCY_MODEL: eventual
+  MAX_PENDING_WRITES: "1000"

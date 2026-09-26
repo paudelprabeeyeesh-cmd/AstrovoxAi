@@ -1,29 +1,32 @@
-from typing import Dict, Any
-import time
+"""AI distributed tracer."""
+from __future__ import annotations
+
+import logging
+import uuid
+from datetime import datetime, timezone
+from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
-class ModelTracer:
-    def __init__(self):
-        self.traces: Dict[str, Dict[str, Any]] = {}
+class AITracer:
+    def __init__(self) -> None:
+        self._spans: Dict[str, Dict[str, Any]] = {}
 
-    def start_trace(self, trace_id: str, model_name: str) -> None:
-        self.traces[trace_id] = {
-            "model": model_name,
-            "start_time": time.time(),
-            "steps": [],
+    def start_span(self, name: str, parent_span_id: Optional[str] = None) -> str:
+        span_id = uuid.uuid4().hex
+        self._spans[span_id] = {
+            "name": name,
+            "parent_span_id": parent_span_id,
+            "started_at": datetime.now(timezone.utc).isoformat(),
         }
+        return span_id
 
-    def log_step(self, trace_id: str, step: str, metadata: Dict[str, Any]) -> None:
-        if trace_id in self.traces:
-            self.traces[trace_id]["steps"].append({
-                "step": step,
-                "timestamp": time.time(),
-                "metadata": metadata,
-            })
+    def end_span(self, span_id: str, status: str = "ok") -> None:
+        span = self._spans.get(span_id)
+        if span:
+            span["ended_at"] = datetime.now(timezone.utc).isoformat()
+            span["status"] = status
 
-    def end_trace(self, trace_id: str) -> Dict[str, Any]:
-        trace = self.traces.get(trace_id)
-        if trace:
-            trace["end_time"] = time.time()
-            trace["duration"] = trace["end_time"] - trace["start_time"]
-        return trace
+
+ai_tracer = AITracer()

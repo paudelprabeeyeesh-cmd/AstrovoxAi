@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: astrovox-zero-downtime
+  namespace: astrovox
+  labels:
+    app: astrovox
+    version: stable
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: astrovox
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: astrovox
+        version: stable
+    spec:
+      containers:
+        - name: astrovox
+          image: astrovox/inference:latest
+          ports:
+            - containerPort: 8000
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "sleep 10"]
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 10

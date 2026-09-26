@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gpu-scheduling-config
+  namespace: astrovox
+data:
+  GPU_MEMORY_FRACTION: "0.9"
+  SCHEDULING_POLICY: priority
+  PREEMPTION_ENABLED: "true"
+  TIME_SLICE_DURATION: "30s"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gpu-scheduler
+  namespace: astrovox
+  labels:
+    app: gpu-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gpu-scheduler
+  template:
+    metadata:
+      labels:
+        app: gpu-scheduler
+    spec:
+      containers:
+        - name: gpu-scheduler
+          image: astrovox/gpu-scheduler:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"

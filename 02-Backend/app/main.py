@@ -75,6 +75,7 @@ from app.quantum.routes.router import router as quantum_router
 from app.routers.audio import router as audio_router
 from app.routers.audio_outputs import router as audio_outputs_router
 from app.routers.neural_bci import router as neural_bci_router
+from app.routers.images import router as images_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router

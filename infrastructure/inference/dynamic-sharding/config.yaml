@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dynamic-sharding-config
+  namespace: astrovox
+data:
+  NUM_SHARDS: "8"
+  RESHARD_THRESHOLD: "0.8"
+  KEY_HASH_ALGO: "md5"
+  REBALANCE_INTERVAL: "30s"
+  SESSION_AFFINITY: "true"
