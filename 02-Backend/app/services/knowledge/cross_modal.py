@@ -52,7 +52,6 @@ class CrossModalRetriever:
             audio_bytes = base64.b64decode(audio)
             import io
             from pydub import AudioSegment
-            import numpy as np
             segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
             samples = np.array(segment.get_array_of_samples(), dtype=np.float32)
             if len(samples) == 0:

@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import types
 from contextlib import ExitStack
 from unittest.mock import patch, MagicMock

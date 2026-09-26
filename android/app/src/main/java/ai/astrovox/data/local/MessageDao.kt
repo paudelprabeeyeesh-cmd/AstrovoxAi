@@ -18,4 +18,10 @@ interface MessageDao {
 
     @Query("DELETE FROM messages")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM messages WHERE offline = 1")
+    suspend fun getPendingOffline(): List<MessageEntity>
+
+    @Query("UPDATE messages SET offline = 0 WHERE id = :id")
+    suspend fun markSynced(id: String)
 }

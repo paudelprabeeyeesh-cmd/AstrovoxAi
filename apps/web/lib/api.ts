@@ -254,6 +254,50 @@ export const api = {
   // Customer Portal
   getCustomerPortal: () =>
     request<{ portal: CustomerPortal }>('/cx/portal'),
+
+  // Analytics
+  getAnalyticsDashboard: (days?: number) =>
+    request<{ data: AnalyticsDashboard }>(`/analytics/dashboard?days=${days ?? 7}`),
+  getAnalyticsOverview: (days?: number) =>
+    request<{ data: AnalyticsOverview }>(`/analytics/overview?days=${days ?? 7}`),
+  getUsageStats: (days?: number) =>
+    request<{ data: UsageStats }>(`/analytics/usage?days=${days ?? 7}`),
+  getTokenAnalytics: (days?: number) =>
+    request<{ data: TokenAnalytics }>(`/analytics/tokens?days=${days ?? 7}`),
+  getCostAnalytics: (days?: number) =>
+    request<{ data: CostAnalytics }>(`/analytics/costs?days=${days ?? 7}`),
+  getModelPerformance: (days?: number) =>
+    request<{ data: ModelPerformance }>(`/analytics/models?days=${days ?? 7}`),
+  getGpuAnalytics: (days?: number) =>
+    request<{ data: GpuAnalytics }>(`/analytics/gpu?days=${days ?? 7}`),
+  getMemoryAnalytics: (days?: number) =>
+    request<{ data: MemoryAnalytics }>(`/analytics/memory?days=${days ?? 7}`),
+  getApiMetrics: (days?: number) =>
+    request<{ data: ApiMetrics }>(`/analytics/api-metrics?days=${days ?? 7}`),
+  getErrorAnalytics: (days?: number) =>
+    request<{ data: ErrorAnalytics }>(`/analytics/errors?days=${days ?? 7}`),
+  getRealtimeAnalytics: (days?: number) =>
+    request<{ data: RealtimeAnalytics }>(`/analytics/realtime?days=${days ?? 1}`),
+
+  // Monitoring
+  getMonitoringDashboard: () =>
+    request<MonitoringDashboard>('/monitoring/dashboard'),
+  getMonitoringHealth: () =>
+    request<HealthCheck>('/monitoring/health/detailed'),
+  getMonitoringErrors: (limit?: number) =>
+    request<{ errors: MonitoringError[]; summary: Record<string, unknown> }>(`/monitoring/errors?limit=${limit ?? 50}`),
+  getMonitoringPerformance: () =>
+    request<{ system: Record<string, unknown>; requests: Record<string, unknown> }>('/monitoring/performance'),
+  getMonitoringUptime: () =>
+    request<UptimeInfo>('/monitoring/uptime'),
+  getMonitoringGpu: () =>
+    request<{ gpu: Record<string, unknown>; available: boolean }>('/monitoring/gpu'),
+  getMonitoringMemory: () =>
+    request<{ memory: Record<string, unknown> }>('/monitoring/memory'),
+  getMonitoringLatency: (hours?: number) =>
+    request<{ data: LatencyMetrics }>(`/monitoring/latency?hours=${hours ?? 24}`),
+  getMonitoringApiMetrics: () =>
+    request<{ requests: Record<string, unknown>; latency: Record<string, unknown> }>('/monitoring/api-metrics'),
 }
 
 // ============================================================================
@@ -497,4 +541,339 @@ export interface ToolExecutionResult {
   result: unknown
   executionTime: number
   error?: string
+}
+
+export interface AnalyticsDashboard {
+  total_messages: number
+  total_cost_usd: number
+  realtime: RealtimeAnalytics
+  usage: UsageStats
+  tokens: TokenAnalytics
+  costs: CostAnalytics
+  performance: PerformanceAnalytics
+  errors: ErrorAnalytics
+  conversations: ConversationAnalytics
+  models: ModelPerformance
+  feature_adoption: FeatureAdoptionAnalytics
+  user_behavior: UserBehaviorAnalytics
+  revenue: RevenueAnalytics
+}
+
+export interface AnalyticsOverview {
+  period_days: number
+  usage: {
+    total_requests: number
+    total_tokens: number
+    active_users: number
+    avg_latency: number
+    error_rate: number
+  }
+  ai_usage: {
+    total_requests: number
+    success_rate: number
+    avg_latency: number
+  }
+  tokens: {
+    total_tokens: number
+    total_cost: number
+  }
+  costs: {
+    total_cost: number
+    trend: string
+  }
+  models: {
+    model_count: number
+    best_by_latency: string | null
+    best_by_success: string | null
+  }
+  users: {
+    active_users: number
+    total_actions: number
+  }
+}
+
+export interface UsageStats {
+  total_requests: number
+  total_tokens: number
+  total_errors: number
+  error_rate: number
+  average_latency: number
+  active_users: number
+  total_users: number
+}
+
+export interface TokenAnalytics {
+  period_days: number
+  total_tokens: number
+  total_input_tokens: number
+  total_output_tokens: number
+  total_cost: number
+  avg_tokens_per_request: number
+  tokens_by_user: Record<string, number>
+  tokens_by_model: Record<string, number>
+  tokens_by_provider: Record<string, number>
+  tokens_by_hour: Record<number, number>
+  tokens_by_day: Record<string, number>
+  peak_hour: [number, number]
+  peak_day: [string, number]
+}
+
+export interface CostAnalytics {
+  period_days: number
+  total_api_cost: number
+  total_revenue: number
+  net_margin: number
+  cost_by_user: Record<string, number>
+  cost_by_model: Record<string, number>
+  cost_by_provider: Record<string, number>
+  daily_costs: Record<string, number>
+  trend: string
+  mrr: number
+  arr: number
+  forecast_next_period: number
+}
+
+export interface PerformanceAnalytics {
+  period_days: number
+  total_requests: number
+  avg_latency: number
+  p50_latency: number
+  p95_latency: number
+  p99_latency: number
+  max_latency: number
+  min_latency: number
+  avg_duration_ms: number
+  throughput_rpm: number
+}
+
+export interface ErrorAnalytics {
+  period_days: number
+  total_events: number
+  total_errors: number
+  total_failed_requests: number
+  total_requests: number
+  error_rate: number
+  error_rate_percent: number
+  error_types: Record<string, number>
+  errors_by_model: Record<string, number>
+  errors_by_user: Record<string, number>
+  error_timeline: Record<string, number>
+}
+
+export interface RealtimeAnalytics {
+  generated_at: string
+  period_days: number
+  active_users: number
+  active_sessions: number
+  total_events: number
+  events_per_minute: number
+  requests_per_minute: number
+  behavior_events: number
+  revenue_today: number
+  events_today: number
+  cost_today: number
+  top_pages: Array<[string, number]>
+  top_features: Array<[string, number]>
+}
+
+export interface ConversationAnalytics {
+  period_days: number
+  total_conversations: number
+  total_messages: number
+  total_tokens: number
+  total_cost: number
+  avg_messages_per_conversation: number
+  avg_tokens_per_conversation: number
+  avg_duration_seconds: number
+  sentiment_distribution: Record<string, number>
+  model_distribution: Record<string, number>
+  satisfaction_avg: number
+}
+
+export interface ModelPerformance {
+  period_days: number
+  models: Record<string, {
+    requests: number
+    success_rate: number
+    error_rate: number
+    avg_latency: number
+    p50_latency: number
+    p95_latency: number
+    p99_latency: number
+    avg_tokens: number
+    total_cost: number
+  }>
+  best_by_latency: string | null
+  best_by_success: string | null
+  best_by_cost: string | null
+}
+
+export interface FeatureAdoptionAnalytics {
+  period_days: number
+  features: Record<string, {
+    total_users: number
+    adopted_users: number
+    adoption_rate: number
+    total_uses: number
+    avg_uses_per_user: number
+    category: string
+  }>
+  overall_adoption_rate: number
+}
+
+export interface UserBehaviorAnalytics {
+  period_days: number
+  total_behavior_events: number
+  unique_users: number
+  event_type_breakdown: Record<string, number>
+  top_pages: Array<{ page: string; views: number }>
+  avg_time_on_page: Record<string, number>
+  avg_scroll_depth: Record<string, number>
+  click_heatmap: Record<string, number>
+}
+
+export interface RevenueAnalytics {
+  period_days: number
+  total_revenue: number
+  net_revenue: number
+  refunds: number
+  revenue_by_type: Record<string, { count: number; total: number }>
+  revenue_by_plan: Record<string, { count: number; total: number }>
+  daily_revenue: Record<string, number>
+  top_customers: Record<string, number>
+  mrr: number
+  arr: number
+  arpu: number
+}
+
+export interface GpuAnalytics {
+  period_days: number
+  gpu_available: boolean
+  device_count: number
+  device_ids: number[]
+  avg_utilization_percent: number
+  max_utilization_percent: number
+  min_utilization_percent: number
+  avg_memory_used_mb: number
+  avg_memory_total_mb: number
+  avg_temperature_c: number
+  max_temperature_c: number
+  min_temperature_c: number
+  timeline: Array<{
+    date: string
+    avg_utilization_percent: number
+    avg_memory_used_mb: number
+    avg_temperature_c: number
+  }>
+}
+
+export interface MemoryAnalytics {
+  period_days: number
+  total_mb: number
+  avg_used_mb: number
+  max_used_mb: number
+  min_used_mb: number
+  avg_available_mb: number
+  avg_percent: number
+  max_percent: number
+  min_percent: number
+  avg_swap_used_mb: number
+  max_swap_used_mb: number
+  timeline: Array<{
+    date: string
+    used_mb: number
+    available_mb: number
+    percent: number
+    swap_used_mb: number
+  }>
+}
+
+export interface ApiMetrics {
+  period_days: number
+  total_requests: number
+  total_errors: number
+  error_rate: number
+  avg_latency_ms: number
+  by_endpoint: Record<string, {
+    count: number
+    errors: number
+    error_rate: number
+    avg_latency_ms: number
+    p95_latency_ms: number
+    p99_latency_ms: number
+    total_tokens: number
+  }>
+  by_method: Record<string, number>
+  by_status: Record<string, number>
+  by_model: Record<string, {
+    count: number
+    avg_latency_ms: number
+    total_tokens: number
+  }>
+}
+
+export interface MonitoringDashboard {
+  status: string
+  uptime: {
+    uptime_seconds: number
+    start_time: number
+    status: string
+  }
+  system: Record<string, unknown>
+  errors: Record<string, unknown>
+  requests: Record<string, unknown>
+  latency: Record<string, unknown>
+}
+
+export interface HealthCheck {
+  status: string
+  timestamp: number
+  uptime: {
+    uptime_seconds: number
+    start_time: number
+    status: string
+  }
+  system: {
+    cpu: number
+    memory: number
+    disk: number
+    gpu: {
+      available: boolean
+      devices: Array<Record<string, unknown>>
+      utilization_percent: number
+      memory_used_mb: number
+      memory_total_mb: number
+      temperature_c: number
+    }
+  }
+  errors: {
+    total: number
+    by_severity: Record<string, number>
+    by_type: Record<string, number>
+  }
+}
+
+export interface MonitoringError {
+  error_type: string
+  message: string
+  endpoint: string
+  timestamp: number
+  severity: string
+}
+
+export interface UptimeInfo {
+  status: string
+  uptime_seconds: number
+  start_time: number
+}
+
+export interface LatencyMetrics {
+  period_hours: number
+  count: number
+  avg_ms: number
+  min_ms: number
+  max_ms: number
+  p50_ms: number
+  p95_ms: number
+  p99_ms: number
 }

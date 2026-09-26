@@ -167,7 +167,6 @@ class RetrievalEngine:
         
         except Exception as e:
             # Log error but continue with other stores
-            print(f"Error retrieving from {memory_type}: {e}")
         
         return matches
     
@@ -346,10 +345,7 @@ class RetrievalEngine:
                     )
                     for result in results
                 ]
-            except:
-                pass
-        
-        return []
+                return [
     
     def _calculate_keyword_relevance(self, query: str, content: str) -> float:
         """Calculate relevance based on keyword matching"""

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Training — AstrovoxAI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/enterprise.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>AI Training</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="evaluation_dashboard.html">Evaluation</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="tabs">
+      <button class="tab active" data-tab="dataset">Dataset Builder</button>
+      <button class="tab" data-tab="tokenizer">Tokenizer</button>
+      <button class="tab" data-tab="finetune">Fine-Tuning</button>
+      <button class="tab" data-tab="alignment">Alignment</button>
+      <button class="tab" data-tab="eval">Evaluation</button>
+      <button class="tab" data-tab="merging">Model Merging</button>
+    </section>
+
+    <section id="dataset" class="tab-content">
+      <h2>Dataset Builder</h2>
+      <div class="card">
+        <label>Dataset Name</label>
+        <input id="ds-name" type="text" placeholder="my-training-set" />
+        <label>Max Samples</label>
+        <input id="ds-max" type="number" value="10000" />
+        <button onclick="buildDataset()">Build Dataset</button>
+        <button onclick="uploadDataset()">Upload JSONL</button>
+        <input id="ds-file" type="file" accept=".jsonl" />
+        <pre id="ds-output"></pre>
+      </div>
+    </section>
+
+    <section id="tokenizer" class="tab-content hidden">
+      <h2>Tokenizer Training</h2>
+      <div class="card">
+        <label>Vocab Size</label>
+        <input id="tok-vocab" type="number" value="32000" />
+        <label>Min Pair Frequency</label>
+        <input id="tok-min-freq" type="number" value="2" />
+        <button onclick="trainTokenizer()">Train Tokenizer</button>
+        <pre id="tok-output"></pre>
+      </div>
+    </section>
+
+    <section id="finetune" class="tab-content hidden">
+      <h2>Fine-Tuning</h2>
+      <div class="card">
+        <label>Model Name</label>
+        <input id="ft-model" type="text" value="default" />
+        <label>
+          <input id="ft-lora" type="checkbox" checked /> Use LoRA
+        </label>
+        <label>
+          <input id="ft-qlora" type="checkbox" /> Use QLoRA
+        </label>
+        <label>LoRA Rank</label>
+        <input id="ft-rank" type="number" value="8" />
+        <label>Learning Rate</label>
+        <input id="ft-lr" type="number" step="1e-5" value="0.0001" />
+        <button onclick="createFineTuneJob()">Create Fine-Tune Job</button>
+        <button onclick="injectLoRA()">Inject LoRA</button>
+        <button onclick="prepareQLoRA()">Prepare QLoRA</button>
+        <pre id="ft-output"></pre>
+      </div>
+    </section>
+
+    <section id="alignment" class="tab-content hidden">
+      <h2>Alignment</h2>
+      <div class="card">
+        <label>Model Name</label>
+        <input id="al-model" type="text" value="default" />
+        <label>DPO Beta</label>
+        <input id="al-beta" type="number" step="0.1" value="0.1" />
+        <label>RLHF KL Coef</label>
+        <input id="al-kl" type="number" step="0.1" value="0.1" />
+        <button onclick="dpoTrain()">DPO Train Step</button>
+        <button onclick="rlhfTrain()">RLHF Train Step</button>
+        <pre id="al-output"></pre>
+      </div>
+    </section>
+
+    <section id="eval" class="tab-content hidden">
+      <h2>Evaluation Pipeline</h2>
+      <div class="card">
+        <label>Suite Name</label>
+        <input id="ev-name" type="text" value="default" />
+        <button onclick="runEvaluation()">Run Evaluation</button>
+        <pre id="ev-output"></pre>
+      </div>
+    </section>
+
+    <section id="merging" class="tab-content hidden">
+      <h2>Model Merging</h2>
+      <div class="card">
+        <label>Method</label>
+        <select id="mg-method">
+          <option value="linear">Linear</option>
+          <option value="slerp">SLERP</option>
+        </select>
+        <button onclick="mergeModels()">Merge Models</button>
+        <pre id="mg-output"></pre>
+      </div>
+    </section>
+  </main>
+  <script src="js/training.js"></script>
+</body>
+</html>

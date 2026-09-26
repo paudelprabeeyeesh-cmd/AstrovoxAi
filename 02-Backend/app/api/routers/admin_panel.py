@@ -44,10 +44,7 @@ def delete_user(user_id: str, admin: str = Depends(require_admin)):
             "teams",
             "feedback",
         ):
-            try:
-                conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
-            except Exception:
-                pass  # table may not have user_id column
+            conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()
     return {"ok": True, "deleted": user_id}

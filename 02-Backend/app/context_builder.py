@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Optional
 
 from app.services.memory.memory_pipeline import get_relevant_memories
 from app.services.knowledge.knowledge import search_docs

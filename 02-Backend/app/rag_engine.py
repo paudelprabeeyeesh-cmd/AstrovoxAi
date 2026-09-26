@@ -262,8 +262,6 @@ class RAGEngine:
         return self.search(query, user_id, top_k=top_k)
 
     def _sparse_search(self, query: str, user_id: str, limit: int = 10) -> List[dict]:
-        from app.services.knowledge.knowledge import search_docs
-
         docs = search_docs(user_id, query, limit=limit)
         results = []
         for doc in docs:

@@ -1,6 +1,6 @@
 """Monitoring API routes — health, errors, performance, GPU, memory, latency, and uptime."""
 
-from fastapi import APIRouter, HTTPException, status, Header
+from fastapi import APIRouter, Header
 from typing import Optional
 
 from app.monitoring import error_tracker, performance_monitor, uptime_tracker
