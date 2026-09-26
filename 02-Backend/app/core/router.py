@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import re
+import time
+from functools import lru_cache
 
 from openai import OpenAI
 
@@ -10,6 +12,23 @@ from .providers import get_active_providers
 logger = logging.getLogger(__name__)
 
 CONFIDENCE_THRESHOLD = 0.7
+
+_client_cache: dict[str, OpenAI] = {}
+_client_ts: dict[str, float] = {}
+_CLIENT_TTL = 60.0
+
+
+def _get_client_for(provider) -> OpenAI:
+    now = time.time()
+    cache_key = f"{provider.name}:{provider.base_url}:{os.getenv(provider.env_key, '')}"
+    cached = _client_cache.get(cache_key)
+    ts = _client_ts.get(cache_key, 0.0)
+    if cached is not None and (now - ts) < _CLIENT_TTL:
+        return cached
+    client = OpenAI(base_url=provider.base_url, api_key=os.getenv(provider.env_key, ""))
+    _client_cache[cache_key] = client
+    _client_ts[cache_key] = now
+    return client
 
 
 def estimate_confidence(text: str, prompt: str) -> float:
@@ -55,7 +74,7 @@ def call_llm(
         if not api_key:
             continue
         try:
-            client = OpenAI(base_url=provider.base_url, api_key=api_key)
+            client = _get_client_for(provider)
             if messages is None:
                 messages = []
                 if system:
@@ -138,7 +157,7 @@ async def call_llm_stream(
         if not api_key:
             continue
         try:
-            client = OpenAI(base_url=provider.base_url, api_key=api_key)
+            client = _get_client_for(provider)
             messages = []
             if system:
                 messages.append({"role": "system", "content": system})

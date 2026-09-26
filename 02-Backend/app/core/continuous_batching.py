@@ -44,17 +44,24 @@ class ContinuousBatchScheduler:
                 "generated_tokens": 0,
                 "finished": False,
             }
-        elif len(self.preempted) < self.max_preempted and req.priority > 0:
-            preempted_id = next(iter(self.active))
-            preempted_req = self.active.pop(preempted_id)
-            self.preempted.append(preempted_req["request"])
-            self.active[req.request_id] = {
-                "request": req,
-                "tokens": list(req.prompt_ids),
-                "generated_tokens": 0,
-                "finished": False,
-            }
-        elif len(self.queued) < self.max_queue:
+            return
+        if len(self.preempted) < self.max_preempted:
+            lowest_priority = min(
+                ((rid, r["request"].priority) for rid, r in self.active.items()),
+                default=(None, float("inf")),
+            )
+            if lowest_priority[0] is not None and req.priority > lowest_priority[1]:
+                preempted_id = lowest_priority[0]
+                preempted_req = self.active.pop(preempted_id)
+                self.preempted.append(preempted_req["request"])
+                self.active[req.request_id] = {
+                    "request": req,
+                    "tokens": list(req.prompt_ids),
+                    "generated_tokens": 0,
+                    "finished": False,
+                }
+                return
+        if len(self.queued) < self.max_queue:
             self.queued.append(req)
 
     def get_batch(self) -> Tuple[torch.Tensor, List[str]]:

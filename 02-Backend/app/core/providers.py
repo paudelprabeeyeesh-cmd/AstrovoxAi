@@ -1,6 +1,8 @@
 import logging
 import os
+import time
 from dataclasses import dataclass
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +55,21 @@ PROVIDERS: list[Provider] = [
 ]
 
 
+_active_providers_cache: Optional[list[Provider]] = None
+_active_providers_ts: float = 0.0
+_ACTIVE_TTL = 5.0
+
+
 def get_active_providers() -> list[Provider]:
+    global _active_providers_cache, _active_providers_ts
+    now = time.time()
+    if _active_providers_cache is not None and (now - _active_providers_ts) < _ACTIVE_TTL:
+        return _active_providers_cache
     active = []
     for p in PROVIDERS:
         key = os.getenv(p.env_key)
         if key:
             active.append(p)
-        else:
-            logger.info(f"Provider {p.name} skipped: {p.env_key} not set")
-    return sorted(active, key=lambda p: p.priority)
+    _active_providers_cache = sorted(active, key=lambda p: p.priority)
+    _active_providers_ts = now
+    return list(_active_providers_cache)

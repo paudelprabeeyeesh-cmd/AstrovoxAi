@@ -1,7 +1,7 @@
 import logging
 from typing import Any
 
-from ...tools import get_builtin_tools
+from app.tools import get_builtin_tools
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class ToolExecutor:
         return all(k in arguments for k in required)
 
     def get_available_tools(self, user_id: str) -> list[dict[str, Any]]:
-        from ...tools import get_builtin_tools
+        from app.tools import get_builtin_tools
         tools = []
         for t in get_builtin_tools():
             schema = t.to_openai_schema()
