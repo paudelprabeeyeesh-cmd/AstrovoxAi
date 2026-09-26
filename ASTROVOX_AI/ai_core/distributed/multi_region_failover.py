@@ -1,4 +1,4 @@
-"""Multi-region failover for high availability."""
+"""Multi-region failover and disaster recovery for distributed inference."""
 
 from __future__ import annotations
 
@@ -13,81 +13,119 @@ logger = logging.getLogger(__name__)
 
 
 class RegionStatus(Enum):
-    ACTIVE = "active"
-    STANDBY = "standby"
+    HEALTHY = "healthy"
     DEGRADED = "degraded"
-    FAILED = "failed"
+    UNAVAILABLE = "unavailable"
+    FAILING_OVER = "failing_over"
 
 
 @dataclass
-class RegionConfig:
+class Region:
     region_id: str
-    region_name: str
+    endpoint: str
     priority: int = 0
-    endpoint: str = ""
-    health_check_url: str = "/health"
-    failover_timeout: float = 30.0
+    status: RegionStatus = RegionStatus.HEALTHY
     health_check_interval: float = 10.0
+    last_health_check: datetime = field(default_factory=datetime.utcnow)
+    active_connections: int = 0
+    failed_requests: int = 0
 
 
 class MultiRegionFailover:
-    def __init__(self, regions: List[RegionConfig], health_check_fn: Optional[Callable[[str], bool]] = None):
-        self.regions = {r.region_id: r for r in regions}
-        self.health_check_fn = health_check_fn
-        self._region_status: Dict[str, RegionStatus] = {r.region_id: RegionStatus.ACTIVE if r.priority == max(r.priority for r in regions) else RegionStatus.STANDBY for r in regions}
+    def __init__(self, regions: Optional[List[Region]] = None, failure_threshold: int = 3):
+        self.regions: List[Region] = regions or []
+        self._region_index: Dict[str, Region] = {r.region_id: r for r in self.regions}
+        self.failure_threshold = failure_threshold
         self._active_region: Optional[str] = None
-        self._failover_history: List[Dict[str, Any]] = []
-        for rid, status in self._region_status.items():
-            if status == RegionStatus.ACTIVE:
-                self._active_region = rid
-                break
+        self._failover_lock = False
 
-    def get_active_region(self) -> Optional[str]:
-        return self._active_region
+    def register_region(self, region: Region) -> None:
+        self.regions.append(region)
+        self._region_index[region.region_id] = region
+        logger.info("Registered region %s with endpoint %s", region.region_id, region.endpoint)
 
-    def check_region_health(self, region_id: str) -> RegionStatus:
-        if self.health_check_fn:
-            try:
-                healthy = self.health_check_fn(region_id)
-                return RegionStatus.ACTIVE if healthy else RegionStatus.FAILED
-            except Exception:
-                return RegionStatus.FAILED
-        return RegionStatus.ACTIVE
+    def get_active_region(self) -> Optional[Region]:
+        if self._active_region and self._active_region in self._region_index:
+            region = self._region_index[self._active_region]
+            if region.status == RegionStatus.HEALTHY:
+                return region
+        return self._select_best_region()
 
-    def run_health_checks(self) -> Dict[str, RegionStatus]:
+    def _select_best_region(self) -> Optional[Region]:
+        healthy = [r for r in self.regions if r.status == RegionStatus.HEALTHY]
+        if not healthy:
+            return None
+        healthy.sort(key=lambda r: (-r.priority, r.active_connections))
+        best = healthy[0]
+        self._active_region = best.region_id
+        return best
+
+    def report_failure(self, region_id: str) -> None:
+        if region_id not in self._region_index:
+            return
+        region = self._region_index[region_id]
+        region.failed_requests += 1
+        if region.failed_requests >= self.failure_threshold:
+            region.status = RegionStatus.UNAVAILABLE
+            logger.warning("Region %s marked as unavailable after %d failures", region_id, region.failed_requests)
+            if self._active_region == region_id:
+                self._trigger_failover(region_id)
+
+    def _trigger_failover(self, failed_region_id: str) -> None:
+        if self._failover_lock:
+            return
+        self._failover_lock = True
+        try:
+            logger.info("Initiating failover from region %s", failed_region_id)
+            failed_region = self._region_index[failed_region_id]
+            failed_region.status = RegionStatus.FAILING_OVER
+            new_active = self._select_best_region()
+            if new_active:
+                logger.info("Failover complete. New active region: %s", new_active.region_id)
+                self._active_region = new_active.region_id
+                failed_region.status = RegionStatus.UNAVAILABLE
+            else:
+                logger.error("No healthy regions available for failover")
+        finally:
+            self._failover_lock = False
+
+    def perform_health_checks(self) -> Dict[str, RegionStatus]:
         results = {}
-        for region_id in self.regions:
-            status = self.check_region_health(region_id)
-            self._region_status[region_id] = status
-            results[region_id] = status
-            if status == RegionStatus.FAILED and self._active_region == region_id:
-                self._initiate_failover(region_id)
+        for region in self.regions:
+            healthy = self._check_region_health(region)
+            if healthy:
+                region.status = RegionStatus.HEALTHY
+                region.failed_requests = 0
+            else:
+                region.failed_requests += 1
+                if region.failed_requests >= self.failure_threshold:
+                    region.status = RegionStatus.UNAVAILABLE
+                else:
+                    region.status = RegionStatus.DEGRADED
+            results[region.region_id] = region.status
+            region.last_health_check = datetime.utcnow()
         return results
 
-    def _initiate_failover(self, failed_region: str) -> None:
-        logger.warning("Initiating failover from region %s", failed_region)
-        candidates = sorted(
-            [(rid, self.regions[rid]) for rid, status in self._region_status.items() if status == RegionStatus.ACTIVE and rid != failed_region],
-            key=lambda x: x[1].priority,
-            reverse=True,
-        )
-        if candidates:
-            new_active = candidates[0][0]
-            self._active_region = new_active
-            self._region_status[failed_region] = RegionStatus.FAILED
-            self._failover_history.append({
-                "from_region": failed_region,
-                "to_region": new_active,
-                "timestamp": datetime.utcnow().isoformat(),
-            })
-            logger.info("Failover complete: %s -> %s", failed_region, new_active)
+    def _check_region_health(self, region: Region) -> bool:
+        try:
+            import requests
+            response = requests.get(f"{region.endpoint}/health", timeout=5)
+            return response.status_code == 200
+        except Exception:
+            return False
 
     def get_region_status(self) -> Dict[str, Any]:
         return {
             "active_region": self._active_region,
-            "regions": {rid: {"status": status.value, "priority": self.regions[rid].priority, "endpoint": self.regions[rid].endpoint} for rid, status in self._region_status.items()},
-            "failover_count": len(self._failover_history),
+            "regions": [
+                {
+                    "region_id": r.region_id,
+                    "endpoint": r.endpoint,
+                    "status": r.status.value,
+                    "priority": r.priority,
+                    "active_connections": r.active_connections,
+                    "failed_requests": r.failed_requests,
+                }
+                for r in self.regions
+            ],
         }
-
-    def get_failover_history(self) -> List[Dict[str, Any]]:
-        return self._failover_history.copy()
