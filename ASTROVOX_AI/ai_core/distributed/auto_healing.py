@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import logging
-import threading
-import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
+from ASTROVOX_AI.ai_core.distributed._base import BackgroundService, validate_node_id
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class HealthIssue:
     heal_action: Optional[HealingAction] = None
 
 
-class AutoHealer:
+class AutoHealer(BackgroundService):
     def __init__(
         self,
         node_ids: List[str],
@@ -39,34 +39,23 @@ class AutoHealer:
         check_interval: float = 15.0,
         max_retries: int = 3,
     ):
-        self.node_ids = node_ids
+        super().__init__(check_interval=check_interval)
+        if not node_ids:
+            raise ValueError("node_ids must not be empty")
+        self.node_ids = list(node_ids)
         self.heal_fn = heal_fn
-        self.check_interval = check_interval
         self.max_retries = max_retries
         self._issues: Dict[str, HealthIssue] = {}
         self._retry_counts: Dict[str, int] = {nid: 0 for nid in node_ids}
-        self._running = False
-        self._thread: Optional[threading.Thread] = None
 
-    def start(self) -> None:
-        self._running = True
-        self._thread = threading.Thread(target=self._healing_loop, daemon=True)
-        self._thread.start()
-        logger.info("Auto-healer started")
+    def report_issue(self, node_id: str, issue_type: str, severity: str = "high") -> None:
+        validate_node_id(node_id)
+        if not issue_type:
+            raise ValueError("issue_type must not be empty")
+        self._issues[node_id] = HealthIssue(node_id=node_id, issue_type=issue_type, severity=severity)
 
-    def stop(self) -> None:
-        self._running = False
-        if self._thread:
-            self._thread.join(timeout=5)
-        logger.info("Auto-healer stopped")
-
-    def _healing_loop(self) -> None:
-        while self._running:
-            try:
-                self._detect_and_heal()
-            except Exception:
-                logger.exception("Auto-healing error")
-            time.sleep(self.check_interval)
+    def _tick(self) -> None:
+        self._detect_and_heal()
 
     def _detect_and_heal(self) -> None:
         for node_id in self.node_ids:
@@ -102,12 +91,7 @@ class AutoHealer:
     def _select_heal_action(self, issue: HealthIssue) -> HealingAction:
         if issue.severity == "critical":
             return HealingAction.REPLACE
-        if issue.issue_type == "unhealthy":
-            return HealingAction.RESTART_POD
         return HealingAction.RESTART_POD
-
-    def report_issue(self, node_id: str, issue_type: str, severity: str = "high") -> None:
-        self._issues[node_id] = HealthIssue(node_id=node_id, issue_type=issue_type, severity=severity)
 
     def get_status(self) -> Dict[str, Any]:
         return {

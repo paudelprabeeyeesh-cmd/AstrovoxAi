@@ -8,7 +8,11 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+import requests
+
+from ASTROVOX_AI.ai_core.distributed._base import validate_node_id, validate_positive_float
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +43,9 @@ class LeaderElection:
         election_timeout: float = 5.0,
         heartbeat_interval: float = 1.0,
     ):
+        validate_node_id(node_id)
+        validate_positive_float(election_timeout, "election_timeout")
+        validate_positive_float(heartbeat_interval, "heartbeat_interval")
         self.node_id = node_id
         self.host = host
         self.port = port
@@ -68,15 +75,21 @@ class LeaderElection:
 
     def _election_loop(self) -> None:
         while self._running:
-            elapsed = (datetime.utcnow() - self._last_heartbeat).total_seconds()
-            if elapsed > self.election_timeout and self.role != NodeRole.LEADER:
-                self._start_election()
+            try:
+                elapsed = (datetime.utcnow() - self._last_heartbeat).total_seconds()
+                if elapsed > self.election_timeout and self.role != NodeRole.LEADER:
+                    self._start_election()
+            except Exception:
+                logger.exception("Election loop error on node %s", self.node_id)
             time.sleep(0.1)
 
     def _heartbeat_loop(self) -> None:
         while self._running:
-            if self.role == NodeRole.LEADER:
-                self._send_heartbeats()
+            try:
+                if self.role == NodeRole.LEADER:
+                    self._send_heartbeats()
+            except Exception:
+                logger.exception("Heartbeat loop error on node %s", self.node_id)
             time.sleep(self.heartbeat_interval)
 
     def _start_election(self) -> None:
@@ -96,7 +109,6 @@ class LeaderElection:
 
     def _request_vote(self, peer: ClusterNode) -> bool:
         try:
-            import requests
             response = requests.post(
                 f"http://{peer.host}:{peer.port}/election/vote",
                 json={"term": self.term, "candidate_id": self.node_id},
@@ -104,20 +116,19 @@ class LeaderElection:
             )
             if response.status_code == 200:
                 return response.json().get("vote_granted", False)
-        except Exception:
+        except requests.RequestException:
             logger.warning("Failed to request vote from peer %s", peer.node_id)
         return False
 
     def _send_heartbeats(self) -> None:
         for peer in self.peers:
             try:
-                import requests
                 requests.post(
                     f"http://{peer.host}:{peer.port}/election/heartbeat",
                     json={"term": self.term, "leader_id": self.node_id},
                     timeout=1,
                 )
-            except Exception:
+            except requests.RequestException:
                 logger.warning("Failed to send heartbeat to peer %s", peer.node_id)
 
     def get_status(self) -> Dict[str, Any]:
@@ -128,3 +139,4 @@ class LeaderElection:
             "leader_id": self.leader_id,
             "peers": len(self.peers),
         }
+
