@@ -144,7 +144,7 @@ async def update_settings(request: SettingsUpdateRequest, authorization: str = H
 async def create_folder(request: FolderCreateRequest, authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         response = (
             supabase.table("conversation_folders")
             .insert({"user_id": user_id, "name": request.name, "color": request.color or "#0ea5e9"})
@@ -164,7 +164,7 @@ async def create_folder(request: FolderCreateRequest, authorization: str = Heade
 async def list_folders(authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         response = (
             supabase.table("conversation_folders")
             .select("*")
@@ -184,7 +184,7 @@ async def update_folder(folder_id: str, request: FolderUpdateRequest, authorizat
     if not kwargs:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         response = (
             supabase.table("conversation_folders")
             .update(kwargs)
@@ -206,7 +206,7 @@ async def update_folder(folder_id: str, request: FolderUpdateRequest, authorizat
 async def delete_folder(folder_id: str, authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         supabase.table("conversation_folders").delete().eq("id", folder_id).eq("user_id", user_id).execute()
         return {"status": "OK", "message": "Folder deleted"}
     except Exception as e:
@@ -253,7 +253,7 @@ async def move_conversation_to_folder(conversation_id: str, request: MoveConvers
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
     if request.folder_id:
         try:
-            supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+            supabase = get_supabase()
             folder = supabase.table("conversation_folders").select("id").eq("id", request.folder_id).eq("user_id", user_id).execute()
             if not folder.data:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
@@ -276,7 +276,7 @@ async def share_conversation(request: ShareConversationRequest, authorization: s
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         response = (
             supabase.table("conversations")
             .update({"is_shared": True, "shared_at": datetime.now(timezone.utc).isoformat(), "shared_with": request.shared_with_user_ids})
@@ -292,7 +292,7 @@ async def share_conversation(request: ShareConversationRequest, authorization: s
 async def list_shared_conversations(authorization: str = Header(None)):
     user_id = get_user_id_from_token(authorization)
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         response = (
             supabase.table("conversations")
             .select("*")
@@ -317,7 +317,7 @@ async def search_conversations(request: SearchConversationsRequest, authorizatio
     if not query:
         return {"status": "OK", "results": [], "count": 0}
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         conv_response = (
             supabase.table("conversations")
             .select("*")
@@ -385,7 +385,7 @@ async def export_conversation(conversation_id: str, authorization: str = Header(
     else:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported format. Use json or markdown.")
     try:
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         supabase.table("chat_exports").insert({
             "user_id": user_id,
             "conversation_id": conversation_id,
@@ -492,7 +492,7 @@ async def upload_file(file: UploadFile = File(...), authorization: str = Header(
             raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="File too large")
         safe_name = re.sub(r'[^a-zA-Z0-9._-]', '_', file.filename or "file")
         path = f"user/{user_id}/chat/{uuid.uuid4().hex}_{safe_name}"
-        supabase = __import__("app.repositories.database.supabase_client", fromlist=["get_supabase"]).get_supabase()
+        supabase = get_supabase()
         storage = supabase.storage.from_("chat-uploads")
         storage.upload(path, content, {"content-type": file.content_type or "application/octet-stream"})
         public_url = supabase.storage.from_("chat-uploads").get_public_url(path)
