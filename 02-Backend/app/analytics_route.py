@@ -324,7 +324,7 @@ async def add_cohort_member(cohort_id: str, authorization: str = Header(None), p
 
 
 @router.get("/cohorts/{cohort_id}")
-async def get_cohort_analysis(authorization: str = Header(None), cohort_id: str, days: int = 30):
+async def get_cohort_analysis(cohort_id: str, authorization: str = Header(None), days: int = 30):
     """Get cohort analysis."""
     get_user_id_from_token(authorization)
     data = advanced_analytics.get_cohort_analysis(cohort_id=cohort_id, days=days)
@@ -351,7 +351,7 @@ async def create_funnel(authorization: str = Header(None), payload: dict = Body(
 
 
 @router.post("/funnels/{funnel_id}/events")
-async def track_funnel_event(funnel_id: str, authorization: str = Header(None), payload: dict = Body(...)):
+async def track_funnel_event(authorization: str = Header(None), funnel_id: str, payload: dict = Body(...)):
     """Track a funnel event."""
     user_id = get_user_id_from_token(authorization)
     from app.analytics.advanced import FunnelEvent

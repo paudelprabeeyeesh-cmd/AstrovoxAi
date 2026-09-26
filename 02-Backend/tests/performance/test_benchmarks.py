@@ -383,7 +383,7 @@ class TestMemoryLookupTime:
 
     def test_memory_lookup_latency(self):
         with patch("app.chat.get_user_id_from_token", return_value="bench-user"), patch(
-            "app.chat.get_user_memory", new_callable=AsyncMock, return_value=[{"content": "note"}])
+            "app.chat.get_user_memory", new_callable=AsyncMock, return_value=[{"content": "note"}]
         ):
             start = time.perf_counter()
             client.get("/api/memory", headers=_auth_headers(), params={"limit": 10})
