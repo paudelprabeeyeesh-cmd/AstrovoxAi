@@ -57,21 +57,21 @@ const RAGPanel = (() => {
   }
 
   async function embedText(text) {
-    return request('/api/rag/embed', {
+    return request('/rag/embed', {
       method: 'POST',
       body: JSON.stringify({ text }),
     });
   }
 
   async function hybridSearch(query, embedding = null, topK = 5) {
-    return request('/api/rag/search', {
+    return request('/rag/search', {
       method: 'POST',
       body: JSON.stringify({ query, embedding, top_k: topK }),
     });
   }
 
   async function multiQuerySearch(query, topK = 5) {
-    return request('/api/rag/multi-query', {
+    return request('/rag/multi-query', {
       method: 'POST',
       body: JSON.stringify({ query, top_k: topK }),
     });

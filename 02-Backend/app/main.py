@@ -239,7 +239,7 @@ async def metrics_middleware(request: Request, call_next):
         pass
 
     try:
-        from app.monitoring import performance_monitor, error_tracker
+        from app.monitoring import performance_monitor, error_tracker, RequestMetric
         performance_monitor.record_request(
             RequestMetric(
                 endpoint=request.url.path,

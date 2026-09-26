@@ -73,7 +73,7 @@ class AgentRuntime:
             try:
                 return str(self.llm.generate(step))
             except Exception:
-                pass
+                logger.warning("LLM generation failed for step: %s", step)
         return f"Executed: {step}"
 
     def safety_check(self, action: str) -> bool:
