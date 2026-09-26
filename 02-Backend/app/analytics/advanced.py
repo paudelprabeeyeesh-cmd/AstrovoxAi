@@ -285,6 +285,138 @@ class AdvancedAnalyticsEngine:
         }
         self._load_from_db()
 
+    def _persist_gpu_metric(self, metric: "GPUMetric") -> None:
+        try:
+            event_id = str(uuid.uuid4())
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO gpu_metrics (id, device_id, utilization_percent, memory_used_mb, memory_total_mb, temperature_c, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        event_id,
+                        metric.device_id,
+                        metric.utilization_percent,
+                        metric.memory_used_mb,
+                        metric.memory_total_mb,
+                        metric.temperature_c,
+                        datetime.fromtimestamp(metric.timestamp, tz=timezone.utc).isoformat() if metric.timestamp else datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_memory_metric(self, metric: "MemoryMetric") -> None:
+        try:
+            event_id = str(uuid.uuid4())
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO memory_metrics (id, total_mb, used_mb, available_mb, percent, swap_used_mb, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        event_id,
+                        metric.total_mb,
+                        metric.used_mb,
+                        metric.available_mb,
+                        metric.percent,
+                        metric.swap_used_mb,
+                        datetime.fromtimestamp(metric.timestamp, tz=timezone.utc).isoformat() if metric.timestamp else datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _persist_api_metric(self, metric: "APIMetric") -> None:
+        try:
+            event_id = str(uuid.uuid4())
+            with get_db() as conn:
+                conn.execute(
+                    "INSERT INTO api_metrics (id, endpoint, method, status_code, latency_ms, user_id, model, provider, tokens, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        event_id,
+                        metric.endpoint,
+                        metric.method,
+                        metric.status_code,
+                        metric.latency_ms,
+                        metric.user_id,
+                        metric.model,
+                        metric.provider,
+                        metric.tokens,
+                        datetime.fromtimestamp(metric.timestamp, tz=timezone.utc).isoformat() if metric.timestamp else datetime.now(timezone.utc).isoformat(),
+                    ),
+                )
+                conn.commit()
+        except Exception:
+            pass
+
+    def _load_gpu_metrics_from_db(self) -> None:
+        try:
+            with get_db() as conn:
+                rows = conn.execute(
+                    "SELECT device_id, utilization_percent, memory_used_mb, memory_total_mb, temperature_c, created_at FROM gpu_metrics ORDER BY created_at ASC"
+                ).fetchall()
+                for r in rows:
+                    try:
+                        ts = datetime.fromisoformat(r["created_at"]).timestamp()
+                    except Exception:
+                        ts = time.time()
+                    self._gpu_metrics.append(GPUMetric(
+                        device_id=r["device_id"],
+                        utilization_percent=r["utilization_percent"],
+                        memory_used_mb=r["memory_used_mb"],
+                        memory_total_mb=r["memory_total_mb"],
+                        temperature_c=r["temperature_c"],
+                        timestamp=ts,
+                    ))
+        except Exception:
+            pass
+
+    def _load_memory_metrics_from_db(self) -> None:
+        try:
+            with get_db() as conn:
+                rows = conn.execute(
+                    "SELECT total_mb, used_mb, available_mb, percent, swap_used_mb, created_at FROM memory_metrics ORDER BY created_at ASC"
+                ).fetchall()
+                for r in rows:
+                    try:
+                        ts = datetime.fromisoformat(r["created_at"]).timestamp()
+                    except Exception:
+                        ts = time.time()
+                    self._memory_metrics.append(MemoryMetric(
+                        total_mb=r["total_mb"],
+                        used_mb=r["used_mb"],
+                        available_mb=r["available_mb"],
+                        percent=r["percent"],
+                        swap_used_mb=r["swap_used_mb"],
+                        timestamp=ts,
+                    ))
+        except Exception:
+            pass
+
+    def _load_api_metrics_from_db(self) -> None:
+        try:
+            with get_db() as conn:
+                rows = conn.execute(
+                    "SELECT endpoint, method, status_code, latency_ms, user_id, model, provider, tokens, created_at FROM api_metrics ORDER BY created_at ASC"
+                ).fetchall()
+                for r in rows:
+                    try:
+                        ts = datetime.fromisoformat(r["created_at"]).timestamp()
+                    except Exception:
+                        ts = time.time()
+                    self._api_metrics.append(APIMetric(
+                        endpoint=r["endpoint"],
+                        method=r["method"],
+                        status_code=r["status_code"],
+                        latency_ms=r["latency_ms"],
+                        user_id=r["user_id"],
+                        model=r["model"],
+                        provider=r["provider"],
+                        tokens=r["tokens"],
+                        timestamp=ts,
+                    ))
+        except Exception:
+            pass
+
     def _load_from_db(self) -> None:
         try:
             with get_db() as conn:
@@ -304,6 +436,9 @@ class AdvancedAnalyticsEngine:
                     ))
         except Exception:
             pass
+        self._load_gpu_metrics_from_db()
+        self._load_memory_metrics_from_db()
+        self._load_api_metrics_from_db()
 
     def _persist_event(self, event_type: str, user_id: str, metadata: dict) -> None:
         try:
@@ -1567,6 +1702,7 @@ class AdvancedAnalyticsEngine:
             timestamp=time.time(),
         )
         self._gpu_metrics.append(metric)
+        self._persist_gpu_metric(metric)
 
     def track_memory_usage(self, total_mb: float = 0.0, used_mb: float = 0.0, available_mb: float = 0.0, percent: float = 0.0, swap_used_mb: float = 0.0):
         metric = MemoryMetric(
@@ -1578,6 +1714,7 @@ class AdvancedAnalyticsEngine:
             timestamp=time.time(),
         )
         self._memory_metrics.append(metric)
+        self._persist_memory_metric(metric)
 
     def track_api_metric(self, endpoint: str, method: str, status_code: int, latency_ms: float = 0.0, user_id: str = "", model: str = "", provider: str = "", tokens: int = 0):
         metric = APIMetric(
@@ -1592,6 +1729,7 @@ class AdvancedAnalyticsEngine:
             timestamp=time.time(),
         )
         self._api_metrics.append(metric)
+        self._persist_api_metric(metric)
 
     def get_user_stats(self, user_id: str) -> dict:
         user_events = [e for e in self._events if e.user_id == user_id]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,8 @@ class Memory:
         self._max_entries = max_entries
         self._entries: Dict[str, MemoryEntry] = {}
         self._by_type: Dict[str, List[str]] = {}
+        self._recall_cache: Dict[str, Tuple[List[MemoryEntry], float]] = {}
+        self._RECALL_TTL = 30.0
 
     def store(self, content: str, memory_type: str, importance: float = 1.0, metadata: Optional[Dict[str, Any]] = None) -> MemoryEntry:
         entry = MemoryEntry(
@@ -45,6 +47,11 @@ class Memory:
         return entry
 
     def recall(self, query: str, memory_type: Optional[str] = None, limit: int = 10) -> List[MemoryEntry]:
+        cache_key = f"{query}:{memory_type}:{limit}"
+        now = time.time()
+        cached = self._recall_cache.get(cache_key)
+        if cached and (now - cached[1]) < self._RECALL_TTL:
+            return list(cached[0])
         candidates = []
         search_ids = self._by_type.get(memory_type, list(self._entries.keys())) if memory_type else list(self._entries.keys())
         for mem_id in search_ids:
@@ -54,7 +61,9 @@ class Memory:
                 entry.accessed_at = time.time()
                 candidates.append(entry)
         candidates.sort(key=lambda e: (e.importance, e.access_count), reverse=True)
-        return candidates[:limit]
+        result = candidates[:limit]
+        self._recall_cache[cache_key] = (result, now)
+        return result
 
     def _prune(self) -> None:
         sorted_entries = sorted(self._entries.values(), key=lambda e: (e.importance, e.accessed_at))

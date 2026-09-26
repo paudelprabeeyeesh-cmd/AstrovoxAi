@@ -24,6 +24,7 @@ class JWTManager:
         scope: str = "user",
         algorithm: str = "HS256",
         audience: str = "astrovox-api",
+        issuer: str = "astrovox-auth",
     ) -> str:
         now = datetime.now(timezone.utc)
         payload = {
@@ -32,6 +33,8 @@ class JWTManager:
             "iat": now,
             "scope": scope,
             "aud": audience,
+            "iss": issuer,
+            "jti": secrets.token_urlsafe(16),
         }
         return jwt.encode(payload, secret_key, algorithm=algorithm)
 
@@ -41,10 +44,17 @@ class JWTManager:
         secret_key: str,
         algorithms: list[str] = None,
         audience: str = "astrovox-api",
+        issuer: str = "astrovox-auth",
     ) -> Optional[Dict[str, Any]]:
         algorithms = algorithms or ["HS256"]
         try:
-            payload = jwt.decode(token, secret_key, algorithms=algorithms, audience=audience)
+            payload = jwt.decode(
+                token,
+                secret_key,
+                algorithms=algorithms,
+                audience=audience,
+                issuer=issuer,
+            )
             return payload
         except JWTError:
             return None
@@ -55,3 +65,10 @@ class JWTManager:
         if not exp:
             return True
         return datetime.fromtimestamp(exp, tz=timezone.utc) < datetime.now(timezone.utc)
+
+    @staticmethod
+    def is_revoked(payload: Dict[str, Any], revocation_list: Any = None) -> bool:
+        jti = payload.get("jti")
+        if not jti or revocation_list is None:
+            return False
+        return revocation_list.is_revoked(jti)

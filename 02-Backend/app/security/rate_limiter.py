@@ -41,13 +41,16 @@ class RateLimiter:
             timestamps.append(now)
             remaining -= 1
         reset_at = datetime.fromtimestamp(timestamps[0] + window, tz=timezone.utc) if timestamps else datetime.now(timezone.utc)
-        return RateLimit(
+        rate_limit = RateLimit(
             key=key,
             limit=limit,
             window_seconds=window,
             remaining=max(0, remaining),
             reset_at=reset_at,
         )
+        if not rate_limit.remaining:
+            logger.warning("Rate limit exceeded for %s: %d/%d", key, limit, limit)
+        return rate_limit
 
     @classmethod
     def reset(cls, key: str) -> None:
