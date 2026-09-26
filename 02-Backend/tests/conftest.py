@@ -223,14 +223,18 @@ def mock_external_services():
             ])),
         ]
 
-    with patch('app.billing.stripe', mock_stripe), \
-         patch.object(billing_module, '_STRIPE_CONFIGURED', True), \
-         patch('openai.OpenAI', return_value=mock_openai_client), \
-         patch('app.core.moderation.check_moderation', return_value=(False, None)), \
-         patch('app.routers.solve.check_moderation', return_value=(False, None)), \
-         patch('app.core.providers.get_active_providers', return_value=[]), \
-         *_main_patches:
-        
+    _patches = [
+        patch('app.billing.stripe', mock_stripe),
+        patch.object(billing_module, '_STRIPE_CONFIGURED', True),
+        patch('openai.OpenAI', return_value=mock_openai_client),
+        patch('app.core.moderation.check_moderation', return_value=(False, None)),
+        patch('app.routers.solve.check_moderation', return_value=(False, None)),
+        patch('app.core.providers.get_active_providers', return_value=[]),
+    ] + _main_patches
+
+    with ExitStack() as stack:
+        for p in _patches:
+            stack.enter_context(p)
         yield {
             'stripe': mock_stripe,
             'openai': mock_openai_client,

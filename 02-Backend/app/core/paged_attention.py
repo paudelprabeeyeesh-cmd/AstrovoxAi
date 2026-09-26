@@ -81,9 +81,11 @@ class KVCache:
         )
         return page_id
 
-    def write_kv(self, layer_idx: int, logical_block: int, data: torch.Tensor) -> None:
+    def write_kv(self, layer_idx: int, logical_block: int, data: Any) -> None:
         page_id = self.get_or_allocate(logical_block, layer_idx)
         page = self.pages[page_id]
+        if not isinstance(data, torch.Tensor):
+            data = torch.tensor(data, device=self.device, dtype=torch.float16)
         actual_len = min(self.page_size, data.shape[0])
         page.k[:actual_len, :, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
         page.v[:actual_len, :, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
