@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..repositories.database.client import get_db
+from app.repositories.database.client import get_db
 from ..services.auth.auth import get_current_user
 from ..services.auth.auth import require_admin
 

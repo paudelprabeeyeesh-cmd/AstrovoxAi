@@ -214,7 +214,7 @@ class ConflictDetector:
         words_b = set(b.lower().split())
         overlap = len(words_a & words_b)
         min_len = min(len(words_a), len(words_b))
-        return min_len > 0 and (overlap / min_len) < 0.5
+        return min_len > 0 and (overlap / min_len) <= 0.5
 
 
 class KnowledgeGraph:

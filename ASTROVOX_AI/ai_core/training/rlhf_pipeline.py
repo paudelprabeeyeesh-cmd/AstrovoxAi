@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 class RLHFConfig:
     def __init__(self, reward_model_path: Optional[str] = None, kl_coef: float = 0.1, lr: float = 1e-5, num_train_epochs: int = 3, max_length: int = 512):
-        self.reward_model_path = reward_model_path_path
+        self.reward_model_path = reward_model_path
         self.kl_coef = kl_coef
         self.lr = lr
         self.num_train_epochs = num_train_epochs

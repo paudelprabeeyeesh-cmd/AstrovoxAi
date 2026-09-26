@@ -6,7 +6,7 @@ from app.services.knowledge.knowledge import search_docs
 from .cost import count_tokens
 from app.repositories.database.client import get_db
 from .core.llm import LLMClient
-from ...tools import get_builtin_tools
+from app.tools import get_builtin_tools
 from .thinking import ThinkingConfig
 
 logger = logging.getLogger(__name__)

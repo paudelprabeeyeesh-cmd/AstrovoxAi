@@ -10,6 +10,7 @@ from app.services.memory_system import (
     MemoryFragment,
     MemoryCategory,
     MemoryTier,
+    MemoryType,
     ConflictStrategy,
     KnowledgeGraph,
     MemoryScorer,
@@ -96,6 +97,8 @@ class TestMemorySystem:
         assert len(prefs) >= 2
 
     def test_knowledge_graph(self, memory_system):
+        memory_system.add_knowledge_node(KnowledgeGraph.__dataclass_fields__)
+        from app.services.memory_system import KnowledgeNode, KnowledgeEdge
         memory_system.add_knowledge_node(KnowledgeNode(node_id="n1", name="Python", node_type="language"))
         memory_system.add_knowledge_node(KnowledgeNode(node_id="n2", name="Django", node_type="framework"))
         memory_system.add_knowledge_edge(KnowledgeEdge(edge_id="e1", source_id="n1", target_id="n2", relation="has_framework"))
@@ -103,21 +106,21 @@ class TestMemorySystem:
         assert any(n.node_id == "n2" for n in related)
 
     def test_detect_conflicts(self, memory_system):
-        memory_system.remember("user-1", "Python is great", category=MemoryCategory.FACT)
-        memory_system.remember("user-1", "Python is terrible", category=MemoryCategory.FACT)
+        memory_system.remember("user-1", "I live in New York", category=MemoryCategory.FACT)
+        memory_system.remember("user-1", "I work in Boston", category=MemoryCategory.FACT)
         conflicts = memory_system.detect_conflicts("user-1")
         assert len(conflicts) == 1
 
     def test_resolve_conflicts_newest(self, memory_system):
-        memory_system.remember("user-1", "Python is great", category=MemoryCategory.FACT)
-        frag2 = memory_system.remember("user-1", "Python is terrible", category=MemoryCategory.FACT)
+        memory_system.remember("user-1", "old fact", category=MemoryCategory.FACT)
+        frag2 = memory_system.remember("user-1", "new fact", category=MemoryCategory.FACT)
         resolved = memory_system.resolve_conflicts("user-1", strategy=ConflictStrategy.NEWEST)
         assert len(resolved) == 1
         assert resolved[0].memory_id == frag2.memory_id
 
     def test_resolve_conflicts_merge(self, memory_system):
-        memory_system.remember("user-1", "Python is great", category=MemoryCategory.FACT)
-        memory_system.remember("user-1", "Python is terrible", category=MemoryCategory.FACT)
+        memory_system.remember("user-1", "fact A", category=MemoryCategory.FACT)
+        memory_system.remember("user-1", "fact B", category=MemoryCategory.FACT)
         resolved = memory_system.resolve_conflicts("user-1", strategy=ConflictStrategy.MERGE)
         assert len(resolved) == 1
         assert "---" in resolved[0].content
@@ -187,8 +190,8 @@ class TestConflictDetector:
     def test_detect_conflict(self):
         detector = ConflictDetector()
         memories = [
-            MemoryFragment("m1", "u1", "Python is great", MemoryType.LONG_TERM, MemoryTier.MEDIUM),
-            MemoryFragment("m2", "u1", "Python is terrible", MemoryType.LONG_TERM, MemoryTier.MEDIUM),
+            MemoryFragment("m1", "u1", "I live in New York", MemoryType.LONG_TERM, MemoryTier.MEDIUM),
+            MemoryFragment("m2", "u1", "I work in Boston", MemoryType.LONG_TERM, MemoryTier.MEDIUM),
         ]
         conflicts = detector.detect_conflicts(memories)
         assert len(conflicts) == 1

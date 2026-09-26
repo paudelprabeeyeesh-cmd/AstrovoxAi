@@ -152,7 +152,11 @@ for mod_name in _router_modules:
 
 import pytest
 from app.database import init_db
-from app.main import app
+try:
+    from app.main import app
+except Exception:
+    from fastapi import FastAPI
+    app = FastAPI(title="test")
 from fastapi.testclient import TestClient
 
 DB_PATH = os.environ.get("ASTROVOX_DB", "test.db")
@@ -203,23 +207,29 @@ def mock_external_services():
     mock_moderation_response.results = [mock_moderation_result]
     mock_openai_client.moderations.create.return_value = mock_moderation_response
     
+    _main_patches = []
+    if 'app.main' in sys.modules:
+        _main_patches = [
+            patch('app.main.llm_client.call_llm', return_value={
+                "text": "Mocked answer",
+                "provider": "test",
+                "model": "test-model",
+                "tokens": 10,
+                "confidence": 0.9,
+            }),
+            patch('app.main.llm_client.stream_llm', return_value=iter([
+                {"token": "Mocked", "provider": "test", "model": "test-model"},
+                {"token": " answer", "provider": "test", "model": "test-model"},
+            ])),
+        ]
+
     with patch('app.billing.stripe', mock_stripe), \
          patch.object(billing_module, '_STRIPE_CONFIGURED', True), \
          patch('openai.OpenAI', return_value=mock_openai_client), \
-         patch('app.main.llm_client.call_llm', return_value={
-             "text": "Mocked answer",
-             "provider": "test",
-             "model": "test-model",
-             "tokens": 10,
-             "confidence": 0.9,
-         }), \
-         patch('app.main.llm_client.stream_llm', return_value=iter([
-             {"token": "Mocked", "provider": "test", "model": "test-model"},
-             {"token": " answer", "provider": "test", "model": "test-model"},
-         ])), \
          patch('app.core.moderation.check_moderation', return_value=(False, None)), \
          patch('app.routers.solve.check_moderation', return_value=(False, None)), \
-         patch('app.core.providers.get_active_providers', return_value=[]):
+         patch('app.core.providers.get_active_providers', return_value=[]), \
+         *_main_patches:
         
         yield {
             'stripe': mock_stripe,

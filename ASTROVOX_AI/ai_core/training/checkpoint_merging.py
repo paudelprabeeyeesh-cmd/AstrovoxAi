@@ -35,7 +35,7 @@ class CheckpointMerger:
                 else:
                     omega = torch.acos(torch.dot(vec_a / norm_a, vec_b / norm_b).clamp(-1, 1))
                     sin_omega = torch.sin(omega)
-                    result[key] = (torch.sin((1 - t) * omega) / sin_omega) * state_dict_a[key] + (torch.sin(t * omega) / sin_omega) * state_b[key]
+                    result[key] = (torch.sin((1 - t) * omega) / sin_omega) * state_dict_a[key] + (torch.sin(t * omega) / sin_omega) * state_dict_b[key]
             else:
                 result[key] = state_dict_a[key]
         model_a.load_state_dict(result)

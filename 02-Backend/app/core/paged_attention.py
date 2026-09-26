@@ -56,7 +56,7 @@ class KVCache:
             self._evict()
         page_id = self._next_page_id
         self._next_page_id += 1
-        shape = (self.num_heads, self.page_size, self.head_dim)
+        shape = (self.page_size, self.num_heads, self.head_dim)
         k = torch.zeros(shape, device=self.device, dtype=torch.float16)
         v = torch.zeros(shape, device=self.device, dtype=torch.float16)
         page = KVCachePage(page_id=page_id, layer_idx=layer_idx, k=k, v=v)
@@ -85,8 +85,8 @@ class KVCache:
         page_id = self.get_or_allocate(logical_block, layer_idx)
         page = self.pages[page_id]
         actual_len = min(self.page_size, data.shape[0])
-        page.k[:, :actual_len, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
-        page.v[:, :actual_len, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
+        page.k[:actual_len, :, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
+        page.v[:actual_len, :, :] = data[:actual_len, :, :] if data.ndim == 3 else data[:actual_len, :]
         page.last_accessed = time.time()
 
     def get_kv(self, layer_idx: int, logical_block: int) -> Optional[torch.Tensor]:
@@ -95,7 +95,7 @@ class KVCache:
         if page_id is None:
             return None
         page = self.pages[page_id]
-        return torch.cat([page.k, page.v], dim=-1)
+        return page.k
 
     def _evict(self) -> None:
         candidates = [p for p in self.pages if p.ref_count <= 1 and not p.is_prefix]
@@ -108,6 +108,9 @@ class KVCache:
             for key, pid in list(self._logical_to_physical.items()):
                 if pid == victim.page_id:
                     del self._logical_to_physical[key]
+            for logical_block, entry in list(self.page_table.items()):
+                if entry.physical_page_id == victim.page_id:
+                    del self.page_table[logical_block]
 
     def get_memory_usage(self) -> Dict[str, Any]:
         total_bytes = sum(p.k.numel() * p.k.element_size() + p.v.numel() * p.v.element_size() for p in self.pages)
@@ -161,14 +164,14 @@ def paged_attention_forward(q: torch.Tensor, kv_cache: KVCache, page_table: Dict
     v_blocks = []
     for entry in page_table.values():
         page = kv_cache.pages[entry.physical_page_id]
-        k_blocks.append(page.k)
-        v_blocks.append(page.v)
+        k_blocks.append(page.k.transpose(0, 1))
+        v_blocks.append(page.v.transpose(0, 1))
     if not k_blocks:
         k = torch.zeros(batch_size, num_heads, 0, head_dim, device=q.device, dtype=q.dtype)
         v = torch.zeros(batch_size, num_heads, 0, head_dim, device=q.device, dtype=q.dtype)
     else:
-        k = torch.cat(k_blocks, dim=1).unsqueeze(0).repeat(batch_size, 1, 1, 1)
-        v = torch.cat(v_blocks, dim=1).unsqueeze(0).repeat(batch_size, 1, 1, 1)
+        k = torch.cat(k_blocks, dim=2).unsqueeze(0).repeat(batch_size, 1, 1, 1)
+        v = torch.cat(v_blocks, dim=2).unsqueeze(0).repeat(batch_size, 1, 1, 1)
     attn = torch.matmul(q, k.transpose(-2, -1)) * scale
     attn = attn.softmax(dim=-1)
     out = torch.matmul(attn, v)

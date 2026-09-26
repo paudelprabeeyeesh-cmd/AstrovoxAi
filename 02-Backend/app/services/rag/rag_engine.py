@@ -78,7 +78,7 @@ class RAGEngine:
         return [item.embedding for item in response.data]
 
     def store_chunks(self, chunks, embeddings, user_id, source_type, filename=None):
-        from ..repositories.database.client import get_db
+        from app.repositories.database.client import get_db
         with get_db() as conn:
             row = conn.execute(
                 "SELECT id FROM documents WHERE user_id = ? AND filename = ? ORDER BY created_at DESC LIMIT 1",

@@ -1,6 +1,7 @@
 from typing import Optional, Dict, Any, List, Callable
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 from ASTROVOX_AI.ai_core.fine_tuning.lora import LoRA
 

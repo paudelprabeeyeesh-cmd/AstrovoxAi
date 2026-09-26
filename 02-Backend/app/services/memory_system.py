@@ -291,7 +291,7 @@ class ConflictDetector:
         min_len = min(len(words_a), len(words_b))
         if min_len == 0:
             return False
-        return overlap / min_len < 0.5
+        return overlap / min_len <= 0.5
 
 
 class MemorySystem:

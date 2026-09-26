@@ -1,7 +1,7 @@
 from typing import Optional, Dict, Any, List
 import os
 from pathlib import Path
-from ASTROVOX_AI.ai_core.inference.custom_tokenizer import CustomTokenizer
+from ASTROVOX_AI.ai_core.tokenization.custom_tokenizer import CustomTokenizer
 from ASTROVOX_AI.ai_core.rag.incremental_indexing import IncrementalIndexer
 from torch.utils.data import Dataset, DataLoader
 
