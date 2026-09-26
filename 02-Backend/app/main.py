@@ -54,6 +54,7 @@ from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeL
 from app.middleware.error_handler import register_error_handlers
 from app.core.llm import LLMClient
 from app.context_builder import ContextBuilder
+from app.middleware.content_negotiation import ContentNegotiationMiddleware
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
@@ -78,6 +79,7 @@ from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router
+from app.routers.rag import router as rag_router
 from app.search_route import router as search_router
 
 load_dotenv()
@@ -186,6 +188,7 @@ app.include_router(memory_v2_router)
 app.include_router(memory_system_router)
 app.include_router(automation_router)
 app.include_router(document_router)
+app.include_router(rag_router)
 app.include_router(performance_router)
 app.include_router(temporal_router)
 app.include_router(kernel_router)

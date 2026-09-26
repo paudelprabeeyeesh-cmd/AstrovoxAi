@@ -64,6 +64,26 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         )
         """)
     cur.execute("""
+        CREATE TABLE IF NOT EXISTS images (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            prompt TEXT,
+            size TEXT DEFAULT '0x0',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            metadata TEXT DEFAULT '{}'
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS image_analyses (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            filename TEXT,
+            question TEXT,
+            result TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS analytics_events (
             id TEXT PRIMARY KEY,
             event_type TEXT NOT NULL,

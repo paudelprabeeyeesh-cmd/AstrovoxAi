@@ -28,7 +28,7 @@ class Cache:
             if hasattr(self._config, 'redis_sentinel_url') and self._config.redis_sentinel_url:
                 from redis.sentinel import Sentinel
                 sentinel = Sentinel(
-                    self._config.redis_sentinel_url.split(','),
+                    self._config.redis.sentinel_url.split(','),
                     socket_timeout=self._config.redis.socket_timeout,
                     socket_connect_timeout=self._config.redis.socket_connect_timeout,
                 )

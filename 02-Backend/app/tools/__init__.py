@@ -185,9 +185,11 @@ class CodeExecutionTool:
             result = execute_python(code, config=config, principal=principal)
             if result.success:
                 return ToolResult(True, result.output, "code_executor")
-            return ToolResult(False, result.error or "Execution failed", "code_executor")
+            err = result.error or "Execution failed"
+            return ToolResult(False, err, "code_executor", error=err)
         except Exception as e:
-            return ToolResult(False, f"Execution error: {str(e)[:200]}", "code_executor")
+            err = f"Execution error: {str(e)[:200]}"
+            return ToolResult(False, err, "code_executor", error=err)
 
 
 # ============================================================================

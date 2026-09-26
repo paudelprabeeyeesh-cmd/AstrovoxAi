@@ -1,46 +1,19 @@
-"""Enterprise Module — organizations, workspaces, RBAC, real-time, notifications."""
+from ASTROVOX_AI.ai_core.enterprise.tenant_manager import TenantManager
+from ASTROVOX_AI.ai_core.enterprise.role_based_access import RoleBasedAccess
+from ASTROVOX_AI.ai_core.enterprise.audit_log import AuditLogger
+from ASTROVOX_AI.ai_core.enterprise.sso import SSOManager
+from ASTROVOX_AI.ai_core.enterprise.sla import SLATracker
 
-from .models import (
-    Organization,
-    Workspace,
-    OrganizationMembership,
-    WorkspaceMembership,
-    ORG_ROLES,
-    WORKSPACE_ROLES,
-)
-from .service import org_service, OrganizationService
-from .rbac import rbac, RBACEnforcer
-from .abac import abac, ABACEnforcer, ABACContext
-from .websocket import ws_manager, ConnectionManager
-from .notifications import notification_service, NotificationService
-from .search import EnterpriseSearch, SearchResult
-from .tenancy import tenant_manager, TenantManager, tenant_required, tenant_scoped
-from .encryption import tenant_encryption, TenantEncryptionManager
+tenant_manager = TenantManager()
+rbac = RoleBasedAccess()
+audit = AuditLogger()
+sso = SSOManager()
+sla_tracker = SLATracker()
 
 __all__ = [
-    "Organization",
-    "Workspace",
-    "OrganizationMembership",
-    "WorkspaceMembership",
-    "ORG_ROLES",
-    "WORKSPACE_ROLES",
-    "org_service",
-    "OrganizationService",
-    "rbac",
-    "RBACEnforcer",
-    "abac",
-    "ABACEnforcer",
-    "ABACContext",
-    "ws_manager",
-    "ConnectionManager",
-    "notification_service",
-    "NotificationService",
-    "EnterpriseSearch",
-    "SearchResult",
     "tenant_manager",
-    "TenantManager",
-    "tenant_required",
-    "tenant_scoped",
-    "tenant_encryption",
-    "TenantEncryptionManager",
+    "rbac",
+    "audit",
+    "sso",
+    "sla_tracker",
 ]
