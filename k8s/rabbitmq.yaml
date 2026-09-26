@@ -1,9 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: message-queues
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rabbitmq-config

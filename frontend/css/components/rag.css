@@ -1,0 +1,190 @@
+/* RAG Panel and Knowledge Base UI Components */
+
+.rag-panel {
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border, #334155);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.rag-panel h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary, #f8fafc);
+}
+
+.rag-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border, #334155);
+  padding-bottom: 0.5rem;
+}
+
+.rag-tab {
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #94a3b8);
+  cursor: pointer;
+  border-radius: 0.375rem;
+  font-weight: 500;
+}
+
+.rag-tab.active {
+  background: var(--accent, #0ea5e9);
+  color: #fff;
+}
+
+.rag-form-group {
+  margin-bottom: 1rem;
+}
+
+.rag-form-group label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #f8fafc);
+}
+
+.rag-input,
+.rag-select,
+.rag-textarea {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border, #334155);
+  border-radius: 0.5rem;
+  background: var(--bg-primary, #0f172a);
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.875rem;
+}
+
+.rag-textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.rag-btn {
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.rag-btn:hover {
+  opacity: 0.9;
+}
+
+.rag-btn-primary {
+  background: var(--accent, #0ea5e9);
+  color: #fff;
+}
+
+.rag-btn-secondary {
+  background: var(--bg-tertiary, #334155);
+  color: var(--text-primary, #f8fafc);
+}
+
+.rag-chunk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.rag-chunk-card {
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.rag-chunk-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.rag-chunk-id {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent, #0ea5e9);
+}
+
+.rag-chunk-score {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.rag-chunk-content {
+  font-size: 0.875rem;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.5;
+}
+
+.rag-citation {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--accent, #0ea5e9);
+  margin-top: 0.5rem;
+}
+
+.rag-search-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rag-search-bar .rag-input {
+  flex: 1;
+}
+
+.rag-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.rag-meta-card {
+  background: var(--bg-primary, #0f172a);
+  border: 1px solid var(--border, #334155);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.rag-meta-card .label {
+  font-size: 0.75rem;
+  color: var(--text-secondary, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.rag-meta-card .value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  margin-top: 0.25rem;
+}
+
+.rag-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.rag-empty-state svg {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}

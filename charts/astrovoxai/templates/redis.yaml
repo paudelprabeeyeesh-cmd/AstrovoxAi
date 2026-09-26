@@ -1,3 +1,23 @@
+{{- if .Values.redis.enabled }}
+{{- $redis := .Values.redis }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-redis-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: redis
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+data:
+  redis.conf: |
+    maxmemory 1gb
+    maxmemory-policy allkeys-lru
+    save 900 1
+    save 300 10
+    save 60 10000
+    appendonly yes
+    protected-mode no
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -7,7 +27,7 @@ metadata:
     app: redis
     {{- include "astrovoxai.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ $redis.replicaCount | default 1 }}
   selector:
     matchLabels:
       app: redis
@@ -25,7 +45,7 @@ spec:
         fsGroup: 999
       containers:
       - name: redis
-        image: "{{ .Values.image.registry }}/redis:7-alpine"
+        image: "{{ $redis.image }}"
         ports:
         - containerPort: 6379
           name: redis
@@ -34,7 +54,7 @@ spec:
         - /etc/redis/redis.conf
         env:
         - name: REDIS_PASSWORD
-          value: "{{ .Values.redis.password }}"
+          value: "{{ $redis.password }}"
         volumeMounts:
         - name: redis-config
           mountPath: /etc/redis
@@ -42,12 +62,7 @@ spec:
         - name: redis-data
           mountPath: /data
         resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-          limits:
-            cpu: 500m
-            memory: 512Mi
+          {{- toYaml $redis.resources | nindent 12 }}
         livenessProbe:
           exec:
             command: ["redis-cli", "ping"]
@@ -65,22 +80,6 @@ spec:
       - name: redis-data
         persistentVolumeClaim:
           claimName: {{ include "astrovoxai.fullname" . }}-redis
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ include "astrovoxai.fullname" . }}-redis-config
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "astrovoxai.labels" . | nindent 4 }}
-data:
-  redis.conf: |
-    maxmemory 1gb
-    maxmemory-policy allkeys-lru
-    save 900 1
-    save 300 10
-    save 60 10000
-    appendonly yes
 ---
 apiVersion: v1
 kind: Service
@@ -112,4 +111,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 8Gi
+      storage: {{ $redis.storage | default "8Gi" }}
+{{- end }}

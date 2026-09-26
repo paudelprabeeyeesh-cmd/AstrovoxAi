@@ -1,35 +1,238 @@
-"""Docker Compose production configuration with full services."""
+version: "3.8"
 
-services: dict[str, Any] = {
-    "backend": {
-        "build": {"context": ".", "dockerfile": "Dockerfile.backend", "target": "production"},
-        "ports": ["8000:8000"],
-        "environment": [
-            "APP_ENV=production",
-            "DATABASE_URL=${DATABASE_URL}",
-            "REDIS_URL=${REDIS_URL}",
-            "JAEGER_URL=http://jaeger:14268/api/traces",
-        ],
-        "volumes": ["./storage:/app/storage", "./logs:/app/logs"],
-        "depends_on": {"postgres": {"condition": "service_healthy"}, "redis": {"condition": "service_healthy"}},
-        "healthcheck": {"test": ["CMD", "curl", "-f", "http://localhost:8000/healthz"], "interval": "30s", "timeout": "10s", "retries": 3},
-        "restart": "always",
-        "deploy": {"replicas": 3, "resources": {"limits": {"cpus": "2.0", "memory": "2G"}, "reservations": {"cpus": "0.5", "memory": "512M"}}},
-    },
-    "postgres": {
-        "image": "pgvector/pgvector:pg16",
-        "environment": ["POSTGRES_USER=${POSTGRES_USER}", "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}", "POSTGRES_DB=${POSTGRES_DB}"],
-        "volumes": ["postgres_data:/var/lib/postgresql/data"],
-        "healthcheck": {"test": ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"], "interval": "10s", "timeout": "5s", "retries": 5},
-        "restart": "always",
-    },
-    "redis": {
-        "image": "redis:7-alpine",
-        "command": "redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru",
-        "volumes": ["redis_data:/data"],
-        "healthcheck": {"test": ["CMD", "redis-cli", "ping"], "interval": "10s", "timeout": "5s", "retries": 5},
-        "restart": "always",
-    },
-    "jaeger": {"image": "jaegertracing/all-in-one:1.50", "ports": ["16686:16686", "14268:14268"], "restart": "always"},
-}
-volumes = {"postgres_data": {}, "redis_data": {}}
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_REPLICA_URL=${DATABASE_REPLICA_URL}
+      - REDIS_URL=${REDIS_URL}
+      - REDIS_SENTINEL_URL=${REDIS_SENTINEL_URL}
+      - RABBITMQ_URL=${RABBITMQ_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - API_GATEWAY_URL=http://kong:8000
+      - CDN_BASE_URL=https://cdn.astrovox.ai
+      - JAEGER_URL=http://jaeger:14268/api/traces
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+    volumes:
+      - ./storage:/app/storage
+      - ./logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redis-sentinel:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      kong:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    networks:
+      - astrovox
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-astrovox}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-astrovox_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-astrovox}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astrovox}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: always
+    networks:
+      - astrovox
+
+  postgres-replica:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-astrovox}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-astrovox_pass}
+      - POSTGRES_DB=${POSTGRES_DB:-astrovox}
+      - PGUSER=${POSTGRES_USER:-astrovox}
+    command: >
+      bash -c "
+        until pg_basebackup -h postgres -U astrovox -D /var/lib/postgresql/data -Fp -Xs -P -R;
+        do
+          echo 'Waiting for primary...';
+          sleep 5;
+        done;
+        exec postgres -c config_file=/etc/postgresql/postgresql.conf
+      "
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-astrovox}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - astrovox
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 1gb --maxmemory-policy allkeys-lru --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - astrovox
+
+  redis-sentinel:
+    image: redis:7-alpine
+    command: redis-sentinel /etc/redis/sentinel.conf
+    volumes:
+      - ./infrastructure/k8s/redis-sentinel.yaml:/etc/redis/sentinel.conf:ro
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - astrovox
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-astrovox}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-astrovox_pass}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+    networks:
+      - astrovox
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    networks:
+      - astrovox
+
+  kong:
+    image: kong:3.5
+    environment:
+      - KONG_DATABASE=off
+      - KONG_ADMIN_LISTEN=0.0.0.0:8001
+      - KONG_PROXY_LISTEN=0.0.0.0:8000
+    ports:
+      - "8000:8000"
+      - "8443:8443"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: always
+    networks:
+      - astrovox
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: always
+    networks:
+      - astrovox
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    ports:
+      - "9090:9090"
+    restart: always
+    networks:
+      - astrovox
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    restart: always
+    networks:
+      - astrovox
+
+volumes:
+  postgres_data:
+  postgres_replica_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+  grafana_data:
+
+networks:
+  astrovox:
+    driver: bridge

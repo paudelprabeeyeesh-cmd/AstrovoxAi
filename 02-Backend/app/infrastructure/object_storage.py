@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import BinaryIO, Dict, List, Optional
+from typing import BinaryIO, List, Optional
 
 from app.infrastructure.storage import get_storage
 

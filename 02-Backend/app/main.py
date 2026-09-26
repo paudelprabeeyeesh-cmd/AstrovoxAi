@@ -131,8 +131,6 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(IPEnforcementMiddleware)
 app.add_middleware(UserAgentMiddleware)
-app.add_middleware(AuthenticationMiddleware)
-app.add_middleware(BackendRateLimitMiddleware, limiter=limiter)
 
 # Request logging with correlation id propagation
 app.add_middleware(RequestLoggingMiddleware)

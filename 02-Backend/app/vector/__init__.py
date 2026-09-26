@@ -1,12 +1,18 @@
-"""Vector Search Module."""
+"""Vector search and database module."""
 
-from .engine import VectorSearchEngine, search_engine, VectorIndex, VectorDocument, SearchResult, SearchResults
+from .database import HNSWIndex, SearchResult, VectorDatabase, VectorRecord
+from .engine import SearchResults, VectorDocument, VectorIndex, VectorSearchEngine, search_engine
+from .index import VectorIndexManager
 
 __all__ = [
-    "VectorSearchEngine",
-    "search_engine",
-    "VectorIndex",
-    "VectorDocument",
+    "HNSWIndex",
     "SearchResult",
+    "VectorDatabase",
+    "VectorDocument",
+    "VectorIndex",
+    "VectorIndexManager",
+    "VectorRecord",
+    "VectorSearchEngine",
     "SearchResults",
+    "search_engine",
 ]

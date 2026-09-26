@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
@@ -64,8 +65,6 @@ class HealthChecker:
             return HealthStatus.DEGRADED
         return HealthStatus.HEALTHY
 
-
-import time
 
 _health_checker: Optional[HealthChecker] = None
 

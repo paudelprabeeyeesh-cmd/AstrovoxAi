@@ -41,6 +41,7 @@ class ToolResult:
     success: bool
     result: str
     tool_name: str
+    error: str = ""
     metadata: dict = field(default_factory=dict)
 
     def __post_init__(self):
@@ -656,7 +657,7 @@ class GitHubIntegrationTool:
     def __init__(self, token: str = ""):
         self._token = token or os.getenv("GITHUB_TOKEN", "")
 
-    def list_repos(self, username: str = "") -> ToolResult:
+    async def list_repos(self, username: str = "") -> ToolResult:
         try:
             import httpx
             target = username or os.getenv("GITHUB_USERNAME", "")
@@ -673,7 +674,7 @@ class GitHubIntegrationTool:
         except Exception as e:
             return ToolResult(False, f"GitHub error: {str(e)}", "github")
 
-    def create_issue(self, repo: str, title: str, body: str = "") -> ToolResult:
+    async def create_issue(self, repo: str, title: str, body: str = "") -> ToolResult:
         try:
             if not self._token:
                 return ToolResult(False, "GitHub token not configured.", "github")

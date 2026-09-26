@@ -23,8 +23,7 @@ from app.search_knowledge import (
     QueryUnderstanding,
     SearchResult as SKSearchResult,
 )
-from app.search_unified import verify_source, verify_sources_batch
-from app.search.source_verifier import get_verification_summary
+from app.search_verifier import verify_sources_batch, get_verification_summary, verify_source
 
 logger = logging.getLogger(__name__)
 

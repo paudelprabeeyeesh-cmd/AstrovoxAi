@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+automountServiceAccountToken: {{ .Values.serviceAccount.automount }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-role
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "astrovoxai.fullname" . }}-rolebinding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "astrovoxai.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "astrovoxai.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "astrovoxai.fullname" . }}-role
