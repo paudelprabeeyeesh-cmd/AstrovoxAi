@@ -50,10 +50,20 @@ class Agent:
         action = self.decide()
         return self.act(action)
 
+    def run(self, task: str, context: Dict[str, Any]) -> Any:
+        self.perceive(context or {})
+        action = self.decide()
+        return self.act(action)
+
+    def receive(self, message: Dict[str, Any]) -> None:
+        self.perceive(message)
+
 
 class MultiAgentOrchestrator:
     def __init__(self):
         self.agents: Dict[str, Agent] = {}
+        self.collaboration = None
+        self.conflict_resolver = None
 
     def register(self, agent: Agent) -> None:
         self.agents[agent.agent_id] = agent
@@ -70,3 +80,60 @@ class MultiAgentOrchestrator:
         for agent_id, agent in self.agents.items():
             results[agent_id] = agent.run(task, results)
         return results
+
+
+class MultiAgentCollaboration:
+    def __init__(self):
+        self.agents: Dict[str, Any] = {}
+        self.shared_context: Dict[str, Any] = {}
+
+    def register(self, agent: Any) -> None:
+        self.agents[agent.agent_id] = agent
+
+    def broadcast(self, sender_id: str, message: Dict[str, Any]) -> None:
+        for agent_id, agent in self.agents.items():
+            if agent_id != sender_id:
+                if hasattr(agent, "receive"):
+                    agent.receive(message)
+                logger.debug("Broadcast from %s to %s", sender_id, agent_id)
+
+    def coordinate(self, task: str) -> Dict[str, Any]:
+        results = {}
+        for agent_id, agent in self.agents.items():
+            if hasattr(agent, "run"):
+                results[agent_id] = agent.run(task, self.shared_context)
+        return results
+
+    def share_context(self, key: str, value: Any) -> None:
+        self.shared_context[key] = value
+
+
+class ConflictResolution:
+    def __init__(self):
+        self.resolution_history: List[Dict[str, Any]] = []
+
+    def resolve(self, conflict: Dict[str, Any]) -> Dict[str, Any]:
+        strategy = self._select_strategy(conflict)
+        resolution = self._apply_strategy(strategy, conflict)
+        self.resolution_history.append({"conflict": conflict, "strategy": strategy, "resolution": resolution})
+        return resolution
+
+    def _select_strategy(self, conflict: Dict[str, Any]) -> str:
+        severity = conflict.get("severity", "low")
+        if severity == "high":
+            return "human_escalation"
+        if conflict.get("type") == "resource_contention":
+            return "priority_based"
+        return "consensus"
+
+    def _apply_strategy(self, strategy: str, conflict: Dict[str, Any]) -> Dict[str, Any]:
+        if strategy == "human_escalation":
+            return {"status": "escalated", "reason": "Requires human decision"}
+        if strategy == "priority_based":
+            candidates = conflict.get("candidates", [])
+            best = max(candidates, key=lambda c: c.get("priority", 0)) if candidates else None
+            return {"status": "resolved", "winner": best}
+        if strategy == "consensus":
+            candidates = conflict.get("candidates", [])
+            return {"status": "resolved", "winner": candidates[0] if candidates else None}
+        return {"status": "unresolved"}

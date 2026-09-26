@@ -11,7 +11,7 @@ from ..core.moderation import check_moderation
 from ..core.pii import redact_pii
 from ..core.tracing import start_trace, get_prompt_hash, log_llm_call
 from ..cost import count_tokens
-from ...schemas import SolveRequest, SolveResponse
+from ..schemas import SolveRequest, SolveResponse
 from ..auth import require_verified_email
 from ..circuit_breaker import llm_circuit_breaker
 from ..retry import retry_with_backoff

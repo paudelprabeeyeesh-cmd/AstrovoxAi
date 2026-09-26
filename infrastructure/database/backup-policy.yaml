@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-backup-policy
+  namespace: astrovox
+data:
+  BACKUP_SCHEDULE: "0 2 * * *"
+  RETENTION_DAYS: "30"
+  BACKUP_TYPE: "full,incremental"
+  COMPRESSION: "gzip"
+  ENCRYPTION: "AES256"
+  VERIFICATION: "true"
+  CROSS_REGION_REPLICATION: "true"
+  BACKUP_TARGET: "s3://astrovox-backups/production"

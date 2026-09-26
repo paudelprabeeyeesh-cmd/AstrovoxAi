@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email
 from ..core.llm import LLMClient
-from ...schemas import EmbeddingRequest, EmbeddingResponse
+from ..schemas import EmbeddingRequest, EmbeddingResponse
 
 logger = logging.getLogger(__name__)
 

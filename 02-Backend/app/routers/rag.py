@@ -12,7 +12,7 @@ from ..documents import (
     get_document,
     delete_document,
 )
-from ...schemas import (
+from ..schemas import (
     DocumentOut, RAGSearchResult,
     RAGIngestResponse, RAGIngestRequest, RAGGithubRequest,
 )

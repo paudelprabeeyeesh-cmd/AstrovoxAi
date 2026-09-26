@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...schemas import MemoryCreate, MemoryUpdate, MemoryOut, MemoryClassifyRequest, MemoryClassifyResponse
+from ..schemas import MemoryCreate, MemoryUpdate, MemoryOut, MemoryClassifyRequest, MemoryClassifyResponse
 from ..memory_service import memory_service
 from ..auth import require_verified_email, get_current_user
 from app.repositories.database.client import get_db

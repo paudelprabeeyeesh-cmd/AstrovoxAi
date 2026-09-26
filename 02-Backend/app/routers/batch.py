@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email
 from app.repositories.database.client import get_db
-from ...schemas import BatchJobCreate
+from ..schemas import BatchJobCreate
 
 logger = logging.getLogger(__name__)
 

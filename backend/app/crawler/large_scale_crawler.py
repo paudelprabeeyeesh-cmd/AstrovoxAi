@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from ..crawler.crawler import CrawlerConfig, WebCrawler
+from .crawler import CrawlerConfig, WebCrawler
 
 logger = logging.getLogger(__name__)
 

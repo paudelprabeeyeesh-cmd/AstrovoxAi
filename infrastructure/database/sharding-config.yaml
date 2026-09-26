@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-sharding-config
+  namespace: astrovox
+data:
+  SHARDING_ENABLED: "true"
+  SHARD_COUNT: "4"
+  SHARD_KEY: "user_id"
+  ROUTING_STRATEGY: "hash"
+  REPLICATION_FACTOR: "3"
+  AUTO_REBALANCE: "true"
+  HOT_THRESHOLD: "0.7"
+  COLD_THRESHOLD: "0.3"
+  TIERED_STORAGE: "true"

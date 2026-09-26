@@ -10,8 +10,8 @@ from typing import Any, Dict
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from ...services.memory.memory_manager import MemoryManager
-from ...core.context_manager import ContextChunk, LongContextManager
+from ..services.memory.memory_manager import MemoryManager
+from ..core.context_manager import ContextChunk, LongContextManager
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class MemoryResponse(BaseModel):
 async def add_memory(request: MemoryCreateRequest):
     try:
         if request.memory_type == "semantic":
-            from ...services.memory.semantic_memory import FactCategory
+            from ..services.memory.semantic_memory import FactCategory
             memory_manager.add_fact(
                 fact_key=f"memory_{request.user_id}_{hash(request.content)}",
                 fact_value=request.content,
@@ -54,7 +54,7 @@ async def add_memory(request: MemoryCreateRequest):
                 user_explicit=True,
             )
         elif request.memory_type == "episodic":
-            from ...services.memory.episodic_memory import EventType
+            from ..services.memory.episodic_memory import EventType
             memory_manager.add_event(
                 user_id=int(request.user_id),
                 event_type=EventType.LEARNING_EVENT,

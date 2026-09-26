@@ -1,29 +1,51 @@
+from typing import Any, Dict, List, Optional
 import logging
-from typing import Any
-
-from .base import BaseAgent, AgentResult, Plan, Review
 
 logger = logging.getLogger(__name__)
 
 
-class DebuggerAgent(BaseAgent):
-    def __init__(self, llm_client: Any | None = None):
-        super().__init__("Debugger", llm_client)
+class AutoDebugger:
+    def __init__(self, max_retries: int = 3):
+        self.max_retries = max_retries
+        self.error_history: List[Dict[str, Any]] = []
 
-    def plan(self, task: str) -> Plan:
-        steps = [
-            f"Analyze error/bug report: {task}",
-            f"Isolate the root cause",
-            f"Develop fix strategy",
-            f"Implement and test fix",
-            f"Verify resolution",
-        ]
-        return Plan(steps=steps, estimated_tokens=1000)
+    def diagnose(self, error: Exception, context: Dict[str, Any]) -> Dict[str, Any]:
+        diagnosis = {
+            "error_type": type(error).__name__,
+            "message": str(error),
+            "context": context,
+            "root_cause": self._infer_root_cause(error),
+        }
+        self.error_history.append(diagnosis)
+        return diagnosis
 
-    def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        code = context.get("code", "") if context else ""
-        output = f"Debugging analysis for: {task}\n\nPotential issues found in code.\nSuggested fix: review error handling."
-        return AgentResult(success=True, output=output, metadata={"code_snippet": code[:200]})
+    def _infer_root_cause(self, error: Exception) -> str:
+        msg = str(error).lower()
+        if "timeout" in msg:
+            return "timeout"
+        if "connection" in msg:
+            return "connection_error"
+        if "null" in msg or "none" in msg:
+            return "null_reference"
+        if "permission" in msg or "auth" in msg:
+            return "permission_error"
+        return "unknown"
 
-    def review(self, output: str) -> Review:
-        return Review(approved=True, feedback="Debugging approach is sound", score=0.8)
+    def repair(self, diagnosis: Dict[str, Any]) -> Optional[str]:
+        root_cause = diagnosis.get("root_cause")
+        repairs = {
+            "timeout": "Retry with exponential backoff and increased timeout.",
+            "connection_error": "Check network connectivity and retry.",
+            "null_reference": "Add null guard and validate inputs.",
+            "permission_error": "Verify credentials and permissions.",
+            "unknown": "Escalate to human review.",
+        }
+        return repairs.get(root_cause)
+
+    def self_reflect(self, outcome: Dict[str, Any]) -> Dict[str, Any]:
+        reflection = {
+            "success": outcome.get("status") == "success",
+            "issues": [h for h in self.error_history if h.get("root_cause") != "resolved"],
+            "improvement": "Adjust retry policy and add preconditions.",
+        }
+        return reflection
