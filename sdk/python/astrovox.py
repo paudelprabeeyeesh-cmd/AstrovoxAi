@@ -1,10 +1,10 @@
 import requests
-from typing import Optional, Dict, List, Any, Callable, AsyncIterator
-from dataclasses import dataclass, field
-from datetime import datetime
 import json
 import time
 import logging
+from typing import Optional, Dict, List, Any, Callable
+from dataclasses import dataclass, field
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class AstrovoxClient:
         })
         return response.json()
 
-    def stream_message(self, conversation_id: str, message: str, model: str = "gpt-4") -> Any:
+    def stream_message(self, conversation_id: str, message: str, model: str = "gpt-4"):
         response = self._request("POST", "/chat/stream", json={
             'conversation_id': conversation_id,
             'message': message,
@@ -168,4 +168,20 @@ class AstrovoxClient:
 
     def register_plugin(self, manifest: Dict[str, Any]) -> Dict[str, Any]:
         response = self._request("POST", "/plugins/register", json=manifest)
+        return response.json()
+
+    def run_evaluation(self, suite_name: str, cases: List[dict]) -> Dict[str, Any]:
+        response = self._request("POST", "/evaluation/run", json={'suite': suite_name, 'cases': cases})
+        return response.json()
+
+    def check_safety(self, text: str) -> Dict[str, Any]:
+        response = self._request("POST", "/safety/check", json={'text': text})
+        return response.json()
+
+    def create_organization(self, name: str, plan: str = "free") -> Dict[str, Any]:
+        response = self._request("POST", "/organizations", json={'name': name, 'plan': plan})
+        return response.json()
+
+    def list_organizations(self) -> List[Dict[str, Any]]:
+        response = self._request("GET", "/organizations")
         return response.json()

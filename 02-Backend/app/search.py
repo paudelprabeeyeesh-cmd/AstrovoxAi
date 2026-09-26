@@ -1,4 +1,7 @@
 import uuid
+import re
+import math
+import json
 from datetime import datetime
 from typing import Optional
 
@@ -118,8 +121,6 @@ class SearchEngine:
         if not embedding:
             return 0.0
         try:
-            import json
-            import math
             emb = json.loads(embedding) if isinstance(embedding, str) else embedding
             q_emb = self._embed_query(query)
             dot = sum(a * b for a, b in zip(q_emb, emb))
@@ -132,12 +133,12 @@ class SearchEngine:
             return 0.0
 
     def _embed_query(self, query: str) -> list:
-        try:
-            from app.rag_engine import RAGEngine
-            engine = RAGEngine()
-            return engine.embed_chunks([query])[0]
-        except Exception:
-            return [0.0] * 1536
+        vec = [0.0] * 384
+        words = re.findall(r"\b[a-zA-Z]{2,}\b", query.lower())
+        for i, word in enumerate(words[:384]):
+            vec[i % 384] += hash(word) % 100 / 100.0
+        norm = math.sqrt(sum(v * v for v in vec)) or 1.0
+        return [v / norm for v in vec]
 
     def _keyword_score(self, query: str, content: str) -> float:
         content_lower = content.lower()

@@ -30,6 +30,17 @@ class ToolDefinition:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+    def to_openai_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": self.parameters,
+            },
+        }
+
+
 class ToolRegistry:
     _tools: Dict[str, ToolDefinition] = {}
     _handlers: Dict[str, Callable] = {}

@@ -137,6 +137,30 @@ async def get_user_analytics(authorization: str = Header(None), days: int = 7):
     return {"status": "OK", "data": data}
 
 
+@router.get("/gpu")
+async def get_gpu_analytics(authorization: str = Header(None), days: int = 7):
+    """Get GPU utilization analytics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_gpu_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/memory")
+async def get_memory_analytics(authorization: str = Header(None), days: int = 7):
+    """Get memory usage analytics."""
+    user_id = get_user_id_from_token(authorization)
+    data = analytics.get_memory_analytics(days=days)
+    return {"status": "OK", "data": data}
+
+
+@router.get("/api-metrics")
+async def get_api_metrics(authorization: str = Header(None), days: int = 7, user_id: Optional[str] = None):
+    """Get API metrics analytics."""
+    get_user_id_from_token(authorization)
+    data = analytics.get_api_metrics(days=days, user_id=user_id)
+    return {"status": "OK", "data": data}
+
+
 @router.get("/export")
 async def export_analytics(authorization: str = Header(None), days: int = 30, format: str = "json"):
     """Export analytics data."""

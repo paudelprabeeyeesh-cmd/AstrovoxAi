@@ -8,10 +8,17 @@ const API_BASE = (() => {
 const TOKEN_KEY = 'astrovox_access_token';
 const REFRESH_TOKEN_KEY = 'astrovox_refresh_token';
 const USER_KEY = 'astrovox_user';
+const CSRF_KEY = 'astrovox_csrf_token';
+const SESSION_EXPIRY_KEY = 'astrovox_session_expiry';
 
 function getStoredToken() {
   try {
-    return localStorage.getItem(TOKEN_KEY);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token && isTokenExpired()) {
+      clearTokens();
+      return null;
+    }
+    return token;
   } catch {
     return null;
   }
@@ -25,15 +32,24 @@ function getStoredRefreshToken() {
   }
 }
 
-function setTokens(accessToken, refreshToken) {
+function setTokens(accessToken, refreshToken, expiresIn = 3600) {
   localStorage.setItem(TOKEN_KEY, accessToken);
   if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+  localStorage.setItem(SESSION_EXPIRY_KEY, Date.now() + expiresIn * 1000);
 }
 
 function clearTokens() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  localStorage.removeItem(CSRF_KEY);
+  localStorage.removeItem(SESSION_EXPIRY_KEY);
+}
+
+function isTokenExpired() {
+  const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
+  if (!expiry) return true;
+  return Date.now() > parseInt(expiry, 10);
 }
 
 function getStoredUser() {
@@ -47,6 +63,36 @@ function getStoredUser() {
 
 function setStoredUser(user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
+function getCsrfToken() {
+  try {
+    return localStorage.getItem(CSRF_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setCsrfToken(token) {
+  localStorage.setItem(CSRF_KEY, token);
+}
+
+function hasRole(role) {
+  const user = getStoredUser();
+  if (!user || !user.roles) return false;
+  return user.roles.includes(role);
+}
+
+function hasPermission(permission) {
+  const user = getStoredUser();
+  if (!user || !user.permissions) return false;
+  return user.permissions.includes(permission);
+}
+
+function getSessionTimeRemaining() {
+  const expiry = localStorage.getItem(SESSION_EXPIRY_KEY);
+  if (!expiry) return 0;
+  return Math.max(0, parseInt(expiry, 10) - Date.now());
 }
 
 let refreshPromise = null;
@@ -85,6 +131,7 @@ async function apiFetch(endpoint, options = {}) {
   let token = getStoredToken();
   const headers = {
     'Content-Type': 'application/json',
+    'X-CSRF-Token': getCsrfToken() || '',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...options.headers,
   };
@@ -105,6 +152,10 @@ async function apiFetch(endpoint, options = {}) {
     }
   }
 
+  if (response.status === 403) {
+    console.warn('Forbidden: insufficient permissions');
+  }
+
   return response;
 }
 
@@ -119,15 +170,15 @@ class AuthAPI {
       throw new Error(err.detail || err.message || 'Invalid email or password');
     }
     const data = await res.json();
-    setTokens(data.access_token, data.refresh_token);
-    setStoredUser({ id: data.user_id, email: data.email });
+    setTokens(data.access_token, data.refresh_token, data.expires_in);
+    setStoredUser({ id: data.user_id, email: data.email, roles: data.roles || [], permissions: data.permissions || [] });
     return data;
   }
 
   static async register(email, password, name) {
     const res = await apiFetch('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, full_name: name }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: 'Registration failed' }));
@@ -158,11 +209,23 @@ class AuthAPI {
   }
 
   static isAuthenticated() {
-    return !!getStoredToken();
+    return !!getStoredToken() && !isTokenExpired();
   }
 
   static getUser() {
     return getStoredUser();
+  }
+
+  static checkPermission(permission) {
+    return hasPermission(permission);
+  }
+
+  static checkRole(role) {
+    return hasRole(role);
+  }
+
+  static getSessionTimeRemaining() {
+    return getSessionTimeRemaining();
   }
 }
 

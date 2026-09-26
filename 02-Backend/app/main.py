@@ -4,8 +4,12 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
+import sys
 import time
+from pathlib import Path
 from dotenv import load_dotenv
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
 
 from app.services.auth.auth import router as auth_router
 from app.chat import router as chat_router
@@ -52,6 +56,7 @@ from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdow
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
 from app.middleware.content_negotiation import ContentNegotiationMiddleware
+from backend.app.middleware import AuthenticationMiddleware, RBACMiddleware, RateLimitMiddleware as BackendRateLimitMiddleware
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
@@ -74,6 +79,7 @@ from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router
+from app.search_route import router as search_router
 
 load_dotenv()
 
@@ -128,6 +134,8 @@ app.add_middleware(
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(IPEnforcementMiddleware)
 app.add_middleware(UserAgentMiddleware)
+app.add_middleware(AuthenticationMiddleware)
+app.add_middleware(BackendRateLimitMiddleware, limiter=limiter)
 
 # Request logging with correlation id propagation
 app.add_middleware(RequestLoggingMiddleware)
@@ -205,6 +213,7 @@ app.include_router(collaboration_router)
 app.include_router(multiverse_router)
 app.include_router(omnipresent_router)
 app.include_router(agi_router)
+app.include_router(code_agent_router)
 app.include_router(search_router)
 app.include_router(core_assistant_router)
 app.include_router(video_router)

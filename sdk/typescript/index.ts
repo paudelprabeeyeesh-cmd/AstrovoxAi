@@ -41,6 +41,20 @@ export interface ExportOptions {
   format?: 'json' | 'markdown' | 'csv'
 }
 
+export interface EvaluationOptions {
+  suite: string
+  cases: Array<{ prompt: string; expected: string }>
+}
+
+export interface SafetyCheckOptions {
+  text: string
+}
+
+export interface CreateOrgOptions {
+  name: string
+  plan?: string
+}
+
 export class AstrovoxClient {
   private apiKey: string
   private baseUrl: string
@@ -202,10 +216,11 @@ export class AstrovoxClient {
       body: data,
       headers: { 'Content-Type': `application/${format}` }
     })
-    return response.json()
+    const result = await response.json()
+    return result as Conversation
   }
 
-  async healthCheck(): Promise<Record<string, any>> {
+  async healthCheck(): Promise<any> {
     const response = await this.request('GET', '/health')
     return response.json()
   }
@@ -221,6 +236,32 @@ export class AstrovoxClient {
     const response = await this.request('POST', '/plugins/register', {
       body: JSON.stringify(manifest)
     })
+    return response.json()
+  }
+
+  async runEvaluation(options: EvaluationOptions): Promise<any> {
+    const response = await this.request('POST', '/evaluation/run', {
+      body: JSON.stringify(options)
+    })
+    return response.json()
+  }
+
+  async checkSafety(options: SafetyCheckOptions): Promise<any> {
+    const response = await this.request('POST', '/safety/check', {
+      body: JSON.stringify(options)
+    })
+    return response.json()
+  }
+
+  async createOrganization(options: CreateOrgOptions): Promise<any> {
+    const response = await this.request('POST', '/organizations', {
+      body: JSON.stringify(options)
+    })
+    return response.json()
+  }
+
+  async listOrganizations(): Promise<any[]> {
+    const response = await this.request('GET', '/organizations')
     return response.json()
   }
 }
