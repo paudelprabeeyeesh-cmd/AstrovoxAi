@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  inference:
+    build:
+      context: ..
+      dockerfile: infrastructure/docker/inference/Dockerfile
+    ports:
+      - "8001:8001"
+      - "8002:8002"
+    environment:
+      - MODEL_NAME=${MODEL_NAME:-meta-llama/Llama-2-7b-chat-hf}
+      - TENSOR_PARALLEL_SIZE=${TENSOR_PARALLEL_SIZE:-1}
+      - PIPELINE_PARALLEL_SIZE=${PIPELINE_PARALLEL_SIZE:-1}
+      - MAX_BATCH_SIZE=${MAX_BATCH_SIZE:-32}
+      - MAX_SEQ_LEN=${MAX_SEQ_LEN:-4096}
+      - KV_CACHE_BLOCK_SIZE=${KV_CACHE_BLOCK_SIZE:-16}
+      - PREFIX_CACHE_SIZE=${PREFIX_CACHE_SIZE:-1024}
+      - SPECULATIVE_DECODING_GAMMA=${SPECULATIVE_DECODING_GAMMA:-4}
+      - USE_FLASH_ATTENTION=${USE_FLASH_ATTENTION:-true}
+      - USE_PAGED_ATTENTION=${USE_PAGED_ATTENTION:-true}
+      - ENABLE_CONTINUOUS_BATCHING=${ENABLE_CONTINUOUS_BATCHING:-true}
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+    volumes:
+      - ./models:/app/models
+      - ./logs:/app/logs
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "8"
+          memory: 32G
+          nvidia.com/gpu: "1"
+        reservations:
+          cpus: "2"
+          memory: 8G
+          nvidia.com/gpu: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  redis_data:

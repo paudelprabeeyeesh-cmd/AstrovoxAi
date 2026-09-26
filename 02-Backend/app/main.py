@@ -4,12 +4,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
-import sys
 import time
-from pathlib import Path
 from dotenv import load_dotenv
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
 
 from app.services.auth.auth import router as auth_router
 from app.chat import router as chat_router
@@ -56,7 +52,6 @@ from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdow
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
 from app.middleware.content_negotiation import ContentNegotiationMiddleware
-from backend.app.middleware import AuthenticationMiddleware, RBACMiddleware, RateLimitMiddleware as BackendRateLimitMiddleware
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
@@ -75,6 +70,8 @@ from app.api.routers.search_knowledge_route import router as search_knowledge_ro
 from app.observability.endpoints import router as observability_router
 from app.omniscient_ai.router import router as omniscient_router
 from app.quantum.routes.router import router as quantum_router
+from app.routers.audio import router as audio_router
+from app.routers.audio_outputs import router as audio_outputs_router
 from app.routers.neural_bci import router as neural_bci_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
@@ -207,6 +204,7 @@ app.include_router(omniscient_router)
 app.include_router(images_router)
 app.include_router(quantum_router)
 app.include_router(audio_router)
+app.include_router(audio_outputs_router)
 app.include_router(neural_bci_router)
 app.include_router(team_chat_router)
 app.include_router(collaboration_router)
@@ -222,7 +220,7 @@ app.include_router(video_router)
 # Prometheus metrics middleware
 @app.middleware("http")
 async def metrics_middleware(request: Request, call_next):
-    """Track request metrics for Prometheus."""
+    """Track request metrics for Prometheus, analytics, and monitoring."""
     start_time = time.time()
     response = await call_next(request)
     duration = time.time() - start_time
@@ -234,6 +232,37 @@ async def metrics_middleware(request: Request, call_next):
             path=request.url.path,
             status=response.status_code,
             duration=duration,
+        )
+    except Exception:
+        pass
+
+    try:
+        from app.monitoring import performance_monitor, error_tracker
+        performance_monitor.record_request(
+            RequestMetric(
+                endpoint=request.url.path,
+                method=request.method,
+                status_code=response.status_code,
+                latency_ms=duration * 1000,
+            )
+        )
+        if response.status_code >= 500:
+            error_tracker.record_error(
+                error_type="http_error",
+                message=f"{request.method} {request.url.path} returned {response.status_code}",
+                endpoint=request.url.path,
+                severity="critical" if response.status_code >= 500 else "warning",
+            )
+    except Exception:
+        pass
+
+    try:
+        from app.analytics import advanced_analytics
+        advanced_analytics.track_api_metric(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            latency_ms=duration * 1000,
         )
     except Exception:
         pass
@@ -312,3 +341,38 @@ async def _startup():
         await start_observability()
     except Exception:
         pass
+
+    async def _collect_system_metrics():
+        try:
+            from app.analytics import advanced_analytics
+            from app.monitoring import performance_monitor
+            while True:
+                try:
+                    stats = performance_monitor.get_system_stats()
+                    gpu = stats.get("gpu", {})
+                    if gpu.get("available") and gpu.get("devices"):
+                        for dev in gpu["devices"]:
+                            advanced_analytics.track_gpu_utilization(
+                                device_id=dev.get("device_id", 0),
+                                utilization_percent=dev.get("utilization_percent", 0.0),
+                                memory_used_mb=dev.get("memory_used_mb", 0.0),
+                                memory_total_mb=dev.get("memory_total_mb", 0.0),
+                                temperature_c=dev.get("temperature_c", 0.0),
+                            )
+                    memory_info = performance_monitor._get_memory_info()
+                    if memory_info:
+                        advanced_analytics.track_memory_usage(
+                            total_mb=memory_info.get("total_mb", 0.0),
+                            used_mb=memory_info.get("used_mb", 0.0),
+                            available_mb=memory_info.get("available_mb", 0.0),
+                            percent=memory_info.get("percent", 0.0),
+                        )
+                except Exception:
+                    pass
+                import asyncio
+                await asyncio.sleep(30)
+        except Exception:
+            pass
+
+    import asyncio
+    asyncio.create_task(_collect_system_metrics())

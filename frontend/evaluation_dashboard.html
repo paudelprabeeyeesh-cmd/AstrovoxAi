@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Evaluation Dashboard — AstrovoxAI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/enterprise.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Evaluation Dashboard</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="safety_console.html">Safety</a>
+      <a href="enterprise_admin.html">Enterprise</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="tabs">
+      <button class="tab active" data-tab="regression">Regression</button>
+      <button class="tab" data-tab="benchmark">Benchmark</button>
+      <button class="tab" data-tab="human">Human Eval</button>
+      <button class="tab" data-tab="grading">Auto Grading</button>
+    </section>
+
+    <section id="regression" class="tab-content">
+      <h2>Regression Testing</h2>
+      <div class="card">
+        <canvas id="regressionChart"></canvas>
+      </div>
+      <table class="data-table" id="regressionTable">
+        <thead><tr><th>Case</th><th>Passed</th><th>Delta</th><th>Latency (ms)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="benchmark" class="tab-content hidden">
+      <h2>Benchmark Suite</h2>
+      <div class="card">
+        <canvas id="benchmarkChart"></canvas>
+      </div>
+    </section>
+
+    <section id="human" class="tab-content hidden">
+      <h2>Human Evaluation</h2>
+      <div class="card">
+        <canvas id="humanChart"></canvas>
+      </div>
+    </section>
+
+    <section id="grading" class="tab-content hidden">
+      <h2>Automated Grading</h2>
+      <div class="card">
+        <canvas id="gradingChart"></canvas>
+      </div>
+    </section>
+  </main>
+  <script src="js/evaluation.js"></script>
+</body>
+</html>

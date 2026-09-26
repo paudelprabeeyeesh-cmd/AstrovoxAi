@@ -129,6 +129,19 @@ impl AstrovoxClient {
         Ok(conv)
     }
 
+    pub async fn delete_conversation(&self, conversation_id: &str) -> Result<(), Box<dyn Error>> {
+        let resp = self
+            .client
+            .delete(format!("{}/conversations/{}", self.base_url, conversation_id))
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .send()
+            .await?;
+        if !resp.status().is_success() {
+            return Err(format!("HTTP {}", resp.status()).into());
+        }
+        Ok(())
+    }
+
     pub async fn health_check(&self) -> Result<HashMap<String, serde_json::Value>, Box<dyn Error>> {
         let resp = self
             .client
@@ -138,6 +151,7 @@ impl AstrovoxClient {
         let data: HashMap<String, serde_json::Value> = resp.json().await?;
         Ok(data)
     }
+}
 
     pub async fn create_webhook(&self, config: &WebhookConfig) -> Result<HashMap<String, serde_json::Value>, Box<dyn Error>> {
         let resp = self

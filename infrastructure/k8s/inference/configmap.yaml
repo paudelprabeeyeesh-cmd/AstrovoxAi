@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: astrovox-inference-config
+  namespace: astrovox
+data:
+  MODEL_NAME: "meta-llama/Llama-2-7b-chat-hf"
+  TENSOR_PARALLEL_SIZE: "1"
+  PIPELINE_PARALLEL_SIZE: "1"
+  MAX_BATCH_SIZE: "32"
+  MAX_SEQ_LEN: "4096"
+  KV_CACHE_BLOCK_SIZE: "16"
+  PREFIX_CACHE_SIZE: "1024"
+  SPECULATIVE_DECODING_GAMMA: "4"
+  USE_FLASH_ATTENTION: "true"
+  USE_PAGED_ATTENTION: "true"
+  ENABLE_CONTINUOUS_BATCHING: "true"
+  LOG_LEVEL: "INFO"

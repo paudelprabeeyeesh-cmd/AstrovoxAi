@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Safety Console — AstrovoxAI</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/enterprise.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Safety Console</h1>
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="evaluation_dashboard.html">Evaluation</a>
+      <a href="enterprise_admin.html">Enterprise</a>
+    </nav>
+  </header>
+  <main class="container">
+    <section class="tabs">
+      <button class="tab active" data-tab="moderation">Moderation</button>
+      <button class="tab" data-tab="jailbreak">Jailbreak</button>
+      <button class="tab" data-tab="pii">PII / Leaks</button>
+      <button class="tab" data-tab="constitutional">Constitutional AI</button>
+    </section>
+
+    <section id="moderation" class="tab-content">
+      <h2>Input / Output Moderation</h2>
+      <div class="card">
+        <canvas id="moderationChart"></canvas>
+      </div>
+      <table class="data-table" id="moderationTable">
+        <thead><tr><th>Timestamp</th><th>Category</th><th>Confidence</th><th>Action</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section id="jailbreak" class="tab-content hidden">
+      <h2>Jailbreak Detection</h2>
+      <div class="card">
+        <canvas id="jailbreakChart"></canvas>
+      </div>
+    </section>
+
+    <section id="pii" class="tab-content hidden">
+      <h2>PII Detection & Data Leak Prevention</h2>
+      <div class="card">
+        <canvas id="piiChart"></canvas>
+      </div>
+    </section>
+
+    <section id="constitutional" class="tab-content hidden">
+      <h2>Constitutional AI & Self-Checking</h2>
+      <div class="card">
+        <canvas id="constitutionalChart"></canvas>
+      </div>
+    </section>
+  </main>
+  <script src="js/safety.js"></script>
+</body>
+</html>

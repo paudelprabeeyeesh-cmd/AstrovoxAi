@@ -1,8 +1,36 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: message-queues
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: message-queues
+data:
+  enabled: "true"
+  host: "rabbitmq.astrovox.svc.cluster.local"
+  port: "5672"
+  management_port: "15672"
+  user: "astrovox"
+  vhost: "/"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-secret
+  namespace: message-queues
+type: Opaque
+stringData:
+  password: astrovox_pass
+  erlang_cookie: secure-cookie-value
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: rabbitmq
-  namespace: astrovox
+  namespace: message-queues
 spec:
   serviceName: rabbitmq
   replicas: 3
@@ -26,18 +54,18 @@ spec:
         - name: RABBITMQ_ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
-              name: astrovox-secrets
-              key: RABBITMQ_ERLANG_COOKIE
+              name: rabbitmq-secret
+              key: erlang_cookie
         - name: RABBITMQ_DEFAULT_USER
           valueFrom:
-            secretKeyRef:
-              name: astrovox-secrets
-              key: RABBITMQ_USER
+            configMapKeyRef:
+              name: rabbitmq-config
+              key: user
         - name: RABBITMQ_DEFAULT_PASS
           valueFrom:
             secretKeyRef:
-              name: astrovox-secrets
-              key: RABBITMQ_PASSWORD
+              name: rabbitmq-secret
+              key: password
         resources:
           requests:
             cpu: 100m
@@ -68,10 +96,9 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
-  namespace: astrovox
+  namespace: message-queues
 spec:
-  selector:
-    app: rabbitmq
+  type: ClusterIP
   ports:
   - port: 5672
     targetPort: 5672
@@ -79,4 +106,5 @@ spec:
   - port: 15672
     targetPort: 15672
     name: management
-  type: ClusterIP
+  selector:
+    app: rabbitmq

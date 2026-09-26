@@ -469,11 +469,11 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     _ensure_index(conn, "help_categories", "idx_help_categories_parent", "parent_id")
     _ensure_index(conn, "support_agents", "idx_support_agents_team", "team")
     _ensure_index(conn, "contextual_help", "idx_contextual_help_page", "page")
-_ensure_index(conn, "audio_outputs", "idx_audio_outputs_user", "user_id")
-_ensure_index(conn, "audio_outputs", "idx_audio_outputs_type", "type")
-_ensure_index(conn, "voice_profiles", "idx_voice_profiles_user", "user_id")
-_ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_user", "user_id")
-_ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_speaker_id", "speaker_id")
+    _ensure_index(conn, "audio_outputs", "idx_audio_outputs_user", "user_id")
+    _ensure_index(conn, "audio_outputs", "idx_audio_outputs_type", "type")
+    _ensure_index(conn, "voice_profiles", "idx_voice_profiles_user", "user_id")
+    _ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_user", "user_id")
+    _ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_speaker_id", "speaker_id")
 
 
 def init_db() -> None:

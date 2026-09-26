@@ -41,4 +41,14 @@ interface ApiService {
 
     @GET("v1/conversations")
     suspend fun getConversations(): List<ConversationResponse>
+
+    companion object {
+        fun create(baseUrl: String): ApiService {
+            val retrofit = retrofit2.Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+                .build()
+            return retrofit.create(ApiService::class.java)
+        }
+    }
 }

@@ -1,49 +1,44 @@
 import Foundation
-import CoreData
 
-@objc(OfflineService)
-class OfflineService: NSObject {
+@MainActor
+class OfflineService: ObservableObject {
     static let shared = OfflineService()
+    private let storageURL: URL = {
+        let urls = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+        let dir = urls[0].appendingPathComponent("AstrovoxAI", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("offline_messages.json")
+    }()
 
-    private override init() {
-        super.init()
+    private var messages: [Message] = []
+
+    private init() {
+        load()
     }
 
-    func saveMessage(_ message: Message, context: NSManagedObjectContext) throws {
-        let entity = OfflineMessageEntity(context: context)
-        entity.id = message.id
-        entity.conversationId = message.conversationId
-        entity.role = message.role
-        entity.content = message.content
-        entity.timestamp = message.timestamp
-        entity.offline = message.offline
-        try context.save()
+    func saveMessage(_ message: Message) {
+        messages.append(message)
+        persist()
     }
 
-    func fetchMessages(conversationId: String, context: NSManagedObjectContext) throws -> [Message] {
-        let request = NSFetchRequest<OfflineMessageEntity>(entityName: "OfflineMessageEntity")
-        request.predicate = NSPredicate(format: "conversationId == %@", conversationId)
-        request.sortDescriptors = [NSSortDescriptor(key: "timestamp", ascending: true)]
-        let results = try context.fetch(request)
-        return results.map { entity in
-            Message(
-                id: entity.id ?? UUID().uuidString,
-                conversationId: entity.conversationId ?? "",
-                role: entity.role ?? "",
-                content: entity.content ?? "",
-                timestamp: entity.timestamp ?? Date(),
-                offline: entity.offline
-            )
+    func fetchMessages(conversationId: String) -> [Message] {
+        messages.filter { $0.conversationId == conversationId }
+    }
+
+    func clear() {
+        messages.removeAll()
+        persist()
+    }
+
+    private func load() {
+        guard let data = try? Data(contentsOf: storageURL),
+              let decoded = try? JSONDecoder().decode([Message].self, from: data) else { return }
+        messages = decoded
+    }
+
+    private func persist() {
+        if let data = try? JSONEncoder().encode(messages) {
+            try? data.write(to: storageURL)
         }
     }
-}
-
-@objc(OfflineMessageEntity)
-class OfflineMessageEntity: NSManagedObject {
-    @NSManaged var id: String?
-    @NSManaged var conversationId: String?
-    @NSManaged var role: String?
-    @NSManaged var content: String?
-    @NSManaged var timestamp: Date
-    @NSManaged var offline: Bool
 }
