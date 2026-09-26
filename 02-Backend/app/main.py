@@ -79,10 +79,15 @@ from app.routers.images import router as images_router
 from app.multiverse import multiverse_router
 from app.omnipresent_routes import router as omnipresent_router
 from app.routers.agi_router import router as agi_router
-from app.routers.rag import router as rag_router
 from app.search_route import router as search_router
 from app.training.router import router as training_router
 from app.fine_tune.router import router as fine_tune_router
+from app.api.routers.team_chat_route import router as team_chat_router
+from app.api.routers.collaboration_route import router as collaboration_router
+from app.routers.images import router as images_router
+from app.core_assistant import router as core_assistant_router
+from app.video_router import router as video_router
+from app.routers.code_agent import router as code_agent_router
 
 load_dotenv()
 

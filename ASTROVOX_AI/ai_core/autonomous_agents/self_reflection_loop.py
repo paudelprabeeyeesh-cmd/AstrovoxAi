@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from ASTROVOX_AI.ai_core.autonomous_agents.agent_runtime import AutoDebugger
 
 __all__ = ["AutoDebugger"]
