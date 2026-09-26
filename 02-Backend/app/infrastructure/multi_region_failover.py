@@ -1,9 +1,14 @@
 """Multi-region failover."""
 
-from typing import Dict, Any, Optional, List
+from __future__ import annotations
+
+import logging
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class RegionStatus(Enum):
@@ -26,6 +31,8 @@ class Region:
 
 
 class FailoverManager:
+    """Manage multi-region failover."""
+
     _regions: Dict[str, Region] = {}
 
     @classmethod
@@ -55,3 +62,13 @@ class FailoverManager:
             candidates.sort(key=lambda r: r.priority, reverse=True)
             return candidates[0]
         return None
+
+
+_failover_manager: Optional[FailoverManager] = None
+
+
+def get_failover_manager() -> FailoverManager:
+    global _failover_manager
+    if _failover_manager is None:
+        _failover_manager = FailoverManager()
+    return _failover_manager

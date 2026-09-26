@@ -28,10 +28,12 @@ from app.repositories.database.client import (
     save_memory,
     get_user_memory,
 )
+from app.repositories.database.supabase_client import get_supabase
 
 router = APIRouter(prefix="/api/core", tags=["core-assistant"])
 
 openai_client = OpenAI()
+supabase = get_supabase()
 
 
 # ============================================================================

@@ -1,9 +1,14 @@
 """Cost engineering for cloud optimization."""
 
-from typing import Dict, Any, Optional, List
+from __future__ import annotations
+
+import logging
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class OptimizationType(Enum):
@@ -27,6 +32,8 @@ class CostOptimization:
 
 
 class CostEngineering:
+    """Manage cloud cost optimizations."""
+
     _optimizations: List[CostOptimization] = []
 
     @classmethod
@@ -48,3 +55,13 @@ class CostEngineering:
     @classmethod
     def get_recommendations(cls) -> List[CostOptimization]:
         return [o for o in cls._optimizations if not o.implemented]
+
+
+_cost_engineering: Optional[CostEngineering] = None
+
+
+def get_cost_engineering() -> CostEngineering:
+    global _cost_engineering
+    if _cost_engineering is None:
+        _cost_engineering = CostEngineering()
+    return _cost_engineering

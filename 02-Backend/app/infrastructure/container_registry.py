@@ -1,60 +1,81 @@
-"""Container registry management."""
+"""Container registry configuration."""
 
-from typing import Dict, Any, Optional, List
+from __future__ import annotations
+
+import logging
+from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 
+logger = logging.getLogger(__name__)
 
-class RegistryProvider(Enum):
+
+class RegistryProvider(str, Enum):
     DOCKER_HUB = "docker_hub"
-    ECR = "ecr"
-    GCR = "gcr"
-    ACR = "acr"
-    HARBOR = "harbor"
-    QUAY = "quay"
+    GITHUB_CR = "github_cr"
+    AWS_ECR = "aws_ecr"
+    GCP_GCR = "gcp_gcr"
+    AZURE_ACR = "azure_acr"
 
 
 @dataclass
 class Image:
-    image_id: str
     name: str
     tag: str
-    digest: str
-    size_mb: float
-    registry: RegistryProvider
-    pushed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    digest: str = ""
+    size_bytes: int = 0
+    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    labels: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
 class RegistryConfig:
-    registry_id: str
     provider: RegistryProvider
     url: str
-    username: str
-    password: str
-    namespace: str = "astrovox"
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    username: str = ""
+    password: str = ""
+    namespace: str = ""
 
 
 class ContainerRegistry:
-    _images: Dict[str, Image] = {}
-    _configs: Dict[str, RegistryConfig] = {}
+    """Manage container registry operations."""
 
-    @classmethod
-    def register_config(cls, config: RegistryConfig) -> None:
-        cls._configs[config.registry_id] = config
+    def __init__(self, config: RegistryConfig) -> None:
+        self._config = config
+        self._images: Dict[str, Image] = {}
 
-    @classmethod
-    def register_image(cls, image: Image) -> None:
-        cls._images[image.image_id] = image
+    def push_image(self, image: Image) -> str:
+        self._images[image.name] = image
+        logger.info(f"Pushed image: {image.name}:{image.tag}")
+        return f"{self._config.url}/{self._config.namespace}/{image.name}:{image.tag}"
 
-    @classmethod
-    def get_images(cls, registry: Optional[RegistryProvider] = None, tag: Optional[str] = None) -> List[Image]:
-        images = list(cls._images.values())
-        if registry:
-            images = [img for img in images if img.registry == registry]
-        if tag:
-            images = [img for img in images if img.tag == tag]
-        return images
+    def pull_image(self, image_name: str, tag: str) -> Optional[Image]:
+        key = f"{image_name}:{tag}"
+        return self._images.get(key)
+
+    def list_images(self) -> List[Image]:
+        return list(self._images.values())
+
+    def delete_image(self, image_name: str, tag: str) -> bool:
+        key = f"{image_name}:{tag}"
+        if key in self._images:
+            del self._images[key]
+            return True
+        return False
+
+
+_registry: Optional[ContainerRegistry] = None
+
+
+def get_registry() -> ContainerRegistry:
+    global _registry
+    if _registry is None:
+        _registry = ContainerRegistry(
+            config=RegistryConfig(
+                provider=RegistryProvider.GITHUB_CR,
+                url="ghcr.io",
+                namespace="astrovoxai",
+            )
+        )
+    return _registry

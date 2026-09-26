@@ -36,6 +36,7 @@ from app.api.routers.realtime_route import tools_router
 from app.api.routers.realtime_route import security_router as scan_router
 from app.api.routers.agents_route import router as agents_router
 from app.api.routers.agents_route import memory_router as memory_v2_router
+from app.api.routers.memory_system import router as memory_system_router
 from app.api.routers.automation_route import router as automation_router
 from app.kernel.api import router as kernel_router
 from app.aios.api import router as aios_router
@@ -51,7 +52,8 @@ from app.middleware.idempotency import IdempotencyMiddleware
 from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
 from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
 from app.middleware.error_handler import register_error_handlers
-from app.middleware.content_negotiation import ContentNegotiationMiddleware
+from app.core.llm import LLMClient
+from app.context_builder import ContextBuilder
 from app.core.cache_enhanced import get_cached_response, cache_response
 from app.api.routers.bulk_router import router as bulk_router
 from app.api.routers.tasks_router import router as tasks_router
@@ -92,6 +94,7 @@ class _LLMClientStub:
 
 
 llm_client = _LLMClientStub()
+context_builder = ContextBuilder(llm_client=llm_client)
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)

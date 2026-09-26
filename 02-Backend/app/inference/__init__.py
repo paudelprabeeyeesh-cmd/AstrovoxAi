@@ -3,7 +3,7 @@
 from .flash_attention import FlashAttention, FlashAttentionConfig, FlashAttentionMetadata
 from .paged_attention import PagedAttention, PagedKVCache, BlockManager
 from .parallelism import TensorParallelism, PipelineParallelism, ParallelConfig
-from .sharding import ZeROSharding, HybridSharding, ShardingPlan
+from .sharding import ZeROSharding, HybridSharding
 
 __all__ = [
     "FlashAttention",
@@ -17,5 +17,4 @@ __all__ = [
     "ParallelConfig",
     "ZeROSharding",
     "HybridSharding",
-    "ShardingPlan",
 ]

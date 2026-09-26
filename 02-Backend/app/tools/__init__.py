@@ -818,7 +818,7 @@ class ToolRegistryInstance:
 
         executor = tool_map.get(tool_name)
         if not executor:
-            return ToolResult(False, f"Unknown tool: {tool_name}", tool_name)
+            return ToolResult(False, f"Unknown tool: {tool_name}", tool_name, error=f"Unknown tool: {tool_name}")
 
         result = executor()
         if asyncio.iscoroutine(result):

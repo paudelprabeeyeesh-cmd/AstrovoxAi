@@ -1,81 +1,53 @@
-# SDK Documentation
+# SDK / CLI / API / GraphQL
 
-AstrovoxAI ships official SDKs for Python and JavaScript/TypeScript. Both
-follow the same naming conventions and authentication model.
+AstrovoxAI provides comprehensive SDKs and APIs for integrating AI capabilities into any application.
 
-## Installation
+## REST API
+Base URL: `https://api.astrovox.ai/v1`
 
-```bash
-# Python
-pip install astrovoxai
+### Endpoints
+- `POST /v1/chat/completions` — Chat completion
+- `POST /v1/chat/stream` — Streaming chat
+- `POST /v1/completions` — Text completion
+- `GET /v1/models` — List models
+- `POST /v1/embeddings` — Generate embeddings
+- `POST /v1/chat/agent` — Agent execution
+- `POST /v1/vision/analyze` — Image analysis
+- `POST /v1/audio/transcribe` — Audio transcription
+- `POST /v1/search/semantic` — Semantic search
 
-# JavaScript / TypeScript
-npm install @astrovoxai/sdk
-```
+## GraphQL
+Endpoint: `https://api.astrovox.ai/v1/graphql`
 
-## Authentication
-
-```python
-# Python
-from astrovoxai import AstrovoxClient
-client = AstrovoxClient(
-    base_url="https://api.astrovox.ai",
-    api_key="ak_...",
-    api_secret="sk_...",
-)
-```
-
-```ts
-// TypeScript
-import { AstrovoxClient } from "@astrovoxai/sdk";
-
-const client = new AstrovoxClient({
-  baseUrl: "https://api.astrovox.ai",
-  apiKey: process.env.ASTROVOX_KEY!,
-  apiSecret: process.env.ASTROVOX_SECRET!,
-});
-```
-
-## Common Operations
-
-| Operation | Python | TypeScript |
-|-----------|--------|------------|
-| Send chat | `client.chat([...])` | `client.chat([...])` |
-| List plugins | `client.list_plugins()` | `client.listPlugins()` |
-| Install plugin | `client.install_plugin("github")` | `client.installPlugin("github")` |
-| Invoke plugin | `client.invoke_plugin("github", "list_repos", owner="x")` | `client.invokePlugin("github", "list_repos", ["x"])` |
-| Create API key | `client.create_api_key(...)` | `client.createApiKey(...)` |
-| Subscribe webhook | `client.create_webhook(url, events)` | `client.createWebhook(url, events)` |
-| Connect integration | `client.connect_integration("slack", "Main")` | `client.connectIntegration("slack", "Main")` |
-| Search marketplace | `client.marketplace_search(q="chat")` | `client.marketplaceSearch({ q: "chat" })` |
-
-## Error Handling
-
-```python
-from astrovoxai import AstrovoxError
-
-try:
-    client.invoke_plugin("github", "list_repos")
-except AstrovoxError as exc:
-    print(exc.status, exc.payload)
-```
-
-```ts
-try {
-  await client.invokePlugin("github", "list_repos");
-} catch (err) {
-  if (err instanceof AstrovoxError) {
-    console.error(err.status, err.payload);
+```graphql
+query Chat($conversationId: ID!, $message: String!) {
+  chat(conversationId: $conversationId, message: $message) {
+    id
+    role
+    content
+    timestamp
   }
 }
 ```
 
-## Webhook Signatures
+## gRPC
+Proto files available in `sdk/openapi/`.
 
-Both SDKs ship a `signPayload`/`verifyPayload` helper that implements the
-`X-Astrovox-Signature` scheme. Use it on your receiving endpoints.
+## SDKs
+- **Python**: `pip install astrovox-ai`
+- **TypeScript**: `npm install @astrovox-ai/sdk`
+- **Go**: `go get github.com/astrovox/astrovox-ai/go`
+- **Java**: Maven Central
+- **Rust**: `cargo add astrovox-ai`
+- **C#**: NuGet `AstrovoxSDK`
 
-## Versioning
+## CLI
+```bash
+# Install
+npm install -g @astrovox-ai/cli
 
-The SDKs follow semver. The current major version is `1.x`; breaking changes
-will be announced in the changelog at least one minor release ahead.
+# Usage
+astrovox chat "Explain quantum computing"
+astrovox models list
+astrovox embeddings create --text "Hello world"
+```
