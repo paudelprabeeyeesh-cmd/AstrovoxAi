@@ -450,6 +450,42 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS gpu_metrics (
+            id TEXT PRIMARY KEY,
+            device_id INTEGER NOT NULL,
+            utilization_percent REAL NOT NULL,
+            memory_used_mb REAL NOT NULL,
+            memory_total_mb REAL NOT NULL,
+            temperature_c REAL NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS memory_metrics (
+            id TEXT PRIMARY KEY,
+            total_mb REAL NOT NULL,
+            used_mb REAL NOT NULL,
+            available_mb REAL NOT NULL,
+            percent REAL NOT NULL,
+            swap_used_mb REAL DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS api_metrics (
+            id TEXT PRIMARY KEY,
+            endpoint TEXT NOT NULL,
+            method TEXT NOT NULL,
+            status_code INTEGER NOT NULL,
+            latency_ms REAL NOT NULL,
+            user_id TEXT DEFAULT '',
+            model TEXT DEFAULT '',
+            provider TEXT DEFAULT '',
+            tokens INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
     _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
@@ -494,6 +530,10 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     _ensure_index(conn, "voice_profiles", "idx_voice_profiles_user", "user_id")
     _ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_user", "user_id")
     _ensure_index(conn, "speaker_profiles", "idx_speaker_profiles_speaker_id", "speaker_id")
+    _ensure_index(conn, "gpu_metrics", "idx_gpu_metrics_device", "device_id, created_at")
+    _ensure_index(conn, "memory_metrics", "idx_memory_metrics_created", "created_at")
+    _ensure_index(conn, "api_metrics", "idx_api_metrics_endpoint", "endpoint, created_at")
+    _ensure_index(conn, "api_metrics", "idx_api_metrics_status", "status_code")
 
 
 def init_db() -> None:

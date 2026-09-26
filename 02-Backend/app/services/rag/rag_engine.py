@@ -290,10 +290,11 @@ class RAGEngine:
     def rerank(self, query, chunks, top_k=5):
         if not chunks:
             return []
-        query_embedding = self.embed_chunks([query])[0]
+        query_embedding = _cached_embed(query)
+        contents = [chunk.get("content", "") for chunk in chunks]
+        chunk_embeddings = _batch_embed(contents)
         scored = []
-        for chunk in chunks:
-            chunk_embedding = self.embed_chunks([chunk.get("content", "")])[0]
+        for chunk, chunk_embedding in zip(chunks, chunk_embeddings):
             score = self._cosine_similarity(query_embedding, chunk_embedding)
             scored.append({**chunk, "rerank_score": score})
         scored.sort(key=lambda x: x["rerank_score"], reverse=True)

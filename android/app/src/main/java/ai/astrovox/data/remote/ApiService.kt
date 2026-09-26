@@ -4,15 +4,21 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 
-interface ApiService {
-    @POST("/chat/message")
-    suspend fun sendMessage(@Body request: Map<String, String>): Map<String, Any>
+data class ChatRequest(
+    val conversation_id: String,
+    val message: String,
+    val model: String
+)
 
-    @GET("/health")
+interface AstrovoxApi {
+    @POST("/v1/chat/message")
+    suspend fun sendMessage(@Body request: ChatRequest): Map<String, Any>
+
+    @GET("/v1/health")
     suspend fun healthCheck(): Map<String, Any>
 }
 
 object ApiService {
-    private val retrofit = ApiClient.retrofit
-    fun create(): ApiService = retrofit.create(com.ai.astrovox.data.remote.ApiService::class.java)
+    private val retrofit = RetrofitClient.retrofit
+    fun create(): AstrovoxApi = retrofit.create(AstrovoxApi::class.java)
 }

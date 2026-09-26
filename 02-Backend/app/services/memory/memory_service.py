@@ -2,6 +2,7 @@ import os
 import json
 import uuid
 import logging
+import time
 from enum import Enum
 from typing import Optional
 from datetime import datetime
@@ -22,6 +23,8 @@ class MemoryService:
     def __init__(self):
         self._redis = None
         self._openai_client = None
+        self._search_cache: dict[str, tuple[list[dict], float]] = {}
+        self._SEARCH_TTL = 60.0
 
     def _get_redis(self):
         if self._redis is None:
@@ -129,13 +132,18 @@ class MemoryService:
     def search_memories(
         self, user_id: str, query: str, limit: int = 5
     ) -> list[dict]:
+        cache_key = f"search:{user_id}:{query}:{limit}"
+        now = time.time()
+        cached = self._search_cache.get(cache_key)
+        if cached and (now - cached[1]) < self._SEARCH_TTL:
+            return cached[0]
         query_lower = query.lower()
         with get_db() as conn:
             rows = conn.execute(
                 "SELECT id, key, value, memory_type, importance_score, created_at FROM memories WHERE user_id = ? AND (key LIKE ? OR value LIKE ?) ORDER BY created_at DESC LIMIT ?",
                 (user_id, f"%{query_lower}%", f"%{query_lower}%", limit),
             ).fetchall()
-            return [
+            result = [
                 {
                     "id": r["id"],
                     "key": r["key"],
@@ -147,6 +155,8 @@ class MemoryService:
                 }
                 for r in rows
             ]
+        self._search_cache[cache_key] = (result, now)
+        return result
 
     def get_relevant_memories(
         self, user_id: str, query: str, limit: int = 5

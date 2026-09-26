@@ -5,6 +5,7 @@ import ai.astrovox.data.local.MessageDao
 import ai.astrovox.data.local.entities.ConversationEntity
 import ai.astrovox.data.local.entities.MessageEntity
 import ai.astrovox.data.remote.ApiService
+import ai.astrovox.data.remote.ChatRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 
@@ -22,7 +23,7 @@ class ChatRepository(
     }
 
     suspend fun sendMessage(conversationId: String, message: String, model: String): MessageEntity {
-        val request = ai.astrovox.data.remote.ChatRequest(
+        val request = ChatRequest(
             conversation_id = conversationId,
             message = message,
             model = model
@@ -41,7 +42,7 @@ class ChatRepository(
             id = "local-${System.currentTimeMillis()}-assistant",
             conversationId = conversationId,
             role = "assistant",
-            content = response.content ?: response.ai_message?.content ?: "",
+            content = response["content"] as? String ?: (response["ai_message"] as? Map<*, *>)?.get("content") as? String ?: "",
             timestamp = System.currentTimeMillis(),
             offline = false
         )

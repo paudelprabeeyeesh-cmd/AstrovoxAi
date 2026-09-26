@@ -1,6 +1,8 @@
 import os
 import uuid
+import time
 from typing import Any
+from functools import lru_cache
 
 from ...services.knowledge.knowledge_graph_neo4j import KnowledgeGraphNeo4j, Entity, Relationship
 
@@ -25,6 +27,34 @@ class GraphRAG:
         auth = (os.getenv("NEO4J_USER", "neo4j"), os.getenv("NEO4J_PASSWORD", "password"))
         self._kg = KnowledgeGraphNeo4j()
         self._kg.connect(uri, auth)
+        self._entity_cache: dict[str, Entity | None] = {}
+        self._entity_cache_ts: dict[str, float] = {}
+        _ENTITY_TTL = 30.0
+
+    def _get_entity_cached(self, name: str) -> Entity | None:
+        now = time.time()
+        cached = self._entity_cache.get(name)
+        ts = self._entity_cache_ts.get(name, 0.0)
+        if cached is not None and (now - ts) < _ENTITY_TTL:
+            return cached
+        with self._kg._driver.session() as session:
+            result = session.run("MATCH (e:Entity {name: $name}) RETURN e", {"name": name})
+            record = result.single()
+            if not record:
+                self._entity_cache[name] = None
+                self._entity_cache_ts[name] = now
+                return None
+            e = record["e"]
+            entity = Entity(
+                id=e["id"],
+                entity_type=e["entity_type"],
+                name=e["name"],
+                properties=e["properties"] or {},
+                created_at=e["created_at"],
+            )
+            self._entity_cache[name] = entity
+            self._entity_cache_ts[name] = now
+            return entity
 
     def build_graph(self, documents: list[dict[str, Any]]) -> Graph:
         entities: list[Entity] = []
@@ -70,7 +100,7 @@ class GraphRAG:
                         visited.add(target_id)
                         if conn.get("target_name") and conn["target_name"] != current_entity.name:
                             neighbor_name = conn["target_name"]
-                            neighbor = self._entity_by_name(neighbor_name)
+                            neighbor = self._get_entity_cached(neighbor_name)
                             if neighbor and neighbor.entity_type == "Chunk":
                                 chunks.append(Chunk(
                                     id=neighbor.id,
@@ -107,16 +137,4 @@ class GraphRAG:
         return Graph(kept_entities, kept_relationships)
 
     def _entity_by_name(self, name: str) -> Entity | None:
-        with self._kg._driver.session() as session:
-            result = session.run("MATCH (e:Entity {name: $name}) RETURN e", {"name": name})
-            record = result.single()
-            if not record:
-                return None
-            e = record["e"]
-            return Entity(
-                id=e["id"],
-                entity_type=e["entity_type"],
-                name=e["name"],
-                properties=e["properties"] or {},
-                created_at=e["created_at"],
-            )
+        return self._get_entity_cached(name)

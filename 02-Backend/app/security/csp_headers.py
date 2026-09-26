@@ -22,9 +22,9 @@ class CSPDirective:
         if self.default_src is None:
             self.default_src = ["'self'"]
         if self.script_src is None:
-            self.script_src = ["'self'", "'unsafe-inline'"]
+            self.script_src = ["'self'"]
         if self.style_src is None:
-            self.style_src = ["'self'", "'unsafe-inline'"]
+            self.style_src = ["'self'", "'unsafe-hashes'"]
         if self.img_src is None:
             self.img_src = ["'self'", "data:", "https:"]
         if self.connect_src is None:

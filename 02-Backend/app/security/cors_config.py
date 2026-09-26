@@ -15,11 +15,16 @@ class CORSConfig:
 
     def __post_init__(self):
         if self.allow_origins is None:
-            self.allow_origins = ["http://localhost:5173", "http://localhost:3000"]
+            self.allow_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
         if self.allow_methods is None:
             self.allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
         if self.allow_headers is None:
-            self.allow_headers = ["Authorization", "Content-Type", "X-Request-ID"]
+            self.allow_headers = [
+                "Authorization",
+                "Content-Type",
+                "X-Request-ID",
+                "X-CSRF-Token",
+            ]
 
 
 def setup_cors(app, config: Optional[CORSConfig] = None) -> None:
