@@ -1,11 +1,4 @@
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: cdn
-  labels:
-    app: cdn
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cloudflare-config
@@ -65,3 +58,70 @@ stringData:
   CLOUDFLARE_API_TOKEN: "your-cloudflare-api-token"
   CLOUDFLARE_ZONE_ID: "your-cloudflare-zone-id"
   CLOUDFLARE_ACCOUNT_ID: "your-cloudflare-account-id"
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cloudflare-cache-purge
+  namespace: cdn
+spec:
+  template:
+    spec:
+      containers:
+      - name: purge
+        image: curlimages/curl:latest
+        command:
+        - sh
+        - -c
+        - |
+          curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
+        env:
+        - name: CLOUDFLARE_ZONE_ID
+          valueFrom:
+            configMapKeyRef:
+              name: cloudflare-config
+              key: CLOUDFLARE_ZONE_ID
+        - name: CLOUDFLARE_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-secret
+              key: CLOUDFLARE_API_TOKEN
+      restartPolicy: Never
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cdn-cache-purge
+  namespace: cdn
+spec:
+  schedule: "0 0 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: purge
+            image: curlimages/curl:latest
+            command:
+            - sh
+            - -c
+            - |
+              curl -X POST "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/purge_cache" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data '{"purge_everything":true}'
+            env:
+            - name: CLOUDFLARE_ZONE_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-config
+                  key: CLOUDFLARE_ZONE_ID
+            - name: CLOUDFLARE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflare-secret
+                  key: CLOUDFLARE_API_TOKEN
+          restartPolicy: OnFailure

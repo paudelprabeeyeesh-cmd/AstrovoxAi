@@ -50,7 +50,7 @@ const RAGPanel = (() => {
   }
 
   async function chunkDocument(text, documentId, strategy = 'semantic', chunkSize = 500, chunkOverlap = 50) {
-    return request('/api/rag/chunk', {
+    return request('/rag/chunk', {
       method: 'POST',
       body: JSON.stringify({ text, document_id: documentId, strategy, chunk_size: chunkSize, chunk_overlap: chunkOverlap }),
     });

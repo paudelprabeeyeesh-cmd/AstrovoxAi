@@ -55,9 +55,47 @@
 
         <div id="charts-grid" style="display:none;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;margin-top:1.5rem;"></div>
 
-        <div id="detail-sections" style="display:none;margin-top:1.5rem;gap:1.5rem;display:flex;flex-direction:column;"></div>
-      </div>
-    </main>
+         <div id="detail-sections" style="display:none;margin-top:1.5rem;gap:1.5rem;display:flex;flex-direction:column;"></div>
+
+         <div id="memory-section" style="margin-top:2rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+           <h2 style="font-size:1.25rem;font-weight:600;margin-bottom:1rem;">Memory System</h2>
+           <div id="memory-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;"></div>
+           <div style="background:var(--bg-secondary);border:1px solid var(--border);border-radius:0.75rem;padding:1rem;margin-bottom:1rem;">
+             <form id="memory-add-form" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+               <div style="flex:1;min-width:200px;">
+                 <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Memory</label>
+                 <input name="content" required maxlength="10000" placeholder="Add a memory..." style="width:100%;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+               </div>
+               <div>
+                 <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Category</label>
+                 <select name="category" style="padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                   <option value="fact">Fact</option>
+                   <option value="preference">Preference</option>
+                   <option value="user_preference">User Preference</option>
+                   <option value="goal">Goal</option>
+                   <option value="context">Context</option>
+                   <option value="knowledge">Knowledge</option>
+                 </select>
+               </div>
+               <div>
+                 <label style="display:block;font-size:0.75rem;color:var(--text-secondary);margin-bottom:0.25rem;">Tier</label>
+                 <select name="tier" style="padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+                   <option value="critical">Critical</option>
+                   <option value="high">High</option>
+                   <option value="medium" selected>Medium</option>
+                   <option value="low">Low</option>
+                 </select>
+               </div>
+               <button type="submit" class="btn btn-primary" style="padding:0.5rem 1rem;border-radius:0.5rem;background:var(--accent);color:#fff;border:none;cursor:pointer;font-weight:500;">Save Memory</button>
+             </form>
+           </div>
+           <div style="margin-bottom:1rem;">
+             <input id="memory-search-input" type="search" placeholder="Search memories..." style="width:100%;max-width:400px;padding:0.5rem 0.75rem;border-radius:0.5rem;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);">
+           </div>
+           <div id="memory-list" style="display:flex;flex-direction:column;gap:0.75rem;"></div>
+         </div>
+       </div>
+     </main>
 
     <div id="toast-container" class="toast-container"></div>
     <script src="js/auth.js"></script>

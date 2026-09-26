@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from typing import Any, Callable, Dict, List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -172,19 +172,6 @@ class EnhancedConnectionPool:
         }
 
 
-_failover_pool: Optional[EnhancedConnectionPool] = None
-
-
-def get_failover_pool(config: Optional[ConnectionConfig] = None) -> EnhancedConnectionPool:
-    global _failover_pool
-    if _failover_pool is None:
-        if config is None:
-            raise ValueError("ConnectionConfig required for first initialization")
-        _failover_pool = EnhancedConnectionPool(config=config)
-        asyncio.get_event_loop().run_until_complete(_failover_pool.initialize())
-    return _failover_pool
-
-
 class FailoverManager:
     """Manage database failover and circuit breaking."""
 
@@ -220,8 +207,11 @@ class FailoverManager:
         return self._state in ("closed", "half-open")
 
 
-_failover_manager = FailoverManager()
+_failover_manager: Optional[FailoverManager] = None
 
 
 def get_failover_manager() -> FailoverManager:
+    global _failover_manager
+    if _failover_manager is None:
+        _failover_manager = FailoverManager()
     return _failover_manager

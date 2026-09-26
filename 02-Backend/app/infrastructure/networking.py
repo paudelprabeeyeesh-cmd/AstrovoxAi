@@ -1,9 +1,13 @@
 """Networking configuration."""
 
-from typing import Dict, Any, Optional, List
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from enum import Enum
+
+logger = logging.getLogger(__name__)
 
 
 class NetworkType(Enum):
@@ -27,6 +31,8 @@ class NetworkConfig:
 
 
 class NetworkManager:
+    """Manage network configurations."""
+
     _networks: Dict[str, NetworkConfig] = {}
 
     @classmethod
@@ -41,3 +47,13 @@ class NetworkManager:
     @classmethod
     def list_networks(cls) -> List[NetworkConfig]:
         return list(cls._networks.values())
+
+
+_network_manager: Optional[NetworkManager] = None
+
+
+def get_network_manager() -> NetworkManager:
+    global _network_manager
+    if _network_manager is None:
+        _network_manager = NetworkManager()
+    return _network_manager
