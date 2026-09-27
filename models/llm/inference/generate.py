@@ -1,7 +1,8 @@
 import torch
-from model.model import LLM
-from tokenizer.train_tokenizer import load_tokenizer
-from utils.helpers import load_config, get_device
+import os
+from models.llm.model import LLM
+from models.llm.tokenizer import load_tokenizer
+from models.llm.utils import load_config, get_device
 
 
 def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=1.0, top_k=None, device="cpu"):

@@ -56,6 +56,44 @@ missing_pages = [
     ("core-assistant", "Core Assistant"),
 ]
 
+# Find and remove any standalone methods that are outside the class
+# They look like: `  _showXxx() {` followed by content and `  }`
+# But we need to be careful not to remove methods inside the class.
+# Since we already inserted them after the class closing brace, they are standalone.
+# Let's find all `  _show` blocks that are after the last `}` before initRouter
+
+init_router_idx = content.find('\nfunction initRouter()')
+
+# Find the last `}` before initRouter that closes the class
+# The pattern should be: method content ends with `  }\n\nfunction initRouter()`
+# But currently it's: method content ends with `  }\n\nfunction initRouter()`
+# Actually, looking at the output, the last thing before initRouter is a method `  _showCoreAssistant() { ... }`
+# and there's no class closing brace.
+
+# Let's find where the App class actually closes. Search backwards from initRouter for the class definition.
+class_def_idx = content.rfind('class App {')
+if class_def_idx == -1:
+    print("ERROR: No class App found")
+    exit(1)
+
+# Find the last `}` before initRouter that is at the class level (2 spaces indent)
+section_before_init = content[:init_router_idx]
+lines = section_before_init.split('\n')
+
+# Find the last line that is exactly `  }` - this should be the class closing brace
+# But wait, if methods were inserted outside the class, there might be multiple `  }` lines
+# Let's look for the pattern: a `  }` that is followed by blank line then `function initRouter()`
+
+# Actually, looking at the current state, there might not be a class closing brace at all.
+# Let's check:
+last_50 = section_before_init[-100:]
+print("Last 100 chars before initRouter:")
+print(repr(last_50))
+
+# If the class closing brace is missing, we need to add it before the methods
+# and remove the extra `}` from the last method if needed
+
+# First, let's rebuild the methods properly inside the class
 methods_lines = []
 for slug, title in missing_pages:
     title_var = ''.join(word.capitalize() for word in slug.split('-'))
@@ -67,46 +105,28 @@ for slug, title in missing_pages:
 
 methods_text = '\n'.join(methods_lines)
 
-# Insert methods inside App class, before the class closing brace
-# The pattern is: `  }\n\nfunction initRouter() {`
-old_class_end = "  }\n\nfunction initRouter() {"
-new_class_end = "  }\n" + methods_text + "\n\nfunction initRouter() {"
-
-if old_class_end in content:
-    content = content.replace(old_class_end, new_class_end, 1)
-    print("Inserted methods inside App class")
-else:
-    print("ERROR: Could not find class end")
-
-# Build routing blocks
-routing_lines = []
-for slug, title in missing_pages:
-    title_var = ''.join(word.capitalize() for word in slug.split('-'))
-    routing_lines.append(f"    }} else if (path === '/{slug}.html') {{")
-    routing_lines.append(f"      if (!this.authState.isAuthenticated) {{")
-    routing_lines.append(f"        window.location.href = '/login.html';")
-    routing_lines.append(f"        return;")
-    routing_lines.append(f"      }}")
-    routing_lines.append(f"      this._show{title_var}();")
-
-routing_text = '\n'.join(routing_lines)
-
-# Insert routing before final else block
-# Exact pattern: `      this._showMemory();\n    } else {`
-insertion_marker = "      this._showMemory();\n    } else {"
-replacement = "      this._showMemory();\n" + routing_text + "\n    } else {"
-
-if insertion_marker in content:
-    content = content.replace(insertion_marker, replacement, 1)
-    print("Inserted routing before final else")
-else:
-    print("ERROR: Could not find routing insertion point")
-    print("Content around memory route:")
-    idx = content.find("_showMemory();")
-    if idx != -1:
-        print(repr(content[idx:idx+200]))
+# Find the last occurrence of methods outside the class
+# Pattern: _showCoreAssistant block ending with `  }\n\nfunction initRouter()`
+core_assistant_idx = content.find("_showCoreAssistant()")
+if core_assistant_idx != -1:
+    # Find the end of this method
+    method_end_idx = content.find("}\n\nfunction initRouter()", core_assistant_idx)
+    if method_end_idx != -1:
+        # Remove all standalone methods (from the first _showAnalytics to before initRouter)
+        analytics_idx = content.find("  _showAnalytics() {")
+        if analytics_idx != -1 and analytics_idx < method_end_idx:
+            # Keep everything before the standalone methods
+            before = content[:analytics_idx]
+            # Keep everything from initRouter onwards
+            after = content[method_end_idx + 1:]  # +1 to skip the `}` that was the last method's end
+            # But wait, we need to add the class closing `}` and then the methods inside the class
+            # Actually, the methods should be inside the class, before the class closing `}`
+            # So: before + class_close + methods + newline + initRouter
+            new_content = before.rstrip() + "\n  }\n" + methods_text + "\n\n" + after.lstrip('\n')
+            content = new_content
+            print("Rebuilt methods inside class")
 
 with open(app_js_path, 'w', encoding='utf-8') as f:
     f.write(content)
 
-print("Done")
+print("Fixed app.js class structure")

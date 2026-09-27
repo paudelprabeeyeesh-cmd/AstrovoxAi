@@ -1,8 +1,8 @@
 import os
 import torch
-from model.model import LLM
-from tokenizer.train_tokenizer import load_tokenizer
-from utils.helpers import load_config, get_device
+from models.llm.model import LLM
+from models.llm.tokenizer import load_tokenizer
+from models.llm.utils import load_config, get_device
 
 
 def chat_loop(model, tokenizer, device="cpu"):
