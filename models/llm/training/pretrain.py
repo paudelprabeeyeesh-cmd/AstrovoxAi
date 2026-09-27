@@ -216,3 +216,50 @@ def collate_fn(batch, pad_token_id=0):
         input_ids[i, :length] = item["input_ids"]
         labels[i, :length] = item["labels"]
     return {"input_ids": input_ids, "labels": labels}
+
+
+class PretrainPipeline:
+    def __init__(self, config_path: str = "models/llm/configs/config_4b.yaml"):
+        self.config = load_config(config_path)
+        self.device = get_device()
+        if self.device == "cpu":
+            set_cpu_threads(min(4, os.cpu_count() or 2))
+        self.mp = self.config.get("mixed_precision", "none")
+        self.dtype = torch.float32
+        if self.mp == "bf16" and hasattr(torch, 'bfloat16'):
+            self.dtype = torch.bfloat16
+        elif self.mp == "fp16" and self.device == "cuda":
+            self.dtype = torch.float16
+
+    def run(self, resume_from: Optional[str] = None):
+        model = _build_model(self.config, self.device, self.dtype)
+        tokenizer = load_tokenizer(self.config.get("tokenizer_path", "tokenizer.json"))
+        train_file = self.config.get("train_file", "data/train.txt")
+        if not os.path.exists(train_file):
+            raise FileNotFoundError(f"Training file not found: {train_file}")
+        from ..training_data.pipeline import StreamingDataset
+        train_dataset = StreamingDataset(train_file, tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
+        val_dataset = StreamingDataset(self.config.get("val_file", train_file), tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
+        train_loader = DataLoader(train_dataset, batch_size=self.config.get("batch_size", 1), shuffle=True, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=True)
+        val_loader = DataLoader(val_dataset, batch_size=max(1, self.config.get("batch_size", 1)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=False)
+        optimizer = _create_optimizer(model, self.config)
+        scheduler = _create_scheduler(optimizer, self.config, len(train_loader))
+        scaler = GradScaler(enabled=(self.mp == "fp16" and self.device == "cuda"))
+        start_epoch = 0
+        best_val_loss = float("inf")
+        if resume_from and os.path.exists(resume_from):
+            start_epoch, best_val_loss = load_checkpoint(model, optimizer, scheduler, resume_from, device=self.device)
+        accumulation = self.config.get("gradient_accumulation_steps", 1)
+        grad_clip = self.config.get("gradient_clip_norm", 1.0)
+        for epoch in range(start_epoch, self.config.get("epochs", 1)):
+            train_metrics = train_epoch(model, train_loader, optimizer, scheduler, scaler, self.device, accumulation, grad_clip, self.mp, epoch)
+            val_metrics = validate(model, val_loader, self.device, max_batches=self.config.get("max_val_batches", None), mp=self.mp)
+            logger.info(f"Epoch {epoch+1} | Train loss: {train_metrics['train_loss']:.4f} | Val loss: {val_metrics['loss']:.4f} | Val ppl: {val_metrics['perplexity']:.2f}")
+            if val_metrics["loss"] < best_val_loss:
+                best_val_loss = val_metrics["loss"]
+                save_checkpoint(model, optimizer, scheduler, epoch, best_val_loss, self.config.get("best_checkpoint", "best.pt"), self.config, global_step=epoch)
+        output_path = self.config.get("output_dir", "model.pt")
+        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        torch.save(model.state_dict(), output_path)
+        logger.info(f"Model saved to {output_path}")
+        return {"best_val_loss": best_val_loss}
