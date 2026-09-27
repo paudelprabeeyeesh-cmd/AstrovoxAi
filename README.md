@@ -22,6 +22,8 @@ AstrovoxAI is a production-ready AI chat platform that unifies multiple LLM prov
 - **Extensible** — Plugin marketplace, webhooks, custom tools, IDE/browser extensions
 - **AI Safety** — Prompt injection defense, content moderation, PII detection, red teaming
 - **Advanced AI** — RLHF, Constitutional AI, distributed training, inference optimization
+- **Robotics** — ROS2 integration, sensor fusion, simulation, manipulation
+- **Quantum-ready** — Quantum simulation interfaces and quantum-safe cryptography
 
 ## Supported AI Providers
 
@@ -189,7 +191,7 @@ AstrovoxAi/
 | Embeddings | `02-Backend/app/embeddings_route.py` | Text vectorization via Gemini |
 | Providers | `02-Backend/app/providers/` | OpenAI, Anthropic, Gemini, Ollama adapters |
 | Auth | `02-Backend/app/services/auth/` | Supabase authentication |
-| Enterprise | `backend/app/enterprise/` | SSO, RBAC, billing, teams |
+| Enterprise | `02-Backend/app/enterprise/` | SSO, RBAC, billing, teams |
 | Agents | `02-Backend/app/api/routers/agent_route.py` | Agent management and execution |
 | RAG | `02-Backend/app/routers/rag.py` | Retrieval-Augmented Generation |
 | Workspace | `02-Backend/app/api/routers/workspace_route.py` | Team workspaces and folders |
@@ -249,6 +251,22 @@ npm run test
 # Full test suite
 npm run test:all
 ```
+
+## Documentation
+
+- **[docs/README.md](docs/README.md)** — Documentation index
+- **[docs/API.md](docs/API.md)** — Complete REST API reference
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — System design and architecture
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** — Production deployment guide
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Contribution guidelines
+- **[docs/agents.md](docs/agents.md)** — Autonomous agents guide
+- **[docs/sdk.md](docs/sdk.md)** — SDK and CLI reference
+- **[docs/extensions.md](docs/extensions.md)** — IDE and browser extensions
+- **[docs/inference.md](docs/inference.md)** — Inference engine documentation
+- **[docs/training.md](docs/training.md)** — Distributed training guide
+- **[docs/safety.md](docs/safety.md)** — AI safety and alignment
+- **[docs/robotics.md](docs/robotics.md)** — Robotics integration
+- **[docs/enterprise.md](docs/enterprise.md)** — Enterprise platform features
 
 ## Troubleshooting
 
