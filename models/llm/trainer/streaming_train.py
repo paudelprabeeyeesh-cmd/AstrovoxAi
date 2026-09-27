@@ -1,154 +1,52 @@
 import os
-import gc
 import logging
+import threading
+import queue
 from typing import Optional, Dict, Any, List
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 
-from ..model.model import LLM
-from ..tokenizer.train_tokenizer import load_tokenizer
-from ..utils.helpers import load_config, get_device, set_cpu_threads
+from .model.model import LLM
+from .tokenizer.train_tokenizer import load_tokenizer
+from .utils.helpers import load_config, get_device, set_cpu_threads
 
 logger = logging.getLogger(__name__)
 
 
-class AdaFactor(torch.optim.Optimizer):
-    def __init__(self, params, lr=1e-3, beta1=0.0, beta2=0.999, eps1=1e-30, eps2=1e-3,
-                 clip_threshold=1.0, weight_decay=0.0, scale_parameter=True):
-        defaults = dict(lr=lr, beta1=beta1, beta2=beta2, eps1=eps1, eps2=eps2,
-                        clip_threshold=clip_threshold, weight_decay=weight_decay,
-                        scale_parameter=scale_parameter)
-        super().__init__(params, defaults)
-
-    @torch.no_grad()
-    def step(self, closure=None):
-        loss = None
-        if closure is not None:
-            with torch.enable_grad():
-                loss = closure()
-
-        for group in self.param_groups:
-            for p in group["params"]:
-                if p.grad is None:
-                    continue
-                grad = p.grad
-                state = self.state[p]
-
-                if len(state) == 0:
-                    state["step"] = 0
-                    state["exp_avg_sq_row"] = None
-                    state["exp_avg_sq_col"] = None
-                    if group["beta1"] > 0:
-                        state["exp_avg"] = torch.zeros_like(p.data)
-
-                state["step"] += 1
-                beta1 = group["beta1"]
-                beta2 = group["beta2"]
-                eps1 = group["eps1"]
-                eps2 = group["eps2"]
-                clip_threshold = group["clip_threshold"]
-                weight_decay = group["weight_decay"]
-                scale_parameter = group.get("scale_parameter", True)
-
-                if weight_decay > 0:
-                    p.data.mul_(1 - group["lr"] * weight_decay)
-
-                if len(grad.shape) >= 2:
-                    grad_sq = grad * grad
-                    if state["exp_avg_sq_row"] is None:
-                        state["exp_avg_sq_row"] = torch.ones(grad.shape[:-1], device=grad.device)
-                        state["exp_avg_sq_col"] = torch.ones(grad.shape[:-2] + grad.shape[-1:], device=grad.device)
-
-                    state["exp_avg_sq_row"] = beta2 * state["exp_avg_sq_row"] + (1 - beta2) * grad_sq.mean(dim=-1)
-                    state["exp_avg_sq_col"] = beta2 * state["exp_avg_sq_col"] + (1 - beta2) * grad_sq.mean(dim=-2)
-
-                    r = state["exp_avg_sq_row"] / (1 - beta2 ** state["step"])
-                    c = state["exp_avg_sq_col"] / (1 - beta2 ** state["step"])
-
-                    u = grad / (torch.sqrt(r.unsqueeze(-1) * c.unsqueeze(-2)) + eps1)
-                else:
-                    grad_sq = grad * grad
-                    if "exp_avg_sq" not in state:
-                        state["exp_avg_sq"] = torch.ones_like(grad)
-                    state["exp_avg_sq"] = beta2 * state["exp_avg_sq"] + (1 - beta2) * grad_sq
-                    u = grad / (torch.sqrt(state["exp_avg_sq"] / (1 - beta2 ** state["step"])) + eps1)
-
-                if clip_threshold > 0:
-                    u_norm = u.norm()
-                    if u_norm > clip_threshold:
-                        u = u * clip_threshold / u_norm
-
-                if beta1 > 0:
-                    if "exp_avg" not in state:
-                        state["exp_avg"] = torch.zeros_like(p.data)
-                    state["exp_avg"] = beta1 * state["exp_avg"] + (1 - beta1) * u
-                    u = state["exp_avg"]
-
-                if scale_parameter:
-                    param_rms = p.norm()
-                    lr = group["lr"] * max(eps2, param_rms)
-                else:
-                    lr = group["lr"]
-
-                p.data.add_(u, alpha=-lr)
-
-        return loss
-
-
-class MetaLLM(LLM):
-    def __init__(self, config: dict, device: torch.device = None, dtype: torch.dtype = None, cache_dir: str = ".weight_cache"):
-        self._cache_dir = cache_dir
-        self._loaded = set()
-        os.makedirs(cache_dir, exist_ok=True)
-        super().__init__(config, device=torch.device("meta"), dtype=dtype)
-        self._device = device or torch.device("cpu")
-        self._dtype = dtype or torch.float32
-        self._cache_weights()
-
-    def _param_name(self, name: str) -> str:
-        return os.path.join(self._cache_dir, name.replace(".", "_") + ".pt")
-
-    def _cache_weights(self):
-        for name, param in self.named_parameters():
-            path = self._param_name(name)
+class WeightStreamer:
+    def __init__(self, model: nn.Module, device: str = "cpu", offload_dir: str = ".offload"):
+        self.model = model
+        self.device = device
+        self.offload_dir = offload_dir
+        self._active = set()
+        os.makedirs(offload_dir, exist_ok=True)
+        for name, param in model.named_parameters():
+            path = os.path.join(offload_dir, name.replace(".", "_") + ".pt")
             if not os.path.exists(path):
-                torch.save(torch.zeros_like(param.data, device="cpu"), path)
+                torch.save(param.data.cpu(), path)
             param.data = torch.tensor([], device="meta")
+            param.data.share_memory_()
+            self._active.add(name)
 
-    def _load_weights(self, names: List[str]):
-        for name in names:
-            if name in self._loaded:
-                continue
-            param = dict(self.named_parameters())[name]
-            path = self._param_name(name)
-            if os.path.exists(path):
-                param.data = torch.load(path, map_location="cpu", weights_only=True)
-                self._loaded.add(name)
+    def load(self, name: str):
+        if name not in self._active:
+            return
+        path = os.path.join(self.offload_dir, name.replace(".", "_") + ".pt")
+        if os.path.exists(path):
+            param = dict(self.model.named_parameters())[name]
+            param.data = torch.load(path, map_location=self.device, weights_only=True)
 
-    def _offload_weights(self, names: List[str]):
-        for name in names:
-            if name not in self._loaded:
-                continue
-            param = dict(self.named_parameters())[name]
-            path = self._param_name(name)
-            torch.save(param.data.cpu(), path)
-            param.data = torch.tensor([], device="meta")
-            self._loaded.discard(name)
-        gc.collect()
-
-    def forward(self, input_ids: torch.Tensor, labels=None, attention_mask=None, use_gradient_checkpointing=False):
-        names = [n for n, _ in self.named_parameters()]
-        self._load_weights(names)
-        try:
-            return super().forward(input_ids, labels=labels, attention_mask=attention_mask, use_gradient_checkpointing=use_gradient_checkpointing)
-        finally:
-            if not self.training:
-                self._offload_weights(names)
+    def offload(self, name: str):
+        if name not in self._active:
+            return
+        param = dict(self.model.named_parameters())[name]
+        path = os.path.join(self.offload_dir, name.replace(".", "_") + ".pt")
+        torch.save(param.data.cpu(), path)
+        param.data = torch.tensor([], device="meta")
 
 
 class StreamingTrainer:
@@ -168,20 +66,18 @@ class StreamingTrainer:
         self.optimizer = None
         self.scheduler = None
         self.scaler = None
+        self.streamer = None
 
     def _build_model(self):
         try:
-            self.model = MetaLLM(self.config, device=torch.device(self.device), dtype=self.dtype)
-            logger.info("Meta model built and cached")
+            self.model = LLM(self.config, device=torch.device(self.device), dtype=self.dtype)
         except RuntimeError as exc:
             if "not enough memory" in str(exc):
-                logger.warning("Reducing model size for CPU")
-                cfg = dict(self.config)
-                cfg["hidden_size"] = min(cfg.get("hidden_size", 2880), 2560)
-                cfg["num_hidden_layers"] = min(cfg.get("num_hidden_layers", 32), 24)
-                cfg["intermediate_size"] = min(cfg.get("intermediate_size", 9216), 8192)
-                self.config = cfg
-                self.model = MetaLLM(self.config, device=torch.device(self.device), dtype=self.dtype)
+                logger.warning("CPU memory insufficient; using meta init with streaming")
+                self.model = LLM(self.config, device=torch.device("meta"), dtype=self.dtype)
+                self.model = self.model.to_empty(device=torch.device(self.device))
+                self.model.apply(self.model._init_weights)
+                self.streamer = WeightStreamer(self.model, device=self.device)
             else:
                 raise
 
@@ -247,7 +143,7 @@ class StreamingTrainer:
         logger.info(f"Model saved to {output_path}")
         return metrics
 
-    def _train_epoch(self, dataloader, accumulation_steps, grad_clip, epoch):
+    def _train_epoch(self, dataloader: DataLoader, accumulation_steps: int, grad_clip: float, epoch: int) -> Dict[str, float]:
         self.model.train()
         total_loss = 0.0
         tokens = 0
@@ -256,6 +152,9 @@ class StreamingTrainer:
         for i, batch in enumerate(pbar):
             input_ids = batch["input_ids"].to(self.device, non_blocking=True)
             labels = batch["labels"].to(self.device, non_blocking=True)
+            if self.streamer:
+                for name in list(self.streamer._active):
+                    self.streamer.load(name)
             if self.mp == "bf16":
                 with autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True):
                     outputs = self.model(input_ids, labels=labels, use_gradient_checkpointing=True)
@@ -285,12 +184,16 @@ class StreamingTrainer:
                 self.optimizer.zero_grad(set_to_none=True)
                 if self.scheduler:
                     self.scheduler.step()
+                if self.streamer:
+                    for name in list(self.streamer._active):
+                        self.streamer.offload(name)
+                    gc.collect()
             pbar.set_postfix({"loss": f"{total_loss / (i+1):.4f}"})
         elapsed = time.time() - start
         return {"loss": total_loss / max(1, len(dataloader)), "tokens": tokens, "tokens_per_sec": tokens / max(elapsed, 1e-6), "time": elapsed}
 
     @torch.no_grad()
-    def _validate(self, dataloader):
+    def _validate(self, dataloader: DataLoader) -> Dict[str, float]:
         self.model.eval()
         total_loss = 0.0
         total_tokens = 0
@@ -298,6 +201,9 @@ class StreamingTrainer:
         for batch in dataloader:
             input_ids = batch["input_ids"].to(self.device, non_blocking=True)
             labels = batch["labels"].to(self.device, non_blocking=True)
+            if self.streamer:
+                for name in list(self.streamer._active):
+                    self.streamer.load(name)
             if self.mp == "bf16":
                 with autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True):
                     outputs = self.model(input_ids, labels=labels, use_gradient_checkpointing=False)
@@ -313,17 +219,21 @@ class StreamingTrainer:
             preds = logits.argmax(dim=-1)
             mask = labels != -100
             correct += (preds[mask] == labels[mask]).sum().item()
+            if self.streamer:
+                for name in list(self.streamer._active):
+                    self.streamer.offload(name)
+                gc.collect()
         avg_loss = total_loss / max(total_tokens, 1)
         accuracy = correct / max(total_tokens, 1)
         perplexity = torch.exp(torch.tensor(avg_loss)).item()
         return {"loss": avg_loss, "perplexity": perplexity, "accuracy": accuracy, "tokens": total_tokens}
 
 
-def train(config_path="models/llm/configs/config_4b.yaml", resume_from=None):
+def main(config_path: str = "models/llm/configs/config_4b.yaml", resume_from: Optional[str] = None):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     trainer = StreamingTrainer(config_path)
     return trainer.train(resume_from=resume_from)
 
 
-def pretrain(config_path="models/llm/configs/config_4b.yaml", resume_from=None):
-    return train(config_path=config_path, resume_from=resume_from)
+if __name__ == "__main__":
+    main()

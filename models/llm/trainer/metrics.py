@@ -71,3 +71,33 @@ def evaluate_metrics(model, dataloader, device, max_batches=None):
 def evaluate_loss(model, dataloader, device, max_batches=None):
     metrics = evaluate_metrics(model, dataloader, device, max_batches=max_batches)
     return metrics["loss"]
+
+
+class MetricsLogger:
+    def __init__(self, log_dir: str, project: Optional[str] = None):
+        self.log_dir = log_dir
+        self.project = project
+        os.makedirs(log_dir, exist_ok=True)
+        self._file = open(os.path.join(log_dir, "metrics.log"), "a", encoding="utf-8")
+
+    def log_metrics(self, metrics: dict, step: int):
+        line = f"{step} " + " ".join(f"{k}={v}" for k, v in metrics.items())
+        self._file.write(line + "\n")
+        self._file.flush()
+
+    def close(self):
+        if self._file:
+            self._file.close()
+
+
+class TrainingMetrics:
+    def __init__(self):
+        self._loss = 0.0
+        self._count = 0
+
+    def update(self, loss: float, tokens: int):
+        self._loss += loss
+        self._count += tokens
+
+    def compute(self) -> dict:
+        return {"loss": self._loss / max(self._count, 1)}

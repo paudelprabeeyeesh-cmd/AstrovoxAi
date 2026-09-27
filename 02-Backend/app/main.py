@@ -94,6 +94,9 @@ from app.routers.rag import router as rag_router
 load_dotenv()
 
 
+from app.llm.service import LocalLLMService
+from app.llm.router import router as llm_router
+
 class _LLMClientStub:
     def call_llm(self, *args, **kwargs):
         raise RuntimeError("No LLM client configured")
@@ -104,7 +107,11 @@ class _LLMClientStub:
             yield
 
 
-llm_client = _LLMClientStub()
+try:
+    llm_service = LocalLLMService()
+    llm_client = llm_service
+except Exception:
+    llm_client = _LLMClientStub()
 context_builder = ContextBuilder(llm_client=llm_client)
 
 # Rate limiting setup
@@ -238,6 +245,7 @@ app.include_router(core_assistant_router)
 app.include_router(video_router)
 app.include_router(training_router)
 app.include_router(fine_tune_router)
+app.include_router(llm_router)
 
 
 # Prometheus metrics middleware

@@ -1,8 +1,8 @@
 vocab_size: 32000
-hidden_size: 5120
-num_hidden_layers: 40
-num_attention_heads: 40
-intermediate_size: 16384
+hidden_size: 2880
+num_hidden_layers: 32
+num_attention_heads: 32
+intermediate_size: 9216
 max_position_embeddings: 2048
 rms_norm_eps: 1.0e-5
 rope_theta: 10000.0

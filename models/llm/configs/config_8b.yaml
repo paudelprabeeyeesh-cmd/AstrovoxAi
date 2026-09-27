@@ -1,6 +1,6 @@
 vocab_size: 32000
 hidden_size: 4096
-num_hidden_layers: 32
+num_hidden_layers: 40
 num_attention_heads: 32
 intermediate_size: 11008
 max_position_embeddings: 2048
@@ -10,12 +10,12 @@ activation: swiglu
 attention_bias: false
 mlp_bias: false
 dropout: 0.0
-batch_size: 4
+batch_size: 2
 epochs: 1
 lr: 3.0e-4
 weight_decay: 0.1
 warmup_ratio: 0.01
-gradient_accumulation_steps: 4
+gradient_accumulation_steps: 8
 gradient_checkpointing: true
 mixed_precision: bfloat16
 train_file: "data/train.txt"

@@ -1,7 +1,7 @@
 import os
 import time
 import torch
-from utils.helpers import load_config
+from ..utils.helpers import load_config
 
 
 def save_checkpoint(model, optimizer, scheduler, epoch, best_val_loss, path, config=None):

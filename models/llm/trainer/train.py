@@ -20,11 +20,31 @@ def get_8bit_optimizer(model, lr=3e-4):
         return torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.95), weight_decay=0.1)
 
 
-def train(config_path="configs/config_100m.yaml"):
+def train(config_path="configs/config_4b.yaml"):
     config = load_config(config_path)
     device = get_device()
-    model = LLM(config).to(device)
-    print(f"Parameters: {count_parameters(model):,}")
+
+    if device == "cpu":
+        set_cpu_threads(min(4, os.cpu_count() or 2))
+
+    dtype = torch.float32
+    mp = config.get("mixed_precision", "none")
+    if device == "cpu":
+        if mp == "bf16" and hasattr(torch, 'bfloat16'):
+            dtype = torch.bfloat16
+        elif mp == "fp16":
+            dtype = torch.float16
+    elif device == "cuda":
+        if mp == "bf16":
+            dtype = torch.bfloat16
+        elif mp == "fp16":
+            dtype = torch.float16
+
+    mem = LLM.estimate_memory_from_config(config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4)
+    print(f"Parameters: {LLM.get_num_params_from_config(config):,}")
+    print(f"Estimated memory: {mem['total_base_gb']:.1f}GB")
+
+    model = LLM(config, device=torch.device(device), dtype=dtype)
 
     tokenizer_path = config.get("tokenizer_path", "tokenizer.json")
     if not os.path.exists(tokenizer_path):
@@ -39,7 +59,7 @@ def train(config_path="configs/config_100m.yaml"):
 
     optimizer = get_8bit_optimizer(model, lr=config.get("lr", 3e-4))
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(dataloader) * config.get("epochs", 1))
-    scaler = GradScaler(enabled=(device == "cuda"))
+    scaler = GradScaler(enabled=(dtype == torch.float16 and device == "cuda"))
 
     model.train()
     accumulation_steps = config.get("gradient_accumulation_steps", 1)
@@ -48,13 +68,24 @@ def train(config_path="configs/config_100m.yaml"):
         for i, batch in enumerate(dataloader):
             input_ids = batch["input_ids"].to(device)
             labels = batch["labels"].to(device)
-            with autocast(enabled=(device == "cuda")):
+            if dtype == torch.float16 and device == "cuda":
+                with autocast(enabled=True):
+                    outputs = model(input_ids, labels=labels, use_gradient_checkpointing=config.get("gradient_checkpointing", False))
+                    loss = outputs["loss"] / accumulation_steps
+                scaler.scale(loss).backward()
+            else:
                 outputs = model(input_ids, labels=labels, use_gradient_checkpointing=config.get("gradient_checkpointing", False))
                 loss = outputs["loss"] / accumulation_steps
-            scaler.scale(loss).backward()
+                loss.backward()
             if (i + 1) % accumulation_steps == 0:
-                scaler.step(optimizer)
-                scaler.update()
+                if dtype == torch.float16 and device == "cuda":
+                    scaler.unscale_(optimizer)
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.get("gradient_clip_norm", 1.0))
+                    scaler.step(optimizer)
+                    scaler.update()
+                else:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.get("gradient_clip_norm", 1.0))
+                    optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
                 scheduler.step()
             total_loss += loss.item() * accumulation_steps

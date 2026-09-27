@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+from typing import Optional
 from .transformer import TransformerBlock, OutputLayer, RMSNorm
 
 
@@ -19,7 +21,7 @@ def _prepare_4d_attention_mask(attention_mask: torch.Tensor, dtype: torch.dtype,
 
 
 class LLM(nn.Module):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, device: torch.device = None, dtype: torch.dtype = None):
         super().__init__()
         self.config = config
         self.vocab_size = int(config["vocab_size"])
@@ -36,7 +38,14 @@ class LLM(nn.Module):
         self.dropout = float(config.get("dropout", 0.0))
         self.tie_weights = bool(config.get("tie_weights", True))
 
-        self.token_embedding = nn.Embedding(self.vocab_size, self.hidden_size)
+        if device is None:
+            device = torch.device("cpu")
+        if dtype is None:
+            dtype = torch.float32
+        self._device = device
+        self._dtype = dtype
+
+        self.token_embedding = nn.Embedding(self.vocab_size, self.hidden_size, device=device, dtype=dtype)
         self.embed_dropout = nn.Dropout(self.dropout)
 
         self.blocks = nn.ModuleList([
@@ -113,6 +122,11 @@ class LLM(nn.Module):
         except Exception:
             return 0
 
+    @classmethod
+    def get_num_params_from_config(cls, config: dict, trainable_only: bool = True) -> int:
+        temp = cls(config)
+        return temp.get_num_params(trainable_only=trainable_only)
+
     def estimate_memory(self, training: bool = True, dtype_bytes: int = 2) -> dict:
         num_params = self.get_num_params(trainable_only=False)
         weights_mem = num_params * dtype_bytes
@@ -125,3 +139,8 @@ class LLM(nn.Module):
             "optimizer_gb": optimizer_mem / (1024 ** 3),
             "total_base_gb": (weights_mem + grad_mem + optimizer_mem) / (1024 ** 3),
         }
+
+    @classmethod
+    def estimate_memory_from_config(cls, config: dict, training: bool = True, dtype_bytes: int = 2) -> dict:
+        temp = cls(config)
+        return temp.estimate_memory(training=training, dtype_bytes=dtype_bytes)
