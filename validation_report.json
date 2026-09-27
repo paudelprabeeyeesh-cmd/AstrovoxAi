@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-09-27T18:26:11.344674",
+  "summary": {
+    "passed": 4,
+    "failed": 0,
+    "skipped": 1,
+    "errors": 0,
+    "total": 5
+  },
+  "strategies": {
+    "Setup": {
+      "passed": 4,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0
+    }
+  },
+  "tests": [
+    {
+      "name": "tests/test_distributed.py::TestDistributedSetup::test_cuda_available",
+      "outcome": "skipped",
+      "markers": [],
+      "duration": 0.000937800039537251,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDistributedSetup::test_gpu_count_reported",
+      "outcome": "passed",
+      "markers": [],
+      "duration": 0.0003581999917514622,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDistributedSetup::test_environment_helpers",
+      "outcome": "passed",
+      "markers": [],
+      "duration": 0.0003503000480122864,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDistributedSetup::test_barrier_noop_undistributed",
+      "outcome": "passed",
+      "markers": [],
+      "duration": 0.0006967000081203878,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDistributedSetup::test_log_memory_no_cuda",
+      "outcome": "passed",
+      "markers": [],
+      "duration": 0.0004010000266134739,
+      "message": null
+    }
+  ]
+}
