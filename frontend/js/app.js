@@ -1022,7 +1022,6 @@ class App {
     window.location.href = '/login.html';
   }
 }
-  }
   _showAnalytics() {
     const app = document.getElementById('app');
     if (!app) return;

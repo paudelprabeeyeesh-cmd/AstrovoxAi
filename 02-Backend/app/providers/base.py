@@ -76,10 +76,9 @@ class AIProvider(ABC):
         response = await self.chat(messages, model, temperature, max_tokens, system_prompt)
         yield response.content
 
-    @abstractmethod
     def validate_model(self, model: str) -> bool:
-        """Check if a model name is valid for this provider."""
-        ...
+        """Check if a model name is valid for this provider. Override if provider has model restrictions."""
+        return True
 
     async def embed(
         self,

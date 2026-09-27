@@ -8,11 +8,14 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimiter:
-    def __init__(self):
+    def __init__(self, limit: int = None, window: int = None):
         self.windows = defaultdict(list)
         self.enabled = os.getenv("RATE_LIMIT_ENABLED", "1") == "1"
-        self.default_max = int(os.getenv("RATE_LIMIT_DEFAULT", "60"))
-        self.window_seconds = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+        self.default_max = limit or int(os.getenv("RATE_LIMIT_DEFAULT", "60"))
+        self.window_seconds = window or int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+
+    def is_allowed(self, key: str, max_requests: int = None) -> bool:
+        return self.check(key, max_requests)
 
     def check(self, key: str, max_requests: int = None) -> bool:
         if not self.enabled:

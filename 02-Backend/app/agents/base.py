@@ -1,5 +1,5 @@
 import logging
-from abc import ABC
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -35,11 +35,9 @@ class BaseAgent(ABC):
         self.llm = llm_client
         logger.info(f"Initialized agent: {name}")
 
+    @abstractmethod
     def execute(self, task: str, context: dict[str, Any] | None = None) -> AgentResult:
-        if self.llm:
-            response = self.llm.generate(task)
-            return AgentResult(success=True, output=response)
-        return AgentResult(success=False, output="No LLM client configured", error="missing_llm")
+        ...
 
     def plan(self, task: str) -> Plan:
         steps = [f"Analyze task: {task}", "Execute steps", "Verify results"]
