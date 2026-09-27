@@ -1,0 +1,36 @@
+{
+  "08c7ba74-e7ec-4335-a0db-9512367af9fd": {
+    "conversation_id": "08c7ba74-e7ec-4335-a0db-9512367af9fd",
+    "title": "Test",
+    "user_id": "user1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "hello",
+        "timestamp": 1790492715.0841165,
+        "metadata": {}
+      }
+    ],
+    "created_at": 1790492715.0828202,
+    "updated_at": 1790492715.084161,
+    "pinned": false,
+    "archived": false
+  },
+  "161966f6-9056-4a0a-b9e9-c4a040549b84": {
+    "conversation_id": "161966f6-9056-4a0a-b9e9-c4a040549b84",
+    "title": "Test",
+    "user_id": "user1",
+    "messages": [
+      {
+        "role": "user",
+        "content": "python code example",
+        "timestamp": 1790492715.0923395,
+        "metadata": {}
+      }
+    ],
+    "created_at": 1790492715.09127,
+    "updated_at": 1790492715.0923638,
+    "pinned": false,
+    "archived": false
+  }
+}
