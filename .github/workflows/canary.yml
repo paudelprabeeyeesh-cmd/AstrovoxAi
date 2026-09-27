@@ -1,0 +1,165 @@
+name: Canary Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_version:
+        description: 'Model version to deploy'
+        required: true
+        type: string
+      canary_percentage:
+        description: 'Canary traffic percentage'
+        required: true
+        type: number
+        default: '5'
+      auto_promote:
+        description: 'Auto-promote after success'
+        required: false
+        type: boolean
+        default: false
+      promotion_delay_minutes:
+        description: 'Minutes to wait before auto-promotion'
+        required: false
+        type: number
+        default: '30'
+
+jobs:
+  validate:
+    name: Validate Canary Deployment
+    runs-on: ubuntu-latest
+    outputs:
+      model_sha: ${{ steps.validate.outputs.model_sha }}
+      model_version: ${{ steps.validate.outputs.model_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Validate model version
+        id: validate
+        run: |
+          python -c "
+          import json, pathlib, sys
+          registry_path = pathlib.Path('models/registry')
+          version = '${{ github.event.inputs.model_version }}'
+          manifest = registry_path / 'manifest.json'
+          if not manifest.exists():
+              print('Model registry manifest not found')
+              sys.exit(1)
+          data = json.loads(manifest.read_text())
+          if version not in data.get('models', {}):
+              print(f'Model version {version} not found in registry')
+              sys.exit(1)
+          model_info = data['models'][version]
+          print(f'Validated model: {version}')
+          print(f'Status: {model_info.get(\"status\")}')
+          print(f'SHA256: {model_info.get(\"sha256\")}')
+          print(f'Evaluation: {model_info.get(\"evaluation\", {})}')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f'model_sha={model_info.get(\"sha256\")}\n')
+              f.write(f'model_version={version}\n')
+          "
+      - name: Upload validation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary-validation
+          path: canary_validation_report.json
+
+  deploy-canary:
+    name: Deploy Canary
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: production-canary
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Update canary task definition
+        run: |
+          MODEL_VERSION=${{ needs.validate.outputs.model_version }}
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition astrovox-inference --query 'taskDefinition')
+          NEW_TASK=$(echo $TASK_DEF | jq '.containerDefinitions[0].environment += [{"name":"MODEL_VERSION","value":"'$MODEL_VERSION'"},{"name":"CANARY_MODE","value":"true"}]')
+          aws ecs register-task-definition --cli-input-json "$NEW_TASK"
+      - name: Deploy canary service
+        run: |
+          CANARY_PERCENTAGE=${{ github.event.inputs.canary_percentage }}
+          aws ecs update-service --cluster astrovox-production --service inference-canary --task-definition astrovox-inference-canary --desired-count 2
+          aws elbv2 modify-listener-rule --listener-arn ${{ secrets.ALB_LISTENER_ARN }} --rules file://canary_rule.json
+      - name: Run canary health checks
+        run: |
+          for i in {1..10}; do
+            sleep 10
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.CANARY_URL }}/health/live)
+            if [ "$STATUS" == "200" ]; then
+              echo "Canary healthy"
+              exit 0
+            fi
+          done
+          echo "Canary health check failed"
+          exit 1
+      - name: Monitor canary metrics
+        run: |
+          sleep 60
+          python -c "
+          import requests, os, json, sys
+          prom_url = os.environ.get('PROMETHEUS_URL', 'http://prometheus:9090')
+          queries = {
+              'error_rate': 'sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))',
+              'latency_p99': 'histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))',
+              'throughput': 'sum(rate(http_requests_total[5m]))',
+          }
+          results = {}
+          for name, query in queries.items():
+              resp = requests.get(f'{prom_url}/api/v1/query', params={'query': query})
+              results[name] = resp.json().get('data', {}).get('result', [])
+          print(json.dumps(results, indent=2))
+          with open('canary_metrics.json', 'w') as f:
+              json.dump(results, f, indent=2)
+          "
+      - name: Evaluate canary
+        run: |
+          python -c "
+          import json, sys
+          with open('canary_metrics.json') as f:
+              metrics = json.load(f)
+          error_rate = float(metrics.get('error_rate', [{}])[0].get('value', [0, 0])[1] or 0)
+          latency_p99 = float(metrics.get('latency_p99', [{}])[0].get('value', [0, 0])[1] or 0)
+          baseline_error_rate = 0.01
+          baseline_latency_p99 = 0.5
+          if error_rate > baseline_error_rate * 2:
+              print(f'ERROR: Error rate {error_rate} exceeds threshold')
+              sys.exit(1)
+          if latency_p99 > baseline_latency_p99 * 1.5:
+              print(f'ERROR: Latency p99 {latency_p99} exceeds threshold')
+              sys.exit(1)
+          print(f'Canary metrics OK: error_rate={error_rate}, latency_p99={latency_p99}')
+          "
+
+  auto-promote:
+    name: Auto-Promote Canary
+    runs-on: ubuntu-latest
+    needs: deploy-canary
+    if: ${{ github.event.inputs.auto_promote == 'true' }}
+    steps:
+      - name: Wait for promotion delay
+        run: sleep $(( ${{ github.event.inputs.promotion_delay_minutes }} * 60 ))
+      - name: Promote to production
+        run: |
+          MODEL_VERSION=${{ needs.validate.outputs.model_version }}
+          aws ecs update-service --cluster astrovox-production --service inference --force-new-deployment
+          aws ecs update-service --cluster astrovox-production --service inference-canary --desired-count 0
+      - name: Verify production
+        run: |
+          for i in {1..10}; do
+            sleep 10
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" ${{ secrets.PRODUCTION_URL }}/health/live)
+            if [ "$STATUS" == "200" ]; then
+              echo "Production healthy after promotion"
+              exit 0
+            fi
+          done
+          exit 1

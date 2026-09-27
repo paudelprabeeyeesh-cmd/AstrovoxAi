@@ -9,7 +9,7 @@ from .citation import Citation, CitationEngine
 from .metadata import ChunkMetadata, MetadataExtractor, MetadataFilter
 from .vector_db import VectorStore, VectorRecord, SearchResult as VectorSearchResult
 from .semantic_chunker import SemanticChunker
-from .hybrid_retriever import HybridRetriever as AdvancedHybridRetriever
+from .hybrid_retriever import AdvancedHybridRetriever
 from .graph_rag import GraphRAG, GraphNode, GraphEdge
 from .knowledge_graph import KnowledgeGraph, KnowledgeTriple
 from .incremental_indexing import IncrementalIndexer, IndexedDocument

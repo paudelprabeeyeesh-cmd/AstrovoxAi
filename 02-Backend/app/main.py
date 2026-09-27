@@ -5,8 +5,11 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 import os
+import sys
 import time
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from app.services.auth.auth import router as auth_router
 from app.chat import router as chat_router
@@ -90,6 +93,12 @@ from app.video_router import router as video_router
 from app.routers.images import router as images_router
 from app.routers.code_agent import router as code_agent_router
 from app.routers.rag import router as rag_router
+from backend.app.auth.router import router as phase14_auth_router
+from backend.app.workspaces.router import router as phase14_workspaces_router
+from backend.app.memory.router import router as phase14_memory_router
+from backend.app.uploads.router import router as phase14_uploads_router
+from backend.app.plugins.router import router as phase14_plugins_router
+from backend.app.api_keys.router import router as phase14_api_keys_router
 
 load_dotenv()
 
@@ -246,6 +255,12 @@ app.include_router(video_router)
 app.include_router(training_router)
 app.include_router(fine_tune_router)
 app.include_router(llm_router)
+app.include_router(phase14_auth_router)
+app.include_router(phase14_workspaces_router)
+app.include_router(phase14_memory_router)
+app.include_router(phase14_uploads_router)
+app.include_router(phase14_plugins_router)
+app.include_router(phase14_api_keys_router)
 
 
 # Prometheus metrics middleware

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - AstrovoxAI</title>
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="logo">
+        <h1>AstrovoxAI</h1>
+        <span>Admin</span>
+      </div>
+      <nav>
+        <a href="#" class="nav-item active" data-view="overview">Overview</a>
+        <a href="#" class="nav-item" data-view="users">Users</a>
+        <a href="#" class="nav-item" data-view="workspaces">Workspaces</a>
+        <a href="#" class="nav-item" data-view="api-keys">API Keys</a>
+        <a href="#" class="nav-item" data-view="usage">Usage</a>
+        <a href="#" class="nav-item" data-view="plugins">Plugins</a>
+        <a href="#" class="nav-item" data-view="settings">Settings</a>
+      </nav>
+      <div class="sidebar-footer">
+        <span>Phase 14 Platform</span>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="header">
+        <h2 id="page-title">Overview</h2>
+        <div class="header-actions">
+          <button id="refresh-btn">Refresh</button>
+        </div>
+      </header>
+      <div id="content">
+        <div id="overview-view" class="view active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h3>Total Users</h3>
+              <p class="stat-value" id="stat-users">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Active Workspaces</h3>
+              <p class="stat-value" id="stat-workspaces">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>API Requests</h3>
+              <p class="stat-value" id="stat-requests">0</p>
+            </div>
+            <div class="stat-card">
+              <h3>Plugins Installed</h3>
+              <p class="stat-value" id="stat-plugins">0</p>
+            </div>
+          </div>
+          <div class="chart-container">
+            <h3>Usage Analytics</h3>
+            <canvas id="usage-chart"></canvas>
+          </div>
+        </div>
+        <div id="users-view" class="view">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr><th>ID</th><th>Email</th><th>Name</th><th>Status</th><th>Created</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="users-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="workspaces-view" class="view">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr><th>ID</th><th>Name</th><th>Owner</th><th>Members</th><th>Created</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="workspaces-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="api-keys-view" class="view">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr><th>ID</th><th>Name</th><th>User</th><th>Usage</th><th>Last Used</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="api-keys-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="usage-view" class="view">
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr><th>Endpoint</th><th>Method</th><th>Status</th><th>Latency</th><th>Timestamp</th></tr>
+              </thead>
+              <tbody id="usage-table"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="plugins-view" class="view">
+          <div class="plugins-grid" id="plugins-grid"></div>
+        </div>
+        <div id="settings-view" class="view">
+          <div class="settings-section">
+            <h3>General Settings</h3>
+            <form id="settings-form">
+              <label>Platform Name</label>
+              <input type="text" id="setting-name" value="AstrovoxAI">
+              <label>Environment</label>
+              <select id="setting-env">
+                <option value="development">Development</option>
+                <option value="staging">Staging</option>
+                <option value="production">Production</option>
+              </select>
+              <button type="submit">Save Settings</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <script src="js/admin.js"></script>
+</body>
+</html>

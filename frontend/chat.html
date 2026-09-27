@@ -3,21 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat - AstrovoxAI</title>
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/components/platform.css">
+  <title>Chat - AstrovoxAI Phase 14</title>
+  <link rel="stylesheet" href="css/chat-phase14.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div id="app"></div>
-  <script src="js/auth.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/platform/index.js"></script>
-  <script src="js/platform/theme.js"></script>
-  <script src="js/platform/reality-bending.js"></script>
-  <script src="js/integrations/markdown.js"></script>
-  <script src="js/integrations/monaco.js"></script>
+  <div id="chat-app">
+    <aside class="chat-sidebar">
+      <div class="sidebar-header">
+        <h1>AstrovoxAI</h1>
+        <span class="version">Phase 14</span>
+      </div>
+      <div class="conversation-list">
+        <button class="new-chat-btn" id="new-chat">+ New Chat</button>
+        <div id="conversations"></div>
+      </div>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <span id="user-email">user@example.com</span>
+          <button id="logout-btn">Logout</button>
+        </div>
+      </div>
+    </aside>
+    <main class="chat-main">
+      <header class="chat-header">
+        <div class="model-selector">
+          <label>Model:</label>
+          <select id="model-select">
+            <option value="gpt-4">GPT-4</option>
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="claude-3">Claude 3</option>
+          </select>
+        </div>
+        <div class="header-actions">
+          <button id="clear-chat" title="Clear conversation">Clear</button>
+          <button id="toggle-memory" title="Toggle memory">Memory: ON</button>
+        </div>
+      </header>
+      <div class="messages-container" id="messages-container">
+        <div class="welcome-screen" id="welcome-screen">
+          <div class="welcome-content">
+            <h2>Welcome to AstrovoxAI</h2>
+            <p>Start a conversation with Phase 14 AI Platform</p>
+            <div class="suggestions">
+              <button class="suggestion-btn" data-prompt="Explain quantum computing">Explain quantum computing</button>
+              <button class="suggestion-btn" data-prompt="Write a Python function">Write a Python function</button>
+              <button class="suggestion-btn" data-prompt="Help me brainstorm ideas">Help me brainstorm</button>
+            </div>
+          </div>
+        </div>
+        <div id="messages"></div>
+        <div class="typing-indicator" id="typing-indicator" style="display: none;">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+      <form class="chat-input-area" id="chat-form">
+        <div class="input-wrapper">
+          <textarea id="message-input" placeholder="Type your message..." rows="1"></textarea>
+          <button type="submit" id="send-btn" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>
+        <div class="input-meta">
+          <span id="token-count">0 tokens</span>
+          <span id="char-count">0 characters</span>
+        </div>
+      </form>
+    </main>
+    <aside class="memory-panel" id="memory-panel">
+      <div class="memory-header">
+        <h3>Memory</h3>
+        <button id="close-memory">Close</button>
+      </div>
+      <div class="memory-content" id="memory-content">
+        <p class="memory-placeholder">Memories will appear here as you chat.</p>
+      </div>
+    </aside>
+  </div>
+  <script src="js/chat-phase14.js"></script>
 </body>
 </html>

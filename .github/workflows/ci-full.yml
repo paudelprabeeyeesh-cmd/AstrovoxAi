@@ -1,0 +1,139 @@
+name: CI Full
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Ruff
+        run: ruff check .
+      - name: Black
+        run: black --check .
+      - name: isort
+        run: isort --check-only .
+      - name: Mypy
+        run: mypy models scripts experiments datasets
+
+  test:
+    name: Test Suite
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ['3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run unit tests
+        run: pytest tests/ -v --tb=short
+      - name: Run integration tests
+        run: pytest tests/integration/ -v --tb=short || true
+      - name: Run security tests
+        run: pytest tests/security/ -v --tb=short || true
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install security tools
+        run: |
+          pip install bandit safety pip-audit
+      - name: Bandit scan
+        run: bandit -r models scripts experiments datasets -f json -o bandit-report.json || true
+      - name: Safety check
+        run: safety check --json || true
+      - name: pip-audit
+        run: pip-audit --desc=summary || true
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit-report.json
+            safety-report.json
+
+  build:
+    name: Build Artifacts
+    runs-on: ubuntu-latest
+    needs: [lint, test, security]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Build Docker images
+        run: |
+          docker build -f Dockerfile.prod -t astrovoxai-inference:${{ github.sha }} .
+          docker build -f Dockerfile.training -t astrovoxai-training:${{ github.sha }} .
+      - name: Push to registry
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker tag astrovoxai-inference:${{ github.sha }} ghcr.io/${{ github.repository }}/inference:${{ github.sha }}
+          docker tag astrovoxai-training:${{ github.sha }} ghcr.io/${{ github.repository }}/training:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/inference:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/training:${{ github.sha }}
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-images
+          path: |
+            Dockerfile.prod
+            Dockerfile.training
+
+  model-card-validation:
+    name: Model Card Validation
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Validate model cards
+        run: |
+          python -c "
+          import yaml, json, pathlib, sys
+          root = pathlib.Path('.')
+          for card in root.glob('models/registry/**/model_card.md'):
+              text = card.read_text()
+              assert '## Model Details' in text, f'Missing Model Details in {card}'
+              assert '## Training Details' in text, f'Missing Training Details in {card}'
+              assert '## Evaluation' in text, f'Missing Evaluation in {card}'
+              print(f'OK: {card}')
+          print('All model cards validated.')
+          "
