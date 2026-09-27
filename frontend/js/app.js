@@ -246,6 +246,282 @@ class App {
         return;
       }
       this._showMemory();
+    } else if (path === '/analytics.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAnalytics();
+    } else if (path === '/collaboration.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showCollaboration();
+    } else if (path === '/database.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showDatabase();
+    } else if (path === '/high-performance.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showHighPerformance();
+    } else if (path === '/scalability.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showScalability();
+    } else if (path === '/platform-maturity.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showPlatformMaturity();
+    } else if (path === '/testing-framework.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showTestingFramework();
+    } else if (path === '/security-excellence.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showSecurityExcellence();
+    } else if (path === '/performance-optimization.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showPerformanceOptimization();
+    } else if (path === '/automation-devops.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAutomationDevops();
+    } else if (path === '/intelligent-automation.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showIntelligentAutomation();
+    } else if (path === '/knowledge-platform.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showKnowledgePlatform();
+    } else if (path === '/marketplace.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showMarketplace();
+    } else if (path === '/monitoring-center.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showMonitoringCenter();
+    } else if (path === '/advanced-api.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAdvancedApi();
+    } else if (path === '/engineering-productivity.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showEngineeringProductivity();
+    } else if (path === '/release-engineering.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showReleaseEngineering();
+    } else if (path === '/v2-vision.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showV2Vision();
+    } else if (path === '/ai-networking.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAiNetworking();
+    } else if (path === '/advanced-data.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAdvancedData();
+    } else if (path === '/model-factory.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showModelFactory();
+    } else if (path === '/enterprise-expansion.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showEnterpriseExpansion();
+    } else if (path === '/edge-ai.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showEdgeAi();
+    } else if (path === '/research-benchmark.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showResearchBenchmark();
+    } else if (path === '/autonomous-engineering.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAutonomousEngineering();
+    } else if (path === '/data-governance.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showDataGovernance();
+    } else if (path === '/distributed.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showDistributed();
+    } else if (path === '/high-performance-runtime.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showHighPerformanceRuntime();
+    } else if (path === '/ai-compiler.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAiCompiler();
+    } else if (path === '/runtime.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showRuntime();
+    } else if (path === '/intelligent-memory.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showIntelligentMemory();
+    } else if (path === '/reasoning-engine.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showReasoningEngine();
+    } else if (path === '/aiops.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showAiops();
+    } else if (path === '/sustainability.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showSustainability();
+    } else if (path === '/platform-evolution.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showPlatformEvolution();
+    } else if (path === '/policy.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showPolicy();
+    } else if (path === '/privacy.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showPrivacy();
+    } else if (path === '/recommendation.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showRecommendation();
+    } else if (path === '/forecasting.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showForecasting();
+    } else if (path === '/business-intelligence.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showBusinessIntelligence();
+    } else if (path === '/notifications.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showNotifications();
+    } else if (path === '/orchestration.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showOrchestration();
+    } else if (path === '/cqrs.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showCqrs();
+    } else if (path === '/event-sourcing.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showEventSourcing();
+    } else if (path === '/cdc.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showCdc();
+    } else if (path === '/core-assistant.html') {
+      if (!this.authState.isAuthenticated) {
+        window.location.href = '/login.html';
+        return;
+      }
+      this._showCoreAssistant();
     } else {
       if (this.authState.isAuthenticated) {
         window.location.href = '/dashboard.html';
@@ -746,237 +1022,6 @@ class App {
     window.location.href = '/login.html';
   }
 }
-
-  _showAnalytics() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/analytics.html';
-  }
-  _showCollaboration() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/collaboration.html';
-  }
-  _showDatabase() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/database.html';
-  }
-  _showHighPerformance() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/high-performance.html';
-  }
-  _showScalability() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/scalability.html';
-  }
-  _showPlatformMaturity() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/platform-maturity.html';
-  }
-  _showTestingFramework() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/testing-framework.html';
-  }
-  _showSecurityExcellence() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/security-excellence.html';
-  }
-  _showPerformanceOptimization() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/performance-optimization.html';
-  }
-  _showAutomationDevops() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/automation-devops.html';
-  }
-  _showIntelligentAutomation() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/intelligent-automation.html';
-  }
-  _showKnowledgePlatform() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/knowledge-platform.html';
-  }
-  _showMarketplace() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/marketplace.html';
-  }
-  _showMonitoringCenter() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/monitoring-center.html';
-  }
-  _showAdvancedApi() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/advanced-api.html';
-  }
-  _showEngineeringProductivity() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/engineering-productivity.html';
-  }
-  _showReleaseEngineering() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/release-engineering.html';
-  }
-  _showV2Vision() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/v2-vision.html';
-  }
-  _showAiNetworking() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/ai-networking.html';
-  }
-  _showAdvancedData() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/advanced-data.html';
-  }
-  _showModelFactory() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/model-factory.html';
-  }
-  _showEnterpriseExpansion() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/enterprise-expansion.html';
-  }
-  _showEdgeAi() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/edge-ai.html';
-  }
-  _showResearchBenchmark() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/research-benchmark.html';
-  }
-  _showAutonomousEngineering() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/autonomous-engineering.html';
-  }
-  _showDataGovernance() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/data-governance.html';
-  }
-  _showDistributed() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/distributed.html';
-  }
-  _showHighPerformanceRuntime() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/high-performance-runtime.html';
-  }
-  _showAiCompiler() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/ai-compiler.html';
-  }
-  _showRuntime() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/runtime.html';
-  }
-  _showIntelligentMemory() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/intelligent-memory.html';
-  }
-  _showReasoningEngine() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/reasoning-engine.html';
-  }
-  _showAiops() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/aiops.html';
-  }
-  _showSustainability() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/sustainability.html';
-  }
-  _showPlatformEvolution() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/platform-evolution.html';
-  }
-  _showPolicy() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/policy.html';
-  }
-  _showPrivacy() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/privacy.html';
-  }
-  _showRecommendation() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/recommendation.html';
-  }
-  _showForecasting() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/forecasting.html';
-  }
-  _showBusinessIntelligence() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/business-intelligence.html';
-  }
-  _showNotifications() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/notifications.html';
-  }
-  _showOrchestration() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/orchestration.html';
-  }
-  _showCqrs() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/cqrs.html';
-  }
-  _showEventSourcing() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/event-sourcing.html';
-  }
-  _showCdc() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/cdc.html';
-  }
-  _showCoreAssistant() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    window.location.href = '/core-assistant.html';
-  }
 
 function initRouter() {
   window.addEventListener('hashchange', () => {
