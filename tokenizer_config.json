@@ -1,0 +1,9 @@
+{
+  "model_type": "bpe",
+  "unk_token": "<unk>",
+  "bos_token": "<bos>",
+  "eos_token": "<eos>",
+  "pad_token": "<pad>",
+  "mask_token": "<mask>",
+  "vocab_size": 312
+}

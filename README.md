@@ -103,6 +103,56 @@ cp .env.example .env
 docker-compose up --build
 ```
 
+## Model Training, Inference & Evaluation
+
+AstrovoxAI includes a complete LLM training and inference toolkit under `models/llm/`.
+
+### Training
+
+```bash
+# Install ML dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Train a tiny model
+python examples/train_tiny.py --config models/llm/configs/config_100m.yaml
+
+# Fine-tune on instruction data
+python examples/finetune.py --config models/llm/configs/config_finetune.yaml --model model.pt
+```
+
+### Inference
+
+```bash
+# Generate text
+python examples/generate.py --prompt "Once upon a time" --checkpoint model.pt
+
+# Start API server
+python examples/serve_api.py --config models/llm/configs/config_4b.yaml --checkpoint model.pt --port 8000
+
+# Run benchmarks
+python examples/evaluate.py --checkpoint model.pt --benchmarks mmlu hellaswag
+```
+
+### Evaluation
+
+```bash
+# Quick eval (MMLU, HellaSwag, GSM8K, HumanEval, MBPP, PIQA, BoolQ, Winogrande)
+python examples/evaluate.py --checkpoint model.pt --max-samples 500 --output eval_report.json
+```
+
+### Export
+
+```bash
+# Export to HuggingFace format
+python examples/export_model.py --checkpoint model.pt --config models/llm/configs/config_4b.yaml --format huggingface --output-dir export/hf
+
+# Export to ONNX
+python examples/export_model.py --checkpoint model.pt --config models/llm/configs/config_4b.yaml --format onnx --output-dir export/onnx
+
+# Export to GGUF
+python examples/export_model.py --checkpoint model.pt --config models/llm/configs/config_4b.yaml --format gguf --output-dir export/gguf
+```
+
 ## Environment Variables
 
 | Variable | Required | Description |
@@ -165,9 +215,22 @@ AstrovoxAi/
 │   │   ├── metrics.py          # Prometheus metrics
 │   │   └── providers/          # LLM provider adapters
 │   └── tests/                  # Backend tests
+├── models/                     # LLM model code
+│   └── llm/
+│       ├── model/              # Transformer architecture
+│       ├── trainer/            # Pre-training and fine-tuning
+│       ├── tokenizer/          # Tokenizer training
+│       ├── inference/          # Generation engine + FastAPI server
+│       ├── evaluation/         # Benchmark harness
+│       ├── quantization.py     # INT8/FP16/BF16 quantization
+│       ├── export.py           # Multi-format model export
+│       └── configs/            # Model size configs
+├── examples/                   # Developer examples
+├── tests/                      # Model unit and integration tests
+├── scripts/                    # Benchmark and utility scripts
+├── docs/                       # Documentation
 ├── database/                   # Database schemas and migrations
 ├── frontend/                   # Legacy frontend assets
-├── docs/                       # Documentation
 ├── sdk/                        # Generated SDKs
 ├── charts/                     # Helm charts
 ├── k8s/                        # Kubernetes manifests
@@ -176,6 +239,8 @@ AstrovoxAi/
 ├── docker-compose.prod.yml     # Docker Compose (production)
 ├── Dockerfile.backend          # Backend Dockerfile
 ├── Dockerfile.frontend         # Frontend Dockerfile
+├── Dockerfile.training         # Model training Dockerfile
+├── Dockerfile.inference        # Inference server Dockerfile
 ├── Makefile                    # Build shortcuts
 ├── justfile                    # Task runner
 └── package.json                # Frontend dependencies
@@ -200,6 +265,7 @@ AstrovoxAi/
 | Safety | `02-Backend/app/safety_routes.py` | Safety and moderation endpoints |
 | Training | `02-Backend/app/training/` | Model fine-tuning and RLHF |
 | Analytics | `02-Backend/app/api/routers/analytics_route.py` | Usage analytics |
+| Model | `models/llm/` | Transformer model, trainer, tokenizer, inference, quantization, export |
 
 ## API Overview
 
@@ -218,6 +284,24 @@ AstrovoxAi/
 
 Full API reference: [docs/API.md](docs/API.md)
 
+## Model API Reference
+
+See [docs/api-reference/](docs/api-reference/) for detailed model API documentation:
+- [Models](docs/api-reference/models.md) — LLM architecture and config
+- [Tokenizer](docs/api-reference/tokenizer.md) — Tokenizer training and loading
+- [Training](docs/api-reference/training.md) — Pre-training and fine-tuning APIs
+- [Inference](docs/api-reference/inference.md) — Generation engines and server APIs
+- [Evaluation](docs/api-reference/evaluation.md) — Benchmark harness
+- [Quantization](docs/api-reference/quantization.md) — Quantization utilities
+- [Export](docs/api-reference/export.md) — Multi-format model export
+
+## Architecture Diagrams
+
+See [docs/architecture/](docs/architecture/) for Mermaid diagrams:
+- [Model Architecture](docs/architecture/model-architecture.md)
+- [Training Pipeline](docs/architecture/training-pipeline.md)
+- [Inference Pipeline](docs/architecture/inference-pipeline.md)
+
 ## Database Schema
 
 Core tables (Supabase PostgreSQL):
@@ -235,6 +319,9 @@ All tables enforce Row Level Security (RLS) for tenant isolation.
 ## Testing
 
 ```bash
+# Model tests
+pytest tests/ -v
+
 # Backend tests
 cd 02-Backend
 pytest
@@ -278,6 +365,7 @@ npm run test:all
 | Database errors | Run `database/schemas/supabase_setup.sql` in Supabase |
 | Rate limit exceeded | Wait or increase `RATE_LIMIT` in `.env` |
 | Import errors in backend | Ensure Python 3.9+ and install `requirements.txt` |
+| CUDA out of memory | Reduce `batch_size` or enable `gradient_checkpointing` in config |
 
 ## Roadmap
 
@@ -294,6 +382,8 @@ See [docs/README.md](docs/README.md) for the full documentation index and [docs/
 - [x] CI/CD pipeline
 - [x] Monitoring and observability
 - [x] Enterprise SSO (SAML, OIDC)
+- [x] Model training and inference toolkit
+- [x] Quantization and export utilities
 
 ### Upcoming
 

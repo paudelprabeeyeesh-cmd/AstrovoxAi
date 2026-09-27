@@ -1,0 +1,70 @@
+# ============================================================================
+# AstrovoxAI Model Training — Production Dockerfile
+# ============================================================================
+
+FROM python:3.12-slim-bookworm@sha256:4a3ec766c3f93b3b6d0c6c6f9c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS base
+
+ARG PYTHON_VERSION=3.12
+ARG APP_USER=appuser
+ARG APP_UID=1000
+ARG APP_GID=1000
+ARG TZ=UTC
+
+ENV PYTHON_VERSION=${PYTHON_VERSION} \
+    APP_USER=${APP_USER} \
+    APP_UID=${APP_UID} \
+    APP_GID=${APP_GID} \
+    TZ=${TZ} \
+    DEBIAN_FRONTEND=noninteractive \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gcc \
+    g++ \
+    libffi-dev \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt && \
+    pip install --no-cache-dir --prefer-binary -r requirements-dev.txt && \
+    rm -rf /root/.cache/pip
+
+FROM base AS production
+
+RUN groupadd -r -g ${APP_GID} ${APP_USER} && \
+    useradd -r -g ${APP_USER} -u ${APP_UID} -m -s /usr/sbin/nologin ${APP_USER} && \
+    chown -R ${APP_USER}:${APP_USER} /app
+
+LABEL org.opencontainers.image.title="astrovoxai-training" \
+      org.opencontainers.image.description="AstrovoxAI Model Training" \
+      org.opencontainers.image.vendor="AstrovoxAI" \
+      org.opencontainers.image.licenses="MIT"
+
+COPY --chown=${APP_USER}:${APP_USER} models/ ./models/
+COPY --chown=${APP_USER}:${APP_USER} trainer/ ./trainer/
+COPY --chown=${APP_USER}:${APP_USER} tokenizer/ ./tokenizer/
+COPY --chown=${APP_USER}:${APP_USER} examples/ ./examples/
+COPY --chown=${APP_USER}:${APP_USER} scripts/ ./scripts/
+COPY --chown=${APP_USER}:${APP_USER} tests/ ./tests/
+
+RUN mkdir -p /app/output /app/logs /app/data && \
+    chown -R ${APP_USER}:${APP_USER} /app/output /app/logs /app/data && \
+    chmod 750 /app/output /app/logs /app/data
+
+USER ${APP_USER}
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD python -c "import torch; print('ok')" || exit 1
+
+CMD ["python", "examples/train_tiny.py", "--config", "models/llm/configs/config_100m.yaml"]

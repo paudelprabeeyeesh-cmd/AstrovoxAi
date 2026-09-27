@@ -34,18 +34,18 @@ Be respectful. Constructive feedback only. No harassment or discrimination. By p
 
 1. Fork the repository on GitHub
 2. Clone your fork:
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/AstrovoxAi.git
-   cd AstrovoxAi
-   ```
+    ```bash
+    git clone https://github.com/YOUR_USERNAME/AstrovoxAi.git
+    cd AstrovoxAi
+    ```
 3. Add upstream remote:
-   ```bash
-   git remote add upstream https://github.com/astrovox/AstrovoxAi.git
-   ```
+    ```bash
+    git remote add upstream https://github.com/astrovox/AstrovoxAi.git
+    ```
 4. Create a feature branch:
-   ```bash
-   git checkout -b feature/my-feature
-   ```
+    ```bash
+    git checkout -b feature/my-feature
+    ```
 
 ## Development Setup
 
@@ -73,6 +73,22 @@ cp .env.example .env
 # Edit .env with your Supabase and AI provider keys
 ```
 
+### Model Development
+
+```bash
+# Install ML dependencies
+pip install -r requirements.txt -r requirements-dev.txt
+
+# Verify installation
+pytest tests/ -v
+
+# Train a tiny model (CPU-friendly)
+python examples/train_tiny.py --config models/llm/configs/config_100m.yaml
+
+# Run inference
+python examples/generate.py --prompt "Hello world" --checkpoint model.pt
+```
+
 ## Project Structure
 
 ```
@@ -85,13 +101,23 @@ AstrovoxAi/
 │       ├── providers/          # AI provider implementations
 │       ├── middleware/         # Security & request middleware
 │       └── services/           # Business logic services
-├── database/                   # Database schemas and migrations
+├── models/                     # LLM model code
+│   └── llm/
+│       ├── model/              # Transformer architecture
+│       ├── trainer/            # Pre-training and fine-tuning
+│       ├── tokenizer/          # Tokenizer training
+│       ├── inference/          # Generation engine + FastAPI server
+│       ├── evaluation/         # Benchmark harness
+│       ├── quantization.py     # INT8/FP16/BF16 quantization
+│       ├── export.py           # Multi-format model export
+│       └── configs/            # Model size configs
+├── examples/                   # Developer examples
+├── tests/                      # Test suites
 ├── docs/                       # Documentation
 ├── sdk/                        # Generated SDKs
 ├── charts/                     # Helm charts
 ├── k8s/                        # Kubernetes manifests
 ├── monitoring/                 # Prometheus/Grafana configs
-├── tests/                      # Test suites
 └── tools/                      # Development tools
 ```
 
@@ -105,6 +131,16 @@ AstrovoxAi/
 - Use async/await for all I/O operations
 - Maximum line length: 100 characters
 - Use `ruff` for linting and formatting
+
+### Python (Model)
+
+- Follow PEP 8 style guide
+- Use type hints for all function signatures
+- Write docstrings for public functions and classes
+- Use `torch.compile` when available for performance
+- Keep model classes pure (no side effects in forward)
+- Use `torch.no_grad()` for inference
+- Prefer `torch.compile` over manual optimization
 
 ### TypeScript (Frontend)
 
@@ -132,10 +168,11 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 ### Pull Request Process
 
 1. Ensure all tests pass:
-   ```bash
-   cd 02-Backend && pytest
-   npm run test:all
-   ```
+    ```bash
+    pytest tests/ -v
+    cd 02-Backend && pytest
+    npm run test:all
+    ```
 2. Update documentation if behavior changes
 3. Keep changes focused and minimal
 4. Open a Pull Request against the `main` branch
@@ -151,6 +188,19 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 - No secrets or credentials in code
 
 ## Testing
+
+### Model Tests
+
+```bash
+# Run all model tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_model.py -v
+
+# Run with coverage
+pytest tests/ --cov=models --cov-report=term-missing
+```
 
 ### Backend Tests
 

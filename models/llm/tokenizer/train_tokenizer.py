@@ -21,6 +21,27 @@ from tokenizers.models import BPE, WordPiece
 from tokenizers.pre_tokenizers import ByteLevel, Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer, WordPieceTrainer
+try:
+    from tokenizers.decoders import BPEDecoder, WordPiece as WordPieceDecoder2
+except Exception:
+    BPEDecoder = None
+    WordPieceDecoder2 = None
+
+
+def _get_decoder(algorithm: str):
+    if algorithm == "bpe":
+        if ByteLevelDecoder is not None:
+            return ByteLevelDecoder()
+        if BPEDecoder is not None:
+            return BPEDecoder()
+        raise ImportError("No BPE decoder available in tokenizers library")
+    if algorithm == "wordpiece":
+        if WordPieceDecoder is not None:
+            return WordPieceDecoder()
+        if WordPieceDecoder2 is not None:
+            return WordPieceDecoder2()
+        raise ImportError("No WordPiece decoder available in tokenizers library")
+    raise ValueError(f"Unsupported algorithm: {algorithm}. Choose 'bpe' or 'wordpiece'.")
 
 
 SPECIAL_TOKENS = {
@@ -207,7 +228,7 @@ def train_tokenizer(
             min_frequency=2,
         )
         pre_tokenizer = ByteLevel()
-        decoder = ByteLevelDecoder()
+        decoder = _get_decoder("bpe")
     elif algorithm == "wordpiece":
         model = WordPiece(unk_token=SPECIAL_TOKENS["unk"])
         trainer = WordPieceTrainer(
@@ -216,7 +237,7 @@ def train_tokenizer(
             min_frequency=2,
         )
         pre_tokenizer = Whitespace()
-        decoder = WordPieceDecoder()
+        decoder = _get_decoder("wordpiece")
     else:
         raise ValueError(f"Unsupported algorithm: {algorithm}. Choose 'bpe' or 'wordpiece'.")
 

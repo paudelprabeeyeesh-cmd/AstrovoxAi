@@ -64,6 +64,8 @@ def memory_estimation(
     activation_checkpointing: bool = True,
     context_length: int = 2048,
     batch_size: int = 1,
+    hidden_size: int = 4096,
+    num_hidden_layers: int = 32,
 ) -> Dict[str, float]:
     weights_mem = num_params * dtype_bytes
     grad_mem = weights_mem if training else 0.0

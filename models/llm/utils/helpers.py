@@ -3,9 +3,26 @@ import yaml
 import torch
 
 
+def _cast_value(value):
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            pass
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    return value
+
+
 def load_config(config_path="configs/config_100m.yaml"):
     with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+    if isinstance(config, dict):
+        for key, value in config.items():
+            config[key] = _cast_value(value)
+    return config
 
 
 def save_config(config, config_path):

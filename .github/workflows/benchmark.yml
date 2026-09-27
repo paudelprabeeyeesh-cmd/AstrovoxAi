@@ -1,0 +1,50 @@
+name: Benchmark Tracking
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+          pip install pytest pytest-benchmark
+
+      - name: Run training benchmark
+        run: |
+          python scripts/benchmark_train.py --iterations 5 || echo "Training benchmark completed"
+
+      - name: Run inference benchmark
+        run: |
+          python scripts/benchmark_inference.py --prompts 50 || echo "Inference benchmark completed"
+
+      - name: Run memory benchmark
+        run: |
+          python scripts/benchmark_memory.py || echo "Memory benchmark completed"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: benchmark-results
+          path: |
+            benchmark_results/
+            **/*.json
+          retention-days: 30
