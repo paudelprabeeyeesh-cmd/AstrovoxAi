@@ -112,8 +112,6 @@ class CausalSelfAttention(nn.Module):
         rope_theta: float = 10000.0,
         dropout: float = 0.0,
         attention_bias: bool = False,
-        device=None,
-        dtype=None,
     ):
         super().__init__()
         if hidden_size % num_attention_heads != 0:
@@ -121,8 +119,6 @@ class CausalSelfAttention(nn.Module):
         self.num_attention_heads = num_attention_heads
         self.head_dim = hidden_size // num_attention_heads
         self.scale = self.head_dim ** -0.5
-        self._device = device
-        self._dtype = dtype
 
         self.q_proj = nn.Linear(hidden_size, hidden_size, bias=attention_bias)
         self.k_proj = nn.Linear(hidden_size, hidden_size, bias=attention_bias)
@@ -132,6 +128,8 @@ class CausalSelfAttention(nn.Module):
 
         self.rotary_emb = RotaryEmbedding(self.head_dim, max_position_embeddings=max_position_embeddings, base=rope_theta)
         self.use_flash = hasattr(F, 'scaled_dot_product_attention')
+        self.use_kv_cache = False
+        self._cache = KVCache()
 
     def forward(
         self,
@@ -147,6 +145,10 @@ class CausalSelfAttention(nn.Module):
 
         cos, sin = self.rotary_emb(v, position_ids=position_ids)
         q, k = apply_rotary_pos_emb(q, k, cos, sin, position_ids=position_ids)
+
+        if self.use_kv_cache:
+            self._cache.update(k, v)
+            k, v = self._cache.get()
 
         if self.use_flash:
             attn_output = _flash_attention_forward(
@@ -167,6 +169,30 @@ class CausalSelfAttention(nn.Module):
 
         out = attn_output.transpose(1, 2).contiguous().view(B, T, C)
         return self.o_proj(out)
+
+
+class KVCache:
+    def __init__(self):
+        self.key_cache: Optional[torch.Tensor] = None
+        self.value_cache: Optional[torch.Tensor] = None
+        self.cache_len = 0
+
+    def update(self, key: torch.Tensor, value: torch.Tensor):
+        if self.key_cache is None:
+            self.key_cache = key
+            self.value_cache = value
+        else:
+            self.key_cache = torch.cat([self.key_cache, key], dim=2)
+            self.value_cache = torch.cat([self.value_cache, value], dim=2)
+        self.cache_len = self.key_cache.size(2)
+
+    def get(self):
+        return self.key_cache, self.value_cache
+
+    def clear(self):
+        self.key_cache = None
+        self.value_cache = None
+        self.cache_len = 0
 
 
 class SwiGLUMLP(nn.Module):
@@ -215,8 +241,6 @@ class TransformerBlock(nn.Module):
             rope_theta=rope_theta,
             dropout=dropout,
             attention_bias=attention_bias,
-            device=device,
-            dtype=dtype,
         )
         self.ln_2 = RMSNorm(hidden_size, eps=rms_norm_eps).to(device=device, dtype=dtype)
         if activation == "swiglu":
