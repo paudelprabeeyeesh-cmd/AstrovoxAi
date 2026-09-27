@@ -1,12 +1,14 @@
 import os
+import sys
 import yaml
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
-from model.model import LLM
-from tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
-from utils.helpers import load_config, count_parameters, get_device
+
+from ..model.model import LLM
+from ..tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
+from ..utils.helpers import load_config, count_parameters, get_device
 
 
 def get_8bit_optimizer(model, lr=3e-4):

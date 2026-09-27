@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from .transformer import TransformerBlock, OutputLayer, LayerNorm
 
 
@@ -38,6 +39,10 @@ class LLM(nn.Module):
 
         self.apply(self._init_weights)
 
+    @classmethod
+    def from_config(cls, config):
+        return cls(config)
+
     def _init_weights(self, module):
         if isinstance(module, nn.Linear):
             torch.nn.init.normal_(module.weight, mean=0.0, std=0.02)
@@ -67,6 +72,9 @@ class LLM(nn.Module):
         return {"logits": logits, "loss": loss}
 
     def get_num_params(self, trainable_only=True):
-        if trainable_only:
-            return sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return sum(p.numel() for p in self.parameters())
+        try:
+            if trainable_only:
+                return sum(p.numel() for p in self.parameters() if p.requires_grad)
+            return sum(p.numel() for p in self.parameters())
+        except Exception:
+            return 0
