@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
+from typing import Any
+
 import click
+
 from marketplace.plugin_registry import plugin_registry
 
 
@@ -35,11 +40,15 @@ def uninstall(plugin_id: str) -> None:
 @marketplace.command()
 @click.option("--category", default=None, help="Filter by category")
 @click.option("--verified-only", is_flag=True, help="Show only verified plugins")
-def list(category: str, verified_only: bool) -> None:
+@click.option("--output", default="text", type=click.Choice(["text", "json"]))
+def list(category: str, verified_only: bool, output: str) -> None:
     """List available plugins."""
     plugins = plugin_registry.list_plugins(category=category, verified_only=verified_only)
     if not plugins:
         click.echo("No plugins found.")
+        return
+    if output == "json":
+        click.echo(json.dumps(plugins, indent=2))
         return
     click.echo(f"{'Name':<30} {'Category':<20} {'Installs':<10} {'Verified'}")
     click.echo("-" * 80)
@@ -68,7 +77,22 @@ def info(plugin_id: str) -> None:
 
 @marketplace.command()
 @click.argument("path")
-def publish(path: str) -> None:
+@click.option("--category", default=None)
+def publish(path: str, category: str) -> None:
     """Publish a plugin to the marketplace."""
-    click.echo(f"Publishing plugin from {path}")
-    click.echo("Plugin published successfully!")
+    plugin_path = Path(path)
+    manifest_path = plugin_path / "manifest.json"
+    if not manifest_path.exists():
+        click.echo(f"manifest.json not found in {path}", err=True)
+        raise click.Abort()
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    plugin = plugin_registry.register_plugin(
+        name=manifest.get("name", plugin_path.name),
+        version=manifest.get("version", "0.1.0"),
+        description=manifest.get("description", ""),
+        author=manifest.get("author", "unknown"),
+        category=category or manifest.get("category", "general"),
+        manifest=manifest,
+    )
+    click.echo(f"Published plugin {plugin.name}@{plugin.version} to marketplace")
+

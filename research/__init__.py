@@ -1,12 +1,12 @@
-from ASTROVOX_AI.ai_core.research.benchmark_attention_variants import BenchmarkAttentionVariants
-from ASTROVOX_AI.ai_core.research.compare_tokenizers import TokenizerComparator, TokenizerReport
-from ASTROVOX_AI.ai_core.research.quantization_eval import QuantizationEvaluator, QuantizationResult
-from ASTROVOX_AI.ai_core.research.sparse_routing import SparseMoELayer, SparseRouter, SparseRoutingBenchmark
-from ASTROVOX_AI.ai_core.research.eval_benchmark_suite import EvalBenchmarkSuite, EvalResult
-from ASTROVOX_AI.ai_core.research.experiment_reports import ExperimentRecord, ExperimentReporter
-from ASTROVOX_AI.ai_core.research.ablation_studies import AblationConfig, AblationResult, AblationStudy
-from ASTROVOX_AI.ai_core.research.hyperparameter_optimization import HyperparameterOptimizer
-from ASTROVOX_AI.ai_core.research.experiment_tracking import ExperimentTracker, Metric
+from research.benchmark_attention_variants import BenchmarkAttentionVariants
+from research.compare_tokenizers import TokenizerComparator, TokenizerReport
+from research.quantization_eval import QuantizationEvaluator, QuantizationResult
+from research.sparse_routing import SparseMoELayer, SparseRouter, SparseRoutingBenchmark
+from research.eval_benchmark_suite import EvalBenchmarkSuite, EvalResult
+from research.experiment_reports import ExperimentRecord, ExperimentReporter
+from research.ablation_studies import AblationConfig, AblationResult, AblationStudy
+from research.hyperparameter_optimization import HyperparameterOptimizer
+from research.experiment_tracking import ExperimentTracker, Metric
 
 __all__ = [
     "BenchmarkAttentionVariants",

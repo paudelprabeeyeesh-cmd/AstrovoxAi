@@ -88,6 +88,7 @@ from app.core_assistant import router as core_assistant_router
 from app.video_router import router as video_router
 from app.routers.images import router as images_router
 from app.routers.code_agent import router as code_agent_router
+from app.routers.rag import router as rag_router
 
 load_dotenv()
 

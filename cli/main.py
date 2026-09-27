@@ -11,7 +11,7 @@ def cli() -> None:
 
 def register_commands() -> None:
     from cli.commands import api, deploy, debug, developer, plugin, scaffold, test
-    from cli.commands import analytics, explorer, playground
+    from cli.commands import analytics, explorer, playground, marketplace
 
     cli.add_command(api.api)
     cli.add_command(deploy.deploy)
@@ -23,6 +23,7 @@ def register_commands() -> None:
     cli.add_command(analytics.analytics)
     cli.add_command(explorer.explorer)
     cli.add_command(playground.playground)
+    cli.add_command(marketplace.marketplace)
 
 
 register_commands()
