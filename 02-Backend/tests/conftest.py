@@ -1,8 +1,19 @@
 import os
 import sys
 import types
+import asyncio
 from contextlib import ExitStack
 from unittest.mock import patch, MagicMock
+
+import pytest
+
+def _run(func, *args, **kwargs):
+    result = func(*args, **kwargs)
+    if asyncio.iscoroutine(result):
+        return asyncio.run(result)
+    return result
+
+pytest.run = _run
 
 # Ensure the backend root is on sys.path so 'app' package can be imported
 _backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

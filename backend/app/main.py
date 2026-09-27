@@ -4,6 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from llm.router import router as llm_router
+from training.routes import router as training_router
+from fine_tune.router import router as fine_tune_router
+from model_management.router import router as model_management_router
 
 app = FastAPI(
     title="AstrovoxAI LLM Service",
@@ -20,6 +23,9 @@ app.add_middleware(
 )
 
 app.include_router(llm_router)
+app.include_router(training_router)
+app.include_router(fine_tune_router)
+app.include_router(model_management_router)
 
 
 @app.get("/healthz")

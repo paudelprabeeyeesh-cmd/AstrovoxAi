@@ -1021,7 +1021,6 @@ class App {
     showToast('Logged out successfully');
     window.location.href = '/login.html';
   }
-}
   _showAnalytics() {
     const app = document.getElementById('app');
     if (!app) return;
@@ -1253,6 +1252,7 @@ class App {
     window.location.href = '/core-assistant.html';
   }
 
+}
 function initRouter() {
   window.addEventListener('hashchange', () => {
     if (window.app) {
