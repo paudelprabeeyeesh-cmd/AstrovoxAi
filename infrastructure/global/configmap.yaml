@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-infra-config
+  namespace: astrovox
+data:
+  regions: |
+    - id: us-east-1
+      name: US East
+      endpoint: https://us-east-1.astrovox.ai
+    - id: eu-west-1
+      name: EU West
+      endpoint: https://eu-west-1.astrovox.ai
+    - id: ap-southeast-1
+      name: APAC Southeast
+      endpoint: https://ap-southeast-1.astrovox.ai
+  cdn.enabled: "true"
+  geo-routing.enabled: "true"
+  data-residency.enabled: "true"

@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
-import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+from ASTROVOX_AI.ai_core.distributed._base import BackgroundService, validate_node_id
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,7 @@ class ReplicationRecord:
     checksum: str
 
 
-class CrossRegionReplication:
+class CrossRegionReplication(BackgroundService):
     def __init__(
         self,
         local_region: str,
@@ -31,38 +33,17 @@ class CrossRegionReplication:
         sync_interval: float = 5.0,
         consistency_model: str = "eventual",
     ):
+        super().__init__(check_interval=sync_interval)
+        validate_node_id(local_region)
         self.local_region = local_region
-        self.remote_regions = remote_regions or []
-        self.sync_interval = sync_interval
+        self.remote_regions = list(remote_regions or [])
         self.consistency_model = consistency_model
         self._local_store: Dict[str, ReplicationRecord] = {}
         self._pending_writes: Dict[str, ReplicationRecord] = {}
-        self._running = False
-        self._sync_thread: Optional[threading.Thread] = None
-
-    def start(self) -> None:
-        self._running = True
-        self._sync_thread = threading.Thread(target=self._sync_loop, daemon=True)
-        self._sync_thread.start()
-        logger.info("Cross-region replication started for region %s", self.local_region)
-
-    def stop(self) -> None:
-        self._running = False
-        if self._sync_thread:
-            self._sync_thread.join(timeout=5)
-        logger.info("Cross-region replication stopped")
-
-    def _sync_loop(self) -> None:
-        while self._running:
-            try:
-                self._replicate_pending()
-                self._pull_remote_changes()
-            except Exception:
-                logger.exception("Cross-region sync error")
-            time.sleep(self.sync_interval)
 
     def put(self, key: str, value: Any) -> None:
-        checksum = hashlib.sha256(str(value).encode()).hexdigest()
+        validate_node_id(key)
+        checksum = self._compute_checksum(value)
         record = ReplicationRecord(
             key=key,
             value=value,
@@ -76,12 +57,24 @@ class CrossRegionReplication:
         logger.debug("Queued replication for key %s", key)
 
     def get(self, key: str) -> Optional[Any]:
+        validate_node_id(key)
         record = self._local_store.get(key)
         return record.value if record else None
+
+    def _compute_checksum(self, value: Any) -> str:
+        try:
+            payload = json.dumps(value, sort_keys=True, default=str)
+        except (TypeError, ValueError):
+            payload = str(value)
+        return hashlib.sha256(payload.encode()).hexdigest()
 
     def _get_next_version(self, key: str) -> int:
         existing = self._local_store.get(key)
         return (existing.version + 1) if existing else 1
+
+    def _tick(self) -> None:
+        self._replicate_pending()
+        self._pull_remote_changes()
 
     def _replicate_pending(self) -> None:
         for key, record in list(self._pending_writes.items()):

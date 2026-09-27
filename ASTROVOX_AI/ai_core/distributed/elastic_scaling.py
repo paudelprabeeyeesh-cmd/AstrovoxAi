@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import logging
-import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional
+
+from ASTROVOX_AI.ai_core.distributed._base import validate_non_negative_int, validate_positive_float
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,18 @@ class ScalingPolicy:
     max_requests_per_replica: int = 100
     scale_up_threshold: float = 0.8
     scale_down_threshold: float = 0.3
+
+    def __post_init__(self) -> None:
+        if self.min_replicas < 1:
+            raise ValueError("min_replicas must be >= 1")
+        if self.max_replicas < self.min_replicas:
+            raise ValueError("max_replicas must be >= min_replicas")
+        validate_positive_float(self.target_cpu_utilization, "target_cpu_utilization")
+        validate_positive_float(self.target_memory_utilization, "target_memory_utilization")
+        validate_positive_float(self.target_gpu_utilization, "target_gpu_utilization")
+        validate_positive_float(self.scale_up_cooldown, "scale_up_cooldown")
+        validate_positive_float(self.scale_down_cooldown, "scale_down_cooldown")
+        validate_non_negative_int(self.max_requests_per_replica, "max_requests_per_replica")
 
 
 class InferenceElasticScaler:
@@ -57,17 +70,37 @@ class InferenceElasticScaler:
         memory = metrics.get("memory_utilization", 0.0)
         gpu = metrics.get("gpu_utilization", 0.0)
         requests_per_replica = metrics.get("requests_per_replica", 0.0)
-        if self._current_replicas < self.policy.max_replicas:
-            if cpu > self.policy.target_cpu_utilization or memory > self.policy.target_memory_utilization or gpu > self.policy.target_gpu_utilization or requests_per_replica > self.policy.max_requests_per_replica:
-                cooldown = (datetime.utcnow() - self._last_scale_up).total_seconds()
-                if cooldown >= self.policy.scale_up_cooldown:
-                    return ScalingDirection.UP
-        if self._current_replicas > self.policy.min_replicas:
-            if cpu < self.policy.target_cpu_utilization * 0.5 and memory < self.policy.target_memory_utilization * 0.5 and gpu < self.policy.target_gpu_utilization * 0.5 and requests_per_replica < self.policy.max_requests_per_replica * 0.3:
-                cooldown = (datetime.utcnow() - self._last_scale_down).total_seconds()
-                if cooldown >= self.policy.scale_down_cooldown:
-                    return ScalingDirection.DOWN
+        if self._should_scale_up(cpu, memory, gpu, requests_per_replica):
+            return ScalingDirection.UP
+        if self._should_scale_down(cpu, memory, gpu, requests_per_replica):
+            return ScalingDirection.DOWN
         return ScalingDirection.NONE
+
+    def _should_scale_up(self, cpu: float, memory: float, gpu: float, requests_per_replica: float) -> bool:
+        if self._current_replicas >= self.policy.max_replicas:
+            return False
+        if not (
+            cpu > self.policy.target_cpu_utilization
+            or memory > self.policy.target_memory_utilization
+            or gpu > self.policy.target_gpu_utilization
+            or requests_per_replica > self.policy.max_requests_per_replica
+        ):
+            return False
+        cooldown = (datetime.utcnow() - self._last_scale_up).total_seconds()
+        return cooldown >= self.policy.scale_up_cooldown
+
+    def _should_scale_down(self, cpu: float, memory: float, gpu: float, requests_per_replica: float) -> bool:
+        if self._current_replicas <= self.policy.min_replicas:
+            return False
+        if not (
+            cpu < self.policy.target_cpu_utilization * 0.5
+            and memory < self.policy.target_memory_utilization * 0.5
+            and gpu < self.policy.target_gpu_utilization * 0.5
+            and requests_per_replica < self.policy.max_requests_per_replica * 0.3
+        ):
+            return False
+        cooldown = (datetime.utcnow() - self._last_scale_down).total_seconds()
+        return cooldown >= self.policy.scale_down_cooldown
 
     def scale(self) -> Optional[int]:
         direction = self.evaluate()

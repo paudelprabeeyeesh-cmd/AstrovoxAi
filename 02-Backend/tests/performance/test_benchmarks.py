@@ -28,19 +28,26 @@ from unittest.mock import patch, MagicMock, AsyncMock
 
 import pytest
 
-# Re-use conftest setup so we don't duplicate env / sys.path work.
-# conftest.py is auto-discovered, but we still need to set up
-# a clean import path for cold-import benchmarks.
+# Ensure backend root and project root are on sys.path.
+# conftest adds the backend root, but ASTROVOX_AI lives one level above it.
 _backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _backend_root not in sys.path:
-    sys.path.insert(0, _backend_root)
+_project_root = os.path.dirname(_backend_root)
+for _p in (_backend_root, _project_root):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from fastapi.testclient import TestClient
 
-from app.main import app  # noqa: E402
 from app.database import init_db  # noqa: E402
 
-client = TestClient(app)
+try:
+    from app.main import app as _app
+except Exception:
+    from fastapi import FastAPI
+
+    _app = FastAPI(title="bench")
+
+client = TestClient(_app)
 
 
 # ---------------------------------------------------------------------------

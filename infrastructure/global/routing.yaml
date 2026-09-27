@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: phase53-global-routing
+  namespace: astrovox
+data:
+  routing.yaml: |
+    rules:
+      - match:
+          header:
+            x-geo-region: eu-west-1
+        route:
+          - destination:
+              host: astrovox-eu.astrovox.svc.cluster.local
+      - match:
+          header:
+            x-geo-region: ap-southeast-1
+        route:
+          - destination:
+              host: astrovox-apac.astrovox.svc.cluster.local
+      - default:
+          destination:
+              host: astrovox-us.astrovox.svc.cluster.local

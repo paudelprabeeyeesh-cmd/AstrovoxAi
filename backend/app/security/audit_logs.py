@@ -1,5 +1,6 @@
 """Immutable audit logging with export and filtering."""
 import json
+import os
 import time
 import uuid
 import threading

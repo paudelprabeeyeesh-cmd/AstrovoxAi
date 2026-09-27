@@ -7,7 +7,9 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+from ASTROVOX_AI.ai_core.distributed._base import validate_positive_float
 
 logger = logging.getLogger(__name__)
 
@@ -49,14 +51,21 @@ class CanaryBlueGreenDeployment:
         self._history: List[Dict[str, Any]] = []
 
     def deploy_canary(self, new_version: str, steps: Optional[List[CanaryStep]] = None) -> Dict[str, Any]:
+        if not new_version:
+            raise ValueError("new_version must not be empty")
         if steps is None:
             steps = [
-                CanaryStep(weight=10, duration=60),
-                CanaryStep(weight=25, duration=120),
-                CanaryStep(weight=50, duration=120),
-                CanaryStep(weight=75, duration=60),
-                CanaryStep(weight=100, duration=0, analysis_required=False),
+                CanaryStep(weight=10, duration=60.0),
+                CanaryStep(weight=25, duration=120.0),
+                CanaryStep(weight=50, duration=120.0),
+                CanaryStep(weight=75, duration=60.0),
+                CanaryStep(weight=100, duration=0.0, analysis_required=False),
             ]
+        for step in steps:
+            if step.weight < 0 or step.weight > 100:
+                raise ValueError(f"step weight must be between 0 and 100, got {step.weight}")
+            if step.duration < 0:
+                raise ValueError(f"step duration must be non-negative, got {step.duration}")
         logger.info("Starting canary deployment to %s", new_version)
         for step in steps:
             self.stage = DeploymentStage.DEPLOYING
@@ -69,13 +78,16 @@ class CanaryBlueGreenDeployment:
                     self.stage = DeploymentStage.ROLLING_BACK
                     self._rollback()
                     return {"status": "failed", "reason": "analysis_failed", "version": new_version}
-            time.sleep(step.duration / 60)
+            time.sleep(step.duration)
         self.stage = DeploymentStage.COMPLETED
         result = {"status": "success", "strategy": "canary", "version": new_version}
         self._history.append({"timestamp": datetime.utcnow().isoformat(), **result})
         return result
 
     def deploy_blue_green(self, new_version: str, preview_duration: float = 300.0) -> Dict[str, Any]:
+        if not new_version:
+            raise ValueError("new_version must not be empty")
+        validate_positive_float(preview_duration, "preview_duration")
         logger.info("Starting blue-green deployment to %s", new_version)
         self.stage = DeploymentStage.DEPLOYING
         self._deploy_green(new_version)

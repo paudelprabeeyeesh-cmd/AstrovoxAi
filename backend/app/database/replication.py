@@ -3,6 +3,8 @@ from typing import List, Dict
 
 class ReplicationManager:
     def __init__(self, primary_dsn: str, replica_dsns: List[str]):
+        if not replica_dsns:
+            raise ValueError("replica_dsns must contain at least one DSN")
         self.primary_dsn = primary_dsn
         self.replica_dsns = replica_dsns
         self._replica_index = 0
