@@ -1,15 +1,63 @@
 {
-  "timestamp": "2026-09-27T18:26:11.344674",
+  "timestamp": "2026-09-27T18:26:51.499903",
   "summary": {
-    "passed": 4,
+    "passed": 8,
     "failed": 0,
-    "skipped": 1,
+    "skipped": 17,
     "errors": 0,
-    "total": 5
+    "total": 25
   },
   "strategies": {
     "Setup": {
       "passed": 4,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0
+    },
+    "DDP": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 3,
+      "errors": 0
+    },
+    "FSDP": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 3,
+      "errors": 0
+    },
+    "ZeRO": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 2,
+      "errors": 0
+    },
+    "TensorParallel": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 3,
+      "errors": 0
+    },
+    "CPUOffload": {
+      "passed": 2,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0
+    },
+    "Checkpoint": {
+      "passed": 1,
+      "failed": 0,
+      "skipped": 1,
+      "errors": 0
+    },
+    "FailureRecovery": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 2,
+      "errors": 0
+    },
+    "ScalingEfficiency": {
+      "passed": 0,
       "failed": 0,
       "skipped": 1,
       "errors": 0
@@ -19,36 +67,395 @@
     {
       "name": "tests/test_distributed.py::TestDistributedSetup::test_cuda_available",
       "outcome": "skipped",
-      "markers": [],
-      "duration": 0.000937800039537251,
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDistributedSetup",
+        "test_cuda_available",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.001415700011420995,
       "message": null
     },
     {
       "name": "tests/test_distributed.py::TestDistributedSetup::test_gpu_count_reported",
       "outcome": "passed",
-      "markers": [],
-      "duration": 0.0003581999917514622,
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDistributedSetup",
+        "test_distributed.py",
+        "test_gpu_count_reported",
+        "tests"
+      ],
+      "duration": 0.0008844999829307199,
       "message": null
     },
     {
       "name": "tests/test_distributed.py::TestDistributedSetup::test_environment_helpers",
       "outcome": "passed",
-      "markers": [],
-      "duration": 0.0003503000480122864,
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDistributedSetup",
+        "test_distributed.py",
+        "test_environment_helpers",
+        "tests"
+      ],
+      "duration": 0.000693499983754009,
       "message": null
     },
     {
       "name": "tests/test_distributed.py::TestDistributedSetup::test_barrier_noop_undistributed",
       "outcome": "passed",
-      "markers": [],
-      "duration": 0.0006967000081203878,
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDistributedSetup",
+        "test_barrier_noop_undistributed",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.000694400048814714,
       "message": null
     },
     {
       "name": "tests/test_distributed.py::TestDistributedSetup::test_log_memory_no_cuda",
       "outcome": "passed",
-      "markers": [],
-      "duration": 0.0004010000266134739,
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDistributedSetup",
+        "test_distributed.py",
+        "test_log_memory_no_cuda",
+        "tests"
+      ],
+      "duration": 0.0007419000030495226,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDDP::test_ddp_2gpu_forward",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_ddp_2gpu_forward",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.0007024999940767884,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDDP::test_ddp_gradient_sync",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_ddp_gradient_sync",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.0028093000291846693,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestDDP::test_ddp_train_step",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestDDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_ddp_train_step",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.0017210000078193843,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestFSDP::test_fsdp_2gpu_forward",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestFSDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_fsdp_2gpu_forward",
+        "tests"
+      ],
+      "duration": 0.0009691000450402498,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestFSDP::test_fsdp_gradient_sync",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestFSDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_fsdp_gradient_sync",
+        "tests"
+      ],
+      "duration": 0.0008177000563591719,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestFSDP::test_fsdp_train_step",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestFSDP",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_fsdp_train_step",
+        "tests"
+      ],
+      "duration": 0.0007144000264815986,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestZeRO::test_zero_stage1_2gpu",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestZeRO",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_zero_stage1_2gpu",
+        "tests"
+      ],
+      "duration": 0.0006366000161506236,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestZeRO::test_zero_stage2_2gpu",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestZeRO",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_zero_stage2_2gpu",
+        "tests"
+      ],
+      "duration": 0.0008431000169366598,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestTensorParallel::test_tensor_parallel_available",
+      "outcome": "passed",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestTensorParallel",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_tensor_parallel_available",
+        "tests"
+      ],
+      "duration": 0.0007755000260658562,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestTensorParallel::test_tensor_parallel_2gpu",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestTensorParallel",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_tensor_parallel_2gpu",
+        "tests"
+      ],
+      "duration": 0.0007664000149816275,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestPipelineParallel::test_pipeline_parallel_available",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestPipelineParallel",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_pipeline_parallel_available",
+        "tests"
+      ],
+      "duration": 0.000735200010240078,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestPipelineParallel::test_pipeline_parallel_2gpu",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestPipelineParallel",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_pipeline_parallel_2gpu",
+        "tests"
+      ],
+      "duration": 0.0007196000078693032,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestCPUOffload::test_cpu_offload_fallback_cpu",
+      "outcome": "passed",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestCPUOffload",
+        "test_cpu_offload_fallback_cpu",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.17670539999380708,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestCPUOffload::test_cpu_offload_cuda",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestCPUOffload",
+        "gpu",
+        "pytestmark",
+        "test_cpu_offload_cuda",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.0007053000153973699,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestCPUOffload::test_cpu_offload_without_accelerate",
+      "outcome": "passed",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestCPUOffload",
+        "test_cpu_offload_without_accelerate",
+        "test_distributed.py",
+        "tests"
+      ],
+      "duration": 0.0022523999796248972,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestCheckpointDistributed::test_save_load_distributed_checkpoint",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestCheckpointDistributed",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_save_load_distributed_checkpoint",
+        "tests"
+      ],
+      "duration": 0.000750600011087954,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestCheckpointDistributed::test_save_load_single_device",
+      "outcome": "passed",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestCheckpointDistributed",
+        "test_distributed.py",
+        "test_save_load_single_device",
+        "tests"
+      ],
+      "duration": 6.486273699963931,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestFailureRecovery::test_fault_recovery_manager_init",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestFailureRecovery",
+        "test_distributed.py",
+        "test_fault_recovery_manager_init",
+        "tests"
+      ],
+      "duration": 0.0007062000222504139,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestFailureRecovery::test_fault_recovery_state_roundtrip",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestFailureRecovery",
+        "test_distributed.py",
+        "test_fault_recovery_state_roundtrip",
+        "tests"
+      ],
+      "duration": 0.0003423999878577888,
+      "message": null
+    },
+    {
+      "name": "tests/test_distributed.py::TestScalingEfficiency::test_scaling_efficiency_1_vs_2_gpus",
+      "outcome": "skipped",
+      "markers": [
+        "",
+        "AstrovoxAi",
+        "TestScalingEfficiency",
+        "distributed",
+        "gpu",
+        "pytestmark",
+        "test_distributed.py",
+        "test_scaling_efficiency_1_vs_2_gpus",
+        "tests"
+      ],
+      "duration": 0.00038320000749081373,
       "message": null
     }
   ]
