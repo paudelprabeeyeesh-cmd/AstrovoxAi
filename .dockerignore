@@ -157,6 +157,14 @@ pnpm-lock.yaml
 requirements.txt
 pyproject.toml
 
+# Inference server
+inference/__pycache__
+inference/*.pyc
+inference/*.pyo
+inference/.pytest_cache
+inference/.ruff_cache
+inference/.mypy_cache
+
 # Misc
 kilo_local_recall
 k8s-cache

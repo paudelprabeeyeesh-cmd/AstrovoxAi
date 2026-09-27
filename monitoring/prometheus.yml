@@ -9,6 +9,12 @@ scrape_configs:
     metrics_path: '/metrics'
     scheme: 'http'
 
+  - job_name: 'astravox-inference'
+    static_configs:
+      - targets: ['inference:8000']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
   - job_name: 'astravox-frontend'
     static_configs:
       - targets: ['frontend:80']

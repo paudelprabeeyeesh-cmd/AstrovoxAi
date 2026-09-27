@@ -47,6 +47,51 @@ services:
     pre_stop:
       command: ["/bin/sh", "-c", "kill -USR1 $(cat /app/pid 2>/dev/null || true) || true"]
 
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    restart: always
+    ports:
+      - "8001:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - API_KEY=${INFERENCE_API_KEY:-}
+      - RATE_LIMIT_ENABLED=${INFERENCE_RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_REQUESTS=${INFERENCE_RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${INFERENCE_RATE_LIMIT_WINDOW:-60}
+      - REQUEST_TIMEOUT=${INFERENCE_REQUEST_TIMEOUT:-30.0}
+      - CORS_ORIGINS=${INFERENCE_CORS_ORIGINS:-*}
+      - DEVICE=${INFERENCE_DEVICE:-auto}
+    env_file:
+      - .env
+    volumes:
+      - inference_model_cache:/app/models
+      - inference_logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+        reservations:
+          cpus: "2"
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s
+    depends_on:
+      - backend
+
   frontend:
     build:
       context: .
@@ -58,6 +103,8 @@ services:
       - "443:443"
     depends_on:
       backend:
+        condition: service_healthy
+      inference:
         condition: service_healthy
     deploy:
       resources:
@@ -150,6 +197,8 @@ volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
+  inference_model_cache:
+  inference_logs:
 
 secrets:
   db_password:

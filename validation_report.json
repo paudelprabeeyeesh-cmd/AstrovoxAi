@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-09-27T18:26:51.499903",
+  "timestamp": "2026-09-27T18:27:55.217513",
   "summary": {
     "passed": 8,
     "failed": 0,
@@ -35,7 +35,13 @@
     "TensorParallel": {
       "passed": 1,
       "failed": 0,
-      "skipped": 3,
+      "skipped": 1,
+      "errors": 0
+    },
+    "PipelineParallel": {
+      "passed": 0,
+      "failed": 0,
+      "skipped": 2,
       "errors": 0
     },
     "CPUOffload": {
@@ -75,7 +81,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.001415700011420995,
+      "duration": 0.00043239997467026114,
       "message": null
     },
     {
@@ -89,7 +95,7 @@
         "test_gpu_count_reported",
         "tests"
       ],
-      "duration": 0.0008844999829307199,
+      "duration": 0.0008310000412166119,
       "message": null
     },
     {
@@ -103,7 +109,7 @@
         "test_environment_helpers",
         "tests"
       ],
-      "duration": 0.000693499983754009,
+      "duration": 0.0003515999997034669,
       "message": null
     },
     {
@@ -117,7 +123,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.000694400048814714,
+      "duration": 0.0005105000454932451,
       "message": null
     },
     {
@@ -131,7 +137,7 @@
         "test_log_memory_no_cuda",
         "tests"
       ],
-      "duration": 0.0007419000030495226,
+      "duration": 0.0005175999831408262,
       "message": null
     },
     {
@@ -148,7 +154,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.0007024999940767884,
+      "duration": 0.0003215000033378601,
       "message": null
     },
     {
@@ -165,7 +171,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.0028093000291846693,
+      "duration": 0.0009002999868243933,
       "message": null
     },
     {
@@ -182,7 +188,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.0017210000078193843,
+      "duration": 0.00039770000148564577,
       "message": null
     },
     {
@@ -199,7 +205,7 @@
         "test_fsdp_2gpu_forward",
         "tests"
       ],
-      "duration": 0.0009691000450402498,
+      "duration": 0.0003315000212751329,
       "message": null
     },
     {
@@ -216,7 +222,7 @@
         "test_fsdp_gradient_sync",
         "tests"
       ],
-      "duration": 0.0008177000563591719,
+      "duration": 0.0003108999808318913,
       "message": null
     },
     {
@@ -233,7 +239,7 @@
         "test_fsdp_train_step",
         "tests"
       ],
-      "duration": 0.0007144000264815986,
+      "duration": 0.00030860002152621746,
       "message": null
     },
     {
@@ -250,7 +256,7 @@
         "test_zero_stage1_2gpu",
         "tests"
       ],
-      "duration": 0.0006366000161506236,
+      "duration": 0.0004264999879524112,
       "message": null
     },
     {
@@ -267,7 +273,7 @@
         "test_zero_stage2_2gpu",
         "tests"
       ],
-      "duration": 0.0008431000169366598,
+      "duration": 0.0006597000174224377,
       "message": null
     },
     {
@@ -284,7 +290,7 @@
         "test_tensor_parallel_available",
         "tests"
       ],
-      "duration": 0.0007755000260658562,
+      "duration": 0.00028600002406165004,
       "message": null
     },
     {
@@ -301,7 +307,7 @@
         "test_tensor_parallel_2gpu",
         "tests"
       ],
-      "duration": 0.0007664000149816275,
+      "duration": 0.0003139000036753714,
       "message": null
     },
     {
@@ -318,7 +324,7 @@
         "test_pipeline_parallel_available",
         "tests"
       ],
-      "duration": 0.000735200010240078,
+      "duration": 0.0003227999550290406,
       "message": null
     },
     {
@@ -335,7 +341,7 @@
         "test_pipeline_parallel_2gpu",
         "tests"
       ],
-      "duration": 0.0007196000078693032,
+      "duration": 0.0003026999766007066,
       "message": null
     },
     {
@@ -349,7 +355,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.17670539999380708,
+      "duration": 0.06256659998325631,
       "message": null
     },
     {
@@ -365,7 +371,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.0007053000153973699,
+      "duration": 0.0007718999986536801,
       "message": null
     },
     {
@@ -379,7 +385,7 @@
         "test_distributed.py",
         "tests"
       ],
-      "duration": 0.0022523999796248972,
+      "duration": 0.0015851000207476318,
       "message": null
     },
     {
@@ -396,7 +402,7 @@
         "test_save_load_distributed_checkpoint",
         "tests"
       ],
-      "duration": 0.000750600011087954,
+      "duration": 0.0003282999969087541,
       "message": null
     },
     {
@@ -410,7 +416,7 @@
         "test_save_load_single_device",
         "tests"
       ],
-      "duration": 6.486273699963931,
+      "duration": 2.69784769997932,
       "message": null
     },
     {
@@ -424,7 +430,7 @@
         "test_fault_recovery_manager_init",
         "tests"
       ],
-      "duration": 0.0007062000222504139,
+      "duration": 0.0005284000071696937,
       "message": null
     },
     {
@@ -438,7 +444,7 @@
         "test_fault_recovery_state_roundtrip",
         "tests"
       ],
-      "duration": 0.0003423999878577888,
+      "duration": 0.0009627999970689416,
       "message": null
     },
     {
@@ -455,7 +461,7 @@
         "test_scaling_efficiency_1_vs_2_gpus",
         "tests"
       ],
-      "duration": 0.00038320000749081373,
+      "duration": 0.0005956999957561493,
       "message": null
     }
   ]

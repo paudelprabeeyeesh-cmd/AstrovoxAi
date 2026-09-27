@@ -1,0 +1,32 @@
+{
+  "version": "1.0.0",
+  "phase": "Phase-J",
+  "description": "Versioned reproducibility configuration bundle",
+  "configs": {
+    "config_phase1_v1.yaml": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "description": "Phase 1 small model config (1000 vocab, 4 layers)",
+      "model_size": "~1.2M parameters",
+      "reproducibility_status": "verified"
+    },
+    "config_1b_v1.yaml": {
+      "sha256": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2",
+      "description": "1B parameter model config for evaluation reference",
+      "model_size": "~1B parameters",
+      "reproducibility_status": "reference"
+    }
+  },
+  "reproduction": {
+    "python_version": "3.12",
+    "torch_version": ">=2.0.0",
+    "seed": 42,
+    "deterministic": true,
+    "expected_metrics": {
+      "phase1_final_train_loss_max": 3.0,
+      "phase1_val_accuracy_min": 0.01,
+      "inference_min_length": 10,
+      "convergence_required": true
+    }
+  },
+  "generated_at": "2026-09-27T12:00:00Z"
+}

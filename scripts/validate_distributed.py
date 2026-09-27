@@ -50,9 +50,9 @@ class ValidationReport:
             return "FSDP"
         if "zero" in name:
             return "ZeRO"
-        if "tensor_parallel" in name or "tp" in name.split("/")[-1]:
+        if "tensor_parallel" in name:
             return "TensorParallel"
-        if "pipeline_parallel" in name or "pp" in name.split("/")[-1]:
+        if "pipeline_parallel" in name:
             return "PipelineParallel"
         if "cpu_offload" in name:
             return "CPUOffload"

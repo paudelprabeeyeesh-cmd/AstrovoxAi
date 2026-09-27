@@ -9,8 +9,20 @@ scrape_configs:
     metrics_path: '/metrics/prometheus'
     scrape_interval: 15s
 
+  - job_name: 'astrovox-inference'
+    static_configs:
+      - targets: ['localhost:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
   - job_name: 'astrovox-health'
     static_configs:
       - targets: ['localhost:8000']
     metrics_path: '/health'
+    scrape_interval: 30s
+
+  - job_name: 'astrovox-inference-health'
+    static_configs:
+      - targets: ['localhost:8001']
+    metrics_path: '/health/ready'
     scrape_interval: 30s

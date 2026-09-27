@@ -1,91 +1,88 @@
-# AstrovoxAI — REST API Reference
+# API Documentation
+
+Complete REST API reference for AstrovoxAI. All endpoints return JSON unless otherwise specified.
 
 ## Base URLs
 
-```
+```yaml
 Development:  http://localhost:8000
+Staging:      https://staging-api.astrovox.ai
 Production:   https://api.astrovox.ai
 ```
 
 ## Authentication
 
-All authenticated endpoints require a Bearer token in the `Authorization` header:
+All authenticated endpoints require a Bearer token:
 
-```
+```http
 Authorization: Bearer <jwt_token>
 ```
 
-Tokens are obtained via `/auth/login` or `/auth/signup`. Supabase Auth is used for identity management.
+Obtain tokens via `/auth/signup` or `/auth/login`. Tokens expire after 1 hour; use `/auth/refresh` to renew.
 
----
+## Quick Reference
 
-## Table of Contents
-
-1. [Health & System](#health--system)
-2. [Authentication](#authentication)
-3. [Chat](#chat)
-4. [Memory](#memory)
-5. [Terminal](#terminal)
-6. [Embeddings](#embeddings)
-7. [Agents](#agents)
-8. [Workspace](#workspace)
-9. [Enterprise](#enterprise)
-10. [RAG](#rag)
-11. [Billing & Usage](#billing--usage)
-12. [Admin](#admin)
-13. [Monitoring & Metrics](#monitoring--metrics)
-14. [Safety](#safety)
-15. [Training](#training)
-16. [Audio](#audio)
-17. [Neural BCI](#neural-bci)
-18. [Quantum](#quantum)
-19. [Multiverse](#multiverse)
-20. [AGI](#agi)
-21. [Realtime](#realtime)
-22. [Search](#search)
-
----
+| Domain | Base Path | Auth Required |
+|--------|-----------|---------------|
+| Health | `/health*` | No |
+| Authentication | `/auth/*` | Varies |
+| Chat | `/chat/*` | Yes |
+| Memory | `/memory/*` | Yes |
+| Terminal | `/api/terminal/*` | Yes |
+| Embeddings | `/embeddings/*` | Yes |
+| Agents | `/api/v1/agents/*` | Yes |
+| Workspace | `/api/v1/workspace/*` | Yes |
+| Enterprise | `/api/v1/enterprise/*` | Yes |
+| RAG | `/api/rag/*` | Yes |
+| Billing | `/api/v1/billing/*` | Yes |
+| Admin | `/api/v1/admin/*` | Admin |
+| Training | `/api/v1/training/*` | Yes |
+| Audio | `/api/v1/audio/*` | Yes |
+| Monitoring | `/api/v1/monitoring/*` | Yes |
+| Safety | `/api/v1/safety/*` | Yes |
+| Metrics | `/metrics` | No |
 
 ## Health & System
 
 ### `GET /healthz`
+
 Basic health check.
 
-**Response:**
+**Response 200:**
 ```json
-{
-  "status": "ok"
-}
+{"status": "ok"}
 ```
 
 ### `GET /health/live`
+
 Container liveness probe.
 
-**Response:**
+**Response 200:**
 ```json
-{
-  "status": "alive"
-}
+{"status": "alive"}
 ```
 
 ### `GET /health/ready`
-Kubernetes readiness probe with dependency checks.
 
-**Response:**
+Kubernetes readiness probe.
+
+**Response 200:**
 ```json
 {
   "status": "ready",
   "checks": {
     "database": "healthy",
-    "redis": "healthy"
+    "redis": "healthy",
+    "openai": "healthy"
   }
 }
 ```
 
 ### `GET /health/detailed`
-Detailed health check with all service statuses.
 
-**Response (200):**
+Detailed health with all services.
+
+**Response 200:**
 ```json
 {
   "status": "healthy",
@@ -101,15 +98,15 @@ Detailed health check with all service statuses.
 ```
 
 ### `GET /metrics`
-Prometheus metrics endpoint.
 
-**Response:** `text/plain` Prometheus exposition format.
+Prometheus metrics exposition format.
 
----
+**Response:** `text/plain`
 
 ## Authentication
 
 ### `POST /auth/signup`
+
 Register a new user.
 
 **Request:**
@@ -117,11 +114,12 @@ Register a new user.
 {
   "email": "user@example.com",
   "password": "SecurePass123!",
-  "full_name": "John Doe"
+  "full_name": "John Doe",
+  "username": "johndoe"
 }
 ```
 
-**Response (201):**
+**Response 201:**
 ```json
 {
   "status": "OK",
@@ -134,6 +132,7 @@ Register a new user.
 ```
 
 ### `POST /auth/login`
+
 Authenticate and receive session tokens.
 
 **Request:**
@@ -144,59 +143,7 @@ Authenticate and receive session tokens.
 }
 ```
 
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com"
-  },
-  "session": {
-    "access_token": "jwt",
-    "refresh_token": "jwt",
-    "expires_in": 3600
-  }
-}
-```
-
-### `POST /auth/logout`
-Invalidate the current session.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "message": "Logged out successfully"
-}
-```
-
-### `POST /auth/reset-password`
-Send a password reset email.
-
-**Request:**
-```json
-{
-  "email": "user@example.com"
-}
-```
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "message": "Password reset email sent"
-}
-```
-
-### `GET /auth/me`
-Get the current authenticated user profile.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
+**Response 200:**
 ```json
 {
   "status": "OK",
@@ -204,42 +151,62 @@ Get the current authenticated user profile.
     "id": "uuid",
     "email": "user@example.com",
     "full_name": "John Doe",
-    "avatar_url": "https://...",
     "role": "user",
     "tier": "free"
+  },
+  "session": {
+    "access_token": "jwt_token",
+    "refresh_token": "refresh_token",
+    "expires_in": 3600
   }
 }
 ```
 
-### `POST /auth/refresh`
-Refresh an expired access token.
+### `POST /auth/logout`
 
-**Request:**
-```json
-{
-  "refresh_token": "jwt"
-}
-```
-
-### `POST /auth/security/validate`
-Validate token security and check for anomalies.
+Invalidate current session.
 
 **Headers:** `Authorization: Bearer <token>`
 
-**Response (200):**
+**Response 200:**
+```json
+{"status": "OK", "message": "Logged out successfully"}
+```
+
+### `POST /auth/refresh`
+
+Refresh expired access token.
+
+**Request:**
+```json
+{"refresh_token": "refresh_token"}
+```
+
+### `GET /auth/me`
+
+Get current user profile.
+
+**Headers:** `Authorization: Bearer <token>`
+
+**Response 200:**
 ```json
 {
   "status": "OK",
-  "valid": true,
-  "anomalies": []
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "full_name": "John Doe",
+    "role": "user",
+    "tier": "free",
+    "avatar_url": "https://..."
+  }
 }
 ```
-
----
 
 ## Chat
 
 ### `POST /chat/conversations`
+
 Create a new conversation.
 
 **Headers:** `Authorization: Bearer <token>`
@@ -248,11 +215,12 @@ Create a new conversation.
 ```json
 {
   "title": "Project Planning",
-  "model": "gpt-4"
+  "model": "gpt-4",
+  "system_prompt": "You are a helpful assistant."
 }
 ```
 
-**Response (201):**
+**Response 201:**
 ```json
 {
   "status": "OK",
@@ -262,24 +230,24 @@ Create a new conversation.
     "title": "Project Planning",
     "model": "gpt-4",
     "is_archived": false,
-    "created_at": "2024-01-01T00:00:00Z",
-    "updated_at": "2024-01-01T00:00:00Z"
+    "created_at": "2024-01-01T00:00:00Z"
   }
 }
 ```
 
 ### `GET /chat/conversations`
-List the current user's conversations.
+
+List user's conversations.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | integer | 50 | Max results (1-100) |
-| `offset` | integer | 0 | Pagination offset |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 50 | Max results (1-100) |
+| `offset` | int | 0 | Pagination offset |
 
-**Response (200):**
+**Response 200:**
 ```json
 {
   "status": "OK",
@@ -288,25 +256,22 @@ List the current user's conversations.
 }
 ```
 
-### `GET /chat/conversations/{id}`
-Get conversation details.
-
-**Headers:** `Authorization: Bearer <token>`
-
 ### `GET /chat/conversations/{id}/messages`
+
 Get messages for a conversation.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | integer | 50 | Max results |
-| `offset` | integer | 0 | Pagination offset |
-| `before_id` | integer | — | Fetch messages before this ID |
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 50 | Max results |
+| `offset` | int | 0 | Pagination offset |
+| `before_id` | int | — | Fetch before this ID |
 
 ### `POST /chat/message`
-Send a message to a conversation. Supports streaming.
+
+Send a message. Supports streaming.
 
 **Headers:** `Authorization: Bearer <token>`
 
@@ -316,11 +281,13 @@ Send a message to a conversation. Supports streaming.
   "conversation_id": 1,
   "message": "Explain quantum computing",
   "model": "gpt-4",
-  "stream": true
+  "stream": true,
+  "temperature": 0.7,
+  "max_tokens": 500
 }
 ```
 
-**Response (200, non-streaming):**
+**Response 200 (non-streaming):**
 ```json
 {
   "id": 42,
@@ -341,10 +308,42 @@ data:  uses...
 data: [DONE]
 ```
 
-### `GET /chat/models`
-List all available AI models.
+### `POST /chat/conversations/{id}/title`
 
-**Response (200):**
+Update conversation title.
+
+**Request:**
+```json
+{"title": "New Title"}
+```
+
+### `DELETE /chat/conversations/{id}`
+
+Soft-delete a conversation.
+
+**Response 200:**
+```json
+{"status": "OK", "message": "Conversation deleted"}
+```
+
+### `POST /chat/branch`
+
+Branch conversation from a message.
+
+**Request:**
+```json
+{
+  "conversation_id": 1,
+  "message_id": 42,
+  "title": "Branch title"
+}
+```
+
+### `GET /chat/models`
+
+List available models.
+
+**Response 200:**
 ```json
 {
   "models": [
@@ -360,55 +359,10 @@ List all available AI models.
 }
 ```
 
-### `POST /chat/conversations/{id}/title`
-Update conversation title.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "title": "New Title"
-}
-```
-
-### `DELETE /chat/conversations/{id}`
-Soft-delete a conversation.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "message": "Conversation deleted"
-}
-```
-
-### `POST /chat/branch`
-Branch a conversation from a specific message.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "conversation_id": 1,
-  "message_id": 42,
-  "title": "Branch title"
-}
-```
-
-### `GET /chat/agents`
-List available agents.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
 ## Memory
 
 ### `POST /memory/save`
+
 Save a memory entry.
 
 **Headers:** `Authorization: Bearer <token>`
@@ -416,19 +370,19 @@ Save a memory entry.
 **Request:**
 ```json
 {
-  "content": "User prefers TypeScript over JavaScript",
+  "content": "User prefers TypeScript",
   "importance": 3
 }
 ```
 
-**Response (201):**
+**Response 201:**
 ```json
 {
   "status": "OK",
   "memory": {
     "id": 1,
     "user_id": "uuid",
-    "content": "User prefers TypeScript over JavaScript",
+    "content": "User prefers TypeScript",
     "importance": 3,
     "created_at": "2024-01-01T00:00:00Z"
   }
@@ -436,130 +390,52 @@ Save a memory entry.
 ```
 
 ### `GET /memory/`
-Get the current user's memory entries.
+
+Get user's memory entries.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Query Parameters:**
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `limit` | integer | 50 | Max results |
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "memory": [...],
-  "count": 25
-}
-```
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `limit` | int | 50 | Max results |
+| `offset` | int | 0 | Pagination offset |
 
 ### `POST /memory/extract-from-conversation`
-Extract important information from a conversation and save as memory.
 
-**Headers:** `Authorization: Bearer <token>`
+Extract memory from conversation.
 
 **Request:**
 ```json
-{
-  "conversation_id": 1
-}
+{"conversation_id": 1}
 ```
 
 ### `POST /memory/context`
-Get formatted memory context for injection into prompts.
 
-**Headers:** `Authorization: Bearer <token>`
+Get formatted memory context.
 
 **Request:**
 ```json
-{
-  "max_tokens": 2000
-}
+{"max_tokens": 2000}
 ```
 
-**Response (200):**
+**Response 200:**
 ```json
 {
   "status": "OK",
-  "context": "Relevant memory: ..."
+  "context": "Relevant memory: User prefers TypeScript..."
 }
 ```
-
-### `POST /memory/auto-extract`
-LLM-powered memory extraction from conversation.
-
-**Headers:** `Authorization: Bearer <token>`
 
 ### `DELETE /memory/{id}`
-Delete a memory entry.
 
-**Headers:** `Authorization: Bearer <token>`
-
----
-
-## Terminal
-
-### `POST /api/terminal/inject`
-Persist a memory entry via the terminal console.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "content": "Important fact to remember"
-}
-```
-
-**Response (201):**
-```json
-{
-  "status": "OK",
-  "memory": {
-    "id": 1,
-    "content": "Important fact to remember",
-    "importance": 1,
-    "created_at": "2024-01-01T00:00:00Z"
-  }
-}
-```
-
-### `POST /api/terminal/purge`
-Delete all memory entries for the current user. **Destructive operation.**
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "deleted": 42
-}
-```
-
-### `GET /api/terminal/usage`
-Get today's AI usage count and configured daily limit.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "used": 12,
-  "limit": 50,
-  "remaining": 38,
-  "reset_at": "2024-01-02T00:00:00Z"
-}
-```
-
----
+Delete memory entry.
 
 ## Embeddings
 
 ### `POST /embeddings/`
-Generate batch embeddings for multiple texts.
+
+Generate batch embeddings.
 
 **Headers:** `Authorization: Bearer <token>`
 
@@ -571,7 +447,7 @@ Generate batch embeddings for multiple texts.
 }
 ```
 
-**Response (200):**
+**Response 200:**
 ```json
 {
   "status": "OK",
@@ -585,62 +461,11 @@ Generate batch embeddings for multiple texts.
 }
 ```
 
-### `POST /embeddings/one`
-Generate a single embedding.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "text": "Hello world",
-  "model": "text-embedding-004"
-}
-```
-
-### `GET /embeddings/status`
-Check embeddings service status.
-
-**Response (200):**
-```json
-{
-  "status": "OK",
-  "service": "healthy",
-  "provider": "gemini"
-}
-```
-
----
-
 ## Agents
 
-### `GET /api/v1/agents`
-List all registered agents.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/agents/{role}`
-Get agent details by role.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/agents/{role}/health`
-Get agent health status.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
-```json
-{
-  "role": "researcher",
-  "status": "healthy",
-  "last_active": "2024-01-01T00:00:00Z",
-  "tasks_completed": 142
-}
-```
-
 ### `POST /api/v1/agents/{role}/run`
-Execute an agent task.
+
+Execute agent task.
 
 **Headers:** `Authorization: Bearer <token>`
 
@@ -653,9 +478,8 @@ Execute an agent task.
 ```
 
 ### `POST /api/v1/agents/tools/register`
-Register a new tool.
 
-**Headers:** `Authorization: Bearer <token>`
+Register a new tool.
 
 **Request:**
 ```json
@@ -667,78 +491,10 @@ Register a new tool.
 }
 ```
 
-### `GET /api/v1/agents/executions`
-List agent execution history.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
-## Workspace
-
-### `GET /api/v1/workspace`
-Get current workspace details.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `POST /api/v1/workspace/folders`
-Create a folder.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "name": "Research",
-  "parent_id": null
-}
-```
-
-### `POST /api/v1/workspace/conversations/{id}/share`
-Share a conversation with team members.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "user_ids": ["uuid-1", "uuid-2"],
-  "permission": "read"
-}
-```
-
----
-
-## Enterprise
-
-### `POST /api/v1/enterprise/sso/saml`
-SAML SSO authentication.
-
-### `GET /api/v1/enterprise/team/members`
-List team members.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `POST /api/v1/enterprise/billing/subscribe`
-Create a subscription.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/enterprise/audit/logs`
-Get audit logs.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `POST /api/v1/enterprise/compliance/export`
-GDPR data export.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
 ## RAG
 
 ### `POST /api/rag/index`
+
 Index documents for retrieval.
 
 **Headers:** `Authorization: Bearer <token>`
@@ -747,16 +503,15 @@ Index documents for retrieval.
 ```json
 {
   "documents": [
-    {"id": "doc-1", "text": "Document content here..."}
+    {"id": "doc-1", "text": "Document content..."}
   ],
   "collection": "default"
 }
 ```
 
 ### `POST /api/rag/search`
-Search indexed documents.
 
-**Headers:** `Authorization: Bearer <token>`
+Search indexed documents.
 
 **Request:**
 ```json
@@ -767,7 +522,7 @@ Search indexed documents.
 }
 ```
 
-**Response (200):**
+**Response 200:**
 ```json
 {
   "status": "OK",
@@ -775,109 +530,72 @@ Search indexed documents.
     {
       "id": "doc-1",
       "score": 0.92,
-      "text": "Document content here..."
+      "text": "Document content..."
     }
   ]
 }
 ```
 
----
+## Training
 
-## Billing & Usage
+### `POST /api/v1/training/fine-tune`
 
-### `GET /api/v1/billing/usage`
-Get current billing period usage.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/billing/invoices`
-List invoices.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `POST /api/v1/billing/coupons/apply`
-Apply a coupon code.
+Initiate fine-tuning job.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Request:**
 ```json
 {
-  "code": "SUMMER2024"
+  "model": "llama-2-7b",
+  "dataset_id": "dataset-123",
+  "method": "lora",
+  "hyperparameters": {
+    "epochs": 3,
+    "batch_size": 8,
+    "learning_rate": 2e-4,
+    "lora_rank": 16
+  }
 }
 ```
 
----
-
-## Admin
-
-### `GET /api/v1/admin/users`
-List all users (admin only).
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/admin/metrics`
-Platform-wide metrics.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Response (200):**
+**Response 202:**
 ```json
 {
-  "total_users": 1250,
-  "active_today": 340,
-  "total_conversations": 8900,
-  "total_messages": 45600,
-  "ai_requests_today": 12000
+  "status": "OK",
+  "job_id": "job-123",
+  "status": "queued"
 }
 ```
 
-### `POST /api/v1/admin/feature-flags`
-Create a feature flag.
+### `GET /api/v1/training/jobs/{id}`
 
-**Headers:** `Authorization: Bearer <token>`
+Get training job status.
 
----
-
-## Monitoring & Metrics
-
-### `GET /api/v1/monitoring/health`
-Detailed health check with all services.
-
-### `GET /api/v1/monitoring/metrics`
-Application metrics.
-
-**Response (200):**
+**Response 200:**
 ```json
 {
-  "requests_total": 125000,
-  "requests_per_second": 45.2,
-  "average_latency_ms": 120,
-  "error_rate": 0.02,
-  "active_connections": 230
+  "id": "job-123",
+  "status": "running",
+  "progress": 0.45,
+  "current_epoch": 2,
+  "total_epochs": 3,
+  "current_loss": 0.32
 }
 ```
-
-### `GET /api/v1/observability/alerts`
-Active alerts.
-
----
 
 ## Safety
 
 ### `POST /api/v1/safety/moderate`
-Moderate content for safety violations.
 
-**Headers:** `Authorization: Bearer <token>`
+Moderate content.
 
 **Request:**
 ```json
-{
-  "content": "User-generated content to moderate"
-}
+{"content": "User-generated content"}
 ```
 
-**Response (200):**
+**Response 200:**
 ```json
 {
   "flagged": false,
@@ -890,181 +608,18 @@ Moderate content for safety violations.
 ```
 
 ### `POST /api/v1/safety/pii/detect`
-Detect PII in content.
 
-**Headers:** `Authorization: Bearer <token>`
+Detect PII.
 
-**Request:**
+**Response 200:**
 ```json
 {
-  "content": "My SSN is 123-45-6789"
+  "has_pii": true,
+  "entities": [
+    {"type": "email", "value": "user@example.com", "start": 0, "end": 16}
+  ]
 }
 ```
-
-### `POST /api/v1/safety/redact`
-Redact sensitive information.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
-## Training
-
-### `POST /api/v1/training/fine-tune`
-Initiate a fine-tuning job.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "model": "llama-2-7b",
-  "dataset_id": "dataset-123",
-  "hyperparameters": {
-    "epochs": 3,
-    "batch_size": 8,
-    "learning_rate": 2e-4
-  }
-}
-```
-
-### `GET /api/v1/training/jobs`
-List training jobs.
-
-**Headers:** `Authorization: Bearer <token>`
-
-### `GET /api/v1/training/jobs/{id}`
-Get training job status.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
-## Audio
-
-### `POST /api/v1/audio/transcribe`
-Transcribe audio to text.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "audio_url": "https://example.com/audio.mp3",
-  "language": "en"
-}
-```
-
-### `POST /api/v1/audio/speak`
-Text-to-speech synthesis.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "text": "Hello, how can I help you?",
-  "voice": "alloy"
-}
-```
-
----
-
-## Neural BCI
-
-### `POST /api/v1/neural/bci/input`
-Process brain-computer interface input.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "eeg_data": [...],
-  "device_type": "muse"
-}
-```
-
----
-
-## Quantum
-
-### `POST /api/v1/quantum/simulate`
-Run quantum simulation.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "circuit": {
-    "gates": [
-      {"type": "H", "qubits": [0]},
-      {"type": "CNOT", "control": 0, "target": 1}
-    ]
-  },
-  "shots": 1024
-}
-```
-
----
-
-## Multiverse
-
-### `POST /api/v1/multiverse/branch`
-Create a conversation branch in a parallel timeline.
-
-**Headers:** `Authorization: Bearer <token>`
-
----
-
-## AGI
-
-### `POST /api/v1/agi/reason`
-Execute AGI reasoning task.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "task": "Solve this complex multi-step problem",
-  "context": {}
-}
-```
-
----
-
-## Realtime
-
-### `WSS /api/v1/realtime`
-WebSocket endpoint for real-time updates.
-
-**Message Types:**
-- `message.created` — New message in conversation
-- `agent.status` — Agent execution status
-- `typing` — User typing indicator
-- `notification` — System notifications
-
----
-
-## Search
-
-### `POST /api/v1/search/semantic`
-Semantic search across conversations and knowledge base.
-
-**Headers:** `Authorization: Bearer <token>`
-
-**Request:**
-```json
-{
-  "query": "How do I deploy to production?",
-  "limit": 10,
-  "collections": ["conversations", "documents"]
-}
-```
-
----
 
 ## Error Codes
 
@@ -1079,8 +634,7 @@ Semantic search across conversations and knowledge base.
 | 500 | `INTERNAL_ERROR` | Server error |
 | 503 | `SERVICE_UNAVAILABLE` | Dependency unavailable |
 
-### Error Response Format
-
+**Error Response Format:**
 ```json
 {
   "status": "error",
@@ -1092,18 +646,10 @@ Semantic search across conversations and knowledge base.
 }
 ```
 
-## Rate Limiting
-
-- Default: 120 requests/minute per IP
-- Configurable via `RATE_LIMIT` environment variable
-- Exceeded requests return `429 Too Many Requests`
-- Response includes `Retry-After` header
-
 ## Pagination
 
-List endpoints support pagination via `limit` and `offset` query parameters.
+List endpoints support `limit` and `offset` query parameters.
 
-Response envelope:
 ```json
 {
   "status": "OK",
@@ -1114,25 +660,13 @@ Response envelope:
 }
 ```
 
+## Rate Limiting
+
+- Default: 120 requests/minute per IP
+- Configurable via `RATE_LIMIT` environment variable
+- Exceeded requests return `429 Too Many Requests`
+- Response includes `Retry-After` header
+
 ## Versioning
 
 The API is versioned via URL path prefix `/api/v1/`. Breaking changes will be released under new versions.
-
-Policy: [api_versioning_policy.md](api_versioning_policy.md)
-
-## SDKs
-
-Auto-generated SDKs are available:
-- Python: `sdk/python/`
-- TypeScript: `sdk/typescript/`
-- Go: `sdk/go/`
-- Rust: `sdk/rust/`
-
-Generate with:
-```bash
-npm run sdk:generate
-```
-
-## Webhooks
-
-See [WEBHOOKS.md](WEBHOOKS.md) for webhook configuration and event types.

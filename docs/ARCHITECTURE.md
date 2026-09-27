@@ -1,205 +1,234 @@
-# AstrovoxAI — System Architecture
+# Architecture Overview
 
-## Design Principles
-
-1. **Stateless backend** — Horizontal scaling via Kubernetes or Docker Swarm
-2. **Provider abstraction** — Unified interface for multiple LLM providers
-3. **Tenant isolation** — Row Level Security (RLS) in Supabase PostgreSQL
-4. **Observability first** — Structured logging, metrics, and tracing on every request
-5. **Security by default** — Rate limiting, input validation, CORS, security headers
-6. **Graceful degradation** — Fallback providers, circuit breakers, cached responses
-
----
+AstrovoxAI is a production-ready AI chat platform with multi-provider LLM support, persistent memory, agent systems, RAG, enterprise features, and a complete model training and inference toolkit.
 
 ## High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                           CLIENTS                                   │
-│  ┌────────────┐  ┌────────────┐  ┌──────────────────────────────┐  │
-│  │  React Web │  │  Tauri     │  │  Mobile (iOS / Android)      │  │
-│  │  Frontend  │  │  Desktop   │  │  SDK / API Clients           │  │
-│  └─────┬──────┘  └─────┬──────┘  └──────────┬───────────────────┘  │
-└────────┼───────────────┼─────────────────────┼──────────────────────┘
-          │               │                     │
-          └───────────────┼─────────────────────┘
-                          │ HTTPS / WSS
-┌────────────────────────┼───────────────────────────────────────────┐
-│                  API GATEWAY / INGRESS                              │
-│  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  Nginx / Cloud Load Balancer                                 │  │
-│  │  - TLS termination                                           │  │
-│  │  - Rate limiting                                             │  │
-│  │  - Static asset serving                                      │  │
-│  └───────────────────────────┬──────────────────────────────────┘  │
-└──────────────────────────────┼──────────────────────────────────────┘
-                                │
-┌──────────────────────────────┼──────────────────────────────────────┐
-│                        FASTAPI BACKEND                              │
-│  ┌───────────────────────────┼──────────────────────────────────┐   │
-│  │                    MIDDLEWARE STACK                            │   │
-│  │  CORS → Security Headers → Rate Limit → Request Logging      │   │
-│  │  → Idempotency → Timeout → Payload Limit → Graceful Shutdown │   │
-│  └───────────────────────────┬──────────────────────────────────┘   │
-│                               │                                     │
-│  ┌────────────────────────────┼─────────────────────────────────┐  │
-│  │                     API ROUTERS                                │  │
-│  │                                                               │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
-│  │  │   Auth       │  │   Chat       │  │   Memory         │   │  │
-│  │  │   Router     │  │   Router     │  │   Router         │   │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
-│  │  │   Agents     │  │   Workspace  │  │   Enterprise     │   │  │
-│  │  │   Router     │  │   Router     │  │   Router         │   │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
-│  │  │   RAG        │  │   Billing    │  │   Admin          │   │  │
-│  │  │   Router     │  │   Router     │  │   Router         │   │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  │  Plus: Terminal, Embeddings, Audio, Neural, Quantum, ...      │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-│                               │                                     │
-│  ┌────────────────────────────┼─────────────────────────────────┐  │
-│  │                     SERVICE LAYER                              │  │
-│  │                                                               │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
-│  │  │   Provider   │  │   Memory     │  │   Context        │   │  │
-│  │  │   Factory    │  │   Engine     │  │   Builder        │   │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐   │  │
-│  │  │   LLM        │  │   Analytics  │  │   Metrics        │   │  │
-│  │  │   Client     │  │   Engine     │  │   Collector      │   │  │
-│  │  └──────────────┘  └──────────────┘  └──────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-                                │
-           ┌────────────────────┼────────────────────┐
-           │                    │                    │
-┌─────────┼─────────┐  ┌────────┼─────────┐  ┌──────┼──────────┐
-│ SUPABASE │         │  │  REDIS │         │  │  AI  │ PROVIDERS│
-│ PostgreSQL│         │  │ Cache  │         │  │      │          │
-│ + Auth   │         │  │ Session│         │  │      │ OpenAI   │
-│ + RLS    │         │  │ Rate   │         │  │      │ Anthropic│
-│          │         │  │ Limit  │         │  │      │ Gemini   │
-│          │         │  │        │         │  │      │ Ollama   │
-│          │         │  │        │         │  │      │ Groq     │
-└──────────┘         │  └───────┘         │  └──────┘          │
-                     │                    │                     │
-                     └────────────────────┘                     │
-                               │                                 │
-                    ┌──────────┴──────────┐                     │
-                    │  PROMETHEUS + GRAFANA│                     │
-                    │  MONITORING STACK    │                     │
-                    └─────────────────────┘                     │
-```
+```mermaid
+graph TB
+    subgraph "Clients"
+        WEB[React Frontend]
+        MOBILE[Mobile Apps]
+        SDK[SDK Clients]
+        CLI[Terminal CLI]
+    end
 
----
+    subgraph "Edge Layer"
+        LB[Load Balancer / Nginx]
+        TLS[TLS Termination]
+        WAF[Rate Limiting + Security]
+    end
 
-## Frontend Architecture
+    subgraph "Application Layer"
+        API[FastAPI Backend]
+        MW[Middleware Stack]
+        ROUTERS[API Routers]
+    end
 
-### Technology Stack
+    subgraph "Service Layer"
+        PROVIDER[Provider Factory]
+        MEMORY[Memory Engine]
+        CONTEXT[Context Builder]
+        ANALYTICS[Analytics Engine]
+    end
 
-- **React 18** with functional components and hooks
-- **Vite 6** for build tooling and HMR
-- **TypeScript** strict mode
-- **Tailwind CSS** for utility-first styling
-- **Radix UI** for accessible primitives
-- **Framer Motion** for animations
-- **Zustand** for global state
-- **React Query** for server state and caching
-- **React Router** for navigation
+    subgraph "Data Layer"
+        PG[(Supabase PostgreSQL + RLS)]
+        REDIS[(Redis Cache)]
+        S3[Object Storage]
+    end
 
-### Key Modules
+    subgraph "AI Providers"
+        OPENAI[OpenAI]
+        ANTHROPIC[Anthropic]
+        GEMINI[Gemini]
+        OLLAMA[Ollama Local]
+        GROQ[Groq]
+    end
 
-| Module | Path | Responsibility |
-|--------|------|----------------|
-| App Shell | `src/app.jsx` | Routing, layout, theme provider |
-| Authentication | `src/auth.jsx` | Login, signup, password reset UI |
-| Chat | `src/Chat.jsx` | Main conversation interface |
-| Sidebar | `src/Sidebar.jsx` | Conversation list and navigation |
-| Memory | `src/MemoryPanel.jsx` | Memory management UI |
-| Settings | `src/SettingsPanel.jsx` | User preferences |
-| Terminal | `src/terminalconsole.jsx` | Interactive terminal console |
-| Telemetry | `src/telemetry.jsx` | System diagnostics display |
+    subgraph "Observability"
+        PROM[Prometheus]
+        GRAF[Grafana]
+        LOGS[Structured Logs]
+    end
 
-### Design System
+    WEB --> LB
+    MOBILE --> LB
+    SDK --> LB
+    CLI --> LB
 
-- **Design Tokens**: `src/design/DesignTokens.js`
-- **Typography**: `src/design/TypographyScale.jsx`
-- **Motion**: `src/design/MotionLibrary.jsx`
-- **Iconography**: `src/design/Iconography.jsx`
-- **Dark Mode**: `src/design/DarkModeVariants.jsx`
-- **Accessibility**: `src/design/AccessibilitySpecs.js`
+    LB --> TLS
+    TLS --> WAF
+    WAF --> API
 
-### State Management
+    API --> MW
+    MW --> ROUTERS
+    ROUTERS --> PROVIDER
+    ROUTERS --> MEMORY
+    ROUTERS --> CONTEXT
+    ROUTERS --> ANALYTICS
 
-- **Zustand stores** for client state (auth, settings, UI)
-- **React Query** for server state (conversations, messages, memory)
-- **Supabase Realtime** for live updates
+    PROVIDER --> OPENAI
+    PROVIDER --> ANTHROPIC
+    PROVIDER --> GEMINI
+    PROVIDER --> OLLAMA
+    PROVIDER --> GROQ
 
----
+    MEMORY --> PG
+    ANALYTICS --> REDIS
+    API --> PG
+    API --> REDIS
 
-## Backend Architecture
-
-### Application Entry Point
-
-`02-Backend/app/main.py` is the FastAPI application entry point. It:
-1. Loads environment variables via `python-dotenv`
-2. Configures CORS, security headers, rate limiting
-3. Registers 50+ API routers
-4. Applies middleware stack
-5. Registers lifecycle handlers for graceful shutdown
-
-### Middleware Stack (order matters)
-
-1. **GlobalExceptionMiddleware** — Catches unhandled exceptions
-2. **SecurityHeadersMiddleware** — CSP, HSTS, X-Frame-Options
-3. **IPEnforcementMiddleware** — IP allowlisting/blocklisting
-4. **UserAgentMiddleware** — User-Agent validation
-5. **RequestLoggingMiddleware** — Structured request logging with correlation IDs
-6. **IdempotencyMiddleware** — Prevents duplicate writes
-7. **RequestTimeoutMiddleware** — 30s request timeout
-8. **PayloadSizeLimitMiddleware** — 10MB payload limit
-9. **GracefulShutdownMiddleware** — Drain in-flight requests
-10. **ContentNegotiationMiddleware** — JSON/MessagePack negotiation
-11. **HTTPSRedirectMiddleware** — Force HTTPS in production
-12. **PIIRedactionMiddleware** — Redact sensitive data from logs
-13. **StructuredLoggingMiddleware** — JSON-formatted structured logs
-
-### AI Provider Abstraction
-
-All AI providers implement a common interface defined in `app/providers/base.py`:
-
-```python
-class BaseProvider(ABC):
-    @abstractmethod
-    async def chat(self, messages, model, **kwargs) -> str: ...
-    @abstractmethod
-    async def stream(self, messages, model, **kwargs) -> AsyncGenerator[str, None]: ...
-    @abstractmethod
-    def count_tokens(self, text) -> int: ...
+    API --> PROM
+    PROM --> GRAF
+    API --> LOGS
 ```
 
-Registered providers:
+## System Components
 
-| Provider | Module | Models |
-|----------|--------|--------|
-| OpenAI | `providers/openai_provider.py` | GPT-4, GPT-4o Mini, GPT-3.5 Turbo |
-| Anthropic | `providers/anthropic_provider.py` | Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku |
-| Gemini | `providers/gemini_provider.py` | Gemini 1.5 Pro, 1.5 Flash, 1.0 Pro |
-| Ollama | `providers/ollama_provider.py` | Llama 3, Mistral, Mixtral, Phi-3, Gemma 2 |
-| Smart Router | `providers/smart_router.py` | Automatic provider selection with fallback |
-
-Provider factory (`providers/factory.py`) resolves providers by model name. Model registry (`providers/models.py`) maps model IDs to provider metadata.
-
----
-
-## Database Design
-
-### Core Schema
+### Frontend Layer
 
 ```
+┌─────────────────────────────────────────────────────────────┐
+│                     FRONTEND ARCHITECTURE                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │   App.jsx   │  │   Chat.jsx   │  │   Sidebar.jsx     │  │
+│  │  Shell &    │  │  Message UI  │  │  Conversation     │  │
+│  │  Routing    │  │  Streaming   │  │  Navigation       │  │
+│  └─────────────┘  └──────────────┘  └───────────────────┘  │
+│                                                              │
+│  ┌─────────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │ MemoryPanel │  │ Terminal     │  │ SettingsPanel     │  │
+│  │ Memory UI   │  │ CLI Console  │  │ User Prefs        │  │
+│  └─────────────┘  └──────────────┘  └───────────────────┘  │
+│                                                              │
+│  State: Zustand | Server: React Query | HTTP: Axios         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Technologies:**
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| Framework | React 18 | UI components |
+| Build Tool | Vite 6 | Fast HMR and bundling |
+| Language | TypeScript | Type safety |
+| Styling | Tailwind CSS | Utility-first CSS |
+| Components | Radix UI | Accessible primitives |
+| Animation | Framer Motion | Motion library |
+| State | Zustand | Global client state |
+| Server State | React Query | Caching and mutations |
+| Routing | React Router | Navigation |
+| Editor | Monaco Editor | Code editing in chat |
+
+### Backend Layer
+
+```mermaid
+graph TD
+    subgraph "Middleware Stack"
+        M1[GlobalException]
+        M2[SecurityHeaders]
+        M3[IPEnforcement]
+        M4[UserAgent]
+        M5[RequestLogging]
+        M6[Idempotency]
+        M7[RequestTimeout]
+        M8[PayloadSizeLimit]
+        M9[GracefulShutdown]
+        M10[ContentNegotiation]
+        M11[HTTPSRedirect]
+        M12[PIIRedaction]
+        M13[StructuredLogging]
+    end
+
+    subgraph "API Routers"
+        R1[auth]
+        R2[chat]
+        R3[memory]
+        R4[terminal]
+        R5[embeddings]
+        R6[agents]
+        R7[workspace]
+        R8[enterprise]
+        R9[rag]
+        R10[billing]
+        R11[admin]
+        R12[training]
+        R13[audio]
+        R14[neural_bci]
+        R15[quantum]
+        R16[safety]
+        R17[analytics]
+        R18[observability]
+    end
+
+    subgraph "Service Layer"
+        S1[ProviderFactory]
+        S2[MemoryEngine]
+        S3[ContextBuilder]
+        S4[AnalyticsEngine]
+        S5[MetricsCollector]
+        S6[LLMClient]
+    end
+
+    M1 --> M2 --> M3 --> M4 --> M5 --> M6 --> M7 --> M8 --> M9 --> M10 --> M11 --> M12 --> M13
+    M13 --> R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & R9 & R10 & R11 & R12 & R13 & R14 & R15 & R16 & R17 & R18
+    R1 & R2 & R3 & R4 & R5 & R6 & R7 & R8 & R9 & R10 & R11 & R12 & R13 & R14 & R15 & R16 & R17 & R18 --> S1 & S2 & S3 & S4 & S5 & S6
+```
+
+**Middleware stack (order matters):**
+
+1. `GlobalExceptionMiddleware` — Catches unhandled exceptions
+2. `SecurityHeadersMiddleware` — CSP, HSTS, X-Frame-Options
+3. `IPEnforcementMiddleware` — IP allowlisting/blocklisting
+4. `UserAgentMiddleware` — User-Agent validation
+5. `RequestLoggingMiddleware` — Structured logging with correlation IDs
+6. `IdempotencyMiddleware` — Prevents duplicate writes
+7. `RequestTimeoutMiddleware` — 30s request timeout
+8. `PayloadSizeLimitMiddleware` — 10MB payload limit
+9. `GracefulShutdownMiddleware` — Drain in-flight requests
+10. `ContentNegotiationMiddleware` — JSON/MessagePack negotiation
+11. `HTTPSRedirectMiddleware` — Force HTTPS in production
+12. `PIIRedactionMiddleware` — Redact sensitive data from logs
+13. `StructuredLoggingMiddleware` — JSON-formatted structured logs
+
+### Data Layer
+
+```mermaid
+graph LR
+    subgraph "Supabase PostgreSQL"
+        AUTH[auth.users]
+        PROFILES[profiles]
+        CONVS[conversations]
+        MSGS[messages]
+        MEM[ai_memory]
+        SETTINGS[user_settings]
+    end
+
+    subgraph "Redis"
+        CACHE[Cache]
+        SESSION[Session Store]
+        RATE[Rate Limiter]
+    end
+
+    subgraph "Object Storage"
+        FILES[File Uploads]
+        CKPT[Model Checkpoints]
+    end
+
+    AUTH --> PROFILES
+    PROFILES --> CONVS
+    CONVS --> MSGS
+    AUTH --> MEM
+    AUTH --> SETTINGS
+```
+
+**Database schema:**
+
+```sql
+-- Core tables (simplified)
 auth.users (Supabase managed)
     │
     ├── profiles
@@ -235,207 +264,161 @@ auth.users (Supabase managed)
           └── updated_at
 ```
 
-### Row Level Security (RLS)
+### AI Provider Abstraction
 
-All user-scoped tables enforce RLS:
-- Users can only read/write their own data
-- Policies use `auth.uid()` for ownership checks
-- No cross-tenant data leakage possible
+```mermaid
+graph TD
+    subgraph "Provider Interface"
+        BASE[BaseProvider ABC]
+        BASE --> CHAT[chat]
+        BASE --> STREAM[stream]
+        BASE --> TOKENS[count_tokens]
+    end
 
-### Migrations
+    subgraph "Providers"
+        P1[OpenAI]
+        P2[Anthropic]
+        P3[Gemini]
+        P4[Ollama]
+        P5[Groq]
+        P6[SmartRouter]
+    end
 
-Schema migrations are versioned in `database/migrations/`. The initial schema is in `database/schemas/supabase_setup.sql`.
+    BASE --> P1 & P2 & P3 & P4 & P5
+    P6 --> P1 & P2 & P3 & P4 & P5
 
----
+    subgraph "Factory"
+        F[ProviderFactory]
+        M[ModelRegistry]
+    end
 
-## Data Flow
-
-### Chat Request Flow
-
-```
-1. Client sends POST /chat/message
-2. CORS + Security Headers middleware
-3. Rate limiter checks IP + user quota
-4. Auth middleware extracts user_id from JWT
-5. Chat router validates conversation ownership
-6. Usage tracker checks daily AI limit
-7. Context builder loads conversation history + memory
-8. Provider factory selects adapter for requested model
-9. LLM provider streams response (SSE)
-10. Messages are persisted to PostgreSQL
-11. Metrics recorded (Prometheus + Analytics)
-12. Response streamed to client
-```
-
-### Memory Extraction Flow
-
-```
-1. User triggers memory extraction
-2. Backend fetches recent messages
-3. LLM extracts key facts with importance scoring
-4. Entries saved to ai_memory table
-5. Vector embeddings generated (optional, for RAG)
-6. Memory context injected into future prompts
+    F --> BASE
+    M --> F
 ```
 
----
+All AI providers implement a common interface:
+
+```python
+class BaseProvider(ABC):
+    @abstractmethod
+    async def chat(self, messages, model, **kwargs) -> str: ...
+    @abstractmethod
+    async def stream(self, messages, model, **kwargs) -> AsyncGenerator[str, None]: ...
+    @abstractmethod
+    def count_tokens(self, text) -> int: ...
+```
+
+## Deployment Topology
+
+### Development (Docker Compose)
+
+```mermaid
+graph TD
+    subgraph "docker-compose.yml"
+        F[Frontend :5173]
+        B[Backend :8000]
+        R[Redis :6379]
+        P[PostgreSQL via Supabase]
+    end
+
+    F --> B
+    B --> R
+    B --> P
+```
+
+### Production (Kubernetes)
+
+```mermaid
+graph TD
+    subgraph "Kubernetes Cluster"
+        ING[Ingress NGINX]
+        subgraph "Backend Pods"
+            BP1[Pod 1]
+            BP2[Pod 2]
+            BPN[Pod N]
+        end
+        RS[Redis Sentinel]
+        PG_PRIMARY[(PostgreSQL Primary)]
+        PG_REPLICA[(PostgreSQL Replica)]
+    end
+
+    ING --> BP1 & BP2 & BPN
+    BP1 & BP2 & BPN --> RS
+    BP1 & BP2 & BPN --> PG_PRIMARY
+    PG_PRIMARY --> PG_REPLICA
+```
 
 ## Security Architecture
 
-### Authentication
-- Supabase Auth (JWT + refresh tokens)
-- Token validation on every request
-- Session management with automatic refresh
+### Authentication Flow
 
-### Authorization
-- Role-based access: `user` < `developer` < `admin`
-- Resource ownership enforced at database level (RLS)
-- API-level permission checks for admin endpoints
+```
+┌────────┐     ┌──────────┐     ┌──────────────┐     ┌─────────────┐
+│ Client │────►│ Supabase │────►│   Auth       │────►│   JWT       │
+│        │     │   Auth   │     │   Service    │     │   Token     │
+└────────┘     └──────────┘     └──────────────┘     └─────────────┘
+                                                               │
+                                                               ▼
+                                                    ┌──────────────────┐
+                                                    │   Backend        │
+                                                    │   Validates JWT  │
+                                                    │   on every req   │
+                                                    └──────────────────┘
+```
+
+### Authorization Model
+
+| Role | Level | Permissions |
+|------|-------|-------------|
+| `user` | 1 | Own data, chat, memory |
+| `developer` | 2 | User + API access, tool creation |
+| `admin` | 3 | Full platform access, user management |
 
 ### Network Security
+
 - CORS restricted to configured origins
-- Security headers: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
+- Security headers: CSP, HSTS, X-Frame-Options
 - IP allowlisting/blocklisting support
 - Request payload size limits (10MB)
 - Request timeouts (30s)
 - HTTPS redirect in production
 - PII redaction from logs
 
-### Rate Limiting
-- Per-IP: 120 requests/minute (configurable)
-- Per-user: Daily AI quota (configurable)
-- Endpoint-specific limits for expensive operations
-
-### Data Protection
-- Secrets stored in environment variables or Docker secrets
-- Service role key never exposed to frontend
-- Database connections via connection pooling
-- Audit logging for all mutations
-
----
-
 ## Observability
 
-### Structured Logging
-- JSON-formatted logs with correlation IDs
-- Request/response logging via middleware
-- Configurable log levels (DEBUG, INFO, WARNING, ERROR)
-- PII redaction from logs
+```mermaid
+graph TD
+    subgraph "Application"
+        APP[FastAPI Backend]
+    end
 
-### Metrics
-- Prometheus exposition format at `/metrics`
-- Tracked: request count, latency, status codes, AI usage
-- Custom metrics for business events
+    subgraph "Metrics"
+        PROM[Prometheus]
+        GRAF[Grafana]
+    end
 
-### Health Checks
-- `/health/live` — Container health
-- `/health/ready` — Dependency health (DB, Redis, providers)
-- `/healthz` — Simple OK response
+    subgraph "Logging"
+        LOG[Structured JSON Logs]
+    end
 
-### Dashboards
-- Grafana dashboards defined in `monitoring/`
-- Key metrics: request rate, error rate, latency, AI usage, active users
+    subgraph "Tracing"
+        TRACE[Distributed Traces]
+    end
 
----
-
-## Deployment Topology
-
-### Development (Docker Compose)
-
-```
-┌─────────────────────────────────────┐
-│         docker-compose.yml          │
-│                                     │
-│  ┌──────────┐  ┌──────────────┐    │
-│  │ Frontend │  │   Backend    │    │
-│  │ (Vite)   │  │  (Uvicorn)   │    │
-│  └──────────┘  └──────┬───────┘    │
-│                       │            │
-│              ┌────────┴───────┐    │
-│              │     Redis      │    │
-│              └────────┬───────┘    │
-│                       │            │
-│              ┌────────┴───────┐    │
-│              │   PostgreSQL   │    │
-│              │  (via Supabase)│    │
-│              └────────────────┘    │
-└─────────────────────────────────────┘
+    APP -->|/metrics| PROM
+    PROM --> GRAF
+    APP -->|logs| LOG
+    APP -->|spans| TRACE
 ```
 
-### Production (Kubernetes)
+**Health check endpoints:**
 
-```
-┌───────────────────────────────────────────────────┐
-│                   Ingress NGINX                    │
-│                 (TLS termination)                  │
-└───────────────────────┬───────────────────────────┘
-                         │
-         ┌───────────────┼───────────────┐
-         │               │               │
-    ┌────┴────┐     ┌────┴────┐    ┌────┴────┐
-    │ Backend │     │ Backend │    │ Backend │
-    │  Pod 1  │     │  Pod 2  │    │  Pod N  │
-    └────┬────┘     └────┬────┘    └────┬────┘
-         │               │               │
-         └───────────────┼───────────────┘
-                         │
-               ┌─────────┴─────────┐
-               │    Redis Sentinel │
-               └─────────┬─────────┘
-                         │
-               ┌─────────┴─────────┐
-               │  PostgreSQL       │
-               │  (Primary + Replica)
-               └───────────────────┘
-```
-
-Helm charts: `helm/`
-Kubernetes manifests: `k8s/`
-
----
-
-## Module Reference
-
-### Backend Modules
-
-| Module | Path | Purpose |
-|--------|------|---------|
-| Chat | `app/chat.py` | Conversation CRUD, message streaming |
-| Memory | `app/memory.py` | Memory CRUD, context extraction |
-| Terminal | `app/terminal.py` | Terminal console API |
-| Embeddings | `app/embeddings_route.py` | Text vectorization |
-| Providers | `app/providers/` | LLM provider adapters |
-| Auth | `app/services/auth/` | Supabase authentication |
-| Agents | `app/api/routers/agent_route.py` | Agent lifecycle and execution |
-| RAG | `app/routers/rag.py` | Document indexing and retrieval |
-| Workspace | `app/api/routers/workspace_route.py` | Team workspaces, folders |
-| Enterprise | `app/enterprise/` | SSO, RBAC, billing, teams |
-| Billing | `app/billing/` | Subscriptions, invoices, coupons |
-| Kernel | `app/kernel/` | Core AI orchestration kernel |
-| AIOS | `app/aios/` | AI Operating System runtime |
-| AGI Reasoning | `app/agi_reasoning/` | Advanced reasoning modules |
-| Analytics | `app/analytics/` | Usage analytics and reporting |
-| Observability | `app/observability/` | Monitoring endpoints |
-| Safety | `app/safety_routes.py` | Safety and moderation |
-| Training | `app/training/` | Fine-tuning and RLHF |
-| Audio | `app/routers/audio.py` | Speech-to-text and TTS |
-| Neural BCI | `app/routers/neural_bci.py` | Brain-computer interface |
-| Quantum | `app/quantum/` | Quantum computing simulation |
-
-### Frontend Modules
-
-| Module | Path | Purpose |
-|--------|------|---------|
-| Chat UI | `src/components/chat/` | Message rendering, streaming, markdown |
-| Workspace | `src/components/workspace/` | Folders, tabs, branching |
-| Neural | `src/components/neural/` | BCI, neurofeedback, thought-to-text |
-| Quantum | `src/components/quantum/` | Quantum visualization, holographic UI |
-| Platform | `src/platform/` | PWA, offline sync, push notifications |
-| Hooks | `src/hooks/` | Custom React hooks |
-| Services | `src/services/` | API clients, monitoring, sandbox |
-| Terminal | `src/terminal/` | Terminal engine and API client |
-
----
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /healthz` | Simple liveness check |
+| `GET /health/live` | Container liveness probe |
+| `GET /health/ready` | Dependency health check |
+| `GET /health/detailed` | Full service status |
 
 ## Scalability Considerations
 
@@ -447,14 +430,12 @@ Kubernetes manifests: `k8s/`
 - **CDN** — Static assets served via CDN in production
 - **Database replication** — Read replicas for reporting queries
 
----
-
 ## Extension Points
 
 - **Custom tools** — Register tools via `app/api/custom_tools.py`
 - **Custom providers** — Implement `BaseProvider` interface
 - **Webhooks** — Configure event subscriptions
-- **Plugins** — Extend via plugin framework (`app/api/routers/plugin_framework.py`)
+- **Plugins** — Extend via plugin framework
 - **SDK generation** — OpenAPI specs auto-generate clients
 - **Extensions** — IDE and browser extensions via extension SDK
 - **Middleware** — Custom middleware injection points
