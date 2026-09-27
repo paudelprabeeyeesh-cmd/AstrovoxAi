@@ -5,11 +5,12 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
-from model.model import LLM
-from tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
-from utils.helpers import load_config, count_parameters, get_device, set_cpu_threads, ValidationSplit
-from trainer.checkpoint import save_checkpoint, load_checkpoint, list_checkpoints, remove_old_checkpoints
-from trainer.metrics import evaluate_metrics, compute_perplexity
+from ..model.model import LLM
+from ..tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
+from ..utils.helpers import load_config, count_parameters, get_device, set_cpu_threads, ValidationSplit
+from .checkpoint import save_checkpoint, load_checkpoint, list_checkpoints, remove_old_checkpoints
+from .metrics import evaluate_metrics, compute_perplexity
+from ..training_data.prepare import PretrainDataset
 
 
 def pretrain(config_path="configs/config_100m.yaml", resume_from: Optional[str] = None):
