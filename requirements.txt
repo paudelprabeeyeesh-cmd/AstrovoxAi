@@ -20,3 +20,4 @@ apscheduler==3.10.4
 slowapi==0.1.9
 prometheus-client==0.21.0
 structlog==24.4.0
+tokenizers>=0.19.1
