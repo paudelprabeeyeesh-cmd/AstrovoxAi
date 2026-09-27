@@ -4,27 +4,18 @@ import io
 import itertools
 import json
 import logging
-import math
 import os
 import random
 import re
 import statistics
 import time
 import unicodedata
-from collections import Counter, defaultdict, deque
+from collections import Counter, deque
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,7 +76,7 @@ DOMAINS = [
     "instructions",
 ]
 
-DEFAULT_CURRICULUM_WEIGHTS: Dict[str, float] = {
+DEFAULT_CURRICULUM_WEIGHTS: dict[str, float] = {
     "instructions": 1.4,
     "math": 1.3,
     "conversations": 1.2,
@@ -111,17 +102,19 @@ class PipelineConfig:
     quality_threshold: float = DEFAULT_QUALITY_THRESHOLD
     dedup_threshold: float = 0.80
     dedup_bands: int = 20
-    max_samples: Optional[int] = None
+    max_samples: int | None = None
     seed: int = 42
-    curriculum_weights: Dict[str, float] = field(default_factory=lambda: dict(DEFAULT_CURRICULUM_WEIGHTS))
-    sources: List[str] = field(default_factory=lambda: list(DOMAINS))
+    curriculum_weights: dict[str, float] = field(
+        default_factory=lambda: dict(DEFAULT_CURRICULUM_WEIGHTS)
+    )
+    sources: list[str] = field(default_factory=lambda: list(DOMAINS))
     validation_split: float = 0.02
     logging_interval: int = 5000
     stats_path: str = "pipeline_stats.json"
     enable_validation: bool = True
     strip_html: bool = True
     remove_spam: bool = True
-    perplexity_model_name: Optional[str] = None
+    perplexity_model_name: str | None = None
     streaming_buffer_size: int = 10000
 
 
@@ -132,7 +125,7 @@ class Sample:
     quality_score: float = 0.0
     domain: str = ""
     length: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_jsonl(self) -> str:
         payload = {
@@ -187,14 +180,20 @@ class TextCleaner:
         "exclusive offer",
     ]
 
-    def __init__(self, min_length: int = DEFAULT_MIN_LEN, max_length: int = DEFAULT_MAX_LEN, strip_html: bool = True, remove_spam: bool = True):
+    def __init__(
+        self,
+        min_length: int = DEFAULT_MIN_LEN,
+        max_length: int = DEFAULT_MAX_LEN,
+        strip_html: bool = True,
+        remove_spam: bool = True,
+    ):
         self.min_length = min_length
         self.max_length = max_length
         self.strip_html = strip_html
         self.remove_spam = remove_spam
         self._spam_pattern = self._compile_spam_pattern()
 
-    def _compile_spam_pattern(self) -> Optional[re.Pattern]:
+    def _compile_spam_pattern(self) -> re.Pattern | None:
         if not self.remove_spam or not self.SPAM_PHRASES:
             return None
             return re.compile("|".join(re.escape(p) for p in self.SPAM_PHRASES), re.IGNORECASE)
@@ -241,7 +240,7 @@ class TextCleaner:
             return True
         return not bool(self._spam_pattern.search(text))
 
-    def clean(self, text: str) -> Optional[str]:
+    def clean(self, text: str) -> str | None:
         if not isinstance(text, str):
             return None
         text = unicodedata.normalize("NFKC", text)
@@ -262,7 +261,9 @@ class TextCleaner:
 class Deduplicator:
     def __init__(self, threshold: float = 0.80, bands: int = 20, seed: int = 42):
         if not DATASKETCH_AVAILABLE:
-            raise ImportError("datasketch is required for MinHash deduplication. Install it with: pip install datasketch")
+            raise ImportError(
+                "datasketch is required for MinHash deduplication. Install it with: pip install datasketch"
+            )
         self.threshold = threshold
         self.bands = bands
         self.seed = seed
@@ -278,11 +279,11 @@ class Deduplicator:
         return m
 
     @staticmethod
-    def _shingle(text: str, k: int = 5) -> List[str]:
+    def _shingle(text: str, k: int = 5) -> list[str]:
         tokens = re.findall(r"\w+", text.lower())
         if len(tokens) < k:
             return [" ".join(tokens)] if tokens else []
-        return [" ".join(tokens[i: i + k]) for i in range(len(tokens) - k + 1)]
+        return [" ".join(tokens[i : i + k]) for i in range(len(tokens) - k + 1)]
 
     def is_duplicate(self, text: str) -> bool:
         text_hash = hashlib.md5(text.encode("utf-8", errors="ignore")).hexdigest()
@@ -303,7 +304,7 @@ class Deduplicator:
         return False
 
     @property
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         return {"processed": self._count, "duplicates": self._duplicates}
 
 
@@ -323,17 +324,17 @@ class NaiveDeduplicator:
         return False
 
     @property
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         return {"processed": self._count, "duplicates": self._duplicates}
 
 
 class QualityScorer:
-    def __init__(self, model_name: Optional[str] = None):
+    def __init__(self, model_name: str | None = None):
         self.model_name = model_name
         self._model = None
         self._tokenizer = None
-        self._length_mean: Optional[float] = None
-        self._length_std: Optional[float] = None
+        self._length_mean: float | None = None
+        self._length_std: float | None = None
 
     def _load_model(self):
         if self._model is not None or self.model_name is None:
@@ -356,13 +357,13 @@ class QualityScorer:
         self._length_std = statistics.pstdev(lengths) or 1.0
         logger.info("Fitted length stats: mean=%.2f, std=%.2f", self._length_mean, self._length_std)
 
-    def score(self, text: str, reference_lengths: Optional[List[int]] = None) -> float:
+    def score(self, text: str, reference_lengths: list[int] | None = None) -> float:
         length_score = self._length_score(text, reference_lengths)
         diversity_score = self._diversity_score(text)
         perplexity_score = self._perplexity_score(text)
-        return (0.4 * perplexity_score + 0.35 * length_score + 0.25 * diversity_score)
+        return 0.4 * perplexity_score + 0.35 * length_score + 0.25 * diversity_score
 
-    def _length_score(self, text: str, reference_lengths: Optional[List[int]] = None) -> float:
+    def _length_score(self, text: str, reference_lengths: list[int] | None = None) -> float:
         length = len(text)
         if reference_lengths:
             mean = statistics.mean(reference_lengths)
@@ -402,7 +403,7 @@ class QualityScorer:
 
 
 class DomainBalancer:
-    def __init__(self, target_weights: Dict[str, float]):
+    def __init__(self, target_weights: dict[str, float]):
         self.target_weights = dict(target_weights)
         self._counts: Counter = Counter()
         self._total = 0
@@ -420,7 +421,7 @@ class DomainBalancer:
         return observed < expected * 1.5
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         total = self._total or 1
         return {
             "total": self._total,
@@ -430,11 +431,11 @@ class DomainBalancer:
 
 
 class CurriculumSampler:
-    def __init__(self, weights: Dict[str, float], seed: int = 42):
+    def __init__(self, weights: dict[str, float], seed: int = 42):
         self.weights = weights
         self.seed = seed
         self._rng = random.Random(seed)
-        self._domain_buffers: Dict[str, deque] = {d: deque() for d in weights}
+        self._domain_buffers: dict[str, deque] = {d: deque() for d in weights}
         self._global_buffer: deque = deque()
 
     def add(self, sample: Sample) -> None:
@@ -445,7 +446,7 @@ class CurriculumSampler:
         else:
             self._global_buffer.append(sample)
 
-    def sample(self) -> Optional[Sample]:
+    def sample(self) -> Sample | None:
         domains = list(self._domain_buffers.keys())
         weights = [self.weights.get(d, 1.0) for d in domains]
         total = sum(weights)
@@ -454,7 +455,7 @@ class CurriculumSampler:
         r = self._rng.uniform(0, total)
         cumulative = 0.0
         chosen = domains[-1]
-        for domain, weight in zip(domains, weights):
+        for domain, weight in zip(domains, weights, strict=False):
             cumulative += weight
             if r <= cumulative:
                 chosen = domain
@@ -480,7 +481,7 @@ class DataValidator:
         self._invalid = 0
         self._errors: Counter = Counter()
 
-    def validate(self, record: Dict[str, Any]) -> bool:
+    def validate(self, record: dict[str, Any]) -> bool:
         if not self.enable:
             return True
         try:
@@ -504,7 +505,7 @@ class DataValidator:
                 return False
             try:
                 float(record.get("quality_score", 0))
-            except (TypeError, ValueError):
+            except TypeError, ValueError:
                 self._record_error("invalid_quality_score")
                 return False
             self._valid += 1
@@ -518,7 +519,7 @@ class DataValidator:
         self._errors[key] += 1
 
     @property
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         return {
             "valid": self._valid,
             "invalid": self._invalid,
@@ -527,7 +528,9 @@ class DataValidator:
 
 
 class LocalFileSource:
-    def __init__(self, paths: Union[str, List[str]], domain: str, cleaner: TextCleaner, encoding: str = "utf-8"):
+    def __init__(
+        self, paths: str | list[str], domain: str, cleaner: TextCleaner, encoding: str = "utf-8"
+    ):
         if isinstance(paths, str):
             paths = [paths]
         self.paths = [Path(p) for p in paths]
@@ -556,7 +559,17 @@ class LocalFileSource:
 
 
 class HuggingFaceSource:
-    def __init__(self, dataset_name: str, config: Optional[str] = None, split: str = "train", domain: str = "common_crawl", cleaner: Optional[TextCleaner] = None, text_field: str = "text", source_field: Optional[str] = None, max_samples: Optional[int] = None):
+    def __init__(
+        self,
+        dataset_name: str,
+        config: str | None = None,
+        split: str = "train",
+        domain: str = "common_crawl",
+        cleaner: TextCleaner | None = None,
+        text_field: str = "text",
+        source_field: str | None = None,
+        max_samples: int | None = None,
+    ):
         if not HF_DATASETS_AVAILABLE:
             raise ImportError("datasets library is required. Install it with: pip install datasets")
         self.dataset_name = dataset_name
@@ -586,18 +599,31 @@ class HuggingFaceSource:
             if cleaned is None:
                 continue
             self._stats["cleaned_samples"] += 1
-            source = row[self.source_field] if self.source_field and isinstance(row, dict) and self.source_field in row else self.dataset_name
+            source = (
+                row[self.source_field]
+                if self.source_field and isinstance(row, dict) and self.source_field in row
+                else self.dataset_name
+            )
             yield Sample(text=cleaned, source=str(source), domain=self.domain)
 
     @property
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         return dict(self._stats)
 
 
 class WebSource:
-    def __init__(self, urls: List[str], domain: str, cleaner: Optional[TextCleaner] = None, max_pages: int = 1000, concurrency: int = 4):
+    def __init__(
+        self,
+        urls: list[str],
+        domain: str,
+        cleaner: TextCleaner | None = None,
+        max_pages: int = 1000,
+        concurrency: int = 4,
+    ):
         if not REQUESTS_AVAILABLE:
-            raise ImportError("requests is required for web scraping. Install it with: pip install requests")
+            raise ImportError(
+                "requests is required for web scraping. Install it with: pip install requests"
+            )
         self.urls = list(urls)
         self.domain = domain
         self.cleaner = cleaner or TextCleaner()
@@ -617,7 +643,9 @@ class WebSource:
         for url in itertools.islice(self.urls, self.max_pages):
             self._stats["pages_crawled"] += 1
             try:
-                response = requests.get(url, timeout=15, headers={"User-Agent": "AstrovoxAi-Crawler/1.0"})
+                response = requests.get(
+                    url, timeout=15, headers={"User-Agent": "AstrovoxAi-Crawler/1.0"}
+                )
                 response.raise_for_status()
                 text = self._extract_text(response.text)
                 cleaned = self.cleaner.clean(text)
@@ -637,6 +665,7 @@ class WebSource:
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
+
         async def _fetch(session, url):
             try:
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as response:
@@ -649,12 +678,16 @@ class WebSource:
 
         async def _run():
             semaphore = asyncio.Semaphore(self.concurrency)
-            async with aiohttp.ClientSession(headers={"User-Agent": "AstrovoxAi-Crawler/1.0"}) as session:
+            async with aiohttp.ClientSession(
+                headers={"User-Agent": "AstrovoxAi-Crawler/1.0"}
+            ) as session:
                 tasks = []
                 for url in itertools.islice(self.urls, self.max_pages):
+
                     async def _guarded(u=url):
                         async with semaphore:
                             return await _fetch(session, u)
+
                     tasks.append(_guarded())
                 for coro in asyncio.as_completed(tasks):
                     text = await coro
@@ -693,12 +726,12 @@ class WebSource:
         return re.sub(r"<[^>]+>", " ", html)
 
     @property
-    def stats(self) -> Dict[str, int]:
+    def stats(self) -> dict[str, int]:
         return dict(self._stats)
 
 
 class DatasetPipeline:
-    def __init__(self, config: Optional[PipelineConfig] = None):
+    def __init__(self, config: PipelineConfig | None = None):
         self.config = config or PipelineConfig()
         random.seed(self.config.seed)
         self.cleaner = TextCleaner(
@@ -723,16 +756,20 @@ class DatasetPipeline:
             "start_time": time.time(),
             "end_time": None,
         }
-        self._deduplicator: Optional[Union[Deduplicator, NaiveDeduplicator]] = None
+        self._deduplicator: Deduplicator | NaiveDeduplicator | None = None
         self._output_handle = None
         self._train_handle = None
         self._val_handle = None
 
-    def _get_deduplicator(self) -> Union[Deduplicator, NaiveDeduplicator]:
+    def _get_deduplicator(self) -> Deduplicator | NaiveDeduplicator:
         if self._deduplicator is None:
             if DATASKETCH_AVAILABLE:
                 try:
-                    self._deduplicator = Deduplicator(threshold=self.config.dedup_threshold, bands=self.config.dedup_bands, seed=self.config.seed)
+                    self._deduplicator = Deduplicator(
+                        threshold=self.config.dedup_threshold,
+                        bands=self.config.dedup_bands,
+                        seed=self.config.seed,
+                    )
                 except Exception as exc:
                     logger.warning("Falling back to naive deduplication: %s", exc)
                     self._deduplicator = NaiveDeduplicator()
@@ -741,13 +778,13 @@ class DatasetPipeline:
                 self._deduplicator = NaiveDeduplicator()
         return self._deduplicator
 
-    def add_source(self, source: Union[LocalFileSource, HuggingFaceSource, WebSource]) -> None:
+    def add_source(self, source: LocalFileSource | HuggingFaceSource | WebSource) -> None:
         if source.domain not in self.config.sources:
             logger.info("Skipping domain '%s' not in enabled sources", source.domain)
             return
         logger.info("Streaming from %s source: %s", source.domain, type(source).__name__)
         dedup = self._get_deduplicator()
-        buffer: List[Sample] = []
+        buffer: list[Sample] = []
         for sample in source.stream():
             self._stats["total_raw"] += 1
             buffer.append(sample)
@@ -759,7 +796,9 @@ class DatasetPipeline:
         if hasattr(source, "stats"):
             logger.debug("Source stats: %s", source.stats)
 
-    def _process_buffer(self, buffer: List[Sample], dedup: Union[Deduplicator, NaiveDeduplicator]) -> None:
+    def _process_buffer(
+        self, buffer: list[Sample], dedup: Deduplicator | NaiveDeduplicator
+    ) -> None:
         for sample in buffer:
             if not self.balancer.should_sample(sample.domain):
                 continue
@@ -786,9 +825,11 @@ class DatasetPipeline:
                 self._stats["quality_scores"].append(sample.quality_score)
                 self.balancer.register(sample.domain)
 
-    def write_jsonl(self, output_path: Optional[str] = None) -> str:
+    def write_jsonl(self, output_path: str | None = None) -> str:
         output_path = output_path or self.config.output_path
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
         if self.config.validation_split > 0:
             self._write_split(output_path)
         else:
@@ -801,7 +842,10 @@ class DatasetPipeline:
         base, ext = os.path.splitext(output_path)
         train_path = f"{base}_train{ext}"
         val_path = f"{base}_val{ext}"
-        with open(train_path, "w", encoding="utf-8") as train_f, open(val_path, "w", encoding="utf-8") as val_f:
+        with (
+            open(train_path, "w", encoding="utf-8") as train_f,
+            open(val_path, "w", encoding="utf-8") as val_f,
+        ):
             val_ratio = self.config.validation_split
             for sample in self._sample_iter():
                 self._stats["total_written"] += 1
@@ -824,7 +868,7 @@ class DatasetPipeline:
                 break
             yield sample
 
-    def compute_statistics(self) -> Dict[str, Any]:
+    def compute_statistics(self) -> dict[str, Any]:
         self._stats["end_time"] = time.time()
         elapsed = self._stats["end_time"] - self._stats["start_time"]
         quality_scores = self._stats["quality_scores"]
@@ -851,7 +895,7 @@ class DatasetPipeline:
         }
         return stats
 
-    def save_statistics(self, path: Optional[str] = None) -> str:
+    def save_statistics(self, path: str | None = None) -> str:
         path = path or self.config.stats_path
         stats = self.compute_statistics()
         os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
@@ -860,7 +904,9 @@ class DatasetPipeline:
         logger.info("Statistics saved to %s", path)
         return path
 
-    def run(self, sources: Optional[List[Union[LocalFileSource, HuggingFaceSource, WebSource]]] = None) -> str:
+    def run(
+        self, sources: list[LocalFileSource | HuggingFaceSource | WebSource] | None = None
+    ) -> str:
         _set_default_logging()
         logger.info("Starting dataset pipeline with config: %s", self.config.__dict__)
         if sources:
@@ -874,22 +920,34 @@ class DatasetPipeline:
 
     def _log_final_stats(self) -> None:
         stats = self.compute_statistics()
-        logger.info("Pipeline stats: raw=%d, cleaned=%d, deduped=%d, validated=%d, written=%d, elapsed=%.2fs",
-                     stats["total_raw"], stats["total_cleaned"], stats["total_deduped"],
-                     stats["total_validated"], stats["total_written"], stats["elapsed_seconds"])
+        logger.info(
+            "Pipeline stats: raw=%d, cleaned=%d, deduped=%d, validated=%d, written=%d, elapsed=%.2fs",
+            stats["total_raw"],
+            stats["total_cleaned"],
+            stats["total_deduped"],
+            stats["total_validated"],
+            stats["total_written"],
+            stats["elapsed_seconds"],
+        )
         if stats["quality_scores"].get("mean"):
-            logger.info("Quality scores - mean: %.4f, median: %.4f, std: %.4f",
-                         stats["quality_scores"]["mean"], stats["quality_scores"]["median"], stats["quality_scores"]["std"])
+            logger.info(
+                "Quality scores - mean: %.4f, median: %.4f, std: %.4f",
+                stats["quality_scores"]["mean"],
+                stats["quality_scores"]["median"],
+                stats["quality_scores"]["std"],
+            )
 
 
 class StreamingDatasetPipeline:
-    def __init__(self, config: Optional[PipelineConfig] = None):
+    def __init__(self, config: PipelineConfig | None = None):
         self.config = config or PipelineConfig()
         self.pipeline = DatasetPipeline(config=self.config)
 
-    def stream_jsonl(self, output_path: Optional[str] = None) -> Iterator[str]:
+    def stream_jsonl(self, output_path: str | None = None) -> Iterator[str]:
         output_path = output_path or self.config.output_path
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
         file_handle = open(output_path, "w", encoding="utf-8")
         try:
             for sample in self.pipeline._sample_iter():
@@ -901,7 +959,9 @@ class StreamingDatasetPipeline:
         finally:
             file_handle.close()
 
-    def run_streaming(self, sources: Optional[List[Union[LocalFileSource, HuggingFaceSource, WebSource]]] = None) -> str:
+    def run_streaming(
+        self, sources: list[LocalFileSource | HuggingFaceSource | WebSource] | None = None
+    ) -> str:
         _set_default_logging()
         logger.info("Starting streaming dataset pipeline")
         if sources:
@@ -912,13 +972,21 @@ class StreamingDatasetPipeline:
         return output_path
 
 
-def build_default_pipeline(output_path: str = "dataset.jsonl", local_paths: Optional[List[str]] = None, hf_datasets: Optional[List[Dict[str, Any]]] = None, web_urls: Optional[Dict[str, List[str]]] = None, config: Optional[PipelineConfig] = None) -> DatasetPipeline:
+def build_default_pipeline(
+    output_path: str = "dataset.jsonl",
+    local_paths: list[str] | None = None,
+    hf_datasets: list[dict[str, Any]] | None = None,
+    web_urls: dict[str, list[str]] | None = None,
+    config: PipelineConfig | None = None,
+) -> DatasetPipeline:
     cfg = config or PipelineConfig(output_path=output_path)
     pipeline = DatasetPipeline(config=cfg)
     if local_paths:
         for path in local_paths:
             domain = _guess_domain(path)
-            pipeline.add_source(LocalFileSource(paths=[path], domain=domain, cleaner=pipeline.cleaner))
+            pipeline.add_source(
+                LocalFileSource(paths=[path], domain=domain, cleaner=pipeline.cleaner)
+            )
     if hf_datasets:
         for ds in hf_datasets:
             domain = ds.get("domain", "common_crawl")
@@ -935,7 +1003,9 @@ def build_default_pipeline(output_path: str = "dataset.jsonl", local_paths: Opti
             pipeline.add_source(source)
     if web_urls:
         for domain, urls in web_urls.items():
-            pipeline.add_source(WebSource(urls=urls, domain=domain, cleaner=pipeline.cleaner, max_pages=1000))
+            pipeline.add_source(
+                WebSource(urls=urls, domain=domain, cleaner=pipeline.cleaner, max_pages=1000)
+            )
     return pipeline
 
 
@@ -947,12 +1017,20 @@ def _guess_domain(path: str) -> str:
     return "common_crawl"
 
 
-def run_pipeline(output_path: str = "dataset.jsonl", sources: Optional[List[Union[LocalFileSource, HuggingFaceSource, WebSource]]] = None, config: Optional[PipelineConfig] = None) -> str:
+def run_pipeline(
+    output_path: str = "dataset.jsonl",
+    sources: list[LocalFileSource | HuggingFaceSource | WebSource] | None = None,
+    config: PipelineConfig | None = None,
+) -> str:
     pipeline = DatasetPipeline(config=config or PipelineConfig(output_path=output_path))
     return pipeline.run(sources=sources)
 
 
-def stream_pipeline(output_path: str = "dataset.jsonl", sources: Optional[List[Union[LocalFileSource, HuggingFaceSource, WebSource]]] = None, config: Optional[PipelineConfig] = None) -> Iterator[str]:
+def stream_pipeline(
+    output_path: str = "dataset.jsonl",
+    sources: list[LocalFileSource | HuggingFaceSource | WebSource] | None = None,
+    config: PipelineConfig | None = None,
+) -> Iterator[str]:
     sp = StreamingDatasetPipeline(config=config or PipelineConfig(output_path=output_path))
     if sources:
         for source in sources:

@@ -12,7 +12,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from models.llm.model.model import LLM
-from models.llm.tokenizer.train_tokenizer import load_tokenizer, create_dummy_tokenizer, TextDataset, collate_fn
+from models.llm.tokenizer.train_tokenizer import (
+    load_tokenizer,
+    create_dummy_tokenizer,
+    TextDataset,
+    collate_fn,
+)
 from models.llm.utils.helpers import load_config, get_device, set_cpu_threads
 from models.llm.trainer.checkpoint import save_checkpoint, load_checkpoint
 from models.llm.inference.generate import generate
@@ -79,7 +84,23 @@ def compute_grad_norm(model):
     return math.sqrt(total_norm)
 
 
-def train_epoch(model, dataloader, optimizer, scheduler, device, accumulation_steps, grad_clip, epoch, log_rows, sample_rows, checkpoint_dir, step_offset, checkpoint_every, tokenizer, prompts):
+def train_epoch(
+    model,
+    dataloader,
+    optimizer,
+    scheduler,
+    device,
+    accumulation_steps,
+    grad_clip,
+    epoch,
+    log_rows,
+    sample_rows,
+    checkpoint_dir,
+    step_offset,
+    checkpoint_every,
+    tokenizer,
+    prompts,
+):
     model.train()
     total_loss = 0.0
     total_tokens = 0
@@ -104,7 +125,9 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, accumulation_st
         if (i + 1) % accumulation_steps == 0:
             grad_norm = compute_grad_norm(model)
             if math.isnan(grad_norm) or math.isinf(grad_norm) or grad_norm > 1e6:
-                print(f"[stop] Exploding gradients at epoch {epoch+1} step {i+1}: grad_norm={grad_norm:.4e}")
+                print(
+                    f"[stop] Exploding gradients at epoch {epoch+1} step {i+1}: grad_norm={grad_norm:.4e}"
+                )
                 nan_encountered = True
                 break
 
@@ -126,26 +149,47 @@ def train_epoch(model, dataloader, optimizer, scheduler, device, accumulation_st
             current_lr = optimizer.param_groups[0]["lr"]
             ppl = math.exp(min(train_loss, 80))
 
-            log_rows.append({
-                "step": step,
-                "epoch": epoch + 1,
-                "train_loss": train_loss,
-                "val_loss": "",
-                "val_ppl": "",
-                "tokens_per_sec": tps,
-                "grad_norm": grad_norm,
-                "lr": current_lr,
-            })
+            log_rows.append(
+                {
+                    "step": step,
+                    "epoch": epoch + 1,
+                    "train_loss": train_loss,
+                    "val_loss": "",
+                    "val_ppl": "",
+                    "tokens_per_sec": tps,
+                    "grad_norm": grad_norm,
+                    "lr": current_lr,
+                }
+            )
 
             if step % checkpoint_every == 0:
                 ckpt_path = os.path.join(checkpoint_dir, f"ckpt_step_{step}.pt")
-                save_checkpoint(model, optimizer, scheduler, epoch, float("inf"), ckpt_path, config=None, global_step=step)
-                print(f"[ckpt] step={step} loss={train_loss:.4f} ppl={ppl:.2f} tps={tps:.1f} grad_norm={grad_norm:.4e}")
+                save_checkpoint(
+                    model,
+                    optimizer,
+                    scheduler,
+                    epoch,
+                    float("inf"),
+                    ckpt_path,
+                    config=None,
+                    global_step=step,
+                )
+                print(
+                    f"[ckpt] step={step} loss={train_loss:.4f} ppl={ppl:.2f} tps={tps:.1f} grad_norm={grad_norm:.4e}"
+                )
 
                 samples = []
                 for p in prompts:
                     try:
-                        out = generate(model, tokenizer, p, max_new_tokens=40, temperature=0.8, top_k=40, device=device)
+                        out = generate(
+                            model,
+                            tokenizer,
+                            p,
+                            max_new_tokens=40,
+                            temperature=0.8,
+                            top_k=40,
+                            device=device,
+                        )
                         samples.append(out.replace("\n", " ").strip())
                     except Exception as e:
                         samples.append(f"[gen_error] {e}")
@@ -197,8 +241,12 @@ def main(config_path="models/llm/configs/config_100m.yaml", resume_from=None):
         dtype = torch.float16
 
     output_dir = config.get("output_dir", "model.pt")
-    checkpoint_dir = os.path.join(os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_checkpoints")
-    log_dir = os.path.join(os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_logs")
+    checkpoint_dir = os.path.join(
+        os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_checkpoints"
+    )
+    log_dir = os.path.join(
+        os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_logs"
+    )
     os.makedirs(checkpoint_dir, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
 
@@ -209,7 +257,10 @@ def main(config_path="models/llm/configs/config_100m.yaml", resume_from=None):
 
     tokenizer_path = config.get("tokenizer_path", "tokenizer.json")
     if not os.path.exists(tokenizer_path):
-        create_dummy_tokenizer(save_dir=os.path.dirname(tokenizer_path) or ".", vocab_size=config.get("vocab_size", 32000))
+        create_dummy_tokenizer(
+            save_dir=os.path.dirname(tokenizer_path) or ".",
+            vocab_size=config.get("vocab_size", 32000),
+        )
     tokenizer = load_tokenizer(tokenizer_path)
     pad_token_id = tokenizer.token_to_id("<pad>") or 0
 
@@ -219,16 +270,36 @@ def main(config_path="models/llm/configs/config_100m.yaml", resume_from=None):
     indices = torch.randperm(n, generator=g).tolist()
     split = int(n * 0.9)
     from torch.utils.data import Subset, DataLoader
+
     train_dataset = Subset(dataset, indices[:split])
     val_dataset = Subset(dataset, indices[split:])
-    train_loader = DataLoader(train_dataset, batch_size=config.get("batch_size", 2), shuffle=True, num_workers=0, pin_memory=(device == "cuda"), collate_fn=lambda b: collate_fn(b, pad_token_id), drop_last=True)
-    val_loader = DataLoader(val_dataset, batch_size=max(1, config.get("batch_size", 2)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id), drop_last=False)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=config.get("batch_size", 2),
+        shuffle=True,
+        num_workers=0,
+        pin_memory=(device == "cuda"),
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+        drop_last=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=max(1, config.get("batch_size", 2) // 2),
+        shuffle=False,
+        num_workers=0,
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+        drop_last=False,
+    )
 
     model = LLM(config, device=torch.device(device), dtype=dtype)
     print(f"Parameters: {model.get_num_params():,}")
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.get("lr", 3e-4), betas=(0.9, 0.95), weight_decay=0.1)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(train_loader) * config.get("epochs", 1))
+    optimizer = torch.optim.AdamW(
+        model.parameters(), lr=config.get("lr", 3e-4), betas=(0.9, 0.95), weight_decay=0.1
+    )
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=len(train_loader) * config.get("epochs", 1)
+    )
 
     start_epoch = 0
     global_step = 0
@@ -250,10 +321,28 @@ def main(config_path="models/llm/configs/config_100m.yaml", resume_from=None):
     sample_csv = os.path.join(log_dir, "samples.csv")
     tb_csv = os.path.join(log_dir, "tensorboard_metrics.csv")
 
-    train_fields = ["step", "epoch", "train_loss", "val_loss", "val_ppl", "tokens_per_sec", "grad_norm", "lr"]
+    train_fields = [
+        "step",
+        "epoch",
+        "train_loss",
+        "val_loss",
+        "val_ppl",
+        "tokens_per_sec",
+        "grad_norm",
+        "lr",
+    ]
     val_fields = ["step", "epoch", "val_loss", "val_ppl", "val_accuracy"]
     sample_fields = ["step", "text"]
-    tb_fields = ["step", "epoch", "train_loss", "val_loss", "val_ppl", "tokens_per_sec", "grad_norm", "lr"]
+    tb_fields = [
+        "step",
+        "epoch",
+        "train_loss",
+        "val_loss",
+        "val_ppl",
+        "tokens_per_sec",
+        "grad_norm",
+        "lr",
+    ]
 
     train_rows = []
     val_rows = []
@@ -276,43 +365,79 @@ def main(config_path="models/llm/configs/config_100m.yaml", resume_from=None):
         log_rows = train_rows
         sample_rows_epoch = sample_rows
         nan_stop, global_step = train_epoch(
-            model, train_loader, optimizer, scheduler, device,
-            accumulation_steps, grad_clip, epoch, log_rows, sample_rows_epoch,
-            checkpoint_dir, global_step, checkpoint_every, tokenizer, prompts
+            model,
+            train_loader,
+            optimizer,
+            scheduler,
+            device,
+            accumulation_steps,
+            grad_clip,
+            epoch,
+            log_rows,
+            sample_rows_epoch,
+            checkpoint_dir,
+            global_step,
+            checkpoint_every,
+            tokenizer,
+            prompts,
         )
         if nan_stop:
             break
 
         val_loss, val_ppl, val_acc = validate(model, val_loader, device)
-        val_rows.append({
-            "step": global_step,
-            "epoch": epoch + 1,
-            "val_loss": val_loss,
-            "val_ppl": val_ppl,
-            "val_accuracy": val_acc,
-        })
-        print(f"Epoch {epoch+1} | Val loss: {val_loss:.4f} | Val ppl: {val_ppl:.2f} | Val acc: {val_acc:.4f}")
+        val_rows.append(
+            {
+                "step": global_step,
+                "epoch": epoch + 1,
+                "val_loss": val_loss,
+                "val_ppl": val_ppl,
+                "val_accuracy": val_acc,
+            }
+        )
+        print(
+            f"Epoch {epoch+1} | Val loss: {val_loss:.4f} | Val ppl: {val_ppl:.2f} | Val acc: {val_acc:.4f}"
+        )
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             best_path = os.path.join(checkpoint_dir, "best.pt")
-            save_checkpoint(model, optimizer, scheduler, epoch, best_val_loss, best_path, config=None, global_step=global_step)
+            save_checkpoint(
+                model,
+                optimizer,
+                scheduler,
+                epoch,
+                best_val_loss,
+                best_path,
+                config=None,
+                global_step=global_step,
+            )
 
         latest = os.path.join(checkpoint_dir, "latest.pt")
-        save_checkpoint(model, optimizer, scheduler, epoch, best_val_loss, latest, config=None, global_step=global_step)
+        save_checkpoint(
+            model,
+            optimizer,
+            scheduler,
+            epoch,
+            best_val_loss,
+            latest,
+            config=None,
+            global_step=global_step,
+        )
 
         # Sync validation into train CSV for TensorBoard-style viewing
         for r in val_rows[-1:]:
-            tb_rows.append({
-                "step": r["step"],
-                "epoch": r["epoch"],
-                "train_loss": "",
-                "val_loss": r["val_loss"],
-                "val_ppl": r["val_ppl"],
-                "tokens_per_sec": "",
-                "grad_norm": "",
-                "lr": optimizer.param_groups[0]["lr"],
-            })
+            tb_rows.append(
+                {
+                    "step": r["step"],
+                    "epoch": r["epoch"],
+                    "train_loss": "",
+                    "val_loss": r["val_loss"],
+                    "val_ppl": r["val_ppl"],
+                    "tokens_per_sec": "",
+                    "grad_norm": "",
+                    "lr": optimizer.param_groups[0]["lr"],
+                }
+            )
 
     # Write CSV logs
     with open(train_csv, "w", newline="", encoding="utf-8") as f:

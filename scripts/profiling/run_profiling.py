@@ -36,6 +36,7 @@ async def main():
     print("MEMORY SNAPSHOT")
     print("=" * 60)
     import tracemalloc
+
     tracemalloc.start()
     snapshot = profile_memory_snapshot("baseline")
     tracemalloc.stop()

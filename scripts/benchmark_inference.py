@@ -18,7 +18,6 @@ from models.llm.tokenizer.train_tokenizer import load_tokenizer
 from models.llm.utils.helpers import load_config, get_device
 from models.llm.benchmarking import BenchmarkSuite, BenchmarkRun, SystemMonitor
 
-
 PROMPTS = [
     "Once upon a time in a distant galaxy,",
     "The future of artificial intelligence is",
@@ -61,7 +60,9 @@ def benchmark_single_batch(
         "latencies_seconds": latencies,
         "tokens_per_second": tokens_per_sec,
         "avg_latency_seconds": round(sum(latencies) / len(latencies), 4) if latencies else 0.0,
-        "avg_tokens_per_second": round(sum(tokens_per_sec) / len(tokens_per_sec), 4) if tokens_per_sec else 0.0,
+        "avg_tokens_per_second": (
+            round(sum(tokens_per_sec) / len(tokens_per_sec), 4) if tokens_per_sec else 0.0
+        ),
         "p50_latency_seconds": round(sorted_latencies[n // 2], 4) if n else 0.0,
         "p95_latency_seconds": round(sorted_latencies[int(n * 0.95)], 4) if n else 0.0,
         "p99_latency_seconds": round(sorted_latencies[int(n * 0.99)], 4) if n else 0.0,
@@ -76,7 +77,9 @@ def main() -> int:
     parser.add_argument("--checkpoint", default="model.pt")
     parser.add_argument("--prompts", type=int, default=10)
     parser.add_argument("--max-tokens", type=int, default=32)
-    parser.add_argument("--batch-sizes", type=str, default="1,4,8", help="Comma-separated batch sizes to test")
+    parser.add_argument(
+        "--batch-sizes", type=str, default="1,4,8", help="Comma-separated batch sizes to test"
+    )
     parser.add_argument("--device", default=None)
     parser.add_argument("--output", default="benchmark_results/inference_benchmark")
     args = parser.parse_args()

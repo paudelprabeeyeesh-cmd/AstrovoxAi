@@ -1,6 +1,7 @@
 import os
-import yaml
+
 import torch
+import yaml
 
 
 def _cast_value(value):
@@ -17,7 +18,7 @@ def _cast_value(value):
 
 
 def load_config(config_path="configs/config_100m.yaml"):
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         config = yaml.safe_load(f)
     if isinstance(config, dict):
         for key, value in config.items():
@@ -64,8 +65,10 @@ class ValidationSplit:
 
     def train_dataset(self):
         from torch.utils.data import Subset
+
         return Subset(self.dataset, self.train_idx)
 
     def val_dataset(self):
         from torch.utils.data import Subset
+
         return Subset(self.dataset, self.val_idx)

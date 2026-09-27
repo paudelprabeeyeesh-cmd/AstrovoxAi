@@ -7,8 +7,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger(__name__)
 
 
-def main(config_path: str = "models/llm/configs/config_10b.yaml", resume_from: Optional[str] = None):
+def main(
+    config_path: str = "models/llm/configs/config_10b.yaml", resume_from: Optional[str] = None
+):
     from models.llm.training.pretrain import PretrainPipeline
+
     pipeline = PretrainPipeline(config_path)
     try:
         history = pipeline.run(resume_from=resume_from)

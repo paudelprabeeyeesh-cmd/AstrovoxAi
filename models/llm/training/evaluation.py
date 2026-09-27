@@ -1,15 +1,10 @@
-import os
-import json
-import math
 import logging
-from typing import Dict, List, Optional
+import math
 
 import torch
 from torch.utils.data import DataLoader
 
 from ..model.model import LLM
-from ..tokenizer.train_tokenizer import load_tokenizer
-from ..utils.helpers import load_config
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +15,7 @@ class Evaluator:
         self.tokenizer = tokenizer
         self.device = device
 
-    def perplexity(self, dataloader: DataLoader, max_batches: Optional[int] = None) -> float:
+    def perplexity(self, dataloader: DataLoader, max_batches: int | None = None) -> float:
         self.model.eval()
         total_loss = 0.0
         total_tokens = 0
@@ -37,7 +32,7 @@ class Evaluator:
         avg_loss = total_loss / max(total_tokens, 1)
         return math.exp(avg_loss) if avg_loss < 100 else float("inf")
 
-    def accuracy(self, dataloader: DataLoader, max_batches: Optional[int] = None) -> float:
+    def accuracy(self, dataloader: DataLoader, max_batches: int | None = None) -> float:
         self.model.eval()
         correct = 0
         total = 0
@@ -54,10 +49,20 @@ class Evaluator:
                 total += mask.sum().item()
         return correct / max(total, 1)
 
-    def generation_quality(self, prompts: List[str], max_new_tokens: int = 50) -> Dict[str, float]:
+    def generation_quality(self, prompts: list[str], max_new_tokens: int = 50) -> dict[str, float]:
         from ..inference.generate import generate
+
         results = []
         for prompt in prompts:
-            text = generate(self.model, self.tokenizer, prompt, max_new_tokens=max_new_tokens, device=self.device)
+            text = generate(
+                self.model,
+                self.tokenizer,
+                prompt,
+                max_new_tokens=max_new_tokens,
+                device=self.device,
+            )
             results.append(text)
-        return {"num_generated": len(results), "avg_length": sum(len(r.split()) for r in results) / max(len(results), 1)}
+        return {
+            "num_generated": len(results),
+            "avg_length": sum(len(r.split()) for r in results) / max(len(results), 1),
+        }

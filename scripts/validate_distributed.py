@@ -29,6 +29,7 @@ if ROOT not in sys.path:
 # Report model
 # ===========================================================================
 
+
 class ValidationReport:
     def __init__(self) -> None:
         self.timestamp: str = datetime.now().isoformat()
@@ -179,6 +180,7 @@ class ValidationReport:
 # Pytest plugin
 # ===========================================================================
 
+
 class ResultCollector:
     """Pytest plugin that records per-test outcomes into a ValidationReport."""
 
@@ -210,6 +212,7 @@ class ResultCollector:
 # ===========================================================================
 # Runner
 # ===========================================================================
+
 
 def run_validation(
     test_path: str,
@@ -249,6 +252,7 @@ def run_validation(
 # ===========================================================================
 # CLI
 # ===========================================================================
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(

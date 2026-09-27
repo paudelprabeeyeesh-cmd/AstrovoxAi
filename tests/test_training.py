@@ -19,7 +19,6 @@ from model.model_scaling import (
     compare_configs,
 )
 
-
 CONFIG_100M = os.path.join(ROOT, "models", "llm", "configs", "config_100m.yaml")
 
 
@@ -44,7 +43,9 @@ class TestModelScaling:
         assert params < 1_000_000_000
 
     def test_memory_estimation(self):
-        mem = memory_estimation(num_params=10_000_000, dtype_bytes=2, training=True, context_length=1024, batch_size=1)
+        mem = memory_estimation(
+            num_params=10_000_000, dtype_bytes=2, training=True, context_length=1024, batch_size=1
+        )
         assert mem["weights_gb"] > 0
         assert mem["total_base_gb"] > mem["weights_gb"]
 
@@ -58,7 +59,9 @@ class TestModelScaling:
         assert tokens == 20_000_000
 
     def test_estimate_training_time(self):
-        result = estimate_training_time(num_params=100_000_000, tokens_per_second=1000, context_length=1024)
+        result = estimate_training_time(
+            num_params=100_000_000, tokens_per_second=1000, context_length=1024
+        )
         assert "steps" in result
         assert "days" in result
         assert result["steps"] > 0

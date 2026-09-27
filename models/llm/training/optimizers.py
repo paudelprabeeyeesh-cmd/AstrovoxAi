@@ -1,7 +1,7 @@
 import logging
 import math
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -23,11 +23,12 @@ logger = logging.getLogger(__name__)
 # Gradient Clipping Utilities
 # ---------------------------------------------------------------------------
 
+
 def clip_grad_max_norm(
     model: nn.Module,
     max_norm: float,
     norm_type: float = 2.0,
-) -> Optional[float]:
+) -> float | None:
     total_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm, norm_type=norm_type)
     return float(total_norm.item())
 
@@ -40,7 +41,7 @@ def adaptive_grad_clip(
     model: nn.Module,
     clip_factor: float = 0.01,
     eps: float = 1e-3,
-) -> Optional[float]:
+) -> float | None:
     total_norm = 0.0
     for p in model.parameters():
         if p.grad is None:
@@ -59,7 +60,10 @@ def adaptive_grad_clip(
 # Optimizers
 # ---------------------------------------------------------------------------
 
-def create_adamw(params, lr: float, weight_decay: float, betas: Tuple[float, float] = (0.9, 0.95)) -> Optimizer:
+
+def create_adamw(
+    params, lr: float, weight_decay: float, betas: tuple[float, float] = (0.9, 0.95)
+) -> Optimizer:
     return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay, betas=betas)
 
 
@@ -67,58 +71,84 @@ def create_adafactor(params, lr: float, weight_decay: float, **kwargs: Any) -> O
     return torch.optim.AdaFactor(params, lr=lr, weight_decay=weight_decay, **kwargs)
 
 
-def create_lion(params, lr: float, weight_decay: float, betas: Tuple[float, float] = (0.9, 0.99), **kwargs: Any) -> Optimizer:
+def create_lion(
+    params, lr: float, weight_decay: float, betas: tuple[float, float] = (0.9, 0.99), **kwargs: Any
+) -> Optimizer:
     try:
         from lion_pytorch import Lion  # type: ignore
+
         return Lion(params, lr=lr, weight_decay=weight_decay, betas=betas, **kwargs)
     except ImportError:
-        warnings.warn("lion_pytorch not installed; falling back to AdamW")
+        warnings.warn("lion_pytorch not installed; falling back to AdamW", stacklevel=2)
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay, betas=betas)
 
 
-def create_sophia(params, lr: float, weight_decay: float, betas: Tuple[float, float] = (0.965, 0.99), rho: float = 0.04, **kwargs: Any) -> Optimizer:
+def create_sophia(
+    params,
+    lr: float,
+    weight_decay: float,
+    betas: tuple[float, float] = (0.965, 0.99),
+    rho: float = 0.04,
+    **kwargs: Any,
+) -> Optimizer:
     try:
         from Sophia import SophiaG  # type: ignore
+
         return SophiaG(params, lr=lr, betas=betas, rho=rho, weight_decay=weight_decay, **kwargs)
     except ImportError:
-        warnings.warn("sophia optimizer not installed; falling back to AdamW")
+        warnings.warn("sophia optimizer not installed; falling back to AdamW", stacklevel=2)
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay, betas=betas)
 
 
-def create_muon(params, lr: float, weight_decay: float, momentum: float = 0.9, **kwargs: Any) -> Optimizer:
+def create_muon(
+    params, lr: float, weight_decay: float, momentum: float = 0.9, **kwargs: Any
+) -> Optimizer:
     try:
         from muon import Muon  # type: ignore
+
         return Muon(params, lr=lr, momentum=momentum, weight_decay=weight_decay, **kwargs)
     except ImportError:
-        warnings.warn("muon optimizer not installed; falling back to AdamW")
+        warnings.warn("muon optimizer not installed; falling back to AdamW", stacklevel=2)
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay)
 
 
-def create_adamw_8bit(params, lr: float, weight_decay: float, betas: Tuple[float, float] = (0.9, 0.95), **kwargs: Any) -> Optimizer:
+def create_adamw_8bit(
+    params, lr: float, weight_decay: float, betas: tuple[float, float] = (0.9, 0.95), **kwargs: Any
+) -> Optimizer:
     try:
         import bitsandbytes as bnb  # type: ignore
+
         return bnb.optim.AdamW8bit(params, lr=lr, weight_decay=weight_decay, betas=betas, **kwargs)
     except ImportError:
-        warnings.warn("bitsandbytes not installed; falling back to AdamW")
+        warnings.warn("bitsandbytes not installed; falling back to AdamW", stacklevel=2)
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay, betas=betas)
 
 
-def create_paged_adamw(params, lr: float, weight_decay: float, betas: Tuple[float, float] = (0.9, 0.95), **kwargs: Any) -> Optimizer:
+def create_paged_adamw(
+    params, lr: float, weight_decay: float, betas: tuple[float, float] = (0.9, 0.95), **kwargs: Any
+) -> Optimizer:
     try:
         import bitsandbytes as bnb  # type: ignore
+
         if hasattr(bnb.optim, "PagedAdamW8bit"):
-            return bnb.optim.PagedAdamW8bit(params, lr=lr, weight_decay=weight_decay, betas=betas, **kwargs)
+            return bnb.optim.PagedAdamW8bit(
+                params, lr=lr, weight_decay=weight_decay, betas=betas, **kwargs
+            )
     except ImportError:
         pass
-    warnings.warn("bitsandbytes paged optimizer not available; falling back to AdamW8bit or AdamW")
+    warnings.warn(
+        "bitsandbytes paged optimizer not available; falling back to AdamW8bit or AdamW",
+        stacklevel=2,
+    )
     try:
         import bitsandbytes as bnb  # type: ignore
+
         return bnb.optim.AdamW8bit(params, lr=lr, weight_decay=weight_decay, betas=betas, **kwargs)
     except ImportError:
         return torch.optim.AdamW(params, lr=lr, weight_decay=weight_decay, betas=betas)
 
 
-_OPTIMIZER_BUILDERS: Dict[str, Any] = {
+_OPTIMIZER_BUILDERS: dict[str, Any] = {
     "adamw": create_adamw,
     "adafactor": create_adafactor,
     "lion": create_lion,
@@ -136,6 +166,7 @@ _OPTIMIZER_BUILDERS: Dict[str, Any] = {
 # LR Schedulers
 # ---------------------------------------------------------------------------
 
+
 def create_cosine_scheduler(
     optimizer: Optimizer,
     dataloader_len: int,
@@ -148,7 +179,9 @@ def create_cosine_scheduler(
             optimizer,
             schedulers=[
                 LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup),
-                CosineAnnealingLR(optimizer, T_max=dataloader_len * epochs - warmup, eta_min=min_lr),
+                CosineAnnealingLR(
+                    optimizer, T_max=dataloader_len * epochs - warmup, eta_min=min_lr
+                ),
             ],
             milestones=[warmup],
         )
@@ -181,7 +214,9 @@ def create_linear_scheduler(
     dataloader_len: int,
     epochs: int,
 ) -> _LRScheduler:
-    return LinearLR(optimizer, start_factor=1.0, end_factor=0.0, total_iters=dataloader_len * epochs)
+    return LinearLR(
+        optimizer, start_factor=1.0, end_factor=0.0, total_iters=dataloader_len * epochs
+    )
 
 
 def create_constant_scheduler(optimizer: Optimizer) -> _LRScheduler:
@@ -198,7 +233,7 @@ def create_step_decay_scheduler(
     return StepLR(optimizer, step_size=step_size, gamma=gamma)
 
 
-_SCHEDULER_BUILDERS: Dict[str, Any] = {
+_SCHEDULER_BUILDERS: dict[str, Any] = {
     "cosine": create_cosine_scheduler,
     "onecycle": create_one_cycle_scheduler,
     "one_cycle": create_one_cycle_scheduler,
@@ -213,32 +248,43 @@ _SCHEDULER_BUILDERS: Dict[str, Any] = {
 # Configuration Helper
 # ---------------------------------------------------------------------------
 
+
 class OptimizerSchedulerConfig:
-    def __init__(self, config: Dict[str, Any], model: nn.Module, dataloader_len: int) -> None:
+    def __init__(self, config: dict[str, Any], model: nn.Module, dataloader_len: int) -> None:
         self.config = config
         self.model = model
         self.dataloader_len = dataloader_len
 
-    def build(self) -> Tuple[Optimizer, Optional[_LRScheduler]]:
-        optimizer_name = str(self.config.get("optimizer", "adamw")).lower().replace("-", "").replace("_", "")
+    def build(self) -> tuple[Optimizer, _LRScheduler | None]:
+        optimizer_name = (
+            str(self.config.get("optimizer", "adamw")).lower().replace("-", "").replace("_", "")
+        )
         builder = _OPTIMIZER_BUILDERS.get(optimizer_name)
         if builder is None:
-            warnings.warn(f"Unknown optimizer '{optimizer_name}'; falling back to AdamW")
+            warnings.warn(
+                f"Unknown optimizer '{optimizer_name}'; falling back to AdamW", stacklevel=2
+            )
             builder = create_adamw
         lr = float(self.config.get("lr", 3e-4))
         weight_decay = float(self.config.get("weight_decay", 0.1))
         optimizer = builder(self.model.parameters(), lr=lr, weight_decay=weight_decay)
 
-        scheduler_name = str(self.config.get("lr_scheduler", "cosine")).lower().replace("-", "").replace("_", "")
+        scheduler_name = (
+            str(self.config.get("lr_scheduler", "cosine")).lower().replace("-", "").replace("_", "")
+        )
         scheduler_builder = _SCHEDULER_BUILDERS.get(scheduler_name)
         if scheduler_builder is None:
-            warnings.warn(f"Unknown scheduler '{scheduler_name}'; falling back to cosine")
+            warnings.warn(
+                f"Unknown scheduler '{scheduler_name}'; falling back to cosine", stacklevel=2
+            )
             scheduler_builder = create_cosine_scheduler
         epochs = int(self.config.get("epochs", 1))
-        warmup = int(self.config.get("warmup_steps", max(1, int(self.dataloader_len * epochs * 0.01))))
+        warmup = int(
+            self.config.get("warmup_steps", max(1, int(self.dataloader_len * epochs * 0.01)))
+        )
         min_lr = float(self.config.get("min_lr", 1e-6))
 
-        scheduler_kwargs: Dict[str, Any] = {
+        scheduler_kwargs: dict[str, Any] = {
             "optimizer": optimizer,
             "dataloader_len": self.dataloader_len,
             "epochs": epochs,
@@ -249,11 +295,15 @@ class OptimizerSchedulerConfig:
             scheduler_kwargs["max_lr"] = lr
             scheduler_kwargs["pct_start"] = float(self.config.get("one_cycle_pct_start", 0.3))
             scheduler_kwargs["div_factor"] = float(self.config.get("one_cycle_div_factor", 25.0))
-            scheduler_kwargs["final_div_factor"] = float(self.config.get("one_cycle_final_div_factor", 1e4))
+            scheduler_kwargs["final_div_factor"] = float(
+                self.config.get("one_cycle_final_div_factor", 1e4)
+            )
             scheduler_kwargs.pop("warmup", None)
             scheduler_kwargs.pop("min_lr", None)
         elif scheduler_name in ("step", "step_decay"):
-            scheduler_kwargs["step_size"] = int(self.config.get("step_size", max(1, self.dataloader_len * epochs // 3)))
+            scheduler_kwargs["step_size"] = int(
+                self.config.get("step_size", max(1, self.dataloader_len * epochs // 3))
+            )
             scheduler_kwargs["gamma"] = float(self.config.get("step_gamma", 0.1))
             scheduler_kwargs.pop("warmup", None)
             scheduler_kwargs.pop("min_lr", None)
@@ -270,9 +320,9 @@ class OptimizerSchedulerConfig:
 
 
 def get_optimizer_and_scheduler(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     model: nn.Module,
     dataloader_len: int,
-) -> Tuple[Optimizer, Optional[_LRScheduler]]:
+) -> tuple[Optimizer, _LRScheduler | None]:
     helper = OptimizerSchedulerConfig(config=config, model=model, dataloader_len=dataloader_len)
     return helper.build()

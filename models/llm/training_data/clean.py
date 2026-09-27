@@ -1,7 +1,6 @@
-import re
 import os
+import re
 import unicodedata
-from typing import List, Optional
 
 
 def normalize_whitespace(text: str) -> str:
@@ -53,12 +52,19 @@ def clean_text(text: str, min_len: int = 20) -> str:
     return text.strip()
 
 
-def clean_file(input_path: str, output_path: Optional[str] = None, min_len: int = 20, encoding: str = "utf-8") -> str:
+def clean_file(
+    input_path: str, output_path: str | None = None, min_len: int = 20, encoding: str = "utf-8"
+) -> str:
     if output_path is None:
         base, ext = os.path.splitext(input_path)
         output_path = f"{base}_clean{ext}"
-    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
-    with open(input_path, "r", encoding=encoding) as fin, open(output_path, "w", encoding=encoding) as fout:
+    os.makedirs(
+        os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+    )
+    with (
+        open(input_path, encoding=encoding) as fin,
+        open(output_path, "w", encoding=encoding) as fout,
+    ):
         for line in fin:
             cleaned = clean_text(line, min_len=min_len)
             if cleaned:
@@ -66,7 +72,9 @@ def clean_file(input_path: str, output_path: Optional[str] = None, min_len: int 
     return output_path
 
 
-def clean_files(input_paths: List[str], output_dir: str, min_len: int = 20, encoding: str = "utf-8") -> List[str]:
+def clean_files(
+    input_paths: list[str], output_dir: str, min_len: int = 20, encoding: str = "utf-8"
+) -> list[str]:
     os.makedirs(output_dir, exist_ok=True)
     out_paths = []
     for path in input_paths:

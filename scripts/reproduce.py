@@ -65,7 +65,14 @@ def validate_config():
     assert CONFIG_PATH.exists(), f"Config not found: {CONFIG_PATH}"
     with open(CONFIG_PATH) as f:
         cfg = yaml.safe_load(f)
-    required = ["vocab_size", "hidden_size", "num_hidden_layers", "batch_size", "epochs", "output_dir"]
+    required = [
+        "vocab_size",
+        "hidden_size",
+        "num_hidden_layers",
+        "batch_size",
+        "epochs",
+        "output_dir",
+    ]
     for k in required:
         assert k in cfg, f"Missing config key: {k}"
     print(f"[repro] Config OK: {CONFIG_PATH}")
@@ -76,10 +83,14 @@ def train_model(cfg):
     print("\n[repro] Training model (fresh)...")
     train_script = REPO_ROOT / "phase1_train.py"
     assert train_script.exists(), f"Training script not found: {train_script}"
-    run_cmd([
-        sys.executable, str(train_script),
-        "--config", str(CONFIG_PATH),
-    ])
+    run_cmd(
+        [
+            sys.executable,
+            str(train_script),
+            "--config",
+            str(CONFIG_PATH),
+        ]
+    )
     assert FINAL_MODEL.exists(), f"Final model not created: {FINAL_MODEL}"
     print(f"[repro] Training complete. Model at {FINAL_MODEL}")
 
@@ -91,11 +102,16 @@ def resume_training(cfg):
     assert ckpts, f"No checkpoints found in {ckpt_dir}"
     resume_ckpt = ckpts[-1]
     train_script = REPO_ROOT / "phase1_train.py"
-    run_cmd([
-        sys.executable, str(train_script),
-        "--config", str(CONFIG_PATH),
-        "--resume", str(resume_ckpt),
-    ])
+    run_cmd(
+        [
+            sys.executable,
+            str(train_script),
+            "--config",
+            str(CONFIG_PATH),
+            "--resume",
+            str(resume_ckpt),
+        ]
+    )
     print(f"[repro] Resume complete from {resume_ckpt}")
 
 
@@ -104,12 +120,19 @@ def evaluate_model(cfg):
     eval_script = REPO_ROOT / "phase1_evaluate.py"
     assert eval_script.exists(), f"Evaluation script not found: {eval_script}"
     ckpt_dir = REPO_ROOT / cfg.get("checkpoint_dir", "phase1_checkpoints")
-    output = run_cmd([
-        sys.executable, str(eval_script),
-        "--config", str(CONFIG_PATH),
-        "--checkpoint-dir", str(ckpt_dir),
-        "--output-dir", str(FINAL_MODEL),
-    ], capture=True)
+    output = run_cmd(
+        [
+            sys.executable,
+            str(eval_script),
+            "--config",
+            str(CONFIG_PATH),
+            "--checkpoint-dir",
+            str(ckpt_dir),
+            "--output-dir",
+            str(FINAL_MODEL),
+        ],
+        capture=True,
+    )
     print(output)
     return output
 
@@ -121,9 +144,13 @@ def export_model(cfg):
         print("[repro] Export module not found, skipping export.")
         return None
     EXPORT_DIR.mkdir(exist_ok=True)
-    run_cmd([
-        sys.executable, str(export_script),
-    ], check=False)
+    run_cmd(
+        [
+            sys.executable,
+            str(export_script),
+        ],
+        check=False,
+    )
     # Use export via direct Python API
     sys.path.insert(0, str(REPO_ROOT / "models" / "llm"))
     try:
@@ -182,7 +209,9 @@ def run_inference(cfg):
         generations = {}
         for p in prompts:
             try:
-                out = generate(model, tokenizer, p, max_new_tokens=40, temperature=0.8, top_k=40, device=device)
+                out = generate(
+                    model, tokenizer, p, max_new_tokens=40, temperature=0.8, top_k=40, device=device
+                )
             except Exception as e:
                 out = f"[gen_error] {e}"
             generations[p] = out
@@ -190,12 +219,19 @@ def run_inference(cfg):
             print(f"  Gen:    {out[:120]}")
         return generations
 
-    output = run_cmd([
-        sys.executable, str(inference_script),
-        "--config", str(CONFIG_PATH),
-        "--checkpoint", str(FINAL_MODEL),
-        "--prompt", "Astrovox is",
-    ], capture=True)
+    output = run_cmd(
+        [
+            sys.executable,
+            str(inference_script),
+            "--config",
+            str(CONFIG_PATH),
+            "--checkpoint",
+            str(FINAL_MODEL),
+            "--prompt",
+            "Astrovox is",
+        ],
+        capture=True,
+    )
     print(output)
     return {"inline": output}
 
@@ -217,10 +253,12 @@ def verify_reproducibility(cfg, generations):
     val_rows = []
     if train_csv.exists():
         import csv
+
         with open(train_csv, newline="", encoding="utf-8") as f:
             train_rows = list(csv.DictReader(f))
     if val_csv.exists():
         import csv
+
         with open(val_csv, newline="", encoding="utf-8") as f:
             val_rows = list(csv.DictReader(f))
 
@@ -235,7 +273,9 @@ def verify_reproducibility(cfg, generations):
         "model_file_sha256": compute_file_sha256(FINAL_MODEL) if FINAL_MODEL.exists() else None,
         "config_sha256": compute_file_sha256(CONFIG_PATH),
         "generations": generations,
-        "inference_min_length": min((len(v) for v in generations.values()), default=0) if generations else 0,
+        "inference_min_length": (
+            min((len(v) for v in generations.values()), default=0) if generations else 0
+        ),
         "reproducibility_passed": False,
     }
 
@@ -243,17 +283,29 @@ def verify_reproducibility(cfg, generations):
         metrics["convergence_passed"] = metrics["final_train_loss"] < metrics["initial_train_loss"]
 
     passed = True
-    if metrics["final_train_loss"] is not None and metrics["final_train_loss"] > expected["phase1_final_train_loss_max"]:
-        print(f"[repro] FAIL: final train loss {metrics['final_train_loss']:.4f} > {expected['phase1_final_train_loss_max']}")
+    if (
+        metrics["final_train_loss"] is not None
+        and metrics["final_train_loss"] > expected["phase1_final_train_loss_max"]
+    ):
+        print(
+            f"[repro] FAIL: final train loss {metrics['final_train_loss']:.4f} > {expected['phase1_final_train_loss_max']}"
+        )
         passed = False
-    if metrics["val_accuracy"] is not None and metrics["val_accuracy"] < expected["phase1_val_accuracy_min"]:
-        print(f"[repro] FAIL: val accuracy {metrics['val_accuracy']:.4f} < {expected['phase1_val_accuracy_min']}")
+    if (
+        metrics["val_accuracy"] is not None
+        and metrics["val_accuracy"] < expected["phase1_val_accuracy_min"]
+    ):
+        print(
+            f"[repro] FAIL: val accuracy {metrics['val_accuracy']:.4f} < {expected['phase1_val_accuracy_min']}"
+        )
         passed = False
     if not metrics["convergence_passed"]:
         print("[repro] FAIL: convergence check failed")
         passed = False
     if metrics["inference_min_length"] < expected["inference_min_length"]:
-        print(f"[repro] FAIL: inference min length {metrics['inference_min_length']} < {expected['inference_min_length']}")
+        print(
+            f"[repro] FAIL: inference min length {metrics['inference_min_length']} < {expected['inference_min_length']}"
+        )
         passed = False
 
     metrics["reproducibility_passed"] = passed
@@ -269,7 +321,9 @@ def verify_reproducibility(cfg, generations):
 def main():
     parser = argparse.ArgumentParser(description="Phase J Reproduction Script")
     parser.add_argument("--skip-install", action="store_true", help="Skip dependency installation")
-    parser.add_argument("--skip-train", action="store_true", help="Skip training (use existing model)")
+    parser.add_argument(
+        "--skip-train", action="store_true", help="Skip training (use existing model)"
+    )
     parser.add_argument("--skip-resume", action="store_true", help="Skip resume step")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation")
     parser.add_argument("--skip-export", action="store_true", help="Skip export")

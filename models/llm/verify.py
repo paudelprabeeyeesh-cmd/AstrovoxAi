@@ -1,11 +1,12 @@
 import os
 import sys
+
 import torch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from model.model import LLM
-from utils.helpers import load_config, count_parameters, get_device
+from utils.helpers import count_parameters, get_device
 
 
 def verify_instantiation():

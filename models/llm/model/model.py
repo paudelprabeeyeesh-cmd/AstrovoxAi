@@ -1,19 +1,25 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional
-from .transformer import TransformerBlock, OutputLayer, RMSNorm
+
+from .transformer import OutputLayer, RMSNorm, TransformerBlock
 
 
-def _prepare_4d_attention_mask(attention_mask: torch.Tensor, dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+def _prepare_4d_attention_mask(
+    attention_mask: torch.Tensor, dtype: torch.dtype, device: torch.device
+) -> torch.Tensor:
     if attention_mask is None:
         return None
     if attention_mask.dim() == 2:
         batch_size, seq_len = attention_mask.size()
-        causal_mask = torch.triu(torch.ones(seq_len, seq_len, device=device, dtype=torch.bool), diagonal=1)
+        causal_mask = torch.triu(
+            torch.ones(seq_len, seq_len, device=device, dtype=torch.bool), diagonal=1
+        )
         expanded_mask = attention_mask.unsqueeze(1).unsqueeze(2)
         expanded_mask = expanded_mask.expand(batch_size, 1, seq_len, seq_len)
-        combined = torch.masked_fill(torch.zeros(seq_len, seq_len, device=device, dtype=dtype), causal_mask, float("-inf"))
+        combined = torch.masked_fill(
+            torch.zeros(seq_len, seq_len, device=device, dtype=dtype), causal_mask, float("-inf")
+        )
         combined = combined.unsqueeze(0).unsqueeze(0).expand(batch_size, 1, seq_len, seq_len)
         combined = combined + (~expanded_mask * torch.finfo(dtype).min)
         return combined.to(dtype)
@@ -45,24 +51,28 @@ class LLM(nn.Module):
         self._device = device
         self._dtype = dtype
 
-        self.token_embedding = nn.Embedding(self.vocab_size, self.hidden_size, device=device, dtype=dtype)
+        self.token_embedding = nn.Embedding(
+            self.vocab_size, self.hidden_size, device=device, dtype=dtype
+        )
         self.embed_dropout = nn.Dropout(self.dropout)
 
-        self.blocks = nn.ModuleList([
-            TransformerBlock(
-                hidden_size=self.hidden_size,
-                num_attention_heads=self.num_attention_heads,
-                intermediate_size=self.intermediate_size,
-                max_position_embeddings=self.max_position_embeddings,
-                rope_theta=self.rope_theta,
-                rms_norm_eps=self.rms_norm_eps,
-                dropout=self.dropout,
-                activation=self.activation,
-                attention_bias=self.attention_bias,
-                mlp_bias=self.mlp_bias,
-            )
-            for _ in range(self.num_hidden_layers)
-        ])
+        self.blocks = nn.ModuleList(
+            [
+                TransformerBlock(
+                    hidden_size=self.hidden_size,
+                    num_attention_heads=self.num_attention_heads,
+                    intermediate_size=self.intermediate_size,
+                    max_position_embeddings=self.max_position_embeddings,
+                    rope_theta=self.rope_theta,
+                    rms_norm_eps=self.rms_norm_eps,
+                    dropout=self.dropout,
+                    activation=self.activation,
+                    attention_bias=self.attention_bias,
+                    mlp_bias=self.mlp_bias,
+                )
+                for _ in range(self.num_hidden_layers)
+            ]
+        )
 
         self.ln_f = RMSNorm(self.hidden_size, eps=self.rms_norm_eps)
         self.lm_head = OutputLayer(self.hidden_size, self.vocab_size, tie_weights=self.tie_weights)
@@ -91,27 +101,36 @@ class LLM(nn.Module):
     def forward(
         self,
         input_ids: torch.Tensor,
-        labels: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
+        labels: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
         use_gradient_checkpointing: bool = False,
     ) -> dict:
         B, T = input_ids.size()
         if attention_mask is not None and attention_mask.dim() == 2:
-            attention_mask = _prepare_4d_attention_mask(attention_mask, input_ids.dtype, input_ids.device)
+            attention_mask = _prepare_4d_attention_mask(
+                attention_mask, input_ids.dtype, input_ids.device
+            )
 
         x = self.token_embedding(input_ids)
         x = self.embed_dropout(x)
 
         position_ids = self.get_position_ids(T, input_ids.device)
         for block in self.blocks:
-            x = block(x, position_ids=position_ids, attention_mask=attention_mask, use_gradient_checkpointing=use_gradient_checkpointing)
+            x = block(
+                x,
+                position_ids=position_ids,
+                attention_mask=attention_mask,
+                use_gradient_checkpointing=use_gradient_checkpointing,
+            )
 
         x = self.ln_f(x)
         logits = self.lm_head(x)
 
         loss = None
         if labels is not None:
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), labels.view(-1), ignore_index=-100)
+            loss = F.cross_entropy(
+                logits.view(-1, logits.size(-1)), labels.view(-1), ignore_index=-100
+            )
         return {"logits": logits, "loss": loss}
 
     def get_num_params(self, trainable_only: bool = True) -> int:
@@ -134,13 +153,15 @@ class LLM(nn.Module):
         optimizer_mem = weights_mem * 2 if training else 0
         return {
             "num_params": num_params,
-            "weights_gb": weights_mem / (1024 ** 3),
-            "gradients_gb": grad_mem / (1024 ** 3),
-            "optimizer_gb": optimizer_mem / (1024 ** 3),
-            "total_base_gb": (weights_mem + grad_mem + optimizer_mem) / (1024 ** 3),
+            "weights_gb": weights_mem / (1024**3),
+            "gradients_gb": grad_mem / (1024**3),
+            "optimizer_gb": optimizer_mem / (1024**3),
+            "total_base_gb": (weights_mem + grad_mem + optimizer_mem) / (1024**3),
         }
 
     @classmethod
-    def estimate_memory_from_config(cls, config: dict, training: bool = True, dtype_bytes: int = 2) -> dict:
+    def estimate_memory_from_config(
+        cls, config: dict, training: bool = True, dtype_bytes: int = 2
+    ) -> dict:
         temp = cls(config)
         return temp.estimate_memory(training=training, dtype_bytes=dtype_bytes)

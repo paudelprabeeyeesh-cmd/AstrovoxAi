@@ -9,6 +9,7 @@ Validates and cleans datasets for LLM training:
 - HTML stripping, normalization
 - Vocabulary coverage reporting
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -16,9 +17,10 @@ import logging
 import re
 import unicodedata
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 try:
     from langdetect import DetectorFactory, detect_langs
+
     DetectorFactory.seed = 0
     _HAS_LANGDETECT = True
 except Exception:  # pragma: no cover - optional
@@ -35,6 +38,7 @@ except Exception:  # pragma: no cover - optional
 
 try:
     from datasketch import MinHash, MinHashLSH
+
     _HAS_MINHASH = True
 except Exception:  # pragma: no cover - optional
     _HAS_MINHASH = False
@@ -42,13 +46,13 @@ except Exception:  # pragma: no cover - optional
 
 try:
     import tiktoken
+
     _HAS_TIKTOKEN = True
 except Exception:  # pragma: no cover - optional
     _HAS_TIKTOKEN = False
     logger.debug("tiktoken not available; tokenizer coverage disabled")
 
 try:
-    from tokenizers import Tokenizer
     _HAS_TOKENIZERS = True
 except Exception:  # pragma: no cover - optional
     _HAS_TOKENIZERS = False
@@ -57,6 +61,7 @@ except Exception:  # pragma: no cover - optional
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ValidatedDocument:
@@ -72,7 +77,7 @@ class ValidatedDocument:
     token_count: int = 0
     sha256: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "text": self.text,
             "source": self.source,
@@ -100,14 +105,14 @@ class ValidationStats:
     total_tokens: int = 0
     vocab_coverage: float = 0.0
     avg_document_length: float = 0.0
-    length_distribution: Dict[str, int] = field(default_factory=dict)
-    language_distribution: Dict[str, int] = field(default_factory=dict)
-    domain_distribution: Dict[str, int] = field(default_factory=dict)
+    length_distribution: dict[str, int] = field(default_factory=dict)
+    language_distribution: dict[str, int] = field(default_factory=dict)
+    domain_distribution: dict[str, int] = field(default_factory=dict)
     vocab_size: int = 0
     unique_tokens: int = 0
-    sample_texts: List[str] = field(default_factory=list)
+    sample_texts: list[str] = field(default_factory=list)
 
-    def merge(self, other: "ValidationStats") -> None:
+    def merge(self, other: ValidationStats) -> None:
         self.total_documents += other.total_documents
         self.valid_documents += other.valid_documents
         self.removed_corrupted += other.removed_corrupted
@@ -134,6 +139,7 @@ class ValidationStats:
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ValidationConfig:
     min_document_length: int = 20
@@ -145,17 +151,18 @@ class ValidationConfig:
     near_dup_threshold: float = 0.75
     near_dup_num_perm: int = 128
     near_dup_shingle_size: int = 5
-    allowed_languages: List[str] = field(default_factory=lambda: ["en"])
+    allowed_languages: list[str] = field(default_factory=lambda: ["en"])
     default_language: str = "en"
     language_confidence_threshold: float = 0.5
     tokenizer_name: str = "cl100k_base"
     max_sample_texts: int = 10
-    corpus_vocab_path: Optional[str] = None
+    corpus_vocab_path: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # Text utilities
 # ---------------------------------------------------------------------------
+
 
 class TextUtils:
     @staticmethod
@@ -175,7 +182,7 @@ class TextUtils:
         return text
 
     @staticmethod
-    def is_corrupted(text: str) -> Tuple[bool, str]:
+    def is_corrupted(text: str) -> tuple[bool, str]:
         if not text or not text.strip():
             return True, "empty text"
         if len(text) < 10:
@@ -222,6 +229,7 @@ class TextUtils:
 # Duplicate detection
 # ---------------------------------------------------------------------------
 
+
 class DuplicateDetector:
     def __init__(self, config: ValidationConfig) -> None:
         self.config = config
@@ -235,7 +243,7 @@ class DuplicateDetector:
         self.removed_exact = 0
         self.removed_near = 0
 
-    def _minhash(self, text: str) -> Optional[Any]:
+    def _minhash(self, text: str) -> Any | None:
         if not _HAS_MINHASH or self.lsh is None:
             return None
         m = MinHash(num_perm=self.config.near_dup_num_perm)
@@ -243,7 +251,7 @@ class DuplicateDetector:
             m.update(shingle.encode("utf-8"))
         return m
 
-    def is_duplicate(self, text: str, sha: str) -> Tuple[bool, bool]:
+    def is_duplicate(self, text: str, sha: str) -> tuple[bool, bool]:
         normalized = TextUtils.normalize(text)
         doc_hash = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
@@ -278,11 +286,12 @@ class DuplicateDetector:
 # Language detection
 # ---------------------------------------------------------------------------
 
+
 class LanguageDetector:
     def __init__(self, config: ValidationConfig) -> None:
         self.config = config
 
-    def detect(self, text: str) -> Tuple[str, float]:
+    def detect(self, text: str) -> tuple[str, float]:
         if not _HAS_LANGDETECT:
             return self.config.default_language, 0.0
         try:
@@ -294,7 +303,7 @@ class LanguageDetector:
         except Exception:
             return self.config.default_language, 0.0
 
-    def is_allowed(self, text: str) -> Tuple[bool, str]:
+    def is_allowed(self, text: str) -> tuple[bool, str]:
         lang, confidence = self.detect(text)
         if confidence < self.config.language_confidence_threshold:
             lang = self.config.default_language
@@ -305,11 +314,12 @@ class LanguageDetector:
 # Low-quality filter
 # ---------------------------------------------------------------------------
 
+
 class QualityFilter:
     def __init__(self, config: ValidationConfig) -> None:
         self.config = config
 
-    def is_low_quality(self, text: str) -> Tuple[bool, str]:
+    def is_low_quality(self, text: str) -> tuple[bool, str]:
         length = len(text.split())
         if length < self.config.min_document_length:
             return True, f"too short ({length} words)"
@@ -331,13 +341,14 @@ class QualityFilter:
 # Tokenizer coverage
 # ---------------------------------------------------------------------------
 
+
 class TokenizerCoverage:
     def __init__(self, config: ValidationConfig) -> None:
         self.config = config
         self.vocab: set = set()
         if config.corpus_vocab_path and Path(config.corpus_vocab_path).exists():
             try:
-                with open(config.corpus_vocab_path, "r", encoding="utf-8") as f:
+                with open(config.corpus_vocab_path, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line:
@@ -345,7 +356,7 @@ class TokenizerCoverage:
             except Exception as exc:
                 logger.warning("Failed to load corpus vocab: %s", exc)
 
-    def compute_coverage(self, text: str) -> Tuple[float, int, int]:
+    def compute_coverage(self, text: str) -> tuple[float, int, int]:
         if not _HAS_TIKTOKEN or not self.vocab:
             return 100.0, TextUtils.token_count(text, self.config.tokenizer_name), 0
         try:
@@ -362,6 +373,7 @@ class TokenizerCoverage:
 # ---------------------------------------------------------------------------
 # Sentence duplicate detection
 # ---------------------------------------------------------------------------
+
 
 class SentenceDuplicateDetector:
     def __init__(self) -> None:
@@ -387,8 +399,9 @@ class SentenceDuplicateDetector:
 # Validator
 # ---------------------------------------------------------------------------
 
+
 class DatasetValidator:
-    def __init__(self, config: Optional[ValidationConfig] = None) -> None:
+    def __init__(self, config: ValidationConfig | None = None) -> None:
         self.config = config or ValidationConfig()
         self.dup_detector = DuplicateDetector(self.config)
         self.lang_detector = LanguageDetector(self.config)
@@ -397,7 +410,7 @@ class DatasetValidator:
         self.sent_dedup = SentenceDuplicateDetector()
         self.stats = ValidationStats()
 
-    def _process(self, text: str, source: str = "", domain: str = "") -> Optional[ValidatedDocument]:
+    def _process(self, text: str, source: str = "", domain: str = "") -> ValidatedDocument | None:
         self.stats.total_documents += 1
         text = text.strip()
         if not text:
@@ -477,11 +490,15 @@ class DatasetValidator:
         self.stats.total_tokens += token_count
         self.stats.vocab_coverage = coverage
         self.stats.unique_tokens = in_vocab
-        self.stats.domain_distribution[domain or "general"] = self.stats.domain_distribution.get(domain or "general", 0) + 1
+        self.stats.domain_distribution[domain or "general"] = (
+            self.stats.domain_distribution.get(domain or "general", 0) + 1
+        )
         self.stats.language_distribution[lang] = self.stats.language_distribution.get(lang, 0) + 1
 
         length_bucket = self._length_bucket(text)
-        self.stats.length_distribution[length_bucket] = self.stats.length_distribution.get(length_bucket, 0) + 1
+        self.stats.length_distribution[length_bucket] = (
+            self.stats.length_distribution.get(length_bucket, 0) + 1
+        )
 
         if len(self.stats.sample_texts) < self.config.max_sample_texts:
             self.stats.sample_texts.append(text[:500])
@@ -502,12 +519,14 @@ class DatasetValidator:
             return "1k-5k"
         return "5k+"
 
-    def process_document(self, text: str, source: str = "", domain: str = "") -> Optional[ValidatedDocument]:
+    def process_document(
+        self, text: str, source: str = "", domain: str = ""
+    ) -> ValidatedDocument | None:
         return self._process(text, source, domain)
 
     def process_stream(
         self,
-        documents: Iterable[Tuple[str, str, str]],
+        documents: Iterable[tuple[str, str, str]],
     ) -> ValidationStats:
         self.stats = ValidationStats()
         for text, source, domain in documents:
@@ -526,8 +545,8 @@ class DatasetValidator:
 
 
 def validate_dataset(
-    documents: Iterable[Tuple[str, str, str]],
-    config: Optional[ValidationConfig] = None,
+    documents: Iterable[tuple[str, str, str]],
+    config: ValidationConfig | None = None,
 ) -> ValidationStats:
     validator = DatasetValidator(config)
     return validator.process_stream(documents)

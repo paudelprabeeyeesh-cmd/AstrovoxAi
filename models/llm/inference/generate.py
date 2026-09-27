@@ -1,11 +1,15 @@
-import torch
 import os
+
+import torch
+
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import load_tokenizer
-from ..utils.helpers import load_config, get_device, set_cpu_threads
+from ..utils.helpers import get_device, load_config, set_cpu_threads
 
 
-def generate(model, tokenizer, prompt, max_new_tokens=100, temperature=1.0, top_k=None, device="cpu"):
+def generate(
+    model, tokenizer, prompt, max_new_tokens=100, temperature=1.0, top_k=None, device="cpu"
+):
     model.eval()
     input_ids = torch.tensor(tokenizer.encode(prompt).ids, dtype=torch.long).unsqueeze(0).to(device)
     for _ in range(max_new_tokens):
@@ -29,15 +33,23 @@ def main(config_path="configs/config_4b.yaml", checkpoint_path="model.pt", promp
     if device == "cpu":
         set_cpu_threads(min(4, os.cpu_count() or 2))
 
-    dtype = torch.bfloat16 if config.get("mixed_precision") == "bf16" and device != "cuda" else torch.float32
+    dtype = (
+        torch.bfloat16
+        if config.get("mixed_precision") == "bf16" and device != "cuda"
+        else torch.float32
+    )
     if device == "cuda" and config.get("mixed_precision") == "fp16":
         dtype = torch.float16
 
-    mem = LLM.estimate_memory_from_config(config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4)
+    mem = LLM.estimate_memory_from_config(
+        config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4
+    )
     if device == "cpu" and mem.get("total_base_gb", 0) > 8:
         print(f"Warning: model needs ~{mem['total_base_gb']:.1f}GB; reducing precision")
-        dtype = torch.bfloat16 if hasattr(torch, 'bfloat16') else torch.float32
-        mem = LLM.estimate_memory_from_config(config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4)
+        dtype = torch.bfloat16 if hasattr(torch, "bfloat16") else torch.float32
+        mem = LLM.estimate_memory_from_config(
+            config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4
+        )
 
     model = LLM(config, device=torch.device(device), dtype=dtype)
     if os.path.exists(checkpoint_path):

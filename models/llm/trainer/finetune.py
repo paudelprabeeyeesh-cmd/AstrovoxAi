@@ -1,30 +1,35 @@
+import contextlib
+import logging
+import math
 import os
 import sys
-import math
-import logging
-from typing import Optional, List
 
 import torch
-import torch.nn as nn
 import torch.distributed as dist
-from torch.utils.data import DataLoader, DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
+import torch.nn as nn
 from torch.cuda.amp import GradScaler, autocast
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader, DistributedSampler
 from tqdm import tqdm
 
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import load_tokenizer
-from ..utils.helpers import load_config, count_parameters, get_device, set_cpu_threads
-from .checkpoint import save_checkpoint, load_checkpoint, get_latest_checkpoint, remove_old_checkpoints
-from .metrics import evaluate_metrics, TrainingMetrics, MetricsLogger
+from ..utils.helpers import count_parameters, get_device, load_config, set_cpu_threads
+from .checkpoint import (
+    load_checkpoint,
+    remove_old_checkpoints,
+    save_checkpoint,
+)
+from .metrics import MetricsLogger, TrainingMetrics, evaluate_metrics
 from .pretrain import AdaFactor
 
 logger = logging.getLogger(__name__)
 
 
 class LoRALinear(nn.Module):
-    def __init__(self, linear: nn.Linear, r: int = 8, lora_alpha: float = 16,
-                 lora_dropout: float = 0.0):
+    def __init__(
+        self, linear: nn.Linear, r: int = 8, lora_alpha: float = 16, lora_dropout: float = 0.0
+    ):
         super().__init__()
         self.linear = linear
         self.r = r
@@ -59,8 +64,14 @@ class LoRALinear(nn.Module):
 
 
 class QLoRALinear(nn.Module):
-    def __init__(self, linear: nn.Linear, r: int = 8, lora_alpha: float = 16,
-                 lora_dropout: float = 0.0, bits: int = 4):
+    def __init__(
+        self,
+        linear: nn.Linear,
+        r: int = 8,
+        lora_alpha: float = 16,
+        lora_dropout: float = 0.0,
+        bits: int = 4,
+    ):
         super().__init__()
         self.r = r
         self.lora_alpha = lora_alpha
@@ -69,8 +80,11 @@ class QLoRALinear(nn.Module):
 
         try:
             import bitsandbytes as bnb
+
             self.linear = bnb.nn.Linear4bit(
-                linear.in_features, linear.out_features, bias=linear.bias is not None,
+                linear.in_features,
+                linear.out_features,
+                bias=linear.bias is not None,
                 quant_type="nf4",
             )
             self.linear.weight = linear.weight
@@ -106,13 +120,19 @@ class QLoRALinear(nn.Module):
             self.lora_B = None
 
 
-def _get_target_modules() -> List[str]:
+def _get_target_modules() -> list[str]:
     return ["q_proj", "k_proj", "v_proj", "o_proj", "up_proj", "down_proj", "gate_proj"]
 
 
-def apply_lora(model: nn.Module, r: int = 8, lora_alpha: float = 16,
-               lora_dropout: float = 0.0, target_modules: Optional[List[str]] = None,
-               qlora: bool = False, bits: int = 4):
+def apply_lora(
+    model: nn.Module,
+    r: int = 8,
+    lora_alpha: float = 16,
+    lora_dropout: float = 0.0,
+    target_modules: list[str] | None = None,
+    qlora: bool = False,
+    bits: int = 4,
+):
     if target_modules is None:
         target_modules = _get_target_modules()
 
@@ -126,7 +146,9 @@ def apply_lora(model: nn.Module, r: int = 8, lora_alpha: float = 16,
             for part in parent_name.split("."):
                 parent = getattr(parent, part)
 
-            lora_module = lora_cls(module, r=r, lora_alpha=lora_alpha, lora_dropout=lora_dropout, bits=bits)
+            lora_module = lora_cls(
+                module, r=r, lora_alpha=lora_alpha, lora_dropout=lora_dropout, bits=bits
+            )
             setattr(parent, child_name, lora_module)
 
     return model
@@ -194,15 +216,19 @@ def _create_scheduler(optimizer, config, dataloader_len):
             optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_steps
         )
         main = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=dataloader_len * epochs - warmup_steps,
+            optimizer,
+            T_max=dataloader_len * epochs - warmup_steps,
             eta_min=config.get("min_lr", 1e-6),
         )
         return warmup, main
     elif scheduler_name == "linear":
         total_steps = dataloader_len * epochs
-        return torch.optim.lr_scheduler.LinearLR(
-            optimizer, start_factor=1.0, end_factor=0.0, total_iters=total_steps
-        ), None
+        return (
+            torch.optim.lr_scheduler.LinearLR(
+                optimizer, start_factor=1.0, end_factor=0.0, total_iters=total_steps
+            ),
+            None,
+        )
     elif scheduler_name == "constant":
         return torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1.0), None
     else:
@@ -211,13 +237,13 @@ def _create_scheduler(optimizer, config, dataloader_len):
 
 def finetune(
     config_path="configs/config_4b.yaml",
-    resume_from: Optional[str] = None,
+    resume_from: str | None = None,
     lora: bool = True,
     qlora: bool = False,
     lora_r: int = 8,
     lora_alpha: float = 16,
     lora_dropout: float = 0.0,
-    lora_target_modules: Optional[List[str]] = None,
+    lora_target_modules: list[str] | None = None,
 ):
     config = load_config(config_path)
 
@@ -282,18 +308,26 @@ def finetune(
 
     train_file = config.get("train_file", "data/train.jsonl")
     val_file = config.get("val_file", train_file)
-    from ..training_data.prepare import InstructionDataset, InstructionCollator
+    from ..training_data.prepare import InstructionCollator, InstructionDataset
 
-    dataset = InstructionDataset(train_file, tokenizer, block_size=config.get("max_position_embeddings", 1024))
-    val_dataset = InstructionDataset(val_file, tokenizer, block_size=config.get("max_position_embeddings", 1024))
+    dataset = InstructionDataset(
+        train_file, tokenizer, block_size=config.get("max_position_embeddings", 1024)
+    )
+    val_dataset = InstructionDataset(
+        val_file, tokenizer, block_size=config.get("max_position_embeddings", 1024)
+    )
 
     batch_size = config.get("batch_size", 1)
     num_workers = 0 if device == "cpu" else min(4, os.cpu_count() or 2)
     max_length = config.get("max_position_embeddings", 1024)
 
     if is_distributed:
-        train_sampler = DistributedSampler(dataset, num_replicas=world_size, rank=rank, shuffle=True)
-        val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False)
+        train_sampler = DistributedSampler(
+            dataset, num_replicas=world_size, rank=rank, shuffle=True
+        )
+        val_sampler = DistributedSampler(
+            val_dataset, num_replicas=world_size, rank=rank, shuffle=False
+        )
         train_loader = DataLoader(
             dataset,
             batch_size=batch_size,
@@ -349,20 +383,20 @@ def finetune(
     global_step = 0
 
     if resume_from and os.path.exists(resume_from):
-        start_epoch, best_val_loss = load_checkpoint(model, optimizer, warmup_scheduler, resume_from, device=device)
+        start_epoch, best_val_loss = load_checkpoint(
+            model, optimizer, warmup_scheduler, resume_from, device=device
+        )
         if main_scheduler:
-            try:
+            with contextlib.suppress(Exception):
                 main_scheduler.load_state_dict(optimizer.state_dict())
-            except Exception:
-                pass
         print(f"Resumed from {resume_from} at epoch {start_epoch}")
     elif os.path.exists(latest_ckpt):
-        start_epoch, best_val_loss = load_checkpoint(model, optimizer, warmup_scheduler, latest_ckpt, device=device)
+        start_epoch, best_val_loss = load_checkpoint(
+            model, optimizer, warmup_scheduler, latest_ckpt, device=device
+        )
         if main_scheduler:
-            try:
+            with contextlib.suppress(Exception):
                 main_scheduler.load_state_dict(optimizer.state_dict())
-            except Exception:
-                pass
         print(f"Resumed from {latest_ckpt} at epoch {start_epoch}")
 
     metrics_logger = MetricsLogger(log_dir, config.get("wandb_project"))
@@ -391,16 +425,26 @@ def finetune(
 
                 if mixed_precision == "bf16":
                     with autocast(device_type="cuda", dtype=torch.bfloat16):
-                        outputs = model(input_ids, labels=labels, use_gradient_checkpointing=gradient_checkpointing)
+                        outputs = model(
+                            input_ids,
+                            labels=labels,
+                            use_gradient_checkpointing=gradient_checkpointing,
+                        )
                         loss = outputs["loss"] / accumulation_steps
                     loss.backward()
                 elif mixed_precision == "fp16":
                     with autocast(device_type="cuda"):
-                        outputs = model(input_ids, labels=labels, use_gradient_checkpointing=gradient_checkpointing)
+                        outputs = model(
+                            input_ids,
+                            labels=labels,
+                            use_gradient_checkpointing=gradient_checkpointing,
+                        )
                         loss = outputs["loss"] / accumulation_steps
                     scaler.scale(loss).backward()
                 else:
-                    outputs = model(input_ids, labels=labels, use_gradient_checkpointing=gradient_checkpointing)
+                    outputs = model(
+                        input_ids, labels=labels, use_gradient_checkpointing=gradient_checkpointing
+                    )
                     loss = outputs["loss"] / accumulation_steps
                     loss.backward()
 
@@ -428,10 +472,12 @@ def finetune(
 
                     global_step += 1
 
-                pbar.set_postfix({
-                    "loss": f"{total_loss / (i + 1):.4f}",
-                    "lr": f"{optimizer.param_groups[0]['lr']:.2e}",
-                })
+                pbar.set_postfix(
+                    {
+                        "loss": f"{total_loss / (i + 1):.4f}",
+                        "lr": f"{optimizer.param_groups[0]['lr']:.2e}",
+                    }
+                )
 
                 if max_train_steps and global_step >= max_train_steps:
                     break
@@ -462,21 +508,39 @@ def finetune(
                     if val_loss < best_val_loss and rank == 0:
                         best_val_loss = val_loss
                         save_checkpoint(
-                            model, optimizer, warmup_scheduler, epoch, best_val_loss, best_ckpt,
-                            config=config, global_step=global_step,
+                            model,
+                            optimizer,
+                            warmup_scheduler,
+                            epoch,
+                            best_val_loss,
+                            best_ckpt,
+                            config=config,
+                            global_step=global_step,
                         )
 
                 if (i + 1) % checkpoint_every == 0 and rank == 0:
                     save_checkpoint(
-                        model, optimizer, warmup_scheduler, epoch, best_val_loss, latest_ckpt,
-                        config=config, global_step=global_step,
+                        model,
+                        optimizer,
+                        warmup_scheduler,
+                        epoch,
+                        best_val_loss,
+                        latest_ckpt,
+                        config=config,
+                        global_step=global_step,
                     )
                     remove_old_checkpoints(checkpoint_dir, keep_last_n=3)
 
             if rank == 0:
                 save_checkpoint(
-                    model, optimizer, warmup_scheduler, epoch + 1, best_val_loss, latest_ckpt,
-                    config=config, global_step=global_step,
+                    model,
+                    optimizer,
+                    warmup_scheduler,
+                    epoch + 1,
+                    best_val_loss,
+                    latest_ckpt,
+                    config=config,
+                    global_step=global_step,
                 )
                 remove_old_checkpoints(checkpoint_dir, keep_last_n=3)
 
@@ -492,7 +556,9 @@ def finetune(
 
     if rank == 0:
         output_path = config.get("output_dir", "finetuned_model.pt")
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
 
         unwrapped_model = model.module if is_distributed else model
         if lora or qlora:

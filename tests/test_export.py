@@ -39,6 +39,8 @@ class TestExportUtilities:
             report_export_sizes("/nonexistent/path")
 
     def test_export_metadata_dataclass(self):
-        meta = ExportMetadata(model_name="test", format="huggingface", timestamp="2024-01-01T00:00:00Z")
+        meta = ExportMetadata(
+            model_name="test", format="huggingface", timestamp="2024-01-01T00:00:00Z"
+        )
         assert meta.model_name == "test"
         assert meta.format == "huggingface"

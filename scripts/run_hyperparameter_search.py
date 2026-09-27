@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """CLI harness for Phase E hyperparameter search."""
+
 import argparse
 import logging
 import sys
@@ -19,15 +20,32 @@ def setup_logging(verbose: bool = False) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run LLM hyperparameter search (Phase E)")
-    parser.add_argument("--config", default="models/llm/configs/config_phase1.yaml", help="Base YAML config path")
-    parser.add_argument("--search-type", choices=["optuna", "random", "auto"], default="auto", help="Search backend")
+    parser.add_argument(
+        "--config", default="models/llm/configs/config_phase1.yaml", help="Base YAML config path"
+    )
+    parser.add_argument(
+        "--search-type", choices=["optuna", "random", "auto"], default="auto", help="Search backend"
+    )
     parser.add_argument("--n-trials", type=int, default=20, help="Number of trials to run")
-    parser.add_argument("--output-dir", default="hyperparameter_search", help="Output directory for logs and configs")
+    parser.add_argument(
+        "--output-dir",
+        default="hyperparameter_search",
+        help="Output directory for logs and configs",
+    )
     parser.add_argument("--study-name", default="llm_search", help="Study name")
-    parser.add_argument("--direction", choices=["minimize", "maximize"], default="minimize", help="Optimization direction")
+    parser.add_argument(
+        "--direction",
+        choices=["minimize", "maximize"],
+        default="minimize",
+        help="Optimization direction",
+    )
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    parser.add_argument("--max-trial-steps", type=int, default=50, help="Max training steps per trial")
-    parser.add_argument("--report", action="store_true", help="Generate markdown report after search")
+    parser.add_argument(
+        "--max-trial-steps", type=int, default=50, help="Max training steps per trial"
+    )
+    parser.add_argument(
+        "--report", action="store_true", help="Generate markdown report after search"
+    )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     args = parser.parse_args()
 

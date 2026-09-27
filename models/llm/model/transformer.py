@@ -1,8 +1,8 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from typing import Optional, Tuple
 
 
 class RMSNorm(nn.Module):
@@ -22,14 +22,22 @@ def rotate_half(x: torch.Tensor) -> torch.Tensor:
     return torch.cat((-x2, x1), dim=-1)
 
 
-def apply_rotary_pos_emb(q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, position_ids: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+def apply_rotary_pos_emb(
+    q: torch.Tensor,
+    k: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+    position_ids: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
     q_embed = (q * cos) + (rotate_half(q) * sin)
     k_embed = (k * cos) + (rotate_half(k) * sin)
     return q_embed, k_embed
 
 
 class RotaryEmbedding(nn.Module):
-    def __init__(self, dim: int, max_position_embeddings: int = 2048, base: float = 10000.0, device=None):
+    def __init__(
+        self, dim: int, max_position_embeddings: int = 2048, base: float = 10000.0, device=None
+    ):
         super().__init__()
         self.dim = dim
         self.max_position_embeddings = max_position_embeddings
@@ -41,7 +49,11 @@ class RotaryEmbedding(nn.Module):
         self.sin_cached = None
 
     def _set_cos_sin_cache(self, seq_len: int, device=None, dtype=None):
-        if seq_len == self.max_seq_len_cached and self.cos_cached is not None and self.sin_cached is not None:
+        if (
+            seq_len == self.max_seq_len_cached
+            and self.cos_cached is not None
+            and self.sin_cached is not None
+        ):
             if device is not None:
                 self.cos_cached = self.cos_cached.to(device)
                 self.sin_cached = self.sin_cached.to(device)
@@ -56,7 +68,9 @@ class RotaryEmbedding(nn.Module):
         self.cos_cached = emb.cos().to(device).to(dtype)
         self.sin_cached = emb.sin().to(device).to(dtype)
 
-    def forward(self, x: torch.Tensor, position_ids: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, x: torch.Tensor, position_ids: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         seq_len = x.size(2) if x.dim() == 4 else x.size(1)
         self._set_cos_sin_cache(seq_len=seq_len + 1, device=x.device, dtype=x.dtype)
         if position_ids is not None:
@@ -72,15 +86,17 @@ def _flash_attention_forward(
     query: torch.Tensor,
     key: torch.Tensor,
     value: torch.Tensor,
-    attention_mask: Optional[torch.Tensor] = None,
+    attention_mask: torch.Tensor | None = None,
     dropout_p: float = 0.0,
     training: bool = False,
-    scale: Optional[float] = None,
+    scale: float | None = None,
 ) -> torch.Tensor:
-    if hasattr(F, 'scaled_dot_product_attention'):
+    if hasattr(F, "scaled_dot_product_attention"):
         if scale is not None:
             query = query * scale
-        return F.scaled_dot_product_attention(query, key, value, attn_mask=attention_mask, dropout_p=dropout_p if training else 0.0)
+        return F.scaled_dot_product_attention(
+            query, key, value, attn_mask=attention_mask, dropout_p=dropout_p if training else 0.0
+        )
     return _eager_attention_forward(query, key, value, attention_mask, dropout_p, training, scale)
 
 
@@ -88,10 +104,10 @@ def _eager_attention_forward(
     query: torch.Tensor,
     key: torch.Tensor,
     value: torch.Tensor,
-    attention_mask: Optional[torch.Tensor] = None,
+    attention_mask: torch.Tensor | None = None,
     dropout_p: float = 0.0,
     training: bool = False,
-    scale: Optional[float] = None,
+    scale: float | None = None,
 ) -> torch.Tensor:
     if scale is None:
         scale = 1.0 / math.sqrt(query.size(-1))
@@ -115,10 +131,12 @@ class CausalSelfAttention(nn.Module):
     ):
         super().__init__()
         if hidden_size % num_attention_heads != 0:
-            raise ValueError(f"hidden_size {hidden_size} must be divisible by num_attention_heads {num_attention_heads}")
+            raise ValueError(
+                f"hidden_size {hidden_size} must be divisible by num_attention_heads {num_attention_heads}"
+            )
         self.num_attention_heads = num_attention_heads
         self.head_dim = hidden_size // num_attention_heads
-        self.scale = self.head_dim ** -0.5
+        self.scale = self.head_dim**-0.5
 
         self.q_proj = nn.Linear(hidden_size, hidden_size, bias=attention_bias)
         self.k_proj = nn.Linear(hidden_size, hidden_size, bias=attention_bias)
@@ -126,22 +144,36 @@ class CausalSelfAttention(nn.Module):
         self.o_proj = nn.Linear(hidden_size, hidden_size, bias=attention_bias)
         self.dropout = nn.Dropout(dropout)
 
-        self.rotary_emb = RotaryEmbedding(self.head_dim, max_position_embeddings=max_position_embeddings, base=rope_theta)
-        self.use_flash = hasattr(F, 'scaled_dot_product_attention')
+        self.rotary_emb = RotaryEmbedding(
+            self.head_dim, max_position_embeddings=max_position_embeddings, base=rope_theta
+        )
+        self.use_flash = hasattr(F, "scaled_dot_product_attention")
         self.use_kv_cache = False
         self._cache = KVCache()
 
     def forward(
         self,
         hidden_states: torch.Tensor,
-        position_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
         use_gradient_checkpointing: bool = False,
     ) -> torch.Tensor:
         B, T, C = hidden_states.size()
-        q = self.q_proj(hidden_states).view(B, T, self.num_attention_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(hidden_states).view(B, T, self.num_attention_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(hidden_states).view(B, T, self.num_attention_heads, self.head_dim).transpose(1, 2)
+        q = (
+            self.q_proj(hidden_states)
+            .view(B, T, self.num_attention_heads, self.head_dim)
+            .transpose(1, 2)
+        )
+        k = (
+            self.k_proj(hidden_states)
+            .view(B, T, self.num_attention_heads, self.head_dim)
+            .transpose(1, 2)
+        )
+        v = (
+            self.v_proj(hidden_states)
+            .view(B, T, self.num_attention_heads, self.head_dim)
+            .transpose(1, 2)
+        )
 
         cos, sin = self.rotary_emb(v, position_ids=position_ids)
         q, k = apply_rotary_pos_emb(q, k, cos, sin, position_ids=position_ids)
@@ -162,10 +194,24 @@ class CausalSelfAttention(nn.Module):
             )
         else:
             if attention_mask is None:
-                causal_mask = torch.triu(torch.ones(T, T, device=hidden_states.device, dtype=torch.bool), diagonal=1)
-                attention_mask = torch.masked_fill(torch.zeros(T, T, device=hidden_states.device, dtype=torch.float32), causal_mask, float("-inf"))
+                causal_mask = torch.triu(
+                    torch.ones(T, T, device=hidden_states.device, dtype=torch.bool), diagonal=1
+                )
+                attention_mask = torch.masked_fill(
+                    torch.zeros(T, T, device=hidden_states.device, dtype=torch.float32),
+                    causal_mask,
+                    float("-inf"),
+                )
                 attention_mask = attention_mask.unsqueeze(0).unsqueeze(0)
-            attn_output = _eager_attention_forward(q, k, v, attention_mask=attention_mask, dropout_p=self.dropout.p if self.training else 0.0, training=self.training, scale=self.scale)
+            attn_output = _eager_attention_forward(
+                q,
+                k,
+                v,
+                attention_mask=attention_mask,
+                dropout_p=self.dropout.p if self.training else 0.0,
+                training=self.training,
+                scale=self.scale,
+            )
 
         out = attn_output.transpose(1, 2).contiguous().view(B, T, C)
         return self.o_proj(out)
@@ -173,8 +219,8 @@ class CausalSelfAttention(nn.Module):
 
 class KVCache:
     def __init__(self):
-        self.key_cache: Optional[torch.Tensor] = None
-        self.value_cache: Optional[torch.Tensor] = None
+        self.key_cache: torch.Tensor | None = None
+        self.value_cache: torch.Tensor | None = None
         self.cache_len = 0
 
     def update(self, key: torch.Tensor, value: torch.Tensor):
@@ -196,11 +242,25 @@ class KVCache:
 
 
 class SwiGLUMLP(nn.Module):
-    def __init__(self, hidden_size: int, intermediate_size: int, dropout: float = 0.0, bias: bool = False, device=None, dtype=None):
+    def __init__(
+        self,
+        hidden_size: int,
+        intermediate_size: int,
+        dropout: float = 0.0,
+        bias: bool = False,
+        device=None,
+        dtype=None,
+    ):
         super().__init__()
-        self.gate_proj = nn.Linear(hidden_size, intermediate_size, bias=bias, device=device, dtype=dtype)
-        self.up_proj = nn.Linear(hidden_size, intermediate_size, bias=bias, device=device, dtype=dtype)
-        self.down_proj = nn.Linear(intermediate_size, hidden_size, bias=bias, device=device, dtype=dtype)
+        self.gate_proj = nn.Linear(
+            hidden_size, intermediate_size, bias=bias, device=device, dtype=dtype
+        )
+        self.up_proj = nn.Linear(
+            hidden_size, intermediate_size, bias=bias, device=device, dtype=dtype
+        )
+        self.down_proj = nn.Linear(
+            intermediate_size, hidden_size, bias=bias, device=device, dtype=dtype
+        )
         self.act = nn.SiLU()
         self.dropout = nn.Dropout(dropout)
 
@@ -212,7 +272,9 @@ class SwiGLUMLP(nn.Module):
                 nn.init.zeros_(module.bias)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = self.down_proj(self.act(self.gate_proj(hidden_states)) * self.up_proj(hidden_states))
+        hidden_states = self.down_proj(
+            self.act(self.gate_proj(hidden_states)) * self.up_proj(hidden_states)
+        )
         return self.dropout(hidden_states)
 
 
@@ -244,36 +306,61 @@ class TransformerBlock(nn.Module):
         )
         self.ln_2 = RMSNorm(hidden_size, eps=rms_norm_eps).to(device=device, dtype=dtype)
         if activation == "swiglu":
-            self.mlp = SwiGLUMLP(hidden_size, intermediate_size, dropout=dropout, bias=mlp_bias, device=device, dtype=dtype)
+            self.mlp = SwiGLUMLP(
+                hidden_size,
+                intermediate_size,
+                dropout=dropout,
+                bias=mlp_bias,
+                device=device,
+                dtype=dtype,
+            )
         else:
             self.mlp = nn.Sequential(
-                nn.Linear(hidden_size, intermediate_size, bias=mlp_bias, device=device, dtype=dtype),
+                nn.Linear(
+                    hidden_size, intermediate_size, bias=mlp_bias, device=device, dtype=dtype
+                ),
                 nn.GELU(),
                 nn.Dropout(dropout),
-                nn.Linear(intermediate_size, hidden_size, bias=mlp_bias, device=device, dtype=dtype),
+                nn.Linear(
+                    intermediate_size, hidden_size, bias=mlp_bias, device=device, dtype=dtype
+                ),
                 nn.Dropout(dropout),
             ).to(device=device, dtype=dtype)
 
     def forward(
         self,
         hidden_states: torch.Tensor,
-        position_ids: Optional[torch.Tensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: torch.Tensor | None = None,
+        attention_mask: torch.Tensor | None = None,
         use_gradient_checkpointing: bool = False,
     ) -> torch.Tensor:
         residual = hidden_states
         if use_gradient_checkpointing and self.training:
-            hidden_states = torch.utils.checkpoint.checkpoint(self.ln_1, hidden_states, use_reentrant=False)
-            hidden_states = torch.utils.checkpoint.checkpoint(self.attn, hidden_states, position_ids=position_ids, attention_mask=attention_mask, use_reentrant=False)
+            hidden_states = torch.utils.checkpoint.checkpoint(
+                self.ln_1, hidden_states, use_reentrant=False
+            )
+            hidden_states = torch.utils.checkpoint.checkpoint(
+                self.attn,
+                hidden_states,
+                position_ids=position_ids,
+                attention_mask=attention_mask,
+                use_reentrant=False,
+            )
         else:
             hidden_states = self.ln_1(hidden_states)
-            hidden_states = self.attn(hidden_states, position_ids=position_ids, attention_mask=attention_mask)
+            hidden_states = self.attn(
+                hidden_states, position_ids=position_ids, attention_mask=attention_mask
+            )
         hidden_states = residual + hidden_states
 
         residual = hidden_states
         if use_gradient_checkpointing and self.training:
-            hidden_states = torch.utils.checkpoint.checkpoint(self.ln_2, hidden_states, use_reentrant=False)
-            hidden_states = torch.utils.checkpoint.checkpoint(self.mlp, hidden_states, use_reentrant=False)
+            hidden_states = torch.utils.checkpoint.checkpoint(
+                self.ln_2, hidden_states, use_reentrant=False
+            )
+            hidden_states = torch.utils.checkpoint.checkpoint(
+                self.mlp, hidden_states, use_reentrant=False
+            )
         else:
             hidden_states = self.ln_2(hidden_states)
             hidden_states = self.mlp(hidden_states)
@@ -282,7 +369,9 @@ class TransformerBlock(nn.Module):
 
 
 class OutputLayer(nn.Module):
-    def __init__(self, hidden_size: int, vocab_size: int, tie_weights: bool = True, device=None, dtype=None):
+    def __init__(
+        self, hidden_size: int, vocab_size: int, tie_weights: bool = True, device=None, dtype=None
+    ):
         super().__init__()
         self.lm_head = nn.Linear(hidden_size, vocab_size, bias=False, device=device, dtype=dtype)
         self.tie_weights = tie_weights

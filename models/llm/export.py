@@ -4,16 +4,15 @@ Phase 12 Model Export Module
 Supports multiple export formats for LLM models with graceful fallbacks.
 """
 
+import json
+import logging
 import os
 import sys
-import json
 import time
-import logging
-import shutil
+from dataclasses import asdict, dataclass, field
+from enum import StrEnum
 from pathlib import Path
-from typing import Dict, Any, Optional, Union, List
-from dataclasses import dataclass, field, asdict
-from enum import Enum
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -23,7 +22,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 logger = logging.getLogger(__name__)
 
 
-class ExportFormat(str, Enum):
+class ExportFormat(StrEnum):
     HUGGINGFACE = "huggingface"
     ONNX = "onnx"
     TENSORRT = "tensorrt"
@@ -36,12 +35,12 @@ class ExportMetadata:
     model_name: str
     format: str
     timestamp: str
-    original_config: Dict[str, Any] = field(default_factory=dict)
-    exported_files: List[str] = field(default_factory=list)
-    export_params: Dict[str, Any] = field(default_factory=dict)
+    original_config: dict[str, Any] = field(default_factory=dict)
+    exported_files: list[str] = field(default_factory=list)
+    export_params: dict[str, Any] = field(default_factory=dict)
     size_bytes: int = 0
     validation_status: str = "pending"
-    notes: List[str] = field(default_factory=list)
+    notes: list[str] = field(default_factory=list)
 
 
 class FormatValidationError(Exception):
@@ -59,7 +58,7 @@ def _validate_model(model: nn.Module) -> None:
         raise FormatValidationError(f"Expected nn.Module, got {type(model)}")
 
 
-def _validate_state_dict(state_dict: Dict[str, Any]) -> None:
+def _validate_state_dict(state_dict: dict[str, Any]) -> None:
     if not isinstance(state_dict, dict):
         raise FormatValidationError(f"Expected dict for state_dict, got {type(state_dict)}")
     if len(state_dict) == 0:
@@ -69,9 +68,9 @@ def _validate_state_dict(state_dict: Dict[str, Any]) -> None:
 def _human_readable_size(size_bytes: int) -> str:
     if size_bytes < 1024:
         return f"{size_bytes} B"
-    elif size_bytes < 1024 ** 2:
+    elif size_bytes < 1024**2:
         return f"{size_bytes / 1024:.2f} KB"
-    elif size_bytes < 1024 ** 3:
+    elif size_bytes < 1024**3:
         return f"{size_bytes / (1024 ** 2):.2f} MB"
     else:
         return f"{size_bytes / (1024 ** 3):.2f} GB"
@@ -86,7 +85,9 @@ def _calculate_directory_size(path: Path) -> int:
 
 
 class BaseExporter:
-    def __init__(self, model: nn.Module, config: Dict[str, Any], metadata: Optional[ExportMetadata] = None):
+    def __init__(
+        self, model: nn.Module, config: dict[str, Any], metadata: ExportMetadata | None = None
+    ):
         _validate_model(model)
         self.model = model
         self.config = config
@@ -97,7 +98,7 @@ class BaseExporter:
             original_config=dict(config),
         )
 
-    def export(self, output_dir: Union[str, Path], **kwargs) -> ExportMetadata:
+    def export(self, output_dir: str | Path, **kwargs) -> ExportMetadata:
         raise NotImplementedError
 
     def _save_metadata(self, output_dir: Path) -> None:
@@ -114,7 +115,7 @@ class BaseExporter:
 
 
 class HuggingFaceExporter(BaseExporter):
-    def export(self, output_dir: Union[str, Path], tokenizer=None, **kwargs) -> ExportMetadata:
+    def export(self, output_dir: str | Path, tokenizer=None, **kwargs) -> ExportMetadata:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata.format = ExportFormat.HUGGINGFACE.value
@@ -122,7 +123,9 @@ class HuggingFaceExporter(BaseExporter):
         try:
             from transformers import PretrainedConfig, PreTrainedTokenizer
         except ImportError as e:
-            self.metadata.notes.append(f"HuggingFace export skipped: transformers not available ({e})")
+            self.metadata.notes.append(
+                f"HuggingFace export skipped: transformers not available ({e})"
+            )
             self.metadata.validation_status = "skipped"
             logger.warning(f"HuggingFace export skipped: {e}")
             return self.metadata
@@ -142,6 +145,7 @@ class HuggingFaceExporter(BaseExporter):
             state_dict = self.model.state_dict()
             try:
                 from safetensors.torch import save_file as st_save
+
                 st_save(state_dict, str(output_dir / "model.safetensors"))
                 self.metadata.exported_files.append("model.safetensors")
             except Exception:
@@ -150,13 +154,17 @@ class HuggingFaceExporter(BaseExporter):
 
             self._save_config(output_dir, "config.json")
             readme = output_dir / "README.md"
-            readme.write_text(f"# {self.metadata.model_name}\n\nExported with AstrovoxAi Phase 12 export module.\n")
+            readme.write_text(
+                f"# {self.metadata.model_name}\n\nExported with AstrovoxAi Phase 12 export module.\n"
+            )
             self.metadata.exported_files.append("README.md")
 
             self.metadata.size_bytes = _calculate_directory_size(output_dir)
             self.metadata.validation_status = "success"
             self._save_metadata(output_dir)
-            logger.info(f"HuggingFace export completed: {output_dir} ({_human_readable_size(self.metadata.size_bytes)})")
+            logger.info(
+                f"HuggingFace export completed: {output_dir} ({_human_readable_size(self.metadata.size_bytes)})"
+            )
         except Exception as e:
             self.metadata.notes.append(f"HuggingFace export failed: {e}")
             self.metadata.validation_status = "failed"
@@ -165,7 +173,7 @@ class HuggingFaceExporter(BaseExporter):
 
         return self.metadata
 
-    def _build_hf_config(self) -> "PretrainedConfig":
+    def _build_hf_config(self) -> PretrainedConfig:
         cfg = self.config
         return PretrainedConfig(
             vocab_size=int(cfg.get("vocab_size", 100)),
@@ -184,11 +192,20 @@ class HuggingFaceExporter(BaseExporter):
         vocab_size = int(self.config.get("vocab_size", 100))
         tokenizer_data = {
             "version": "1.0",
-            "truncation": {"direction": "Right", "max_length": 256, "strategy": "LongestFirst", "strategy_id": 0},
+            "truncation": {
+                "direction": "Right",
+                "max_length": 256,
+                "strategy": "LongestFirst",
+                "strategy_id": 0,
+            },
             "padding": {"direction": "Right", "pad_id": 0, "pad_type_id": 0, "pad_token": "<pad>"},
             "added_tokens": [],
             "normalizer": {"type": "Sequence", "normalizers": []},
-            "pre_tokenizer": {"type": "Whitespace", "split": True, "replacements": [{"content": " ", "prefix": True, "id": -1}]},
+            "pre_tokenizer": {
+                "type": "Whitespace",
+                "split": True,
+                "replacements": [{"content": " ", "prefix": True, "id": -1}],
+            },
             "post_processor": None,
             "decoder": None,
             "model": {
@@ -208,7 +225,9 @@ class HuggingFaceExporter(BaseExporter):
 
 
 class ONNXExporter(BaseExporter):
-    def export(self, output_dir: Union[str, Path], opset: int = 17, dynamic_axes: bool = True, **kwargs) -> ExportMetadata:
+    def export(
+        self, output_dir: str | Path, opset: int = 17, dynamic_axes: bool = True, **kwargs
+    ) -> ExportMetadata:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata.format = ExportFormat.ONNX.value
@@ -232,7 +251,10 @@ class ONNXExporter(BaseExporter):
             output_names = ["logits"]
             dynamic_axes_dict = None
             if dynamic_axes:
-                dynamic_axes_dict = {"input_ids": {0: "batch_size", 1: "sequence_length"}, "logits": {0: "batch_size", 1: "sequence_length"}}
+                dynamic_axes_dict = {
+                    "input_ids": {0: "batch_size", 1: "sequence_length"},
+                    "logits": {0: "batch_size", 1: "sequence_length"},
+                }
 
             torch.onnx.export(
                 self.model,
@@ -253,7 +275,7 @@ class ONNXExporter(BaseExporter):
                 self.metadata.notes.append(f"ONNX validation failed: {e}")
 
             try:
-                session = InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
+                InferenceSession(str(onnx_path), providers=["CPUExecutionProvider"])
                 self.metadata.notes.append("ONNX Runtime loaded successfully")
             except Exception as e:
                 self.metadata.notes.append(f"ONNX Runtime load failed: {e}")
@@ -264,7 +286,9 @@ class ONNXExporter(BaseExporter):
             self.metadata.size_bytes = _calculate_directory_size(output_dir)
             self.metadata.validation_status = "success"
             self._save_metadata(output_dir)
-            logger.info(f"ONNX export completed: {onnx_path} ({_human_readable_size(self.metadata.size_bytes)})")
+            logger.info(
+                f"ONNX export completed: {onnx_path} ({_human_readable_size(self.metadata.size_bytes)})"
+            )
         except Exception as e:
             self.metadata.notes.append(f"ONNX export failed: {e}")
             self.metadata.validation_status = "failed"
@@ -275,17 +299,25 @@ class ONNXExporter(BaseExporter):
 
 
 class TensorRTExporter(BaseExporter):
-    def export(self, output_dir: Union[str, Path], precision: str = "fp16", workspace_size: int = 1 << 30, **kwargs) -> ExportMetadata:
+    def export(
+        self,
+        output_dir: str | Path,
+        precision: str = "fp16",
+        workspace_size: int = 1 << 30,
+        **kwargs,
+    ) -> ExportMetadata:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata.format = ExportFormat.TENSORRT.value
 
         try:
-            import tensorrt as trt
-            import pycuda.driver as cuda
             import pycuda.autoinit
+            import pycuda.driver as cuda
+            import tensorrt as trt
         except ImportError as e:
-            self.metadata.notes.append(f"TensorRT export skipped: tensorrt/pycuda not available ({e})")
+            self.metadata.notes.append(
+                f"TensorRT export skipped: tensorrt/pycuda not available ({e})"
+            )
             self.metadata.validation_status = "skipped"
             logger.warning(f"TensorRT export skipped: {e}")
             return self.metadata
@@ -294,12 +326,16 @@ class TensorRTExporter(BaseExporter):
             onnx_path = output_dir / "model.onnx"
             if not onnx_path.exists():
                 self.metadata.notes.append("No ONNX file found, generating one")
-                onnx_exporter = ONNXExporter(self.model, self.config, metadata=ExportMetadata(
-                    model_name=self.metadata.model_name,
-                    format=ExportFormat.ONNX.value,
-                    timestamp=self.metadata.timestamp,
-                    original_config=self.config,
-                ))
+                onnx_exporter = ONNXExporter(
+                    self.model,
+                    self.config,
+                    metadata=ExportMetadata(
+                        model_name=self.metadata.model_name,
+                        format=ExportFormat.ONNX.value,
+                        timestamp=self.metadata.timestamp,
+                        original_config=self.config,
+                    ),
+                )
                 onnx_exporter.export(output_dir)
 
             trt_logger = trt.Logger(trt.Logger.INFO)
@@ -340,7 +376,9 @@ class TensorRTExporter(BaseExporter):
             self.metadata.size_bytes = _calculate_directory_size(output_dir)
             self.metadata.validation_status = "success"
             self._save_metadata(output_dir)
-            logger.info(f"TensorRT export completed: {engine_path} ({_human_readable_size(self.metadata.size_bytes)})")
+            logger.info(
+                f"TensorRT export completed: {engine_path} ({_human_readable_size(self.metadata.size_bytes)})"
+            )
         except Exception as e:
             self.metadata.notes.append(f"TensorRT export failed: {e}")
             self.metadata.validation_status = "failed"
@@ -351,7 +389,9 @@ class TensorRTExporter(BaseExporter):
 
 
 class GGUFFExporter(BaseExporter):
-    def export(self, output_dir: Union[str, Path], quantization: str = "q4_k_m", **kwargs) -> ExportMetadata:
+    def export(
+        self, output_dir: str | Path, quantization: str = "q4_k_m", **kwargs
+    ) -> ExportMetadata:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata.format = ExportFormat.GGUF.value
@@ -380,7 +420,9 @@ class GGUFFExporter(BaseExporter):
             self.metadata.size_bytes = _calculate_directory_size(output_dir)
             self.metadata.validation_status = "success"
             self._save_metadata(output_dir)
-            logger.info(f"GGUF export completed: {gguf_path} ({_human_readable_size(self.metadata.size_bytes)})")
+            logger.info(
+                f"GGUF export completed: {gguf_path} ({_human_readable_size(self.metadata.size_bytes)})"
+            )
         except Exception as e:
             self.metadata.notes.append(f"GGUF export failed: {e}")
             self.metadata.validation_status = "failed"
@@ -389,17 +431,24 @@ class GGUFFExporter(BaseExporter):
 
         return self.metadata
 
-    def _write_gguf_native(self, state_dict: Dict[str, Any], path: Path, quantization: str) -> None:
+    def _write_gguf_native(self, state_dict: dict[str, Any], path: Path, quantization: str) -> None:
         import gguf
+
         writer = gguf.GGUFWriter(str(path), "llama")
         writer.add_string("general.name", self.metadata.model_name)
         writer.add_uint32("general.architecture", 0)
         writer.add_uint32("general.file_type", self._gguf_quantization_type(quantization))
-        writer.add_uint64("llama.context_length", int(self.config.get("max_position_embeddings", 2048)))
+        writer.add_uint64(
+            "llama.context_length", int(self.config.get("max_position_embeddings", 2048))
+        )
         writer.add_uint32("llama.embedding_length", int(self.config.get("hidden_size", 64)))
         writer.add_uint32("llama.block_count", int(self.config.get("num_hidden_layers", 2)))
-        writer.add_uint32("llama.attention.head_count", int(self.config.get("num_attention_heads", 2)))
-        writer.add_uint32("llama.feed_forward_length", int(self.config.get("intermediate_size", 128)))
+        writer.add_uint32(
+            "llama.attention.head_count", int(self.config.get("num_attention_heads", 2))
+        )
+        writer.add_uint32(
+            "llama.feed_forward_length", int(self.config.get("intermediate_size", 128))
+        )
         writer.add_float("llama.rope.freq_base", float(self.config.get("rope_theta", 10000.0)))
 
         tensors = []
@@ -408,21 +457,33 @@ class GGUFFExporter(BaseExporter):
         writer.write_tensors(tensors)
         writer.close()
 
-    def _write_gguf_fallback(self, state_dict: Dict[str, Any], path: Path, quantization: str) -> None:
+    def _write_gguf_fallback(
+        self, state_dict: dict[str, Any], path: Path, quantization: str
+    ) -> None:
         fallback_path = path.with_suffix(".bin")
         torch.save(state_dict, fallback_path)
         self.metadata.notes.append(f"GGUF fallback: saved state dict to {fallback_path.name}")
 
     def _gguf_quantization_type(self, quantization: str) -> int:
         mapping = {
-            "f32": 0, "f16": 1, "q4_0": 2, "q4_1": 3, "q4_k_s": 4, "q4_k_m": 5,
-            "q5_0": 6, "q5_1": 7, "q5_k_s": 8, "q5_k_m": 9, "q8_0": 10, "q8_k_s": 11,
+            "f32": 0,
+            "f16": 1,
+            "q4_0": 2,
+            "q4_1": 3,
+            "q4_k_s": 4,
+            "q4_k_m": 5,
+            "q5_0": 6,
+            "q5_1": 7,
+            "q5_k_s": 8,
+            "q5_k_m": 9,
+            "q8_0": 10,
+            "q8_k_s": 11,
         }
         return mapping.get(quantization, 5)
 
 
 class SafeTensorsExporter(BaseExporter):
-    def export(self, output_dir: Union[str, Path], **kwargs) -> ExportMetadata:
+    def export(self, output_dir: str | Path, **kwargs) -> ExportMetadata:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         self.metadata.format = ExportFormat.SAFETENSORS.value
@@ -430,7 +491,9 @@ class SafeTensorsExporter(BaseExporter):
         try:
             from safetensors.torch import save_file as st_save
         except ImportError as e:
-            self.metadata.notes.append(f"SafeTensors export skipped: safetensors not available ({e})")
+            self.metadata.notes.append(
+                f"SafeTensors export skipped: safetensors not available ({e})"
+            )
             self.metadata.validation_status = "skipped"
             logger.warning(f"SafeTensors export skipped: {e}")
             return self.metadata
@@ -445,7 +508,9 @@ class SafeTensorsExporter(BaseExporter):
             self.metadata.size_bytes = _calculate_directory_size(output_dir)
             self.metadata.validation_status = "success"
             self._save_metadata(output_dir)
-            logger.info(f"SafeTensors export completed: {safetensors_path} ({_human_readable_size(self.metadata.size_bytes)})")
+            logger.info(
+                f"SafeTensors export completed: {safetensors_path} ({_human_readable_size(self.metadata.size_bytes)})"
+            )
         except Exception as e:
             self.metadata.notes.append(f"SafeTensors export failed: {e}")
             self.metadata.validation_status = "failed"
@@ -457,9 +522,9 @@ class SafeTensorsExporter(BaseExporter):
 
 def export_model(
     model: nn.Module,
-    config: Dict[str, Any],
-    output_dir: Union[str, Path],
-    format: Union[str, ExportFormat] = ExportFormat.HUGGINGFACE,
+    config: dict[str, Any],
+    output_dir: str | Path,
+    format: str | ExportFormat = ExportFormat.HUGGINGFACE,
     tokenizer=None,
     **kwargs,
 ) -> ExportMetadata:
@@ -483,10 +548,10 @@ def export_model(
 
 
 def export_from_checkpoint(
-    checkpoint_path: Union[str, Path],
-    output_dir: Union[str, Path],
-    config: Dict[str, Any],
-    format: Union[str, ExportFormat] = ExportFormat.HUGGINGFACE,
+    checkpoint_path: str | Path,
+    output_dir: str | Path,
+    config: dict[str, Any],
+    format: str | ExportFormat = ExportFormat.HUGGINGFACE,
     tokenizer=None,
     **kwargs,
 ) -> ExportMetadata:
@@ -509,10 +574,10 @@ def export_from_checkpoint(
 
 
 def export_from_state_dict(
-    state_dict: Dict[str, Any],
-    config: Dict[str, Any],
-    output_dir: Union[str, Path],
-    format: Union[str, ExportFormat] = ExportFormat.HUGGINGFACE,
+    state_dict: dict[str, Any],
+    config: dict[str, Any],
+    output_dir: str | Path,
+    format: str | ExportFormat = ExportFormat.HUGGINGFACE,
     tokenizer=None,
     **kwargs,
 ) -> ExportMetadata:
@@ -525,7 +590,7 @@ def export_from_state_dict(
     return export_model(model, config, output_dir, format=format, tokenizer=tokenizer, **kwargs)
 
 
-def validate_export(output_dir: Union[str, Path]) -> Dict[str, Any]:
+def validate_export(output_dir: str | Path) -> dict[str, Any]:
     output_dir = Path(output_dir)
     if not output_dir.exists():
         return {"valid": False, "error": f"Output directory does not exist: {output_dir}"}
@@ -534,7 +599,7 @@ def validate_export(output_dir: Union[str, Path]) -> Dict[str, Any]:
     if not meta_path.exists():
         return {"valid": False, "error": "export_metadata.json not found"}
 
-    with open(meta_path, "r") as f:
+    with open(meta_path) as f:
         metadata = json.load(f)
 
     missing_files = []
@@ -556,7 +621,7 @@ def validate_export(output_dir: Union[str, Path]) -> Dict[str, Any]:
     }
 
 
-def report_export_sizes(output_dir: Union[str, Path]) -> Dict[str, Any]:
+def report_export_sizes(output_dir: str | Path) -> dict[str, Any]:
     output_dir = Path(output_dir)
     if not output_dir.exists():
         raise FileNotFoundError(f"Output directory does not exist: {output_dir}")
@@ -566,7 +631,13 @@ def report_export_sizes(output_dir: Union[str, Path]) -> Dict[str, Any]:
     for entry in sorted(output_dir.rglob("*")):
         if entry.is_file():
             size = entry.stat().st_size
-            files.append({"path": str(entry.relative_to(output_dir)), "size_bytes": size, "size_human": _human_readable_size(size)})
+            files.append(
+                {
+                    "path": str(entry.relative_to(output_dir)),
+                    "size_bytes": size,
+                    "size_human": _human_readable_size(size),
+                }
+            )
             total += size
 
     return {
@@ -577,5 +648,5 @@ def report_export_sizes(output_dir: Union[str, Path]) -> Dict[str, Any]:
     }
 
 
-def list_supported_formats() -> List[str]:
+def list_supported_formats() -> list[str]:
     return [fmt.value for fmt in ExportFormat]

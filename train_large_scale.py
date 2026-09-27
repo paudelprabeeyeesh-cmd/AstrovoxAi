@@ -66,27 +66,44 @@ def build_parser() -> argparse.ArgumentParser:
         choices=sorted(MODEL_PRESETS.keys()),
         help="Model size preset (1b, 3.7b, 10b)",
     )
-    model_group.add_argument("--config", type=str, default=None, help="Path to YAML config file (overrides preset)")
-    model_group.add_argument("--output-dir", type=str, default="output", help="Output directory for model and artifacts")
+    model_group.add_argument(
+        "--config", type=str, default=None, help="Path to YAML config file (overrides preset)"
+    )
+    model_group.add_argument(
+        "--output-dir", type=str, default="output", help="Output directory for model and artifacts"
+    )
 
     # Data
     data_group = parser.add_argument_group("Data")
-    data_group.add_argument("--train-file", type=str, default="data/train.txt", help="Training data path")
-    data_group.add_argument("--val-file", type=str, default=None, help="Validation data path (optional)")
+    data_group.add_argument(
+        "--train-file", type=str, default="data/train.txt", help="Training data path"
+    )
+    data_group.add_argument(
+        "--val-file", type=str, default=None, help="Validation data path (optional)"
+    )
     data_group.add_argument("--val-ratio", type=float, default=0.05, help="Validation split ratio")
-    data_group.add_argument("--tokenizer-path", type=str, default="tokenizer.json", help="Tokenizer path")
+    data_group.add_argument(
+        "--tokenizer-path", type=str, default="tokenizer.json", help="Tokenizer path"
+    )
 
     # Training hyperparameters
     train_group = parser.add_argument_group("Training")
     train_group.add_argument("--epochs", type=int, default=None, help="Number of epochs")
     train_group.add_argument("--batch-size", type=int, default=None, help="Global batch size")
-    train_group.add_argument("--gradient-accumulation-steps", type=int, default=None, help="Gradient accumulation steps")
+    train_group.add_argument(
+        "--gradient-accumulation-steps", type=int, default=None, help="Gradient accumulation steps"
+    )
     train_group.add_argument("--lr", type=float, default=None, help="Learning rate")
     train_group.add_argument("--weight-decay", type=float, default=None, help="Weight decay")
     train_group.add_argument("--grad-clip", type=float, default=None, help="Gradient clipping norm")
     train_group.add_argument("--warmup-steps", type=int, default=None, help="LR warmup steps")
     train_group.add_argument("--min-lr", type=float, default=None, help="Minimum learning rate")
-    train_group.add_argument("--lr-scheduler", type=str, default=None, choices=["cosine", "linear", "onecycle", "constant", "step"])
+    train_group.add_argument(
+        "--lr-scheduler",
+        type=str,
+        default=None,
+        choices=["cosine", "linear", "onecycle", "constant", "step"],
+    )
 
     # Distributed
     dist_group = parser.add_argument_group("Distributed")
@@ -94,14 +111,39 @@ def build_parser() -> argparse.ArgumentParser:
         "--strategy",
         type=str,
         default="ddp",
-        choices=["ddp", "fsdp", "zero1", "zero2", "zero3", "tensor_parallel", "pipeline_parallel", "none"],
+        choices=[
+            "ddp",
+            "fsdp",
+            "zero1",
+            "zero2",
+            "zero3",
+            "tensor_parallel",
+            "pipeline_parallel",
+            "none",
+        ],
         help="Distributed training strategy",
     )
-    dist_group.add_argument("--tensor-parallel-size", type=int, default=1, help="Tensor parallelism degree")
-    dist_group.add_argument("--pipeline-parallel-size", type=int, default=1, help="Pipeline parallelism degree")
-    dist_group.add_argument("--fsdp-sharding", type=str, default="FULL_SHARD", choices=["FULL_SHARD", "SHARD_GRAD_OP", "NO_SHARD"])
-    dist_group.add_argument("--cpu-offload", action="store_true", default=None, help="Enable CPU offload (ZeRO / FSDP)")
-    dist_group.add_argument("--find-unused-parameters", action="store_true", default=None, help="Find unused parameters in DDP")
+    dist_group.add_argument(
+        "--tensor-parallel-size", type=int, default=1, help="Tensor parallelism degree"
+    )
+    dist_group.add_argument(
+        "--pipeline-parallel-size", type=int, default=1, help="Pipeline parallelism degree"
+    )
+    dist_group.add_argument(
+        "--fsdp-sharding",
+        type=str,
+        default="FULL_SHARD",
+        choices=["FULL_SHARD", "SHARD_GRAD_OP", "NO_SHARD"],
+    )
+    dist_group.add_argument(
+        "--cpu-offload", action="store_true", default=None, help="Enable CPU offload (ZeRO / FSDP)"
+    )
+    dist_group.add_argument(
+        "--find-unused-parameters",
+        action="store_true",
+        default=None,
+        help="Find unused parameters in DDP",
+    )
 
     # Precision
     prec_group = parser.add_argument_group("Precision")
@@ -116,15 +158,34 @@ def build_parser() -> argparse.ArgumentParser:
     # Checkpointing
     ckpt_group = parser.add_argument_group("Checkpointing")
     ckpt_group.add_argument("--resume", type=str, default=None, help="Resume from checkpoint path")
-    ckpt_group.add_argument("--checkpoint-dir", type=str, default="checkpoints", help="Checkpoint directory")
-    ckpt_group.add_argument("--checkpoint-interval", type=int, default=500, help="Checkpoint interval (steps)")
+    ckpt_group.add_argument(
+        "--checkpoint-dir", type=str, default="checkpoints", help="Checkpoint directory"
+    )
+    ckpt_group.add_argument(
+        "--checkpoint-interval", type=int, default=500, help="Checkpoint interval (steps)"
+    )
     ckpt_group.add_argument("--keep-last-n", type=int, default=3, help="Keep last N checkpoints")
 
     # Memory optimization
     mem_group = parser.add_argument_group("Memory Optimization")
-    mem_group.add_argument("--gradient-checkpointing", action="store_true", default=None, help="Enable gradient checkpointing")
-    mem_group.add_argument("--activation-checkpointing", action="store_true", default=None, help="Enable activation checkpointing")
-    mem_group.add_argument("--activation-recompute", action="store_true", default=None, help="Enable activation recomputation")
+    mem_group.add_argument(
+        "--gradient-checkpointing",
+        action="store_true",
+        default=None,
+        help="Enable gradient checkpointing",
+    )
+    mem_group.add_argument(
+        "--activation-checkpointing",
+        action="store_true",
+        default=None,
+        help="Enable activation checkpointing",
+    )
+    mem_group.add_argument(
+        "--activation-recompute",
+        action="store_true",
+        default=None,
+        help="Enable activation recomputation",
+    )
 
     # Logging
     log_group = parser.add_argument_group("Logging")
@@ -133,7 +194,12 @@ def build_parser() -> argparse.ArgumentParser:
     log_group.add_argument("--seed", type=int, default=42, help="Random seed")
 
     # Hidden: local rank for torchrun
-    parser.add_argument("--local_rank", type=int, default=int(os.environ.get("LOCAL_RANK", 0)), help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--local_rank",
+        type=int,
+        default=int(os.environ.get("LOCAL_RANK", 0)),
+        help=argparse.SUPPRESS,
+    )
 
     return parser
 

@@ -4,16 +4,18 @@ import json
 import os
 import re
 import unicodedata
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable, Optional
 
 try:
     from datasets import load_dataset
 except Exception:
     load_dataset = None
 from tokenizers import Tokenizer
+
 try:
-    from tokenizers.decoders import ByteLevelDecoder, WordPiece as WordPieceDecoder
+    from tokenizers.decoders import ByteLevelDecoder
+    from tokenizers.decoders import WordPiece as WordPieceDecoder
 except Exception:
     ByteLevelDecoder = None
     WordPieceDecoder = None
@@ -21,8 +23,10 @@ from tokenizers.models import BPE, WordPiece
 from tokenizers.pre_tokenizers import ByteLevel, Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer, WordPieceTrainer
+
 try:
-    from tokenizers.decoders import BPEDecoder, WordPiece as WordPieceDecoder2
+    from tokenizers.decoders import BPEDecoder
+    from tokenizers.decoders import WordPiece as WordPieceDecoder2
 except Exception:
     BPEDecoder = None
     WordPieceDecoder2 = None
@@ -82,7 +86,7 @@ def iter_texts(
     text_key: str = "text",
     deduplicate: bool = True,
     clean: bool = True,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> Iterable[str]:
     """Stream text documents from multiple input sources.
 
@@ -91,7 +95,7 @@ def iter_texts(
     - HuggingFace datasets via hf://dataset/config
     """
 
-    def _process(text: str) -> Optional[str]:
+    def _process(text: str) -> str | None:
         if clean:
             text = clean_text(text)
         return text if text else None
@@ -121,7 +125,7 @@ def iter_texts(
 
             ext = Path(path).suffix.lower()
             if ext == ".txt":
-                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(path, encoding="utf-8", errors="ignore") as f:
                     for line in f:
                         line = line.strip()
                         if not line:
@@ -130,7 +134,7 @@ def iter_texts(
                         if processed:
                             yield processed
             elif ext == ".jsonl":
-                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(path, encoding="utf-8", errors="ignore") as f:
                     for line in f:
                         line = line.strip()
                         if not line:
@@ -160,7 +164,7 @@ def iter_texts(
                         if processed:
                             yield processed
             else:
-                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                with open(path, encoding="utf-8", errors="ignore") as f:
                     for line in f:
                         line = line.strip()
                         if not line:
@@ -174,6 +178,7 @@ def iter_texts(
         iterator = _dedup_iterator(iterator)
 
     if limit is not None:
+
         def _limit(it: Iterable[str], n: int) -> Iterable[str]:
             count = 0
             for item in it:
@@ -192,9 +197,9 @@ def train_tokenizer(
     vocab_size: int = 32000,
     algorithm: str = "bpe",
     save_dir: str = "tokenizer",
-    special_tokens: Optional[list[str]] = None,
+    special_tokens: list[str] | None = None,
     text_key: str = "text",
-    limit: Optional[int] = None,
+    limit: int | None = None,
     cleaning: bool = True,
     deduplicate: bool = True,
 ) -> Tokenizer:
@@ -303,14 +308,16 @@ class TextDataset:
 
     def __init__(self, file_path: str, tokenizer: Tokenizer, block_size: int = 1024):
         self.examples = []
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             text = f.read()
         tokenized = tokenizer.encode(text).ids
         for i in range(0, len(tokenized) - block_size, block_size):
-            self.examples.append({
-                "input_ids": tokenized[i:i + block_size],
-                "labels": tokenized[i + 1:i + 1 + block_size],
-            })
+            self.examples.append(
+                {
+                    "input_ids": tokenized[i : i + block_size],
+                    "labels": tokenized[i + 1 : i + 1 + block_size],
+                }
+            )
 
     def __len__(self):
         return len(self.examples)
@@ -393,9 +400,7 @@ def create_dummy_tokenizer(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Train a BPE or WordPiece tokenizer on text data."
-    )
+    parser = argparse.ArgumentParser(description="Train a BPE or WordPiece tokenizer on text data.")
     parser.add_argument(
         "paths",
         nargs="+",
@@ -448,7 +453,7 @@ def main():
     args = parser.parse_args()
 
     if args.dummy:
-        tokenizer = create_dummy_tokenizer(
+        create_dummy_tokenizer(
             save_dir=args.save_dir,
             vocab_size=args.vocab_size,
             algorithm=args.algorithm,
@@ -456,7 +461,7 @@ def main():
         print(f"Dummy tokenizer saved to {args.save_dir}")
         return
 
-    tokenizer = train_tokenizer(
+    train_tokenizer(
         paths=args.paths,
         vocab_size=args.vocab_size,
         algorithm=args.algorithm,

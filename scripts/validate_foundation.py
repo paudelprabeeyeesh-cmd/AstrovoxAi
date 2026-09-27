@@ -14,7 +14,6 @@ from typing import Any
 
 import yaml
 
-
 REPORT_PATH = Path("foundation_report.json")
 
 
@@ -68,7 +67,9 @@ report = FoundationReport()
 
 
 def _record(category: str, file: str, message: str, severity: str = "error") -> None:
-    report.issues.append(ValidationIssue(category=category, file=file, message=message, severity=severity))
+    report.issues.append(
+        ValidationIssue(category=category, file=file, message=message, severity=severity)
+    )
 
 
 # ------------------------------------------------------------------
@@ -165,19 +166,44 @@ def validate_yaml_file(path: Path) -> None:
         hidden = int(data["hidden_size"])
         heads = int(data["num_attention_heads"])
         if heads > 0 and hidden % heads != 0:
-            _record("yaml", str(path), f"hidden_size ({hidden}) must be divisible by num_attention_heads ({heads})")
+            _record(
+                "yaml",
+                str(path),
+                f"hidden_size ({hidden}) must be divisible by num_attention_heads ({heads})",
+            )
 
-    if "mixed_precision" in data and str(data["mixed_precision"]).lower() not in {"none", "fp16", "bf16", "bfloat16"}:
-        _record("yaml", str(path), f"mixed_precision must be one of none/fp16/bf16/bfloat16, got {data['mixed_precision']}")
+    if "mixed_precision" in data and str(data["mixed_precision"]).lower() not in {
+        "none",
+        "fp16",
+        "bf16",
+        "bfloat16",
+    }:
+        _record(
+            "yaml",
+            str(path),
+            f"mixed_precision must be one of none/fp16/bf16/bfloat16, got {data['mixed_precision']}",
+        )
 
     if "optimizer" in data and str(data["optimizer"]).lower() not in {"adamw", "8bit-adamw"}:
-        _record("yaml", str(path), f"optimizer must be one of adamw/8bit-adamw, got {data['optimizer']}")
+        _record(
+            "yaml", str(path), f"optimizer must be one of adamw/8bit-adamw, got {data['optimizer']}"
+        )
 
-    if "lr_scheduler" in data and str(data["lr_scheduler"]).lower() not in {"cosine", "linear", "constant"}:
-        _record("yaml", str(path), f"lr_scheduler must be one of cosine/linear/constant, got {data['lr_scheduler']}")
+    if "lr_scheduler" in data and str(data["lr_scheduler"]).lower() not in {
+        "cosine",
+        "linear",
+        "constant",
+    }:
+        _record(
+            "yaml",
+            str(path),
+            f"lr_scheduler must be one of cosine/linear/constant, got {data['lr_scheduler']}",
+        )
 
     if "activation" in data and str(data["activation"]).lower() not in {"swiglu", "gelu"}:
-        _record("yaml", str(path), f"activation must be one of swiglu/gelu, got {data['activation']}")
+        _record(
+            "yaml", str(path), f"activation must be one of swiglu/gelu, got {data['activation']}"
+        )
 
 
 def validate_all_yaml() -> None:
@@ -203,7 +229,14 @@ def _normalize(node: ast.AST) -> str:
 
 
 def detect_dead_code() -> None:
-    roots = [Path("."), Path("scripts"), Path("backend"), Path("model"), Path("models"), Path("ASTROVOX_AI")]
+    roots = [
+        Path("."),
+        Path("scripts"),
+        Path("backend"),
+        Path("model"),
+        Path("models"),
+        Path("ASTROVOX_AI"),
+    ]
     files: list[Path] = []
     for root in roots:
         if root.exists():
@@ -269,7 +302,9 @@ def detect_dead_code() -> None:
     for file_path, imported in imported_names.items():
         for name in imported:
             if name not in used_names.get(file_path, set()):
-                report.dead_code.append({"file": file_path, "name": name, "reason": "imported but never used"})
+                report.dead_code.append(
+                    {"file": file_path, "name": name, "reason": "imported but never used"}
+                )
 
     for file_path, defined in defined_names.items():
         module_name = Path(file_path).stem
@@ -277,20 +312,27 @@ def detect_dead_code() -> None:
             if name.startswith("_"):
                 continue
             used_elsewhere = any(
-                name in used_names.get(other, set())
-                for other in used_names
-                if other != file_path
+                name in used_names.get(other, set()) for other in used_names if other != file_path
             )
             if not used_elsewhere and name not in {"main", "run", "cli"}:
                 if name not in imported_names.get(file_path, set()):
-                    report.dead_code.append({"file": file_path, "name": name, "reason": "defined but never referenced"})
+                    report.dead_code.append(
+                        {"file": file_path, "name": name, "reason": "defined but never referenced"}
+                    )
 
 
 # ------------------------------------------------------------------
 # Missing type hints
 # ------------------------------------------------------------------
 def detect_missing_type_hints() -> None:
-    roots = [Path("."), Path("scripts"), Path("backend"), Path("model"), Path("models"), Path("ASTROVOX_AI")]
+    roots = [
+        Path("."),
+        Path("scripts"),
+        Path("backend"),
+        Path("model"),
+        Path("models"),
+        Path("ASTROVOX_AI"),
+    ]
     files: list[Path] = []
     for root in roots:
         if root.exists():
@@ -343,7 +385,14 @@ def _function_hash(node: ast.FunctionDef | ast.AsyncFunctionDef) -> str | None:
 
 
 def detect_duplicate_code() -> None:
-    roots = [Path("."), Path("scripts"), Path("backend"), Path("model"), Path("models"), Path("ASTROVOX_AI")]
+    roots = [
+        Path("."),
+        Path("scripts"),
+        Path("backend"),
+        Path("model"),
+        Path("models"),
+        Path("ASTROVOX_AI"),
+    ]
     files: list[Path] = []
     for root in roots:
         if root.exists():
@@ -401,7 +450,11 @@ def main() -> int:
     report.save(REPORT_PATH)
     print(f"\nReport saved to {REPORT_PATH}")
 
-    return 1 if report.issues or report.dead_code or report.missing_type_hints or report.duplicate_code else 0
+    return (
+        1
+        if report.issues or report.dead_code or report.missing_type_hints or report.duplicate_code
+        else 0
+    )
 
 
 if __name__ == "__main__":

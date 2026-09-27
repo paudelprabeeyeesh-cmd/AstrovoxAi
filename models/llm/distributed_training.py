@@ -26,12 +26,12 @@ Graceful fallback:
   single-device training with a warning.
 """
 
-import os
-import sys
+import contextlib
 import logging
+import os
 import warnings
-from enum import Enum
-from typing import Any, Dict, Optional, Union
+from enum import StrEnum
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Strategy enum
 # ---------------------------------------------------------------------------
-class DistributedStrategy(str, Enum):
+class DistributedStrategy(StrEnum):
     DDP = "ddp"
     FSDP = "fsdp"
     ZERO_1 = "zero1"
@@ -93,8 +93,8 @@ def is_distributed() -> bool:
 def log_memory_usage(prefix: str = "") -> None:
     rank = get_rank()
     if torch.cuda.is_available():
-        allocated = torch.cuda.memory_allocated(rank) / (1024 ** 2)
-        reserved = torch.cuda.memory_reserved(rank) / (1024 ** 2)
+        allocated = torch.cuda.memory_allocated(rank) / (1024**2)
+        reserved = torch.cuda.memory_reserved(rank) / (1024**2)
         logger.info(
             "%s[Rank %d] CUDA Memory: %.2f MB allocated, %.2f MB reserved",
             prefix,
@@ -108,8 +108,8 @@ def log_memory_usage(prefix: str = "") -> None:
 
 def log_model_memory(model: nn.Module, prefix: str = "") -> None:
     rank = get_rank()
-    param_mem = sum(p.numel() * p.element_size() for p in model.parameters()) / (1024 ** 2)
-    buffer_mem = sum(b.numel() * b.element_size() for b in model.buffers()) / (1024 ** 2)
+    param_mem = sum(p.numel() * p.element_size() for p in model.parameters()) / (1024**2)
+    buffer_mem = sum(b.numel() * b.element_size() for b in model.buffers()) / (1024**2)
     logger.info(
         "%s[Rank %d] Model Memory: %.2f MB parameters, %.2f MB buffers",
         prefix,
@@ -122,27 +122,30 @@ def log_model_memory(model: nn.Module, prefix: str = "") -> None:
 # ---------------------------------------------------------------------------
 # Initialization
 # ---------------------------------------------------------------------------
-def init_distributed(backend: str = "nccl", init_method: Optional[str] = None) -> bool:
+def init_distributed(backend: str = "nccl", init_method: str | None = None) -> bool:
     if is_distributed():
         if not torch.distributed.is_initialized():
             if init_method is None:
                 init_method = "env://"
             try:
                 torch.distributed.init_process_group(backend=backend, init_method=init_method)
-                logger.info("Initialized distributed process group: backend=%s, rank=%d, world_size=%d", backend, get_rank(), get_world_size())
+                logger.info(
+                    "Initialized distributed process group: backend=%s, rank=%d, world_size=%d",
+                    backend,
+                    get_rank(),
+                    get_world_size(),
+                )
                 return True
             except Exception as exc:
-                warnings.warn(f"Failed to initialize distributed: {exc}")
+                warnings.warn(f"Failed to initialize distributed: {exc}", stacklevel=2)
                 return False
     return False
 
 
 def destroy_distributed() -> None:
     if torch.distributed.is_initialized():
-        try:
+        with contextlib.suppress(Exception):
             torch.distributed.destroy_process_group()
-        except Exception:
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -150,8 +153,8 @@ def destroy_distributed() -> None:
 # ---------------------------------------------------------------------------
 def wrap_model_ddp(
     model: nn.Module,
-    device_ids: Optional[list] = None,
-    output_device: Optional[int] = None,
+    device_ids: list | None = None,
+    output_device: int | None = None,
     find_unused_parameters: bool = False,
     gradient_as_bucket_view: bool = True,
 ) -> nn.Module:
@@ -172,19 +175,17 @@ def wrap_model_ddp(
 def wrap_model_fsdp(
     model: nn.Module,
     cpu_offload: bool = False,
-    mixed_precision: Optional[torch.dtype] = None,
-    auto_wrap_policy: Optional[Any] = None,
-    sharding_strategy: Optional[Any] = None,
+    mixed_precision: torch.dtype | None = None,
+    auto_wrap_policy: Any | None = None,
+    sharding_strategy: Any | None = None,
 ) -> nn.Module:
     if not is_distributed() or not torch.distributed.is_initialized():
         return model
     try:
+        from torch.distributed.fsdp import BackwardPrefetch, MixedPrecision, ShardingStrategy
         from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-        from torch.distributed.fsdp import MixedPrecision
-        from torch.distributed.fsdp import BackwardPrefetch
-        from torch.distributed.fsdp import ShardingStrategy
     except ImportError:
-        warnings.warn("FSDP is unavailable; falling back to single-device model.")
+        warnings.warn("FSDP is unavailable; falling back to single-device model.", stacklevel=2)
         return model
 
     mp = MixedPrecision(
@@ -205,45 +206,65 @@ def wrap_model_fsdp(
 
 
 def _zero3_wrap(model: nn.Module, cpu_offload: bool = False) -> nn.Module:
-    return wrap_model_fsdp(model, cpu_offload=cpu_offload, sharding_strategy=torch.distributed.fsdp.ShardingStrategy.FULL_SHARD)
+    return wrap_model_fsdp(
+        model,
+        cpu_offload=cpu_offload,
+        sharding_strategy=torch.distributed.fsdp.ShardingStrategy.FULL_SHARD,
+    )
 
 
 def _zero2_wrap(model: nn.Module, cpu_offload: bool = False) -> nn.Module:
-    return wrap_model_fsdp(model, cpu_offload=cpu_offload, sharding_strategy=torch.distributed.fsdp.ShardingStrategy.SHARD_GRAD_OP)
+    return wrap_model_fsdp(
+        model,
+        cpu_offload=cpu_offload,
+        sharding_strategy=torch.distributed.fsdp.ShardingStrategy.SHARD_GRAD_OP,
+    )
 
 
 def _zero1_wrap(model: nn.Module) -> nn.Module:
-    return wrap_model_fsdp(model, sharding_strategy=torch.distributed.fsdp.ShardingStrategy.NO_SHARD)
+    return wrap_model_fsdp(
+        model, sharding_strategy=torch.distributed.fsdp.ShardingStrategy.NO_SHARD
+    )
 
 
 def wrap_model_tensor_parallel(
     model: nn.Module,
     tp_size: int = 2,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
 ) -> nn.Module:
     device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
-        from torch.distributed.tensor.parallel import parallelize_module, ColwiseParallel, RowwiseParallel
+        from torch.distributed.tensor.parallel import (
+            ColwiseParallel,
+            RowwiseParallel,
+            parallelize_module,
+        )
+
         tp_mesh = torch.distributed.device_mesh.init_device_mesh(device.type, (tp_size,))
         model = parallelize_module(model, tp_mesh, {"": ColwiseParallel(), "": RowwiseParallel()})
         return model
     except Exception:
-        warnings.warn("Tensor parallelism unavailable or failed; returning unwrapped model.")
+        warnings.warn(
+            "Tensor parallelism unavailable or failed; returning unwrapped model.", stacklevel=2
+        )
         return model
 
 
 def wrap_model_pipeline_parallel(
     model: nn.Module,
     pp_size: int = 2,
-    chunks: Optional[int] = None,
+    chunks: int | None = None,
 ) -> nn.Module:
     try:
         from torch.distributed.pipeline.sync import Pipe
+
         chunks = chunks or pp_size
         model = Pipe(model, chunks=chunks)
         return model
     except Exception:
-        warnings.warn("Pipeline parallelism unavailable or failed; returning unwrapped model.")
+        warnings.warn(
+            "Pipeline parallelism unavailable or failed; returning unwrapped model.", stacklevel=2
+        )
         return model
 
 
@@ -253,10 +274,13 @@ def wrap_model_sequence_parallel(
 ) -> nn.Module:
     try:
         from torch.distributed.sequence_parallel import SequenceParallel
+
         model = SequenceParallel(model, process_group=None)
         return model
     except Exception:
-        warnings.warn("Sequence parallelism unavailable or failed; returning unwrapped model.")
+        warnings.warn(
+            "Sequence parallelism unavailable or failed; returning unwrapped model.", stacklevel=2
+        )
         return model
 
 
@@ -270,20 +294,24 @@ def wrap_model_cpu_offload(
     if hasattr(torch, "cpu") and hasattr(model, "cpu"):
         pass
     try:
-        from accelerate import init_empty_weights, cpu_offload
+        from accelerate import cpu_offload, init_empty_weights
+
         with init_empty_weights():
             pass
         model = cpu_offload(model, device)
         return model
     except Exception:
-        warnings.warn("CPU offload via accelerate unavailable; returning model on target device.")
+        warnings.warn(
+            "CPU offload via accelerate unavailable; returning model on target device.",
+            stacklevel=2,
+        )
         return model.to(device)
 
 
 def wrap_model(
     model: nn.Module,
-    strategy: Union[DistributedStrategy, str],
-    device: Optional[torch.device] = None,
+    strategy: DistributedStrategy | str,
+    device: torch.device | None = None,
     **kwargs: Any,
 ) -> nn.Module:
     if isinstance(strategy, str):
@@ -309,7 +337,7 @@ def wrap_model(
         return wrap_model_sequence_parallel(model, **kwargs)
     if strategy == DistributedStrategy.CPU_OFFLOAD:
         return wrap_model_cpu_offload(model, device, **kwargs)
-    warnings.warn(f"Unknown strategy: {strategy}; returning unwrapped model.")
+    warnings.warn(f"Unknown strategy: {strategy}; returning unwrapped model.", stacklevel=2)
     return model
 
 
@@ -319,10 +347,8 @@ def wrap_model(
 def add_gradient_sync_hooks(model: nn.Module) -> None:
     def _sync(grad):
         if is_distributed() and torch.distributed.is_initialized():
-            try:
+            with contextlib.suppress(Exception):
                 torch.distributed.all_reduce(grad, op=torch.distributed.ReduceOp.SUM)
-            except Exception:
-                pass
         return grad
 
     for p in model.parameters():
@@ -333,10 +359,8 @@ def add_gradient_sync_hooks(model: nn.Module) -> None:
 def remove_gradient_sync_hooks(model: nn.Module) -> None:
     for p in model.parameters():
         if hasattr(p, "_grad_sync_hook"):
-            try:
+            with contextlib.suppress(Exception):
                 p._grad_sync_hook.remove()
-            except Exception:
-                pass
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +379,7 @@ def create_distributed_dataloader(
         try:
             sampler = torch.utils.data.distributed.DistributedSampler(dataset, shuffle=shuffle)
         except Exception:
-            warnings.warn("DistributedSampler unavailable; using default sampler.")
+            warnings.warn("DistributedSampler unavailable; using default sampler.", stacklevel=2)
             shuffle = False
     loader = DataLoader(
         dataset,
@@ -375,12 +399,12 @@ def create_distributed_dataloader(
 def save_distributed_checkpoint(
     path: str,
     model: nn.Module,
-    optimizer: Optional[torch.optim.Optimizer] = None,
-    scheduler: Optional[Any] = None,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: Any | None = None,
     epoch: int = 0,
     best_val_loss: float = float("inf"),
-    config: Optional[Dict[str, Any]] = None,
-    strategy: Union[DistributedStrategy, str] = DistributedStrategy.DDP,
+    config: dict[str, Any] | None = None,
+    strategy: DistributedStrategy | str = DistributedStrategy.DDP,
     use_safetensors: bool = False,
 ) -> None:
     if is_main_process():
@@ -394,33 +418,38 @@ def save_distributed_checkpoint(
     }
 
     try:
-        state["model_state_dict"] = model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+        state["model_state_dict"] = (
+            model.module.state_dict() if hasattr(model, "module") else model.state_dict()
+        )
     except Exception as exc:
-        warnings.warn(f"Could not serialize model state: {exc}")
+        warnings.warn(f"Could not serialize model state: {exc}", stacklevel=2)
         state["model_state_dict"] = {}
 
     if optimizer is not None:
         try:
             state["optimizer_state_dict"] = optimizer.state_dict()
         except Exception as exc:
-            warnings.warn(f"Could not serialize optimizer state: {exc}")
+            warnings.warn(f"Could not serialize optimizer state: {exc}", stacklevel=2)
             state["optimizer_state_dict"] = {}
 
     if scheduler is not None:
         try:
             state["scheduler_state_dict"] = scheduler.state_dict()
         except Exception as exc:
-            warnings.warn(f"Could not serialize scheduler state: {exc}")
+            warnings.warn(f"Could not serialize scheduler state: {exc}", stacklevel=2)
             state["scheduler_state_dict"] = {}
 
     if is_main_process():
         if use_safetensors:
             try:
                 from safetensors.torch import save_file
+
                 save_file({k: v for k, v in state.items() if torch.is_tensor(v)}, path)
                 logger.info("Saved distributed checkpoint (safetensors): %s", path)
             except Exception as exc:
-                warnings.warn(f"safetensors save failed: {exc}; falling back to torch.save.")
+                warnings.warn(
+                    f"safetensors save failed: {exc}; falling back to torch.save.", stacklevel=2
+                )
                 torch.save(state, path)
         else:
             torch.save(state, path)
@@ -432,12 +461,12 @@ def save_distributed_checkpoint(
 def load_distributed_checkpoint(
     path: str,
     model: nn.Module,
-    optimizer: Optional[torch.optim.Optimizer] = None,
-    scheduler: Optional[Any] = None,
-    device: Optional[torch.device] = None,
-    strategy: Union[DistributedStrategy, str] = DistributedStrategy.DDP,
+    optimizer: torch.optim.Optimizer | None = None,
+    scheduler: Any | None = None,
+    device: torch.device | None = None,
+    strategy: DistributedStrategy | str = DistributedStrategy.DDP,
     strict: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     device = device or torch.device("cpu")
     if not os.path.exists(path):
         raise FileNotFoundError(f"Checkpoint not found: {path}")
@@ -445,6 +474,7 @@ def load_distributed_checkpoint(
     if path.endswith(".safetensors"):
         try:
             from safetensors.torch import load_file
+
             state = load_file(path)
         except Exception as exc:
             raise RuntimeError(f"Failed to load safetensors checkpoint: {exc}")
@@ -455,19 +485,21 @@ def load_distributed_checkpoint(
     target_model = model.module if hasattr(model, "module") else model
     missing_keys, unexpected_keys = target_model.load_state_dict(model_state, strict=strict)
     if missing_keys or unexpected_keys:
-        warnings.warn(f"Missing keys: {missing_keys}, Unexpected keys: {unexpected_keys}")
+        warnings.warn(
+            f"Missing keys: {missing_keys}, Unexpected keys: {unexpected_keys}", stacklevel=2
+        )
 
     if optimizer is not None and state.get("optimizer_state_dict"):
         try:
             optimizer.load_state_dict(state["optimizer_state_dict"])
         except Exception as exc:
-            warnings.warn(f"Failed to load optimizer state: {exc}")
+            warnings.warn(f"Failed to load optimizer state: {exc}", stacklevel=2)
 
     if scheduler is not None and state.get("scheduler_state_dict"):
         try:
             scheduler.load_state_dict(state["scheduler_state_dict"])
         except Exception as exc:
-            warnings.warn(f"Failed to load scheduler state: {exc}")
+            warnings.warn(f"Failed to load scheduler state: {exc}", stacklevel=2)
 
     barrier()
     return {
@@ -481,19 +513,31 @@ def load_distributed_checkpoint(
 # Single-device fallback trainer
 # ---------------------------------------------------------------------------
 class SingleDeviceTrainer:
-    def __init__(self, model: nn.Module, optimizer: torch.optim.Optimizer, scheduler: Optional[Any] = None, device: Optional[torch.device] = None):
+    def __init__(
+        self,
+        model: nn.Module,
+        optimizer: torch.optim.Optimizer,
+        scheduler: Any | None = None,
+        device: torch.device | None = None,
+    ):
         self.model = model
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.device = device or torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
         self.scaler = torch.cuda.amp.GradScaler() if self.device.type == "cuda" else None
-        logger.warning("Running in single-device fallback mode (rank=%d, world_size=%d).", get_rank(), get_world_size())
+        logger.warning(
+            "Running in single-device fallback mode (rank=%d, world_size=%d).",
+            get_rank(),
+            get_world_size(),
+        )
 
     def train_step(self, batch: Any, criterion: nn.Module) -> float:
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
-        with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.device.type == "cuda"):
+        with torch.autocast(
+            device_type=self.device.type, dtype=torch.float16, enabled=self.device.type == "cuda"
+        ):
             outputs = self.model(batch)
             loss = criterion(outputs, batch["target"])
         if self.scaler is not None:
@@ -516,9 +560,9 @@ class DistributedTrainer:
         self,
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
-        scheduler: Optional[Any] = None,
-        strategy: Union[DistributedStrategy, str] = DistributedStrategy.DDP,
-        device: Optional[torch.device] = None,
+        scheduler: Any | None = None,
+        strategy: DistributedStrategy | str = DistributedStrategy.DDP,
+        device: torch.device | None = None,
         checkpoint_dir: str = "checkpoints",
         use_amp: bool = True,
         max_grad_norm: float = 1.0,
@@ -543,14 +587,18 @@ class DistributedTrainer:
         self.scheduler = scheduler
         self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
 
-        self.model = wrap_model(self.model, self.strategy, device=self.device, cpu_offload=self.cpu_offload)
+        self.model = wrap_model(
+            self.model, self.strategy, device=self.device, cpu_offload=self.cpu_offload
+        )
         if self._is_distributed:
             add_gradient_sync_hooks(self.model)
 
     def train_step(self, batch: Any, criterion: nn.Module) -> float:
         self.model.train()
         self.optimizer.zero_grad(set_to_none=True)
-        with torch.autocast(device_type=self.device.type, dtype=torch.float16, enabled=self.use_amp):
+        with torch.autocast(
+            device_type=self.device.type, dtype=torch.float16, enabled=self.use_amp
+        ):
             outputs = self.model(batch)
             loss = criterion(outputs, batch["target"])
         loss = loss / self.gradient_accumulation_steps
@@ -576,7 +624,9 @@ class DistributedTrainer:
             self.optimizer.zero_grad(set_to_none=True)
         return loss.item() * self.gradient_accumulation_steps
 
-    def save_checkpoint(self, filename: str = "checkpoint.pt", use_safetensors: bool = False) -> None:
+    def save_checkpoint(
+        self, filename: str = "checkpoint.pt", use_safetensors: bool = False
+    ) -> None:
         path = os.path.join(self.checkpoint_dir, filename)
         save_distributed_checkpoint(
             path=path,
@@ -588,7 +638,9 @@ class DistributedTrainer:
             use_safetensors=use_safetensors,
         )
 
-    def load_checkpoint(self, filename: str = "checkpoint.pt", strict: bool = True) -> Dict[str, Any]:
+    def load_checkpoint(
+        self, filename: str = "checkpoint.pt", strict: bool = True
+    ) -> dict[str, Any]:
         path = os.path.join(self.checkpoint_dir, filename)
         return load_distributed_checkpoint(
             path=path,

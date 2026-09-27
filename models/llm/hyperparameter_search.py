@@ -1,23 +1,25 @@
-import argparse
-import hashlib
 import json
 import logging
 import math
 import os
 import random
-import sys
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Subset
 
-from models.llm.utils.helpers import load_config, save_config, get_device, set_cpu_threads
 from models.llm.model.model import LLM
-from models.llm.tokenizer.train_tokenizer import load_tokenizer, create_dummy_tokenizer, TextDataset, collate_fn
+from models.llm.tokenizer.train_tokenizer import (
+    TextDataset,
+    collate_fn,
+    create_dummy_tokenizer,
+    load_tokenizer,
+)
+from models.llm.utils.helpers import get_device, load_config, save_config, set_cpu_threads
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +27,13 @@ logger = logging.getLogger(__name__)
 class TrialLogger:
     """Append-only JSONL experiment tracker for hyperparameter search."""
 
-    def __init__(self, path: Union[str, Path]):
+    def __init__(self, path: str | Path):
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._lock_path = self.path.with_suffix(".lock")
 
-    def log(self, record: Dict[str, Any]) -> None:
-        record.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
+    def log(self, record: dict[str, Any]) -> None:
+        record.setdefault("timestamp", datetime.now(UTC).isoformat())
         record.setdefault("trial_id", self._next_id())
         line = json.dumps(record, default=str)
         tmp_path = self.path.with_suffix(".tmp")
@@ -47,16 +49,16 @@ class TrialLogger:
         if not self.path.exists():
             return "0"
         try:
-            with open(self.path, "r", encoding="utf-8") as f:
+            with open(self.path, encoding="utf-8") as f:
                 return str(sum(1 for _ in f))
         except OSError:
             return "0"
 
-    def read_all(self) -> List[Dict[str, Any]]:
+    def read_all(self) -> list[dict[str, Any]]:
         if not self.path.exists():
             return []
-        records: List[Dict[str, Any]] = []
-        with open(self.path, "r", encoding="utf-8") as f:
+        records: list[dict[str, Any]] = []
+        with open(self.path, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
                 if line:
@@ -71,7 +73,7 @@ class SearchSpace:
     """Default search space specification and random sampler."""
 
     @staticmethod
-    def default() -> Dict[str, Tuple[str, Any, Any]]:
+    def default() -> dict[str, tuple[str, Any, Any]]:
         return {
             "lr": ("loguniform", 1e-5, 1e-3),
             "warmup_ratio": ("uniform", 0.0, 0.1),
@@ -86,8 +88,8 @@ class SearchSpace:
         }
 
     @staticmethod
-    def sample(search_space: Dict[str, Any], rng: random.Random) -> Dict[str, Any]:
-        sampled: Dict[str, Any] = {}
+    def sample(search_space: dict[str, Any], rng: random.Random) -> dict[str, Any]:
+        sampled: dict[str, Any] = {}
         for name, spec in search_space.items():
             kind = spec[0]
             if kind == "loguniform":
@@ -121,7 +123,9 @@ def _build_scheduler(
     if name == "cosine":
         return torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=total_steps)
     if name == "linear":
-        return torch.optim.lr_scheduler.LinearLR(optimizer, start_factor=1.0, end_factor=0.0, total_iters=total_steps)
+        return torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=1.0, end_factor=0.0, total_iters=total_steps
+        )
     if name == "constant":
         return torch.optim.lr_scheduler.ConstantLR(optimizer, factor=1.0)
     raise ValueError(f"Unsupported scheduler: {name}")
@@ -211,11 +215,11 @@ def _ensure_synthetic_data(path: str, min_chars: int = 50000) -> None:
 
 
 def _run_trial(
-    config: Dict[str, Any],
+    config: dict[str, Any],
     max_steps: int = 50,
-    device: Optional[str] = None,
+    device: str | None = None,
     seed: int = 42,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Execute a single training trial and return metrics."""
     if device is None:
         device = get_device()
@@ -252,7 +256,7 @@ def _run_trial(
     train_dataset = Subset(dataset, indices[:split])
     val_dataset = Subset(dataset, indices[split:])
     if len(val_dataset) < 1:
-        val_dataset = Subset(dataset, indices[:max(1, split // 2)])
+        val_dataset = Subset(dataset, indices[: max(1, split // 2)])
 
     batch_size = int(config.get("batch_size", 2))
     accumulation_steps = int(config.get("gradient_accumulation_steps", 1))
@@ -280,7 +284,9 @@ def _run_trial(
 
     lr = float(config.get("lr", 3e-4))
     weight_decay = float(config.get("weight_decay", 0.1))
-    optimizer = _build_optimizer(config.get("optimizer", "adamw"), model.parameters(), lr, weight_decay)
+    optimizer = _build_optimizer(
+        config.get("optimizer", "adamw"), model.parameters(), lr, weight_decay
+    )
 
     total_steps = max(len(train_loader) * int(config.get("epochs", 1)), 1)
     scheduler = _build_scheduler(config.get("lr_scheduler", "cosine"), optimizer, total_steps)
@@ -298,7 +304,7 @@ def _run_trial(
     train_loss_sum = 0.0
     train_tokens = 0
     nan_encountered = False
-    intermediate_losses: List[float] = []
+    intermediate_losses: list[float] = []
 
     max_steps = min(max_steps, total_steps) if total_steps > 0 else max_steps
     if max_steps <= 0:
@@ -313,7 +319,11 @@ def _run_trial(
             labels = batch["labels"].to(device, non_blocking=True)
 
             with torch.cuda.amp.autocast(enabled=use_amp):
-                outputs = model(input_ids, labels=labels, use_gradient_checkpointing=bool(config.get("gradient_checkpointing", False)))
+                outputs = model(
+                    input_ids,
+                    labels=labels,
+                    use_gradient_checkpointing=bool(config.get("gradient_checkpointing", False)),
+                )
                 loss = outputs["loss"] / accumulation_steps
 
             if torch.isnan(loss) or torch.isinf(loss):
@@ -325,7 +335,7 @@ def _run_trial(
             if (i + 1) % accumulation_steps == 0:
                 scaler.unscale_(optimizer)
                 try:
-                    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip).item()
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip).item()
                 except RuntimeError as exc:
                     msg = str(exc).lower()
                     if "nan" in msg or "inf" in msg:
@@ -399,10 +409,10 @@ class HyperparameterSearch:
 
     def __init__(
         self,
-        base_config_path: Union[str, Path],
-        search_space: Optional[Dict[str, Any]] = None,
+        base_config_path: str | Path,
+        search_space: dict[str, Any] | None = None,
         n_trials: int = 20,
-        output_dir: Union[str, Path] = "hyperparameter_search",
+        output_dir: str | Path = "hyperparameter_search",
         study_name: str = "llm_search",
         direction: str = "minimize",
         seed: int = 42,
@@ -425,15 +435,15 @@ class HyperparameterSearch:
         self.logger = TrialLogger(self.log_path)
         self.rng = random.Random(self.seed)
         self.best_value = float("inf") if direction == "minimize" else float("-inf")
-        self.best_config: Optional[Dict[str, Any]] = None
-        self.trials: List[Dict[str, Any]] = []
+        self.best_config: dict[str, Any] | None = None
+        self.trials: list[dict[str, Any]] = []
 
-    def _get_base_config(self) -> Dict[str, Any]:
+    def _get_base_config(self) -> dict[str, Any]:
         if not self.base_config_path.exists():
             raise FileNotFoundError(f"Base config not found: {self.base_config_path}")
         return load_config(str(self.base_config_path))
 
-    def _merge_params(self, base: Dict[str, Any], params: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_params(self, base: dict[str, Any], params: dict[str, Any]) -> dict[str, Any]:
         config = dict(base)
         for key, value in params.items():
             if key == "max_position_embeddings":
@@ -461,7 +471,7 @@ class HyperparameterSearch:
         config.setdefault("output_dir", str(self.output_dir / "models" / "trial_models"))
         return config
 
-    def _run_and_log(self, params: Dict[str, Any], trial_id: int) -> Dict[str, Any]:
+    def _run_and_log(self, params: dict[str, Any], trial_id: int) -> dict[str, Any]:
         base_config = self._get_base_config()
         trial_config = self._merge_params(base_config, params)
 
@@ -473,7 +483,9 @@ class HyperparameterSearch:
 
         start = time.time()
         try:
-            metrics = _run_trial(trial_config, max_steps=self.max_trial_steps, seed=self.seed + trial_id)
+            metrics = _run_trial(
+                trial_config, max_steps=self.max_trial_steps, seed=self.seed + trial_id
+            )
         except Exception as exc:
             logger.exception("Trial %d failed", trial_id)
             metrics = {
@@ -485,7 +497,11 @@ class HyperparameterSearch:
 
         elapsed = time.time() - start
         score = metrics.get("val_loss", float("inf"))
-        status = "pruned" if metrics.get("pruned") else ("failed" if metrics.get("error") else "completed")
+        status = (
+            "pruned"
+            if metrics.get("pruned")
+            else ("failed" if metrics.get("error") else "completed")
+        )
 
         record = {
             "trial_id": trial_id,
@@ -498,7 +514,9 @@ class HyperparameterSearch:
         self.logger.log(record)
         self.trials.append(record)
 
-        is_better = (score < self.best_value) if self.direction == "minimize" else (score > self.best_value)
+        is_better = (
+            (score < self.best_value) if self.direction == "minimize" else (score > self.best_value)
+        )
         if is_better and not math.isinf(score):
             self.best_value = score
             self.best_config = trial_config
@@ -507,7 +525,7 @@ class HyperparameterSearch:
 
         return record
 
-    def run_random(self) -> Dict[str, Any]:
+    def run_random(self) -> dict[str, Any]:
         logger.info("Running random search: %d trials", self.n_trials)
         for trial_id in range(self.n_trials):
             params = SearchSpace.sample(self.search_space, self.rng)
@@ -521,7 +539,7 @@ class HyperparameterSearch:
             )
         return self._build_result()
 
-    def run_optuna(self) -> Dict[str, Any]:
+    def run_optuna(self) -> dict[str, Any]:
         try:
             import optuna
             from optuna.pruners import MedianPruner
@@ -531,8 +549,8 @@ class HyperparameterSearch:
                 "Optuna is not installed. Install it with `pip install optuna` or use --search-type random."
             ) from exc
 
-        def objective(trial: "optuna.Trial") -> float:  # type: ignore[name-defined]
-            params: Dict[str, Any] = {}
+        def objective(trial: optuna.Trial) -> float:  # type: ignore[name-defined]
+            params: dict[str, Any] = {}
             for name, spec in self.search_space.items():
                 kind = spec[0]
                 if kind == "loguniform":
@@ -558,7 +576,9 @@ class HyperparameterSearch:
 
             start = time.time()
             try:
-                metrics = _run_trial(trial_config, max_steps=self.max_trial_steps, seed=self.seed + trial_id)
+                metrics = _run_trial(
+                    trial_config, max_steps=self.max_trial_steps, seed=self.seed + trial_id
+                )
             except Exception as exc:
                 logger.exception("Optuna trial %d failed", trial_id)
                 raise optuna.TrialPruned(f"Trial failed: {exc}") from exc
@@ -591,7 +611,9 @@ class HyperparameterSearch:
 
             return score
 
-        pruner = MedianPruner(n_startup_trials=min(5, self.n_trials // 2), n_warmup_steps=2, interval_steps=1)
+        pruner = MedianPruner(
+            n_startup_trials=min(5, self.n_trials // 2), n_warmup_steps=2, interval_steps=1
+        )
         sampler = TPESampler(seed=self.seed)
         study = optuna.create_study(
             direction=self.direction,
@@ -611,7 +633,7 @@ class HyperparameterSearch:
 
         return self._build_result()
 
-    def _build_result(self) -> Dict[str, Any]:
+    def _build_result(self) -> dict[str, Any]:
         if self.best_config is None:
             self.best_config = self._get_base_config()
         return {
@@ -623,7 +645,7 @@ class HyperparameterSearch:
             "report_path": str(self.report_path),
         }
 
-    def run(self, search_type: str = "auto") -> Dict[str, Any]:
+    def run(self, search_type: str = "auto") -> dict[str, Any]:
         if search_type == "random":
             return self.run_random()
         if search_type == "optuna":
@@ -639,7 +661,7 @@ class HyperparameterSearch:
         if not trials:
             return "# Hyperparameter Search Report\n\nNo trials completed.\n"
 
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("# Hyperparameter Search Report")
         lines.append("")
         lines.append(f"- **Study**: {self.study_name}")
@@ -648,7 +670,7 @@ class HyperparameterSearch:
         lines.append(f"- **Best Score**: {self.best_value:.6f}")
         lines.append(f"- **Best Config**: `{self.best_config_path}`")
         lines.append(f"- **Log**: `{self.log_path}`")
-        lines.append(f"- **Generated**: {datetime.now(timezone.utc).isoformat()}")
+        lines.append(f"- **Generated**: {datetime.now(UTC).isoformat()}")
 
         completed = [t for t in trials if t.get("status") == "completed"]
         pruned = [t for t in trials if t.get("status") == "pruned"]
@@ -671,14 +693,24 @@ class HyperparameterSearch:
         sorted_trials = sorted(trials, key=lambda t: t.get("score", float("inf")))
         for idx, trial in enumerate(sorted_trials[:10], 1):
             lines.append("")
-            lines.append(f"### {idx}. Trial {trial['trial_id']} (score={trial['score']:.6f}, status={trial.get('status', 'unknown')})")
+            lines.append(
+                f"### {idx}. Trial {trial['trial_id']} (score={trial['score']:.6f}, status={trial.get('status', 'unknown')})"
+            )
             for k, v in trial.get("params", {}).items():
                 lines.append(f"- `{k}`: {v}")
             metrics = trial.get("metrics", {})
             val_loss = metrics.get("val_loss")
             train_loss = metrics.get("train_loss")
-            lines.append(f"- val_loss: {val_loss:.6f}" if isinstance(val_loss, (int, float)) else "- val_loss: N/A")
-            lines.append(f"- train_loss: {train_loss:.6f}" if isinstance(train_loss, (int, float)) else "- train_loss: N/A")
+            lines.append(
+                f"- val_loss: {val_loss:.6f}"
+                if isinstance(val_loss, (int, float))
+                else "- val_loss: N/A"
+            )
+            lines.append(
+                f"- train_loss: {train_loss:.6f}"
+                if isinstance(train_loss, (int, float))
+                else "- train_loss: N/A"
+            )
             lines.append(f"- elapsed: {trial.get('elapsed_seconds', 0):.2f}s")
 
         lines.append("")

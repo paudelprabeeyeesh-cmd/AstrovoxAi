@@ -109,8 +109,12 @@ def verify_inference(generations: dict) -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Verify Phase J reproducibility")
-    parser.add_argument("--metrics", default=str(REPRO_METRICS_PATH), help="Path to reproduction metrics JSON")
-    parser.add_argument("--expected", default=str(EXPECTED_METRICS_PATH), help="Path to expected metrics JSON")
+    parser.add_argument(
+        "--metrics", default=str(REPRO_METRICS_PATH), help="Path to reproduction metrics JSON"
+    )
+    parser.add_argument(
+        "--expected", default=str(EXPECTED_METRICS_PATH), help="Path to expected metrics JSON"
+    )
     parser.add_argument("--config", default=str(CONFIG_PATH), help="Path to versioned config")
     args = parser.parse_args()
 
@@ -148,7 +152,11 @@ def main():
     all_passed &= verify_config_hash()
     all_passed &= verify_export()
 
-    if "expected_metrics" in json.loads(expected_path.read_text()) if expected_path.exists() else {}:
+    if (
+        "expected_metrics" in json.loads(expected_path.read_text())
+        if expected_path.exists()
+        else {}
+    ):
         inner = json.loads(expected_path.read_text())["expected_metrics"]
     else:
         inner = expected

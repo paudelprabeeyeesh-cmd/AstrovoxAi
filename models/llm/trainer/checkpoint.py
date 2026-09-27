@@ -1,10 +1,12 @@
 import os
 import time
+
 import torch
-from ..utils.helpers import load_config
 
 
-def save_checkpoint(model, optimizer, scheduler, epoch, best_val_loss, path, config=None, global_step=None):
+def save_checkpoint(
+    model, optimizer, scheduler, epoch, best_val_loss, path, config=None, global_step=None
+):
     os.makedirs(os.path.dirname(path) if os.path.dirname(path) else ".", exist_ok=True)
     ckpt = {
         "epoch": epoch,

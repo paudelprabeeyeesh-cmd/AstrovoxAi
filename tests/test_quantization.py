@@ -30,7 +30,9 @@ class TestQuantizationConfig:
         assert cfg.format == QuantizationFormat.INT8_SYMMETRIC
 
     def test_to_dict_roundtrip(self):
-        cfg = QuantizationConfig(format=QuantizationFormat.BF16, method=QuantizationMethod.POST_TRAINING)
+        cfg = QuantizationConfig(
+            format=QuantizationFormat.BF16, method=QuantizationMethod.POST_TRAINING
+        )
         d = cfg.to_dict()
         assert d["format"] == "bf16"
         assert d["method"] == "ptq"
@@ -71,7 +73,9 @@ class TestQuantizedLinear:
 
 class TestQuantizedModelWrapper:
     def test_wrap_model(self):
-        model = torch.nn.Sequential(torch.nn.Linear(16, 32), torch.nn.ReLU(), torch.nn.Linear(32, 8))
+        model = torch.nn.Sequential(
+            torch.nn.Linear(16, 32), torch.nn.ReLU(), torch.nn.Linear(32, 8)
+        )
         cfg = QuantizationConfig(format=QuantizationFormat.INT8_SYMMETRIC)
         wrapper = QuantizedModelWrapper(model, config=cfg)
         x = torch.randn(2, 16)

@@ -11,6 +11,7 @@ Trains a 10B parameter language model using multiple advanced techniques:
 7. Curriculum learning
 8. Self-training/active learning
 """
+
 import os
 import sys
 import json
@@ -124,8 +125,12 @@ class DistributedTrainer:
         elapsed = time.time() - start
         params = count_parameters(self.model)
         logger.info(f"Model built in {elapsed:.1f}s: {params:,} ({params/1e9:.2f}B) parameters")
-        mem = self.model.estimate_memory(training=True, dtype_bytes=2 if self.dtype in (torch.float16, torch.bfloat16) else 4)
-        logger.info(f"Estimated memory: weights={mem['weights_gb']:.1f}GB, total={mem['total_base_gb']:.1f}GB")
+        mem = self.model.estimate_memory(
+            training=True, dtype_bytes=2 if self.dtype in (torch.float16, torch.bfloat16) else 4
+        )
+        logger.info(
+            f"Estimated memory: weights={mem['weights_gb']:.1f}GB, total={mem['total_base_gb']:.1f}GB"
+        )
 
     def _create_optimizer(self):
         name = self.config.get("optimizer", "adamw").lower()
@@ -136,27 +141,45 @@ class DistributedTrainer:
         elif name == "8bit_adam":
             try:
                 import bitsandbytes as bnb
-                self.optimizer = bnb.optim.AdamW8bit(self.model.parameters(), lr=lr, weight_decay=wd)
+
+                self.optimizer = bnb.optim.AdamW8bit(
+                    self.model.parameters(), lr=lr, weight_decay=wd
+                )
             except ImportError:
                 self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=wd)
         else:
-            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=wd, betas=(0.9, 0.95))
+            self.optimizer = torch.optim.AdamW(
+                self.model.parameters(), lr=lr, weight_decay=wd, betas=(0.9, 0.95)
+            )
 
     def _create_scheduler(self, dataloader_len):
         name = self.config.get("lr_scheduler", "cosine").lower()
         epochs = self.config.get("epochs", 1)
-        warmup = self.config.get("warmup_steps", int(dataloader_len * self.config.get("warmup_ratio", 0.01)))
+        warmup = self.config.get(
+            "warmup_steps", int(dataloader_len * self.config.get("warmup_ratio", 0.01))
+        )
         if name == "cosine":
             self.scheduler = torch.optim.lr_scheduler.SequentialLR(
                 self.optimizer,
                 schedulers=[
-                    torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup),
-                    torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=dataloader_len * epochs - warmup, eta_min=self.config.get("min_lr", 1e-6)),
+                    torch.optim.lr_scheduler.LinearLR(
+                        self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup
+                    ),
+                    torch.optim.lr_scheduler.CosineAnnealingLR(
+                        self.optimizer,
+                        T_max=dataloader_len * epochs - warmup,
+                        eta_min=self.config.get("min_lr", 1e-6),
+                    ),
                 ],
                 milestones=[warmup],
             )
         elif name == "linear":
-            self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=1.0, end_factor=0.0, total_iters=dataloader_len * epochs)
+            self.scheduler = torch.optim.lr_scheduler.LinearLR(
+                self.optimizer,
+                start_factor=1.0,
+                end_factor=0.0,
+                total_iters=dataloader_len * epochs,
+            )
         else:
             self.scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1.0)
 
@@ -167,6 +190,7 @@ class DistributedTrainer:
         grad_norm = 0.0
         start = time.time()
         from tqdm import tqdm
+
         pbar = tqdm(dataloader, desc=f"Epoch {epoch+1}")
         for i, batch in enumerate(pbar):
             input_ids = batch["input_ids"].to(self.device, non_blocking=True)
@@ -203,7 +227,13 @@ class DistributedTrainer:
                     self.scheduler.step()
             elapsed = time.time() - start
             tokens_per_sec = tokens / max(elapsed, 1e-6)
-            pbar.set_postfix({"loss": f"{total_loss / (i+1):.4f}", "tokens/s": f"{tokens_per_sec:.1f}", "grad": f"{grad_norm:.2f}"})
+            pbar.set_postfix(
+                {
+                    "loss": f"{total_loss / (i+1):.4f}",
+                    "tokens/s": f"{tokens_per_sec:.1f}",
+                    "grad": f"{grad_norm:.2f}",
+                }
+            )
         return {
             "train_loss": total_loss / max(1, len(dataloader)),
             "tokens": tokens,
@@ -237,7 +267,12 @@ class DistributedTrainer:
         avg_loss = total_loss / max(total_tokens, 1)
         accuracy = correct / max(total_tokens, 1)
         perplexity = torch.exp(torch.tensor(avg_loss)).item() if avg_loss < 100 else float("inf")
-        return {"loss": avg_loss, "perplexity": perplexity, "accuracy": accuracy, "tokens": total_tokens}
+        return {
+            "loss": avg_loss,
+            "perplexity": perplexity,
+            "accuracy": accuracy,
+            "tokens": total_tokens,
+        }
 
     def pretrain(self, resume_from: Optional[str] = None):
         logger.info("=" * 60)
@@ -247,28 +282,61 @@ class DistributedTrainer:
         self._create_optimizer()
         tokenizer = load_tokenizer(self.config.get("tokenizer_path", "tokenizer.json"))
         from models.llm.training_data.pipeline import StreamingDataset
+
         train_file = self.config.get("train_file", "data/train.txt")
-        train_dataset = StreamingDataset(train_file, tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
-        val_dataset = StreamingDataset(self.config.get("val_file", train_file), tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
-        train_loader = DataLoader(train_dataset, batch_size=self.config.get("batch_size", 1), shuffle=True, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=True)
-        val_loader = DataLoader(val_dataset, batch_size=max(1, self.config.get("batch_size", 1)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=False)
+        train_dataset = StreamingDataset(
+            train_file,
+            tokenizer,
+            block_size=self.config.get("max_position_embeddings", 2048),
+            streaming=True,
+        )
+        val_dataset = StreamingDataset(
+            self.config.get("val_file", train_file),
+            tokenizer,
+            block_size=self.config.get("max_position_embeddings", 2048),
+            streaming=True,
+        )
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.config.get("batch_size", 1),
+            shuffle=True,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=True,
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=max(1, self.config.get("batch_size", 1) // 2),
+            shuffle=False,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=False,
+        )
         self._create_scheduler(len(train_loader))
         start_epoch = 0
         if resume_from and os.path.exists(resume_from):
-            start_epoch, _ = PretrainPipeline.load_checkpoint(self.model, self.optimizer, self.scheduler, resume_from, self.device)
+            start_epoch, _ = PretrainPipeline.load_checkpoint(
+                self.model, self.optimizer, self.scheduler, resume_from, self.device
+            )
         accumulation = self.config.get("gradient_accumulation_steps", 1)
         grad_clip = self.config.get("gradient_clip_norm", 1.0)
         for epoch in range(start_epoch, self.config.get("epochs", 1)):
             train_metrics = self.train_epoch(train_loader, accumulation, grad_clip, epoch)
             val_metrics = self.validate(val_loader, max_batches=self.config.get("max_val_batches"))
             self.tracker.log({**train_metrics, **val_metrics}, step=epoch)
-            logger.info(f"Epoch {epoch+1} | Train loss: {train_metrics['train_loss']:.4f} | Val loss: {val_metrics['loss']:.4f} | Val ppl: {val_metrics['perplexity']:.2f}")
-            self.ckpt_manager.save(self.model, self.optimizer, self.scheduler, epoch, val_metrics, self.config)
+            logger.info(
+                f"Epoch {epoch+1} | Train loss: {train_metrics['train_loss']:.4f} | Val loss: {val_metrics['loss']:.4f} | Val ppl: {val_metrics['perplexity']:.2f}"
+            )
+            self.ckpt_manager.save(
+                self.model, self.optimizer, self.scheduler, epoch, val_metrics, self.config
+            )
             if self.early_stopping(val_metrics["loss"]):
                 logger.info("Early stopping triggered")
                 break
         output_path = self.config.get("output_dir", "model_10b.pt")
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
         torch.save(self.model.state_dict(), output_path)
         logger.info(f"Pretraining complete. Model saved to {output_path}")
         return output_path
@@ -278,14 +346,29 @@ class DistributedTrainer:
         logger.info("PHASE 2: INSTRUCTION TUNING")
         logger.info("=" * 60)
         self._build_model()
-        self.model.load_state_dict(torch.load(base_model_path, map_location=self.device, weights_only=True))
+        self.model.load_state_dict(
+            torch.load(base_model_path, map_location=self.device, weights_only=True)
+        )
         self._create_optimizer()
         tokenizer = load_tokenizer(self.config.get("tokenizer_path", "tokenizer.json"))
-        instruct_dataset = InstructionDataset(instructions_path, tokenizer, max_length=self.config.get("max_position_embeddings", 2048))
-        instruct_loader = DataLoader(instruct_dataset, batch_size=self.config.get("batch_size", 2), shuffle=True, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=True)
+        instruct_dataset = InstructionDataset(
+            instructions_path,
+            tokenizer,
+            max_length=self.config.get("max_position_embeddings", 2048),
+        )
+        instruct_loader = DataLoader(
+            instruct_dataset,
+            batch_size=self.config.get("batch_size", 2),
+            shuffle=True,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=True,
+        )
         self._create_scheduler(len(instruct_loader))
         for epoch in range(self.config.get("instruction_epochs", 3)):
-            train_metrics = self.train_epoch(instruct_loader, 1, self.config.get("gradient_clip_norm", 1.0), epoch)
+            train_metrics = self.train_epoch(
+                instruct_loader, 1, self.config.get("gradient_clip_norm", 1.0), epoch
+            )
             logger.info(f"Instruct Epoch {epoch+1} | Loss: {train_metrics['train_loss']:.4f}")
         output_path = self.config.get("instruction_output_dir", "model_10b_instruct.pt")
         torch.save(self.model.state_dict(), output_path)
@@ -297,11 +380,26 @@ class DistributedTrainer:
         logger.info("PHASE 3: EVALUATION")
         logger.info("=" * 60)
         self._build_model()
-        self.model.load_state_dict(torch.load(model_path, map_location=self.device, weights_only=True))
+        self.model.load_state_dict(
+            torch.load(model_path, map_location=self.device, weights_only=True)
+        )
         tokenizer = load_tokenizer(self.config.get("tokenizer_path", "tokenizer.json"))
         from models.llm.training_data.pipeline import StreamingDataset
-        val_dataset = StreamingDataset(val_file, tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
-        val_loader = DataLoader(val_dataset, batch_size=self.config.get("batch_size", 1), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=False)
+
+        val_dataset = StreamingDataset(
+            val_file,
+            tokenizer,
+            block_size=self.config.get("max_position_embeddings", 2048),
+            streaming=True,
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=self.config.get("batch_size", 1),
+            shuffle=False,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=False,
+        )
         evaluator = Evaluator(self.model, tokenizer, device=self.device)
         ppl = evaluator.perplexity(val_loader, max_batches=self.config.get("max_val_batches"))
         acc = evaluator.accuracy(val_loader, max_batches=self.config.get("max_val_batches"))
@@ -317,7 +415,9 @@ class DistributedTrainer:
         start_time = time.time()
         try:
             base_model = self.pretrain(resume_from=resume_from)
-            instruct_model = self.instruction_tune(base_model, self.config.get("instructions_path", "data/instructions.jsonl"))
+            instruct_model = self.instruction_tune(
+                base_model, self.config.get("instructions_path", "data/instructions.jsonl")
+            )
             results = self.evaluate(instruct_model, self.config.get("val_file", "data/val.txt"))
             self.experiment_tracker.log_artifact(instruct_model, metadata=results)
             total_time = time.time() - start_time
@@ -346,11 +446,20 @@ def collate_fn(batch, pad_token_id=0):
 
 def main():
     parser = argparse.ArgumentParser(description="Train 10B LLM with all methods")
-    parser.add_argument("--config", default="models/llm/configs/config_10b.yaml", help="Config path")
+    parser.add_argument(
+        "--config", default="models/llm/configs/config_10b.yaml", help="Config path"
+    )
     parser.add_argument("--resume", default=None, help="Resume from checkpoint")
-    parser.add_argument("--phase", choices=["pretrain", "instruct", "evaluate", "all"], default="all", help="Training phase")
+    parser.add_argument(
+        "--phase",
+        choices=["pretrain", "instruct", "evaluate", "all"],
+        default="all",
+        help="Training phase",
+    )
     parser.add_argument("--base-model", default=None, help="Base model for instruction tuning")
-    parser.add_argument("--instructions", default="data/instructions.jsonl", help="Instructions dataset")
+    parser.add_argument(
+        "--instructions", default="data/instructions.jsonl", help="Instructions dataset"
+    )
     args = parser.parse_args()
     os.makedirs("logs", exist_ok=True)
     os.makedirs("experiments", exist_ok=True)

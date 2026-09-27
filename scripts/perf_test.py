@@ -101,11 +101,7 @@ class PerformanceTester:
 
     def generate_report(self) -> dict:
         """Generate performance report."""
-        report = {
-            "timestamp": datetime.now().isoformat(),
-            "base_url": self.base_url,
-            "tests": {}
-        }
+        report = {"timestamp": datetime.now().isoformat(), "base_url": self.base_url, "tests": {}}
 
         for endpoint, measurements in self.results.items():
             if not measurements:
@@ -126,9 +122,9 @@ class PerformanceTester:
                 "p99_ms": round(self._percentile(durations, 99), 2),
                 "success_rate": round(success_count / len(statuses) * 100, 2),
                 "error_count": error_count,
-                "requests_per_second": round(
-                    len(durations) / sum(durations), 2
-                ) if sum(durations) > 0 else 0,
+                "requests_per_second": (
+                    round(len(durations) / sum(durations), 2) if sum(durations) > 0 else 0
+                ),
             }
 
         return report

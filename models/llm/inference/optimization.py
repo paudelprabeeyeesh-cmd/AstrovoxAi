@@ -1,6 +1,4 @@
-import os
 import logging
-from typing import Optional, Dict, Any
 
 import torch
 import torch.nn as nn
@@ -10,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 class KVCache:
     def __init__(self):
-        self.key_cache: Optional[torch.Tensor] = None
-        self.value_cache: Optional[torch.Tensor] = None
+        self.key_cache: torch.Tensor | None = None
+        self.value_cache: torch.Tensor | None = None
         self.cache_len = 0
 
     def update(self, key: torch.Tensor, value: torch.Tensor):
@@ -65,10 +63,25 @@ class InferenceOptimizer:
         self.kv_cache = KVCache()
 
     def enable_kv_cache(self):
-        for name, module in self.model.named_modules():
+        for _name, module in self.model.named_modules():
             if hasattr(module, "use_kv_cache"):
                 module.use_kv_cache = True
 
-    def generate(self, prompt: str, max_new_tokens: int = 100, temperature: float = 1.0, top_k: Optional[int] = None) -> str:
+    def generate(
+        self,
+        prompt: str,
+        max_new_tokens: int = 100,
+        temperature: float = 1.0,
+        top_k: int | None = None,
+    ) -> str:
         from ..inference.generate import generate
-        return generate(self.model, self.tokenizer, prompt, max_new_tokens=max_new_tokens, temperature=temperature, top_k=top_k, device=self.device)
+
+        return generate(
+            self.model,
+            self.tokenizer,
+            prompt,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            device=self.device,
+        )

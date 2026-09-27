@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate all YAML configs have required fields and correct types."""
+
 import argparse
 import os
 import sys
@@ -98,19 +99,27 @@ def validate_types(config, path):
         value = config[field]
         if isinstance(expected_type, tuple):
             if not isinstance(value, expected_type):
-                errors.append(f"Field '{field}' has type {type(value).__name__}, expected {expected_type}")
+                errors.append(
+                    f"Field '{field}' has type {type(value).__name__}, expected {expected_type}"
+                )
         else:
             if not isinstance(value, expected_type):
-                errors.append(f"Field '{field}' has type {type(value).__name__}, expected {expected_type.__name__}")
+                errors.append(
+                    f"Field '{field}' has type {type(value).__name__}, expected {expected_type.__name__}"
+                )
     for field, value in OPTIONAL_FIELDS.items():
         if field in config:
             expected_type = OPTIONAL_FIELDS[field]
             if isinstance(expected_type, tuple):
                 if not isinstance(value, expected_type):
-                    errors.append(f"Optional field '{field}' has type {type(value).__name__}, expected {expected_type}")
+                    errors.append(
+                        f"Optional field '{field}' has type {type(value).__name__}, expected {expected_type}"
+                    )
             else:
                 if not isinstance(value, expected_type):
-                    errors.append(f"Optional field '{field}' has type {type(value).__name__}, expected {expected_type.__name__}")
+                    errors.append(
+                        f"Optional field '{field}' has type {type(value).__name__}, expected {expected_type.__name__}"
+                    )
     return errors
 
 
@@ -144,9 +153,13 @@ def validate_consistency(config, path):
     errors = []
     if config.get("num_attention_heads", 0) > 0:
         if int(config["hidden_size"]) % int(config["num_attention_heads"]) != 0:
-            errors.append(f"hidden_size ({config['hidden_size']}) must be divisible by num_attention_heads ({config['num_attention_heads']})")
+            errors.append(
+                f"hidden_size ({config['hidden_size']}) must be divisible by num_attention_heads ({config['num_attention_heads']})"
+            )
     if config.get("intermediate_size", 0) < config.get("hidden_size", 0):
-        errors.append(f"intermediate_size ({config['intermediate_size']}) should be >= hidden_size ({config['hidden_size']})")
+        errors.append(
+            f"intermediate_size ({config['intermediate_size']}) should be >= hidden_size ({config['hidden_size']})"
+        )
     if config.get("lr", 0) <= 0:
         errors.append(f"lr must be positive, got {config['lr']}")
     if config.get("epochs", 0) < 1:
@@ -154,15 +167,25 @@ def validate_consistency(config, path):
     if config.get("batch_size", 0) < 1:
         errors.append(f"batch_size must be >= 1, got {config['batch_size']}")
     if config.get("gradient_accumulation_steps", 0) < 1:
-        errors.append(f"gradient_accumulation_steps must be >= 1, got {config['gradient_accumulation_steps']}")
+        errors.append(
+            f"gradient_accumulation_steps must be >= 1, got {config['gradient_accumulation_steps']}"
+        )
     if config.get("mixed_precision") not in ("none", "fp16", "bf16", "bfloat16"):
-        errors.append(f"mixed_precision must be one of 'none', 'fp16', 'bf16', 'bfloat16', got '{config.get('mixed_precision')}'")
+        errors.append(
+            f"mixed_precision must be one of 'none', 'fp16', 'bf16', 'bfloat16', got '{config.get('mixed_precision')}'"
+        )
     if config.get("optimizer") not in ("adamw", "8bit-adamw"):
-        errors.append(f"optimizer must be one of 'adamw', '8bit-adamw', got '{config.get('optimizer')}'")
+        errors.append(
+            f"optimizer must be one of 'adamw', '8bit-adamw', got '{config.get('optimizer')}'"
+        )
     if config.get("lr_scheduler") not in ("cosine", "linear", "constant"):
-        errors.append(f"lr_scheduler must be one of 'cosine', 'linear', 'constant', got '{config.get('lr_scheduler')}'")
+        errors.append(
+            f"lr_scheduler must be one of 'cosine', 'linear', 'constant', got '{config.get('lr_scheduler')}'"
+        )
     if config.get("activation") not in ("swiglu", "gelu"):
-        errors.append(f"activation must be one of 'swiglu', 'gelu', got '{config.get('activation')}'")
+        errors.append(
+            f"activation must be one of 'swiglu', 'gelu', got '{config.get('activation')}'"
+        )
     return errors
 
 
@@ -211,6 +234,8 @@ def validate_all(base_dir="models/llm/configs"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Validate LLM training configs")
-    parser.add_argument("--base-dir", default="models/llm/configs", help="Directory containing config YAML files")
+    parser.add_argument(
+        "--base-dir", default="models/llm/configs", help="Directory containing config YAML files"
+    )
     args = parser.parse_args()
     sys.exit(validate_all(base_dir=args.base_dir))

@@ -24,6 +24,7 @@ Hardware support:
 from __future__ import annotations
 
 import argparse
+import contextlib
 import gc
 import json
 import logging
@@ -31,15 +32,12 @@ import math
 import os
 import sys
 import time
-import warnings
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import torch
 import torch.nn as nn
-import yaml
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +45,7 @@ logger = logging.getLogger(__name__)
 # Internal imports with graceful fallback
 # ---------------------------------------------------------------------------
 try:
-    from ..utils.helpers import load_config, get_device, set_cpu_threads, count_parameters
+    from ..utils.helpers import count_parameters, get_device, load_config, set_cpu_threads
 
     _HELPERS_AVAILABLE = True
 except Exception:  # pragma: no cover
@@ -63,7 +61,7 @@ except Exception:  # pragma: no cover
     LLM = None  # type: ignore[misc,assignment]
 
 try:
-    from ..tokenizer.train_tokenizer import load_tokenizer, TextDataset, collate_fn
+    from ..tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
 
     _TOKENIZER_AVAILABLE = True
 except Exception:  # pragma: no cover
@@ -71,7 +69,7 @@ except Exception:  # pragma: no cover
     load_tokenizer = TextDataset = collate_fn = None  # type: ignore[misc,assignment]
 
 try:
-    from ..trainer.checkpoint import save_checkpoint, load_checkpoint, list_checkpoints
+    from ..trainer.checkpoint import list_checkpoints, load_checkpoint, save_checkpoint
 
     _CHECKPOINT_AVAILABLE = True
 except Exception:  # pragma: no cover
@@ -81,17 +79,17 @@ except Exception:  # pragma: no cover
 try:
     from ..distributed_training import (
         DistributedStrategy,
-        init_distributed,
-        destroy_distributed,
-        wrap_model,
-        create_distributed_dataloader,
-        is_main_process,
         barrier,
+        create_distributed_dataloader,
+        destroy_distributed,
+        get_local_rank,
         get_rank,
         get_world_size,
-        get_local_rank,
+        init_distributed,
         is_distributed,
+        is_main_process,
         log_memory_usage,
+        wrap_model,
     )
 
     _DISTRIBUTED_AVAILABLE = True
@@ -106,9 +104,9 @@ except Exception:  # pragma: no cover
 try:
     from ..memory_optimization import (
         MemoryProfiler,
-        checkpoint_forward,
-        SelectiveRecompute,
         MixedPrecisionTraining,
+        SelectiveRecompute,
+        checkpoint_forward,
     )
 
     _MEMORY_OPT_AVAILABLE = True
@@ -133,7 +131,7 @@ except Exception:  # pragma: no cover
     ExperimentLogger = None  # type: ignore[misc,assignment]
 
 try:
-    from ..trainer.metrics import evaluate_metrics, compute_perplexity
+    from ..trainer.metrics import compute_perplexity, evaluate_metrics
 
     _METRICS_AVAILABLE = True
 except Exception:  # pragma: no cover
@@ -144,7 +142,7 @@ except Exception:  # pragma: no cover
 # ---------------------------------------------------------------------------
 # Built-in model presets for 1B / 3.7B / 10B
 # ---------------------------------------------------------------------------
-MODEL_PRESETS: Dict[str, Dict[str, Any]] = {
+MODEL_PRESETS: dict[str, dict[str, Any]] = {
     "1b": {
         "vocab_size": 32000,
         "hidden_size": 2048,
@@ -232,7 +230,9 @@ class DistributedConfig:
             "none",
         }
         if strategy not in valid:
-            raise ValueError(f"Unknown distributed strategy: {self.strategy}. Valid: {sorted(valid)}")
+            raise ValueError(
+                f"Unknown distributed strategy: {self.strategy}. Valid: {sorted(valid)}"
+            )
         self.strategy = strategy
 
 
@@ -259,7 +259,7 @@ class CheckpointConfig:
     interval: int = 500
     keep_last_n: int = 3
     save_safetensors: bool = False
-    resume_from: Optional[str] = None
+    resume_from: str | None = None
 
 
 @dataclass
@@ -268,11 +268,11 @@ class TrainingConfig:
 
     # Model
     model_size: str = "1b"
-    config_path: Optional[str] = None
+    config_path: str | None = None
     output_dir: str = "output"
     tokenizer_path: str = "tokenizer.json"
     train_file: str = "data/train.txt"
-    val_file: Optional[str] = None
+    val_file: str | None = None
     val_ratio: float = 0.05
 
     # Training hyperparameters
@@ -281,7 +281,7 @@ class TrainingConfig:
     gradient_accumulation_steps: int = 1
     lr: float = 3e-4
     weight_decay: float = 0.1
-    betas: Tuple[float, float] = (0.9, 0.95)
+    betas: tuple[float, float] = (0.9, 0.95)
     grad_clip: float = 1.0
     warmup_steps: int = 0
     min_lr: float = 1e-6
@@ -303,7 +303,7 @@ class TrainingConfig:
 
     # Logging
     log_dir: str = "logs"
-    experiment_name: Optional[str] = None
+    experiment_name: str | None = None
     seed: int = 42
 
     def __post_init__(self) -> None:
@@ -315,7 +315,7 @@ class TrainingConfig:
             self.checkpoint = CheckpointConfig(**self.checkpoint)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "TrainingConfig":
+    def from_dict(cls, data: dict[str, Any]) -> TrainingConfig:
         nested = {}
         for key in ("precision", "distributed", "checkpoint"):
             if key in data and isinstance(data[key], dict):
@@ -334,8 +334,16 @@ def _resolve_dtype(precision: PrecisionConfig, device: torch.device) -> torch.dt
         "none": torch.float32,
         "fp16": torch.float16 if device.type == "cuda" else torch.float32,
         "float16": torch.float16 if device.type == "cuda" else torch.float32,
-        "bf16": torch.bfloat16 if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8 else torch.float32,
-        "bfloat16": torch.bfloat16 if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8 else torch.float32,
+        "bf16": (
+            torch.bfloat16
+            if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
+            else torch.float32
+        ),
+        "bfloat16": (
+            torch.bfloat16
+            if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8
+            else torch.float32
+        ),
         "amp": torch.float16 if device.type == "cuda" else torch.float32,
     }
     return dtype_map.get(precision.dtype, torch.float32)
@@ -356,8 +364,8 @@ class LargeScaleTrainer:
 
     def __init__(
         self,
-        config: Optional[TrainingConfig] = None,
-        config_path: Optional[str] = None,
+        config: TrainingConfig | None = None,
+        config_path: str | None = None,
         model_size: str = "1b",
         **config_overrides: Any,
     ) -> None:
@@ -388,25 +396,27 @@ class LargeScaleTrainer:
         self.use_amp = _should_use_amp(self.config.precision, self.device)
         self.scaler = torch.cuda.amp.GradScaler(enabled=self.use_amp)
 
-        self.model: Optional[nn.Module] = None
-        self.optimizer: Optional[torch.optim.Optimizer] = None
-        self.scheduler: Optional[Any] = None
-        self.train_loader: Optional[Any] = None
-        self.val_loader: Optional[Any] = None
+        self.model: nn.Module | None = None
+        self.optimizer: torch.optim.Optimizer | None = None
+        self.scheduler: Any | None = None
+        self.train_loader: Any | None = None
+        self.val_loader: Any | None = None
 
         self.start_epoch: int = 0
         self.global_step: int = 0
         self.best_val_loss: float = float("inf")
-        self.train_log: List[Dict[str, Any]] = []
-        self.val_log: List[Dict[str, Any]] = []
+        self.train_log: list[dict[str, Any]] = []
+        self.val_log: list[dict[str, Any]] = []
 
-        self.memory_profiler = MemoryProfiler(enabled=(self.device.type == "cuda")) if _MEMORY_OPT_AVAILABLE else None
-        self.experiment_logger: Optional[Any] = None
+        self.memory_profiler = (
+            MemoryProfiler(enabled=(self.device.type == "cuda")) if _MEMORY_OPT_AVAILABLE else None
+        )
+        self.experiment_logger: Any | None = None
 
         self._initialized = False
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "LargeScaleTrainer":
+    def from_dict(cls, data: dict[str, Any]) -> LargeScaleTrainer:
         config = TrainingConfig.from_dict(data)
         return cls(config=config)
 
@@ -432,7 +442,7 @@ class LargeScaleTrainer:
                 raise
         raise RuntimeError("LLM model class not available.")
 
-    def _get_model_config(self) -> Dict[str, Any]:
+    def _get_model_config(self) -> dict[str, Any]:
         if self.config.config_path and os.path.exists(self.config.config_path):
             cfg = load_config(self.config.config_path)
         else:
@@ -452,7 +462,7 @@ class LargeScaleTrainer:
         cfg.setdefault("tie_weights", True)
         return cfg
 
-    def _build_dataloaders(self) -> Tuple[Any, Any]:
+    def _build_dataloaders(self) -> tuple[Any, Any]:
         if not _TOKENIZER_AVAILABLE:
             raise RuntimeError("Tokenizer module not available.")
 
@@ -466,7 +476,7 @@ class LargeScaleTrainer:
         indices = torch.randperm(n, generator=g).tolist()
         split = int(n * (1 - self.config.val_ratio))
 
-        from torch.utils.data import Subset, DataLoader
+        from torch.utils.data import DataLoader, Subset
 
         train_subset = Subset(train_dataset, indices[:split])
         val_subset = Subset(train_dataset, indices[split:])
@@ -491,7 +501,9 @@ class LargeScaleTrainer:
         )
         return train_loader, val_loader
 
-    def _build_optimizer_and_scheduler(self, dataloader_len: int) -> Tuple[torch.optim.Optimizer, Optional[Any]]:
+    def _build_optimizer_and_scheduler(
+        self, dataloader_len: int
+    ) -> tuple[torch.optim.Optimizer, Any | None]:
         if _OPTIMIZERS_AVAILABLE and get_optimizer_and_scheduler is not None:
             cfg = {
                 "optimizer": "adamw",
@@ -529,7 +541,7 @@ class LargeScaleTrainer:
         if strategy in ("zero3", "zero_3"):
             strategy = "fsdp"
 
-        kwargs: Dict[str, Any] = {}
+        kwargs: dict[str, Any] = {}
         if strategy == "fsdp":
             from torch.distributed.fsdp import ShardingStrategy
 
@@ -544,7 +556,9 @@ class LargeScaleTrainer:
             )
             kwargs["cpu_offload"] = self.config.distributed.fsdp_cpu_offload
             kwargs["sharding_strategy"] = sharding
-            kwargs["mixed_precision"] = self.dtype if self.dtype in (torch.float16, torch.bfloat16) else torch.float32
+            kwargs["mixed_precision"] = (
+                self.dtype if self.dtype in (torch.float16, torch.bfloat16) else torch.float32
+            )
 
         return wrap_model(self.model, strategy, device=self.device, **kwargs)
 
@@ -562,7 +576,7 @@ class LargeScaleTrainer:
                 [SelectiveRecompute(block) for block in self.model.blocks]
             )
 
-    def initialize(self, resume_from: Optional[str] = None) -> None:
+    def initialize(self, resume_from: str | None = None) -> None:
         """Initialize model, optimizer, scheduler, and dataloaders."""
         logger.info("Initializing large-scale trainer...")
         logger.info("Model size: %s", self.config.model_size)
@@ -590,26 +604,42 @@ class LargeScaleTrainer:
     def _log_model_info(self) -> None:
         if not _LLM_AVAILABLE or self.model is None:
             return
-        params = count_parameters(self.model) if count_parameters else sum(p.numel() for p in self.model.parameters())
-        mem = self.model.estimate_memory(training=True, dtype_bytes=2 if self.dtype in (torch.float16, torch.bfloat16) else 4)
+        params = (
+            count_parameters(self.model)
+            if count_parameters
+            else sum(p.numel() for p in self.model.parameters())
+        )
+        mem = self.model.estimate_memory(
+            training=True, dtype_bytes=2 if self.dtype in (torch.float16, torch.bfloat16) else 4
+        )
         logger.info("Parameters: %s (%sB)", f"{params:,}", f"{params/1e9:.2f}")
-        logger.info("Estimated memory: weights=%.1fGB, total=%.1fGB", mem.get("weights_gb", 0), mem.get("total_base_gb", 0))
+        logger.info(
+            "Estimated memory: weights=%.1fGB, total=%.1fGB",
+            mem.get("weights_gb", 0),
+            mem.get("total_base_gb", 0),
+        )
         if is_main_process() if _DISTRIBUTED_AVAILABLE else True:
-            logger.info("World size: %s, Rank: %s", get_world_size() if _DISTRIBUTED_AVAILABLE else 1, get_rank() if _DISTRIBUTED_AVAILABLE else 0)
+            logger.info(
+                "World size: %s, Rank: %s",
+                get_world_size() if _DISTRIBUTED_AVAILABLE else 1,
+                get_rank() if _DISTRIBUTED_AVAILABLE else 0,
+            )
 
     def _load_checkpoint(self, path: str) -> None:
         if not _CHECKPOINT_AVAILABLE:
             logger.warning("Checkpoint module unavailable; cannot resume.")
             return
         try:
-            state = load_checkpoint(self.model, self.optimizer, self.scheduler, path, device=self.device)
+            state = load_checkpoint(
+                self.model, self.optimizer, self.scheduler, path, device=self.device
+            )
             self.start_epoch = state.get("epoch", 0)
             self.best_val_loss = state.get("best_val_loss", float("inf"))
             logger.info("Resumed from checkpoint: %s (epoch=%d)", path, self.start_epoch)
         except Exception as exc:
             logger.error("Failed to load checkpoint %s: %s", path, exc)
 
-    def train_step(self, batch: Dict[str, torch.Tensor]) -> float:
+    def train_step(self, batch: dict[str, torch.Tensor]) -> float:
         """Execute a single training step."""
         if self.model is None or self.optimizer is None:
             raise RuntimeError("Trainer not initialized. Call initialize() first.")
@@ -623,11 +653,19 @@ class LargeScaleTrainer:
         loss = None
         if self.use_amp:
             with torch.cuda.amp.autocast(dtype=self.dtype):
-                outputs = self.model(input_ids, labels=labels, use_gradient_checkpointing=self.config.gradient_checkpointing)
+                outputs = self.model(
+                    input_ids,
+                    labels=labels,
+                    use_gradient_checkpointing=self.config.gradient_checkpointing,
+                )
                 loss = outputs["loss"] / self.config.gradient_accumulation_steps
             self.scaler.scale(loss).backward()
         else:
-            outputs = self.model(input_ids, labels=labels, use_gradient_checkpointing=self.config.gradient_checkpointing)
+            outputs = self.model(
+                input_ids,
+                labels=labels,
+                use_gradient_checkpointing=self.config.gradient_checkpointing,
+            )
             loss = outputs["loss"] / self.config.gradient_accumulation_steps
             loss.backward()
 
@@ -652,11 +690,13 @@ class LargeScaleTrainer:
         return loss.item() * self.config.gradient_accumulation_steps
 
     @torch.no_grad()
-    def validate(self, max_batches: Optional[int] = None) -> Dict[str, Any]:
+    def validate(self, max_batches: int | None = None) -> dict[str, Any]:
         if self.model is None or self.val_loader is None:
             return {}
         if _METRICS_AVAILABLE and evaluate_metrics is not None:
-            return evaluate_metrics(self.model, self.val_loader, self.device, max_batches=max_batches)
+            return evaluate_metrics(
+                self.model, self.val_loader, self.device, max_batches=max_batches
+            )
         self.model.eval()
         total_loss = 0.0
         total_tokens = 0
@@ -682,10 +722,19 @@ class LargeScaleTrainer:
                 break
         avg_loss = total_loss / max(total_tokens, 1)
         accuracy = correct / max(total_tokens, 1)
-        perplexity = compute_perplexity(avg_loss) if _METRICS_AVAILABLE else (math.exp(avg_loss) if avg_loss < 100 else float("inf"))
-        return {"loss": avg_loss, "perplexity": perplexity, "accuracy": accuracy, "tokens": total_tokens}
+        perplexity = (
+            compute_perplexity(avg_loss)
+            if _METRICS_AVAILABLE
+            else (math.exp(avg_loss) if avg_loss < 100 else float("inf"))
+        )
+        return {
+            "loss": avg_loss,
+            "perplexity": perplexity,
+            "accuracy": accuracy,
+            "tokens": total_tokens,
+        }
 
-    def train(self, resume_from: Optional[str] = None) -> Dict[str, Any]:
+    def train(self, resume_from: str | None = None) -> dict[str, Any]:
         """Run full training loop."""
         if not self._initialized:
             self.initialize(resume_from=resume_from)
@@ -699,7 +748,6 @@ class LargeScaleTrainer:
 
         start_time = time.time()
         accumulation = self.config.gradient_accumulation_steps
-        grad_clip = self.config.grad_clip
         ckpt_cfg = self.config.checkpoint
 
         for epoch in range(self.start_epoch, self.config.epochs):
@@ -772,7 +820,9 @@ class LargeScaleTrainer:
                 self.best_val_loss = val_loss
                 self._save_checkpoint(os.path.join(ckpt_cfg.dir, "best.pt"), epoch)
 
-            if (epoch + 1) % max(1, ckpt_cfg.interval // len(self.train_loader)) == 0 or epoch == self.config.epochs - 1:
+            if (epoch + 1) % max(
+                1, ckpt_cfg.interval // len(self.train_loader)
+            ) == 0 or epoch == self.config.epochs - 1:
                 self._save_checkpoint(os.path.join(ckpt_cfg.dir, "latest.pt"), epoch)
 
             if is_distributed():
@@ -851,7 +901,9 @@ class LargeScaleTrainer:
             "config": self._get_model_config(),
             "timestamp": datetime.now().isoformat(),
         }
-        report_path = os.path.join(self.config.log_dir, f"{self.config.model_size}_training_report.json")
+        report_path = os.path.join(
+            self.config.log_dir, f"{self.config.model_size}_training_report.json"
+        )
         os.makedirs(self.config.log_dir, exist_ok=True)
         with open(report_path, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, default=str)
@@ -909,10 +961,8 @@ See `{report_path}` for detailed training metrics.
         if _DISTRIBUTED_AVAILABLE:
             destroy_distributed()
         if self.experiment_logger:
-            try:
+            with contextlib.suppress(Exception):
                 self.experiment_logger.close()
-            except Exception:
-                pass
         gc.collect()
         torch.cuda.empty_cache()
 
@@ -922,11 +972,11 @@ See `{report_path}` for detailed training metrics.
 # ---------------------------------------------------------------------------
 def train_large_scale(
     model_size: str = "1b",
-    config_path: Optional[str] = None,
-    resume_from: Optional[str] = None,
+    config_path: str | None = None,
+    resume_from: str | None = None,
     output_dir: str = "output",
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     High-level entry point for large-scale training.
 
@@ -956,7 +1006,7 @@ def train_large_scale(
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Phase K Large-Scale LLM Training",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -969,8 +1019,24 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--gradient-accumulation-steps", type=int, default=None)
-    parser.add_argument("--mixed-precision", type=str, default=None, choices=["none", "fp16", "bf16", "amp"])
-    parser.add_argument("--strategy", type=str, default="ddp", choices=["ddp", "fsdp", "zero1", "zero2", "zero3", "tensor_parallel", "pipeline_parallel", "none"])
+    parser.add_argument(
+        "--mixed-precision", type=str, default=None, choices=["none", "fp16", "bf16", "amp"]
+    )
+    parser.add_argument(
+        "--strategy",
+        type=str,
+        default="ddp",
+        choices=[
+            "ddp",
+            "fsdp",
+            "zero1",
+            "zero2",
+            "zero3",
+            "tensor_parallel",
+            "pipeline_parallel",
+            "none",
+        ],
+    )
     parser.add_argument("--gradient-checkpointing", action="store_true", default=None)
     parser.add_argument("--activation-checkpointing", action="store_true", default=None)
     parser.add_argument("--grad-clip", type=float, default=None)
@@ -978,12 +1044,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--checkpoint-dir", type=str, default="checkpoints")
     parser.add_argument("--checkpoint-interval", type=int, default=500)
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--local_rank", type=int, default=int(os.environ.get("LOCAL_RANK", 0)), help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--local_rank",
+        type=int,
+        default=int(os.environ.get("LOCAL_RANK", 0)),
+        help=argparse.SUPPRESS,
+    )
 
     args = parser.parse_args(argv)
 
-    kwargs: Dict[str, Any] = {}
-    for field_name in ["epochs", "batch_size", "lr", "gradient_accumulation_steps", "grad_clip", "warmup_steps", "seed"]:
+    kwargs: dict[str, Any] = {}
+    for field_name in [
+        "epochs",
+        "batch_size",
+        "lr",
+        "gradient_accumulation_steps",
+        "grad_clip",
+        "warmup_steps",
+        "seed",
+    ]:
         val = getattr(args, field_name.replace("-", "_"), None)
         if val is not None:
             kwargs[field_name] = val
@@ -1005,7 +1084,9 @@ def main(argv: Optional[List[str]] = None) -> int:
             output_dir=args.output_dir,
             **kwargs,
         )
-        logger.info("Training finished. Best val loss: %.4f", result.get("best_val_loss", float("inf")))
+        logger.info(
+            "Training finished. Best val loss: %.4f", result.get("best_val_loss", float("inf"))
+        )
         return 0
     except Exception as exc:
         logger.error("Training failed: %s", exc, exc_info=True)

@@ -1,18 +1,15 @@
-import os
 import logging
-import threading
-import queue
-from typing import Optional, Dict, Any, List
+import os
 
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from .model.model import LLM
 from .tokenizer.train_tokenizer import load_tokenizer
-from .utils.helpers import load_config, get_device, set_cpu_threads
+from .utils.helpers import get_device, load_config, set_cpu_threads
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +55,7 @@ class StreamingTrainer:
             set_cpu_threads(min(4, os.cpu_count() or 2))
         self.mp = self.config.get("mixed_precision", "none")
         self.dtype = torch.float32
-        if self.mp == "bf16" and hasattr(torch, 'bfloat16'):
+        if self.mp == "bf16" and hasattr(torch, "bfloat16"):
             self.dtype = torch.bfloat16
         elif self.mp == "fp16" and self.device == "cuda":
             self.dtype = torch.float16
@@ -88,7 +85,9 @@ class StreamingTrainer:
         if name == "adafactor":
             self.optimizer = torch.optim.AdaFactor(self.model.parameters(), lr=lr, weight_decay=wd)
         else:
-            self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=lr, weight_decay=wd, betas=(0.9, 0.95))
+            self.optimizer = torch.optim.AdamW(
+                self.model.parameters(), lr=lr, weight_decay=wd, betas=(0.9, 0.95)
+            )
         self.scaler = GradScaler(enabled=(self.mp == "fp16" and self.device == "cuda"))
 
     def _create_scheduler(self, dataloader_len: int):
@@ -99,30 +98,67 @@ class StreamingTrainer:
             self.scheduler = torch.optim.lr_scheduler.SequentialLR(
                 self.optimizer,
                 schedulers=[
-                    torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup),
-                    torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=dataloader_len * epochs - warmup, eta_min=self.config.get("min_lr", 1e-6)),
+                    torch.optim.lr_scheduler.LinearLR(
+                        self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup
+                    ),
+                    torch.optim.lr_scheduler.CosineAnnealingLR(
+                        self.optimizer,
+                        T_max=dataloader_len * epochs - warmup,
+                        eta_min=self.config.get("min_lr", 1e-6),
+                    ),
                 ],
                 milestones=[warmup],
             )
         elif name == "linear":
-            self.scheduler = torch.optim.lr_scheduler.LinearLR(self.optimizer, start_factor=1.0, end_factor=0.0, total_iters=dataloader_len * epochs)
+            self.scheduler = torch.optim.lr_scheduler.LinearLR(
+                self.optimizer,
+                start_factor=1.0,
+                end_factor=0.0,
+                total_iters=dataloader_len * epochs,
+            )
         else:
             self.scheduler = torch.optim.lr_scheduler.ConstantLR(self.optimizer, factor=1.0)
 
-    def train(self, resume_from: Optional[str] = None):
+    def train(self, resume_from: str | None = None):
         self._build_model()
         tokenizer = load_tokenizer(self.config.get("tokenizer_path", "tokenizer.json"))
         train_file = self.config.get("train_file", "data/train.txt")
-        train_dataset = StreamingDataset(train_file, tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
-        val_dataset = StreamingDataset(self.config.get("val_file", train_file), tokenizer, block_size=self.config.get("max_position_embeddings", 2048), streaming=True)
-        train_loader = DataLoader(train_dataset, batch_size=self.config.get("batch_size", 1), shuffle=True, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=True)
-        val_loader = DataLoader(val_dataset, batch_size=max(1, self.config.get("batch_size", 1)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0), drop_last=False)
+        train_dataset = StreamingDataset(
+            train_file,
+            tokenizer,
+            block_size=self.config.get("max_position_embeddings", 2048),
+            streaming=True,
+        )
+        val_dataset = StreamingDataset(
+            self.config.get("val_file", train_file),
+            tokenizer,
+            block_size=self.config.get("max_position_embeddings", 2048),
+            streaming=True,
+        )
+        train_loader = DataLoader(
+            train_dataset,
+            batch_size=self.config.get("batch_size", 1),
+            shuffle=True,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=True,
+        )
+        val_loader = DataLoader(
+            val_dataset,
+            batch_size=max(1, self.config.get("batch_size", 1) // 2),
+            shuffle=False,
+            num_workers=0,
+            collate_fn=lambda b: collate_fn(b, pad_token_id=tokenizer.token_to_id("<pad>") or 0),
+            drop_last=False,
+        )
         self._create_optimizer()
         self._create_scheduler(len(train_loader))
         start_epoch = 0
         best_val_loss = float("inf")
         if resume_from and os.path.exists(resume_from):
-            start_epoch, best_val_loss = load_checkpoint(self.model, self.optimizer, self.scheduler, resume_from, device=self.device)
+            start_epoch, best_val_loss = load_checkpoint(
+                self.model, self.optimizer, self.scheduler, resume_from, device=self.device
+            )
         metrics = {"train_loss": [], "val_loss": [], "val_ppl": [], "val_acc": []}
         accumulation = self.config.get("gradient_accumulation_steps", 1)
         grad_clip = self.config.get("gradient_clip_norm", 1.0)
@@ -133,17 +169,32 @@ class StreamingTrainer:
             metrics["val_loss"].append(val_metrics["loss"])
             metrics["val_ppl"].append(val_metrics["perplexity"])
             metrics["val_acc"].append(val_metrics["accuracy"])
-            logger.info(f"Epoch {epoch+1} | Train loss: {train_metrics['loss']:.4f} | Val loss: {val_metrics['loss']:.4f} | Val ppl: {val_metrics['perplexity']:.2f} | Val acc: {val_metrics['accuracy']:.4f}")
+            logger.info(
+                f"Epoch {epoch+1} | Train loss: {train_metrics['loss']:.4f} | Val loss: {val_metrics['loss']:.4f} | Val ppl: {val_metrics['perplexity']:.2f} | Val acc: {val_metrics['accuracy']:.4f}"
+            )
             if val_metrics["loss"] < best_val_loss:
                 best_val_loss = val_metrics["loss"]
-                save_checkpoint(self.model, self.optimizer, self.scheduler, epoch, best_val_loss, "best.pt", self.config, global_step=epoch)
+                save_checkpoint(
+                    self.model,
+                    self.optimizer,
+                    self.scheduler,
+                    epoch,
+                    best_val_loss,
+                    "best.pt",
+                    self.config,
+                    global_step=epoch,
+                )
         output_path = self.config.get("output_dir", "model.pt")
-        os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+        os.makedirs(
+            os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+        )
         torch.save(self.model.state_dict(), output_path)
         logger.info(f"Model saved to {output_path}")
         return metrics
 
-    def _train_epoch(self, dataloader: DataLoader, accumulation_steps: int, grad_clip: float, epoch: int) -> Dict[str, float]:
+    def _train_epoch(
+        self, dataloader: DataLoader, accumulation_steps: int, grad_clip: float, epoch: int
+    ) -> dict[str, float]:
         self.model.train()
         total_loss = 0.0
         tokens = 0
@@ -190,10 +241,15 @@ class StreamingTrainer:
                     gc.collect()
             pbar.set_postfix({"loss": f"{total_loss / (i+1):.4f}"})
         elapsed = time.time() - start
-        return {"loss": total_loss / max(1, len(dataloader)), "tokens": tokens, "tokens_per_sec": tokens / max(elapsed, 1e-6), "time": elapsed}
+        return {
+            "loss": total_loss / max(1, len(dataloader)),
+            "tokens": tokens,
+            "tokens_per_sec": tokens / max(elapsed, 1e-6),
+            "time": elapsed,
+        }
 
     @torch.no_grad()
-    def _validate(self, dataloader: DataLoader) -> Dict[str, float]:
+    def _validate(self, dataloader: DataLoader) -> dict[str, float]:
         self.model.eval()
         total_loss = 0.0
         total_tokens = 0
@@ -226,10 +282,15 @@ class StreamingTrainer:
         avg_loss = total_loss / max(total_tokens, 1)
         accuracy = correct / max(total_tokens, 1)
         perplexity = torch.exp(torch.tensor(avg_loss)).item()
-        return {"loss": avg_loss, "perplexity": perplexity, "accuracy": accuracy, "tokens": total_tokens}
+        return {
+            "loss": avg_loss,
+            "perplexity": perplexity,
+            "accuracy": accuracy,
+            "tokens": total_tokens,
+        }
 
 
-def main(config_path: str = "models/llm/configs/config_4b.yaml", resume_from: Optional[str] = None):
+def main(config_path: str = "models/llm/configs/config_4b.yaml", resume_from: str | None = None):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     trainer = StreamingTrainer(config_path)
     return trainer.train(resume_from=resume_from)

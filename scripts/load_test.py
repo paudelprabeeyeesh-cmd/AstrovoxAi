@@ -113,14 +113,16 @@ class LoadTester:
             print(f"    P95: {sorted_times[p95_idx]*1000:.1f}ms")
         print()
 
-        self.results.append({
-            "test": name,
-            "total": total,
-            "errors": errors,
-            "avg_ms": statistics.mean(times) * 1000,
-            "min_ms": min(times) * 1000,
-            "max_ms": max(times) * 1000,
-        })
+        self.results.append(
+            {
+                "test": name,
+                "total": total,
+                "errors": errors,
+                "avg_ms": statistics.mean(times) * 1000,
+                "min_ms": min(times) * 1000,
+                "max_ms": max(times) * 1000,
+            }
+        )
 
     def generate_report(self) -> dict:
         """Generate full test report."""
@@ -165,7 +167,7 @@ def main():
     print("=" * 60)
     print(f"Total requests: {report['summary']['total_requests']}")
     print(f"Total errors: {report['summary']['total_errors']}")
-    error_rate = report['summary']['total_errors'] / max(report['summary']['total_requests'], 1)
+    error_rate = report["summary"]["total_errors"] / max(report["summary"]["total_requests"], 1)
     print(f"Error rate: {error_rate*100:.2f}%")
 
     if args.output:

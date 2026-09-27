@@ -88,7 +88,9 @@ def main(config_path="models/llm/configs/config_100m.yaml", checkpoint_dir=None,
         dtype = torch.float16
 
     output_dir = output_dir or config.get("output_dir", "model.pt")
-    checkpoint_dir = checkpoint_dir or os.path.join(os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_checkpoints")
+    checkpoint_dir = checkpoint_dir or os.path.join(
+        os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_checkpoints"
+    )
 
     model = LLM(config, device=torch.device(device), dtype=dtype)
     load_latest_checkpoint(model, checkpoint_dir, device)
@@ -106,8 +108,22 @@ def main(config_path="models/llm/configs/config_100m.yaml", checkpoint_dir=None,
     split = int(n * 0.9)
     train_dataset = Subset(dataset, indices[:split])
     val_dataset = Subset(dataset, indices[split:])
-    train_loader = DataLoader(train_dataset, batch_size=max(1, config.get("batch_size", 2)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id), drop_last=False)
-    val_loader = DataLoader(val_dataset, batch_size=max(1, config.get("batch_size", 2)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id), drop_last=False)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=max(1, config.get("batch_size", 2) // 2),
+        shuffle=False,
+        num_workers=0,
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+        drop_last=False,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=max(1, config.get("batch_size", 2) // 2),
+        shuffle=False,
+        num_workers=0,
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+        drop_last=False,
+    )
 
     train_loss, train_ppl, train_acc = evaluate(model, train_loader, device)
     val_loss, val_ppl, val_acc = evaluate(model, val_loader, device)
@@ -121,7 +137,9 @@ def main(config_path="models/llm/configs/config_100m.yaml", checkpoint_dir=None,
     print(f"Val accuracy:    {val_acc:.4f}")
     print("=" * 60)
 
-    log_dir = os.path.join(os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_logs")
+    log_dir = os.path.join(
+        os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_logs"
+    )
     train_csv = os.path.join(log_dir, "training_metrics.csv")
     if os.path.exists(train_csv):
         with open(train_csv, "r", encoding="utf-8") as f:
@@ -148,7 +166,9 @@ def main(config_path="models/llm/configs/config_100m.yaml", checkpoint_dir=None,
     generations = []
     for p in prompts:
         try:
-            out = generate(model, tokenizer, p, max_new_tokens=60, temperature=0.8, top_k=40, device=device)
+            out = generate(
+                model, tokenizer, p, max_new_tokens=60, temperature=0.8, top_k=40, device=device
+            )
         except Exception as e:
             out = f"[gen_error] {e}"
         generations.append(out)
@@ -157,11 +177,20 @@ def main(config_path="models/llm/configs/config_100m.yaml", checkpoint_dir=None,
 
     # Memorization check: evaluate on training data vs shuffled nonsense
     dummy_text = " ".join(["token" + str(i % 1000) for i in range(block_size * 40)])
-    dummy_path = os.path.join(os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_dummy_eval.txt")
+    dummy_path = os.path.join(
+        os.path.dirname(output_dir) if os.path.dirname(output_dir) else ".", "phase1_dummy_eval.txt"
+    )
     with open(dummy_path, "w", encoding="utf-8") as f:
         f.write(dummy_text)
     dummy_dataset = TextDataset(dummy_path, tokenizer, block_size=block_size)
-    dummy_loader = DataLoader(dummy_dataset, batch_size=max(1, config.get("batch_size", 2)//2), shuffle=False, num_workers=0, collate_fn=lambda b: collate_fn(b, pad_token_id), drop_last=False)
+    dummy_loader = DataLoader(
+        dummy_dataset,
+        batch_size=max(1, config.get("batch_size", 2) // 2),
+        shuffle=False,
+        num_workers=0,
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+        drop_last=False,
+    )
     dummy_loss, dummy_ppl, _ = evaluate(model, dummy_loader, device)
     print(f"Dummy eval loss:   {dummy_loss:.4f}")
     print(f"Dummy eval ppl:    {dummy_ppl:.2f}")

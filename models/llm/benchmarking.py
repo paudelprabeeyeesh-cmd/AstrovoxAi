@@ -9,7 +9,6 @@ comparing multiple runs.
 from __future__ import annotations
 
 import dataclasses
-import datetime
 import json
 import math
 import os
@@ -17,25 +16,26 @@ import statistics
 import subprocess
 import threading
 import time
-import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 
-def _get_cpu_memory_mb() -> Optional[float]:
+def _get_cpu_memory_mb() -> float | None:
     """Return current process RSS in MB, or None if unavailable."""
     try:
         import psutil
+
         process = psutil.Process()
         return process.memory_info().rss / (1024 * 1024)
     except Exception:
         return None
 
 
-def _get_gpu_memory_mb() -> Optional[float]:
+def _get_gpu_memory_mb() -> float | None:
     """Return current GPU allocated memory in MB, or None if unavailable."""
     try:
         import torch
+
         if torch.cuda.is_available():
             return torch.cuda.memory_allocated() / (1024 * 1024)
     except Exception:
@@ -43,10 +43,11 @@ def _get_gpu_memory_mb() -> Optional[float]:
     return None
 
 
-def _get_gpu_utilization() -> Optional[float]:
+def _get_gpu_utilization() -> float | None:
     """Return current GPU utilization percentage, or None if unavailable."""
     try:
         import pynvml
+
         pynvml.nvmlInit()
         handle = pynvml.nvmlDeviceGetHandleByIndex(0)
         util = pynvml.nvmlDeviceGetUtilizationRates(handle)
@@ -70,10 +71,11 @@ def _get_gpu_utilization() -> Optional[float]:
     return None
 
 
-def _get_disk_io_mb() -> Optional[float]:
+def _get_disk_io_mb() -> float | None:
     """Return cumulative disk I/O in MB, or None if unavailable."""
     try:
         import psutil
+
         io = psutil.disk_io_counters()
         if io:
             return (io.read_bytes + io.write_bytes) / (1024 * 1024)
@@ -82,7 +84,7 @@ def _get_disk_io_mb() -> Optional[float]:
     return None
 
 
-def _get_checkpoint_size_mb(path: str) -> Optional[float]:
+def _get_checkpoint_size_mb(path: str) -> float | None:
     """Return checkpoint file size in MB, or None if unavailable."""
     try:
         return os.path.getsize(path) / (1024 * 1024)
@@ -96,9 +98,9 @@ class SystemMonitor:
     def __init__(self, interval: float = 0.5) -> None:
         self.interval = interval
         self._stop = threading.Event()
-        self._thread: Optional[threading.Thread] = None
-        self.samples: List[Dict[str, Any]] = []
-        self._start_time: Optional[float] = None
+        self._thread: threading.Thread | None = None
+        self.samples: list[dict[str, Any]] = []
+        self._start_time: float | None = None
 
     def start(self) -> None:
         """Start resource monitoring."""
@@ -125,15 +127,19 @@ class SystemMonitor:
             self.samples.append(sample)
             time.sleep(self.interval)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Compute summary statistics from collected samples."""
         if not self.samples:
             return {}
         cpu_mems = [s["cpu_memory_mb"] for s in self.samples if s.get("cpu_memory_mb") is not None]
         gpu_mems = [s["gpu_memory_mb"] for s in self.samples if s.get("gpu_memory_mb") is not None]
-        gpu_utils = [s["gpu_utilization_percent"] for s in self.samples if s.get("gpu_utilization_percent") is not None]
+        gpu_utils = [
+            s["gpu_utilization_percent"]
+            for s in self.samples
+            if s.get("gpu_utilization_percent") is not None
+        ]
 
-        summary: Dict[str, Any] = {}
+        summary: dict[str, Any] = {}
         if cpu_mems:
             summary.update(
                 {
@@ -168,12 +174,12 @@ class BenchmarkRun:
     run_id: str
     name: str
     timestamp: str
-    config: Dict[str, Any]
-    metrics: Dict[str, Any]
-    system_samples: List[Dict[str, Any]] = dataclasses.field(default_factory=list)
+    config: dict[str, Any]
+    metrics: dict[str, Any]
+    system_samples: list[dict[str, Any]] = dataclasses.field(default_factory=list)
     notes: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return dataclasses.asdict(self)
 
 
@@ -183,7 +189,7 @@ class BenchmarkSuite:
     def __init__(self, output_dir: str = "benchmark_results") -> None:
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        self.runs: List[BenchmarkRun] = []
+        self.runs: list[BenchmarkRun] = []
 
     def add_run(self, run: BenchmarkRun) -> None:
         """Register a new benchmark run."""
@@ -195,29 +201,26 @@ class BenchmarkSuite:
         with open(run_path, "w") as f:
             json.dump(run.to_dict(), f, indent=2)
 
-    def get_run(self, run_id: str) -> Optional[BenchmarkRun]:
+    def get_run(self, run_id: str) -> BenchmarkRun | None:
         """Retrieve a run by ID."""
         for run in self.runs:
             if run.run_id == run_id:
                 return run
         return None
 
-    def compare_runs(self, run_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+    def compare_runs(self, run_ids: list[str] | None = None) -> dict[str, Any]:
         """Compare multiple runs on common numeric metrics."""
-        if run_ids:
-            runs = [self.get_run(rid) for rid in run_ids if self.get_run(rid)]
-        else:
-            runs = self.runs
+        runs = [self.get_run(rid) for rid in run_ids if self.get_run(rid)] if run_ids else self.runs
 
         if len(runs) < 2:
             return {"error": "At least two runs are required for comparison"}
 
-        comparison: Dict[str, Any] = {
+        comparison: dict[str, Any] = {
             "runs": [run.to_dict() for run in runs],
             "metrics_comparison": {},
         }
 
-        all_metrics: Dict[str, List[float]] = {}
+        all_metrics: dict[str, list[float]] = {}
         for run in runs:
             for key, value in run.metrics.items():
                 if isinstance(value, (int, float)) and not math.isnan(value):
@@ -235,9 +238,9 @@ class BenchmarkSuite:
 
         return comparison
 
-    def detect_memory_leaks(self, run: BenchmarkRun, threshold_mb: float = 10.0) -> Dict[str, Any]:
+    def detect_memory_leaks(self, run: BenchmarkRun, threshold_mb: float = 10.0) -> dict[str, Any]:
         """Detect potential memory leaks by analyzing sample trends."""
-        result: Dict[str, Any] = {"leak_detected": False, "gpu_leak": None, "cpu_leak": None}
+        result: dict[str, Any] = {"leak_detected": False, "gpu_leak": None, "cpu_leak": None}
 
         gpu_samples = [s for s in run.system_samples if s.get("gpu_memory_mb") is not None]
         cpu_samples = [s for s in run.system_samples if s.get("cpu_memory_mb") is not None]
@@ -268,12 +271,20 @@ class BenchmarkSuite:
 
         return result
 
-    def _compute_system_summary(self, run: BenchmarkRun) -> Dict[str, Any]:
-        cpu_mems = [s["cpu_memory_mb"] for s in run.system_samples if s.get("cpu_memory_mb") is not None]
-        gpu_mems = [s["gpu_memory_mb"] for s in run.system_samples if s.get("gpu_memory_mb") is not None]
-        gpu_utils = [s["gpu_utilization_percent"] for s in run.system_samples if s.get("gpu_utilization_percent") is not None]
+    def _compute_system_summary(self, run: BenchmarkRun) -> dict[str, Any]:
+        cpu_mems = [
+            s["cpu_memory_mb"] for s in run.system_samples if s.get("cpu_memory_mb") is not None
+        ]
+        gpu_mems = [
+            s["gpu_memory_mb"] for s in run.system_samples if s.get("gpu_memory_mb") is not None
+        ]
+        gpu_utils = [
+            s["gpu_utilization_percent"]
+            for s in run.system_samples
+            if s.get("gpu_utilization_percent") is not None
+        ]
 
-        summary: Dict[str, Any] = {}
+        summary: dict[str, Any] = {}
         if cpu_mems:
             summary.update(
                 {
@@ -297,7 +308,9 @@ class BenchmarkSuite:
             )
         return summary
 
-    def generate_markdown_report(self, run: BenchmarkRun, comparison: Optional[Dict[str, Any]] = None) -> str:
+    def generate_markdown_report(
+        self, run: BenchmarkRun, comparison: dict[str, Any] | None = None
+    ) -> str:
         """Generate a human-readable markdown report."""
         lines = [
             f"# Benchmark Report: {run.name}",
@@ -351,11 +364,11 @@ class BenchmarkSuite:
     def generate_json_report(
         self,
         run: BenchmarkRun,
-        comparison: Optional[Dict[str, Any]] = None,
-        leak_report: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        comparison: dict[str, Any] | None = None,
+        leak_report: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         """Generate a structured JSON report."""
-        report: Dict[str, Any] = {
+        report: dict[str, Any] = {
             "run": run.to_dict(),
             "system_summary": self._compute_system_summary(run),
         }
@@ -368,9 +381,9 @@ class BenchmarkSuite:
     def save_reports(
         self,
         run: BenchmarkRun,
-        comparison: Optional[Dict[str, Any]] = None,
-        leak_report: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[Path, Path]:
+        comparison: dict[str, Any] | None = None,
+        leak_report: dict[str, Any] | None = None,
+    ) -> tuple[Path, Path]:
         """Generate and save markdown and JSON reports."""
         md_content = self.generate_markdown_report(run, comparison)
         report_data = self.generate_json_report(run, comparison, leak_report)
@@ -385,7 +398,7 @@ class BenchmarkSuite:
 
         return md_path, json_path
 
-    def save_comparison_report(self, comparison: Dict[str, Any]) -> Tuple[Path, Path]:
+    def save_comparison_report(self, comparison: dict[str, Any]) -> tuple[Path, Path]:
         """Save a comparison report for multiple runs."""
         lines = ["# Benchmark Comparison Report", ""]
         for run in comparison.get("runs", []):
@@ -417,10 +430,12 @@ class BenchmarkSuite:
         if not run_dir.exists():
             return suite
         for run_path in sorted(run_dir.glob("*.json")):
-            if run_path.name.endswith("_report.json") or run_path.name.endswith("comparison_report.json"):
+            if run_path.name.endswith("_report.json") or run_path.name.endswith(
+                "comparison_report.json"
+            ):
                 continue
             try:
-                with open(run_path, "r") as f:
+                with open(run_path) as f:
                     data = json.load(f)
                 suite.runs.append(BenchmarkRun(**data))
             except Exception:

@@ -6,21 +6,21 @@ language detection, PII removal, and domain balancing for
 large-scale text datasets. Supports txt, jsonl, and parquet
 formats with streaming for large files.
 """
+
 from __future__ import annotations
 
 import hashlib
-import io
 import json
 import logging
 import math
-import os
 import random
 import re
 import unicodedata
-from collections import Counter, defaultdict
+from collections import Counter
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 try:
     from datasketch import MinHash, MinHashLSH
+
     _HAS_MINHASH = True
 except Exception:  # pragma: no cover - optional
     _HAS_MINHASH = False
@@ -36,6 +37,7 @@ except Exception:  # pragma: no cover - optional
 
 try:
     from langdetect import DetectorFactory, detect_langs
+
     DetectorFactory.seed = 0
     _HAS_LANGDETECT = True
 except Exception:  # pragma: no cover - optional
@@ -43,8 +45,8 @@ except Exception:  # pragma: no cover - optional
     logger.debug("langdetect not available; language detection disabled")
 
 try:
-    import pyarrow as pa
     import pyarrow.parquet as pq
+
     _HAS_PYARROW = True
 except Exception:  # pragma: no cover - optional
     _HAS_PYARROW = False
@@ -52,6 +54,7 @@ except Exception:  # pragma: no cover - optional
 
 try:
     import ijson
+
     _HAS_IJSON = True
 except Exception:  # pragma: no cover - optional
     _HAS_IJSON = False
@@ -59,6 +62,7 @@ except Exception:  # pragma: no cover - optional
 
 try:
     import tiktoken
+
     _HAS_TIKTOKEN = True
 except Exception:  # pragma: no cover - optional
     _HAS_TIKTOKEN = False
@@ -67,6 +71,7 @@ except Exception:  # pragma: no cover - optional
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ProcessedDocument:
@@ -89,10 +94,10 @@ class DatasetStats:
     removed_pii: int = 0
     removed_quality: int = 0
     removed_language: int = 0
-    domains: Dict[str, int] = field(default_factory=dict)
-    languages: Dict[str, int] = field(default_factory=Counter)
+    domains: dict[str, int] = field(default_factory=dict)
+    languages: dict[str, int] = field(default_factory=Counter)
 
-    def merge(self, other: "DatasetStats") -> None:
+    def merge(self, other: DatasetStats) -> None:
         self.total_documents += other.total_documents
         self.kept_documents += other.kept_documents
         self.removed_exact_duplicates += other.removed_exact_duplicates
@@ -110,6 +115,7 @@ class DatasetStats:
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class DedupConfig:
     enabled: bool = True
@@ -124,7 +130,7 @@ class DedupConfig:
 class ToxicityConfig:
     enabled: bool = True
     max_toxicity_score: float = 0.3
-    profanity_tokens: List[str] = field(
+    profanity_tokens: list[str] = field(
         default_factory=lambda: [
             "fuck",
             "shit",
@@ -151,7 +157,7 @@ class QualityConfig:
     enabled: bool = True
     min_quality_score: float = 0.2
     use_perplexity: bool = True
-    perplexity_model: Optional[str] = None
+    perplexity_model: str | None = None
     length_normalization: bool = True
     diversity_weight: float = 0.3
     min_length: int = 20
@@ -161,7 +167,7 @@ class QualityConfig:
 @dataclass
 class LanguageConfig:
     enabled: bool = True
-    allowed_languages: List[str] = field(default_factory=lambda: ["en"])
+    allowed_languages: list[str] = field(default_factory=lambda: ["en"])
     default_language: str = "en"
     confidence_threshold: float = 0.5
 
@@ -192,6 +198,7 @@ class DatasetEngineeringConfig:
 # ---------------------------------------------------------------------------
 # Text utilities
 # ---------------------------------------------------------------------------
+
 
 class TextUtils:
     @staticmethod
@@ -227,11 +234,12 @@ class TextUtils:
 # Deduplication
 # ---------------------------------------------------------------------------
 
+
 class Deduplicator:
     def __init__(self, config: DedupConfig) -> None:
         self.config = config
         self.seen_hashes: set[str] = set()
-        self.lsh: Optional[Any] = None
+        self.lsh: Any | None = None
         if config.enabled and config.near_duplicate and _HAS_MINHASH:
             self.lsh = MinHashLSH(
                 threshold=config.near_dup_threshold,
@@ -240,7 +248,7 @@ class Deduplicator:
         self.removed_exact = 0
         self.removed_near = 0
 
-    def _minhash(self, text: str) -> Optional[Any]:
+    def _minhash(self, text: str) -> Any | None:
         if not _HAS_MINHASH:
             return None
         m = MinHash(num_perm=self.config.near_dup_num_perm)
@@ -248,7 +256,7 @@ class Deduplicator:
             m.update(shingle.encode("utf-8"))
         return m
 
-    def process(self, document: ProcessedDocument) -> Optional[ProcessedDocument]:
+    def process(self, document: ProcessedDocument) -> ProcessedDocument | None:
         if not self.config.enabled:
             return document
 
@@ -279,6 +287,7 @@ class Deduplicator:
 # Toxicity filtering
 # ---------------------------------------------------------------------------
 
+
 class ToxicityFilter:
     def __init__(self, config: ToxicityConfig) -> None:
         self.config = config
@@ -295,7 +304,7 @@ class ToxicityFilter:
             return 1.0
         return min(1.0, len(matches) / (tokens * 0.1))
 
-    def process(self, document: ProcessedDocument) -> Optional[ProcessedDocument]:
+    def process(self, document: ProcessedDocument) -> ProcessedDocument | None:
         if not self.config.enabled:
             return document
         score = self._score(document.text)
@@ -308,6 +317,7 @@ class ToxicityFilter:
 # ---------------------------------------------------------------------------
 # Quality scoring
 # ---------------------------------------------------------------------------
+
 
 class QualityScorer:
     def __init__(self, config: QualityConfig) -> None:
@@ -345,7 +355,7 @@ class QualityScorer:
         length_score = 1.0
         if self.config.length_normalization:
             ideal = 200
-            length_score = math.exp(-((length - ideal) ** 2) / (2 * (ideal ** 2)))
+            length_score = math.exp(-((length - ideal) ** 2) / (2 * (ideal**2)))
 
         diversity_score = TextUtils.type_token_ratio(text)
 
@@ -359,7 +369,7 @@ class QualityScorer:
 
         return max(0.0, min(1.0, quality))
 
-    def process(self, document: ProcessedDocument) -> Optional[ProcessedDocument]:
+    def process(self, document: ProcessedDocument) -> ProcessedDocument | None:
         if not self.config.enabled:
             document.quality_score = 1.0
             return document
@@ -373,11 +383,12 @@ class QualityScorer:
 # Language detection
 # ---------------------------------------------------------------------------
 
+
 class LanguageDetector:
     def __init__(self, config: LanguageConfig) -> None:
         self.config = config
 
-    def detect(self, text: str) -> Tuple[str, float]:
+    def detect(self, text: str) -> tuple[str, float]:
         if not _HAS_LANGDETECT:
             return self.config.default_language, 0.0
         try:
@@ -389,7 +400,7 @@ class LanguageDetector:
         except Exception:
             return self.config.default_language, 0.0
 
-    def process(self, document: ProcessedDocument) -> Optional[ProcessedDocument]:
+    def process(self, document: ProcessedDocument) -> ProcessedDocument | None:
         if not self.config.enabled:
             return document
         lang, confidence = self.detect(document.text)
@@ -405,23 +416,18 @@ class LanguageDetector:
 # PII removal
 # ---------------------------------------------------------------------------
 
+
 class PiiRemover:
     _EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
-    _PHONE_RE = re.compile(
-        r"(?:(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})"
-    )
-    _IP_RE = re.compile(
-        r"\b(?:\d{1,3}\.){3}\d{1,3}\b"
-    )
-    _SSN_RE = re.compile(
-        r"\b\d{3}-\d{2}-\d{4}\b"
-    )
+    _PHONE_RE = re.compile(r"(?:(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})")
+    _IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+    _SSN_RE = re.compile(r"\b\d{3}-\d{2}-\d{4}\b")
 
     def __init__(self, config: PiiConfig) -> None:
         self.config = config
         self.removed_count = 0
 
-    def _replace(self, text: str) -> Tuple[str, bool]:
+    def _replace(self, text: str) -> tuple[str, bool]:
         original = text
         if self.config.strip_email:
             text = self._EMAIL_RE.sub(self.config.replacement, text)
@@ -448,6 +454,7 @@ class PiiRemover:
 # Cleaners
 # ---------------------------------------------------------------------------
 
+
 class CodeCleaner:
     _FENCE_RE = re.compile(r"```.*?```", re.DOTALL)
     _EXCESSIVE_BLANKS = re.compile(r"\n{4,}")
@@ -468,6 +475,7 @@ class MathCleaner:
             if eq.count("{") == eq.count("}") and eq.count("$") == 2:
                 return eq
             return ""
+
         return self._BROKEN_LATEX_RE.sub(keep_equation, text)
 
     def process(self, document: ProcessedDocument) -> ProcessedDocument:
@@ -515,6 +523,7 @@ class BooksCleaner:
 # Domain balancing
 # ---------------------------------------------------------------------------
 
+
 class DomainBalancer:
     DOMAINS = [
         "books",
@@ -529,11 +538,11 @@ class DomainBalancer:
         "instructions",
     ]
 
-    def __init__(self, target_ratios: Optional[Dict[str, float]] = None) -> None:
+    def __init__(self, target_ratios: dict[str, float] | None = None) -> None:
         if target_ratios is None:
             target_ratios = {d: 1.0 / len(self.DOMAINS) for d in self.DOMAINS}
         self.target_ratios = target_ratios
-        self.buffers: Dict[str, List[ProcessedDocument]] = {d: [] for d in self.DOMAINS}
+        self.buffers: dict[str, list[ProcessedDocument]] = {d: [] for d in self.DOMAINS}
         self.total_seen = 0
 
     def add(self, document: ProcessedDocument) -> None:
@@ -546,7 +555,7 @@ class DomainBalancer:
     def sample(self) -> Iterator[ProcessedDocument]:
         if self.total_seen == 0:
             return
-        counts = {d: len(v) for d, v in self.buffers.items()}
+        {d: len(v) for d, v in self.buffers.items()}
         for domain, docs in self.buffers.items():
             target = self.target_ratios.get(domain, 0.0)
             desired = int(self.total_seen * target)
@@ -560,6 +569,7 @@ class DomainBalancer:
 # Format I/O
 # ---------------------------------------------------------------------------
 
+
 class DatasetIO:
     @staticmethod
     def _read_txt(path: Path, chunk_size: int) -> Iterator[str]:
@@ -571,11 +581,10 @@ class DatasetIO:
                 yield chunk
 
     @staticmethod
-    def _read_jsonl(path: Path, chunk_size: int) -> Iterator[Dict[str, Any]]:
+    def _read_jsonl(path: Path, chunk_size: int) -> Iterator[dict[str, Any]]:
         if _HAS_IJSON:
             with path.open("rb") as f:
-                for item in ijson.items(f, "item"):
-                    yield item
+                yield from ijson.items(f, "item")
         else:
             with path.open("r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
@@ -588,7 +597,7 @@ class DatasetIO:
                         continue
 
     @staticmethod
-    def _read_parquet(path: Path) -> Iterator[Dict[str, Any]]:
+    def _read_parquet(path: Path) -> Iterator[dict[str, Any]]:
         if not _HAS_PYARROW:
             raise ImportError("pyarrow is required for parquet support")
         table = pq.read_table(str(path))
@@ -598,7 +607,7 @@ class DatasetIO:
 
     @staticmethod
     def iter_documents(
-        path: Union[str, Path],
+        path: str | Path,
         text_field: str = "text",
         source_field: str = "source",
         domain_field: str = "domain",
@@ -637,7 +646,7 @@ class DatasetIO:
     @staticmethod
     def write_jsonl(
         documents: Iterable[ProcessedDocument],
-        path: Union[str, Path],
+        path: str | Path,
     ) -> None:
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -659,8 +668,9 @@ class DatasetIO:
 # Pipeline
 # ---------------------------------------------------------------------------
 
+
 class DatasetEngineeringPipeline:
-    def __init__(self, config: Optional[DatasetEngineeringConfig] = None) -> None:
+    def __init__(self, config: DatasetEngineeringConfig | None = None) -> None:
         self.config = config or DatasetEngineeringConfig()
         random.seed(self.config.seed)
         self.dedup = Deduplicator(self.config.dedup)
@@ -687,7 +697,7 @@ class DatasetEngineeringPipeline:
             return self.code_cleaner.process
         return lambda d: d
 
-    def process_document(self, document: ProcessedDocument) -> Optional[ProcessedDocument]:
+    def process_document(self, document: ProcessedDocument) -> ProcessedDocument | None:
         document.domain = document.domain or self.config.domain
         document.source = document.source or self.config.source
 
@@ -723,14 +733,14 @@ class DatasetEngineeringPipeline:
 
     def process_stream(
         self,
-        input_path: Union[str, Path],
-        output_path: Union[str, Path],
+        input_path: str | Path,
+        output_path: str | Path,
         text_field: str = "text",
         source_field: str = "source",
         domain_field: str = "domain",
     ) -> DatasetStats:
         self.stats = DatasetStats()
-        documents: List[ProcessedDocument] = []
+        documents: list[ProcessedDocument] = []
 
         for document in DatasetIO.iter_documents(
             input_path,
@@ -760,10 +770,11 @@ class DatasetEngineeringPipeline:
 # Convenience API
 # ---------------------------------------------------------------------------
 
+
 def run_dataset_engineering(
-    input_path: Union[str, Path],
-    output_path: Union[str, Path],
-    config: Optional[DatasetEngineeringConfig] = None,
+    input_path: str | Path,
+    output_path: str | Path,
+    config: DatasetEngineeringConfig | None = None,
     text_field: str = "text",
     source_field: str = "source",
     domain_field: str = "domain",

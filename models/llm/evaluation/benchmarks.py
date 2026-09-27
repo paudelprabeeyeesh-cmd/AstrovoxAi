@@ -4,9 +4,9 @@ import os
 import random
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any
 
 import torch
 
@@ -16,9 +16,9 @@ class BenchmarkResult:
     name: str
     score: float
     stderr: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "score": self.score,
@@ -32,26 +32,35 @@ class BaseBenchmark(ABC):
     def run(self, model, tokenizer, device: str = "cpu") -> BenchmarkResult:
         raise NotImplementedError
 
-    def _load_dataset(self, name: str, config: Optional[str] = None, split: str = "test"):
+    def _load_dataset(self, name: str, config: str | None = None, split: str = "test"):
         try:
             from datasets import load_dataset
+
             if config:
                 return load_dataset(name, config, split=split, streaming=True)
             return load_dataset(name, split=split, streaming=True)
         except Exception:
             return None
 
-    def _generate_text(self, model, tokenizer, prompt: str, device: str, max_new_tokens: int = 256) -> str:
+    def _generate_text(
+        self, model, tokenizer, prompt: str, device: str, max_new_tokens: int = 256
+    ) -> str:
         model.eval()
         enc = tokenizer(prompt, truncation=True, max_length=1024, return_tensors="pt").to(device)
         with torch.no_grad():
-            out = model.generate(**enc, max_new_tokens=max_new_tokens, pad_token_id=tokenizer.eos_token_id)
-        return tokenizer.decode(out[0][enc.input_ids.shape[1]:], skip_special_tokens=True)
+            out = model.generate(
+                **enc, max_new_tokens=max_new_tokens, pad_token_id=tokenizer.eos_token_id
+            )
+        return tokenizer.decode(out[0][enc.input_ids.shape[1] :], skip_special_tokens=True)
 
-    def _choice_logprob(self, model, tokenizer, prompt: str, choices: List[str], device: str) -> int:
+    def _choice_logprob(
+        self, model, tokenizer, prompt: str, choices: list[str], device: str
+    ) -> int:
         scores = []
         for choice in choices:
-            enc = tokenizer(prompt + " " + choice, truncation=True, max_length=1024, return_tensors="pt").to(device)
+            enc = tokenizer(
+                prompt + " " + choice, truncation=True, max_length=1024, return_tensors="pt"
+            ).to(device)
             labels = enc.input_ids.clone()
             with torch.no_grad():
                 outputs = model(enc.input_ids, labels=labels)
@@ -69,7 +78,13 @@ class BaseBenchmark(ABC):
 
 
 class MultipleChoiceBenchmark(BaseBenchmark):
-    def __init__(self, dataset_name: str, config_name: Optional[str] = None, split: str = "test", max_samples: int = 1000):
+    def __init__(
+        self,
+        dataset_name: str,
+        config_name: str | None = None,
+        split: str = "test",
+        max_samples: int = 1000,
+    ):
         self.dataset_name = dataset_name
         self.config_name = config_name
         self.split = split
@@ -79,7 +94,7 @@ class MultipleChoiceBenchmark(BaseBenchmark):
         return self._load_dataset(self.dataset_name, self.config_name, self.split)
 
     @abstractmethod
-    def format_example(self, example: Dict[str, Any]) -> Tuple[str, List[str], int]:
+    def format_example(self, example: dict[str, Any]) -> tuple[str, list[str], int]:
         raise NotImplementedError
 
     def run(self, model, tokenizer, device: str = "cpu") -> BenchmarkResult:
@@ -100,7 +115,9 @@ class MultipleChoiceBenchmark(BaseBenchmark):
             return self._synthetic_run(model, tokenizer, device)
         score = correct / total
         stderr = math.sqrt(score * (1 - score) / total) if total > 0 else 0.0
-        return BenchmarkResult(name=self.name(), score=score, stderr=stderr, metadata={"n_samples": total})
+        return BenchmarkResult(
+            name=self.name(), score=score, stderr=stderr, metadata={"n_samples": total}
+        )
 
     def name(self) -> str:
         return self.dataset_name.replace("/", "_").replace("-", "_")
@@ -175,7 +192,9 @@ class GSM8KBenchmark(BaseBenchmark):
             return self._synthetic_run(model, tokenizer, device)
         score = correct / total
         stderr = math.sqrt(score * (1 - score) / total) if total > 0 else 0.0
-        return BenchmarkResult(name="gsm8k", score=score, stderr=stderr, metadata={"n_samples": total})
+        return BenchmarkResult(
+            name="gsm8k", score=score, stderr=stderr, metadata={"n_samples": total}
+        )
 
     def _is_correct_gsm8k(self, generated: str, reference: str) -> bool:
         ref_answer = re.search(r"####\s*([-\d.,]+)", reference)
@@ -201,7 +220,12 @@ class GSM8KBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="gsm8k_synthetic", score=score, stderr=stderr, metadata={"n_samples": total, "synthetic": True})
+        return BenchmarkResult(
+            name="gsm8k_synthetic",
+            score=score,
+            stderr=stderr,
+            metadata={"n_samples": total, "synthetic": True},
+        )
 
 
 class HumanEvalBenchmark(BaseBenchmark):
@@ -228,7 +252,9 @@ class HumanEvalBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="humaneval", score=score, stderr=stderr, metadata={"n_samples": total})
+        return BenchmarkResult(
+            name="humaneval", score=score, stderr=stderr, metadata={"n_samples": total}
+        )
 
     def _synthetic_run(self, model, tokenizer, device: str = "cpu") -> BenchmarkResult:
         correct = 0
@@ -243,7 +269,12 @@ class HumanEvalBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="humaneval_synthetic", score=score, stderr=stderr, metadata={"n_samples": total, "synthetic": True})
+        return BenchmarkResult(
+            name="humaneval_synthetic",
+            score=score,
+            stderr=stderr,
+            metadata={"n_samples": total, "synthetic": True},
+        )
 
 
 class MBPPBenchmark(BaseBenchmark):
@@ -270,7 +301,9 @@ class MBPPBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="mbpp", score=score, stderr=stderr, metadata={"n_samples": total})
+        return BenchmarkResult(
+            name="mbpp", score=score, stderr=stderr, metadata={"n_samples": total}
+        )
 
     def _synthetic_run(self, model, tokenizer, device: str = "cpu") -> BenchmarkResult:
         correct = 0
@@ -285,7 +318,12 @@ class MBPPBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="mbpp_synthetic", score=score, stderr=stderr, metadata={"n_samples": total, "synthetic": True})
+        return BenchmarkResult(
+            name="mbpp_synthetic",
+            score=score,
+            stderr=stderr,
+            metadata={"n_samples": total, "synthetic": True},
+        )
 
 
 class PIQABenchmark(MultipleChoiceBenchmark):
@@ -375,7 +413,12 @@ class SyntheticGSM8KBenchmark(BaseBenchmark):
             total += 1
         score = correct / total if total else 0.0
         stderr = math.sqrt(score * (1 - score) / total) if total else 0.0
-        return BenchmarkResult(name="gsm8k_synthetic", score=score, stderr=stderr, metadata={"n_samples": total, "synthetic": True})
+        return BenchmarkResult(
+            name="gsm8k_synthetic",
+            score=score,
+            stderr=stderr,
+            metadata={"n_samples": total, "synthetic": True},
+        )
 
     def _is_correct_gsm8k(self, generated: str, reference: str) -> bool:
         ref_answer = re.search(r"####\s*([-\d.,]+)", reference)
@@ -400,13 +443,17 @@ class EvaluationHarness:
         benchmark = get_benchmark(name, max_samples=max_samples)
         return benchmark.run(self.model, self.tokenizer, device=self.device)
 
-    def evaluate(self, benchmark_names: List[str], max_samples: int = 1000, output_path: Optional[str] = None) -> Dict[str, Any]:
-        results: Dict[str, BenchmarkResult] = {}
+    def evaluate(
+        self, benchmark_names: list[str], max_samples: int = 1000, output_path: str | None = None
+    ) -> dict[str, Any]:
+        results: dict[str, BenchmarkResult] = {}
         for name in benchmark_names:
             try:
                 results[name] = self.run_benchmark(name, max_samples=max_samples)
             except Exception as exc:
-                results[name] = BenchmarkResult(name=name, score=0.0, stderr=0.0, metadata={"error": str(exc)})
+                results[name] = BenchmarkResult(
+                    name=name, score=0.0, stderr=0.0, metadata={"error": str(exc)}
+                )
         report = {
             "model_name": self.model_name,
             "timestamp": datetime.utcnow().isoformat() + "Z",
@@ -414,26 +461,38 @@ class EvaluationHarness:
             "summary": self._summary(results),
         }
         if output_path:
-            os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+            os.makedirs(
+                os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True
+            )
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(report, f, indent=2)
         return report
 
-    def quick_eval(self, output_path: Optional[str] = None) -> Dict[str, Any]:
+    def quick_eval(self, output_path: str | None = None) -> dict[str, Any]:
         return self.evaluate(
-            ["mmlu", "hellaswag", "arc", "gsm8k", "humaneval", "mbpp", "piqa", "boolq", "winogrande"],
+            [
+                "mmlu",
+                "hellaswag",
+                "arc",
+                "gsm8k",
+                "humaneval",
+                "mbpp",
+                "piqa",
+                "boolq",
+                "winogrande",
+            ],
             max_samples=500,
             output_path=output_path,
         )
 
-    def _summary(self, results: Dict[str, BenchmarkResult]) -> str:
+    def _summary(self, results: dict[str, BenchmarkResult]) -> str:
         lines = [f"Evaluation Report - {self.model_name} ({datetime.utcnow().isoformat()}Z)"]
         for name, result in results.items():
             lines.append(f"  {name}: {result.score:.4f} ± {result.stderr:.4f}")
         return "\n".join(lines)
 
 
-BENCHMARK_REGISTRY: Dict[str, type] = {
+BENCHMARK_REGISTRY: dict[str, type] = {
     "mmlu": MMLUBenchmark,
     "hellaswag": HellaSwagBenchmark,
     "arc": ARCBenchmark,
@@ -455,13 +514,21 @@ def get_benchmark(name: str, **kwargs) -> BaseBenchmark:
     return BENCHMARK_REGISTRY[name](**kwargs)
 
 
-def _SYNTHETIC_MMLU() -> List[Dict[str, Any]]:
+def _SYNTHETIC_MMLU() -> list[dict[str, Any]]:
     subjects = {
         "sci": ("What is the chemical symbol for water?", ["CO2", "H2O", "NaCl", "O2"], 1),
-        "hist": ("Who was the first President of the United States?", ["Lincoln", "Washington", "Adams", "Jefferson"], 1),
+        "hist": (
+            "Who was the first President of the United States?",
+            ["Lincoln", "Washington", "Adams", "Jefferson"],
+            1,
+        ),
         "math": ("What is 2 + 2?", ["3", "4", "5", "6"], 1),
         "bio": ("What organ pumps blood?", ["Brain", "Heart", "Lung", "Liver"], 1),
-        "phys": ("What force keeps planets in orbit?", ["Friction", "Gravity", "Magnetism", "Tension"], 1),
+        "phys": (
+            "What force keeps planets in orbit?",
+            ["Friction", "Gravity", "Magnetism", "Tension"],
+            1,
+        ),
     }
     out = []
     for _ in range(20):
@@ -470,11 +537,23 @@ def _SYNTHETIC_MMLU() -> List[Dict[str, Any]]:
     return out
 
 
-def _SYNTHETIC_HELLASWAG() -> List[Dict[str, Any]]:
+def _SYNTHETIC_HELLASWAG() -> list[dict[str, Any]]:
     items = [
-        {"ctx": "The chef chopped the onions.", "endings": ["and cried.", "and slept.", "and sang.", "and ran."], "label": 0},
-        {"ctx": "The student opened the book.", "endings": ["and read.", "and ate it.", "and threw it.", "and hid it."], "label": 0},
-        {"ctx": "The dog barked at the mailman.", "endings": ["and ran away.", "and flew.", "and teleported.", "and read."], "label": 0},
+        {
+            "ctx": "The chef chopped the onions.",
+            "endings": ["and cried.", "and slept.", "and sang.", "and ran."],
+            "label": 0,
+        },
+        {
+            "ctx": "The student opened the book.",
+            "endings": ["and read.", "and ate it.", "and threw it.", "and hid it."],
+            "label": 0,
+        },
+        {
+            "ctx": "The dog barked at the mailman.",
+            "endings": ["and ran away.", "and flew.", "and teleported.", "and read."],
+            "label": 0,
+        },
     ]
     out = []
     for _ in range(20):
@@ -483,9 +562,12 @@ def _SYNTHETIC_HELLASWAG() -> List[Dict[str, Any]]:
     return out
 
 
-def _SYNTHETIC_GSM8K() -> List[Tuple[str, str]]:
+def _SYNTHETIC_GSM8K() -> list[tuple[str, str]]:
     problems = [
-        ("If a train travels 60 miles per hour for 2 hours, how many miles does it travel?", "#### 120"),
+        (
+            "If a train travels 60 miles per hour for 2 hours, how many miles does it travel?",
+            "#### 120",
+        ),
         ("A bakery sells 30 loaves of bread each day. How many loaves in 5 days?", "#### 150"),
         ("What is 15 + 27?", "#### 42"),
         ("If you have 50 apples and give away 12, how many remain?", "#### 38"),
@@ -498,7 +580,7 @@ def _SYNTHETIC_GSM8K() -> List[Tuple[str, str]]:
     return out
 
 
-def _SYNTHETIC_CODEGEN_HUMANEVAL() -> List[Tuple[str, str]]:
+def _SYNTHETIC_CODEGEN_HUMANEVAL() -> list[tuple[str, str]]:
     return [
         ("def add(a, b):\n", "    return a + b\n"),
         ("def factorial(n):\n", "    return 1 if n == 0 else n * factorial(n-1)\n"),
@@ -506,9 +588,18 @@ def _SYNTHETIC_CODEGEN_HUMANEVAL() -> List[Tuple[str, str]]:
     ]
 
 
-def _SYNTHETIC_CODEGEN_MBPP() -> List[Tuple[str, str]]:
+def _SYNTHETIC_CODEGEN_MBPP() -> list[tuple[str, str]]:
     return [
-        ("Write a function that returns the square of a number.\n", "def square(n):\n    return n * n\n"),
-        ("Write a function that checks if a number is even.\n", "def is_even(n):\n    return n % 2 == 0\n"),
-        ("Write a function that returns the maximum of two numbers.\n", "def max_two(a, b):\n    return a if a > b else b\n"),
+        (
+            "Write a function that returns the square of a number.\n",
+            "def square(n):\n    return n * n\n",
+        ),
+        (
+            "Write a function that checks if a number is even.\n",
+            "def is_even(n):\n    return n % 2 == 0\n",
+        ),
+        (
+            "Write a function that returns the maximum of two numbers.\n",
+            "def max_two(a, b):\n    return a if a > b else b\n",
+        ),
     ]

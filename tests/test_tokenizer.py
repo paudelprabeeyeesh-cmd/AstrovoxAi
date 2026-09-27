@@ -9,7 +9,6 @@ if ROOT not in sys.path:
 
 from models.llm.tokenizer.train_tokenizer import load_tokenizer
 
-
 TOKENIZER_PATH = os.path.join(ROOT, "models", "llm", "tokenizer.json")
 
 
@@ -29,11 +28,19 @@ class TestTokenizer:
     def test_encode_decode_roundtrip(self):
         tokenizer = load_tokenizer(TOKENIZER_PATH)
         text = "Hello world"
-        ids = tokenizer.encode(text).ids if hasattr(tokenizer.encode(text), "ids") else tokenizer.encode(text)
+        ids = (
+            tokenizer.encode(text).ids
+            if hasattr(tokenizer.encode(text), "ids")
+            else tokenizer.encode(text)
+        )
         decoded = tokenizer.decode(ids)
         assert decoded.strip() == text
 
     def test_empty_string(self):
         tokenizer = load_tokenizer(TOKENIZER_PATH)
-        ids = tokenizer.encode("").ids if hasattr(tokenizer.encode(""), "ids") else tokenizer.encode("")
+        ids = (
+            tokenizer.encode("").ids
+            if hasattr(tokenizer.encode(""), "ids")
+            else tokenizer.encode("")
+        )
         assert len(ids) == 0

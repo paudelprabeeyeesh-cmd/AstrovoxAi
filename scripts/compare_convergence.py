@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Compare training convergence curves across model sizes."""
+
 import argparse
 import csv
 import json
@@ -9,6 +10,7 @@ import sys
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,6 +39,7 @@ def load_model_info(config_path):
     try:
         sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from model.model_scaling import count_parameters, load_config
+
         cfg = load_config(config_path)
         num_params = count_parameters(
             vocab_size=int(cfg["vocab_size"]),
@@ -88,7 +91,7 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
             try:
                 train_steps.append(int(row["step"]))
                 train_losses.append(float(row["train_loss"]))
-            except (ValueError, KeyError):
+            except ValueError, KeyError:
                 pass
 
         val_steps = []
@@ -97,18 +100,20 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
             try:
                 val_steps.append(int(row["step"]))
                 val_losses.append(float(row["val_loss"]))
-            except (ValueError, KeyError):
+            except ValueError, KeyError:
                 pass
 
-        results.append({
-            "name": name,
-            "config_path": config_path,
-            "train_steps": train_steps,
-            "train_losses": train_losses,
-            "val_steps": val_steps,
-            "val_losses": val_losses,
-            **info,
-        })
+        results.append(
+            {
+                "name": name,
+                "config_path": config_path,
+                "train_steps": train_steps,
+                "train_losses": train_losses,
+                "val_steps": val_steps,
+                "val_losses": val_losses,
+                **info,
+            }
+        )
 
     if not results:
         print("No training logs found.")
@@ -130,12 +135,30 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
         label = f"{res['name']} ({p_label(res.get('params', 0))})"
         c = colors[idx]
         if res["train_steps"]:
-            ax_train.plot(res["train_steps"], res["train_losses"], label=label, color=c, linewidth=1.5)
+            ax_train.plot(
+                res["train_steps"], res["train_losses"], label=label, color=c, linewidth=1.5
+            )
         if res["val_steps"] and res["val_losses"]:
-            ax_val.plot(res["val_steps"], res["val_losses"], label=label, color=c, linewidth=1.5, marker="o", markersize=3)
+            ax_val.plot(
+                res["val_steps"],
+                res["val_losses"],
+                label=label,
+                color=c,
+                linewidth=1.5,
+                marker="o",
+                markersize=3,
+            )
         if res["val_steps"] and res["val_losses"]:
             ppls = [min(math.exp(min(vl, 80)), 1e6) for vl in res["val_losses"]]
-            ax_ppl.plot(res["val_steps"], ppls, label=label, color=c, linewidth=1.5, marker="s", markersize=3)
+            ax_ppl.plot(
+                res["val_steps"],
+                ppls,
+                label=label,
+                color=c,
+                linewidth=1.5,
+                marker="s",
+                markersize=3,
+            )
         if res["train_steps"]:
             tps = []
             train_csv_path = Path(log_dirs[idx]) / "training_metrics.csv"
@@ -143,7 +166,7 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
             for row in train_rows_full:
                 try:
                     tps.append(float(row["tokens_per_sec"]))
-                except (ValueError, KeyError):
+                except ValueError, KeyError:
                     tps.append(None)
             valid = [(s, t) for s, t in zip(res["train_steps"], tps) if t is not None]
             if valid:
@@ -185,16 +208,26 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
     report_path = os.path.join(output_dir, "convergence_report.md")
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("# Convergence Comparison Report\n\n")
-        f.write("| Model | Params | Init Train Loss | Final Train Loss | Best Val Loss | Final Val PPL | Train Steps |\n")
-        f.write("|-------|--------|-----------------|------------------|---------------|---------------|-------------|\n")
+        f.write(
+            "| Model | Params | Init Train Loss | Final Train Loss | Best Val Loss | Final Val PPL | Train Steps |\n"
+        )
+        f.write(
+            "|-------|--------|-----------------|------------------|---------------|---------------|-------------|\n"
+        )
         for res in results:
             init_loss = res["train_losses"][0] if res["train_losses"] else float("nan")
             final_loss = res["train_losses"][-1] if res["train_losses"] else float("nan")
             best_val = min(res["val_losses"]) if res["val_losses"] else float("nan")
-            final_ppl = min(math.exp(min(res["val_losses"][-1], 80)), 1e6) if res["val_losses"] else float("nan")
+            final_ppl = (
+                min(math.exp(min(res["val_losses"][-1], 80)), 1e6)
+                if res["val_losses"]
+                else float("nan")
+            )
             steps = res["train_steps"][-1] if res["train_steps"] else 0
             p_label_str = p_label(res.get("params", 0))
-            f.write(f"| {res['name']} | {p_label_str} | {init_loss:.4f} | {final_loss:.4f} | {best_val:.4f} | {final_ppl:.2f} | {steps} |\n")
+            f.write(
+                f"| {res['name']} | {p_label_str} | {init_loss:.4f} | {final_loss:.4f} | {best_val:.4f} | {final_ppl:.2f} | {steps} |\n"
+            )
         f.write("\n")
         f.write("## Notes\n\n")
         f.write("- Lower loss and perplexity indicate better convergence.\n")
@@ -205,8 +238,14 @@ def compare_convergence(log_dirs, output_dir="models/llm/logs"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare training convergence across model sizes")
-    parser.add_argument("--log-dir", default="models/llm/logs", help="Base directory containing model log subdirectories")
-    parser.add_argument("--output-dir", default="models/llm/logs", help="Directory to save comparison outputs")
+    parser.add_argument(
+        "--log-dir",
+        default="models/llm/logs",
+        help="Base directory containing model log subdirectories",
+    )
+    parser.add_argument(
+        "--output-dir", default="models/llm/logs", help="Directory to save comparison outputs"
+    )
     args = parser.parse_args()
     log_dirs = find_log_dirs(args.log_dir)
     compare_convergence(log_dirs, output_dir=args.output_dir)

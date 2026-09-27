@@ -60,25 +60,33 @@ try:
         FaultRecoveryManager,
         FaultRecoveryConfig,
     )
+
     HAS_ASTROVOX = True
 except Exception:
     HAS_ASTROVOX = False
 
 # Optional tensor / pipeline parallel
 try:
-    from torch.distributed.tensor.parallel import parallelize_module, ColwiseParallel, RowwiseParallel
+    from torch.distributed.tensor.parallel import (
+        parallelize_module,
+        ColwiseParallel,
+        RowwiseParallel,
+    )
+
     HAS_TP = True
 except ImportError:
     HAS_TP = False
 
 try:
     from torch.distributed.pipeline.sync import Pipe
+
     HAS_PP = True
 except ImportError:
     HAS_PP = False
 
 try:
     from accelerate import cpu_offload as _accelerate_cpu_offload
+
     HAS_ACCELERATE = True
 except ImportError:
     HAS_ACCELERATE = False
@@ -87,6 +95,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Hardware helpers
 # ---------------------------------------------------------------------------
+
 
 def has_cuda() -> bool:
     return torch.cuda.is_available()
@@ -113,6 +122,7 @@ def require_2gpus():
 # ---------------------------------------------------------------------------
 # Tiny model / dataset for smoke tests
 # ---------------------------------------------------------------------------
+
 
 class TinyModel(nn.Module):
     def __init__(self, vocab_size: int = 100, hidden_size: int = 32, num_layers: int = 2):
@@ -300,6 +310,7 @@ class TestDistributedSetup:
         if has_cuda():
             pytest.skip("Requires CPU-only environment")
         from models.llm.distributed_training import log_memory_usage
+
         log_memory_usage("test")
 
 
@@ -624,6 +635,7 @@ def test_fn(rank, world_size):
             )
         finally:
             import shutil
+
             shutil.rmtree(ckpt_dir, ignore_errors=True)
 
     def test_save_load_single_device(self):
@@ -656,6 +668,7 @@ def test_fn(rank, world_size):
             assert loaded["step"] == 1
         finally:
             import shutil
+
             shutil.rmtree(ckpt_dir, ignore_errors=True)
 
 
@@ -675,6 +688,7 @@ class TestFailureRecovery:
             assert manager.config.max_retries == 3
         finally:
             import shutil
+
             shutil.rmtree(ckpt_dir, ignore_errors=True)
 
     def test_fault_recovery_state_roundtrip(self):
@@ -694,6 +708,7 @@ class TestFailureRecovery:
             assert loaded_step == 5
         finally:
             import shutil
+
             shutil.rmtree(ckpt_dir, ignore_errors=True)
 
 

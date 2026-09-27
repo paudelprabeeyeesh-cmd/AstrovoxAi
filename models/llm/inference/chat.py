@@ -1,10 +1,10 @@
 import os
-import sys
+
 import torch
 
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import load_tokenizer
-from ..utils.helpers import load_config, get_device
+from ..utils.helpers import get_device, load_config
 from .generate import generate
 
 
@@ -14,7 +14,9 @@ def chat_loop(model, tokenizer, device="cpu"):
         prompt = input("You: ")
         if prompt.lower() in ("quit", "exit"):
             break
-        response = generate(model, tokenizer, f"You: {prompt}\nAI:", max_new_tokens=200, device=device)
+        response = generate(
+            model, tokenizer, f"You: {prompt}\nAI:", max_new_tokens=200, device=device
+        )
         print(response)
 
 
@@ -32,19 +34,27 @@ def main(config_path=None, checkpoint_path=None):
     if device == "cpu":
         set_cpu_threads(min(4, os.cpu_count() or 2))
 
-    dtype = torch.bfloat16 if config.get("mixed_precision") == "bf16" and device != "cuda" else torch.float32
+    dtype = (
+        torch.bfloat16
+        if config.get("mixed_precision") == "bf16" and device != "cuda"
+        else torch.float32
+    )
     if device == "cuda" and config.get("mixed_precision") == "fp16":
         dtype = torch.float16
 
-    mem = LLM.estimate_memory_from_config(config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4)
+    mem = LLM.estimate_memory_from_config(
+        config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4
+    )
     if device == "cpu" and mem.get("total_base_gb", 0) > 8:
         print(f"Warning: model needs ~{mem['total_base_gb']:.1f}GB; reducing precision")
-        dtype = torch.bfloat16 if hasattr(torch, 'bfloat16') else torch.float32
+        dtype = torch.bfloat16 if hasattr(torch, "bfloat16") else torch.float32
 
     model = LLM(config, device=torch.device(device), dtype=dtype)
     if os.path.exists(checkpoint_path):
         model.load_state_dict(torch.load(checkpoint_path, map_location=device, weights_only=True))
-    tokenizer = load_tokenizer(config.get("tokenizer_path", os.path.join(llm_root, "tokenizer.json")))
+    tokenizer = load_tokenizer(
+        config.get("tokenizer_path", os.path.join(llm_root, "tokenizer.json"))
+    )
     chat_loop(model, tokenizer, device)
 
 

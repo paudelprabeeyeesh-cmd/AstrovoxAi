@@ -4,13 +4,13 @@ Dataset Report Generator
 Generates a comprehensive markdown report from dataset validation results,
 including statistics, distributions, sample texts, and ASCII/markdown charts.
 """
+
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Report data structure
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ReportConfig:
@@ -43,7 +44,7 @@ class DatasetReport:
             bar = "#" * int(pct * width)
         return f"{label:<20} |{bar:<{width}} | {value} ({pct:.1%})"
 
-    def _ascii_chart(self, distribution: Dict[str, int], title: str) -> str:
+    def _ascii_chart(self, distribution: dict[str, int], title: str) -> str:
         if not distribution:
             return f"## {title}\nNo data available.\n"
         total = sum(distribution.values())
@@ -54,25 +55,30 @@ class DatasetReport:
         lines.append("```")
         return "\n".join(lines)
 
-    def _markdown_table(self, distribution: Dict[str, int], title: str) -> str:
+    def _markdown_table(self, distribution: dict[str, int], title: str) -> str:
         if not distribution:
             return f"## {title}\nNo data available.\n"
         total = sum(distribution.values())
-        lines = [f"## {title}", "", "| Label | Count | Percentage |", "|-------|-------|------------|"]
+        lines = [
+            f"## {title}",
+            "",
+            "| Label | Count | Percentage |",
+            "|-------|-------|------------|",
+        ]
         for label, value in sorted(distribution.items(), key=lambda x: x[1], reverse=True):
             pct = (value / total * 100) if total > 0 else 0.0
             lines.append(f"| {label} | {value} | {pct:.2f}% |")
         lines.append("")
         return "\n".join(lines)
 
-    def _format_number(self, value: Union[int, float]) -> str:
+    def _format_number(self, value: int | float) -> str:
         if isinstance(value, int):
             return f"{value:,}"
         return f"{value:,.2f}"
 
     def generate(self) -> str:
         stats = self.stats
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append(f"# {self.config.title}")
         lines.append("")
         lines.append(f"*Generated on: {self._timestamp()}*")
@@ -94,7 +100,9 @@ class DatasetReport:
         lines.append("|--------|---------------|")
         lines.append(f"| Corrupted Samples | {self._format_number(stats.removed_corrupted)} |")
         lines.append(f"| HTML Only | {self._format_number(stats.removed_html_only)} |")
-        lines.append(f"| Exact Duplicates | {self._format_number(stats.removed_exact_duplicates)} |")
+        lines.append(
+            f"| Exact Duplicates | {self._format_number(stats.removed_exact_duplicates)} |"
+        )
         lines.append(f"| Near Duplicates | {self._format_number(stats.removed_near_duplicates)} |")
         lines.append(f"| Low Quality | {self._format_number(stats.removed_low_quality)} |")
         lines.append("")
@@ -103,11 +111,17 @@ class DatasetReport:
             lines.append("## Distributions")
             lines.append("")
             if stats.language_distribution:
-                lines.append(self._markdown_table(stats.language_distribution, "Language Distribution"))
+                lines.append(
+                    self._markdown_table(stats.language_distribution, "Language Distribution")
+                )
             if stats.domain_distribution:
                 lines.append(self._markdown_table(stats.domain_distribution, "Domain Distribution"))
             if stats.length_distribution:
-                lines.append(self._ascii_chart(stats.length_distribution, "Document Length Distribution (words)"))
+                lines.append(
+                    self._ascii_chart(
+                        stats.length_distribution, "Document Length Distribution (words)"
+                    )
+                )
             lines.append("")
 
         if self.config.include_samples and stats.sample_texts:
@@ -125,9 +139,10 @@ class DatasetReport:
 
     def _timestamp(self) -> str:
         from datetime import datetime
+
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    def save(self, path: Optional[str] = None) -> str:
+    def save(self, path: str | None = None) -> str:
         output = path or self.config.output_path
         try:
             Path(output).parent.mkdir(parents=True, exist_ok=True)

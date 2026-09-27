@@ -42,8 +42,9 @@ import enum
 import logging
 import os
 import warnings
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -55,6 +56,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Hardware / dependency detection
 # ---------------------------------------------------------------------------
+
 
 def _is_cuda_available() -> bool:
     return torch.cuda.is_available()
@@ -71,6 +73,7 @@ def _is_rocm_available() -> bool:
 def _has_autoawq() -> bool:
     try:
         import autoawq  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -79,6 +82,7 @@ def _has_autoawq() -> bool:
 def _has_gptqmodel() -> bool:
     try:
         import gptqmodel  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -87,6 +91,7 @@ def _has_gptqmodel() -> bool:
 def _has_gguf() -> bool:
     try:
         import gguf  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -95,6 +100,7 @@ def _has_gguf() -> bool:
 def _has_exllamav2() -> bool:
     try:
         import exllamav2  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -103,6 +109,7 @@ def _has_exllamav2() -> bool:
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 class QuantizationFormat(enum.Enum):
     """Supported quantization formats."""
@@ -158,13 +165,11 @@ class QuantizationConfig:
     learning_rate: float = 1e-5
     enable_fallback: bool = True
     fallback_format: QuantizationFormat = QuantizationFormat.INT8_SYMMETRIC
-    device: Optional[torch.device] = None
+    device: torch.device | None = None
 
     def __post_init__(self) -> None:
         if self.device is None:
-            self.device = torch.device(
-                "cuda" if _is_cuda_available() else "cpu"
-            )
+            self.device = torch.device("cuda" if _is_cuda_available() else "cpu")
 
     @property
     def effective_format(self) -> QuantizationFormat:
@@ -173,33 +178,25 @@ class QuantizationConfig:
             return self.format
 
         if self.format == QuantizationFormat.GPTQ and not _has_gptqmodel():
-            logger.warning(
-                "GPTQ unavailable; falling back to %s", self.fallback_format.value
-            )
+            logger.warning("GPTQ unavailable; falling back to %s", self.fallback_format.value)
             return self.fallback_format
 
         if self.format == QuantizationFormat.AWQ and not _has_autoawq():
-            logger.warning(
-                "AWQ unavailable; falling back to %s", self.fallback_format.value
-            )
+            logger.warning("AWQ unavailable; falling back to %s", self.fallback_format.value)
             return self.fallback_format
 
         if self.format == QuantizationFormat.GGUF and not _has_gguf():
-            logger.warning(
-                "GGUF unavailable; falling back to %s", self.fallback_format.value
-            )
+            logger.warning("GGUF unavailable; falling back to %s", self.fallback_format.value)
             return self.fallback_format
 
         if self.format == QuantizationFormat.EXL2 and not _has_exllamav2():
-            logger.warning(
-                "EXL2 unavailable; falling back to %s", self.fallback_format.value
-            )
+            logger.warning("EXL2 unavailable; falling back to %s", self.fallback_format.value)
             return self.fallback_format
 
         return self.format
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "QuantizationConfig":
+    def from_dict(cls, data: dict[str, Any]) -> QuantizationConfig:
         """Create a QuantizationConfig from a dictionary."""
         fmt = data.get("format", "fp16")
         method = data.get("method", "weight_only")
@@ -214,14 +211,12 @@ class QuantizationConfig:
             calibration_samples=int(data.get("calibration_samples", 128)),
             learning_rate=float(data.get("learning_rate", 1e-5)),
             enable_fallback=bool(data.get("enable_fallback", True)),
-            fallback_format=QuantizationFormat(
-                data.get("fallback_format", "int8_symmetric")
-            ),
+            fallback_format=QuantizationFormat(data.get("fallback_format", "int8_symmetric")),
             device=torch.device(data["device"]) if "device" in data else None,
         )
 
     @classmethod
-    def from_yaml(cls, path: str) -> "QuantizationConfig":
+    def from_yaml(cls, path: str) -> QuantizationConfig:
         """Load configuration from a YAML file."""
         try:
             import yaml  # type: ignore[import-untyped]
@@ -231,7 +226,7 @@ class QuantizationConfig:
                 "Install it with: pip install pyyaml"
             ) from exc
 
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             data = yaml.safe_load(fh) or {}
 
         if not isinstance(data, dict):
@@ -239,7 +234,7 @@ class QuantizationConfig:
 
         return cls.from_dict(data)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Serialize configuration to a dictionary."""
         return {
             "format": self.format.value,
@@ -261,10 +256,11 @@ class QuantizationConfig:
 # Low-level quantization helpers
 # ---------------------------------------------------------------------------
 
+
 def _quantize_per_tensor_int8(
     tensor: torch.Tensor,
     symmetric: bool = True,
-) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
     """
     Quantize a tensor to INT8 (per-tensor).
 
@@ -278,7 +274,11 @@ def _quantize_per_tensor_int8(
 
     min_val = tensor.detach().min()
     max_val = tensor.detach().max()
-    scale = (max_val - min_val) / 255.0 if max_val > min_val else torch.tensor(1.0, device=tensor.device)
+    scale = (
+        (max_val - min_val) / 255.0
+        if max_val > min_val
+        else torch.tensor(1.0, device=tensor.device)
+    )
     zero_point = torch.round(-min_val / scale).clamp(0, 255).to(torch.int32)
     q = torch.clamp(torch.round(tensor / scale) + zero_point, 0, 255).to(torch.uint8)
     return q, scale, zero_point
@@ -288,7 +288,7 @@ def _quantize_per_channel_int8(
     tensor: torch.Tensor,
     dim: int = 0,
     symmetric: bool = True,
-) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
     """
     Quantize a 2D weight tensor to INT8 per-channel.
 
@@ -316,7 +316,7 @@ def _quantize_per_channel_int8(
 def _dequantize_per_tensor(
     q: torch.Tensor,
     scale: torch.Tensor,
-    zero_point: Optional[torch.Tensor],
+    zero_point: torch.Tensor | None,
     symmetric: bool = True,
 ) -> torch.Tensor:
     if symmetric:
@@ -327,7 +327,7 @@ def _dequantize_per_tensor(
 def _dequantize_per_channel(
     q: torch.Tensor,
     scale: torch.Tensor,
-    zero_point: Optional[torch.Tensor],
+    zero_point: torch.Tensor | None,
     dim: int = 0,
     symmetric: bool = True,
 ) -> torch.Tensor:
@@ -341,7 +341,7 @@ def _dequantize_per_channel(
     return ((q.float() - zp_expanded) * scale_expanded).float()
 
 
-def _cast_to_dtype(tensor: torch.Tensor, dtype: Union[str, torch.dtype]) -> torch.Tensor:
+def _cast_to_dtype(tensor: torch.Tensor, dtype: str | torch.dtype) -> torch.Tensor:
     if isinstance(dtype, str):
         dtype_map = {
             "fp16": torch.float16,
@@ -357,6 +357,7 @@ def _cast_to_dtype(tensor: torch.Tensor, dtype: Union[str, torch.dtype]) -> torc
 # ---------------------------------------------------------------------------
 # QuantizedLinear module
 # ---------------------------------------------------------------------------
+
 
 class QuantizedLinear(nn.Module):
     """
@@ -376,10 +377,10 @@ class QuantizedLinear(nn.Module):
         in_features: int,
         out_features: int,
         bias: bool = True,
-        config: Optional[QuantizationConfig] = None,
-        quantized_weight: Optional[torch.Tensor] = None,
-        scale: Optional[torch.Tensor] = None,
-        zero_point: Optional[torch.Tensor] = None,
+        config: QuantizationConfig | None = None,
+        quantized_weight: torch.Tensor | None = None,
+        scale: torch.Tensor | None = None,
+        zero_point: torch.Tensor | None = None,
     ) -> None:
         super().__init__()
         self.in_features = in_features
@@ -390,13 +391,17 @@ class QuantizedLinear(nn.Module):
         self._quantized_weight = quantized_weight
         self._scale = scale
         self._zero_point = zero_point
-        self._weight_float: Optional[nn.Parameter] = None
+        self._weight_float: nn.Parameter | None = None
 
         if self.effective_format in (
             QuantizationFormat.FP16,
             QuantizationFormat.BF16,
         ):
-            dtype = torch.float16 if self.effective_format == QuantizationFormat.FP16 else torch.bfloat16
+            dtype = (
+                torch.float16
+                if self.effective_format == QuantizationFormat.FP16
+                else torch.bfloat16
+            )
             self._weight_float = nn.Parameter(torch.empty(out_features, in_features, dtype=dtype))
             if bias:
                 self.bias = nn.Parameter(torch.zeros(out_features, dtype=dtype))
@@ -413,7 +418,7 @@ class QuantizedLinear(nn.Module):
 
     def _reset_parameters(self) -> None:
         if self._weight_float is not None:
-            nn.init.kaiming_uniform_(self._weight_float, a=5 ** 0.5)
+            nn.init.kaiming_uniform_(self._weight_float, a=5**0.5)
         if self.bias is not None:
             nn.init.zeros_(self.bias)
 
@@ -484,7 +489,7 @@ class QuantizedLinear(nn.Module):
             self._quantized_weight = None
             return
 
-        warnings.warn(f"Dequantization for format {fmt.value} is not implemented.")
+        warnings.warn(f"Dequantization for format {fmt.value} is not implemented.", stacklevel=2)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         weight = self._get_compute_weight()
@@ -513,6 +518,7 @@ class QuantizedLinear(nn.Module):
 # Fake quantization for QAT
 # ---------------------------------------------------------------------------
 
+
 class FakeQuantize(nn.Module):
     """
     Fake quantization module that simulates quantization noise during training.
@@ -525,7 +531,7 @@ class FakeQuantize(nn.Module):
     def __init__(
         self,
         config: QuantizationConfig,
-        forward_fn: Optional[Callable[[torch.Tensor], torch.Tensor]] = None,
+        forward_fn: Callable[[torch.Tensor], torch.Tensor] | None = None,
     ) -> None:
         super().__init__()
         self.config = config
@@ -561,8 +567,6 @@ def _wrap_linear_with_qat(module: nn.Linear, config: QuantizationConfig) -> nn.M
     weight_fq = FakeQuantize(config)
     act_fq = FakeQuantize(config)
 
-    original_forward = module.forward
-
     def qat_forward(x: torch.Tensor) -> torch.Tensor:
         x_q = act_fq(x)
         weight_q = weight_fq(module.weight)
@@ -578,9 +582,10 @@ def _wrap_linear_with_qat(module: nn.Linear, config: QuantizationConfig) -> nn.M
 # Calibration for PTQ
 # ---------------------------------------------------------------------------
 
+
 def _default_calibration_loader(
     config: QuantizationConfig,
-) -> List[torch.Tensor]:
+) -> list[torch.Tensor]:
     """
     Produce dummy calibration data for PTQ.
 
@@ -596,7 +601,7 @@ def _default_calibration_loader(
 def calibrate_model(
     model: nn.Module,
     config: QuantizationConfig,
-    calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+    calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
 ) -> None:
     """
     Run calibration data through the model to collect activation statistics.
@@ -618,6 +623,7 @@ def calibrate_model(
 # QuantizedModelWrapper
 # ---------------------------------------------------------------------------
 
+
 class QuantizedModelWrapper(nn.Module):
     """
     Wraps an existing model and applies quantization according to the config.
@@ -632,16 +638,16 @@ class QuantizedModelWrapper(nn.Module):
     def __init__(
         self,
         model: nn.Module,
-        config: Optional[QuantizationConfig] = None,
-        layers_to_quantize: Optional[List[str]] = None,
-        calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+        config: QuantizationConfig | None = None,
+        layers_to_quantize: list[str] | None = None,
+        calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
     ) -> None:
         super().__init__()
         self.model = model
         self.config = config or QuantizationConfig()
         self.layers_to_quantize = layers_to_quantize or []
         self.calibration_loader = calibration_loader
-        self._quantized_layers: Dict[str, QuantizedLinear] = {}
+        self._quantized_layers: dict[str, QuantizedLinear] = {}
 
         self._apply_quantization()
 
@@ -721,11 +727,11 @@ class QuantizedModelWrapper(nn.Module):
     def forward(self, *args: Any, **kwargs: Any) -> Any:
         return self.model(*args, **kwargs)
 
-    def get_quantized_layers(self) -> Dict[str, QuantizedLinear]:
+    def get_quantized_layers(self) -> dict[str, QuantizedLinear]:
         """Return mapping of layer names to QuantizedLinear modules."""
         return dict(self._quantized_layers)
 
-    def export(self, path: str, fmt: Optional[QuantizationFormat] = None) -> None:
+    def export(self, path: str, fmt: QuantizationFormat | None = None) -> None:
         """
         Export the quantized model to the specified format.
 
@@ -801,10 +807,11 @@ class QuantizedModelWrapper(nn.Module):
 # GPTQ / AWQ / EXL2 delegation (with fallback)
 # ---------------------------------------------------------------------------
 
+
 def quantize_gptq(
     model: nn.Module,
     config: QuantizationConfig,
-    calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+    calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
 ) -> nn.Module:
     """
     Apply GPTQ quantization to a model.
@@ -832,7 +839,9 @@ def quantize_gptq(
             group_size=config.group_size,
             sym=config.symmetric,
         )
-        calibration_data = calibration_loader() if calibration_loader else _default_calibration_loader(config)
+        calibration_data = (
+            calibration_loader() if calibration_loader else _default_calibration_loader(config)
+        )
         gptq_model = GPTQModel.quantize(model, qconfig, calibration_data)
         logger.info("GPTQ quantization applied successfully.")
         return gptq_model
@@ -851,7 +860,7 @@ def quantize_gptq(
 def quantize_awq(
     model: nn.Module,
     config: QuantizationConfig,
-    calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+    calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
 ) -> nn.Module:
     """
     Apply AWQ quantization to a model.
@@ -871,7 +880,7 @@ def quantize_awq(
         return QuantizedModelWrapper(model, config=config)
 
     try:
-        from awq import AutoAWQForCausalLM, quantize  # type: ignore[import-untyped]
+        from awq import quantize  # type: ignore[import-untyped]
 
         awq_config = {
             "zero_point": not config.symmetric,
@@ -879,7 +888,9 @@ def quantize_awq(
             "w_bit": config.weight_bits,
             "version": "GEMM",
         }
-        calibration_data = calibration_loader() if calibration_loader else _default_calibration_loader(config)
+        calibration_data = (
+            calibration_loader() if calibration_loader else _default_calibration_loader(config)
+        )
         quantize(model, awq_config, calibration_data)
         logger.info("AWQ quantization applied successfully.")
         return model
@@ -898,7 +909,7 @@ def quantize_awq(
 def quantize_exl2(
     model: nn.Module,
     config: QuantizationConfig,
-    calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+    calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
 ) -> nn.Module:
     """
     Apply EXL2 quantization to a model.
@@ -917,11 +928,11 @@ def quantize_exl2(
         return QuantizedModelWrapper(model, config=config)
 
     try:
-        import exllamav2  # type: ignore[import-untyped]
-        from exllamav2 import ExLlamaV2, ExLlamaV2Config  # type: ignore[import-untyped]
 
-        logger.warning("EXL2 quantization requires an ExLlamaV2-compatible model load; "
-                       "applying INT8 symmetric fallback.")
+        logger.warning(
+            "EXL2 quantization requires an ExLlamaV2-compatible model load; "
+            "applying INT8 symmetric fallback."
+        )
         config = QuantizationConfig(
             format=QuantizationFormat.INT8_SYMMETRIC,
             method=QuantizationMethod.WEIGHT_ONLY,
@@ -946,11 +957,12 @@ def quantize_exl2(
 # High-level quantization API
 # ---------------------------------------------------------------------------
 
+
 def quantize_model(
     model: nn.Module,
-    config: Optional[Union[QuantizationConfig, Dict[str, Any]]] = None,
-    layers_to_quantize: Optional[List[str]] = None,
-    calibration_loader: Optional[Callable[[], List[torch.Tensor]]] = None,
+    config: QuantizationConfig | dict[str, Any] | None = None,
+    layers_to_quantize: list[str] | None = None,
+    calibration_loader: Callable[[], list[torch.Tensor]] | None = None,
 ) -> nn.Module:
     """
     Quantize a model using the specified configuration.
@@ -973,9 +985,7 @@ def quantize_model(
     fmt = cfg.effective_format
     method = cfg.method
 
-    logger.info(
-        "Quantizing model with format=%s, method=%s", fmt.value, method.value
-    )
+    logger.info("Quantizing model with format=%s, method=%s", fmt.value, method.value)
 
     if fmt == QuantizationFormat.GPTQ:
         return quantize_gptq(model, cfg, calibration_loader)
@@ -988,7 +998,9 @@ def quantize_model(
 
     if fmt == QuantizationFormat.GGUF:
         wrapper = QuantizedModelWrapper(
-            model, config=cfg, layers_to_quantize=layers_to_quantize,
+            model,
+            config=cfg,
+            layers_to_quantize=layers_to_quantize,
             calibration_loader=calibration_loader,
         )
         logger.info("GGUF format selected; using QuantizedModelWrapper with fallback support.")
@@ -1002,7 +1014,9 @@ def quantize_model(
         QuantizationMethod.MIXED_PRECISION,
     ):
         return QuantizedModelWrapper(
-            model, config=cfg, layers_to_quantize=layers_to_quantize,
+            model,
+            config=cfg,
+            layers_to_quantize=layers_to_quantize,
             calibration_loader=calibration_loader,
         )
 
@@ -1010,7 +1024,7 @@ def quantize_model(
     return model
 
 
-def get_supported_formats() -> List[str]:
+def get_supported_formats() -> list[str]:
     """Return a list of quantization formats supported in the current environment."""
     formats = [
         QuantizationFormat.FP16.value,
@@ -1029,7 +1043,7 @@ def get_supported_formats() -> List[str]:
     return formats
 
 
-def get_supported_methods() -> List[str]:
+def get_supported_methods() -> list[str]:
     """Return quantization methods supported in the current environment."""
     methods = [
         QuantizationMethod.WEIGHT_ONLY.value,

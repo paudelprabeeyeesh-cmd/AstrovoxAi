@@ -1,4 +1,5 @@
 import os
+
 from tokenizers import Tokenizer
 
 save_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tokenizer.json")

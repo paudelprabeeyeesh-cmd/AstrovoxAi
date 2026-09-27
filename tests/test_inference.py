@@ -13,7 +13,6 @@ from models.llm.inference.engine import InferenceEngine, SamplingParams, Generat
 from models.llm.tokenizer.train_tokenizer import load_tokenizer
 from models.llm.utils.helpers import load_config, get_device
 
-
 CONFIG_100M = os.path.join(ROOT, "models", "llm", "configs", "config_100m.yaml")
 TOKENIZER_PATH = os.path.join(ROOT, "models", "llm", "tokenizer.json")
 

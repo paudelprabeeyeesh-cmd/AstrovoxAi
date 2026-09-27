@@ -19,7 +19,14 @@ def _run(cmd: list[str], cwd: Path | None = None) -> tuple[int, str, str]:
 
 
 def run_black() -> dict[str, Any]:
-    report: dict[str, Any] = {"tool": "black", "command": ["black", "--check", "--diff", "."], "returncode": 0, "stdout": "", "stderr": "", "fixed": False}
+    report: dict[str, Any] = {
+        "tool": "black",
+        "command": ["black", "--check", "--diff", "."],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "fixed": False,
+    }
     code, stdout, stderr = _run(["black", "--check", "--diff", "."])
     report["returncode"] = code
     report["stdout"] = stdout
@@ -34,7 +41,14 @@ def run_black() -> dict[str, Any]:
 
 
 def run_ruff() -> dict[str, Any]:
-    report: dict[str, Any] = {"tool": "ruff", "command": ["ruff", "check", "."], "returncode": 0, "stdout": "", "stderr": "", "fixed": False}
+    report: dict[str, Any] = {
+        "tool": "ruff",
+        "command": ["ruff", "check", "."],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "fixed": False,
+    }
     code, stdout, stderr = _run(["ruff", "check", "."])
     report["returncode"] = code
     report["stdout"] = stdout

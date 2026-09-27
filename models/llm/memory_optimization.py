@@ -47,14 +47,13 @@ Graceful degradation:
 """
 
 import contextlib
-import enum
 import logging
-import os
-import time
 import threading
+import time
 from collections import defaultdict, deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -67,6 +66,7 @@ logger = logging.getLogger(__name__)
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class MemorySnapshot:
     """Point-in-time memory statistics."""
@@ -76,7 +76,7 @@ class MemorySnapshot:
     reserved_bytes: int = 0
     peak_allocated_bytes: int = 0
     active_bytes: int = 0
-    layer_name: Optional[str] = None
+    layer_name: str | None = None
 
 
 @dataclass
@@ -92,6 +92,7 @@ class LayerMemoryStats:
 # ---------------------------------------------------------------------------
 # Utility helpers
 # ---------------------------------------------------------------------------
+
 
 def _is_cuda_available() -> bool:
     return torch.cuda.is_available()
@@ -116,6 +117,7 @@ def _safe_tensor_to_cuda(tensor: torch.Tensor, device: torch.device) -> torch.Te
 # ---------------------------------------------------------------------------
 # 1. Activation recomputation
 # ---------------------------------------------------------------------------
+
 
 class CheckpointedFunction(torch.autograd.Function):
     """Stateless autograd Function implementing checkpointed forward."""
@@ -150,10 +152,10 @@ class CheckpointedFunction(torch.autograd.Function):
     def backward(ctx: Any, *grad_outputs: Any) -> Any:
         with torch.enable_grad():
             flat = list(ctx.saved_tensors)
-            inputs = flat[ctx.num_outputs:]
+            inputs = flat[ctx.num_outputs :]
             outputs = flat[: ctx.num_outputs]
 
-            for o, g in zip(outputs, grad_outputs):
+            for o, g in zip(outputs, grad_outputs, strict=False):
                 if isinstance(o, torch.Tensor):
                     o.grad = g
 
@@ -199,7 +201,7 @@ class SelectiveRecompute:
     def __init__(
         self,
         block: nn.Module,
-        expensive_ops: Optional[List[str]] = None,
+        expensive_ops: list[str] | None = None,
     ) -> None:
         self.block = block
         self.expensive_ops = expensive_ops or ["attn", "mlp"]
@@ -207,7 +209,7 @@ class SelectiveRecompute:
     def forward(
         self,
         hidden_states: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
         **kwargs: Any,
     ) -> torch.Tensor:
         if not self.training or not self.expensive_ops:
@@ -215,7 +217,7 @@ class SelectiveRecompute:
 
         def _block_fn(
             hidden: torch.Tensor,
-            mask: Optional[torch.Tensor] = None,
+            mask: torch.Tensor | None = None,
             **kw: Any,
         ) -> torch.Tensor:
             return self.block(hidden, attention_mask=mask, **kw)
@@ -235,6 +237,7 @@ class SelectiveRecompute:
 # 2. Parameter offloading
 # ---------------------------------------------------------------------------
 
+
 class CPUOffloadParameterBuffer:
     """
     Buffer that holds parameters on CPU and prefetches them on demand.
@@ -253,7 +256,7 @@ class CPUOffloadParameterBuffer:
         self.device = device
         self.prefetch_lookahead = prefetch_lookahead
 
-        self._cpu_buffers: Dict[str, nn.Parameter] = {}
+        self._cpu_buffers: dict[str, nn.Parameter] = {}
         self._gpu_param_names: set = set()
         self._lock = threading.Lock()
 
@@ -262,7 +265,7 @@ class CPUOffloadParameterBuffer:
                 cpu_param = param.detach().clone().cpu()
                 self._cpu_buffers[name] = cpu_param
 
-    def prefetch(self, needed_names: List[str]) -> None:
+    def prefetch(self, needed_names: list[str]) -> None:
         """
         Prefetch parameters to GPU ahead of their use.
 
@@ -283,7 +286,7 @@ class CPUOffloadParameterBuffer:
                             setattr(self.module, name, nn.Parameter(param))
                     self._gpu_param_names.add(name)
 
-    def release(self, released_names: List[str]) -> None:
+    def release(self, released_names: list[str]) -> None:
         """
         Release parameters back to CPU after use, preserving gradients.
         """
@@ -304,9 +307,7 @@ class CPUOffloadParameterBuffer:
                         self._cpu_buffers[name] = cpu_param
 
                     with torch.no_grad():
-                        param.data.copy_(
-                            _safe_tensor_to_cuda(cpu_param, self.device)
-                        )
+                        param.data.copy_(_safe_tensor_to_cuda(cpu_param, self.device))
                     self._gpu_param_names.discard(name)
 
     def sync_gradients(self) -> None:
@@ -340,15 +341,14 @@ def enable_cpu_offload(
         return CPUOffloadParameterBuffer(module, device)
 
     buf = CPUOffloadParameterBuffer(module, device, prefetch_lookahead)
-    logger.info(
-        "CPU offload enabled for %s parameters.", sum(1 for _ in module.parameters())
-    )
+    logger.info("CPU offload enabled for %s parameters.", sum(1 for _ in module.parameters()))
     return buf
 
 
 # ---------------------------------------------------------------------------
 # 3. Optimizer offloading
 # ---------------------------------------------------------------------------
+
 
 class CPUOffloadOptimizer:
     """
@@ -367,7 +367,7 @@ class CPUOffloadOptimizer:
         self.optimizer = optimizer
         self.device = device
         self.pin_memory = pin_memory and _is_cuda_available()
-        self._param_cpu_copies: Dict[int, torch.Tensor] = {}
+        self._param_cpu_copies: dict[int, torch.Tensor] = {}
 
         if not _is_cuda_available():
             logger.warning("CUDA unavailable; optimizer CPU offload disabled.")
@@ -382,7 +382,7 @@ class CPUOffloadOptimizer:
                 cpu_param.grad = None
                 self._param_cpu_copies[pid] = cpu_param
 
-    def step(self, closure: Optional[Callable] = None) -> Optional[float]:
+    def step(self, closure: Callable | None = None) -> float | None:
         """Move grads to CPU, step optimizer, then async copy params back to GPU."""
         if not self._param_cpu_copies:
             return self.optimizer.step(closure)
@@ -440,6 +440,7 @@ def enable_optimizer_cpu_offload(
 # 4. Memory profiler
 # ---------------------------------------------------------------------------
 
+
 class MemoryProfiler:
     """
     Tracks and reports memory usage across training/inference sessions.
@@ -458,7 +459,7 @@ class MemoryProfiler:
         self.enabled = enabled and _is_cuda_available()
         self._max_entries = max_timeline_entries
         self._timeline: deque[MemorySnapshot] = deque(maxlen=max_timeline_entries)
-        self._layer_stats: Dict[str, LayerMemoryStats] = defaultdict(
+        self._layer_stats: dict[str, LayerMemoryStats] = defaultdict(
             lambda: LayerMemoryStats(name="")
         )
         self._global_peak: int = 0
@@ -472,7 +473,7 @@ class MemoryProfiler:
         if self.enabled:
             torch.cuda.reset_peak_memory_stats()
 
-    def snapshot(self, layer_name: Optional[str] = None) -> MemorySnapshot:
+    def snapshot(self, layer_name: str | None = None) -> MemorySnapshot:
         """
         Capture a memory snapshot and record it in the timeline.
         """
@@ -503,7 +504,7 @@ class MemoryProfiler:
             self._timeline.append(snap)
         return snap
 
-    def get_layer_stats(self) -> Dict[str, LayerMemoryStats]:
+    def get_layer_stats(self) -> dict[str, LayerMemoryStats]:
         """Return per-layer memory statistics."""
         with self._lock:
             return dict(self._layer_stats)
@@ -513,7 +514,7 @@ class MemoryProfiler:
         with self._lock:
             return self._global_peak
 
-    def get_timeline(self) -> List[MemorySnapshot]:
+    def get_timeline(self) -> list[MemorySnapshot]:
         """Return a copy of the memory timeline."""
         with self._lock:
             return list(self._timeline)
@@ -545,7 +546,7 @@ class MemoryProfiler:
             self._layer_stats.clear()
             self._global_peak = 0
 
-    def __enter__(self) -> "MemoryProfiler":
+    def __enter__(self) -> MemoryProfiler:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -566,9 +567,9 @@ class LayerMemoryTracker:
     def __init__(self, profiler: MemoryProfiler, layer_name: str) -> None:
         self.profiler = profiler
         self.layer_name = layer_name
-        self._snap_before: Optional[MemorySnapshot] = None
+        self._snap_before: MemorySnapshot | None = None
 
-    def __enter__(self) -> "LayerMemoryTracker":
+    def __enter__(self) -> LayerMemoryTracker:
         self._snap_before = self.profiler.snapshot(self.layer_name)
         return self
 
@@ -586,6 +587,7 @@ class LayerMemoryTracker:
 # ---------------------------------------------------------------------------
 # 5. Fused kernels
 # ---------------------------------------------------------------------------
+
 
 class FusedLayerNorm(nn.Module):
     """
@@ -626,10 +628,7 @@ class FusedLayerNorm(nn.Module):
         )
 
     def extra_repr(self) -> str:
-        return (
-            f"hidden_size={self.hidden_size}, eps={self.eps}, "
-            f"fused={self._use_fused}"
-        )
+        return f"hidden_size={self.hidden_size}, eps={self.eps}, " f"fused={self._use_fused}"
 
 
 class FusedMLP(nn.Module):
@@ -695,7 +694,7 @@ class FusedAttention(nn.Module):
         self.head_dim = head_dim
         self.dropout = dropout
         self.causal = causal
-        self.scale = head_dim ** -0.5
+        self.scale = head_dim**-0.5
         self._use_sdpa = (
             _is_cuda_available()
             and hasattr(F, "scaled_dot_product_attention")
@@ -707,7 +706,7 @@ class FusedAttention(nn.Module):
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
+        attention_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if self._use_sdpa:
             return self._fused_sdpa(query, key, value, attention_mask)
@@ -718,7 +717,7 @@ class FusedAttention(nn.Module):
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
+        attention_mask: torch.Tensor | None,
     ) -> torch.Tensor:
         is_causal = self.causal and attention_mask is None
         return F.scaled_dot_product_attention(
@@ -735,7 +734,7 @@ class FusedAttention(nn.Module):
         query: torch.Tensor,
         key: torch.Tensor,
         value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
+        attention_mask: torch.Tensor | None,
     ) -> torch.Tensor:
         B, H, L, D = query.shape
         scores = torch.matmul(query, key.transpose(-2, -1)) * self.scale
@@ -756,6 +755,7 @@ class FusedAttention(nn.Module):
 # 6. Quantized training
 # ---------------------------------------------------------------------------
 
+
 class INT8WeightQuantizer:
     """
     Simple per-tensor INT8 weight quantizer for training-time weight
@@ -765,10 +765,10 @@ class INT8WeightQuantizer:
 
     def __init__(self, enabled: bool = True) -> None:
         self.enabled = enabled and _is_cuda_available()
-        self._scale: Optional[torch.Tensor] = None
-        self._zero_point: Optional[torch.Tensor] = None
+        self._scale: torch.Tensor | None = None
+        self._zero_point: torch.Tensor | None = None
 
-    def quantize(self, weight: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def quantize(self, weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if not self.enabled:
             return weight, torch.tensor(1.0, device=weight.device)
         q_weight, scale, zero_point = torch.ops.quantized_decomposed.quantize_per_tensor(
@@ -785,7 +785,7 @@ class INT8WeightQuantizer:
             q_weight, scale, self._zero_point, 0, 255, torch.quint8
         )
 
-    def __call__(self, weight: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return self.quantize(weight)
 
 
@@ -810,7 +810,7 @@ class ActivationQuantizer:
             return q_act
         return q_act.float() * scale
 
-    def __call__(self, activation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def __call__(self, activation: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return self.quantize(activation)
 
 
@@ -826,7 +826,7 @@ class MixedPrecisionTraining:
         model: nn.Module,
         optimizer: torch.optim.Optimizer,
         dtype: str = "fp16",
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ) -> None:
         self.device = device or (
             torch.device("cuda") if _is_cuda_available() else torch.device("cpu")
@@ -872,7 +872,7 @@ class MixedPrecisionTraining:
         else:
             loss.backward()
 
-    def __enter__(self) -> "MixedPrecisionTraining":
+    def __enter__(self) -> MixedPrecisionTraining:
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -883,7 +883,7 @@ def enable_quantized_training(
     model: nn.Module,
     weight_quant: bool = True,
     activation_quant: bool = True,
-) -> Tuple[nn.Module, INT8WeightQuantizer, ActivationQuantizer]:
+) -> tuple[nn.Module, INT8WeightQuantizer, ActivationQuantizer]:
     """
     Enable INT8 quantized training for the given model.
 
@@ -909,6 +909,7 @@ def enable_quantized_training(
 # 7. CUDA graphs
 # ---------------------------------------------------------------------------
 
+
 class CUDAGraphCapture:
     """
     Capture and replay static computation graphs via CUDA graphs.
@@ -926,9 +927,9 @@ class CUDAGraphCapture:
     def __init__(
         self,
         model: nn.Module,
-        example_inputs: Tuple[torch.Tensor, ...],
+        example_inputs: tuple[torch.Tensor, ...],
         warmup_iters: int = 3,
-        device: Optional[torch.device] = None,
+        device: torch.device | None = None,
     ) -> None:
         self.device = device or (
             torch.device("cuda") if _is_cuda_available() else torch.device("cpu")
@@ -936,13 +937,10 @@ class CUDAGraphCapture:
         self.model = model.to(self.device)
         self.example_inputs = example_inputs
         self.warmup_iters = warmup_iters
-        self._graph: Optional[torch.cuda.CUDAGraph] = None
-        self._static_inputs: Optional[List[torch.Tensor]] = None
-        self._static_outputs: Optional[Any] = None
-        self._use_cuda_graphs = (
-            _is_cuda_available()
-            and torch.cuda.get_device_capability()[0] >= 7
-        )
+        self._graph: torch.cuda.CUDAGraph | None = None
+        self._static_inputs: list[torch.Tensor] | None = None
+        self._static_outputs: Any | None = None
+        self._use_cuda_graphs = _is_cuda_available() and torch.cuda.get_device_capability()[0] >= 7
 
         if not self._use_cuda_graphs:
             logger.info("CUDA graphs unavailable or unsupported; replay disabled.")
@@ -972,8 +970,7 @@ class CUDAGraphCapture:
                 self._graph = torch.cuda.CUDAGraph()
 
             self._static_inputs = [
-                x.clone() if isinstance(x, torch.Tensor) else x
-                for x in example_inputs
+                x.clone() if isinstance(x, torch.Tensor) else x for x in example_inputs
             ]
 
             self._graph.capture_begin()
@@ -1012,6 +1009,7 @@ class CUDAGraphCapture:
 # Unified optimizer wrapper
 # ---------------------------------------------------------------------------
 
+
 class MemoryOptimizedOptimizer:
     """
     Composite wrapper combining checkpointing, offloading, and mixed precision
@@ -1028,19 +1026,23 @@ class MemoryOptimizedOptimizer:
         enable_cpu_offload_optimizer: bool = True,
         enable_mixed_precision: bool = True,
         mp_dtype: str = "fp16",
-        profiler: Optional[MemoryProfiler] = None,
+        profiler: MemoryProfiler | None = None,
     ) -> None:
         self.device = device
         self.model = model
         self.optimizer = optimizer
         self.profiler = profiler or MemoryProfiler()
 
-        self.mp = MixedPrecisionTraining(
-            model=model,
-            optimizer=optimizer,
-            dtype=mp_dtype,
-            device=device,
-        ) if enable_mixed_precision and _is_cuda_available() else None
+        self.mp = (
+            MixedPrecisionTraining(
+                model=model,
+                optimizer=optimizer,
+                dtype=mp_dtype,
+                device=device,
+            )
+            if enable_mixed_precision and _is_cuda_available()
+            else None
+        )
 
         self.param_offload = (
             enable_cpu_offload(model, device)
@@ -1056,7 +1058,7 @@ class MemoryOptimizedOptimizer:
 
         self.enable_checkpoint = enable_checkpoint
 
-    def step(self, closure: Optional[Callable] = None) -> Optional[float]:
+    def step(self, closure: Callable | None = None) -> float | None:
         """Perform a single optimization step."""
         if self.optim_offload is not None:
             return self.optim_offload.step(closure)
@@ -1076,15 +1078,15 @@ class MemoryOptimizedOptimizer:
         else:
             self.optimizer.zero_grad(set_to_none=set_to_none)
 
-    def prefetch_layer_params(self, param_names: List[str]) -> None:
+    def prefetch_layer_params(self, param_names: list[str]) -> None:
         if self.param_offload is not None:
             self.param_offload.prefetch(param_names)
 
-    def release_layer_params(self, param_names: List[str]) -> None:
+    def release_layer_params(self, param_names: list[str]) -> None:
         if self.param_offload is not None:
             self.param_offload.release(param_names)
 
-    def profile_snapshot(self, layer_name: Optional[str] = None) -> MemorySnapshot:
+    def profile_snapshot(self, layer_name: str | None = None) -> MemorySnapshot:
         return self.profiler.snapshot(layer_name)
 
     def log_memory_summary(self) -> None:
@@ -1095,10 +1097,11 @@ class MemoryOptimizedOptimizer:
 # Convenience factory
 # ---------------------------------------------------------------------------
 
+
 def create_memory_optimized_model(
     model: nn.Module,
     optimizer: torch.optim.Optimizer,
-    device: Optional[torch.device] = None,
+    device: torch.device | None = None,
     enable_checkpoint: bool = True,
     enable_cpu_offload_params: bool = True,
     enable_cpu_offload_optimizer: bool = True,
@@ -1106,16 +1109,14 @@ def create_memory_optimized_model(
     enable_fused_kernels: bool = True,
     enable_cuda_graphs: bool = False,
     mp_dtype: str = "fp16",
-    profiler: Optional[MemoryProfiler] = None,
-) -> Tuple[MemoryOptimizedOptimizer, Optional[CUDAGraphCapture]]:
+    profiler: MemoryProfiler | None = None,
+) -> tuple[MemoryOptimizedOptimizer, CUDAGraphCapture | None]:
     """
     One-stop factory for memory-optimized training.
 
     Returns (MemoryOptimizedOptimizer, CUDAGraphCapture|None).
     """
-    device = device or (
-        torch.device("cuda") if _is_cuda_available() else torch.device("cpu")
-    )
+    device = device or (torch.device("cuda") if _is_cuda_available() else torch.device("cpu"))
 
     if enable_fused_kernels and _is_cuda_available():
         _maybe_fuse_layer_norms(model)
@@ -1160,6 +1161,6 @@ def _maybe_fuse_layer_norms(model: nn.Module) -> None:
             _maybe_fuse_layer_norms(child)
 
 
-def _get_example_inputs(model: nn.Module) -> Optional[Tuple[torch.Tensor, ...]]:
+def _get_example_inputs(model: nn.Module) -> tuple[torch.Tensor, ...] | None:
     """Best-effort extraction of example inputs for CUDA graph capture."""
     return None

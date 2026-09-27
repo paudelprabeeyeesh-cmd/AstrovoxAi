@@ -1,20 +1,25 @@
 import os
-import sys
-import yaml
+
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
 from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
 
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
-from ..utils.helpers import load_config, count_parameters, get_device, set_cpu_threads, ValidationSplit
+from ..utils.helpers import (
+    get_device,
+    load_config,
+    set_cpu_threads,
+)
 
 
 def get_8bit_optimizer(model, lr=3e-4):
     try:
         import bitsandbytes as bnb
-        optimizer = bnb.optim.AdamW8bit(model.parameters(), lr=lr, betas=(0.9, 0.95), weight_decay=0.1)
+
+        optimizer = bnb.optim.AdamW8bit(
+            model.parameters(), lr=lr, betas=(0.9, 0.95), weight_decay=0.1
+        )
         return optimizer
     except Exception:
         return torch.optim.AdamW(model.parameters(), lr=lr, betas=(0.9, 0.95), weight_decay=0.1)
@@ -30,7 +35,7 @@ def train(config_path="configs/config_4b.yaml"):
     dtype = torch.float32
     mp = config.get("mixed_precision", "none")
     if device == "cpu":
-        if mp == "bf16" and hasattr(torch, 'bfloat16'):
+        if mp == "bf16" and hasattr(torch, "bfloat16"):
             dtype = torch.bfloat16
         elif mp == "fp16":
             dtype = torch.float16
@@ -40,7 +45,9 @@ def train(config_path="configs/config_4b.yaml"):
         elif mp == "fp16":
             dtype = torch.float16
 
-    mem = LLM.estimate_memory_from_config(config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4)
+    mem = LLM.estimate_memory_from_config(
+        config, dtype_bytes=2 if dtype in (torch.float16, torch.bfloat16) else 4
+    )
     print(f"Parameters: {LLM.get_num_params_from_config(config):,}")
     print(f"Estimated memory: {mem['total_base_gb']:.1f}GB")
 
@@ -53,12 +60,22 @@ def train(config_path="configs/config_4b.yaml"):
     tokenizer = load_tokenizer(tokenizer_path)
     pad_token_id = tokenizer.token_to_id("<pad>") or 0
 
-    dataset = TextDataset(config["train_file"], tokenizer, block_size=config.get("max_position_embeddings", 1024))
-    dataloader = DataLoader(dataset, batch_size=config["batch_size"], shuffle=True,
-                            num_workers=0, pin_memory=(device == "cuda"), collate_fn=lambda b: collate_fn(b, pad_token_id))
+    dataset = TextDataset(
+        config["train_file"], tokenizer, block_size=config.get("max_position_embeddings", 1024)
+    )
+    dataloader = DataLoader(
+        dataset,
+        batch_size=config["batch_size"],
+        shuffle=True,
+        num_workers=0,
+        pin_memory=(device == "cuda"),
+        collate_fn=lambda b: collate_fn(b, pad_token_id),
+    )
 
     optimizer = get_8bit_optimizer(model, lr=config.get("lr", 3e-4))
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(dataloader) * config.get("epochs", 1))
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=len(dataloader) * config.get("epochs", 1)
+    )
     scaler = GradScaler(enabled=(dtype == torch.float16 and device == "cuda"))
 
     model.train()
@@ -70,21 +87,33 @@ def train(config_path="configs/config_4b.yaml"):
             labels = batch["labels"].to(device)
             if dtype == torch.float16 and device == "cuda":
                 with autocast(enabled=True):
-                    outputs = model(input_ids, labels=labels, use_gradient_checkpointing=config.get("gradient_checkpointing", False))
+                    outputs = model(
+                        input_ids,
+                        labels=labels,
+                        use_gradient_checkpointing=config.get("gradient_checkpointing", False),
+                    )
                     loss = outputs["loss"] / accumulation_steps
                 scaler.scale(loss).backward()
             else:
-                outputs = model(input_ids, labels=labels, use_gradient_checkpointing=config.get("gradient_checkpointing", False))
+                outputs = model(
+                    input_ids,
+                    labels=labels,
+                    use_gradient_checkpointing=config.get("gradient_checkpointing", False),
+                )
                 loss = outputs["loss"] / accumulation_steps
                 loss.backward()
             if (i + 1) % accumulation_steps == 0:
                 if dtype == torch.float16 and device == "cuda":
                     scaler.unscale_(optimizer)
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.get("gradient_clip_norm", 1.0))
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(), config.get("gradient_clip_norm", 1.0)
+                    )
                     scaler.step(optimizer)
                     scaler.update()
                 else:
-                    torch.nn.utils.clip_grad_norm_(model.parameters(), config.get("gradient_clip_norm", 1.0))
+                    torch.nn.utils.clip_grad_norm_(
+                        model.parameters(), config.get("gradient_clip_norm", 1.0)
+                    )
                     optimizer.step()
                 optimizer.zero_grad(set_to_none=True)
                 scheduler.step()

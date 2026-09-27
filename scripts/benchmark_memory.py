@@ -50,7 +50,11 @@ def profile_training_memory(
         start = time.perf_counter()
 
         optimizer.zero_grad()
-        out = model(dummy_input, labels=dummy_labels, use_gradient_checkpointing=config.get("gradient_checkpointing", False))
+        out = model(
+            dummy_input,
+            labels=dummy_labels,
+            use_gradient_checkpointing=config.get("gradient_checkpointing", False),
+        )
         loss = out["loss"]
         loss.backward()
         optimizer.step()
@@ -68,6 +72,7 @@ def profile_training_memory(
     gpu_peak_after = None
     try:
         import torch
+
         if torch.cuda.is_available():
             gpu_mem_after = torch.cuda.memory_allocated() / (1024 * 1024)
             gpu_peak_after = torch.cuda.max_memory_allocated() / (1024 * 1024)
@@ -78,7 +83,9 @@ def profile_training_memory(
         "phase": "training",
         "steps": steps,
         "times_seconds": train_times,
-        "avg_step_time_seconds": round(sum(train_times) / len(train_times), 4) if train_times else 0.0,
+        "avg_step_time_seconds": (
+            round(sum(train_times) / len(train_times), 4) if train_times else 0.0
+        ),
         "gpu_memory_after_mb": gpu_mem_after,
         "gpu_memory_peak_mb": gpu_peak_after,
     }
@@ -134,6 +141,7 @@ def profile_inference_memory(
     gpu_peak_after = None
     try:
         import torch
+
         if torch.cuda.is_available():
             gpu_mem_after = torch.cuda.memory_allocated() / (1024 * 1024)
             gpu_peak_after = torch.cuda.max_memory_allocated() / (1024 * 1024)
