@@ -10,10 +10,9 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BACKUP_DIR = REPO_ROOT / "backups"
@@ -40,7 +39,7 @@ def backup_file(src: Path, dest: Path) -> None:
             shutil.copy2(src, dest)
 
 
-def backup_models(backup_path: Path) -> List[str]:
+def backup_models(backup_path: Path) -> list[str]:
     files = []
     models_dir = REPO_ROOT / "models" / "registry"
     if models_dir.exists():
@@ -50,7 +49,7 @@ def backup_models(backup_path: Path) -> List[str]:
     return files
 
 
-def backup_datasets(backup_path: Path) -> List[str]:
+def backup_datasets(backup_path: Path) -> list[str]:
     files = []
     datasets_dir = REPO_ROOT / "datasets" / "registry"
     if datasets_dir.exists():
@@ -60,7 +59,7 @@ def backup_datasets(backup_path: Path) -> List[str]:
     return files
 
 
-def backup_experiments(backup_path: Path) -> List[str]:
+def backup_experiments(backup_path: Path) -> list[str]:
     files = []
     exp_dir = REPO_ROOT / "experiments"
     if exp_dir.exists():
@@ -70,7 +69,7 @@ def backup_experiments(backup_path: Path) -> List[str]:
     return files
 
 
-def backup_configs(backup_path: Path) -> List[str]:
+def backup_configs(backup_path: Path) -> list[str]:
     files = []
     config_dir = REPO_ROOT / "configs"
     if config_dir.exists():
@@ -80,7 +79,7 @@ def backup_configs(backup_path: Path) -> List[str]:
     return files
 
 
-def backup_database(backup_path: Path) -> List[str]:
+def backup_database(backup_path: Path) -> list[str]:
     files = []
     try:
         pg_dump = shutil.which("pg_dump")
@@ -95,7 +94,7 @@ def backup_database(backup_path: Path) -> List[str]:
     return files
 
 
-def backup_docker_volumes(backup_path: Path) -> List[str]:
+def backup_docker_volumes(backup_path: Path) -> list[str]:
     files = []
     try:
         volumes = ["postgres_data", "redis_data", "storage"]
@@ -109,7 +108,7 @@ def backup_docker_volumes(backup_path: Path) -> List[str]:
     return files
 
 
-def create_backup(name: str = None, include_database: bool = False, include_docker: bool = False) -> Dict[str, Any]:
+def create_backup(name: str = None, include_database: bool = False, include_docker: bool = False) -> dict[str, Any]:
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     backup_name = name or f"backup_{timestamp}"
     backup_path = BACKUP_DIR / backup_name
@@ -158,7 +157,7 @@ def create_backup(name: str = None, include_database: bool = False, include_dock
     return manifest
 
 
-def list_backups() -> List[Dict[str, Any]]:
+def list_backups() -> list[dict[str, Any]]:
     if not BACKUP_DIR.exists():
         return []
     results = []

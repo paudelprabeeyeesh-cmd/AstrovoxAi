@@ -2,11 +2,10 @@
 
 import logging
 import time
-import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ class ModelEndpoint:
     replicas: int = 1
     max_batch_size: int = 32
     max_sequence_length: int = 4096
-    gpu_ids: List[int] = field(default_factory=list)
+    gpu_ids: list[int] = field(default_factory=list)
     created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
@@ -43,20 +42,20 @@ class HealthCheck:
     healthy: bool
     latency_ms: float
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    details: Dict[str, Any] = field(default_factory=dict)
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 class LoadBalancer:
     def __init__(self, strategy: str = "round_robin"):
         self.strategy = strategy
-        self._endpoints: List[ModelEndpoint] = []
+        self._endpoints: list[ModelEndpoint] = []
         self._current_index = 0
 
     def register_endpoint(self, endpoint: ModelEndpoint):
         self._endpoints.append(endpoint)
         logger.info("Registered endpoint: %s at %s", endpoint.model_id, endpoint.endpoint_url)
 
-    def get_endpoint(self) -> Optional[ModelEndpoint]:
+    def get_endpoint(self) -> ModelEndpoint | None:
         if not self._endpoints:
             return None
         if self.strategy == "round_robin":
@@ -65,7 +64,7 @@ class LoadBalancer:
             return endpoint
         return self._endpoints[0]
 
-    def health_check(self) -> List[HealthCheck]:
+    def health_check(self) -> list[HealthCheck]:
         checks = []
         for endpoint in self._endpoints:
             start = time.time()
@@ -82,7 +81,7 @@ class AutoScaler:
         self.target_latency_ms = target_latency_ms
         self._current_replicas = min_replicas
 
-    def evaluate(self, metrics: Dict[str, Any]) -> int:
+    def evaluate(self, metrics: dict[str, Any]) -> int:
         latency = metrics.get("latency_ms", 0)
         if latency > self.target_latency_ms and self._current_replicas < self.max_replicas:
             self._current_replicas += 1
@@ -94,14 +93,14 @@ class AutoScaler:
 class RequestQueue:
     def __init__(self, max_size: int = 1000):
         self.max_size = max_size
-        self._queue: List[Dict[str, Any]] = []
+        self._queue: list[dict[str, Any]] = []
 
-    def enqueue(self, request: Dict[str, Any]):
+    def enqueue(self, request: dict[str, Any]):
         if len(self._queue) >= self.max_size:
             raise RuntimeError("Request queue is full")
         self._queue.append(request)
 
-    def dequeue(self) -> Optional[Dict[str, Any]]:
+    def dequeue(self) -> dict[str, Any] | None:
         if not self._queue:
             return None
         return self._queue.pop(0)
@@ -109,21 +108,21 @@ class RequestQueue:
 
 class MetricsCollector:
     def __init__(self):
-        self._metrics: Dict[str, List[Any]] = {}
+        self._metrics: dict[str, list[Any]] = {}
 
     def record(self, name: str, value: Any):
         if name not in self._metrics:
             self._metrics[name] = []
         self._metrics[name].append({"value": value, "timestamp": datetime.utcnow().isoformat()})
 
-    def get_metrics(self, name: str) -> List[Any]:
+    def get_metrics(self, name: str) -> list[Any]:
         return self._metrics.get(name, [])
 
 
 class ProductionPlatform:
     def __init__(self, environment: DeploymentEnvironment = DeploymentEnvironment.PRODUCTION):
         self.environment = environment
-        self._endpoints: Dict[str, ModelEndpoint] = {}
+        self._endpoints: dict[str, ModelEndpoint] = {}
         self.load_balancer = LoadBalancer()
         self.auto_scaler = AutoScaler()
         self.request_queue = RequestQueue()
@@ -137,10 +136,10 @@ class ProductionPlatform:
         logger.info("Deployed model %s with %d replicas", model_id, replicas)
         return endpoint
 
-    def get_model(self, model_id: str) -> Optional[ModelEndpoint]:
+    def get_model(self, model_id: str) -> ModelEndpoint | None:
         return self._endpoints.get(model_id)
 
-    def run_health_checks(self) -> List[HealthCheck]:
+    def run_health_checks(self) -> list[HealthCheck]:
         return self.load_balancer.health_check()
 
     def scale_model(self, model_id: str, target_replicas: int) -> ModelEndpoint:

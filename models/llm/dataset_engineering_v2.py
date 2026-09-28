@@ -8,16 +8,12 @@ language detection, quality scoring, domain balancing, and versioning.
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import logging
 import math
-import os
 import random
 import re
-import subprocess
-import sys
 import time
 import unicodedata
 import uuid
@@ -26,7 +22,7 @@ from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +87,6 @@ except Exception:  # pragma: no cover - optional
     logger.debug("tiktoken not available; token counting disabled")
 
 try:
-    import pandas as pd
 
     _HAS_PANDAS = True
 except Exception:  # pragma: no cover - optional
@@ -107,14 +102,12 @@ except Exception:  # pragma: no cover - optional
     logger.debug("datasets not available; HF streaming disabled")
 
 try:
-    import easyocr
 
     _HAS_EASYOCR = False
 except Exception:  # pragma: no cover - optional
     _HAS_EASYOCR = False
 
 try:
-    from PIL import Image
 
     _HAS_PIL = True
 except Exception:  # pragma: no cover - optional
@@ -122,7 +115,6 @@ except Exception:  # pragma: no cover - optional
     logger.debug("PIL not available; image processing disabled")
 
 try:
-    import requests
 
     _HAS_REQUESTS = True
 except Exception:  # pragma: no cover - optional

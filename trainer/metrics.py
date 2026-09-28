@@ -1,6 +1,6 @@
 import math
+
 import torch
-import torch.nn.functional as F
 
 
 def compute_perplexity(model, dataloader, device, max_batches=100):

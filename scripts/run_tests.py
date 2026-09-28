@@ -8,6 +8,7 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 REPORT_DIR = Path("test-reports")
 UNIT_REPORT = REPORT_DIR / "unit-test-report.json"

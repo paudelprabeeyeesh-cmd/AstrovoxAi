@@ -79,7 +79,7 @@ def main() -> int:
         print(f"Search failed: {exc}")
         return 1
 
-    print(f"\nSearch completed successfully.")
+    print("\nSearch completed successfully.")
     print(f"  Best score : {result['best_value']:.6f}")
     print(f"  Best config: {result['best_config_path']}")
     print(f"  Experiment log: {result['log_path']}")

@@ -1,8 +1,8 @@
 """Omega-4: Architecture research covering all major LLM architectures."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -40,7 +40,7 @@ class TransformerBlock(nn.Module):
             nn.Dropout(config.dropout),
         )
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         x = x + self.attn(self.norm1(x), self.norm1(x), self.norm1(x), attn_mask=mask)[0]
         x = x + self.mlp(self.norm2(x))
         return x
@@ -66,7 +66,7 @@ class LlamaBlock(nn.Module):
                 nn.Linear(config.intermediate_size, config.hidden_size, bias=False),
             )
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         x = x + self.attn(self.norm1(x), self.norm1(x), self.norm1(x), attn_mask=mask)[0]
         x = x + self.mlp(self.norm2(x))
         return x
@@ -140,7 +140,7 @@ class MixtureOfExpertsBlock(nn.Module):
 
 
 class ArchitectureResearch:
-    def __init__(self, config: Optional[ArchitectureConfig] = None):
+    def __init__(self, config: ArchitectureConfig | None = None):
         self.config = config or ArchitectureConfig()
 
     def build_transformer(self) -> nn.Module:
@@ -158,7 +158,7 @@ class ArchitectureResearch:
     def count_parameters(self, model: nn.Module) -> int:
         return sum(p.numel() for p in model.parameters())
 
-    def comparative_analysis(self) -> Dict[str, Any]:
+    def comparative_analysis(self) -> dict[str, Any]:
         models = {
             "transformer": self.build_transformer(),
             "llama": self.build_llama(),

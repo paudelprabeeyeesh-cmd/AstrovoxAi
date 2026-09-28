@@ -1,12 +1,10 @@
 """Omega-13: Multimodal research for vision, audio, and video-language models."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +66,7 @@ class CrossModalFusion(nn.Module):
         self.config = config
         self.fusion_layers = nn.ModuleList([nn.TransformerEncoderLayer(config.fusion_hidden_size, nhead=8, batch_first=True) for _ in range(config.num_fusion_layers)])
 
-    def forward(self, vision: Optional[torch.Tensor], audio: Optional[torch.Tensor], text: torch.Tensor) -> torch.Tensor:
+    def forward(self, vision: torch.Tensor | None, audio: torch.Tensor | None, text: torch.Tensor) -> torch.Tensor:
         modalities = [m for m in [vision, audio, text] if m is not None]
         x = torch.cat(modalities, dim=1)
         for layer in self.fusion_layers:
@@ -85,7 +83,7 @@ class MultimodalLM(nn.Module):
         self.fusion = CrossModalFusion(config)
         self.lm_head = nn.Linear(config.fusion_hidden_size, config.text_hidden_size)
 
-    def forward(self, images: Optional[torch.Tensor] = None, audio: Optional[torch.Tensor] = None, text: torch.Tensor = None) -> torch.Tensor:
+    def forward(self, images: torch.Tensor | None = None, audio: torch.Tensor | None = None, text: torch.Tensor = None) -> torch.Tensor:
         vision_emb = self.vision_encoder(images) if images is not None and self.vision_encoder else None
         audio_emb = self.audio_encoder(audio) if audio is not None and self.audio_encoder else None
         fused = self.fusion(vision_emb, audio_emb, text)
@@ -93,7 +91,7 @@ class MultimodalLM(nn.Module):
 
 
 class MultimodalResearch:
-    def __init__(self, config: Optional[MultimodalConfig] = None):
+    def __init__(self, config: MultimodalConfig | None = None):
         self.config = config or MultimodalConfig()
 
     def build_vlm(self) -> MultimodalLM:

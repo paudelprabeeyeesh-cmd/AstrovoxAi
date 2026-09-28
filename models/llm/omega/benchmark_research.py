@@ -1,12 +1,9 @@
 """Omega-10: Benchmark research covering major LLM benchmarks and leaderboards."""
 
-import json
 import logging
-import random
-import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 
@@ -32,12 +29,12 @@ class BenchmarkResult:
     benchmark: str
     score: float
     stderr: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
 class BenchmarkConfig:
-    benchmarks: List[BenchmarkType] = field(default_factory=lambda: list(BenchmarkType))
+    benchmarks: list[BenchmarkType] = field(default_factory=lambda: list(BenchmarkType))
     num_fewshot: int = 0
     batch_size: int = 8
     device: str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -141,18 +138,18 @@ class GSM8KBenchmark:
 
 
 class BenchmarkSuite:
-    def __init__(self, config: Optional[BenchmarkConfig] = None):
+    def __init__(self, config: BenchmarkConfig | None = None):
         self.config = config or BenchmarkConfig()
-        self.benchmarks: Dict[str, Any] = {
+        self.benchmarks: dict[str, Any] = {
             "perplexity": PerplexityBenchmark(self.config),
             "accuracy": AccuracyBenchmark(self.config),
             "mmlu": MMLUBenchmark(self.config),
             "human_eval": HumanEvalBenchmark(self.config),
             "gsm8k": GSM8KBenchmark(self.config),
         }
-        self._results: List[BenchmarkResult] = []
+        self._results: list[BenchmarkResult] = []
 
-    def run(self, model, tokenizer, dataset) -> List[BenchmarkResult]:
+    def run(self, model, tokenizer, dataset) -> list[BenchmarkResult]:
         results = []
         for name, benchmark in self.benchmarks.items():
             if name in self.config.benchmarks:
@@ -164,17 +161,17 @@ class BenchmarkSuite:
                     logger.error("Benchmark %s failed: %s", name, e)
         return results
 
-    def generate_leaderboard(self, results: List[BenchmarkResult]) -> Dict[str, Any]:
+    def generate_leaderboard(self, results: list[BenchmarkResult]) -> dict[str, Any]:
         scores = {r.benchmark: r.score for r in results}
         overall = sum(scores.values()) / len(scores) if scores else 0.0
         return {"overall": overall, "breakdown": scores, "num_benchmarks": len(scores)}
 
 
 class BenchmarkResearch:
-    def __init__(self, config: Optional[BenchmarkConfig] = None):
+    def __init__(self, config: BenchmarkConfig | None = None):
         self.config = config or BenchmarkConfig()
         self.suite = BenchmarkSuite(config)
 
-    def run_full_evaluation(self, model, tokenizer, dataset) -> Dict[str, Any]:
+    def run_full_evaluation(self, model, tokenizer, dataset) -> dict[str, Any]:
         results = self.suite.run(model, tokenizer, dataset)
         return self.suite.generate_leaderboard(results)

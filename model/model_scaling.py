@@ -1,7 +1,5 @@
-import math
-import os
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any
 
 try:
     import yaml
@@ -66,7 +64,7 @@ def memory_estimation(
     batch_size: int = 1,
     hidden_size: int = 4096,
     num_hidden_layers: int = 32,
-) -> Dict[str, float]:
+) -> dict[str, float]:
     weights_mem = num_params * dtype_bytes
     grad_mem = weights_mem if training else 0.0
     optimizer_mem = weights_mem * optimizer_overhead if training else 0.0
@@ -95,9 +93,9 @@ def chinchilla_optimal_tokens(num_params: int, tokens_per_param: float = 20.0) -
 def estimate_training_time(
     num_params: int,
     tokens_per_second: float,
-    optimal_tokens: Optional[int] = None,
+    optimal_tokens: int | None = None,
     context_length: int = 2048,
-) -> Dict[str, Union[int, float]]:
+) -> dict[str, int | float]:
     if optimal_tokens is None:
         optimal_tokens = chinchilla_optimal_tokens(num_params)
     steps = optimal_tokens / context_length
@@ -111,21 +109,21 @@ def estimate_training_time(
     }
 
 
-def load_config(config_path: Union[str, Path] = "models/llm/configs/config_100m.yaml") -> Dict[str, Any]:
+def load_config(config_path: str | Path = "models/llm/configs/config_100m.yaml") -> dict[str, Any]:
     if yaml is None:
         raise ImportError("PyYAML is required to load configs. Install it with: pip install pyyaml")
     path = Path(config_path)
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {config_path}")
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
 def estimate_config(
-    config_path: Union[str, Path] = "models/llm/configs/config_100m.yaml",
+    config_path: str | Path = "models/llm/configs/config_100m.yaml",
     dtype_bytes: int = 2,
     training: bool = True,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     config = load_config(config_path)
     num_params = count_parameters(
         vocab_size=int(config["vocab_size"]),
@@ -157,12 +155,11 @@ def estimate_config(
 
 
 def hardware_requirements(
-    config_path: Union[str, Path] = "models/llm/configs/config_100m.yaml",
+    config_path: str | Path = "models/llm/configs/config_100m.yaml",
     dtype_bytes: int = 2,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     report = estimate_config(config_path, dtype_bytes=dtype_bytes)
     num_params = report["num_params"]
-    mem = report["memory"]
     p_label = f"{num_params / 1e9:.1f}B" if num_params >= 1e9 else f"{num_params / 1e6:.0f}M"
 
     if num_params <= 200e6:
@@ -219,8 +216,8 @@ def hardware_requirements(
 
 
 def training_recipe(
-    config_path: Union[str, Path] = "models/llm/configs/config_100m.yaml",
-) -> Dict[str, Any]:
+    config_path: str | Path = "models/llm/configs/config_100m.yaml",
+) -> dict[str, Any]:
     report = estimate_config(config_path)
     hw = hardware_requirements(config_path)
     num_params = report["num_params"]
@@ -306,7 +303,7 @@ def training_recipe(
 
 
 def print_scaling_report(
-    config_path: Union[str, Path] = "models/llm/configs/config_100m.yaml",
+    config_path: str | Path = "models/llm/configs/config_100m.yaml",
     dtype_bytes: int = 2,
 ):
     report = estimate_config(config_path, dtype_bytes=dtype_bytes)
@@ -352,8 +349,8 @@ def print_scaling_report(
 
 
 def compare_configs(
-    config_paths: Optional[list] = None,
-    base_dir: Union[str, Path] = "models/llm/configs",
+    config_paths: list | None = None,
+    base_dir: str | Path = "models/llm/configs",
 ) -> str:
     if config_paths is None:
         base = Path(base_dir)

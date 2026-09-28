@@ -9,14 +9,14 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import time
-import yaml
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
+
+import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = REPO_ROOT / "configs" / "versioned"
@@ -49,7 +49,7 @@ def compute_file_sha256(path: Path) -> str:
     return h.hexdigest()
 
 
-def lock_versions(config_name: str) -> Dict[str, Any]:
+def lock_versions(config_name: str) -> dict[str, Any]:
     manifest = json.loads(MANIFEST_PATH.read_text()) if MANIFEST_PATH.exists() else {}
     config_path = CONFIG_DIR / config_name
     if not config_path.exists():
@@ -116,7 +116,7 @@ def install_dependencies():
     print("[repro] Dependencies installed.")
 
 
-def validate_config(config_name: str) -> Dict[str, Any]:
+def validate_config(config_name: str) -> dict[str, Any]:
     config_path = CONFIG_DIR / config_name
     assert config_path.exists(), f"Config not found: {config_path}"
     with open(config_path) as f:
@@ -175,7 +175,7 @@ def export_model(config_name: str):
     run_cmd([sys.executable, str(export_script)], check=False)
 
 
-def run_inference(config_name: str) -> Dict[str, str]:
+def run_inference(config_name: str) -> dict[str, str]:
     print("\n[repro] Running inference...")
     cfg = validate_config(config_name)
     generations = {}
@@ -202,7 +202,7 @@ def run_inference(config_name: str) -> Dict[str, str]:
     return generations
 
 
-def verify_reproducibility(cfg: Dict[str, Any], generations: Dict[str, str]) -> bool:
+def verify_reproducibility(cfg: dict[str, Any], generations: dict[str, str]) -> bool:
     print("\n[repro] Verifying reproducibility...")
     expected = {
         "phase1_final_train_loss_max": 3.0,

@@ -1,8 +1,8 @@
 """Omega-14: Agentic AI research for tool use, planning, and self-improvement."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -33,7 +33,7 @@ class ToolUseModule(nn.Module):
         self.tool_selector = nn.Linear(config.hidden_size, config.max_tool_calls)
         self.argument_generator = nn.Linear(config.hidden_size, config.hidden_size)
 
-    def forward(self, state: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, state: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         tool_logits = self.tool_selector(state)
         tool_id = torch.argmax(tool_logits, dim=-1)
         tool_emb = self.tool_embedding(tool_id)
@@ -94,15 +94,15 @@ class ReflectionModule(nn.Module):
 
 
 class AgenticAI:
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(self, config: AgentConfig | None = None):
         self.config = config or AgentConfig()
         self.tool_use = ToolUseModule(self.config)
         self.planning = PlanningModule(self.config)
         self.memory = MemoryModule(self.config)
         self.self_critique = SelfCritiqueModule(self.config)
         self.reflection = ReflectionModule(self.config)
-        self.tools: Dict[str, Any] = {}
-        self._history: List[Dict[str, Any]] = []
+        self.tools: dict[str, Any] = {}
+        self._history: list[dict[str, Any]] = []
 
     def register_tool(self, name: str, tool: Any) -> None:
         self.tools[name] = tool
@@ -121,7 +121,7 @@ class AgenticAI:
     def reflect(self, trajectory: torch.Tensor) -> torch.Tensor:
         return self.reflection(trajectory)
 
-    def act(self, state: torch.Tensor, goal: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def act(self, state: torch.Tensor, goal: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         plan = self.plan(state, goal)
         tool_id, args = self.tool_use(plan)
         return tool_id, args

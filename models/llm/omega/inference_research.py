@@ -2,12 +2,11 @@
 
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class KVCache:
         self.cache_v = [torch.zeros(max_batch_size, num_heads, max_seq_len, head_dim, dtype=dtype) for _ in range(num_layers)]
         self.current_len = 0
 
-    def update(self, layer_idx: int, k: torch.Tensor, v: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def update(self, layer_idx: int, k: torch.Tensor, v: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         self.cache_k[layer_idx][:, :, self.current_len] = k
         self.cache_v[layer_idx][:, :, self.current_len] = v
         return self.cache_k[layer_idx][:, :, : self.current_len + 1], self.cache_v[layer_idx][:, :, : self.current_len + 1]
@@ -76,16 +75,16 @@ class ContinuousBatcher:
     def __init__(self, max_batch_size: int = 32, max_seq_len: int = 4096):
         self.max_batch_size = max_batch_size
         self.max_seq_len = max_seq_len
-        self._queue: List[Dict[str, Any]] = []
-        self._active: List[Dict[str, Any]] = []
+        self._queue: list[dict[str, Any]] = []
+        self._active: list[dict[str, Any]] = []
 
-    def add_request(self, request: Dict[str, Any]) -> None:
+    def add_request(self, request: dict[str, Any]) -> None:
         if len(self._active) < self.max_batch_size:
             self._active.append(request)
         else:
             self._queue.append(request)
 
-    def step(self) -> Optional[List[Dict[str, Any]]]:
+    def step(self) -> list[dict[str, Any]] | None:
         if not self._active:
             return None
         while self._queue and len(self._active) < self.max_batch_size:
@@ -98,9 +97,9 @@ class ContinuousBatcher:
 class PrefixCache:
     def __init__(self, max_size: int = 1024):
         self.max_size = max_size
-        self._cache: Dict[str, torch.Tensor] = {}
+        self._cache: dict[str, torch.Tensor] = {}
 
-    def get(self, key: str) -> Optional[torch.Tensor]:
+    def get(self, key: str) -> torch.Tensor | None:
         return self._cache.get(key)
 
     def put(self, key: str, value: torch.Tensor) -> None:
@@ -110,7 +109,7 @@ class PrefixCache:
 
 
 class InferenceEngine:
-    def __init__(self, model: nn.Module, tokenizer: Any, config: Optional[InferenceConfig] = None):
+    def __init__(self, model: nn.Module, tokenizer: Any, config: InferenceConfig | None = None):
         self.model = model
         self.tokenizer = tokenizer
         self.config = config or InferenceConfig()
@@ -127,7 +126,7 @@ class InferenceEngine:
         latency = (time.perf_counter() - start) * 1000
         return self.tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
 
-    def generate_batch(self, prompts: List[str]) -> List[str]:
+    def generate_batch(self, prompts: list[str]) -> list[str]:
         inputs = self.tokenizer(prompts, return_tensors="pt", padding=True)
         with torch.no_grad():
             outputs = self.model.generate(**inputs, max_new_tokens=self.config.max_new_tokens)

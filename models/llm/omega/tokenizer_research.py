@@ -1,11 +1,9 @@
 """Omega-2: Tokenizer research with adaptive vocabulary and online learning."""
 
-import json
 import logging
 import re
-from collections import Counter, defaultdict
+from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -15,24 +13,24 @@ class TokenizerConfig:
     vocab_size: int = 32768
     min_frequency: int = 2
     max_token_length: int = 16
-    special_tokens: Dict[str, int] = field(default_factory=lambda: {"<pad>": 0, "<unk>": 1, "<bos>": 2, "<eos>": 3, "<mask>": 4})
+    special_tokens: dict[str, int] = field(default_factory=lambda: {"<pad>": 0, "<unk>": 1, "<bos>": 2, "<eos>": 3, "<mask>": 4})
     lowercase: bool = True
     normalize_unicode: bool = True
 
 
 class BaseTokenizer:
-    def __init__(self, config: Optional[TokenizerConfig] = None):
+    def __init__(self, config: TokenizerConfig | None = None):
         self.config = config or TokenizerConfig()
-        self.vocab: Dict[str, int] = dict(self.config.special_tokens)
-        self.inverse_vocab: Dict[int, str] = {v: k for k, v in self.vocab.items()}
+        self.vocab: dict[str, int] = dict(self.config.special_tokens)
+        self.inverse_vocab: dict[int, str] = {v: k for k, v in self.vocab.items()}
 
-    def encode(self, text: str) -> List[int]:
+    def encode(self, text: str) -> list[int]:
         raise NotImplementedError
 
-    def decode(self, ids: List[int]) -> str:
+    def decode(self, ids: list[int]) -> str:
         return "".join(self.inverse_vocab.get(i, "<unk>") for i in ids)
 
-    def add_tokens(self, tokens: List[str]) -> int:
+    def add_tokens(self, tokens: list[str]) -> int:
         added = 0
         for token in tokens:
             if token not in self.vocab:
@@ -43,10 +41,10 @@ class BaseTokenizer:
 
 
 class WordPieceTokenizer(BaseTokenizer):
-    def __init__(self, config: Optional[TokenizerConfig] = None):
+    def __init__(self, config: TokenizerConfig | None = None):
         super().__init__(config)
 
-    def encode(self, text: str) -> List[int]:
+    def encode(self, text: str) -> list[int]:
         if self.config.lowercase:
             text = text.lower()
         tokens = []
@@ -58,7 +56,7 @@ class WordPieceTokenizer(BaseTokenizer):
                 tokens.extend(self.vocab.get(t, self.vocab["<unk>"]) for t in subword)
         return tokens
 
-    def _wordpiece_tokenize(self, word: str) -> List[str]:
+    def _wordpiece_tokenize(self, word: str) -> list[str]:
         tokens = []
         start = 0
         while start < len(word):
@@ -81,11 +79,11 @@ class WordPieceTokenizer(BaseTokenizer):
 
 
 class BPE(BaseTokenizer):
-    def __init__(self, config: Optional[TokenizerConfig] = None):
+    def __init__(self, config: TokenizerConfig | None = None):
         super().__init__(config)
-        self.merges: Dict[Tuple[str, str], str] = {}
+        self.merges: dict[tuple[str, str], str] = {}
 
-    def train(self, corpus: List[str], num_merges: int = 1000) -> None:
+    def train(self, corpus: list[str], num_merges: int = 1000) -> None:
         vocab_counter = Counter()
         for text in corpus:
             words = self._preprocess(text)
@@ -111,7 +109,7 @@ class BPE(BaseTokenizer):
         self.vocab = {**self.config.special_tokens, **{token: i + len(self.config.special_tokens) for i, token in enumerate(vocab_counter.keys())}}
         self.inverse_vocab = {v: k for k, v in self.vocab.items()}
 
-    def encode(self, text: str) -> List[int]:
+    def encode(self, text: str) -> list[int]:
         if self.config.lowercase:
             text = text.lower()
         word = " ".join(self._preprocess(text))
@@ -121,11 +119,11 @@ class BPE(BaseTokenizer):
         return [self.vocab.get(t, self.vocab["<unk>"]) for t in tokens]
 
     @staticmethod
-    def _preprocess(text: str) -> List[str]:
+    def _preprocess(text: str) -> list[str]:
         return [" ".join(list(word)) for word in text.split()]
 
     @staticmethod
-    def _merge_pair(symbols: List[str], pair: Tuple[str, str], new_symbol: str) -> str:
+    def _merge_pair(symbols: list[str], pair: tuple[str, str], new_symbol: str) -> str:
         result = []
         i = 0
         while i < len(symbols):
@@ -139,11 +137,11 @@ class BPE(BaseTokenizer):
 
 
 class UnigramTokenizer(BaseTokenizer):
-    def __init__(self, config: Optional[TokenizerConfig] = None):
+    def __init__(self, config: TokenizerConfig | None = None):
         super().__init__(config)
-        self._token_scores: Dict[str, float] = {}
+        self._token_scores: dict[str, float] = {}
 
-    def train(self, corpus: List[str], vocab_size: int = 30000) -> None:
+    def train(self, corpus: list[str], vocab_size: int = 30000) -> None:
         from collections import Counter
         word_counts = Counter()
         for text in corpus:
@@ -154,7 +152,7 @@ class UnigramTokenizer(BaseTokenizer):
         self.vocab = {**self.config.special_tokens, **{token: i + len(self.config.special_tokens) for i, token in enumerate(self._token_scores.keys())}}
         self.inverse_vocab = {v: k for k, v in self.vocab.items()}
 
-    def encode(self, text: str) -> List[int]:
+    def encode(self, text: str) -> list[int]:
         if self.config.lowercase:
             text = text.lower()
         return [self.vocab.get(word, self.vocab["<unk>"]) for word in text.split()]
@@ -165,7 +163,7 @@ class OnlineTokenizerLearner:
         self.tokenizer = tokenizer
         self.buffer_size = buffer_size
         self.update_interval = update_interval
-        self._buffer: List[str] = []
+        self._buffer: list[str] = []
         self._step = 0
 
     def update(self, text: str) -> None:
@@ -189,7 +187,7 @@ class AdaptiveVocab:
         self.growth_rate = growth_rate
         self._usage_counts: Counter = Counter()
 
-    def adapt(self, texts: List[str]) -> BaseTokenizer:
+    def adapt(self, texts: list[str]) -> BaseTokenizer:
         for text in texts:
             self._usage_counts.update(re.findall(r"\w+", text.lower()))
         threshold = int(len(self._usage_counts) * self.growth_rate)
@@ -208,22 +206,22 @@ class TokenizerResearchResult:
 
 
 class TokenizerResearch:
-    def __init__(self, config: Optional[TokenizerConfig] = None):
+    def __init__(self, config: TokenizerConfig | None = None):
         self.config = config or TokenizerConfig()
-        self.tokenizers: Dict[str, BaseTokenizer] = {
+        self.tokenizers: dict[str, BaseTokenizer] = {
             "wordpiece": WordPieceTokenizer(self.config),
             "bpe": BPE(self.config),
             "unigram": UnigramTokenizer(self.config),
         }
-        self.online_learners: Dict[str, OnlineTokenizerLearner] = {}
+        self.online_learners: dict[str, OnlineTokenizerLearner] = {}
 
-    def train_all(self, corpus: List[str]) -> None:
+    def train_all(self, corpus: list[str]) -> None:
         self.tokenizers["bpe"].train(corpus)
         self.tokenizers["unigram"].train(corpus)
         for name, tokenizer in self.tokenizers.items():
             self.online_learners[name] = OnlineTokenizerLearner(tokenizer)
 
-    def evaluate(self, text: str) -> Dict[str, TokenizerResearchResult]:
+    def evaluate(self, text: str) -> dict[str, TokenizerResearchResult]:
         results = {}
         for name, tokenizer in self.tokenizers.items():
             start = time.perf_counter()

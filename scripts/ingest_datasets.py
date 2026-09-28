@@ -13,24 +13,23 @@ import argparse
 import logging
 import sys
 import time
-from datetime import datetime
+from collections import Counter
 from pathlib import Path
-from typing import List, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from models.llm.dataset_engineering_v2 import (
     DatasetEngineeringConfig,
     DatasetEngineeringPipeline,
-    DatasetVersionManager,
     DatasetReportGenerator,
+    DatasetVersionManager,
     run_multilingual_ingestion,
 )
 
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: bool = False, log_file: Optional[str] = None) -> None:
+def setup_logging(verbose: bool = False, log_file: str | None = None) -> None:
     level = logging.DEBUG if verbose else logging.INFO
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
     if log_file:
@@ -137,17 +136,17 @@ def run_single_pipeline(args: argparse.Namespace) -> int:
         "multilingual": pipeline.run_ingestion.__globals__.get("MultilingualPipeline"),
     }
     from models.llm.dataset_engineering_v2 import (
+        AcademicPipeline,
+        BooksPipeline,
+        CodePipeline,
+        ConversationPipeline,
+        ImageCaptionPipeline,
+        MathPipeline,
+        MultilingualPipeline,
+        OcrPipeline,
+        QAPipeline,
         WebCrawlPipeline,
         WikipediaPipeline,
-        BooksPipeline,
-        AcademicPipeline,
-        CodePipeline,
-        MathPipeline,
-        QAPipeline,
-        ConversationPipeline,
-        OcrPipeline,
-        ImageCaptionPipeline,
-        MultilingualPipeline,
     )
 
     pipeline_classes = {
@@ -223,13 +222,13 @@ def list_versions(args: argparse.Namespace) -> int:
 def generate_report(args: argparse.Namespace) -> int:
     import json
 
-    from models.llm.dataset_engineering_v2 import DatasetStats, DatasetReportGenerator, DatasetEngineeringConfig
+    from models.llm.dataset_engineering_v2 import DatasetEngineeringConfig, DatasetStats
 
     if not Path(args.stats_file).exists():
         logger.error("Stats file not found: %s", args.stats_file)
         return 1
     try:
-        with open(args.stats_file, "r", encoding="utf-8") as f:
+        with open(args.stats_file, encoding="utf-8") as f:
             data = json.load(f)
         stats = DatasetStats(
             total_documents=data.get("total_documents", 0),
@@ -256,7 +255,7 @@ def generate_report(args: argparse.Namespace) -> int:
         return 1
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="AstrovoxAI Phase 2 Multilingual Dataset Ingestion Pipeline",
         formatter_class=argparse.RawDescriptionHelpFormatter,

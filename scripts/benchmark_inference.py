@@ -7,16 +7,16 @@ import os
 import sys
 import time
 import uuid
-from typing import List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import torch
-from models.llm.model.model import LLM
+
+from models.llm.benchmarking import BenchmarkRun, BenchmarkSuite, SystemMonitor
 from models.llm.inference.engine import InferenceEngine, SamplingParams
+from models.llm.model.model import LLM
 from models.llm.tokenizer.train_tokenizer import load_tokenizer
-from models.llm.utils.helpers import load_config, get_device
-from models.llm.benchmarking import BenchmarkSuite, BenchmarkRun, SystemMonitor
+from models.llm.utils.helpers import get_device, load_config
 
 PROMPTS = [
     "Once upon a time in a distant galaxy,",
@@ -34,7 +34,7 @@ PROMPTS = [
 
 def benchmark_single_batch(
     engine: InferenceEngine,
-    prompts: List[str],
+    prompts: list[str],
     params: SamplingParams,
     monitor: SystemMonitor,
 ) -> dict:
@@ -91,7 +91,7 @@ def main() -> int:
     device = args.device or get_device()
     config = load_config(args.config)
 
-    print(f"Loading model...")
+    print("Loading model...")
     model = LLM(config, device=torch.device(device), dtype=torch.float32)
     if os.path.exists(args.checkpoint):
         model.load_state_dict(torch.load(args.checkpoint, map_location=device, weights_only=True))

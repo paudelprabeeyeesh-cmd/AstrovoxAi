@@ -3,7 +3,7 @@
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,13 @@ class FrontierDomain(Enum):
 class FrontierConfig:
     domain: FrontierDomain
     enabled: bool = True
-    config: Dict[str, Any] = field(default_factory=dict)
+    config: dict[str, Any] = field(default_factory=dict)
 
 
 class LongContextResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.LONG_CONTEXT)
-        self._memory_banks: List[Any] = []
+        self._memory_banks: list[Any] = []
 
     def sliding_window_attention(self, query, key, value, window_size: int = 4096):
         logger.info("Sliding window attention with window size %d", window_size)
@@ -47,21 +47,21 @@ class LongContextResearch:
 
 
 class MemoryAugmentedResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.MEMORY_AUGMENTED)
-        self.external_memory: List[Any] = []
+        self.external_memory: list[Any] = []
 
     def read_write_memory(self, query: str, write: bool = True):
         logger.info("Read/write memory operation for query: %s", query)
         return {"query": query, "written": write}
 
-    def retrieval_augmented_generation(self, query: str, documents: List[str]):
+    def retrieval_augmented_generation(self, query: str, documents: list[str]):
         logger.info("RAG retrieval for query: %s", query)
         return {"query": query, "documents": documents}
 
 
 class VisionLanguageResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.VISION_LANGUAGE)
 
     def multimodal_tokenizer(self, image, text):
@@ -74,7 +74,7 @@ class VisionLanguageResearch:
 
 
 class SpeechResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.SPEECH)
 
     def speech_to_text(self, audio):
@@ -87,7 +87,7 @@ class SpeechResearch:
 
 
 class TTSResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.TTS)
 
     def text_to_speech(self, text: str):
@@ -96,7 +96,7 @@ class TTSResearch:
 
 
 class ReinforcementLearningResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.REINFORCEMENT_LEARNING)
 
     def reward_model(self, prompt, response):
@@ -109,9 +109,9 @@ class ReinforcementLearningResearch:
 
 
 class ToolAgentResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.TOOL_AGENTS)
-        self.tools: Dict[str, Any] = {}
+        self.tools: dict[str, Any] = {}
 
     def register_tool(self, name: str, tool: Any):
         self.tools[name] = tool
@@ -124,9 +124,9 @@ class ToolAgentResearch:
 
 
 class SelfImprovingResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.SELF_IMPROVING)
-        self.improvement_history: List[Any] = []
+        self.improvement_history: list[Any] = []
 
     def self_reflection(self, output: str):
         logger.info("Self-reflection on output: %s", output)
@@ -139,9 +139,9 @@ class SelfImprovingResearch:
 
 
 class MultiAgentResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.MULTI_AGENT)
-        self.agents: Dict[str, Any] = {}
+        self.agents: dict[str, Any] = {}
 
     def register_agent(self, name: str, agent: Any):
         self.agents[name] = agent
@@ -153,7 +153,7 @@ class MultiAgentResearch:
 
 
 class RoboticsResearch:
-    def __init__(self, config: Optional[FrontierConfig] = None):
+    def __init__(self, config: FrontierConfig | None = None):
         self.config = config or FrontierConfig(FrontierDomain.ROBOTICS)
 
     def embodied_reasoning(self, observation: str):
@@ -177,7 +177,7 @@ class ResearchFrontier:
         self.self_improving = SelfImprovingResearch()
         self.multi_agent = MultiAgentResearch()
         self.robotics = RoboticsResearch()
-        self._registry: Dict[str, Any] = {}
+        self._registry: dict[str, Any] = {}
 
     def register(self, name: str, component: Any):
         self._registry[name] = component

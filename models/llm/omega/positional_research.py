@@ -2,8 +2,7 @@
 
 import logging
 import math
-from dataclasses import dataclass, field
-from typing import Optional, Tuple
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
@@ -47,7 +46,7 @@ class RoPEPositionalEncoding(nn.Module):
         inv_freq = 1.0 / (10000 ** (torch.arange(0, config.hidden_size, 2).float() / config.hidden_size))
         self.register_buffer("inv_freq", inv_freq)
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, q: torch.Tensor, k: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         t = torch.arange(q.size(-2), device=q.device, dtype=self.inv_freq.dtype)
         freqs = torch.outer(t, self.inv_freq)
         emb = torch.cat([freqs, freqs], dim=-1)
@@ -92,12 +91,12 @@ class RelativePositionalEncoding(nn.Module):
         self.config = config
         self.embeddings = nn.Embedding(config.num_buckets, config.hidden_size)
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, q: torch.Tensor, k: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return q, k
 
 
 class PositionalEncodingResearch:
-    def __init__(self, config: Optional[PositionalEncodingConfig] = None):
+    def __init__(self, config: PositionalEncodingConfig | None = None):
         self.config = config or PositionalEncodingConfig()
         self.encodings = {
             "sinusoidal": SinusoidalPositionalEncoding(self.config),

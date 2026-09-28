@@ -9,10 +9,9 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BACKUP_DIR = REPO_ROOT / "backups"
@@ -22,7 +21,7 @@ def _run_cmd(cmd: str, check: bool = True) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, shell=True, check=check, capture_output=True, text=True)
 
 
-def verify_backup(backup_path: Path) -> Dict[str, Any]:
+def verify_backup(backup_path: Path) -> dict[str, Any]:
     manifest_path = backup_path / "manifest.json"
     if not manifest_path.exists():
         raise FileNotFoundError(f"Backup manifest not found: {manifest_path}")
@@ -50,7 +49,7 @@ def verify_backup(backup_path: Path) -> Dict[str, Any]:
     }
 
 
-def restore_backup(backup_id: str, dry_run: bool = False) -> Dict[str, Any]:
+def restore_backup(backup_id: str, dry_run: bool = False) -> dict[str, Any]:
     backup_path = BACKUP_DIR / backup_id
     if not backup_path.exists():
         raise FileNotFoundError(f"Backup not found: {backup_path}")
@@ -95,12 +94,12 @@ def restore_database(dump_file: Path) -> None:
         raise FileNotFoundError(f"Database dump not found: {dump_file}")
     db_url = os.environ.get("DATABASE_URL", "")
     if not db_url:
-        raise EnvironmentError("DATABASE_URL not set")
+        raise OSError("DATABASE_URL not set")
     _run_cmd(f"psql {db_url} -f {dump_file}")
     print(f"[restore] Database restored from {dump_file}")
 
 
-def list_backups() -> List[Dict[str, Any]]:
+def list_backups() -> list[dict[str, Any]]:
     if not BACKUP_DIR.exists():
         return []
     results = []

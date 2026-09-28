@@ -1,15 +1,14 @@
 import os
-import math
+
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from torch.cuda.amp import GradScaler, autocast
 from model.model import LLM
-from model.model_scaling import count_parameters, memory_estimation, chinchilla_optimal_tokens
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
+from utils.helpers import get_device, load_config
+
+from model.model_scaling import chinchilla_optimal_tokens, count_parameters, memory_estimation
 from tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
-from utils.helpers import load_config, get_device
-from trainer.checkpoint import save_checkpoint, load_checkpoint
-from trainer.metrics import compute_perplexity, validate
+from trainer.checkpoint import save_checkpoint
 
 
 def pretrain(config_path="configs/config_40b.yaml"):

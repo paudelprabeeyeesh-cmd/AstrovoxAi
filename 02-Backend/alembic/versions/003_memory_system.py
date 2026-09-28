@@ -6,6 +6,7 @@ Create Date: 2026-09-16
 
 """
 from typing import Sequence, Union
+
 from alembic import op
 
 revision: str = '003'

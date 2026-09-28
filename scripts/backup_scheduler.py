@@ -9,9 +9,8 @@ import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SCHEDULE_CONFIG = REPO_ROOT / "configs" / "backup_schedule.json"
@@ -28,7 +27,7 @@ def save_schedule(schedule: Dict[str, Any]) -> None:
     SCHEDULE_CONFIG.write_text(json.dumps(schedule, indent=2, default=str))
 
 
-def add_schedule(name: str, cron_expression: str, backup_name: Optional[str] = None, include_database: bool = False, include_docker: bool = False) -> Dict[str, Any]:
+def add_schedule(name: str, cron_expression: str, backup_name: str | None = None, include_database: bool = False, include_docker: bool = False) -> Dict[str, Any]:
     schedule = load_schedule()
     entry = {
         "name": name,
@@ -55,7 +54,7 @@ def remove_schedule(name: str) -> None:
     save_schedule(schedule)
 
 
-def run_backup(name: Optional[str] = None, include_database: bool = False, include_docker: bool = False) -> int:
+def run_backup(name: str | None = None, include_database: bool = False, include_docker: bool = False) -> int:
     cmd = [sys.executable, str(REPO_ROOT / "scripts" / "backup.py")]
     if name:
         cmd.extend(["--name", name])

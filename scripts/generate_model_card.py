@@ -4,20 +4,18 @@ Auto-generate model cards from registry metadata.
 """
 
 import argparse
-import json
-import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from models.registry.cards import generate_model_card, save_model_card, get_model_card
+from models.registry.cards import save_model_card
 from models.registry.registry import get_model, list_models
 
 
-def _render_template(template_path: Path, context: Dict[str, Any]) -> str:
+def _render_template(template_path: Path, context: dict[str, Any]) -> str:
     template = template_path.read_text()
     for key, value in context.items():
         placeholder = "{" + key + "}"
@@ -25,7 +23,7 @@ def _render_template(template_path: Path, context: Dict[str, Any]) -> str:
     return template
 
 
-def generate_from_registry(name: str, version: Optional[str] = None) -> str:
+def generate_from_registry(name: str, version: str | None = None) -> str:
     model = get_model(name, version)
     metadata = model.get("metadata", {})
     evaluation = model.get("evaluation", {})

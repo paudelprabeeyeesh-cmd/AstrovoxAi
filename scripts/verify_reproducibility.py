@@ -144,7 +144,7 @@ def main():
             "inference_min_length": 10,
             "convergence_required": True,
         }
-        print(f"[verify] Using built-in expected thresholds")
+        print("[verify] Using built-in expected thresholds")
 
     all_passed = True
 

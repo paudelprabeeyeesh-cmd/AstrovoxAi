@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Train 300M parameter model."""
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from train_base import run_training

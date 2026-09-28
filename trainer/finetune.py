@@ -1,18 +1,17 @@
-import os
 import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader
-from torch.cuda.amp import GradScaler, autocast
 from model.model import LLM
-from tokenizer.train_tokenizer import TextDataset, collate_fn, load_tokenizer
-from utils.helpers import load_config, get_device
-from trainer.checkpoint import save_checkpoint, load_checkpoint
+from torch.cuda.amp import GradScaler, autocast
+from torch.utils.data import DataLoader
+from utils.helpers import get_device, load_config
+
+from tokenizer.train_tokenizer import collate_fn, load_tokenizer
+from trainer.checkpoint import save_checkpoint
 from trainer.metrics import compute_perplexity
 
 
 class InstructionDataset(torch.utils.data.Dataset):
     def __init__(self, file_path, tokenizer, block_size=2048):
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             text = f.read()
         self.examples = []
         tokens = tokenizer.encode(text)

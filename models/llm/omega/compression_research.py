@@ -1,10 +1,7 @@
 """Omega-12: Compression research for LLM efficiency."""
 
 import logging
-import struct
-import zlib
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
@@ -29,7 +26,7 @@ class QuantizationAwareTraining:
     def __init__(self, model: nn.Module, config: CompressionConfig):
         self.model = model
         self.config = config
-        self._quantized_layers: List[nn.Module] = []
+        self._quantized_layers: list[nn.Module] = []
 
     def fake_quantize(self, layer: nn.Module) -> None:
         for name, param in layer.named_parameters():
@@ -48,7 +45,7 @@ class GPTQQuantizer:
     def __init__(self, config: CompressionConfig):
         self.config = config
 
-    def quantize(self, weight: torch.Tensor, num_bits: int = 4) -> Tuple[torch.Tensor, torch.Tensor]:
+    def quantize(self, weight: torch.Tensor, num_bits: int = 4) -> tuple[torch.Tensor, torch.Tensor]:
         scale = weight.abs().max(dim=-1, keepdim=True)[0] / (2 ** (num_bits - 1) - 1)
         quantized = torch.round(weight / scale).clamp(-(2 ** (num_bits - 1)), 2 ** (num_bits - 1) - 1)
         return quantized.to(torch.int8), scale
@@ -58,7 +55,7 @@ class AWQQuantizer:
     def __init__(self, config: CompressionConfig):
         self.config = config
 
-    def quantize(self, weight: torch.Tensor, num_bits: int = 4) -> Tuple[torch.Tensor, torch.Tensor]:
+    def quantize(self, weight: torch.Tensor, num_bits: int = 4) -> tuple[torch.Tensor, torch.Tensor]:
         scale = weight.abs().mean(dim=-1, keepdim=True) / (2 ** (num_bits - 1) - 1)
         quantized = torch.round(weight / scale).clamp(-(2 ** (num_bits - 1)), 2 ** (num_bits - 1) - 1)
         return quantized.to(torch.int8), scale
@@ -68,7 +65,7 @@ class SmoothQuantizer:
     def __init__(self, config: CompressionConfig):
         self.config = config
 
-    def smooth(self, activation: torch.Tensor, weight: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def smooth(self, activation: torch.Tensor, weight: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         scale = activation.abs().mean(dim=0).pow(self.config.quantization_bits / 2 - 1).clamp(min=1e-5)
         smooth_scale = scale / scale.mean()
         return activation / smooth_scale, weight * smooth_scale
@@ -103,7 +100,7 @@ class DistillationLoss:
 
 
 class CompressionResearch:
-    def __init__(self, config: Optional[CompressionConfig] = None):
+    def __init__(self, config: CompressionConfig | None = None):
         self.config = config or CompressionConfig()
         self.qat = None
         self.gptq = GPTQQuantizer(config)

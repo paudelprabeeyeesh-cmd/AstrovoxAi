@@ -1,17 +1,16 @@
 """Run full profiling suite against the backend hot paths (root orchestrator)."""
 
 import asyncio
-import sys
 import os
+import sys
 
 BACKEND = os.path.join(os.path.dirname(__file__), "02-Backend")
 sys.path.insert(0, BACKEND)
 
 
 async def main():
-    from scripts.profiling.endpoint_profiler import run_hot_path_profiles
-    from scripts.profiling.cpu_profiler import CPUProfiler
     from scripts.profiling.async_io_audit import AsyncIOAuditor
+    from scripts.profiling.endpoint_profiler import run_hot_path_profiles
     from scripts.profiling.memory_profiler import profile_memory_snapshot
 
     print("=" * 60)

@@ -1,8 +1,7 @@
 """Omega-9: Alignment research with RLHF, constitutional AI, and safety methods."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
@@ -61,7 +60,7 @@ class DPOOptimizer:
 
 
 class ConstitutionalAI:
-    def __init__(self, principles: List[str], config: AlignmentConfig):
+    def __init__(self, principles: list[str], config: AlignmentConfig):
         self.principles = principles
         self.config = config
 
@@ -101,11 +100,11 @@ class AlignmentTrainer:
         self.constitutional_ai = ConstitutionalAI(["Be helpful", "Be harmless", "Be honest"], config)
         self.safety_classifier = SafetyClassifier()
 
-    def rlhf_step(self, prompt: torch.Tensor, response: torch.Tensor) -> Dict[str, float]:
+    def rlhf_step(self, prompt: torch.Tensor, response: torch.Tensor) -> dict[str, float]:
         reward = self.reward_model(response).mean()
         return {"reward": reward.item()}
 
-    def dpo_step(self, chosen: torch.Tensor, rejected: torch.Tensor) -> Dict[str, float]:
+    def dpo_step(self, chosen: torch.Tensor, rejected: torch.Tensor) -> dict[str, float]:
         chosen_logps = torch.log_softmax(chosen, dim=-1).sum(dim=-1)
         rejected_logps = torch.log_softmax(rejected, dim=-1).sum(dim=-1)
         loss = self.dpo_optimizer.compute_loss(chosen_logps, rejected_logps)
@@ -116,7 +115,7 @@ class AlignmentTrainer:
 
 
 class AlignmentResearch:
-    def __init__(self, config: Optional[AlignmentConfig] = None):
+    def __init__(self, config: AlignmentConfig | None = None):
         self.config = config or AlignmentConfig()
 
     def create_trainer(self, model: nn.Module) -> AlignmentTrainer:

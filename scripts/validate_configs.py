@@ -2,7 +2,6 @@
 """Validate all YAML configs have required fields and correct types."""
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
@@ -28,7 +27,7 @@ def _cast_value(value):
 
 
 def load_config(path):
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
     if isinstance(config, dict):
         for key, value in config.items():
@@ -206,7 +205,7 @@ def validate_all(base_dir="models/llm/configs"):
             continue
 
         if not isinstance(config, dict):
-            print(f"  FAILED: config is not a dictionary")
+            print("  FAILED: config is not a dictionary")
             all_ok = False
             continue
 

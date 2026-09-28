@@ -6,15 +6,15 @@ Usage:
     python scripts/perf_test.py --url http://localhost:8000 --users 100
 """
 
-import os
-import sys
-import time
-import json
-import statistics
 import argparse
 import concurrent.futures
-from datetime import datetime
+import json
+import os
+import statistics
+import sys
+import time
 from collections import defaultdict
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "02-Backend"))
 

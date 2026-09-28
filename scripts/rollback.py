@@ -6,13 +6,12 @@ Supports model version rollback, configuration rollback, and service rollback.
 
 import argparse
 import json
-import os
 import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 BACKUP_DIR = REPO_ROOT / "backups"
@@ -27,7 +26,7 @@ def log(msg: str) -> None:
         f.write(line + "\n")
 
 
-def rollback_model(name: str, target_version: str) -> Dict[str, Any]:
+def rollback_model(name: str, target_version: str) -> dict[str, Any]:
     log(f"Rolling back model {name} to {target_version}")
     sys.path.insert(0, str(REPO_ROOT))
     from models.registry.registry import get_model, update_model_status
@@ -54,7 +53,7 @@ def rollback_model(name: str, target_version: str) -> Dict[str, Any]:
     }
 
 
-def rollback_config(config_name: str, backup_path: str) -> Dict[str, Any]:
+def rollback_config(config_name: str, backup_path: str) -> dict[str, Any]:
     log(f"Rolling back config {config_name} from {backup_path}")
     config_dir = REPO_ROOT / "configs" / "versioned"
     backup_file = Path(backup_path)
@@ -75,7 +74,7 @@ def rollback_config(config_name: str, backup_path: str) -> Dict[str, Any]:
     }
 
 
-def rollback_service(service_name: str, previous_task_definition: str) -> Dict[str, Any]:
+def rollback_service(service_name: str, previous_task_definition: str) -> dict[str, Any]:
     log(f"Rolling back service {service_name} to task {previous_task_definition}")
     run_cmd = lambda cmd: subprocess.run(cmd, check=True, capture_output=True, text=True)
     try:
@@ -96,14 +95,14 @@ def rollback_service(service_name: str, previous_task_definition: str) -> Dict[s
     }
 
 
-def list_model_versions(name: str) -> List[str]:
+def list_model_versions(name: str) -> list[str]:
     sys.path.insert(0, str(REPO_ROOT))
     from models.registry.registry import get_model
     model = get_model(name)
     return sorted(model.get("versions", {}).keys())
 
 
-def list_config_backups() -> List[str]:
+def list_config_backups() -> list[str]:
     if not BACKUP_DIR.exists():
         return []
     return sorted([p.name for p in BACKUP_DIR.glob("config_*.yaml")])

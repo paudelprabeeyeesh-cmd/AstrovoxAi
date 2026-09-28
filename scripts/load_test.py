@@ -2,12 +2,11 @@
 # Usage: python scripts/load_test.py
 # Requires: pip install locust
 
-import os
-import sys
 import json
-import time
-import random
+import os
 import statistics
+import sys
+import time
 from datetime import datetime
 
 # Add backend to path

@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import sys
 
@@ -9,7 +10,15 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from models.llm.model.model import LLM
-from model.model_scaling import count_parameters, memory_estimation, chinchilla_optimal_tokens
+
+_model_scaling_spec = importlib.util.spec_from_file_location(
+    "model.model_scaling", os.path.join(ROOT, "model", "model_scaling.py")
+)
+_model_scaling_mod = importlib.util.module_from_spec(_model_scaling_spec)
+_model_scaling_spec.loader.exec_module(_model_scaling_mod)
+count_parameters = _model_scaling_mod.count_parameters
+memory_estimation = _model_scaling_mod.memory_estimation
+chinchilla_optimal_tokens = _model_scaling_mod.chinchilla_optimal_tokens
 
 
 @pytest.fixture

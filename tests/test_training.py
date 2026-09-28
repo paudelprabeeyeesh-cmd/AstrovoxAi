@@ -1,3 +1,4 @@
+import importlib.util
 import os
 import sys
 
@@ -7,17 +8,20 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from model.model_scaling import (
-    count_parameters,
-    memory_estimation,
-    chinchilla_optimal_tokens,
-    estimate_training_time,
-    load_config,
-    estimate_config,
-    hardware_requirements,
-    training_recipe,
-    compare_configs,
+_model_scaling_spec = importlib.util.spec_from_file_location(
+    "model.model_scaling", os.path.join(ROOT, "model", "model_scaling.py")
 )
+_model_scaling_mod = importlib.util.module_from_spec(_model_scaling_spec)
+_model_scaling_spec.loader.exec_module(_model_scaling_mod)
+count_parameters = _model_scaling_mod.count_parameters
+memory_estimation = _model_scaling_mod.memory_estimation
+chinchilla_optimal_tokens = _model_scaling_mod.chinchilla_optimal_tokens
+estimate_training_time = _model_scaling_mod.estimate_training_time
+load_config = _model_scaling_mod.load_config
+estimate_config = _model_scaling_mod.estimate_config
+hardware_requirements = _model_scaling_mod.hardware_requirements
+training_recipe = _model_scaling_mod.training_recipe
+compare_configs = _model_scaling_mod.compare_configs
 
 CONFIG_100M = os.path.join(ROOT, "models", "llm", "configs", "config_100m.yaml")
 

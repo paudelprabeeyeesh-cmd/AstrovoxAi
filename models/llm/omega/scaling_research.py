@@ -1,12 +1,8 @@
 """Omega-7: Scaling laws research for LLM training at multiple scales."""
 
 import logging
-import math
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
-
-import torch
-import torch.nn as nn
+from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +21,7 @@ class ScalingLawConfig:
 
 
 class KaplanScalingLaw:
-    def __init__(self, config: Optional[ScalingLawConfig] = None):
+    def __init__(self, config: ScalingLawConfig | None = None):
         self.config = config or ScalingLawConfig()
 
     def compute_loss(self, N: int, D: int) -> float:
@@ -44,7 +40,7 @@ class KaplanScalingLaw:
 
 
 class ChinchillaScalingLaw:
-    def __init__(self, config: Optional[ScalingLawConfig] = None):
+    def __init__(self, config: ScalingLawConfig | None = None):
         self.config = config or ScalingLawConfig()
 
     def compute_loss(self, N: int, D: int) -> float:
@@ -68,12 +64,12 @@ class ParamEfficiencyScaling:
 
 
 class ScalingResearch:
-    def __init__(self, config: Optional[ScalingLawConfig] = None):
+    def __init__(self, config: ScalingLawConfig | None = None):
         self.config = config or ScalingLawConfig()
         self.kaplan = KaplanScalingLaw(config)
         self.chinchilla = ChinchillaScalingLaw(config)
 
-    def compare_laws(self, model_sizes: List[int], dataset_sizes: List[int]) -> Dict[str, Any]:
+    def compare_laws(self, model_sizes: list[int], dataset_sizes: list[int]) -> dict[str, Any]:
         results = {"kaplan": [], "chinchilla": []}
         for N in model_sizes:
             for D in dataset_sizes:
@@ -93,7 +89,7 @@ class ScalingResearch:
                 })
         return results
 
-    def fit_scaling_law(self, observed: List[Dict[str, float]]) -> Dict[str, float]:
+    def fit_scaling_law(self, observed: list[dict[str, float]]) -> dict[str, float]:
         import numpy as np
         N = np.array([o["N"] for o in observed])
         D = np.array([o["D"] for o in observed])

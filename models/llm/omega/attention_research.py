@@ -1,8 +1,7 @@
 """Omega-5: Attention mechanism research with all major variants."""
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
 
 import torch
 import torch.nn as nn
@@ -36,7 +35,7 @@ class StandardAttention(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.scale = config.head_dim ** -0.5
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)
@@ -59,7 +58,7 @@ class MultiQueryAttention(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.scale = config.head_dim ** -0.5
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         q = self.q_proj(q)
         k = self.k_proj(k).unsqueeze(1)
         v = self.v_proj(v).unsqueeze(1)
@@ -83,7 +82,7 @@ class GroupedQueryAttention(nn.Module):
         self.dropout = nn.Dropout(config.dropout)
         self.scale = config.head_dim ** -0.5
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         q = self.q_proj(q)
         k = self.k_proj(k)
         v = self.v_proj(v)
@@ -101,7 +100,7 @@ class SlidingWindowAttention(nn.Module):
         self.config = config
         self.attn = StandardAttention(config)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         seq_len = x.size(1)
         if mask is None:
             mask = torch.ones(seq_len, seq_len, device=x.device).tril(0)
@@ -116,7 +115,7 @@ class SparseAttention(nn.Module):
         self.config = config
         self.attn = StandardAttention(config)
 
-    def forward(self, x: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         seq_len = x.size(1)
         if mask is None:
             mask = torch.zeros(seq_len, seq_len, device=x.device)
@@ -146,7 +145,7 @@ class LinearAttention(nn.Module):
 
 
 class AttentionResearch:
-    def __init__(self, config: Optional[AttentionConfig] = None):
+    def __init__(self, config: AttentionConfig | None = None):
         self.config = config or AttentionConfig()
 
     def get_attention(self, variant: str = "standard") -> nn.Module:
@@ -162,7 +161,7 @@ class AttentionResearch:
             raise ValueError(f"Unknown attention variant: {variant}")
         return variants[variant](self.config)
 
-    def benchmark(self, batch_size: int = 4, seq_len: int = 1024) -> Dict[str, float]:
+    def benchmark(self, batch_size: int = 4, seq_len: int = 1024) -> dict[str, float]:
         x = torch.randn(batch_size, seq_len, self.config.hidden_size)
         results = {}
         for variant in ["standard", "multi_query", "grouped_query", "sliding_window", "sparse", "linear"]:

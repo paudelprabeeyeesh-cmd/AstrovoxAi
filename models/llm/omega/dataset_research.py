@@ -2,10 +2,8 @@
 
 import hashlib
 import logging
-import random
-import re
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -24,13 +22,13 @@ class MinHashDedup:
     def __init__(self, num_hashes: int = 128, num_shingles: int = 5):
         self.num_hashes = num_hashes
         self.num_shingles = num_shingles
-        self._seen_hashes: Set[int] = set()
+        self._seen_hashes: set[int] = set()
 
-    def shingles(self, text: str) -> List[str]:
+    def shingles(self, text: str) -> list[str]:
         tokens = text.lower().split()
         return [" ".join(tokens[i : i + self.num_shingles]) for i in range(max(len(tokens) - self.num_shingles + 1, 0))]
 
-    def signature(self, text: str) -> List[int]:
+    def signature(self, text: str) -> list[int]:
         shingles = self.shingles(text)
         if not shingles:
             return [0] * self.num_hashes
@@ -53,7 +51,7 @@ class MinHashDedup:
         return False
 
     @staticmethod
-    def _jaccard(sig1: List[int], sig2: int) -> float:
+    def _jaccard(sig1: list[int], sig2: int) -> float:
         return 0.0
 
 
@@ -102,7 +100,7 @@ class AIGeneratedTextDetector:
         self.perplexity_threshold = 25.0
         self.burstiness_threshold = 1.5
 
-    def detect(self, text: str, perplexity: float) -> Dict[str, Any]:
+    def detect(self, text: str, perplexity: float) -> dict[str, Any]:
         words = text.split()
         burstiness = np.std([len(w) for w in words]) if words else 0.0
         is_ai = perplexity < self.perplexity_threshold and burstiness < self.burstiness_threshold
@@ -113,7 +111,7 @@ class CopyrightDetector:
     def __init__(self, threshold: float = 0.9):
         self.threshold = threshold
 
-    def detect(self, text: str, reference_corpus: List[str]) -> List[Dict[str, Any]]:
+    def detect(self, text: str, reference_corpus: list[str]) -> list[dict[str, Any]]:
         matches = []
         for ref in reference_corpus:
             sim = self._similarity(text, ref)
@@ -134,7 +132,7 @@ class CurriculumGenerator:
     def __init__(self, stages: int = 5):
         self.stages = stages
 
-    def generate(self, dataset: List[Dict[str, Any]], difficulty_fn) -> List[List[Dict[str, Any]]]:
+    def generate(self, dataset: list[dict[str, Any]], difficulty_fn) -> list[list[dict[str, Any]]]:
         scored = [(item, difficulty_fn(item)) for item in dataset]
         scored.sort(key=lambda x: x[1])
         stage_size = len(scored) // self.stages
@@ -150,7 +148,7 @@ class DatasetResearchConfig:
 
 
 class DatasetResearch:
-    def __init__(self, config: Optional[DatasetResearchConfig] = None):
+    def __init__(self, config: DatasetResearchConfig | None = None):
         self.config = config or DatasetResearchConfig()
         self.minhash = MinHashDedup()
         self.simhash = SimHash()
@@ -159,7 +157,7 @@ class DatasetResearch:
         self.copyright_detector = CopyrightDetector(self.config.copyright_threshold)
         self.curriculum_generator = CurriculumGenerator(self.config.curriculum_stages)
 
-    def deduplicate(self, dataset: List[str], method: str = "minhash") -> List[str]:
+    def deduplicate(self, dataset: list[str], method: str = "minhash") -> list[str]:
         unique = []
         for text in dataset:
             if method == "minhash" and self.minhash.is_duplicate(text):
@@ -175,11 +173,11 @@ class DatasetResearch:
             self.bloom_filter.add(text)
         return unique
 
-    def filter_ai_generated(self, dataset: List[Dict[str, Any]], perplexity_fn) -> List[Dict[str, Any]]:
+    def filter_ai_generated(self, dataset: list[dict[str, Any]], perplexity_fn) -> list[dict[str, Any]]:
         return [item for item in dataset if not self.ai_detector.detect(item.get("text", ""), perplexity_fn(item)).get("is_ai_generated", False)]
 
-    def filter_copyrighted(self, dataset: List[Dict[str, Any]], references: List[str]) -> List[Dict[str, Any]]:
+    def filter_copyrighted(self, dataset: list[dict[str, Any]], references: list[str]) -> list[dict[str, Any]]:
         return [item for item in dataset if not self.copyright_detector.detect(item.get("text", ""), references)]
 
-    def create_curriculum(self, dataset: List[Dict[str, Any]], difficulty_fn) -> List[List[Dict[str, Any]]]:
+    def create_curriculum(self, dataset: list[dict[str, Any]], difficulty_fn) -> list[list[dict[str, Any]]]:
         return self.curriculum_generator.generate(dataset, difficulty_fn)

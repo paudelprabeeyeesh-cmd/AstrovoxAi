@@ -1,6 +1,5 @@
 import argparse
 import csv
-import json
 import math
 import os
 import random
@@ -8,19 +7,17 @@ import time
 from pathlib import Path
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 
+from models.llm.inference.generate import generate
 from models.llm.model.model import LLM
 from models.llm.tokenizer.train_tokenizer import (
-    load_tokenizer,
-    create_dummy_tokenizer,
     TextDataset,
     collate_fn,
+    create_dummy_tokenizer,
+    load_tokenizer,
 )
-from models.llm.utils.helpers import load_config, get_device, set_cpu_threads
-from models.llm.trainer.checkpoint import save_checkpoint, load_checkpoint
-from models.llm.inference.generate import generate
+from models.llm.trainer.checkpoint import load_checkpoint, save_checkpoint
+from models.llm.utils.helpers import get_device, load_config, set_cpu_threads
 
 
 def ensure_determinism(seed: int = 42):
@@ -269,7 +266,7 @@ def run_training(config_path="models/llm/configs/config_100m.yaml", resume_from=
     g = torch.Generator().manual_seed(42)
     indices = torch.randperm(n, generator=g).tolist()
     split = int(n * 0.9)
-    from torch.utils.data import Subset, DataLoader
+    from torch.utils.data import DataLoader, Subset
 
     train_dataset = Subset(dataset, indices[:split])
     val_dataset = Subset(dataset, indices[split:])

@@ -2,9 +2,8 @@
 
 import logging
 import time
-import warnings
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -17,13 +16,13 @@ class KernelBenchmarkResult:
     name: str
     mean_ms: float
     std_ms: float
-    flops: Optional[float] = None
-    memory_bytes: Optional[int] = None
+    flops: float | None = None
+    memory_bytes: int | None = None
 
 
 class MemoryProfiler:
     def __init__(self):
-        self._snapshots: List[Dict[str, Any]] = []
+        self._snapshots: list[dict[str, Any]] = []
 
     def snapshot(self, tag: str):
         mem = torch.cuda.memory_allocated() if torch.cuda.is_available() else 0
@@ -33,18 +32,18 @@ class MemoryProfiler:
     def peak(self) -> int:
         return max((s["memory_bytes"] for s in self._snapshots), default=0)
 
-    def report(self) -> Dict[str, Any]:
+    def report(self) -> dict[str, Any]:
         return {"peak_memory_bytes": self.peak(), "snapshots": len(self._snapshots)}
 
 
 class KernelProfiler:
     def __init__(self):
-        self._events: List[Dict[str, Any]] = []
+        self._events: list[dict[str, Any]] = []
 
     def record(self, name: str, start: float, end: float):
         self._events.append({"name": name, "start": start, "end": end, "duration_ms": (end - start) * 1000})
 
-    def report(self) -> List[KernelBenchmarkResult]:
+    def report(self) -> list[KernelBenchmarkResult]:
         from collections import defaultdict
         groups = defaultdict(list)
         for e in self._events:
@@ -93,7 +92,7 @@ class FusedRoPE(nn.Module):
         self.register_buffer("cos", freqs.cos())
         self.register_buffer("sin", freqs.sin())
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, q: torch.Tensor, k: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         return self._apply_rotary_pos_emb(q, self.cos, self.sin), self._apply_rotary_pos_emb(k, self.cos, self.sin)
 
     @staticmethod
@@ -109,14 +108,14 @@ class CustomAutogradFunction(torch.autograd.Function):
         return input.clone()
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor) -> Optional[torch.Tensor]:
+    def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor | None:
         (input,) = ctx.saved_tensors
         return grad_output.clone()
 
 
 class CustomCUDALinearFunction(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input: torch.Tensor, weight: torch.Tensor, bias: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(ctx, input: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None = None) -> torch.Tensor:
         ctx.save_for_backward(input, weight, bias)
         output = torch.matmul(input, weight.t())
         if bias is not None:
@@ -124,7 +123,7 @@ class CustomCUDALinearFunction(torch.autograd.Function):
         return output
 
     @staticmethod
-    def backward(ctx, grad_output: torch.Tensor) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+    def backward(ctx, grad_output: torch.Tensor) -> tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None]:
         input, weight, bias = ctx.saved_tensors
         grad_input = grad_weight = grad_bias = None
         if ctx.needs_input_grad[0]:
@@ -144,7 +143,7 @@ class FlashAttentionV2(nn.Module):
         self.scale = head_dim ** -0.5
         self.dropout = dropout
 
-    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def forward(self, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
         batch, seq_len, _ = q.shape
         q = q.view(batch, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         k = k.view(batch, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
@@ -201,7 +200,7 @@ class GraphOptimizer:
 
 class KernelBenchmarkSuite:
     def __init__(self):
-        self._results: List[KernelBenchmarkResult] = []
+        self._results: list[KernelBenchmarkResult] = []
         self.profiler = KernelProfiler()
         self.memory_profiler = MemoryProfiler()
 
@@ -224,7 +223,7 @@ class KernelBenchmarkSuite:
         logger.info("Benchmark %s: mean=%.3f ms, std=%.3f ms", name, result.mean_ms, result.std_ms)
         return result
 
-    def report(self) -> Dict[str, Any]:
+    def report(self) -> dict[str, Any]:
         return {
             "results": [
                 {"name": r.name, "mean_ms": r.mean_ms, "std_ms": r.std_ms}
@@ -244,14 +243,14 @@ class CPUSIMDOptimizer:
 
 class NumaOptimizer:
     def __init__(self):
-        self._numa_nodes: List[int] = []
+        self._numa_nodes: list[int] = []
 
     def pin_to_node(self, tensor: torch.Tensor, node: int) -> torch.Tensor:
         if torch.cuda.is_available():
             return tensor.cuda(node)
         return tensor
 
-    def optimize_dataloader(self, num_workers: int = 4) -> Dict[str, Any]:
+    def optimize_dataloader(self, num_workers: int = 4) -> dict[str, Any]:
         return {"num_workers": num_workers, "pin_memory": torch.cuda.is_available(), "prefetch_factor": 2}
 
 
@@ -275,7 +274,7 @@ class FoundationResearch:
     def optimize_model(self, model: nn.Module, example_inputs: Any) -> nn.Module:
         return self.graph_optimizer.optimize(model, example_inputs)
 
-    def benchmark_model(self, model: nn.Module, example_inputs: Any) -> Dict[str, Any]:
+    def benchmark_model(self, model: nn.Module, example_inputs: Any) -> dict[str, Any]:
         model.eval()
         with torch.no_grad():
             return self.benchmark_suite.report()

@@ -1,10 +1,9 @@
 """Omega-8: Distributed training research with parallel strategies and fault tolerance."""
 
 import logging
-import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import torch
 import torch.distributed as dist
@@ -38,7 +37,7 @@ class DistributedConfig:
 
 
 class DataParallelWrapper:
-    def __init__(self, model: nn.Module, device_ids: Optional[List[int]] = None):
+    def __init__(self, model: nn.Module, device_ids: list[int] | None = None):
         self.model = model
         self.device_ids = device_ids or list(range(torch.cuda.device_count()))
 
@@ -91,7 +90,7 @@ class TensorParallelLinear(nn.Module):
 
 
 class PipelineParallelWrapper:
-    def __init__(self, layers: List[nn.Module], chunks: int = 4):
+    def __init__(self, layers: list[nn.Module], chunks: int = 4):
         self.layers = layers
         self.chunks = chunks
 
@@ -125,7 +124,7 @@ class ZeroRedundancyOptimizer:
 class FaultToleranceManager:
     def __init__(self, checkpoint_dir: str = "./checkpoints"):
         self.checkpoint_dir = checkpoint_dir
-        self._checkpoints: List[str] = []
+        self._checkpoints: list[str] = []
 
     def save_checkpoint(self, model: nn.Module, step: int) -> str:
         import os
@@ -137,7 +136,8 @@ class FaultToleranceManager:
         return path
 
     def load_latest_checkpoint(self, model: nn.Module) -> int:
-        import os, glob
+        import glob
+        import os
         files = sorted(glob.glob(os.path.join(self.checkpoint_dir, "checkpoint_*.pt")))
         if not files:
             return 0
@@ -160,7 +160,7 @@ class ElasticTrainingManager:
 
 
 class DistributedResearch:
-    def __init__(self, config: Optional[DistributedConfig] = None):
+    def __init__(self, config: DistributedConfig | None = None):
         self.config = config or DistributedConfig()
         self.fault_tolerance = FaultToleranceManager()
         self.elastic = ElasticTrainingManager()

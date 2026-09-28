@@ -8,15 +8,15 @@ import sys
 import time
 import uuid
 import warnings
-from typing import Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import torch
-from models.llm.model.model import LLM
+
 from model.model_scaling import estimate_config
-from models.llm.utils.helpers import load_config, get_device
-from models.llm.benchmarking import BenchmarkSuite, BenchmarkRun, SystemMonitor
+from models.llm.benchmarking import BenchmarkRun, BenchmarkSuite, SystemMonitor
+from models.llm.model.model import LLM
+from models.llm.utils.helpers import get_device, load_config
 
 
 def main() -> int:

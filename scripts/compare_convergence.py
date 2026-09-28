@@ -3,7 +3,6 @@
 
 import argparse
 import csv
-import json
 import math
 import os
 import sys
@@ -28,7 +27,7 @@ def read_csv(path):
     rows = []
     if not os.path.exists(path):
         return rows
-    with open(path, "r", newline="", encoding="utf-8") as f:
+    with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             rows.append(row)
