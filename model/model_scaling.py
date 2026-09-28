@@ -128,8 +128,8 @@ def estimate_config(
     num_params = count_parameters(
         vocab_size=int(config["vocab_size"]),
         hidden_size=int(config["hidden_size"]),
-        num_hidden_layers=int(config["num_hidden_layers"]),
-        num_attention_heads=int(config["num_attention_heads"]),
+        num_hidden_layers=int(config.get("num_hidden_layers", config.get("num_layers", 1))),
+        num_attention_heads=int(config.get("num_attention_heads", config.get("num_heads", 1))),
         intermediate_size=int(config["intermediate_size"]),
         max_position_embeddings=int(config.get("max_position_embeddings", 2048)),
         attention_bias=bool(config.get("attention_bias", False)),
@@ -366,10 +366,10 @@ def compare_configs(
             "params": report["num_params"],
             "size": hw["model_size"],
             "hidden": cfg.get("hidden_size"),
-            "layers": cfg.get("num_hidden_layers"),
-            "heads": cfg.get("num_attention_heads"),
+            "layers": cfg.get("num_hidden_layers", cfg.get("num_layers")),
+            "heads": cfg.get("num_attention_heads", cfg.get("num_heads")),
             "ffn": cfg.get("intermediate_size"),
-            "context": cfg.get("max_position_embeddings"),
+            "context": cfg.get("max_position_embeddings", cfg.get("max_seq_len")),
             "weights_gb": report["memory"]["weights_gb"],
             "train_gb": report["memory"]["total_base_gb"],
         })
@@ -378,7 +378,7 @@ def compare_configs(
     lines = [header, "-" * len(header)]
     for row in rows:
         lines.append(
-            f"{row['name']:<10} {row['params']:>10,} {row['hidden']:>7} {row['layers']:>7} {row['heads']:>7} {row['ffn']:>7} {row['context']:>5} {row['weights_gb']:>11.2f} {row['train_gb']:>10.2f}"
+            f"{row['name']:<10} {row['params']:>10,} {row['hidden'] or 0:>7} {row['layers'] or 0:>7} {row['heads'] or 0:>7} {row['ffn'] or 0:>7} {row['context'] or 0:>5} {row['weights_gb']:>11.2f} {row['train_gb']:>10.2f}"
         )
     return "\n".join(lines)
 
