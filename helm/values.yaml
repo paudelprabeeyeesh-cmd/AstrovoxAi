@@ -66,16 +66,11 @@ ingress:
       paths:
         - path: /
           pathType: Prefix
-    - host: cdn.astrovox.ai
-      paths:
-        - path: /
-          pathType: Prefix
   tls:
     - secretName: astrovox-tls
       hosts:
         - astrovox.ai
         - api.astrovox.ai
-        - cdn.astrovox.ai
 
 configmap:
   data:

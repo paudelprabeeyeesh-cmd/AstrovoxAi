@@ -3,10 +3,13 @@ kind: Service
 metadata:
   name: astrovox-service
   namespace: astrovox
+  labels:
+    app: astrovox-backend
 spec:
   selector:
-    app: astrovox-app
+    app: astrovox-backend
   ports:
-  - port: 80
+  - port: 8000
     targetPort: 8000
+    name: http
   type: ClusterIP

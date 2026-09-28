@@ -1,0 +1,15 @@
+vocab_size: 32000
+hidden_size: 3584
+num_layers: 28
+num_heads: 28
+num_kv_heads: 4
+intermediate_size: 18944
+max_seq_len: 4096
+rope_base: 1000000.0
+use_yarn: false
+yarn_scale: 1.0
+dropout: 0.0
+use_bias: false
+activation: swiglu
+tie_weights: true
+architecture: qwen

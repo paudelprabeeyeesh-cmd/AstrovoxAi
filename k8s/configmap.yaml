@@ -7,3 +7,20 @@ data:
   APP_ENV: production
   LOG_LEVEL: info
   REDIS_URL: redis://redis-master:6379
+  REDIS_SENTINEL_URL: redis://redis-sentinel:26379
+  DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
+  DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
+  RABBITMQ_URL: amqp://astrovox:astrovox_pass@rabbitmq:5672
+  MINIO_ENDPOINT: minio.minio.svc.cluster.local:9000
+  MINIO_BUCKET: astrovox-storage
+  MINIO_ACCESS_KEY: minioadmin
+  MINIO_SECRET_KEY: minioadmin
+  MINIO_REGION: us-east-1
+  CELERY_BROKER_URL: redis://redis-master:6379/1
+  CELERY_RESULT_BACKEND: redis://redis-master:6379/2
+  CLOUDFLARE_ZONE_ID: ""
+  API_GATEWAY_URL: http://kong-kong-proxy.kong.svc.cluster.local:80
+  CDN_BASE_URL: https://cdn.astrovox.ai
+  ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai,https://app.astrovox.ai
+  RATE_LIMIT: "120/minute"
+  DAILY_AI_LIMIT: "50"

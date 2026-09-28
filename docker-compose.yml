@@ -1,94 +1,169 @@
 version: "3.8"
 
 services:
-  training:
+  backend:
     build:
       context: .
-      dockerfile: Dockerfile.training
+      dockerfile: Dockerfile.backend
       target: production
-    container_name: astrovox-training
+    container_name: astrovox-backend
+    restart: always
     environment:
-      - PYTHONUNBUFFERED=1
-      - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-}
-    volumes:
-      - ./models/llm/configs:/app/models/llm/configs:ro
-      - ./models/llm/tokenizer.json:/app/models/llm/tokenizer.json:ro
-      - ./training_data:/app/data
-      - ./output:/app/output
-      - ./logs:/app/logs
-    profiles:
-      - training
-      - dev
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: 8G
-        reservations:
-          cpus: "2"
-          memory: 4G
-    ipc: host
-    shm_size: "8g"
-
-  inference:
-    build:
-      context: .
-      dockerfile: Dockerfile.inference
-      target: production
-    container_name: astrovox-inference
-    ports:
-      - target: 8000
-        published: 8000
-        protocol: tcp
-        mode: host
-    environment:
-      - PYTHONUNBUFFERED=1
-      - MODEL_CACHE=/app/models
+      - APP_ENV=production
       - LOG_LEVEL=info
-    volumes:
-      - ./models/llm/configs:/app/models/llm/configs:ro
-      - ./models/llm/tokenizer.json:/app/models/llm/tokenizer.json:ro
-      - ./model.pt:/app/model.pt:ro
-      - ./logs:/app/logs
-    profiles:
-      - inference
-      - dev
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           cpus: "2"
-          memory: 4G
+          memory: 2G
         reservations:
           cpus: "1"
-          memory: 2G
-    shm_size: "4g"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 60s
 
-  benchmark:
+  frontend:
     build:
       context: .
-      dockerfile: Dockerfile.training
+      dockerfile: Dockerfile.frontend
       target: production
-    container_name: astrovox-benchmark
-    command: python scripts/benchmark_inference.py --iterations 10
-    volumes:
-      - ./models/llm/configs:/app/models/llm/configs:ro
-      - ./models/llm/tokenizer.json:/app/models/llm/tokenizer.json:ro
-      - ./model.pt:/app/model.pt:ro
-    profiles:
-      - benchmark
-      - dev
+    container_name: astrovox-frontend
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 4G
-        reservations:
           cpus: "1"
-          memory: 2G
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s
+
+  redis:
+    image: redis:7-alpine@sha256:2c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
+    container_name: astrovox-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  postgres:
+    image: postgres:16-alpine@sha256:3c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
+    container_name: astrovox-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: astrovox
+      POSTGRES_USER: astrovox
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astrovox_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astrovox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  prometheus:
+    image: prom/prometheus:v2.51.0@sha256:4c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
+    container_name: astrovox-prometheus
+    restart: always
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  grafana:
+    image: grafana/grafana:10.4.0@sha256:5c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
+    container_name: astrovox-grafana
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    container_name: astrovox-otel-collector
+    restart: always
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./monitoring/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
 volumes:
-  training-data:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   default:
-    name: astrovox-dev-network
+    name: astrovox-prod-network

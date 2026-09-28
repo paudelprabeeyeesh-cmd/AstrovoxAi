@@ -2,28 +2,9 @@
 Phase 3 Distributed Training Module
 =====================================
 
-Provides a unified interface for distributed training strategies:
-- Data Parallel (DDP)
-- Fully Sharded Data Parallel (FSDP)
-- ZeRO Stage 1/2/3 (optimizer/parameter sharding via DeepSpeed integration or manual)
-- Tensor Parallel (TP)
-- Pipeline Parallel (PP)
-- Sequence Parallel (SP)
-- CPU Offloading (optimizer and parameter)
-
-Hardware support:
-- Multi-GPU (2, 4, 8)
-- Multi-node via RANK, WORLD_SIZE, LOCAL_RANK environment variables
-
-Utilities:
-- Distributed checkpoint save/load
-- Barrier synchronization
-- Per-rank memory reporting
-- Gradient synchronization hooks
-
-Graceful fallback:
-- If torch.distributed or required libraries are unavailable, falls back to
-  single-device training with a warning.
+Provides a unified interface for distributed training strategies.
+The implementation lives in ``models.llm.training.distributed``;
+this module re-exports everything for backward compatibility.
 """
 
 import contextlib
@@ -39,10 +20,26 @@ from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
 
+from models.llm.training.distributed import (
+    DDPWrapper,
+    FSDPWrapper,
+    ZeROConfig,
+    ZeROOptimizer,
+    TensorParallelWrapper,
+    PipelineParallelWrapper,
+    SequenceParallelWrapper,
+    ContextParallelWrapper,
+    ElasticConfig,
+    ElasticTrainer,
+    save_sharded_checkpoint,
+    load_sharded_checkpoint,
+    async_save_sharded_checkpoint,
+    verify_checkpoint,
+    setup_multi_node,
+    synchronize_gradients,
+)
 
-# ---------------------------------------------------------------------------
-# Strategy enum
-# ---------------------------------------------------------------------------
+
 class DistributedStrategy(StrEnum):
     DDP = "ddp"
     FSDP = "fsdp"
@@ -55,9 +52,6 @@ class DistributedStrategy(StrEnum):
     CPU_OFFLOAD = "cpu_offload"
 
 
-# ---------------------------------------------------------------------------
-# Environment / hardware helpers
-# ---------------------------------------------------------------------------
 def get_rank() -> int:
     return int(os.environ.get("RANK", os.environ.get("LOCAL_RANK", "0")))
 
@@ -87,9 +81,6 @@ def is_distributed() -> bool:
     return get_world_size() > 1
 
 
-# ---------------------------------------------------------------------------
-# Logging / memory utilities
-# ---------------------------------------------------------------------------
 def log_memory_usage(prefix: str = "") -> None:
     rank = get_rank()
     if torch.cuda.is_available():
@@ -119,9 +110,6 @@ def log_model_memory(model: nn.Module, prefix: str = "") -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Initialization
-# ---------------------------------------------------------------------------
 def init_distributed(backend: str = "nccl", init_method: str | None = None) -> bool:
     if is_distributed():
         if not torch.distributed.is_initialized():
@@ -148,9 +136,6 @@ def destroy_distributed() -> None:
             torch.distributed.destroy_process_group()
 
 
-# ---------------------------------------------------------------------------
-# Strategy wrappers
-# ---------------------------------------------------------------------------
 def wrap_model_ddp(
     model: nn.Module,
     device_ids: list | None = None,
@@ -341,9 +326,6 @@ def wrap_model(
     return model
 
 
-# ---------------------------------------------------------------------------
-# Gradient synchronization hooks
-# ---------------------------------------------------------------------------
 def add_gradient_sync_hooks(model: nn.Module) -> None:
     def _sync(grad):
         if is_distributed() and torch.distributed.is_initialized():
@@ -363,9 +345,6 @@ def remove_gradient_sync_hooks(model: nn.Module) -> None:
                 p._grad_sync_hook.remove()
 
 
-# ---------------------------------------------------------------------------
-# DataLoader utilities
-# ---------------------------------------------------------------------------
 def create_distributed_dataloader(
     dataset: Dataset,
     batch_size: int = 1,
@@ -393,9 +372,6 @@ def create_distributed_dataloader(
     return loader
 
 
-# ---------------------------------------------------------------------------
-# Distributed checkpoint save/load
-# ---------------------------------------------------------------------------
 def save_distributed_checkpoint(
     path: str,
     model: nn.Module,
@@ -509,9 +485,6 @@ def load_distributed_checkpoint(
     }
 
 
-# ---------------------------------------------------------------------------
-# Single-device fallback trainer
-# ---------------------------------------------------------------------------
 class SingleDeviceTrainer:
     def __init__(
         self,
@@ -552,9 +525,6 @@ class SingleDeviceTrainer:
         return loss.item()
 
 
-# ---------------------------------------------------------------------------
-# DistributedTrainer
-# ---------------------------------------------------------------------------
 class DistributedTrainer:
     def __init__(
         self,

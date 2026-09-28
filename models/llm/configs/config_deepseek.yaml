@@ -1,0 +1,17 @@
+vocab_size: 32000
+hidden_size: 2048
+num_layers: 62
+num_heads: 128
+num_kv_heads: 8
+intermediate_size: 11008
+max_seq_len: 4096
+rope_base: 10000.0
+q_lora_rank: 1536
+kv_lora_rank: 512
+num_experts: 64
+top_k: 6
+dropout: 0.0
+use_bias: false
+activation: swiglu
+tie_weights: true
+architecture: deepseek

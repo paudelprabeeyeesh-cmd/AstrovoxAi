@@ -1,0 +1,73 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "AstrovoxAI Overview",
+    "tags": ["astrovox"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total[5m])",
+            "legendFormat": "{{method}} {{status}}"
+          }
+        ],
+        "yaxes": [
+          {"unit": "reqps"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Response Time P95",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))",
+            "legendFormat": "P95"
+          }
+        ],
+        "yaxes": [
+          {"unit": "s"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+            "legendFormat": "5xx"
+          }
+        ],
+        "yaxes": [
+          {"unit": "reqps"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Memory Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "process_resident_memory_bytes{job=\"astrovox-backend\"}",
+            "legendFormat": "Memory"
+          }
+        ],
+        "yaxes": [
+          {"unit": "bytes"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  }
+}

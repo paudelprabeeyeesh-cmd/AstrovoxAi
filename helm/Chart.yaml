@@ -1,5 +1,5 @@
 apiVersion: v2
 name: astrovox
-description: A Helm chart for Astrovox AI
+description: A Helm chart for Astrovox AI Platform
 version: 0.1.0
-appVersion: 1.0
+appVersion: 2.0.0
