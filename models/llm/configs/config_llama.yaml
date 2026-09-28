@@ -1,0 +1,13 @@
+vocab_size: 32000
+hidden_size: 4096
+num_layers: 32
+num_heads: 32
+num_kv_heads: 32
+intermediate_size: 11008
+max_seq_len: 4096
+rope_base: 500000.0
+dropout: 0.1
+use_bias: false
+activation: swiglu
+tie_weights: true
+architecture: llama

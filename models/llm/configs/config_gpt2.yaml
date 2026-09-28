@@ -1,0 +1,11 @@
+vocab_size: 50257
+hidden_size: 768
+num_layers: 12
+num_heads: 12
+intermediate_size: 3072
+max_seq_len: 1024
+dropout: 0.1
+use_bias: true
+activation: gelu
+tie_weights: true
+architecture: gpt2
