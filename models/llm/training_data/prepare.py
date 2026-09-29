@@ -57,8 +57,13 @@ class InstructionDataset:
                 output_text = sample.get("output", "")
                 text = self._format_example(instruction, input_text, output_text)
                 tokenized = self.tokenizer.encode(text).ids
-                for i in range(0, max(len(tokenized) - self.block_size, 0), self.block_size):
-                    chunk = tokenized[i : i + self.block_size]
+                if len(tokenized) >= self.block_size:
+                    for i in range(0, len(tokenized) - self.block_size, self.block_size):
+                        chunk = tokenized[i : i + self.block_size]
+                        labels = chunk[1:] + [-100]
+                        self.examples.append({"input_ids": chunk, "labels": labels})
+                else:
+                    chunk = tokenized + [0] * (self.block_size - len(tokenized))
                     labels = chunk[1:] + [-100]
                     self.examples.append({"input_ids": chunk, "labels": labels})
 
