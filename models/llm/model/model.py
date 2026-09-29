@@ -18,12 +18,12 @@ def _prepare_4d_attention_mask(
         expanded_mask = attention_mask.unsqueeze(1).unsqueeze(2)
         expanded_mask = expanded_mask.expand(batch_size, 1, seq_len, seq_len)
         combined = torch.masked_fill(
-            torch.zeros(seq_len, seq_len, device=device, dtype=dtype), causal_mask, float("-inf")
+            torch.zeros(seq_len, seq_len, device=device, dtype=torch.float32), causal_mask, float("-inf")
         )
         combined = combined.unsqueeze(0).unsqueeze(0).expand(batch_size, 1, seq_len, seq_len)
-        combined = combined + (~expanded_mask * torch.finfo(dtype).min)
-        return combined.to(dtype)
-    return attention_mask.to(dtype)
+        combined = combined + (~expanded_mask * torch.finfo(torch.float32).min)
+        return combined.to(torch.float32)
+    return attention_mask.to(torch.float32)
 
 
 class LLM(nn.Module):
@@ -108,7 +108,7 @@ class LLM(nn.Module):
         B, T = input_ids.size()
         if attention_mask is not None and attention_mask.dim() == 2:
             attention_mask = _prepare_4d_attention_mask(
-                attention_mask, input_ids.dtype, input_ids.device
+                attention_mask, torch.float32, input_ids.device
             )
 
         x = self.token_embedding(input_ids)

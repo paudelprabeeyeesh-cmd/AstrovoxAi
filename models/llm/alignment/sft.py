@@ -7,7 +7,6 @@ from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
 
 from ..model.model import LLM
@@ -15,6 +14,11 @@ from ..tokenizer.train_tokenizer import load_tokenizer
 from ..utils.helpers import get_device, set_cpu_threads
 
 logger = logging.getLogger(__name__)
+
+try:
+    from torch.amp import GradScaler, autocast
+except ImportError:
+    from torch.cuda.amp import GradScaler, autocast
 
 
 def instruction_collate_fn(
@@ -138,10 +142,10 @@ class SFTTrainer:
 
     def _autocast_context(self):
         if self.mp == "bf16":
-            return autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True)
+            return autocast("cpu", dtype=torch.bfloat16, enabled=True)
         if self.mp == "fp16":
-            return autocast(device_type="cuda", enabled=True)
-        return autocast(device_type="cpu", dtype=torch.float32, enabled=False)
+            return autocast("cuda", enabled=True)
+        return autocast("cpu", dtype=torch.float32, enabled=False)
 
     def train(
         self, output_dir: str, epochs: int | None = None
