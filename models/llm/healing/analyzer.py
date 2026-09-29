@@ -1,7 +1,7 @@
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Mapping, Optional, Pattern, Sequence, TypedDict
 
 logger = logging.getLogger(__name__)
@@ -100,7 +100,7 @@ class RootCauseAnalyzer:
         self.patterns.append(pattern)
 
     def analyze(self, logs: Sequence[LogEntry]) -> AnalysisReport:
-        analyzed_at = datetime.utcnow().isoformat(timespec="milliseconds")
+        analyzed_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         root_causes: List[RootCause] = []
         recommendations: List[Recommendation] = []
         error_count = 0

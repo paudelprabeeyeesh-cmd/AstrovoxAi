@@ -286,7 +286,7 @@ class TestCrossModal:
         assert "score" in results[0]
 
     def test_retrieval_augmented_generator(self):
-        model = RetrievalAugmentedGenerator(hidden_size=64)
+        model = RetrievalAugmentedGenerator(hidden_size=64, num_attention_heads=4)
         model.eval()
         query = torch.randn(1, 10, 64)
         context = torch.randn(1, 10, 64)

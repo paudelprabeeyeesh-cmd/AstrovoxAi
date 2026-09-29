@@ -131,7 +131,7 @@ class TestRootCauseAnalyzer:
     def test_analyze_empty(self, analyzer: RootCauseAnalyzer) -> None:
         report = analyzer.analyze([])
         assert report.root_causes == []
-        assert report.summary == "no issues found"
+        assert report.summary == "0 logs analyzed"
 
     def test_analyze_matches_patterns(self, analyzer: RootCauseAnalyzer, logs: Sequence[LogEntry]) -> None:
         report = analyzer.analyze(logs)

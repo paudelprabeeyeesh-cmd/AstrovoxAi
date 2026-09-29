@@ -2,7 +2,7 @@ import logging
 import shutil
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Optional, Sequence
@@ -67,7 +67,7 @@ class Recovery:
         cwd: Optional[Path] = None,
         env: Optional[Mapping[str, str]] = None,
     ) -> RecoveryResult:
-        started = datetime.utcnow().isoformat(timespec="milliseconds")
+        started = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         action = f"restart_process({' '.join(command)})"
 
         try:
@@ -80,7 +80,7 @@ class Recovery:
                 timeout=180,
                 check=False,
             )
-            finished = datetime.utcnow().isoformat(timespec="milliseconds")
+            finished = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
             success = proc.returncode == 0
             status = RecoveryStatus.SUCCESS if success else RecoveryStatus.FAILED
             return RecoveryResult(
@@ -95,7 +95,7 @@ class Recovery:
                 },
             )
         except Exception as exc:
-            finished = datetime.utcnow().isoformat(timespec="milliseconds")
+            finished = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
             return RecoveryResult(
                 status=RecoveryStatus.FAILED,
                 action=action,
@@ -106,7 +106,7 @@ class Recovery:
             )
 
     def cleanup_resources(self, paths: Sequence[Path]) -> RecoveryResult:
-        started = datetime.utcnow().isoformat(timespec="milliseconds")
+        started = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         removed: List[str] = []
         failed: List[str] = []
         for path in paths:

@@ -68,17 +68,17 @@ class PhiAttention(nn.Module):
         self.o_proj = nn.Linear(num_heads * self.head_dim, hidden_size, bias=False)
         self.rope = LongRoPE(self.head_dim, base=rope_base, layer_scale=layer_scale)
 
-    def forward(self, x: torch.Tensor, mask: torch.Tensor | None = None) -> torch.Tensor:
-        B, T, C = x.size()
-        q = self.q_proj(x).view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
-        k = self.k_proj(x).view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
-        v = self.v_proj(x).view(B, T, self.num_heads, self.head_dim).transpose(1, 2)
+    def forward(self, x: torch.Tensor, _mask: torch.Tensor | None = None) -> torch.Tensor:
+        b, t, c = x.size()
+        q = self.q_proj(x).view(b, t, self.num_heads, self.head_dim).transpose(1, 2)
+        k = self.k_proj(x).view(b, t, self.num_heads, self.head_dim).transpose(1, 2)
+        v = self.v_proj(x).view(b, t, self.num_heads, self.head_dim).transpose(1, 2)
 
-        cos, sin = self.rope(T, x.device)
+        cos, sin = self.rope(t, x.device)
         q, k = apply_rotary_pos_emb(q, k, cos, sin)
 
         attn = torch.nn.functional.scaled_dot_product_attention(q, k, v, is_causal=True)
-        y = attn.transpose(1, 2).contiguous().view(B, T, C)
+        y = attn.transpose(1, 2).contiguous().view(b, t, c)
         return self.o_proj(y)
 
 
@@ -180,7 +180,6 @@ class PhiArchitecture(BaseArchitecture):
         vocab = config["vocab_size"]
         hidden = config["hidden_size"]
         layers = config["num_layers"]
-        heads = config["num_heads"]
         ffn = config["intermediate_size"]
 
         params = vocab * hidden

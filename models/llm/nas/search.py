@@ -24,6 +24,7 @@ class ArchitectureGenome:
     intermediate_size: int = 512
     max_seq_len: int = 1024
     dropout: float = 0.1
+    vocab_size: int = 100
     tie_weights: bool = True
     use_bias: bool = True
     parent_ids: List[str] = field(default_factory=list)

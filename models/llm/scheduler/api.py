@@ -266,7 +266,7 @@ def scaling_status() -> dict[str, Any]:
 # Cost
 # ---------------------------------------------------------------------------
 @app.get("/cost/estimate")
-def cost_estimate(instance_type: str, hours: float) -> dict[str, float]:
+def cost_estimate(instance_type: str, hours: float) -> dict[str, Any]:
     cost = _cost.estimate_cost(instance_type, hours)
     return {"instance_type": instance_type, "hours": hours, "estimated_cost_usd": cost}
 

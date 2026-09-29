@@ -1,6 +1,6 @@
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, List, Mapping, Sequence, TypedDict
 
@@ -100,7 +100,7 @@ class Notifier:
             severity=alert.severity,
             summary=alert.summary,
             status=status,
-            updated_at=datetime.utcnow().isoformat(timespec="milliseconds"),
+            updated_at=datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
             affected_components=[check.get("name", "") for check in alert.checks if check.get("status") == "fail"],
         )
         self._updates.append(update)

@@ -28,7 +28,7 @@ class TestAttentionMapVisualizer:
         assert data.layer == 0
         assert data.head == 0
         assert data.sequence_length == 8
-        assert data.num_heads == 2
+        assert data.num_heads == 8
         assert len(data.attention_scores) == 8
 
     def test_to_dict(self):

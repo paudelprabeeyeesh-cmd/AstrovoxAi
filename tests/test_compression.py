@@ -31,7 +31,7 @@ from models.llm.compression import (
     update_gguf_metadata,
     quantize_int4_groupwise,
 )
-from models.llm.quantization import QuantizationConfig, QuantizationFormat
+from models.llm.quantization import QuantizationConfig, QuantizationFormat, QuantizationMethod
 
 
 class TestINT4Quantization:

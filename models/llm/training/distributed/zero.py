@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ZeroConfig:
+class ZeROConfig:
     """Configuration for ZeRO optimizer stages."""
 
     stage: int = 2
@@ -33,7 +33,7 @@ class ZeROStage1:
     reducing per-GPU memory by O(world_size).
     """
 
-    def __init__(self, model: nn.Module, optimizer: torch.optim.Optimizer, config: ZeroConfig) -> None:
+    def __init__(self, model: nn.Module, optimizer: torch.optim.Optimizer, config: ZeROConfig) -> None:
         self.model = model
         self.optimizer = optimizer
         self.config = config

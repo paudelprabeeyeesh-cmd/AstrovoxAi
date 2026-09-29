@@ -94,8 +94,8 @@ class DirectoryTraversal(Tool):
         super().__init__()
         self.allowed_dirs = [os.path.abspath(d) for d in (allowed_dirs or [os.getcwd()])]
         self.parameters = [
-            {"name": "path", "type": "string", "description": "Directory path to list", "required": False, "default": "."},
-            {"name": "recursive", "type": "boolean", "description": "Recursively list subdirectories", "required": False, "default": False},
+            ParameterSpec(name="path", type="string", description="Directory path to list", required=False, default="."),
+            ParameterSpec(name="recursive", type="boolean", description="Recursively list subdirectories", required=False, default=False),
         ]
 
     def execute(self, **kwargs: Any) -> ToolResult:
@@ -141,9 +141,9 @@ class FileSearch(Tool):
         super().__init__()
         self.allowed_dirs = [os.path.abspath(d) for d in (allowed_dirs or [os.getcwd()])]
         self.parameters = [
-            {"name": "pattern", "type": "string", "description": "Filename pattern to match", "required": True},
-            {"name": "path", "type": "string", "description": "Base directory for search", "required": False, "default": "."},
-            {"name": "recursive", "type": "boolean", "description": "Recursively search subdirectories", "required": False, "default": True},
+            ParameterSpec(name="pattern", type="string", description="Filename pattern to match", required=True),
+            ParameterSpec(name="path", type="string", description="Base directory for search", required=False, default="."),
+            ParameterSpec(name="recursive", type="boolean", description="Recursively search subdirectories", required=False, default=True),
         ]
 
     def execute(self, **kwargs: Any) -> ToolResult:

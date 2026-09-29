@@ -36,6 +36,43 @@ class DashboardSummary(BaseModel):
     active_alerts: int = 0
 
 
+class GPUMetricsRequest(BaseModel):
+    utilization: float
+    temperature: float = 0.0
+    memory_used_mb: float = 0.0
+
+
+class TensorMetricsRequest(BaseModel):
+    norm: float
+    layer: int = 0
+
+
+class TokenMetricsRequest(BaseModel):
+    tokens_per_second: float
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+
+
+class APIMetricsRequest(BaseModel):
+    latency_ms: float
+    status_code: int
+    endpoint: str = ""
+
+
+class BenchmarkMetricsRequest(BaseModel):
+    score: float
+    benchmark_name: str = "default"
+
+
+class DatasetMetricsRequest(BaseModel):
+    size: int
+    domain: str = "default"
+
+
+class ExperimentMetricsRequest(BaseModel):
+    count: int = 1
+
+
 _summary = DashboardSummary()
 
 
@@ -88,49 +125,49 @@ async def get_metric(metric_name: str, since: float | None = None, until: float 
 
 
 @router.post("/metrics/gpu")
-async def record_gpu(utilization: float, temperature: float = 0.0, memory_used_mb: float = 0.0) -> dict[str, str]:
-    _metrics.record("gpu_utilization", utilization)
-    _metrics.record("gpu_temperature", temperature)
-    _metrics.record("gpu_memory_used_mb", memory_used_mb)
+async def record_gpu(body: GPUMetricsRequest) -> dict[str, str]:
+    _metrics.record("gpu_utilization", body.utilization)
+    _metrics.record("gpu_temperature", body.temperature)
+    _metrics.record("gpu_memory_used_mb", body.memory_used_mb)
     return {"status": "recorded"}
 
 
 @router.post("/metrics/tensor")
-async def record_tensor(norm: float, layer: int = 0) -> dict[str, str]:
-    _metrics.record("tensor_norm", norm, {"layer": str(layer)})
+async def record_tensor(body: TensorMetricsRequest) -> dict[str, str]:
+    _metrics.record("tensor_norm", body.norm, {"layer": str(body.layer)})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/tokens")
-async def record_tokens(tokens_per_second: float, prompt_tokens: int = 0, completion_tokens: int = 0) -> dict[str, str]:
-    _metrics.record("tokens_per_second", tokens_per_second)
-    _metrics.record("prompt_tokens", float(prompt_tokens))
-    _metrics.record("completion_tokens", float(completion_tokens))
+async def record_tokens(body: TokenMetricsRequest) -> dict[str, str]:
+    _metrics.record("tokens_per_second", body.tokens_per_second)
+    _metrics.record("prompt_tokens", float(body.prompt_tokens))
+    _metrics.record("completion_tokens", float(body.completion_tokens))
     return {"status": "recorded"}
 
 
 @router.post("/metrics/api")
-async def record_api_request(latency_ms: float, status_code: int, endpoint: str = "") -> dict[str, str]:
-    _metrics.increment("api_requests", labels={"status": str(status_code), "endpoint": endpoint})
-    _metrics.record("api_latency_ms", latency_ms, {"endpoint": endpoint})
+async def record_api_request(body: APIMetricsRequest) -> dict[str, str]:
+    _metrics.increment("api_requests", labels={"status": str(body.status_code), "endpoint": body.endpoint})
+    _metrics.record("api_latency_ms", body.latency_ms, {"endpoint": body.endpoint})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/benchmark")
-async def record_benchmark(score: float, benchmark_name: str = "default") -> dict[str, str]:
-    _metrics.record("benchmark_score", score, {"benchmark": benchmark_name})
+async def record_benchmark(body: BenchmarkMetricsRequest) -> dict[str, str]:
+    _metrics.record("benchmark_score", body.score, {"benchmark": body.benchmark_name})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/dataset")
-async def record_dataset(size: int, domain: str = "default") -> dict[str, str]:
-    _metrics.set_gauge("dataset_size", float(size), {"domain": domain})
+async def record_dataset(body: DatasetMetricsRequest) -> dict[str, str]:
+    _metrics.set_gauge("dataset_size", float(body.size), {"domain": body.domain})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/experiment")
-async def record_experiment(count: int = 1) -> dict[str, str]:
-    _metrics.increment("experiment_count", float(count))
+async def record_experiment(body: ExperimentMetricsRequest) -> dict[str, str]:
+    _metrics.increment("experiment_count", float(body.count))
     return {"status": "recorded"}
 
 

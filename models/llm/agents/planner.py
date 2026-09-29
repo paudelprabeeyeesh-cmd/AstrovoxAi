@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Callable
 
-from models.llm.agents.tools import Tool, ToolResult
+from models.llm.agents.tools import ParameterSpec, Tool, ToolResult
 
 
 @dataclass

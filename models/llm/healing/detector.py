@@ -3,7 +3,7 @@ import re
 import subprocess
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Optional, Pattern, Sequence, TypedDict
@@ -66,7 +66,7 @@ class FailureDetector:
 
     def check(self) -> HealthResult:
         checks: List[HealthCheck] = []
-        checked_at = datetime.utcnow().isoformat(timespec="milliseconds")
+        checked_at = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
 
         for checker in self.checkers:
             start = time.perf_counter()

@@ -47,7 +47,7 @@ class MockTokenizer:
         input_ids = torch.randint(0, 100, (1, 8))
         attention_mask = torch.ones_like(input_ids)
 
-        class _Obj:
+        class _Batch:
             def __init__(self, input_ids, attention_mask):
                 self.input_ids = input_ids
                 self.attention_mask = attention_mask
@@ -55,7 +55,20 @@ class MockTokenizer:
             def to(self, device):
                 return self
 
-        return _Obj(input_ids, attention_mask)
+            def keys(self):
+                return ["input_ids", "attention_mask"]
+
+            def __getitem__(self, key):
+                if key == "input_ids":
+                    return self.input_ids
+                if key == "attention_mask":
+                    return self.attention_mask
+                raise KeyError(key)
+
+            def items(self):
+                return [("input_ids", self.input_ids), ("attention_mask", self.attention_mask)]
+
+        return _Batch(input_ids, attention_mask)
 
     def decode(self, token_ids, skip_special_tokens=False):
         return "mock answer"

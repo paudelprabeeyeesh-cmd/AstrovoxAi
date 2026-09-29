@@ -97,9 +97,9 @@ class TestBillingSystem:
         )
         billing.register_tier(tier)
         from datetime import datetime, timedelta
-        start = datetime.utcnow() - timedelta(days=30)
-        end = datetime.utcnow()
         billing.record_usage("dev1", tokens_in=80000, tokens_out=50000)
+        start = datetime.utcnow() - timedelta(days=30)
+        end = datetime.utcnow() + timedelta(seconds=10)
         invoice = billing.generate_invoice("dev1", "tier-1", start, end)
         overage_tokens = 130000 - 100000
         expected_total = 29.0 + overage_tokens * 0.00002

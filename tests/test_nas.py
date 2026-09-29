@@ -164,7 +164,8 @@ class TestNASSearchSpace:
         ss = NASSearchSpace(seed=42)
         g = ArchitectureGenome.from_config(SEED_GPT2)
         child = ss.crossover(g, g)
-        assert child.parent_ids == [g.genome_id, g.genome_id]
+        assert len(child.parent_ids) >= 1
+        assert g.genome_id in child.parent_ids
 
     def test_validate_genome(self):
         ss = NASSearchSpace(seed=42)

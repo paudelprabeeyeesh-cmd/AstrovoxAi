@@ -62,9 +62,9 @@ class PromptInjectionDefense:
         for pattern in self._compiled_patterns:
             if pattern.search(sanitized):
                 matched.append(pattern.pattern)
-                score += 0.25
+                score += 0.35
         score = min(score, 1.0)
-        return PromptInjectionResult(is_suspicious=score > 0.3, matched_patterns=matched, risk_score=score, sanitized_input=sanitized)
+        return PromptInjectionResult(is_suspicious=score > 0.2, matched_patterns=matched, risk_score=score, sanitized_input=sanitized)
 
     def _sanitize(self, text: str) -> str:
         cleaned = text
