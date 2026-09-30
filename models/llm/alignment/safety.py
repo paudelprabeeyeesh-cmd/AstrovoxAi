@@ -96,6 +96,9 @@ class SafetyEvaluator:
                 sorted_probs[cutoff] = 0.0
                 probs = torch.zeros_like(probs).scatter_(-1, sorted_indices, sorted_probs)
                 probs = probs / probs.sum(dim=-1, keepdim=True).clamp(min=1e-8)
+            probs = torch.nan_to_num(probs, nan=0.0, posinf=0.0, neginf=0.0)
+            probs_sum = probs.sum(dim=-1, keepdim=True)
+            probs = torch.where(probs_sum > 0, probs / probs_sum, torch.ones_like(probs) / probs.size(-1))
             next_token = torch.multinomial(probs, num_samples=1)
             generated = torch.cat([generated, next_token], dim=1)
             attention_mask = torch.cat([attention_mask, torch.ones_like(next_token)], dim=1)

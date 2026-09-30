@@ -1,0 +1,22 @@
+{
+  "model_name": "test-model",
+  "timestamp": "2026-09-29T17:10:23.978141Z",
+  "results": {
+    "synthetic_mmlu": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "n_samples": 2
+      }
+    }
+  },
+  "aggregate_score": 0.0,
+  "config": {
+    "benchmarks": [
+      "synthetic_mmlu"
+    ],
+    "device": "cpu",
+    "max_samples": 2,
+    "use_synthetic": false
+  }
+}

@@ -262,10 +262,13 @@ class DeepSeekArchitecture(BaseArchitecture):
         per_block += 2 * hidden
         # MLA attention
         per_block += q_lora_rank * hidden + q_lora_rank * heads * head_dim
-        per_block += kv_lora_rank * hidden + head_dim * hidden + 2 * kv_lora_rank * kv_heads * head_dim
+        per_block += q_lora_rank
+        per_block += (kv_lora_rank + head_dim) * hidden
+        per_block += kv_lora_rank
+        per_block += 2 * kv_lora_rank * kv_heads * head_dim
         per_block += heads * head_dim * hidden
-        # MoE: shared expert + gate + routed experts
-        per_block += 3 * hidden * ffn + hidden * num_experts + top_k * num_experts * 3 * hidden * ffn
+        # MoE: shared expert (2 linear) + shared gate (1 linear) + router gate (1 linear) + routed experts (2 linear each)
+        per_block += 2 * hidden * ffn + hidden + hidden * num_experts + num_experts * 2 * hidden * ffn
 
         params += layers * per_block
         params += hidden

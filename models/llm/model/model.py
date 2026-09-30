@@ -21,7 +21,7 @@ def _prepare_4d_attention_mask(
             torch.zeros(seq_len, seq_len, device=device, dtype=torch.float32), causal_mask, float("-inf")
         )
         combined = combined.unsqueeze(0).unsqueeze(0).expand(batch_size, 1, seq_len, seq_len)
-        combined = combined + (~expanded_mask * torch.finfo(torch.float32).min)
+        combined = combined + (~expanded_mask.bool() * torch.finfo(torch.float32).min)
         return combined.to(torch.float32)
     return attention_mask.to(torch.float32)
 
@@ -110,6 +110,21 @@ class LLM(nn.Module):
             attention_mask = _prepare_4d_attention_mask(
                 attention_mask, torch.float32, input_ids.device
             )
+
+        x = self.token_embedding(input_ids)
+        x = self.embed_dropout(x)
+
+        position_ids = self.get_position_ids(T, input_ids.device)
+        for block in self.blocks:
+            x = block(
+                x,
+                position_ids=position_ids,
+                attention_mask=attention_mask,
+                use_gradient_checkpointing=use_gradient_checkpointing,
+            )
+
+        x = self.ln_f(x)
+        logits = self.lm_head(x)
 
         x = self.token_embedding(input_ids)
         x = self.embed_dropout(x)

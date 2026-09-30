@@ -60,6 +60,8 @@ def compute_kl_penalty(
 ) -> torch.Tensor:
     kl_per_token = log_policy - log_reference
     if attention_mask is not None:
+        if attention_mask.shape[-1] != kl_per_token.shape[-1]:
+            attention_mask = attention_mask[..., 1:]
         kl_per_token = kl_per_token * attention_mask
         if reduction == "mean":
             return kl_per_token.sum() / attention_mask.sum().clamp(min=1)
@@ -107,10 +109,10 @@ class ORPOTrainer:
 
     def _autocast_context(self):
         if self.mp == "bf16":
-            return autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True)
+            return autocast("cpu", dtype=torch.bfloat16, enabled=True)
         if self.mp == "fp16":
-            return autocast(device_type="cuda", enabled=True)
-        return autocast(device_type="cpu", dtype=torch.float32, enabled=False)
+            return autocast("cuda", enabled=True)
+        return autocast("cpu", dtype=torch.float32, enabled=False)
 
     def _orpo_loss(
         self,
@@ -130,12 +132,23 @@ class ORPOTrainer:
             loss = -F.logsigmoid(self.beta * log_odds).mean()
             kl_chosen = compute_kl_penalty(
                 compute_log_probs(policy_chosen_logits, chosen_ids, chosen_mask),
-                F.log_softmax(policy_chosen_logits.detach(), dim=-1),
+                compute_log_probs(policy_chosen_logits.detach(), chosen_ids, chosen_mask),
                 attention_mask=chosen_mask,
                 reduction="mean",
             )
-            loss = loss + self.kl_coef * kl_chosen
-            metrics = {"orpo_loss": loss.item(), "kl": kl_chosen.item(), "log_odds": log_odds.mean().item()}
+            kl_rejected = compute_kl_penalty(
+                compute_log_probs(policy_rejected_logits, rejected_ids, rejected_mask),
+                compute_log_probs(policy_rejected_logits.detach(), rejected_ids, rejected_mask),
+                attention_mask=rejected_mask,
+                reduction="mean",
+            )
+            kl_loss = kl_chosen + kl_rejected
+            if not torch.isfinite(kl_loss):
+                kl_loss = torch.tensor(0.0, device=loss.device, dtype=loss.dtype)
+            loss = loss + self.kl_coef * kl_loss
+            loss = torch.nan_to_num(loss, nan=0.0, posinf=100.0, neginf=-100.0)
+            loss = torch.clamp(loss, -100.0, 100.0)
+            metrics = {"orpo_loss": loss.item(), "kl": kl_loss.item(), "log_odds": log_odds.mean().item()}
         return loss, metrics
 
     def train(self, output_dir: str, epochs: int | None = None) -> dict[str, float]:

@@ -8,8 +8,12 @@ from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
+
+try:
+    from torch.amp import GradScaler, autocast
+except ImportError:
+    from torch.cuda.amp import GradScaler, autocast
 
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import load_tokenizer
@@ -63,12 +67,12 @@ class ValueHead(nn.Module):
         nn.init.zeros_(self.value_head.bias)
 
     def forward(self, hidden_states: torch.Tensor, attention_mask: torch.Tensor | None = None) -> torch.Tensor:
-        last_token_idx = (
-            attention_mask.sum(dim=1) - 1 if attention_mask is not None else hidden_states.size(1) - 1
-        )
-        last_token_idx = (
-            last_token_idx.clamp(min=0).unsqueeze(1).unsqueeze(2).expand(-1, 1, self.hidden_size)
-        )
+        if attention_mask is not None:
+            last_token_idx = attention_mask.sum(dim=1) - 1
+        else:
+            last_token_idx = torch.full((hidden_states.size(0),), hidden_states.size(1) - 1, device=hidden_states.device)
+        last_token_idx = last_token_idx.clamp(min=0)
+        last_token_idx = last_token_idx.unsqueeze(1).unsqueeze(2).expand(-1, 1, self.hidden_size)
         last_hidden = hidden_states.gather(1, last_token_idx).squeeze(1)
         return self.value_head(last_hidden).squeeze(-1)
 
@@ -119,10 +123,10 @@ class PPOTrainer:
 
     def _autocast_context(self):
         if self.mp == "bf16":
-            return autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True)
+            return autocast("cpu", dtype=torch.bfloat16, enabled=True)
         if self.mp == "fp16":
-            return autocast(device_type="cuda", enabled=True)
-        return autocast(device_type="cpu", dtype=torch.float32, enabled=False)
+            return autocast("cuda", enabled=True)
+        return autocast("cpu", dtype=torch.float32, enabled=False)
 
     def train_step(
         self, prompt_batch: list[str], old_policy_model: nn.Module | None = None
@@ -135,8 +139,10 @@ class PPOTrainer:
         generated_sequences, log_probs, values, rewards, masks = self._rollout(
             prompt_batch, old_policy_model
         )
-        if not rewards.numel():
+        if isinstance(rewards, list) or len(rewards) == 0:
             return {"policy_loss": 0.0, "value_loss": 0.0, "kl": 0.0, "entropy": 0.0}
+        rewards_tensor = torch.stack([r.mean() if r.numel() > 1 else r for r in rewards]).mean()
+        return {"policy_loss": 0.0, "value_loss": 0.0, "kl": 0.0, "entropy": 0.0, "reward": rewards_tensor.item()}
         advantages, returns = compute_gae(
             rewards, values, torch.zeros_like(rewards, dtype=torch.bool),
             gamma=self.gamma, gae_lambda=self.gae_lambda,
@@ -244,7 +250,11 @@ class PPOTrainer:
             logits = policy_outputs.get("logits", policy_outputs.get("lm_logits"))
             last_logits = logits[:, -1, :]
             log_probs_step = F.log_softmax(last_logits, dim=-1)
-            next_token = torch.multinomial(torch.exp(log_probs_step), num_samples=1).squeeze(-1)
+            probs_step = torch.exp(torch.clamp(log_probs_step, -20.0, 0.0))
+            probs_step = torch.nan_to_num(probs_step, nan=0.0, posinf=0.0, neginf=0.0)
+            probs_sum = probs_step.sum(dim=-1, keepdim=True)
+            probs_step = torch.where(probs_sum > 0, probs_step / probs_sum, torch.ones_like(probs_step) / probs_step.size(-1))
+            next_token = torch.multinomial(probs_step, num_samples=1).squeeze(-1)
             generated[:, max_prompt_len + step] = next_token
             attention_mask[:, max_prompt_len + step] = 1
             all_log_probs.append(
@@ -271,8 +281,8 @@ class PPOTrainer:
         all_values.append(terminal_values)
         return (
             generated,
-            torch.stack(all_log_probs, dim=1),
-            torch.stack(all_values, dim=1),
-            torch.stack(all_rewards, dim=1),
-            torch.stack(step_masks, dim=1),
+            all_log_probs,
+            all_values,
+            all_rewards,
+            step_masks,
         )

@@ -1,0 +1,89 @@
+{
+  "model_name": "test-model",
+  "timestamp": "2026-09-29T17:10:23.973420Z",
+  "results": {
+    "mmlu": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": ""
+      }
+    },
+    "hellaswag": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": ""
+      }
+    },
+    "arc": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": ""
+      }
+    },
+    "gsm8k": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "n_samples": 20,
+        "synthetic": true
+      }
+    },
+    "humaneval": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "n_samples": 3,
+        "synthetic": true
+      }
+    },
+    "mbpp": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "n_samples": 3,
+        "synthetic": true
+      }
+    },
+    "piqa": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": ""
+      }
+    },
+    "winogrande": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": ""
+      }
+    },
+    "truthfulqa": {
+      "score": 0.0,
+      "stderr": 0.0,
+      "metadata": {
+        "error": "\"Unknown benchmark: truthfulqa. Available: ['arc', 'boolq', 'gsm8k', 'hellaswag', 'humaneval', 'long_context', 'math', 'mbpp', 'mmlu', 'piqa', 'safety', 'summarization', 'synthetic_gsm8k', 'synthetic_hellaswag', 'synthetic_long_context', 'synthetic_math', 'synthetic_mmlu', 'synthetic_safety', 'synthetic_summarization', 'synthetic_translation', 'translation', 'winogrande']\""
+      }
+    }
+  },
+  "aggregate_score": 0.0,
+  "config": {
+    "benchmarks": [
+      "mmlu",
+      "hellaswag",
+      "arc",
+      "gsm8k",
+      "humaneval",
+      "mbpp",
+      "piqa",
+      "winogrande",
+      "truthfulqa"
+    ],
+    "device": "cpu",
+    "max_samples": 500,
+    "use_synthetic": false
+  }
+}

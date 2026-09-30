@@ -87,10 +87,10 @@ class SimPOTrainer:
 
     def _autocast_context(self):
         if self.mp == "bf16":
-            return autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True)
+            return autocast("cpu", dtype=torch.bfloat16, enabled=True)
         if self.mp == "fp16":
-            return autocast(device_type="cuda", enabled=True)
-        return autocast(device_type="cpu", dtype=torch.float32, enabled=False)
+            return autocast("cuda", enabled=True)
+        return autocast("cpu", dtype=torch.float32, enabled=False)
 
     def _simpo_loss(
         self,
@@ -108,6 +108,8 @@ class SimPOTrainer:
             )
             log_ratio = policy_chosen_log_probs_sum - policy_rejected_log_probs_sum
             loss = -F.logsigmoid(self.gamma * log_ratio - self.margin).mean()
+            loss = torch.nan_to_num(loss, nan=0.0, posinf=100.0, neginf=-100.0)
+            loss = torch.clamp(loss, -100.0, 100.0)
             metrics = {"simpo_loss": loss.item(), "log_ratio": log_ratio.mean().item()}
         return loss, metrics
 
@@ -149,6 +151,10 @@ class SimPOTrainer:
                 chosen_mask = batch["chosen_attention_mask"].to(self.device, non_blocking=True)
                 rejected_mask = batch["rejected_attention_mask"].to(self.device, non_blocking=True)
                 loss, metrics = self._simpo_loss(chosen_ids, rejected_ids, chosen_mask, rejected_mask)
+                if not torch.isfinite(loss):
+                    logger.warning("Non-finite SimPO loss detected, skipping batch")
+                    self.optimizer.zero_grad()
+                    continue
                 if self.mp == "fp16":
                     self.scaler.scale(loss).backward()
                 else:

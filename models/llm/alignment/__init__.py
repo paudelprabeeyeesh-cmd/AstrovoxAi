@@ -11,6 +11,7 @@ from .reward import (
 )
 from .sft import SFTTrainer, InstructionDataset, compute_instruction_loss, instruction_collate_fn
 from .simpo import SimPOTrainer
+from .safety import SafetyEvaluator
 
 __all__ = [
     "DPOTrainer",
@@ -20,6 +21,7 @@ __all__ = [
     "PreferenceDataset",
     "RewardModel",
     "RewardTrainer",
+    "SafetyEvaluator",
     "SFTTrainer",
     "SimPOTrainer",
     "ValueHead",

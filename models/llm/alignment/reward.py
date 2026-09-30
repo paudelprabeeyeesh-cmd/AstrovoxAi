@@ -6,8 +6,12 @@ from typing import Any
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
+
+try:
+    from torch.amp import GradScaler, autocast
+except ImportError:
+    from torch.cuda.amp import GradScaler, autocast
 
 from ..model.model import LLM
 from ..tokenizer.train_tokenizer import load_tokenizer
@@ -111,6 +115,11 @@ class RewardModel(nn.Module):
         self.config = config
         self.llm = LLM(config, device=device, dtype=dtype)
         self.hidden_size = int(config["hidden_size"])
+        self.vocab_size = int(config["vocab_size"])
+        if self.vocab_size != self.hidden_size:
+            self.proj = nn.Linear(self.vocab_size, self.hidden_size, device=device, dtype=dtype)
+        else:
+            self.proj = nn.Identity()
         self.reward_head = nn.Linear(self.hidden_size, 1, device=device, dtype=dtype)
         nn.init.zeros_(self.reward_head.bias)
         self.to(device)
@@ -126,16 +135,17 @@ class RewardModel(nn.Module):
             attention_mask=attention_mask,
             use_gradient_checkpointing=use_gradient_checkpointing,
         )
-        hidden_states = outputs["logits"]
+        logits = outputs["logits"]
+        projected = self.proj(logits)
         last_token_idx = (
             attention_mask.sum(dim=1) - 1 if attention_mask is not None else input_ids.size(1) - 1
         )
         last_token_idx = (
             last_token_idx.clamp(min=0).unsqueeze(1).unsqueeze(2).expand(-1, 1, self.hidden_size)
         )
-        last_hidden = hidden_states.gather(1, last_token_idx).squeeze(1)
+        last_hidden = projected.gather(1, last_token_idx).squeeze(1)
         reward = self.reward_head(last_hidden).squeeze(-1)
-        return {"reward": reward, "logits": hidden_states}
+        return {"reward": reward, "logits": logits}
 
 
 def compute_reward_loss(
@@ -189,10 +199,10 @@ class RewardTrainer:
 
     def _autocast_context(self):
         if self.mp == "bf16":
-            return autocast(device_type="cpu", dtype=torch.bfloat16, enabled=True)
+            return autocast("cpu", dtype=torch.bfloat16, enabled=True)
         if self.mp == "fp16":
-            return autocast(device_type="cuda", enabled=True)
-        return autocast(device_type="cpu", dtype=torch.float32, enabled=False)
+            return autocast("cuda", enabled=True)
+        return autocast("cpu", dtype=torch.float32, enabled=False)
 
     def train(self, output_dir: str, epochs: int | None = None) -> dict[str, float]:
         epochs = epochs if epochs is not None else int(self.config.get("reward_epochs", 1))
