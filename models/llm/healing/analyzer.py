@@ -6,6 +6,18 @@ from typing import Any, List, Mapping, Optional, Pattern, Sequence, TypedDict
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_REMEDIATION: Mapping[str, Sequence[str]] = {
+    "OOM": ("reduce_batch_size", "enable_gradient_checkpointing"),
+    "NAN_LOSS": ("clip_gradients", "reduce_learning_rate"),
+}
+
+
+def remediation_for(code: str, explicit: Sequence[str] = ()) -> Sequence[str]:
+    """Return explicit pattern actions, else the default remediation for the code."""
+    if explicit:
+        return explicit
+    return DEFAULT_REMEDIATION.get(code, ())
+
 
 class LogEntry(TypedDict, total=False):
     timestamp: str
@@ -129,7 +141,10 @@ class RootCauseAnalyzer:
                         severity=groupdict.get("severity", level),
                         affected_components=groupdict.get("component", "").split(",") if groupdict.get("component") else [],
                         matched_patterns=[pattern.name],
-                        suggested_actions=groupdict.get("actions", "").split(",") if groupdict.get("actions") else [],
+                        suggested_actions=remediation_for(
+                            groupdict.get("code", "UNKNOWN"),
+                            groupdict.get("actions", "").split(",") if groupdict.get("actions") else [],
+                        ),
                     )
                 )
 
@@ -137,17 +152,18 @@ class RootCauseAnalyzer:
             root_causes.append(causes[0])
 
         for cause in root_causes:
-            for action in cause.suggested_actions:
-                if action:
-                    recommendations.append(
-                        Recommendation(
-                            action=action.strip(),
-                            priority="high" if cause.severity in ("critical", "fatal") else "medium",
-                            rationale=f"Matched pattern {cause.matched_patterns[0]} for {cause.code}",
-                            estimated_effort="low",
-                            side_effects=[],
-                        )
-                    )
+            actions = [a.strip() for a in cause.suggested_actions if a and a.strip()]
+            if not actions:
+                continue
+            recommendations.append(
+                Recommendation(
+                    action=actions[0],
+                    priority="high" if cause.severity in ("critical", "fatal") else "medium",
+                    rationale=f"Matched pattern {cause.matched_patterns[0]} for {cause.code}",
+                    estimated_effort="low",
+                    side_effects=actions[1:],
+                )
+            )
 
         summary_parts = [f"{len(logs)} logs analyzed"]
         if error_count:

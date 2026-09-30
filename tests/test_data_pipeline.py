@@ -13,19 +13,24 @@ if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from models.llm.data import (
+    CopyrightConfig,
     CopyrightFilter,
     DataLineageTracker,
     DatasetPipeline,
     DatasetVersionManager,
     Deduplicator,
     DomainBalancer,
+    DomainBalanceConfig,
+    LanguageBalanceConfig,
     LanguageBalancer,
     PIIDetector,
     PipelineConfig,
     PiiConfig,
     QualityConfig,
     QualityScorer,
+    ToxicityConfig,
     ToxicityFilter,
+    VersionConfig,
 )
 from models.llm.dataset_engineering_v2 import ProcessedDocument
 
@@ -67,7 +72,7 @@ class TestQualityScorer:
         assert 0.0 <= score <= 1.0
 
     def test_passes_threshold(self):
-        config = QualityConfig(min_quality_score=0.5)
+        config = QualityConfig(min_quality_score=0.5, min_length=5)
         scorer = QualityScorer(config)
         doc = ProcessedDocument(text="This is a normal English sentence with enough words.")
         doc.language_confidence = 0.9
@@ -81,7 +86,7 @@ class TestQualityScorer:
         assert result is None
 
     def test_process_returns_doc_for_good_doc(self):
-        scorer = QualityScorer(QualityConfig(min_quality_score=0.1))
+        scorer = QualityScorer(QualityConfig(min_quality_score=0.1, min_length=5))
         doc = ProcessedDocument(text="This is a normal English sentence with enough words.")
         doc.language_confidence = 0.9
         result = scorer.process(doc)
@@ -294,9 +299,9 @@ class TestDatasetPipeline:
             return documents
 
         pipeline.register_stage("uppercase", upper_stage)
-        docs = [ProcessedDocument(text="hello world")]
+        docs = [ProcessedDocument(text="hello world test")]
         results = list(pipeline.run(iter(docs)))
-        assert results[0].text == "HELLO WORLD"
+        assert results[0].text == "HELLO WORLD TEST"
 
     def test_run_stream_produces_stats(self):
         with tempfile.TemporaryDirectory() as tmpdir:

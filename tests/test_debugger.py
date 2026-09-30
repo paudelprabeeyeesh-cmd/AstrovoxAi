@@ -198,7 +198,7 @@ class TestActivationViewer:
         model = make_tiny_model()
         viewer = ActivationViewer()
         viewer.register_hooks(model)
-        viewer.forward(model, torch.zeros(1, 8, dtype=torch.long))
+        viewer.forward(model, torch.zeros(1, 8))
         assert viewer.read(0) is not None
         viewer.close()
 
@@ -206,7 +206,7 @@ class TestActivationViewer:
         model = make_tiny_model()
         viewer = ActivationViewer()
         viewer.register_hooks(model)
-        viewer.forward(model, torch.zeros(1, 8, dtype=torch.long))
+        viewer.forward(model, torch.zeros(1, 8))
         info = viewer.read(0)
         assert isinstance(info, ActivationInfo)
         assert info.layer == 0
@@ -216,7 +216,7 @@ class TestActivationViewer:
         model = make_tiny_model()
         viewer = ActivationViewer()
         viewer.register_hooks(model)
-        viewer.forward(model, torch.zeros(1, 8, dtype=torch.long))
+        viewer.forward(model, torch.zeros(1, 8))
         info = viewer.read(0)
         result = viewer.to_dict(info)
         assert result["type"] == "activation"

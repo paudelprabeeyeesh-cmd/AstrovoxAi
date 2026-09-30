@@ -47,7 +47,7 @@ class QualityScorer:
         word_counts = Counter(words)
         max_repeat = max(word_counts.values())
         penalty = max_repeat / max(len(words), 1)
-        return max(0.0, 1.0 - penalty * 10)
+        return max(0.0, 1.0 - penalty)
 
     def entropy_score(self, text: str) -> float:
         if not text:

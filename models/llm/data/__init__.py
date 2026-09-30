@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from models.llm.data.balancing import DomainBalancer, LanguageBalancer
+from models.llm.data.balancing import DomainBalancer, DomainBalanceConfig, LanguageBalancer, LanguageBalanceConfig
 from models.llm.data.filtering import (
     CopyrightConfig,
     CopyrightFilter,
@@ -24,7 +24,9 @@ __all__ = [
     "DedupConfig",
     "Deduplicator",
     "DomainBalancer",
+    "DomainBalanceConfig",
     "LanguageBalancer",
+    "LanguageBalanceConfig",
     "PiiConfig",
     "PIIDetector",
     "PipelineConfig",

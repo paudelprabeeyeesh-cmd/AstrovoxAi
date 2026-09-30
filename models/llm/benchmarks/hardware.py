@@ -39,6 +39,26 @@ class NvidiaBenchmark:
         self.profile = profile
 
     def inference_benchmark(self, model, tokenizer, prompts: List[str], max_new_tokens: int = 32, device: str = "cuda") -> BenchmarkResult:
+        if model is None:
+            metrics = {
+                "vendor": "nvidia",
+                "status": "stub",
+                "message": "No model provided for benchmarking",
+                "num_prompts": len(prompts),
+                "max_new_tokens": max_new_tokens,
+                "avg_latency_seconds": 0.0,
+                "avg_tokens_per_second": 0.0,
+                "p50_latency_seconds": 0.0,
+                "p95_latency_seconds": 0.0,
+                "p99_latency_seconds": 0.0,
+            }
+            return BenchmarkResult(
+                name=f"nvidia_inference_{self.profile.name}",
+                metrics=metrics,
+                profile=self.profile,
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            )
+
         from models.llm.inference.engine import InferenceEngine, SamplingParams
 
         engine = InferenceEngine(model, tokenizer, device=device)
@@ -82,6 +102,23 @@ class NvidiaBenchmark:
         )
 
     def training_benchmark(self, model, config: Dict[str, Any], steps: int = 5, device: str = "cuda") -> BenchmarkResult:
+        if model is None:
+            metrics = {
+                "vendor": "nvidia",
+                "status": "stub",
+                "message": "No model provided for benchmarking",
+                "steps": steps,
+                "avg_step_time_seconds": 0.0,
+                "tokens_per_second": 0.0,
+                "total_tokens_per_step": config["batch_size"] * config.get("max_position_embeddings", 1024),
+            }
+            return BenchmarkResult(
+                name=f"nvidia_training_{self.profile.name}",
+                metrics=metrics,
+                profile=self.profile,
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            )
+
         import torch
 
         model.train()
@@ -247,6 +284,26 @@ class IntelCpuBenchmark:
         self.profile = profile
 
     def inference_benchmark(self, model, tokenizer, prompts: List[str], max_new_tokens: int = 32, device: str = "cpu") -> BenchmarkResult:
+        if model is None:
+            metrics = {
+                "vendor": "intel",
+                "status": "stub",
+                "message": "No model provided for benchmarking",
+                "num_prompts": len(prompts),
+                "max_new_tokens": max_new_tokens,
+                "avg_latency_seconds": 0.0,
+                "avg_tokens_per_second": 0.0,
+                "p50_latency_seconds": 0.0,
+                "p95_latency_seconds": 0.0,
+                "p99_latency_seconds": 0.0,
+            }
+            return BenchmarkResult(
+                name=f"intel_cpu_inference_{self.profile.name}",
+                metrics=metrics,
+                profile=self.profile,
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            )
+
         from models.llm.inference.engine import InferenceEngine, SamplingParams
 
         engine = InferenceEngine(model, tokenizer, device=device)
@@ -283,6 +340,24 @@ class IntelCpuBenchmark:
         )
 
     def training_benchmark(self, model, config: Dict[str, Any], steps: int = 5, device: str = "cpu") -> BenchmarkResult:
+        if model is None:
+            total_tokens = config["batch_size"] * config.get("max_position_embeddings", 1024)
+            metrics = {
+                "vendor": "intel",
+                "status": "stub",
+                "message": "No model provided for benchmarking",
+                "steps": steps,
+                "avg_step_time_seconds": 0.0,
+                "tokens_per_second": 0.0,
+                "total_tokens_per_step": total_tokens,
+            }
+            return BenchmarkResult(
+                name=f"intel_cpu_training_{self.profile.name}",
+                metrics=metrics,
+                profile=self.profile,
+                timestamp=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            )
+
         import torch
 
         model.train()

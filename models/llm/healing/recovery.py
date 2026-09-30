@@ -113,13 +113,16 @@ class Recovery:
             try:
                 if path.is_dir():
                     shutil.rmtree(path, ignore_errors=True)
+                    removed.append(str(path))
                 elif path.is_file():
                     path.unlink(missing_ok=True)
-                removed.append(str(path))
+                    removed.append(str(path))
+                else:
+                    failed.append(f"{path}: path does not exist")
             except Exception as exc:
                 failed.append(f"{path}: {exc}")
 
-        finished = datetime.utcnow().isoformat(timespec="milliseconds")
+        finished = datetime.now(timezone.utc).isoformat(timespec="milliseconds")
         status = RecoveryStatus.FAILED if failed and not removed else RecoveryStatus.SUCCESS
         return RecoveryResult(
             status=status,

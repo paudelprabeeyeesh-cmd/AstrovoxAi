@@ -43,7 +43,8 @@ class MemoryProfiler:
         self._snapshots: list[MemorySnapshot] = []
 
     def start(self) -> None:
-        self._snapshots = torch.cuda.reset_peak_memory_stats()
+        if torch.cuda.is_available():
+            torch.cuda.reset_peak_memory_stats()
         self._snapshots = []
 
     def take_snapshot(self, layer_id: str | None = None) -> MemorySnapshot:

@@ -80,9 +80,9 @@ class KVCacheVisualizer:
         max_blocks = getattr(kv_cache, "max_blocks", 0)
         used_blocks = len(getattr(kv_cache, "free_blocks", []))
         for i, block in enumerate(getattr(kv_cache, "key_blocks", [])[:max_blocks]):
-            key_blocks.append({"block_id": i, "shape": list(block.shape)})
+            key_blocks.append({"block_id": i, "shape": list(block.shape) if block is not None else None})
         for i, block in enumerate(getattr(kv_cache, "value_blocks", [])[:max_blocks]):
-            value_blocks.append({"block_id": i, "shape": list(block.shape)})
+            value_blocks.append({"block_id": i, "shape": list(block.shape) if block is not None else None})
         return KVCacheData(
             layer=layer,
             key_blocks=key_blocks,
