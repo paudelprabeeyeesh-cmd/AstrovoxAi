@@ -172,6 +172,11 @@ def list_suites() -> List[str]:
 
 def build_prompt(benchmark_name: str, example: Dict[str, Any]) -> str:
     template = PROMPT_TEMPLATES.get(benchmark_name, "{question}")
+    example = dict(example)
+    if "choices" in example and isinstance(example["choices"], (list, tuple)):
+        example["choices"] = "\n".join(
+            f"({chr(ord('A') + i)}) {choice}" for i, choice in enumerate(example["choices"])
+        )
     try:
         return template.format(**example)
     except Exception:

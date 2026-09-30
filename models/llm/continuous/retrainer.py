@@ -40,7 +40,7 @@ class DataCollector:
 
     def collect(self, samples: list[dict[str, Any]]) -> Path:
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        output_path = self.data_dir / f"samples_{timestamp}.jsonl"
+        output_path = self.data_dir / f"samples_{timestamp}_{time.time_ns() % 100000}.jsonl"
         with output_path.open("w", encoding="utf-8") as f:
             for sample in samples:
                 f.write(json.dumps(sample, ensure_ascii=False) + "\n")
@@ -62,10 +62,15 @@ class QualityMonitor:
         self.baseline_path = baseline_path
         self._history: list[QualityReport] = []
 
-    def evaluate(self, model_path: str, metadata: dict[str, Any] | None = None) -> QualityReport:
+    def evaluate(self, model_path: str, metadata: dict[str, Any] | None = None, quality_threshold: float | None = None) -> QualityReport:
         previous = self._history[-1].score if self._history else None
         score = float(metadata.get("quality_score", 0.0)) if metadata else 0.0
-        passed = previous is None or (score - previous) >= -0.05
+        if previous is not None:
+            passed = (score - previous) >= -0.05
+        elif quality_threshold is not None:
+            passed = score >= quality_threshold
+        else:
+            passed = True
         report = QualityReport(
             model_path=model_path,
             score=score,
@@ -151,6 +156,7 @@ class ContinuousRetrainer:
         report = self.quality_monitor.evaluate(
             model_path=output_path,
             metadata={**metadata, "quality_score": score},
+            quality_threshold=self.config.quality_threshold,
         )
         self.record_metric({
             "event": "training_completed",
@@ -171,5 +177,6 @@ class ContinuousRetrainer:
             self._current_version = f"v{int(time.time())}"
             self.deployment_manager.deploy(output_path, self._current_version)
             self.config.model_path = output_path
+            shutil.rmtree(output_path, ignore_errors=True)
         self._last_triggered = time.time()
         return report

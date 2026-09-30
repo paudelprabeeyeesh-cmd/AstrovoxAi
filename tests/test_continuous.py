@@ -1,6 +1,7 @@
 import importlib.util
 import os
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -72,7 +73,7 @@ class TestQualityMonitor:
         monitor.evaluate("/tmp/model", {"quality_score": 0.9})
         report = monitor.evaluate("/tmp/model", {"quality_score": 0.8})
         assert monitor.should_rollback(report, threshold=0.05) is True
-        assert monitor.should_rollback(report, threshold=0.01) is False
+        assert monitor.should_rollback(report, threshold=0.15) is False
 
 
 class TestDeploymentManager:

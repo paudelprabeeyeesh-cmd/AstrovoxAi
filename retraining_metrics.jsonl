@@ -1,0 +1,3 @@
+{"event": "training_completed", "model_path": "C:\\Users\\Dell\\AppData\\Local\\Temp\\pytest-of-Dell\\pytest-187\\test_train_triggers_deploy0\\output\\training_1790732691", "score": 0.9, "passed": true, "timestamp": 1790732691.7674117}
+{"event": "training_completed", "model_path": "C:\\Users\\Dell\\AppData\\Local\\Temp\\pytest-of-Dell\\pytest-188\\test_train_triggers_deploy0\\output\\training_1790732823", "score": 0.9, "passed": true, "timestamp": 1790732823.2510314}
+{"event": "training_completed", "model_path": "C:\\Users\\Dell\\AppData\\Local\\Temp\\pytest-of-Dell\\pytest-188\\test_train_triggers_rollback_o0\\output\\training_1790732823", "score": 0.5, "passed": true, "timestamp": 1790732823.2647388}

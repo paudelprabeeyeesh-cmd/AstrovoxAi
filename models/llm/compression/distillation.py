@@ -136,8 +136,8 @@ class FeatureDistillationLoss(nn.Module):
                 module.register_forward_hook(get_activation(name, self.student_features))
 
     def forward(self) -> torch.Tensor:
-        loss = 0.0
+        loss = torch.tensor(0.0)
         for name in self.feature_layers:
             if name in self.teacher_features and name in self.student_features:
-                loss += F.mse_loss(self.student_features[name], self.teacher_features[name])
+                loss = loss + F.mse_loss(self.student_features[name], self.teacher_features[name])
         return self.weight * loss / max(len(self.feature_layers), 1)

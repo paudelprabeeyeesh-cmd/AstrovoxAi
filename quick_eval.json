@@ -1,6 +1,6 @@
 {
   "model_name": "test-model",
-  "timestamp": "2026-09-29T17:10:23.973420Z",
+  "timestamp": "2026-09-30T01:47:02.364196Z",
   "results": {
     "mmlu": {
       "score": 0.0,
@@ -65,7 +65,7 @@
       "score": 0.0,
       "stderr": 0.0,
       "metadata": {
-        "error": "\"Unknown benchmark: truthfulqa. Available: ['arc', 'boolq', 'gsm8k', 'hellaswag', 'humaneval', 'long_context', 'math', 'mbpp', 'mmlu', 'piqa', 'safety', 'summarization', 'synthetic_gsm8k', 'synthetic_hellaswag', 'synthetic_long_context', 'synthetic_math', 'synthetic_mmlu', 'synthetic_safety', 'synthetic_summarization', 'synthetic_translation', 'translation', 'winogrande']\""
+        "n_samples": 0
       }
     }
   },

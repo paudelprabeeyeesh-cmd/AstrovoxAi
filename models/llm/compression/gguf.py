@@ -11,6 +11,13 @@ import torch
 from models.llm.quantization import _has_gguf, logger
 
 
+def _resolve_dtype(dtype_str: str) -> torch.dtype:
+    if isinstance(dtype_str, torch.dtype):
+        return dtype_str
+    name = dtype_str.split(".")[-1]
+    return getattr(torch, name, torch.float32)
+
+
 def export_gguf(
     model: torch.nn.Module,
     path: str,
@@ -62,7 +69,7 @@ def import_gguf(
     with open(path, "rb") as f:
         data = pickle.load(f)
     tensors = {
-        k: torch.zeros(v["shape"], dtype=v["dtype"])
+        k: torch.zeros(v["shape"], dtype=_resolve_dtype(v["dtype"]))
         for k, v in data["tensors"].items()
     }
     return data["metadata"], tensors

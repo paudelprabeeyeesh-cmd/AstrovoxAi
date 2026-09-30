@@ -28,6 +28,7 @@ from models.llm.compression import (
     MaskedTrainer,
     PruningConfig,
     StructuredSparsity,
+    set_sparsity_ratio,
     update_gguf_metadata,
     quantize_int4_groupwise,
 )
@@ -53,6 +54,7 @@ class TestINT4Quantization:
         assert q.dtype == torch.int8
 
     def test_dequantize_int4_symmetric(self):
+        torch.manual_seed(42)
         weight = torch.randn(8, 16)
         config = INT4QuantizationConfig(group_size=8, symmetric=True)
         q, scale, _ = quantize_int4_groupwise(weight, config)
@@ -195,6 +197,10 @@ class TestDistillation:
             use_feature_distillation=True,
         )
         trainer = DistillationTrainer(teacher, student, config)
+        x = torch.randn(2, 8)
+        with torch.no_grad():
+            teacher(x)
+            student(x)
         assert "1" in trainer.teacher_features or "1" in trainer.student_features
 
 
