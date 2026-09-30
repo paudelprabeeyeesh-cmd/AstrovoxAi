@@ -7,6 +7,8 @@ over the reduced axes.
 
 from __future__ import annotations
 
+import builtins
+
 import numpy as np
 
 from astrovox.autograd.function import Function
@@ -24,7 +26,7 @@ def _resolve_axes(dim: int | Sequence[int] | None, ndim: int) -> tuple[int, ...]
     out: list[int] = []
     for axis in axes:
         resolved = axis + ndim if axis < 0 else axis
-        if not 0 <= resolved < max(ndim, 1):
+        if not 0 <= resolved < builtins.max(ndim, 1):
             raise IndexError(f"Axis {axis} out of range for tensor with {ndim} dimensions")
         out.append(resolved)
     return tuple(sorted(set(out)))
@@ -66,10 +68,10 @@ class Sum(Function):
     @staticmethod
     def backward(ctx, grad_output):
         x, axes = ctx.load("x"), ctx.load("axes")
-        if not axes:
-            return _scale_to(grad_output, x.shape, grad_output.item()), None, None
-        expanded = _insert_axes(grad_output, axes, x.shape, keepdim=grad_output.shape.numel != 1)
-        return _scale_to(expanded, x.shape, 1.0), None, None
+        # Re-insert every reduced axis as a singleton, then let broadcasting
+        # expand it back over the original size. This one rule covers the
+        # partial and full-reduction cases alike.
+        return _expand_reduced(grad_output, axes, x.shape), None, None
 
 
 def _insert_axes(grad: Tensor, axes: tuple[int, ...], target: Shape, keepdim: bool) -> Tensor:
@@ -119,8 +121,24 @@ class Mean(Function):
     def backward(ctx, grad_output):
         x, axes = ctx.load("x"), ctx.load("axes")
         count = ctx.load("count") or 1
-        expanded = _insert_axes(grad_output, axes, x.shape, keepdim=grad_output.shape.numel != 1)
-        return _scale_to(expanded, x.shape, 1.0 / count), None, None
+        grad = _expand_reduced(grad_output, axes, x.shape)
+        return grad * (1.0 / count), None, None
+
+
+def _expand_reduced(grad: Tensor, axes: tuple[int, ...], target: Shape) -> Tensor:
+    """Reshape a reduced gradient so it broadcasts back to ``target``.
+
+    A full reduction leaves the gradient untouched: a scalar, or an all-singleton
+    shape from ``keepdim``, already broadcasts against any input. For a partial
+    reduction the reduced axes are reinserted as singletons so right-aligned
+    NumPy broadcasting lands on the correct axis.
+    """
+    if not axes or grad.shape == target or len(axes) >= target.ndim:
+        return grad
+    dims = [1 if axis in axes else dim for axis, dim in enumerate(target.dims)]
+    if list(grad.shape.dims) == dims:
+        return grad
+    return grad.reshape(Shape(dims))
 
 
 def math_prod(values: list[int]) -> int:

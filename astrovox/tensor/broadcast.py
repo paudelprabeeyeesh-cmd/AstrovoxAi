@@ -62,20 +62,28 @@ def prepare_broadcast(operands: Sequence[Tensor]) -> BroadcastPlan:
 
 
 def unbroadcast(grad: Tensor, target: Shape) -> Tensor:
-    """Sum ``grad`` back down to ``target``'s shape.
+    """Reduce ``grad`` so it can accumulate against ``target``.
 
-    Reverse-mode autodiff hands back a gradient shaped like the broadcast
-    output. To accumulate it against the original operand, the expanded axes
-    must be summed away.
+    Reverse-mode autodiff hands back gradients shaped like the broadcast
+    output. Three cases have to be handled:
+
+    * the shapes already match, so nothing to do;
+    * the gradient is *narrower* than the target, which happens when a
+      reduction passed a scalar down: it already broadcasts, so return it;
+    * the gradient is *wider*, which happens when an operand was expanded
+      from extent 1: sum the expanded axes away.
     """
     if grad.shape == target:
         return grad
+    if is_broadcastable(grad.shape, target):
+        return grad
 
-    # Drop the axes that broadcasting added on the left, then sum any axis that
-    # was expanded from extent 1 back down to 1.
-    extra = grad.ndim - target.ndim
-    axes = set(range(extra))
-    axes.update(axis for axis, dim in enumerate(target.dims) if dim == 1)
+    axes = set(range(max(grad.ndim - target.ndim, 0)))
+    axes.update(
+        axis
+        for axis, dim in enumerate(target.dims)
+        if dim == 1 and axis < grad.ndim and grad.shape[axis] != 1
+    )
     if axes:
         grad = _sum_dims(grad, tuple(sorted(axes)))
     return grad.reshape(target)

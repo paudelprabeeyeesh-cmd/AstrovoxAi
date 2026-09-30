@@ -126,7 +126,11 @@ async def get_metric(metric_name: str, since: float | None = None, until: float 
 
 @router.post("/metrics/gpu")
 async def record_gpu(body: GPUMetricsRequest) -> dict[str, str]:
+    # The individual signals are recorded under their own names for alerting,
+    # and the primary one is also recorded under the path name so that a
+    # dashboard GET on "/metrics/gpu" returns the series it just posted.
     _metrics.record("gpu_utilization", body.utilization)
+    _metrics.record("gpu", body.utilization)
     _metrics.record("gpu_temperature", body.temperature)
     _metrics.record("gpu_memory_used_mb", body.memory_used_mb)
     return {"status": "recorded"}

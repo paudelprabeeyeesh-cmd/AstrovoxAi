@@ -51,20 +51,23 @@ class Function:
         graph = current_graph()
         ctx = _FunctionContext()
         result = cls.forward(ctx, *args, **kwargs)
-        needs_graph = graph.is_enabled() and cls._requires_grad(args, result)
-        if needs_graph:
-            node = GraphNode(cls, ctx, tuple(args), tuple(result if isinstance(result, tuple) else (result,)))
-            attach = getattr(result, "_grad_fn", None)
-            if attach is not None:
-                attach(node)
+        if graph.is_enabled() and cls._requires_grad(args, result):
+            outputs = tuple(result) if isinstance(result, tuple) else (result,)
+            node = GraphNode(cls, ctx, tuple(args), outputs)
+            for output in outputs:
+                set_tensor_grad_fn(output, node)
         return result
 
     @staticmethod
     def _requires_grad(args: Sequence[Node], result: Node) -> bool:
-        """Return whether any input requires grad, i.e. the node is needed."""
+        """Return whether any input requires grad, i.e. the node is needed.
+
+        Duck-typed on purpose: a class annotation is not a runtime attribute,
+        so ``isinstance`` against a bare protocol class would never match.
+        """
         if isinstance(result, tuple):
-            return any(isinstance(r, _TensorProtocol) and r.requires_grad for r in result)
-        return isinstance(result, _TensorProtocol) and result.requires_grad
+            return any(bool(getattr(r, "requires_grad", False)) for r in result)
+        return bool(getattr(result, "requires_grad", False))
 
 
 class _TensorProtocol:
@@ -72,6 +75,14 @@ class _TensorProtocol:
 
     requires_grad: bool
     _grad_fn: Any
+
+
+def set_tensor_grad_fn(tensor: object, node: "GraphNode | None") -> None:
+    """Attach or clear the graph node that produced ``tensor``."""
+    try:
+        tensor._grad_fn = node  # type: ignore[attr-defined]
+    except AttributeError:
+        pass
 
 
 class _FunctionContext:
@@ -124,6 +135,8 @@ class GraphNode:
         self.inputs = inputs
         self.outputs = outputs
         self.name = function.name
+        from astrovox.autograd.graph import GraphContext
+
         GraphContext.next_sequence_nr()
         self.sequence_nr = GraphContext.sequence_nr
         self.next_functions: list[tuple[GraphNode | None, int]] = []

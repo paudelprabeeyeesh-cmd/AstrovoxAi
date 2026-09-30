@@ -71,15 +71,23 @@ def numerical_gradient(
 def check_gradients(
     func: "callable[[], Tensor]",
     tensors: Sequence[Tensor],
-    eps: float = 1e-5,
-    rtol: float = 1e-4,
-    atol: float = 1e-6,
+    eps: float = 1e-3,
+    rtol: float = 1e-2,
+    atol: float = 1e-3,
     max_samples: int | None = 512,
 ) -> list[GradientCheckResult]:
     """Compare analytical and numerical gradients for each tensor in ``tensors``.
 
     ``func`` must return a scalar tensor and must use the same tensor objects
     so that the analytical gradients land on them.
+
+    The default ``eps`` suits single precision: in float32 a central
+    difference carries roughly 1e-3 relative noise, so a tiny step would
+    measure that noise rather than the derivative.
+
+    A sample passes when ``|analytical - numerical| <= atol + rtol *
+    |numerical|``. Combining the tolerances matters because the relative error
+    is undefined near a zero gradient, where the absolute error must decide.
     """
     results: list[GradientCheckResult] = []
     for t in tensors:
@@ -102,17 +110,19 @@ def check_gradients(
             positions = _sample_positions(positions, max_samples)
 
         numerical = numerical_gradient(func, t, eps=eps, indices=positions)
-        got = analytical.numpy().reshape(-1)[[Shape(p).ravel(p) for p in positions]]
+        flat_grad = analytical.contiguous().reshape(-1).numpy()
+        # Resolve each sampled position to its flat offset using the tensor's
+        # own shape, so subsampling cannot misalign the comparison.
+        offsets = [t.shape.ravel(p) for p in positions]
+        got = flat_grad[offsets]
+        expected = numerical.numpy()
 
-        abs_error = np.abs(got - numerical.numpy())
-        denom = np.maximum(np.abs(got) + np.abs(numerical.numpy()), 1e-12)
+        abs_error = np.abs(got - expected)
+        denom = np.maximum(np.abs(got) + np.abs(expected), 1e-12)
         rel_error = abs_error / denom
+        tolerance = atol + rtol * np.abs(expected)
 
-        failing = [
-            p
-            for p, a, r in zip(positions, abs_error, rel_error)
-            if not (a <= atol or r <= rtol)
-        ]
+        failing = [p for p, a, tol in zip(positions, abs_error, tolerance) if a > tol]
         results.append(
             GradientCheckResult(
                 passed=not failing,

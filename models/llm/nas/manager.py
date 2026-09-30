@@ -5,14 +5,14 @@ import json
 import logging
 import math
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from models.llm.nas.evolution import NASEvolution, SearchRecord
 from models.llm.nas.evaluator import ArchitectureEvaluator, EvalResult
-from models.llm.nas.search import NASSearchSpace
+from models.llm.nas.search import ArchitectureGenome, NASSearchSpace
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,9 @@ class SearchCheckpoint:
     config: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        # The resumable state has to be written in full. Recording only
+        # counts makes the checkpoint lossy, so restoring from it would
+        # either fail outright or silently restart the search.
         return {
             "generation": self.generation,
             "best_score": self.best_score,
@@ -39,9 +42,61 @@ class SearchCheckpoint:
             "device": self.device,
             "timestamp": self.timestamp,
             "config": self.config,
-            "population_count": len(self.population),
-            "history_length": len(self.history),
+            "population": [_record_to_dict(entry) for entry in self.population],
+            "best_genome": _genome_to_dict(self.best_genome),
+            "history": self.history,
         }
+
+
+def _genome_to_dict(genome: Any) -> Optional[Dict[str, Any]]:
+    """Return a JSON-serializable copy of a genome's declared fields."""
+    if genome is None:
+        return None
+    if isinstance(genome, dict):
+        return dict(genome)
+    return asdict(genome)
+
+
+def _genome_from_dict(data: Optional[Dict[str, Any]]) -> Optional[ArchitectureGenome]:
+    """Rebuild an :class:`ArchitectureGenome` from its stored fields.
+
+    Only known fields are passed through, so a checkpoint written under a
+    different schema still restores instead of raising ``TypeError``.
+    """
+    if not data:
+        return None
+    known = {f.name for f in fields(ArchitectureGenome)}
+    return ArchitectureGenome(**{k: v for k, v in data.items() if k in known})
+
+
+def _record_to_dict(record: Any) -> Dict[str, Any]:
+    """Serialize a population entry, which may be a record or a bare genome."""
+    if isinstance(record, SearchRecord):
+        data = asdict(record)
+        data["genome"] = _genome_to_dict(record.genome)
+        return data
+    return {"genome": _genome_to_dict(record)}
+
+
+def _record_from_dict(data: Any) -> Any:
+    """Rebuild a population entry written by :func:`_record_to_dict`.
+
+    Entries are written either as a full record (when the population holds
+    ``SearchRecord`` objects) or as a bare genome, so the shape of the stored
+    entry decides what is rebuilt. Requiring the record's own fields keeps the
+    two cases from being confused with one another.
+    """
+    if not data:
+        return None
+    if "genome" not in data:
+        return _genome_from_dict(data)
+    genome = _genome_from_dict(data["genome"])
+    record_fields = {f.name for f in fields(SearchRecord) if f.name != "genome"}
+    if not record_fields.issubset(data.keys()):
+        # Only a genome was stored; restore it as one.
+        return genome
+    payload = {k: data[k] for k in record_fields}
+    return SearchRecord(genome=genome, **payload)
 
 
 class NASManager:
@@ -235,14 +290,14 @@ class NASManager:
         data = json.loads(path.read_text())
         ckpt = SearchCheckpoint(
             generation=data["generation"],
-            population=data["population"],
+            population=data.get("population", []),
             best_genome=data.get("best_genome"),
             best_score=data["best_score"],
-            history=data["history"],
-            stagnation_count=data["stagnation_count"],
-            elapsed_seconds=data["elapsed_seconds"],
-            device=data["device"],
-            timestamp=data["timestamp"],
+            history=data.get("history", []),
+            stagnation_count=data.get("stagnation_count", 0),
+            elapsed_seconds=data.get("elapsed_seconds", 0.0),
+            device=data.get("device", self.device),
+            timestamp=data.get("timestamp", datetime.now(UTC).isoformat()),
             config=data.get("config", {}),
         )
         return ckpt
@@ -251,12 +306,16 @@ class NASManager:
         ckpt = self.load_checkpoint(checkpoint_path)
         self.evolution.generation = ckpt.generation
         self.evolution.best_score = ckpt.best_score
-        self.evolution.best_genome = (
-            type("Genome", (), ckpt.best_genome)() if ckpt.best_genome else None
-        )
+        self.evolution.best_genome = _genome_from_dict(ckpt.best_genome)
         self.evolution.history = ckpt.history
         self.evolution.stagnation_count = ckpt.stagnation_count
         self.evolution.best_score_at_stagnation = ckpt.best_score
+        # Restoring the population is what makes a resume continue the search
+        # rather than silently restart it from a fresh random sample.
+        if ckpt.population:
+            self.evolution.population = [
+                _record_from_dict(entry) for entry in ckpt.population
+            ]
         self.steps_without_improvement = 0
         self.start_time = time.time() - ckpt.elapsed_seconds
         logger.info("Restored from checkpoint at generation %d", ckpt.generation)

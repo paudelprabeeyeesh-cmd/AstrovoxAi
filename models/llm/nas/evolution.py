@@ -6,7 +6,7 @@ import logging
 import math
 import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence
@@ -28,6 +28,23 @@ class SearchRecord:
     rank: int
     status: str = "completed"
     error: Optional[str] = None
+
+
+def _coerce_genome(value: Any, genome_id: str = "") -> Any:
+    """Return an :class:`ArchitectureGenome` for dict, object, or id input.
+
+    History restored from a checkpoint may hold a plain dict, a genome object,
+    or just the genome's identifier depending on how it was serialized, so
+    callers get one consistent type back.
+    """
+    if isinstance(value, dict):
+        known = {f.name for f in fields(ArchitectureGenome)}
+        payload = {k: v for k, v in value.items() if k in known}
+        payload.setdefault("genome_id", genome_id)
+        return ArchitectureGenome(**payload)
+    if isinstance(value, str):
+        return ArchitectureGenome(genome_id=value or genome_id)
+    return value
 
 
 class NASEvolution:
@@ -251,15 +268,26 @@ class NASEvolution:
         results: List[SearchRecord] = []
         for hist in self.history:
             for rec in hist.get("records", []):
+                # A record restored from JSON is a plain dict, whereas a fresh
+                # one is an object, so read through whichever form is present.
+                detail = rec.get("record") or {}
+                if isinstance(detail, dict):
+                    rank = detail.get("rank", 0)
+                    status = detail.get("status", "completed")
+                    error = detail.get("error")
+                else:
+                    rank = getattr(detail, "rank", 0)
+                    status = getattr(detail, "status", "completed")
+                    error = getattr(detail, "error", None)
                 results.append(SearchRecord(
                     generation=hist["generation"],
-                    genome=rec["genome"],
+                    genome=_coerce_genome(rec.get("genome"), rec.get("genome_id", "")),
                     score=rec["score"],
                     params=rec["params"],
                     elapsed_seconds=rec["elapsed"],
-                    rank=rec["record"].rank,
-                    status=rec["record"].status,
-                    error=rec["record"].error,
+                    rank=rank,
+                    status=status,
+                    error=error,
                 ))
         return sorted(results, key=lambda r: r.score, reverse=True)
 

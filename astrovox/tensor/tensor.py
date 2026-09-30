@@ -8,7 +8,7 @@ views, is derived from those fields.
 from __future__ import annotations
 
 import math
-from typing import Any, Iterator, Sequence
+from typing import TYPE_CHECKING, Any, Iterator, Sequence
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
@@ -25,6 +25,10 @@ from astrovox.tensor.dtype import (
     resolve,
 )
 from astrovox.tensor.shape import Shape, broadcast_shapes
+
+
+if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type hints only
+    from astrovox.ops.view import ViewSpec
 
 
 def _normalize_axis(axis: int, ndim: int) -> int:
@@ -229,6 +233,17 @@ class Tensor:
             requires_grad=self.requires_grad,
         )
 
+    def _make_view(self, spec: "ViewSpec") -> Tensor:
+        """Apply a view spec, recording an autograd node when gradients are on.
+
+        Views share storage with this tensor, so their gradients must be routed
+        back to this tensor. Doing that through a graph node is what keeps a
+        parameter such as ``weight`` from losing its gradient when a layer
+        transposes or reshapes it.
+        """
+        from astrovox.ops.view import apply_view
+
+        return apply_view(self, spec)
     # ------------------------------------------------------------------
     # Metadata
     # ------------------------------------------------------------------
@@ -305,8 +320,13 @@ class Tensor:
         against a malformed stride set reading outside the buffer.
         """
         array = self._storage.array
-        if self.is_contiguous and self._offset == 0:
+        if self.is_contiguous and self._offset == 0 and self._shape.numel == array.size:
             return array.reshape(self._shape.dims)
+
+        # An empty view carries no elements, so it may legitimately start at
+        # or past the end of the buffer.
+        if self._shape.numel == 0:
+            return np.empty(self._shape.dims, dtype=array.dtype)
 
         itemsize = array.dtype.itemsize
         byte_strides = tuple(s * itemsize for s in self._stride)
@@ -322,14 +342,20 @@ class Tensor:
                 else:
                     highest += span
         if min(lowest, highest) < 0:
-            raise RuntimeError(f"View {self} reaches before the start of its storage")
+            raise RuntimeError(
+                f"View shape {tuple(self._shape.dims)} stride {self._stride} offset {self._offset} "
+                "reaches before the start of its storage"
+            )
         if max(lowest, highest) >= array.size:
-            raise RuntimeError(f"View {self} reaches past the end of its storage")
+            raise RuntimeError(
+                f"View shape {tuple(self._shape.dims)} stride {self._stride} offset {self._offset} "
+                f"reaches past the end of its storage of {array.size} elements"
+            )
 
-        flat = as_strided(array, shape=self._shape.dims, strides=byte_strides)
-        if self._offset:
-            return as_strided(array[self._offset :], shape=self._shape.dims, strides=byte_strides)
-        return flat
+        # The storage may be multi-dimensional, so flatten to a 1-D alias
+        # before applying a flat element offset. reshape(-1) is a view.
+        flat = array.reshape(-1)
+        return as_strided(flat[self._offset :], shape=self._shape.dims, strides=byte_strides)
 
     def __len__(self) -> int:
         if self._shape.ndim == 0:
@@ -357,7 +383,7 @@ class Tensor:
 
         At most one dimension may be ``-1``, which is inferred.
         """
-        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list, Shape)):
             shape = tuple(shape[0])
         target = _infer_shape(self._shape, shape)
         if target.numel != self._shape.numel:
@@ -366,15 +392,34 @@ class Tensor:
                 f"({target.numel} elements)"
             )
         if self.is_contiguous:
-            return self._view_like(target, target.row_major_strides(), self._offset)
+            from astrovox.ops.view import ReshapeSpec
+
+            return self._make_view(ReshapeSpec(tuple(target.dims), tuple(self._shape.dims)))
+        # A strided source cannot be reinterpreted in place, so copy first.
         dense = self._to_dense().copy()
-        return Tensor._make(dense, self.dtype, self.device, self.requires_grad)
+        out = Tensor._make(dense, self.dtype, self.device, self.requires_grad)
+        return out._make_view(ReshapeSpec(tuple(target.dims), tuple(self._shape.dims)))
 
     def view(self, *shape: Any) -> Tensor:
         """Alias for :meth:`reshape` that requires contiguity."""
         if not self.is_contiguous:
             raise RuntimeError("view() requires a contiguous tensor; call reshape() or clone() first")
         return self.reshape(*shape)
+
+    def _raw_reshape(self, target: tuple[int, ...]) -> Tensor:
+        """Build a reshaped view without recording a graph node.
+
+        Only valid on a contiguous tensor; the caller is responsible for
+        materializing a strided source first.
+        """
+        dims = Shape(target)
+        if not self.is_contiguous:
+            raise RuntimeError("_raw_reshape requires a contiguous tensor")
+        if dims.numel != self._shape.numel:
+            raise ValueError(
+                f"Cannot reshape {self._shape} ({self._shape.numel} elements) into {dims} ({dims.numel} elements)"
+            )
+        return self._view_like(dims, dims.row_major_strides(), self._offset)
 
     def flatten(self, start_dim: int = 0, end_dim: int = -1) -> Tensor:
         """Collapse dimensions ``[start_dim, end_dim]`` into one."""
@@ -383,12 +428,17 @@ class Tensor:
         merged = list(self._shape.dims[:start])
         merged.append(math.prod(self._shape.dims[start : end + 1]))
         merged.extend(self._shape.dims[end + 1 :])
-        return self.reshape(Shape(merged))
-
+        return self.reshape(merged)
     def transpose(self, dim0: int = 0, dim1: int = -1) -> Tensor:
         """Swap two dimensions, returning a strided view."""
+        from astrovox.ops.view import TransposeSpec
+
         ndim = self._shape.ndim
         a, b = _normalize_axis(dim0, ndim), _normalize_axis(dim1, ndim)
+        return self._make_view(TransposeSpec(a, b))
+
+    def _raw_transpose(self, a: int, b: int) -> Tensor:
+        """Build a transposed view without recording a graph node."""
         dims = list(self._shape.dims)
         dims[a], dims[b] = dims[b], dims[a]
         strides = list(self._stride)
@@ -397,13 +447,19 @@ class Tensor:
 
     def permute(self, *order: int) -> Tensor:
         """Return a view with dimensions reordered by ``order``."""
+        from astrovox.ops.view import PermuteSpec
+
         ndim = self._shape.ndim
         resolved = tuple(_normalize_axis(o, ndim) for o in order)
         if sorted(resolved) != list(range(ndim)):
             raise ValueError(f"permute order {order} is not a permutation of {ndim} dimensions")
+        return self._make_view(PermuteSpec(resolved))
+
+    def _raw_permute(self, order: tuple[int, ...]) -> Tensor:
+        """Build a permuted view without recording a graph node."""
         return self._view_like(
-            Shape([self._shape.dims[i] for i in resolved]),
-            tuple(self._stride[i] for i in resolved),
+            Shape([self._shape.dims[i] for i in order]),
+            tuple(self._stride[i] for i in order),
             self._offset,
         )
 
@@ -415,29 +471,43 @@ class Tensor:
 
     def squeeze(self, dim: int | None = None) -> Tensor:
         """Remove dimensions of extent 1."""
+        from astrovox.ops.view import SqueezeSpec
+
         if dim is None:
-            dims = [d for d in self._shape.dims if d != 1]
-            strides = [s for d, s in zip(self._shape.dims, self._stride) if d != 1]
+            axes = tuple(i for i, d in enumerate(self._shape.dims) if d == 1)
         else:
             axis = _normalize_axis(dim, self._shape.ndim)
             if self._shape.dims[axis] != 1:
                 return self
-            dims = list(self._shape.dims)
-            strides = list(self._stride)
-            dims.pop(axis)
-            strides.pop(axis)
+            axes = (axis,)
+        return self._make_view(SqueezeSpec(dim, axes))
+
+    def _raw_squeeze(self, axes: tuple[int, ...]) -> Tensor:
+        """Build a squeezed view without recording a graph node."""
+        dims = [d for i, d in enumerate(self._shape.dims) if i not in axes]
+        strides = [s for i, s in enumerate(self._stride) if i not in axes]
         return self._view_like(Shape(dims), tuple(strides), self._offset)
 
     def unsqueeze(self, dim: int) -> Tensor:
         """Insert a dimension of extent 1 at ``dim``."""
+        from astrovox.ops.view import UnsqueezeSpec
+
         axis = dim if dim >= 0 else dim + self._shape.ndim + 1
+        return self._make_view(UnsqueezeSpec(axis))
+
+    def _raw_unsqueeze(self, axis: int) -> Tensor:
+        """Build an unsqueezed view without recording a graph node."""
         dims = list(self._shape.dims)
         strides = list(self._stride)
         dims.insert(axis, 1)
         rows = self._shape.row_major_strides()
-        strides.insert(axis, rows[axis - 1] if 0 < axis <= len(rows) else (rows[axis] if axis < len(rows) else 1))
+        # A size-1 axis is never indexed, so any stride is valid; using the
+        # surrounding product keeps the view contiguous where it can be.
+        stride = 1
+        for i in range(axis - 1, -1, -1):
+            stride *= self._shape.dims[i]
+        strides.insert(axis, stride)
         return self._view_like(Shape(dims), tuple(strides), self._offset)
-
     def narrow(self, dim: int, start: int, length: int) -> Tensor:
         """Return a view of ``length`` elements along ``dim`` starting at ``start``."""
         axis = _normalize_axis(dim, self._shape.ndim)
@@ -471,30 +541,20 @@ class Tensor:
 
         key = key + (slice(None),) * (self._shape.ndim - len(key))
 
-        if all(isinstance(k, (int, np.integer)) for k in key):
-            return self._select_indices([int(k) for k in key])
+        if any(isinstance(k, (list, np.ndarray, Tensor)) for k in key):
+            return self._advanced_index(key, [i for i, k in enumerate(key) if isinstance(k, (list, np.ndarray, Tensor))])
         return self._slice_view(key)
-
-    def _select_indices(self, indices: list[int]) -> Tensor:
-        """Reduce dimensions by integer selection, preserving singletons."""
-        dims: list[int] = []
-        strides: list[int] = []
-        offset = self._offset
-        for axis, index in enumerate(indices):
-            dim = self._shape.dims[axis]
-            normalized = index + dim if index < 0 else index
-            if not 0 <= normalized < dim:
-                raise IndexError(f"Index {index} out of range for dimension {axis} of size {dim}")
-            offset += normalized * self._stride[axis]
-            if axis != len(indices) - 1:
-                dims.append(1)
-                strides.append(self._stride[axis])
-        dims.append(1)
-        strides.append(self._stride[len(indices) - 1])
-        return self._view_like(Shape(dims), tuple(strides), offset)
 
     def _slice_view(self, key: tuple[Any, ...]) -> Tensor:
         """Build a strided view from a tuple of slices and advanced indices."""
+        return self._index_expanded(key, record_graph=False)
+
+    def _raw_index(self, key: tuple[Any, ...]) -> Tensor:
+        """Build a sliced view without recording a graph node."""
+        return self._index_expanded(key, record_graph=False)
+
+    def _index_expanded(self, key: tuple[Any, ...], record_graph: bool) -> Tensor:
+        """Shared implementation of slicing and raw slicing."""
         advanced: list[int] = []
         for axis, item in enumerate(key):
             if isinstance(item, (list, np.ndarray, Tensor)):
@@ -505,24 +565,44 @@ class Tensor:
 
         dims: list[int] = []
         strides: list[int] = []
+        source_index: list[Any] = []
+        dropped_axes: tuple[int, ...] = ()
         offset = self._offset
         for axis, item in enumerate(key):
             dim = self._shape.dims[axis]
             stride = self._stride[axis]
             if isinstance(item, slice):
                 start, stop, step = item.indices(dim)
-                length = max(0, -(-(stop - start) // step)) if step > 0 else 0
+                if step < 0:
+                    raise IndexError("Negative slice steps are not supported")
+                length = max(0, -(-(stop - start) // step))
                 dims.append(length)
                 strides.append(stride * step)
+                source_index.append(slice(start, start + length * step, step))
                 offset += start * stride
             elif isinstance(item, (int, np.integer)):
                 normalized = int(item) + dim if int(item) < 0 else int(item)
                 if not 0 <= normalized < dim:
                     raise IndexError(f"Index {item} out of range for dimension {axis} of size {dim}")
                 offset += normalized * stride
+                dropped_axes = dropped_axes + (axis,)
             else:
                 raise TypeError(f"Unsupported index type {type(item).__name__}")
-        return self._view_like(Shape(dims), tuple(strides), offset)
+
+        if not record_graph or not self.requires_grad:
+            return self._view_like(Shape(dims), tuple(strides), offset)
+
+        from astrovox.ops.view import SliceSpec
+
+        return self._make_view(
+            SliceSpec(
+                source_shape=tuple(self._shape.dims),
+                index=key,
+                view_shape=tuple(dims),
+                source_index=tuple(source_index),
+                dropped_axes=dropped_axes,
+            )
+        )
 
     def _advanced_index(self, key: tuple[Any, ...], advanced: list[int]) -> Tensor:
         """Gather along ``advanced`` axes and keep the slice axes in order."""
@@ -724,7 +804,7 @@ def _as_array(value: Tensor | float) -> np.ndarray:
 def _infer_shape(current: Shape, shape: Sequence[Any]) -> Shape:
     """Resolve ``-1`` entries in ``shape`` against ``current``."""
     resolved: list[int] = []
-    wildcard = -1
+    wildcard: int | None = None
     for axis, dim in enumerate(shape):
         if dim == -1:
             if wildcard is not None:

@@ -13,6 +13,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
+import numpy as np
+
 from astrovox.autograd.function import GraphNode
 from astrovox.autograd.graph import GraphContext, free_graph, walk_from
 from astrovox.tensor.tensor import Tensor
@@ -87,6 +89,7 @@ class Engine:
             if not contributions:
                 continue
             grad_output = contributions[0] if len(contributions) == 1 else _sum_tensors(contributions)
+            # A node's backward receives a gradient shaped like its own output.
             grad_output = _align_to_outputs(node, grad_output)
 
             try:
@@ -100,14 +103,17 @@ class Engine:
             for position, grad in enumerate(grads):
                 if grad is None or position >= len(node.next_functions):
                     continue
-                parent, parent_output = node.next_functions[position]
+                # The gradient at ``position`` belongs to ``node.inputs[position]``,
+                # so that is the shape it must be aligned to. The producing
+                # node is what the gradient is forwarded to.
+                source = node.inputs[position]
+                parent, _ = node.next_functions[position]
                 if parent is None:
-                    leaf = node.inputs[position]
-                    if isinstance(leaf, Tensor) and leaf.requires_grad:
-                        leaf._grad = grad if leaf._grad is None else leaf._grad + grad
-                        leaves[id(leaf)] = leaf
-                else:
-                    incoming[id(parent)].append(_align_to_output(parent.outputs[parent_output], grad))
+                    if isinstance(source, Tensor) and source.requires_grad:
+                        source._grad = grad if source._grad is None else source._grad + grad
+                        leaves[id(source)] = source
+                elif isinstance(source, Tensor):
+                    incoming[id(parent)].append(_broadcast_like(grad, source))
 
         result.leaves_with_grad = len(leaves)
         result.grad_norm = grad_norm(leaves.values())
@@ -149,8 +155,33 @@ def _sum_tensors(tensors: Sequence[Tensor]) -> Tensor:
     return total
 
 
+def _broadcast_like(grad: Tensor, target: Tensor) -> Tensor:
+    """Return ``grad`` expanded to ``target``'s shape.
+
+    Returns a read-only view when ``grad`` only needs broadcasting, and a real
+    tensor when the result is written to, which the accumulation path does.
+    """
+    if grad.shape == target.shape:
+        return grad
+    if grad.numel == 1 or grad.ndim <= target.ndim:
+        aligned = grad.shape.broadcast_to(target.shape)
+        if aligned == grad.shape:
+            return grad
+        return Tensor.from_numpy(
+            np.broadcast_to(grad.numpy(), tuple(target.shape.dims)).copy(),
+            grad.dtype,
+            grad.device,
+        )
+    if grad.numel == target.numel:
+        return grad.reshape(target.shape)
+    raise ValueError(
+        f"Cannot align gradient of shape {tuple(grad.shape.dims)} to output "
+        f"shape {tuple(target.shape.dims)}"
+    )
+
+
 def _align_to_output(output: Tensor, grad: Tensor) -> Tensor:
-    """Expand ``grad`` back to ``output``'s shape after a rank reduction."""
+    """Reshape ``grad`` to ``output``'s shape when it holds the same elements."""
     if output.shape == grad.shape:
         return grad
     if output.numel == grad.numel:
@@ -162,10 +193,10 @@ def _align_to_output(output: Tensor, grad: Tensor) -> Tensor:
 
 
 def _align_to_outputs(node: GraphNode, grad: Tensor) -> Tensor:
-    """Align an accumulated gradient to the node's primary output."""
-    if not node.outputs:
+    """Align a caller-supplied seed to the node's primary output."""
+    if not node.outputs or grad.shape == node.outputs[0].shape:
         return grad
-    return _align_to_output(node.outputs[0], grad)
+    return _broadcast_like(grad, node.outputs[0])
 
 
 def zeros_like(t: Tensor) -> Tensor:
