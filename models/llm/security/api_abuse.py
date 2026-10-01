@@ -124,8 +124,9 @@ class APIAnomalyDetector:
 
 
 class AutomatedBlocker:
-    def __init__(self, cooldown_seconds: int = 600) -> None:
+    def __init__(self, cooldown_seconds: int = 600, violation_threshold: int = 5) -> None:
         self.cooldown_seconds = cooldown_seconds
+        self.violation_threshold = violation_threshold
         self.blocked_clients: dict[str, float] = {}
         self.block_counts: dict[str, int] = defaultdict(int)
 
@@ -134,7 +135,7 @@ class AutomatedBlocker:
             if time.time() < self.blocked_clients[client_id]:
                 return True, f"Client {client_id} is blocked"
             del self.blocked_clients[client_id]
-        if self.block_counts[client_id] >= 5:
+        if self.block_counts[client_id] >= self.violation_threshold:
             self.blocked_clients[client_id] = time.time() + self.cooldown_seconds
             logger.warning("Automatically blocking client %s after %d violations", client_id, self.block_counts[client_id])
             return True, f"Client {client_id} blocked after repeated violations"

@@ -61,7 +61,7 @@ class TensorHeader:
 
 def serialize_tensor(t: Tensor, metadata: dict[str, Any] | None = None) -> bytes:
     """Serialize one tensor to the container format."""
-    dense = np.ascontiguousarray(t.numpy(), dtype=_little_endian(t.dtype))
+    dense = np.ascontiguousarray(t.numpy(), dtype=_little_endian(t.dtype).np_dtype)
     header = TensorHeader(
         dtype=t.dtype.name,
         shape=list(t.shape.dims),

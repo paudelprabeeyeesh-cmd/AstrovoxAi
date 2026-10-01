@@ -105,15 +105,22 @@ class OutputWatermarker:
             return False, 0.0
         ratio = green_hits / total
         expected = self.config.green_list_size / (len(string.ascii_lowercase) + len(string.digits) + 1)
-        z_score = (ratio - expected) / math.sqrt(expected * (1 - expected) / total) if expected > 0 else 0.0
+        # A green list larger than the alphabet makes the expected rate exceed
+        # 1, and expected * (1 - expected) would go negative. Clamping into
+        # (0, 1) keeps the binomial standard error real.
+        rate = min(max(expected, 1e-9), 1.0 - 1e-9)
+        variance = rate * (1.0 - rate) / total
+        z_score = (ratio - expected) / math.sqrt(variance) if variance > 0.0 else 0.0
         confidence = min(abs(z_score) / 2.0, 1.0)
         return confidence > 0.5, confidence
 
 
 class APIMonitor:
-    def __init__(self) -> None:
+    def __init__(self, request_threshold: int = 1000, token_threshold: int = 1_000_000) -> None:
         self.records: list[QueryRecord] = []
         self.client_stats: dict[str, dict[str, Any]] = defaultdict(lambda: {"requests": 0, "tokens": 0, "errors": 0})
+        self.request_threshold = request_threshold
+        self.token_threshold = token_threshold
 
     def record_query(self, record: QueryRecord) -> None:
         self.records.append(record)
@@ -131,8 +138,10 @@ class APIMonitor:
         stats = self.client_stats.get(client_id)
         if not stats:
             return anomalies
-        if stats["requests"] > 1000:
+        # Reaching a limit is already an anomaly, so the comparison is
+        # inclusive; an exclusive test lets a client sit exactly on the limit.
+        if stats["requests"] >= self.request_threshold:
             anomalies.append("high_volume")
-        if stats["tokens"] > 1000000:
+        if stats["tokens"] >= self.token_threshold:
             anomalies.append("high_token_usage")
         return anomalies

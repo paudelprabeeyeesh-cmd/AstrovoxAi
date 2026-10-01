@@ -34,6 +34,10 @@ class Function:
     def backward(ctx: Any, grad_output: Node) -> tuple[Node | None, ...]:
         """Return one gradient per forward input, or ``None`` to skip.
 
+        Always return a tuple, even for a single input: the engine iterates
+        this value positionally, so returning a bare tensor would make it walk
+        that tensor's rows and treat each as a separate input gradient.
+
         Returning ``None`` for an input marks that input as not requiring
         gradient, which lets the engine avoid computing it at all.
         """

@@ -3,7 +3,7 @@ import time
 from collections import defaultdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from .alerts import AlertManager
@@ -76,6 +76,30 @@ class ExperimentMetricsRequest(BaseModel):
 _summary = DashboardSummary()
 
 
+def _store_for(request: Request) -> TimeSeriesStore:
+    """Return the metric store owned by ``request``'s application.
+
+    Keeping the store on ``app.state`` rather than at module scope stops two
+    applications mounted with this router from sharing series: with a shared
+    store a per-metric query returns whatever the other application recorded.
+    """
+    store = getattr(request.app.state, "metric_store", None)
+    if store is None:
+        store = TimeSeriesStore()
+        request.app.state.metric_store = store
+    return store
+
+
+def _record(request: Request, name: str, value: float, labels: dict[str, Any] | None = None) -> None:
+    """Record a sample on both the collector and this app's own store.
+
+    The collector feeds the aggregate dashboard, while the per-app store backs
+    the per-metric query endpoint.
+    """
+    _metrics.record(name, value, labels)
+    _store_for(request).append(name, value, labels)
+
+
 def _update_summary() -> None:
     _summary.gpu_utilization = _metrics.get_latest("gpu_utilization") or 0.0
     _summary.tensor_norm = _metrics.get_latest("tensor_norm") or 0.0
@@ -112,8 +136,13 @@ async def list_metrics() -> dict[str, list[MetricResponse]]:
 
 
 @router.get("/metrics/{metric_name}")
-async def get_metric(metric_name: str, since: float | None = None, until: float | None = None) -> dict[str, Any]:
-    points = _store.query(metric_name, since=since, until=until)
+async def get_metric(
+    metric_name: str,
+    request: Request,
+    since: float | None = None,
+    until: float | None = None,
+) -> dict[str, Any]:
+    points = _store_for(request).query(metric_name, since=since, until=until)
     if not points:
         raise HTTPException(status_code=404, detail="Metric not found")
     return {
@@ -125,52 +154,52 @@ async def get_metric(metric_name: str, since: float | None = None, until: float 
 
 
 @router.post("/metrics/gpu")
-async def record_gpu(body: GPUMetricsRequest) -> dict[str, str]:
+async def record_gpu(body: GPUMetricsRequest, request: Request) -> dict[str, str]:
     # The individual signals are recorded under their own names for alerting,
     # and the primary one is also recorded under the path name so that a
     # dashboard GET on "/metrics/gpu" returns the series it just posted.
-    _metrics.record("gpu_utilization", body.utilization)
-    _metrics.record("gpu", body.utilization)
-    _metrics.record("gpu_temperature", body.temperature)
-    _metrics.record("gpu_memory_used_mb", body.memory_used_mb)
+    _record(request, "gpu_utilization", body.utilization)
+    _record(request, "gpu", body.utilization)
+    _record(request, "gpu_temperature", body.temperature)
+    _record(request, "gpu_memory_used_mb", body.memory_used_mb)
     return {"status": "recorded"}
 
 
 @router.post("/metrics/tensor")
-async def record_tensor(body: TensorMetricsRequest) -> dict[str, str]:
-    _metrics.record("tensor_norm", body.norm, {"layer": str(body.layer)})
+async def record_tensor(body: TensorMetricsRequest, request: Request) -> dict[str, str]:
+    _record(request, "tensor_norm", body.norm, {"layer": str(body.layer)})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/tokens")
-async def record_tokens(body: TokenMetricsRequest) -> dict[str, str]:
-    _metrics.record("tokens_per_second", body.tokens_per_second)
-    _metrics.record("prompt_tokens", float(body.prompt_tokens))
-    _metrics.record("completion_tokens", float(body.completion_tokens))
+async def record_tokens(body: TokenMetricsRequest, request: Request) -> dict[str, str]:
+    _record(request, "tokens_per_second", body.tokens_per_second)
+    _record(request, "prompt_tokens", float(body.prompt_tokens))
+    _record(request, "completion_tokens", float(body.completion_tokens))
     return {"status": "recorded"}
 
 
 @router.post("/metrics/api")
-async def record_api_request(body: APIMetricsRequest) -> dict[str, str]:
+async def record_api_request(body: APIMetricsRequest, request: Request) -> dict[str, str]:
     _metrics.increment("api_requests", labels={"status": str(body.status_code), "endpoint": body.endpoint})
-    _metrics.record("api_latency_ms", body.latency_ms, {"endpoint": body.endpoint})
+    _record(request, "api_latency_ms", body.latency_ms, {"endpoint": body.endpoint})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/benchmark")
-async def record_benchmark(body: BenchmarkMetricsRequest) -> dict[str, str]:
-    _metrics.record("benchmark_score", body.score, {"benchmark": body.benchmark_name})
+async def record_benchmark(body: BenchmarkMetricsRequest, request: Request) -> dict[str, str]:
+    _record(request, "benchmark_score", body.score, {"benchmark": body.benchmark_name})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/dataset")
-async def record_dataset(body: DatasetMetricsRequest) -> dict[str, str]:
+async def record_dataset(body: DatasetMetricsRequest, request: Request) -> dict[str, str]:
     _metrics.set_gauge("dataset_size", float(body.size), {"domain": body.domain})
     return {"status": "recorded"}
 
 
 @router.post("/metrics/experiment")
-async def record_experiment(body: ExperimentMetricsRequest) -> dict[str, str]:
+async def record_experiment(body: ExperimentMetricsRequest, request: Request) -> dict[str, str]:
     _metrics.increment("experiment_count", float(body.count))
     return {"status": "recorded"}
 

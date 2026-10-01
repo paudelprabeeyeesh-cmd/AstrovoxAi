@@ -271,10 +271,22 @@ def cost_estimate(instance_type: str, hours: float) -> dict[str, Any]:
     return {"instance_type": instance_type, "hours": hours, "estimated_cost_usd": cost}
 
 
+class ScaleRecommendation(BaseModel):
+    """Request body for the scale recommendation endpoint."""
+
+    current_nodes: int = Field(..., ge=0, description="Nodes currently running")
+    queue_depth: int = Field(..., ge=0, description="Jobs waiting to be scheduled")
+    avg_runtime_seconds: float = Field(..., ge=0.0, description="Mean observed job duration")
+
+
 @app.post("/cost/recommend", response_model=dict[str, Any])
-def cost_recommend(
-    current_nodes: int,
-    queue_depth: int,
-    avg_runtime_seconds: float,
-) -> dict[str, Any]:
-    return _cost.recommend_scale(current_nodes, queue_depth, avg_runtime_seconds)
+def cost_recommend(request: ScaleRecommendation) -> dict[str, Any]:
+    """Recommend a scaling action.
+
+    The inputs arrive as a JSON body. Declaring them as bare parameters would
+    make FastAPI read them from the query string, so a POST with a body would
+    be rejected as missing its query parameters.
+    """
+    return _cost.recommend_scale(
+        request.current_nodes, request.queue_depth, request.avg_runtime_seconds
+    )

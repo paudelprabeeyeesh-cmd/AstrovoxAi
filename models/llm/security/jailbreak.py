@@ -42,6 +42,7 @@ class JailbreakDetector:
         r"(swatting|harassment|stalking|threatening)\s+(someone|a\s+person|technique|method)",
         r"(sql\s+injection|xss|csrf|buffer\s+overflow|code\s+injection)\s+(attack|payload|technique|method)",
         r"(scrape|extract|harvest|collect)\s+(passwords|credentials|private\s+keys|secrets)\s+(from|of)",
+        r"(ignore|disregard|forget|override)\s+(all\s+|any\s+)?(the\s+|your\s+|previous\s+|prior\s+|earlier\s+)*(instruction|instructions|rules|rule|guideline|guidelines|safety|constraint|constraints|restriction|restrictions|polic|policies|training)",
     ]
 
     BEHAVIORAL_SIGNALS: list[tuple[str, float]] = [
@@ -56,6 +57,13 @@ class JailbreakDetector:
         (r"(over|super)\s*user\s+mode", 0.35),
         (r"(god|dev|debug)\s+mode", 0.35),
         (r"(ignore|skip|bypass|disable)\s+(all\s+)?(safety|ethical|moral|content)\s+(protocol|filter|mechanism|check|guard)", 0.5),
+        # Telling the model to discard its instructions is unambiguous, so it
+        # carries more weight than a generic role-play framing.
+        (r"(ignore|disregard|forget|override)\s+(all\s+|any\s+)?(the\s+|your\s+|previous\s+|prior\s+|earlier\s+)*(instruction|instructions|rules|rule|guideline|guidelines|safety|constraint|constraints|restriction|restrictions|polic|policies|training)", 0.65),
+        # Asking the model to become an unrestricted system is a role-play
+        # framing that names the jailbreak outright, so it scores high.
+        (r"(act|behave|respond|operate)\s+as\s+(an?\s+)?(unrestricted|uncensored|unfiltered|unethical|amoral|evil|lawless)\s+(ai|model|assistant|agent|chatbot|llm|system)", 0.8),
+        (r"(with\s+|having\s+)?no\s+(rules|restrictions|limits|guidelines|filters?|censorship|ethics|morals)\s*(whatsoever|at\s+all)?", 0.5),
         (r"i\s+(don'?t|do\s+not)\s+(care|mind|mind)\s+(about|for)\s+(safety|ethics|morality|consequences)", 0.3),
     ]
 

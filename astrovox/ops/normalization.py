@@ -75,13 +75,21 @@ class LayerNorm(Function):
 
         grad_x = _layer_norm_backward(grad, normalized, inv_std).reshape(x.shape.dims)
 
-        # Reduce over every axis except the feature axes to get parameter grads.
+        # The scale is applied before the shift, so its gradient is weighted
+        # by the normalized activations while the shift's is the plain sum.
+        # Reducing over every axis except the feature axes gives both.
         feature_axes = tuple(range(len(keep), len(keep) + len(dims)))
         reduce_axes = tuple(i for i in range(grad.ndim) if i not in feature_axes)
         raw = grad_output.numpy().reshape(keep + dims)
 
-        grad_weight = Tensor.from_numpy(raw.sum(axis=reduce_axes), weight.dtype) if weight is not None else None
-        grad_bias = Tensor.from_numpy(raw.sum(axis=reduce_axes), bias.dtype) if bias is not None else None
+        grad_weight = (
+            Tensor.from_numpy((raw * normalized).sum(axis=reduce_axes), weight.dtype)
+            if weight is not None
+            else None
+        )
+        grad_bias = (
+            Tensor.from_numpy(raw.sum(axis=reduce_axes), bias.dtype) if bias is not None else None
+        )
 
         return Tensor.from_numpy(grad_x, x.dtype, x.device), None, grad_weight, grad_bias, None
 
@@ -147,7 +155,13 @@ class RMSNorm(Function):
         feature_axes = tuple(range(len(keep), len(keep) + len(dims)))
         reduce_axes = tuple(i for i in range(grad.ndim) if i not in feature_axes)
         raw = grad_output.numpy().reshape(keep + dims)
-        grad_weight = Tensor.from_numpy(raw.sum(axis=reduce_axes), weight.dtype) if weight is not None else None
+        # d(out)/d(weight) is the normalized activation, so it factors into
+        # the scale gradient; the inverse RMS is handled by grad_x above.
+        grad_weight = (
+            Tensor.from_numpy((raw * normalized).sum(axis=reduce_axes), weight.dtype)
+            if weight is not None
+            else None
+        )
 
         return Tensor.from_numpy(grad_x, x.dtype, x.device), None, grad_weight, None
 

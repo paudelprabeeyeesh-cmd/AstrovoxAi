@@ -98,6 +98,11 @@ class Engine:
                 grads = None
             if grads is None:
                 continue
+            # A backward may return a bare tensor for a single-input
+            # operation. Iterating one directly would walk its rows and treat
+            # each as a separate input gradient, so normalise to a tuple here.
+            if isinstance(grads, Tensor):
+                grads = (grads,)
 
             result.nodes_executed += 1
             for position, grad in enumerate(grads):
@@ -226,17 +231,23 @@ def grad_norm(tensors: Iterable[Tensor]) -> float:
 
 
 def clip_grad_norm(tensors: Sequence[Tensor], max_norm: float) -> float:
-    """Scale gradients in place so their total L2 norm is at most ``max_norm``.
+    """Scale the given gradient tensors so their L2 norm is at most ``max_norm``.
 
     Returns the norm before clipping, which is what training loops log.
+
+    Each tensor is scaled in place. Rebinding an attribute would target
+    whichever slot happened to be passed rather than the parameter's own
+    ``_grad``, so the buffers are written through directly.
     """
     total = grad_norm(tensors)
     if max_norm <= 0 or total <= max_norm or total == 0.0:
         return total
     scale = max_norm / (total + 1e-6)
     for t in tensors:
-        if t is not None and t._grad is not None:
-            t._grad = t._grad * scale
+        if t is None:
+            continue
+        values = t.numpy()
+        values[...] = (values * scale).astype(t.dtype.np_dtype)
     return total
 
 

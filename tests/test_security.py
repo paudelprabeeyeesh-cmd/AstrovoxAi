@@ -5,7 +5,7 @@ import pytest
 from models.llm.security.prompt_injection import PromptInjectionDefense, PromptInjectionGuard, PromptInjectionConfig, PromptInjectionResult
 from models.llm.security.jailbreak import JailbreakDetector, JailbreakResult
 from models.llm.security.poisoning import TrainingDataValidator, OutlierDetector, DataIntegrityChecker, DataSample, PoisoningResult
-from models.llm.security.extraction import QueryRateLimiter, OutputWatermarker, APIMonitor, RateLimitConfig as ExtractionRateLimitConfig
+from models.llm.security.extraction import QueryRateLimiter, OutputWatermarker, APIMonitor, QueryRecord, WatermarkConfig, RateLimitConfig as ExtractionRateLimitConfig
 from models.llm.security.membership import PrivacyAuditor, DifferentialPrivacyMechanism, OutputPerturbator, DifferentialPrivacyConfig, PerturbationConfig
 from models.llm.security.adversarial import InputPerturbationDetector, RobustnessTester, DefensiveMechanism, PerturbationResult
 from models.llm.security.api_abuse import APIRateLimiter, APIAnomalyDetector, AutomatedBlocker, RateLimitConfig, AnomalyDetectionResult
@@ -290,7 +290,9 @@ class TestAPIAbuseDetection:
         assert blocked is True
 
     def test_automated_blocker_unblock(self):
-        blocker = AutomatedBlocker(cooldown_seconds=0)
+        # A threshold of 1 so a single violation trips the block; the default
+        # is deliberately higher to tolerate transient client errors.
+        blocker = AutomatedBlocker(cooldown_seconds=0, violation_threshold=1)
         blocker.record_violation("bad-client")
         assert blocker.should_block("bad-client")[0] is True
         blocker.unblock("bad-client")

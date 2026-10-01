@@ -391,14 +391,14 @@ class Tensor:
                 f"Cannot reshape {self._shape} ({self._shape.numel} elements) into {target} "
                 f"({target.numel} elements)"
             )
-        if self.is_contiguous:
-            from astrovox.ops.view import ReshapeSpec
+        from astrovox.ops.view import Materialize, ReshapeSpec
 
-            return self._make_view(ReshapeSpec(tuple(target.dims), tuple(self._shape.dims)))
-        # A strided source cannot be reinterpreted in place, so copy first.
-        dense = self._to_dense().copy()
-        out = Tensor._make(dense, self.dtype, self.device, self.requires_grad)
-        return out._make_view(ReshapeSpec(tuple(target.dims), tuple(self._shape.dims)))
+        spec = ReshapeSpec(tuple(target.dims), tuple(self._shape.dims))
+        if self.is_contiguous:
+            return self._make_view(spec)
+        # A strided source cannot be reinterpreted in place, so it is copied
+        # first. The copy goes through Materialize so the graph stays connected.
+        return Materialize.apply(self)._make_view(spec)
 
     def view(self, *shape: Any) -> Tensor:
         """Alias for :meth:`reshape` that requires contiguity."""
@@ -409,15 +409,19 @@ class Tensor:
     def _raw_reshape(self, target: tuple[int, ...]) -> Tensor:
         """Build a reshaped view without recording a graph node.
 
-        Only valid on a contiguous tensor; the caller is responsible for
-        materializing a strided source first.
+        A contiguous source is reinterpreted in place. A strided one is copied
+        into a fresh contiguous buffer instead, which is what the backward of
+        a reshape needs: the gradient is plain data, so a detached copy is
+        correct and keeps this usable from inside a backward pass.
         """
         dims = Shape(target)
-        if not self.is_contiguous:
-            raise RuntimeError("_raw_reshape requires a contiguous tensor")
         if dims.numel != self._shape.numel:
             raise ValueError(
                 f"Cannot reshape {self._shape} ({self._shape.numel} elements) into {dims} ({dims.numel} elements)"
+            )
+        if not self.is_contiguous:
+            return Tensor.from_numpy(
+                self._to_dense().reshape(tuple(dims.dims)), self.dtype, self.device
             )
         return self._view_like(dims, dims.row_major_strides(), self._offset)
 
@@ -453,7 +457,7 @@ class Tensor:
         resolved = tuple(_normalize_axis(o, ndim) for o in order)
         if sorted(resolved) != list(range(ndim)):
             raise ValueError(f"permute order {order} is not a permutation of {ndim} dimensions")
-        return self._make_view(PermuteSpec(resolved))
+        return self._make_view(PermuteSpec(resolved, tuple(self._shape.dims)))
 
     def _raw_permute(self, order: tuple[int, ...]) -> Tensor:
         """Build a permuted view without recording a graph node."""
@@ -467,7 +471,11 @@ class Tensor:
         """Return a row-major tensor, copying only if this view is strided."""
         if self.is_contiguous:
             return self
-        return Tensor._make(self._to_dense().copy(), self.dtype, self.device, self.requires_grad)
+        from astrovox.ops.view import Materialize
+
+        # Copying through Materialize keeps the autograd connection: attention
+        # permutes heads and then reshapes, so this path is on the hot route.
+        return Materialize.apply(self)
 
     def squeeze(self, dim: int | None = None) -> Tensor:
         """Remove dimensions of extent 1."""
@@ -480,7 +488,7 @@ class Tensor:
             if self._shape.dims[axis] != 1:
                 return self
             axes = (axis,)
-        return self._make_view(SqueezeSpec(dim, axes))
+        return self._make_view(SqueezeSpec(dim, axes, tuple(self._shape.dims)))
 
     def _raw_squeeze(self, axes: tuple[int, ...]) -> Tensor:
         """Build a squeezed view without recording a graph node."""
@@ -493,7 +501,7 @@ class Tensor:
         from astrovox.ops.view import UnsqueezeSpec
 
         axis = dim if dim >= 0 else dim + self._shape.ndim + 1
-        return self._make_view(UnsqueezeSpec(axis))
+        return self._make_view(UnsqueezeSpec(axis, tuple(self._shape.dims)))
 
     def _raw_unsqueeze(self, axis: int) -> Tensor:
         """Build an unsqueezed view without recording a graph node."""
@@ -509,17 +517,18 @@ class Tensor:
         strides.insert(axis, stride)
         return self._view_like(Shape(dims), tuple(strides), self._offset)
     def narrow(self, dim: int, start: int, length: int) -> Tensor:
-        """Return a view of ``length`` elements along ``dim`` starting at ``start``."""
+        """Return a view of ``length`` elements along ``dim`` starting at ``start``.
+
+        Expressed as a slice so the gradient is routed back the same way.
+        """
         axis = _normalize_axis(dim, self._shape.ndim)
         if not 0 <= start <= self._shape.dims[axis] - length:
             raise IndexError(
                 f"narrow({start}, {length}) out of range for dimension {axis} of size {self._shape.dims[axis]}"
             )
-        dims = list(self._shape.dims)
-        dims[axis] = length
-        strides = list(self._stride)
-        offset = self._offset + start * strides[axis]
-        return self._view_like(Shape(dims), tuple(strides), offset)
+        key = [slice(None)] * self._shape.ndim
+        key[axis] = slice(start, start + length)
+        return self._index_expanded(tuple(key), record_graph=True)
 
     def __getitem__(self, key: Any) -> Tensor:
         """Index with an int, slice, ellipsis, or combination of these."""
@@ -546,8 +555,12 @@ class Tensor:
         return self._slice_view(key)
 
     def _slice_view(self, key: tuple[Any, ...]) -> Tensor:
-        """Build a strided view from a tuple of slices and advanced indices."""
-        return self._index_expanded(key, record_graph=False)
+        """Build a strided view, recording a node so gradients route back.
+
+        A slice shares memory with its base, so without a node the gradient
+        would stop here and the base tensor would never be updated.
+        """
+        return self._index_expanded(key, record_graph=True)
 
     def _raw_index(self, key: tuple[Any, ...]) -> Tensor:
         """Build a sliced view without recording a graph node."""
@@ -585,6 +598,9 @@ class Tensor:
                 if not 0 <= normalized < dim:
                     raise IndexError(f"Index {item} out of range for dimension {axis} of size {dim}")
                 offset += normalized * stride
+                # An integer index drops its axis from the view, so its inverse
+                # scatters into a length-1 window of the original axis.
+                source_index.append(slice(normalized, normalized + 1, 1))
                 dropped_axes = dropped_axes + (axis,)
             else:
                 raise TypeError(f"Unsupported index type {type(item).__name__}")

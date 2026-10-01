@@ -70,6 +70,19 @@ class Module:
     # Registration
     # ------------------------------------------------------------------
 
+    def __getattr__(self, name: str) -> Any:
+        """Expose registered buffers and parameters as attributes.
+
+        Only reached when normal attribute lookup fails, so this cannot
+        shadow a real attribute. The registries are read from ``__dict__``
+        directly to avoid recursing through this method during construction.
+        """
+        for registry in ("_buffers", "_parameters"):
+            entries = self.__dict__.get(registry)
+            if entries and name in entries:
+                return entries[name]
+        raise AttributeError(f"{type(self).__name__} has no attribute {name!r}")
+
     def __setattr__(self, name: str, value: Any) -> None:
         """Register parameters, buffers, and child modules on assignment."""
         if isinstance(value, Parameter):
@@ -192,13 +205,18 @@ class Module:
     # ------------------------------------------------------------------
 
     def state_dict(self, prefix: str = "") -> dict[str, Tensor]:
-        """Return every parameter and persistent buffer keyed by name."""
+        """Return every parameter and persistent buffer keyed by name.
+
+        The tensors are copies, so a caller can keep a snapshot across
+        further training. Returning live references would let a later
+        optimizer step silently rewrite the snapshot.
+        """
         state: dict[str, Tensor] = {}
         for name, param in self._parameters.items():
             if param is not None:
-                state[f"{prefix}{name}"] = param
+                state[f"{prefix}{name}"] = param.clone()
         for name, buf in self.named_buffers(prefix):
-            state[name] = buf
+            state[name] = buf.clone()
         for child_name, child in self._modules.items():
             state.update(child.state_dict(f"{prefix}{child_name}."))
         return state

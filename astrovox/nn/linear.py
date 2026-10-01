@@ -7,6 +7,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
+from astrovox.autograd.function import Function
 from astrovox.nn.module import (
     Module,
     Parameter,
@@ -60,12 +61,42 @@ class Linear(Module):
         return f"Linear(in_features={self.in_features}, out_features={self.out_features}, bias={self.bias is not None})"
 
 
-class Embedding(Module):
-    """A lookup table mapping integer indices to learned vectors.
+class EmbeddingLookup(Function):
+    """Gather rows of a table by integer index.
 
-    The gradient of an embedding is a scatter-add: every occurrence of a token
-    contributes to that row, which is what makes shared token embeddings train.
+    The backward is a scatter-add: every occurrence of a token contributes to
+    that row, which is what makes a shared token table train at all.
     """
+
+    name = "embedding"
+
+    @staticmethod
+    def forward(ctx, table: Tensor, indices: Tensor):
+        flat = indices.numpy().astype(np.int64).reshape(-1)
+        rows = table.numpy()[flat]
+        out = Tensor.from_numpy(
+            rows.reshape(tuple(indices.shape.dims) + (table.shape.dims[-1],)),
+            table.dtype,
+            table.device,
+        )
+        ctx.save(indices=flat, rows=table.shape.dims[0], width=table.shape.dims[1])
+        return out.requires_grad_(table.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output: Tensor):
+        indices = ctx.load("indices")
+        rows = ctx.load("rows")
+        width = ctx.load("width")
+        values = grad_output.numpy().reshape(-1, width)
+        buffer = np.zeros((rows, width), dtype=values.dtype)
+        # Repeated indices accumulate, so this has to be a scatter-add.
+        np.add.at(buffer, indices, values)
+        out = Tensor.from_numpy(buffer, grad_output.dtype, grad_output.device)
+        return out, None
+
+
+class Embedding(Module):
+    """A lookup table mapping integer indices to learned vectors."""
 
     def __init__(self, num_embeddings: int, embedding_dim: int) -> None:
         super().__init__()
@@ -84,11 +115,7 @@ class Embedding(Module):
                 f"Embedding index out of range: got [{flat.min()}, {flat.max()}], "
                 f"table has {self.num_embeddings} rows"
             )
-        rows = self.weight.numpy()[flat]
-        out = Tensor.from_numpy(rows.reshape(tuple(indices.shape.dims) + (self.embedding_dim,)), self.weight.dtype)
-        out.requires_grad_(True)
-        self._last_indices = flat
-        return out
+        return EmbeddingLookup.apply(self.weight, indices)
 
     def __repr__(self) -> str:
         return f"Embedding(num_embeddings={self.num_embeddings}, embedding_dim={self.embedding_dim})"

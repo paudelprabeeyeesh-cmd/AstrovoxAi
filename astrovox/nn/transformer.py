@@ -12,6 +12,7 @@ from typing import Any, Sequence
 
 import numpy as np
 
+from astrovox.autograd.function import Function
 from astrovox.nn.layernorm import LayerNorm
 from astrovox.nn.linear import Activation, Linear
 from astrovox.nn.module import Module, init_zeros, parameter
@@ -20,6 +21,37 @@ from astrovox.ops.activation import gelu, softmax
 from astrovox.ops.math import add, div, matmul, mul, neg, sqrt
 from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor
+
+
+class MaskedSoftmax(Function):
+    """Softmax with an additive mask, kept differentiable.
+
+    Applying the mask with plain NumPy would sever the graph, so the mask is
+    added inside a Function. The mask is constant with respect to the input,
+    so its own gradient contribution is zero; masked positions get no gradient
+    because their output weight is zero.
+    """
+
+    name = "masked_softmax"
+
+    @staticmethod
+    def forward(ctx, scores: Tensor, add_mask: Tensor) -> Tensor:
+        array = scores.numpy() + add_mask.numpy()
+        shifted = array - array.max(axis=-1, keepdims=True)
+        exp = np.exp(shifted)
+        out = exp / exp.sum(axis=-1, keepdims=True)
+        result = Tensor.from_numpy(out, scores.dtype, scores.device)
+        ctx.save(out=result)
+        return result.requires_grad_(scores.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output: Tensor):
+        out = ctx.load("out")
+        values = out.numpy()
+        # The softmax Jacobian-vector product, unchanged by an additive mask.
+        dot = np.sum(grad_output.numpy() * values, axis=-1, keepdims=True)
+        grad = values * (grad_output.numpy() - dot)
+        return Tensor.from_numpy(grad, out.dtype, out.device), None
 
 
 def _attention(q: Tensor, k: Tensor, v: Tensor, causal: bool = True, mask: Tensor | None = None) -> Tensor:
@@ -45,22 +77,18 @@ def _softmax_with_mask(scores: Tensor, causal: bool, mask: Tensor | None) -> Ten
     if not causal and mask is None:
         return softmax(scores, axis=-1)
 
-    from astrovox.ops.activation import Softmax
-
-    array = scores.numpy().copy()
-    if causal and array.ndim >= 2:
-        seq_len = array.shape[-2]
-        array = array + np.triu(np.full((seq_len, seq_len), -np.inf, dtype=array.dtype), k=1)
+    seq_len = scores.shape.dims[-2]
+    blocks = []
+    if causal:
+        # A large negative constant rather than -inf: a fully masked row would
+        # otherwise produce NaN from the softmax denominator.
+        blocks.append(
+            np.triu(np.full((seq_len, seq_len), -1e30, dtype=scores.dtype.np_dtype), k=1)
+        )
     if mask is not None:
-        array = array + mask.numpy()
-    # Rows that are fully masked would produce NaN; give them a uniform
-    # distribution instead so a padded batch still yields finite gradients.
-    finite = np.isfinite(array)
-    array = np.where(finite, array, -1e30)
-    shifted = array - array.max(axis=-1, keepdims=True)
-    exp = np.exp(shifted)
-    out = exp / exp.sum(axis=-1, keepdims=True)
-    return Tensor.from_numpy(out, scores.dtype, scores.device)
+        blocks.append(mask.numpy())
+    add_mask = blocks[0] if len(blocks) == 1 else np.add(*blocks)
+    return MaskedSoftmax.apply(scores, Tensor.from_numpy(add_mask, scores.dtype, scores.device))
 
 
 class MultiHeadAttention(Module):
@@ -138,17 +166,45 @@ class MultiHeadAttention(Module):
         )
 
 
+class RepeatKV(Function):
+    """Repeat each key/value head so grouped queries can share it.
+
+    Grouped-query attention gives several query heads the same key and value
+    head. This is a real graph operation, not a bookkeeping step: without a
+    node here the gradient would stop at the repeated tensor and the key and
+    value projections would never train.
+    """
+
+    name = "repeat_kv"
+
+    @staticmethod
+    def forward(ctx, x, repeats: int):
+        ctx.save(repeats=repeats, batch=x.shape.dims[0], seq=x.shape.dims[2])
+        if repeats == 1:
+            return x
+        batch, heads, seq, dim = x.shape.dims
+        expanded = np.repeat(x.numpy(), repeats, axis=1)
+        out = Tensor.from_numpy(expanded, x.dtype, x.device)
+        return out.requires_grad_(x.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        # Each repeated copy contributes independently, so the gradient of the
+        # original head is the sum over the repeats that shared it.
+        repeats = ctx.load("repeats")
+        if repeats == 1:
+            return grad_output, None
+        grad = grad_output.numpy()
+        batch, heads, seq, dim = grad.shape
+        folded = grad.reshape(batch, heads // repeats, repeats, seq, dim).sum(axis=2)
+        return Tensor.from_numpy(folded, grad_output.dtype, grad_output.device), None
+
+
 def _repeat_kv(x: Tensor, repeats: int) -> Tensor:
     """Repeat each key/value head ``repeats`` times for grouped-query attention."""
     if repeats == 1:
         return x
-    batch, heads, seq, dim = x.shape.dims
-    expanded = x.reshape(batch, heads, 1, seq, dim)
-    flat = Tensor.from_numpy(
-        np.repeat(expanded.numpy(), repeats, axis=1).reshape(batch, heads * repeats, seq, dim), x.dtype, x.device
-    )
-    flat.requires_grad_(x.requires_grad)
-    return flat
+    return RepeatKV.apply(x, repeats)
 
 
 class FeedForward(Module):

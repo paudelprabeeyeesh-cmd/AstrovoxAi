@@ -48,8 +48,13 @@ class TransposeSpec(ViewSpec):
         return x._raw_transpose(self.dim0, self.dim1)
 
     def invert(self, grad: Tensor) -> Tensor:
-        """Swap the same two dimensions back."""
-        return grad._raw_transpose(self.dim0, self.dim1)
+        """Transpose the gradient's logical axes back.
+
+        The incoming gradient is a dense array in logical order, so the
+        inverse swaps its axes directly. Reapplying the strided view would
+        instead reinterpret memory and scramble the values.
+        """
+        return _dense(np.swapaxes(grad.numpy(), self.dim0, self.dim1), grad)
 
 
 @dataclass
@@ -57,6 +62,7 @@ class PermuteSpec(ViewSpec):
     """Reordering dimensions; the inverse is the inverse permutation."""
 
     order: tuple[int, ...]
+    source_shape: tuple[int, ...] = ()
 
     def apply(self, x: Tensor) -> Tensor:
         """Return the permuted view."""
@@ -67,7 +73,7 @@ class PermuteSpec(ViewSpec):
         inverse = [0] * len(self.order)
         for position, axis in enumerate(self.order):
             inverse[axis] = position
-        return grad._raw_permute(tuple(inverse))
+        return _dense(np.transpose(grad.numpy(), inverse), grad)
 
     def describe(self) -> str:
         """Return the permutation for printing."""
@@ -76,7 +82,7 @@ class PermuteSpec(ViewSpec):
 
 @dataclass
 class ReshapeSpec(ViewSpec):
-    """Reshaping to a target shape; the inverse is the original shape."""
+    """Reshaping to a target shape; the inverse restores the original shape."""
 
     target: tuple[int, ...]
     source: tuple[int, ...]
@@ -87,7 +93,7 @@ class ReshapeSpec(ViewSpec):
 
     def invert(self, grad: Tensor) -> Tensor:
         """Reshape back to the original dimensions."""
-        return grad._raw_reshape(self.source)
+        return _dense(np.reshape(grad.numpy(), self.source), grad)
 
     def describe(self) -> str:
         """Return the target shape for printing."""
@@ -96,18 +102,19 @@ class ReshapeSpec(ViewSpec):
 
 @dataclass
 class SqueezeSpec(ViewSpec):
-    """Dropping size-1 dimensions; the inverse re-inserts them."""
+    """Dropping size-1 dimensions; the inverse restores the original shape."""
 
     dim: int | None
     squeezed_axes: tuple[int, ...] = ()
+    source_shape: tuple[int, ...] = ()
 
     def apply(self, x: Tensor) -> Tensor:
         """Return the squeezed view."""
         return x._raw_squeeze(self.squeezed_axes)
 
     def invert(self, grad: Tensor) -> Tensor:
-        """Re-insert the dropped dimensions as singletons."""
-        return _restore_squeezed(grad, self.dim, self.squeezed_axes)
+        """Restore the dropped dimensions."""
+        return _dense(np.reshape(grad.numpy(), self.source_shape), grad)
 
     def describe(self) -> str:
         """Return the squeezed axis for printing."""
@@ -119,6 +126,7 @@ class UnsqueezeSpec(ViewSpec):
     """Inserting a size-1 dimension; the inverse drops it."""
 
     dim: int
+    source_shape: tuple[int, ...] = ()
 
     def apply(self, x: Tensor) -> Tensor:
         """Return the unsqueezed view."""
@@ -126,7 +134,7 @@ class UnsqueezeSpec(ViewSpec):
 
     def invert(self, grad: Tensor) -> Tensor:
         """Drop the inserted dimension."""
-        return grad.squeeze(self.dim)
+        return _dense(np.reshape(grad.numpy(), self.source_shape), grad)
 
     def describe(self) -> str:
         """Return the inserted axis for printing."""
@@ -139,8 +147,8 @@ class SliceSpec(ViewSpec):
 
     Slices move elements around, so their inverse is not a reshape: the
     gradient has to be placed at the positions the slice read from and every
-    other position zeroed. Integer indices drop their axis, so those axes are
-    re-inserted after the scatter.
+    other position zeroed. Integer indices select a single position, so they
+    scatter into a length-1 window and the surrounding axis stays zero.
     """
 
     source_shape: tuple[int, ...]
@@ -154,34 +162,17 @@ class SliceSpec(ViewSpec):
         return x._raw_index(self.index)
 
     def invert(self, grad: Tensor) -> Tensor:
-        """Scatter ``grad`` back into a zero tensor of the source shape."""
-        buffer = np.zeros(self.view_shape, dtype=grad.dtype.np_dtype)
+        """Scatter ``grad`` into a zero tensor of the source shape."""
+        buffer = np.zeros(self.source_shape, dtype=grad.dtype.np_dtype)
         if buffer.size and grad.numel:
-            buffer[self.source_index] = grad.numpy().reshape(
-                tuple(
-                    (stop - start) // step
-                    for start, stop, step in (
-                        _as_slice(item) for item in self.source_index
-                    )
-                )
-            )
+            buffer[self.source_index] = grad.numpy()
         out = Tensor.from_numpy(buffer, grad.dtype, grad.device)
         out.requires_grad_(True)
-        for axis in sorted(self.dropped_axes, reverse=True):
-            out = out.unsqueeze(axis)
         return out
 
     def describe(self) -> str:
         """Return the index expression for printing."""
         return f"index{tuple(self.index)}"
-
-
-def _as_slice(item: Any) -> tuple[int, int, int]:
-    """Return an item as an inclusive ``(start, stop, step)`` triple."""
-    if isinstance(item, slice):
-        start, stop, step = item.indices(10**9)
-        return start, start + (-(-(stop - start) // step)) * step, step
-    return int(item), int(item) + 1, 1
 
 
 class ViewOp(Function):
@@ -208,28 +199,49 @@ class ViewOp(Function):
         return spec.invert(full), None
 
 
+def _dense(array: np.ndarray, like: Tensor) -> Tensor:
+    """Wrap a logical-order array as a contiguous gradient tensor.
+
+    View inverses work on logical axes, so the result must own a contiguous
+    buffer in logical order rather than alias some upstream layout.
+    """
+    out = Tensor.from_numpy(np.ascontiguousarray(array), like.dtype, like.device)
+    out.requires_grad_(True)
+    return out
+
+
 def _materialize(grad: Tensor, shape: Any) -> Tensor:
     """Broadcast ``grad`` to ``shape`` when it is narrower than required."""
-    if tuple(grad.shape.dims) == tuple(shape):
-        return grad
-    if grad.ndim <= len(shape):
+    target = tuple(shape)
+    if tuple(grad.shape.dims) == target:
+        return _dense(grad.numpy(), grad)
+    if grad.ndim <= len(target):
         try:
-            return Tensor.from_numpy(
-                np.broadcast_to(grad.numpy(), tuple(shape)).copy(), grad.dtype, grad.device
-            )
+            return _dense(np.broadcast_to(grad.numpy(), target), grad)
         except ValueError:
-            return grad
-    return grad
+            return _dense(grad.numpy(), grad)
+    return _dense(grad.numpy(), grad)
 
 
-def _restore_squeezed(grad: Tensor, dim: int | None, axes: Sequence[int]) -> Tensor:
-    """Re-insert the axes dropped by :meth:`Tensor.squeeze`."""
-    if dim is not None:
-        axis = dim if dim >= 0 else dim + grad.ndim + 1
-        return grad.unsqueeze(axis)
-    for axis in sorted(axes, reverse=True):
-        grad = grad.unsqueeze(axis)
-    return grad
+class Materialize(Function):
+    """Copy a strided tensor into a contiguous buffer, keeping the graph.
+
+    Reinterpreting a non-contiguous tensor's shape requires a physical copy.
+    Doing that copy outside the graph would silently drop the connection to
+    everything upstream, so it happens here: the copy is a no-op for the
+    gradient, and the reshape that follows attaches to this node instead.
+    """
+
+    name = "materialize"
+
+    @staticmethod
+    def forward(ctx, x: Tensor) -> Tensor:
+        out = Tensor.from_numpy(x._to_dense().copy(), x.dtype, x.device)
+        return out.requires_grad_(x.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output: Tensor) -> tuple[Tensor | None]:
+        return (grad_output,)
 
 
 def apply_view(x: Tensor, spec: ViewSpec) -> Tensor:

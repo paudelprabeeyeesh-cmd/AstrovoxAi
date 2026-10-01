@@ -15,7 +15,7 @@ import numpy as np
 from astrovox.autograd.function import Function
 from astrovox.tensor.broadcast import unbroadcast
 from astrovox.tensor.dtype import DEFAULT, DType, resolve
-from astrovox.tensor.shape import Shape
+from astrovox.tensor.shape import Shape, broadcast_shapes
 from astrovox.tensor.tensor import Tensor
 
 
@@ -110,9 +110,10 @@ class Mul(Function):
         if isinstance(a, Tensor) and isinstance(b, Tensor):
             return unbroadcast(grad_output * b, a.shape), unbroadcast(grad_output * a, b.shape)
         if isinstance(a, Tensor):
-            return unbroadcast(grad_output * float(b.numpy()), a.shape), None
+            # The other operand is a Python scalar, which has no gradient.
+            return unbroadcast(grad_output * float(b), a.shape), None
         if isinstance(b, Tensor):
-            return None, unbroadcast(grad_output * float(a.numpy()), b.shape)
+            return None, unbroadcast(grad_output * float(a), b.shape)
         return None, None
 
 
@@ -160,7 +161,7 @@ class Neg(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        return -grad_output
+        return (-grad_output,)
 
 
 class Pow(Function):
@@ -207,41 +208,81 @@ class MatMul(Function):
     @staticmethod
     def backward(ctx, grad_output):
         a, b = ctx.load("a"), ctx.load("b")
-        grad_a = grad_b = None
+        grad = grad_output.numpy()
+        if grad.ndim == 0:
+            grad = grad.reshape(1, 1)
 
         a_was_vector = a.ndim == 1
         b_was_vector = b.ndim == 1
-        a_batch = a.shape.dims[:-2] if a.ndim > 1 else ()
-        b_batch = b.shape.dims[:-2] if b.ndim > 1 else ()
+        a_batch = tuple(a.shape.dims[:-2]) if a.ndim > 1 else ()
+        b_batch = tuple(b.shape.dims[:-2]) if b.ndim > 1 else ()
+        batch = broadcast_shapes(Shape(a_batch), Shape(b_batch)).dims
 
-        # Contract over the shared matrix axis to recover each operand's shape.
-        contract = a.shape.dims[-1]
-        grad_array = grad_output.numpy()
+        a_matrix = a.numpy()
+        b_matrix = b.numpy()
+        # A vector operand contracts differently from a matrix: matmul(a, v)
+        # contracts a's last axis with v, while matmul(v, b) contracts v with
+        # b's first axis. einsum states that directly. The batch axes are kept
+        # in the result and summed afterwards, because einsum refuses to drop
+        # a non-empty ellipsis implicitly.
+        if b_was_vector and not a_was_vector:
+            grad_a = np.einsum("...n,k->...nk", grad, b_matrix).reshape(a.shape.dims)
+            grad_b = _sum_leading(np.einsum("...nk,...n->...k", a_matrix, grad))
+        elif a_was_vector and not b_was_vector:
+            grad_b = np.einsum("n,...m->...nm", a_matrix, grad).reshape(b.shape.dims)
+            grad_a = _sum_leading(np.einsum("...nm,...m->...n", b_matrix, grad))
+        else:
+            # Restore the contracted dimension so the two matrices broadcast
+            # the way they did in the forward pass. The rank must come from
+            # .ndim: len() on an ndarray is its first axis, not its dimension
+            # count, and using it here silently mis-pads batched gradients.
+            grad_batched = grad
+            if grad_batched.ndim < len(batch) + 2:
+                pad = len(batch) + 2 - grad_batched.ndim
+                grad_batched = grad_batched.reshape((1,) * pad + tuple(grad_batched.shape))
+            grad_a = np.matmul(grad_batched, np.swapaxes(b_matrix, -1, -2))
+            grad_b = np.matmul(np.swapaxes(a_matrix, -1, -2), grad_batched)
 
-        if a.ndim >= 2:
-            a_reduced = grad_array if b.ndim >= 2 else grad_array.reshape(a_batch + (a.shape.dims[-2], contract))
-            b_for_a = b.numpy()
-            if b.ndim == 1:
-                grad_a = np.matmul(grad_array.reshape(a_batch + (a.shape.dims[-2], 1)), b_for_a.reshape(1, -1))
-            else:
-                grad_a = np.matmul(grad_array, np.swapaxes(b_for_a, -1, -2))
-        if b.ndim >= 2:
-            if a.ndim == 1:
-                b_reduced = grad_array.reshape(b_batch + (b.shape.dims[-1]))
-                grad_b = np.outer(a.numpy(), b_reduced) if b.ndim == 2 else np.einsum(
-                    "n,...m->...nm", a.numpy(), b_reduced
-                )
-            else:
-                grad_b = np.matmul(np.swapaxes(a.numpy(), -1, -2), grad_array)
+        # A weight is shared across every batch and position, so the batch
+        # dimensions have to be summed away rather than kept.
+        grad_a = _reduce_batch(grad_a, batch, a_batch, a_was_vector, a)
+        grad_b = _reduce_batch(grad_b, batch, b_batch, b_was_vector, b)
 
-        if a_was_vector and grad_a is not None:
-            grad_a = grad_a.reshape(a.shape.dims)
-        if b_was_vector and grad_b is not None:
-            grad_b = grad_b.reshape(b.shape.dims)
         return (
             Tensor.from_numpy(grad_a, a.dtype, a.device) if grad_a is not None else None,
             Tensor.from_numpy(grad_b, b.dtype, b.device) if grad_b is not None else None,
         )
+
+
+def _sum_leading(grad: np.ndarray) -> np.ndarray:
+    """Sum every leading axis, leaving only the last one.
+
+    A vector operand is shared across every batch entry, so its gradient is
+    the total over the batch.
+    """
+    if grad.ndim <= 1:
+        return grad
+    return grad.sum(axis=tuple(range(grad.ndim - 1)))
+
+
+def _reduce_batch(
+    grad: np.ndarray | None,
+    batch: tuple[int, ...],
+    own_batch: tuple[int, ...],
+    was_vector: bool,
+    operand: Tensor,
+) -> np.ndarray | None:
+    """Sum a batched gradient down to the shape of its operand."""
+    if grad is None:
+        return None
+    if was_vector:
+        # A vector operand keeps only the contracted axis.
+        return grad.reshape(-1)
+    if len(own_batch) < len(batch):
+        # Leading axes came from broadcasting the other operand, and this
+        # operand did not have them, so they are summed out.
+        grad = grad.sum(axis=tuple(range(len(batch) - len(own_batch))))
+    return grad.reshape(operand.shape.dims)
 
 
 class Sqrt(Function):
@@ -258,7 +299,7 @@ class Sqrt(Function):
     @staticmethod
     def backward(ctx, grad_output):
         x = ctx.load("x")
-        return grad_output / (2 * sqrt(x))
+        return (grad_output / (2 * sqrt(x)),)
 
 
 class Exp(Function):
@@ -268,12 +309,16 @@ class Exp(Function):
 
     @staticmethod
     def forward(ctx, x):
-        ctx.save(out=exp(x))
-        return ctx.load("out").requires_grad_(x.requires_grad)
+        # Computed directly rather than through the public exp() helper, which
+        # would re-enter this forward and recurse forever.
+        out = Tensor.from_numpy(np.exp(x.numpy()), x.dtype, x.device)
+        ctx.save(out=out)
+        return out.requires_grad_(x.requires_grad)
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output * ctx.load("out")
+        # d(exp)/dx = exp(x), which is the forward output already saved.
+        return (grad_output * ctx.load("out"),)
 
 
 class Log(Function):
@@ -288,7 +333,7 @@ class Log(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output / ctx.load("x")
+        return (grad_output / ctx.load("x"),)
 
 
 class BroadcastTensor(Function):

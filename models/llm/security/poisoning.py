@@ -72,6 +72,21 @@ class TrainingDataValidator:
             if count > self.max_duplicates:
                 duplicate_count += count - self.max_duplicates
                 integrity_issues.append(f"Sample {sample_id} appears {count} times (max {self.max_duplicates})")
+        # Duplicates are counted by content, not by id: the same text
+        # submitted under two different ids is still a duplicate, and
+        # keying on the id alone would miss exactly that case.
+        content_counts: dict[str, int] = {}
+        for sample in samples:
+            if sample.text and len(sample.text.strip()) >= 3:
+                key = hashlib.sha256(sample.text.encode("utf-8")).hexdigest()[:16]
+                content_counts[key] = content_counts.get(key, 0) + 1
+        for key, count in content_counts.items():
+            if count > self.max_duplicates:
+                extra = count - self.max_duplicates
+                duplicate_count += extra
+                integrity_issues.append(
+                    f"Identical text appears {count} times (max {self.max_duplicates})"
+                )
         total_samples = len(samples) if samples else 1
         penalty = min((outlier_count + duplicate_count + len(integrity_issues)) / total_samples, 1.0)
         trust_score = max(0.0, 1.0 - penalty)

@@ -24,7 +24,7 @@ class ReLU(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output * (ctx.load("x").numpy() > 0)
+        return (grad_output * (ctx.load("x").numpy() > 0),)
 
 
 class LeakyReLU(Function):
@@ -62,7 +62,7 @@ class GELU(Function):
         array = x.numpy()
         cdf = 0.5 * (1.0 + _erf(array / np.sqrt(2.0)))
         pdf = np.exp(-0.5 * array**2) / np.sqrt(2.0 * np.pi)
-        return grad_output * (cdf + array * pdf)
+        return (grad_output * (cdf + array * pdf),)
 
 
 class SiLU(Function):
@@ -81,7 +81,7 @@ class SiLU(Function):
         x = ctx.load("x")
         array = x.numpy()
         sig = 1.0 / (1.0 + np.exp(-array))
-        return grad_output * (sig * (1.0 + array * (1.0 - sig)))
+        return (grad_output * (sig * (1.0 + array * (1.0 - sig))),)
 
 
 class Sigmoid(Function):
@@ -98,7 +98,7 @@ class Sigmoid(Function):
     @staticmethod
     def backward(ctx, grad_output):
         out = ctx.load("out")
-        return grad_output * out * (1.0 - out)
+        return (grad_output * out * (1.0 - out),)
 
 
 class Tanh(Function):
@@ -115,7 +115,7 @@ class Tanh(Function):
     @staticmethod
     def backward(ctx, grad_output):
         out = ctx.load("out")
-        return grad_output * (1.0 - out**2)
+        return (grad_output * (1.0 - out**2),)
 
 
 class Softmax(Function):
@@ -175,7 +175,7 @@ class Softplus(Function):
     @staticmethod
     def backward(ctx, grad_output):
         x = ctx.load("x")
-        return grad_output / (1.0 + np.exp(-x.numpy()))
+        return (grad_output / (1.0 + np.exp(-x.numpy())),)
 
 
 class Mish(Function):
@@ -191,7 +191,7 @@ class Mish(Function):
 
     @staticmethod
     def backward(ctx, grad_output):
-        return grad_output * _mish_backward(ctx.load("x").numpy())
+        return (grad_output * _mish_backward(ctx.load("x").numpy()),)
 
 
 def _mish_forward(x: np.ndarray) -> np.ndarray:
