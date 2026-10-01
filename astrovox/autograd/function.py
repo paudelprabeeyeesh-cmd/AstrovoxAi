@@ -96,19 +96,22 @@ class _FunctionContext:
     needed to compute a Jacobian) so the forward pass does not recompute them.
     """
 
-    __slots__ = ("saved", "needs_input_grad", "name")
+    __slots__ = ("saved", "needs_input_grad", "name", "used")
 
     def __init__(self) -> None:
         self.saved: dict[str, Any] = {}
         self.needs_input_grad: list[bool] = []
         self.name: str | None = None
+        #: Names passed to :meth:`load` during backward, for the memory audit.
+        self.used: set[str] = set()
 
     def save(self, **kwargs: Any) -> None:
         """Store tensors or scalars needed during backward."""
         self.saved.update(kwargs)
 
     def load(self, key: str, default: Any = None) -> Any:
-        """Retrieve a previously saved value."""
+        """Retrieve a previously saved value, recording the access."""
+        self.used.add(key)
         return self.saved.get(key, default)
 
     def set_needs_input_grad(self, flags: Iterable[bool]) -> None:

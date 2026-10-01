@@ -182,12 +182,12 @@ class ViewOp(Function):
 
     @staticmethod
     def forward(ctx, x: Tensor, spec: ViewSpec) -> Tensor:
-        ctx.save(x=x, spec=spec)
         out = spec.apply(x)
         out.requires_grad_(x.requires_grad)
-        # The output shape is needed during backward to materialise a gradient
-        # that arrives narrower, and recomputing the view here would recurse.
-        ctx.save(out_shape=tuple(out.shape.dims))
+        # Only the spec and the output shape are kept. Saving the base tensor
+        # would pin it for the whole forward-backward pass while the backward
+        # never reads it, which the memory audit in astrovox.debug flags.
+        ctx.save(spec=spec, out_shape=tuple(out.shape.dims))
         return out
 
     @staticmethod

@@ -1,0 +1,64 @@
+feat(astrovox): add the autograd debugger and diagnostics
+
+Tools for the failures a falling loss curve hides: a gradient that stops
+partway, a parameter that silently never updates, a backward that reads less
+than its forward saved.
+
+astrovox.debug.inspector
+  inspect() builds a report of the graph reaching a tensor: every node with
+  its shapes, parents, and what it saved; the operation histogram; the order
+  the backward pass will actually visit; and, for a module, each parameter's
+  gradient norm with flags for zero and non-finite values. Exports as text,
+  JSON, or Graphviz DOT. check_graph() returns the problems as a list.
+
+  A parameter reaches the graph through a view, for example a transpose of a
+  weight, so connectivity is decided by storage identity rather than object
+  identity. Inspect before backward: a backward releases the graph, and
+  reporting everything as disconnected afterwards would be worse than silence.
+
+astrovox.debug.diagnostics
+  gradient_consistency() compares each parameter's analytical gradient to a
+  finite difference and reports the norm-based relative error, which is the
+  meaningful figure; the per-element relative error is near 1 wherever the
+  true gradient is near zero.
+  propagation_trace() lists the forward graph and the backward visit order, so
+  a backward that stops early is visible in the list.
+  verify_updates() compares parameters against a snapshot and names why one
+  did not move: no gradient, exactly zero gradient, or a step that did nothing.
+  gradient_distribution() reports min, max, mean, std, L2 norm, and the
+  fraction of zeros, NaNs, and infinities per gradient.
+  validate_shapes() checks that every gradient matches the operand it belongs
+  to, which is the signature of a backward that reshapes wrongly.
+  validate_backward() reports tensors a forward saved that its backward never
+  read, which is memory held for the whole pass for no reason.
+  memory_report() accounts for active, saved, and live tensors and peak bytes.
+  dashboard() combines all of it and renders a boxed report. It retains the
+  graph so structural and gradient facts can be reported together.
+
+The audit found a real waste on its first run: every view node saved its base
+tensor and never read it, pinning it for the whole forward-backward pass.
+Fixed by keeping only the spec and the output shape.
+
+Also fixed
+  - FunctionContext records which saved keys a backward reads, which is what
+    makes the memory audit possible without simulating a backward.
+  - Linear(bias=False) left the name bias unset, so forward raised
+    AttributeError on every call. It is now set explicitly to None.
+  - tensor([1.0, 2.0]) silently produced float64 while tensor(1.0) produced
+    float32, because a plain list fell through to NumPy's own inference.
+    Nested numeric lists now follow the framework defaults.
+
+astrovox/tests/test_tensor_and_debug.py
+  Tensor operations compared against NumPy directly across shapes, so a bug in
+  the view or broadcast logic surfaces as a mismatch rather than as a wrong
+  gradient much later: shape algebra, strided views, slicing, permutes, dtype
+  promotion, serialization round trips including corrupt and truncated blobs,
+  large-tensor stress, and a deep view chain.
+
+astrovox/tests/test_diagnostics.py
+  Each diagnostic is tested against the failure it exists to catch, including
+  a frozen parameter, a NaN gradient, an infinity, and a wrongly shaped
+  gradient. Every report is asserted to be plain ASCII, because these go to
+  consoles and log files with limited encodings.
+
+156 astrovox tests, 820 across the repository, none failing.

@@ -44,7 +44,10 @@ class Linear(Module):
         if bias:
             self.bias = parameter(np.zeros(out_features, dtype=np.float32), f"bias:{out_features}")
         else:
-            self.register_parameter("bias", None)
+            # Set explicitly so the attribute resolves to None. Only
+            # registering the parameter would leave the name unset, and
+            # forward() reads self.bias on every call.
+            self.bias = None
 
     def forward(self, x: Tensor) -> Tensor:
         """Apply the affine transform to ``x``."""

@@ -838,7 +838,12 @@ def _infer_shape(current: Shape, shape: Sequence[Any]) -> Shape:
 
 
 def tensor(data: Any, dtype: DType | str | None = None, device: Device = CPU, requires_grad: bool = False) -> Tensor:
-    """Construct a tensor from an array, list, scalar, or existing tensor."""
+    """Construct a tensor from an array, list, scalar, or existing tensor.
+
+    A Python float or a list of floats defaults to :data:`DEFAULT` (float32).
+    Letting a plain list fall back to NumPy's own inference would silently
+    produce float64, so ``tensor([1.0])`` and ``tensor(1.0)`` would disagree.
+    """
     if isinstance(data, Tensor):
         out = data.to(device)
         if requires_grad:
@@ -849,5 +854,33 @@ def tensor(data: Any, dtype: DType | str | None = None, device: Device = CPU, re
         return Tensor._make(np.array(data, dtype=resolved.np_dtype), resolved, device, requires_grad)
     if isinstance(data, np.ndarray):
         return Tensor.from_numpy(data, resolve(dtype) if dtype else None, device, requires_grad)
-    resolved = resolve(dtype) if dtype is not None else None
+    resolved = resolve(dtype) if dtype is not None else _default_for(data)
     return Tensor.from_list(data, resolved, device).requires_grad_(requires_grad)
+
+
+def _default_for(data: Any) -> DType | None:
+    """Return the default dtype for nested Python data.
+
+    Lists of floats and ints follow the framework defaults; anything with a
+    string or other object leaves the choice to NumPy, since there is no
+    numeric default that fits.
+    """
+    flat = [item for item in _flatten(data)]
+    if not flat:
+        return None
+    if all(isinstance(v, bool) for v in flat):
+        return BOOL
+    if all(isinstance(v, (int,)) and not isinstance(v, bool) for v in flat):
+        return DEFAULT_INT
+    if all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in flat):
+        return DEFAULT
+    return None
+
+
+def _flatten(data: Any) -> Iterable[Any]:
+    """Yield the scalar leaves of nested lists and tuples."""
+    if isinstance(data, (list, tuple)):
+        for item in data:
+            yield from _flatten(item)
+    else:
+        yield data
