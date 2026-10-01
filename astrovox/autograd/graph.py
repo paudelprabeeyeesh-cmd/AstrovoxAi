@@ -9,7 +9,7 @@ structure.
 from __future__ import annotations
 
 import threading
-from typing import Iterator
+from typing import Any, Callable, Iterator
 
 from astrovox.autograd.function import GraphNode, Node
 
@@ -69,7 +69,8 @@ class no_grad:
     """Context manager that disables graph recording inside its block.
 
     Inference code runs under this so that no nodes are allocated and the
-    produced tensors have no backward path.
+    produced tensors have no backward path. Usable either as a context
+    manager or as a decorator.
     """
 
     def __init__(self, enabled: bool = True) -> None:
@@ -83,6 +84,17 @@ class no_grad:
 
     def __exit__(self, *exc_info: object) -> None:
         GraphContext.set_enabled(self._previous)
+
+    def __call__(self, func: "Callable[..., Any]") -> "Callable[..., Any]":
+        """Return ``func`` wrapped so it runs with recording disabled."""
+        import functools
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            with no_grad(self.enabled):
+                return func(*args, **kwargs)
+
+        return wrapper
 
 
 class enable_grad:
@@ -99,6 +111,17 @@ class enable_grad:
 
     def __exit__(self, *exc_info: object) -> None:
         GraphContext.set_enabled(self._previous)
+
+    def __call__(self, func: "Callable[..., Any]") -> "Callable[..., Any]":
+        """Return ``func`` wrapped so it runs with recording forced on."""
+        import functools
+
+        @functools.wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            with enable_grad(self.enabled):
+                return func(*args, **kwargs)
+
+        return wrapper
 
 
 def current_graph() -> GraphContext:

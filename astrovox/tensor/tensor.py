@@ -298,6 +298,22 @@ class Tensor:
         """Accumulated gradient, if :meth:`backward` has been called."""
         return self._grad
 
+    def backward(self, grad_output: Tensor | None = None, retain_graph: bool = False) -> "Tensor":
+        """Differentiate this tensor, accumulating into the leaves.
+
+        This is the convenient form: ``loss.backward()`` rather than calling
+        :func:`~astrovox.autograd.engine.backward` directly.
+        """
+        from astrovox.autograd.engine import backward as _backward
+
+        if self._grad_fn is None:
+            raise RuntimeError(
+                "backward() requires a tensor produced by an operation; "
+                "a leaf or a constant has nothing to differentiate"
+            )
+        _backward(self, grad_output, retain_graph)
+        return self
+
     def item(self) -> Any:
         """Return this tensor's value as a Python scalar."""
         if self._shape.numel != 1:

@@ -122,14 +122,23 @@ def load_tensors(path: str | Path) -> dict[str, Tensor]:
         }
 
 
-def save_checkpoint(module: Any, path: str | Path, extra: dict[str, Any] | None = None) -> Path:
+def save_checkpoint(
+    module: Any,
+    path: str | Path,
+    extra: dict[str, Any] | None = None,
+    extra_states: dict[str, dict[str, Tensor]] | None = None,
+) -> Path:
     """Serialize every parameter and buffer of ``module`` into a checkpoint.
 
     Args:
         module: an object exposing ``state_dict()`` and ``load_state_dict()``.
         path: destination file.
         extra: arbitrary JSON-serializable data to store alongside, such as
-            optimizer state or the step counter.
+            the step counter or the loss history.
+        extra_states: named collections of tensors from other modules, for
+            example a head whose weights are not part of ``module``. They are
+            stored under their own namespaced keys and returned by
+            :func:`load_checkpoint`.
     """
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -139,6 +148,11 @@ def save_checkpoint(module: Any, path: str | Path, extra: dict[str, Any] | None 
         for name, t in state.items():
             archive.writestr(f"tensors/{name}.avx", serialize_tensor(t))
             manifest["tensors"][name] = {"dtype": t.dtype.name, "shape": list(t.shape.dims)}
+        for group, tensors in (extra_states or {}).items():
+            for name, t in tensors.items():
+                key = f"{group}/{name}"
+                archive.writestr(f"tensors/{key}.avx", serialize_tensor(t))
+                manifest["tensors"][key] = {"dtype": t.dtype.name, "shape": list(t.shape.dims)}
         archive.writestr("manifest.json", json.dumps(manifest, indent=2, sort_keys=True))
     return target
 
@@ -146,7 +160,8 @@ def save_checkpoint(module: Any, path: str | Path, extra: dict[str, Any] | None 
 def load_checkpoint(module: Any, path: str | Path, strict: bool = True) -> dict[str, Any]:
     """Load a checkpoint written by :func:`save_checkpoint`` into ``module``.
 
-    Returns the extra metadata recorded alongside the tensors.
+    Namespaced keys from ``extra_states`` are split back out into
+    ``manifest["extra"]`` so the caller can route them to the right module.
     """
     with zipfile.ZipFile(Path(path), "r") as archive:
         state: dict[str, Tensor] = {}
@@ -154,8 +169,22 @@ def load_checkpoint(module: Any, path: str | Path, strict: bool = True) -> dict[
             if name.startswith("tensors/") and name.endswith(".avx"):
                 state[name[len("tensors/") : -len(".avx")]] = deserialize_tensor(archive.read(name))
         manifest = json.loads(archive.read("manifest.json"))
+
+    extra = dict(manifest.get("extra", {}))
+    own = module.state_dict()
+    namespaced: dict[str, dict[str, Tensor]] = {}
+    for key in list(state):
+        if key in own:
+            continue
+        group, _, name = key.partition("/")
+        if not name:
+            continue
+        namespaced.setdefault(group, {})[name] = state.pop(key)
+    for group, tensors in namespaced.items():
+        extra[group] = tensors
+
     module.load_state_dict(state, strict=strict)
-    return manifest.get("extra", {})
+    return extra
 
 
 def iter_tensors(path: str | Path) -> Iterator[tuple[str, Tensor]]:

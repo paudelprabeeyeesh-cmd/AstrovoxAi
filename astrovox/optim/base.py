@@ -27,13 +27,29 @@ class Optimizer:
         self.lr = lr
         self.state: dict[int, dict[str, Tensor]] = {}
         self.step_count = 0
+        # State is keyed by position in ``self.params``, not by id(param).
+        # An id is only meaningful inside one process, so keying on it would
+        # make a checkpoint unusable after being reloaded: the restored entry
+        # would never be found and the optimizer would silently start fresh.
+        self._slots: dict[int, int] = {id(p): i for i, p in enumerate(self.params)}
 
     def state_for(self, param: Parameter) -> dict[str, Tensor]:
         """Return the per-parameter state, creating it on first use."""
-        key = id(param)
+        key = self._slot_of(param)
         if key not in self.state:
             self.state[key] = self._init_state(param)
         return self.state[key]
+
+    def _slot_of(self, param: Parameter) -> int:
+        """Return the stable index of ``param`` within this optimizer."""
+        key = self._slots.get(id(param))
+        if key is not None:
+            return key
+        # A parameter added after construction gets a fresh slot.
+        key = len(self.params)
+        self._slots[id(param)] = key
+        self.params.append(param)
+        return key
 
     def _init_state(self, param: Parameter) -> dict[str, Tensor]:
         """Create the per-parameter state; optimized ones override this."""
@@ -61,7 +77,11 @@ class Optimizer:
 
     def add_param_group(self, params: Sequence[Parameter], lr: float | None = None) -> None:
         """Add parameters to this optimizer, optionally at a different rate."""
-        self.params.extend(p for p in params if p.requires_grad)
+        for param in params:
+            if not param.requires_grad or id(param) in self._slots:
+                continue
+            self._slots[id(param)] = len(self.params)
+            self.params.append(param)
         if lr is not None:
             self.lr = lr
 
