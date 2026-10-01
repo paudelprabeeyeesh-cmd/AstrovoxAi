@@ -116,7 +116,7 @@ class LanguageModel(Module):
         # matrix and is standard for small models.
         self.head = Linear(config.d_model, config.vocab_size, bias=False)
         self.optimizer = AdamW(
-            list(self.model.parameters()) + list(self.head.parameters()),
+            list(self.parameters()),
             lr=config.learning_rate,
             weight_decay=config.weight_decay,
         )
@@ -140,19 +140,21 @@ class LanguageModel(Module):
         return cross_entropy(flat_logits, flat_targets)
 
     def parameters(self, recurse: bool = True):
-        """Return every trainable parameter, including the head's."""
-        return list(Module.parameters(self)) + list(self.head.parameters())
+        """Return every trainable parameter exactly once.
+
+        ``head`` is registered as a submodule, so it is already reached by the
+        base traversal. Yielding it again would make the optimizer apply each
+        update to the same weight twice.
+        """
+        return list(Module.parameters(self))
 
     def named_parameters(self, prefix: str = "", recurse: bool = True):
         """Yield ``(name, parameter)`` for the encoder and the head."""
-        yield from Module.named_parameters(self, prefix, recurse)
-        yield from ((f"{prefix}head.{n}", p) for n, p in self.head.named_parameters())
+        return Module.named_parameters(self, prefix, recurse)
 
     def state_dict(self, prefix: str = "") -> dict[str, Any]:
         """Return the encoder and head weights under one namespace."""
-        state = Module.state_dict(self, prefix)
-        state.update({f"{prefix}head.{k}": v for k, v in self.head.state_dict().items()})
-        return state
+        return Module.state_dict(self, prefix)
 
     def learning_rate_at(self, step: int) -> float:
         """Return the learning rate for ``step``.

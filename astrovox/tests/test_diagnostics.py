@@ -60,7 +60,9 @@ class TestGradientConsistency:
         x, y = small_batch(4)
         loss = lambda: cross_entropy(model(x), y)
         for check in gradient_consistency(loss, model):
-            assert check.norm_relative_error < 1e-2, check
+            # The largest single-element disagreement, measured against the
+            # gradient's own norm.
+            assert check.max_error_over_norm < 1e-2, check
 
     def test_report_is_readable(self):
         model = small_model()

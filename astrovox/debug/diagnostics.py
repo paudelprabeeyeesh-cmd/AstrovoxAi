@@ -36,7 +36,7 @@ class ParameterGradientCheck:
     max_rel_error: float
     grad_norm: float
     elements: int
-    norm_relative_error: float = 0.0
+    max_error_over_norm: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         """Return the check as a plain dictionary."""
@@ -45,7 +45,7 @@ class ParameterGradientCheck:
             "passed": self.passed,
             "max_abs_error": self.max_abs_error,
             "max_rel_error": self.max_rel_error,
-            "norm_relative_error": self.norm_relative_error,
+            "max_error_over_norm": self.max_error_over_norm,
             "grad_norm": self.grad_norm,
             "elements": self.elements,
         }
@@ -77,8 +77,10 @@ def gradient_consistency(
         grad = param.grad
         norm = 0.0 if grad is None else float((grad.numpy().astype("float64") ** 2).sum() ** 0.5)
         # The per-element relative error is near 1 wherever the true gradient
-        # is near zero, so the norm ratio is the figure worth reporting.
-        scale = max(result.max_abs_error, 1e-30)
+        # The per-element relative error is near 1 wherever the true gradient
+        # is near zero, so it is not worth reporting. This is the largest
+        # absolute error as a fraction of the gradient norm: a small number
+        # means the disagreement is negligible against the gradient itself.
         checks.append(
             ParameterGradientCheck(
                 name=name,
@@ -87,7 +89,7 @@ def gradient_consistency(
                 max_rel_error=result.max_rel_error,
                 grad_norm=norm,
                 elements=result.num_elements,
-                norm_relative_error=scale / max(norm, 1e-30),
+                max_error_over_norm=result.max_abs_error / max(norm, 1e-30),
             )
         )
     return checks
@@ -100,7 +102,7 @@ def format_consistency(checks: Sequence[ParameterGradientCheck]) -> str:
     for check in checks:
         status = "PASS" if check.passed else "FAIL"
         lines.append(
-            f"{check.name:<44}{status:<8}{check.norm_relative_error:>12.3e}{check.grad_norm:>13.5g}"
+            f"{check.name:<44}{status:<8}{check.max_error_over_norm:>12.3e}{check.grad_norm:>13.5g}"
         )
     return "\n".join(lines)
 
@@ -548,7 +550,7 @@ def dashboard(
         if not check.passed:
             problems.append(
                 f"gradient check failed for {check.name} "
-                f"(relative error {check.norm_relative_error:.3e})"
+                f"(relative error {check.max_error_over_norm:.3e})"
             )
 
     return Dashboard(

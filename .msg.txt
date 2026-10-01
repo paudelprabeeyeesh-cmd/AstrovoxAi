@@ -1,70 +1,57 @@
-feat(astrovox): profiler, FLOP accounting, and a working language model
+docs(astrovox): document the framework and add a runnable example
 
-Closes out the remaining priorities: measure the engine, then use it to train
-a real model end to end.
+Six documents covering what the package is, how each part works, and what is
+not there yet. The limitations section is deliberate: an empty list of known
+gaps is more useful than none.
 
-astrovox.profile
-  count_flops() counts a forward pass from the recorded graph, splitting the
-  total by operation. Matmul flops are checked against the analytic value
-  (2 * m * k * n, scaled by batch), and views count as zero because they move
-  no data. count_backward_flops() doubles a forward cost, which is right for
-  most differentiable ops and correctly zero for views and embeddings.
-  Profiler times named regions and reports throughput. AllocationTracker
-  counts buffers, bytes, and distinct shapes. Roofline helpers give bandwidth,
-  cache residency, and arithmetic intensity, which is what decides whether a
-  kernel wants better math or fewer accesses.
+astrovox/README.md
+  Status table, quick start, the four-call training loop, layout, and links.
+  Notes that the core has no PyTorch dependency, and says plainly what is
+  missing: no accelerator backend, no distributed execution, no compiler or
+  fusion, quadratic attention memory, and NumPy-bound performance.
 
-astrovox.nlp
-  CharTokenizer is byte-level over all 256 values, so any input is encodable;
-  it previously covered only printable ASCII, which silently replaced tabs and
-  newlines. WordTokenizer fits a frequency cutoff. Dataset slices a corpus into
-  windows whose target is the input shifted by one.
-  batches() cycles infinitely for training and epoch() returns a finite pass
-  for validation. The distinction matters: validating by materialising a
-  repeating generator exhausts memory.
+astrovox/docs/tensor.md
+  Storage, stride, and why a strided view is materialized with as_strided over
+  a flattened alias. The three details that each cost a bug: flattening the
+  storage first, taking rank from .ndim rather than len, and the bounds check
+  that exempts empty views. The view-gradient table, why a strided reshape
+  needs the Materialize node, the broadcast and reduction inverses, dtype
+  promotion, and the serialization format with the reason it stores raw bytes
+  rather than pickle.
 
-  LanguageModel is a causal transformer with a tied-free linear head, gradient
-  clipping, linear warmup, and cosine decay. The learning rate is derived from
-  the step counter rather than a separate scheduler object, because two counters
-  that must agree are two things to restore and one thing to forget.
-  sample() generates with temperature and top-k, under no_grad.
+astrovox/docs/autograd.md
+  The Function protocol, the implicit graph, and the backward contract with
+  the bare-tensor case spelled out. Ordering by sequence number, accumulation,
+  and why the gradient at position i belongs to node.inputs[i] rather than to
+  the parent's input list. The broadcast and reduction inverses, batched matmul
+  with einsum for vector operands, and why views are graph nodes. Three
+  verification strategies and the two situations that need explicit handling:
+  a non-smooth function at a kink, and a gradient that is legitimately zero.
 
-  Trained on a synthetic corpus, validation loss falls 2.77 to 2.61 and
-  perplexity 15.9 to 10.4 over 100 steps of an 87k-parameter model.
+astrovox/docs/debugging.md
+  The tool for each failure mode, with the order to try them. Emphasises
+  calling check_graph before backward, since a backward releases the graph.
 
-Three resume bugs, each silent
-  Optimizer state was keyed by id(param). An id is only meaningful inside one
-  process, so a reloaded checkpoint's state was never found and the optimizer
-  silently restarted with fresh moments. State is keyed by position in the
-  parameter list instead.
-  Optimizer state travels through the JSON manifest as keys, which come back
-  as text. Left as strings, every lookup missed. They are converted back to
-  integers on load.
-  The step counter and optimizer state were written but not read back, so a
-  resumed run restarted its warmup and learning rate from zero.
+astrovox/docs/execution.md
+  What executes an operation today, FLOP accounting conventions, timing,
+  roofline ratios, and the memory figure that matters for training. Records
+  what measurement actually showed: a single wide Linear takes about 0.5 ms
+  while the full two-layer forward takes about 9 ms, so the cost is graph
+  construction and view materialization rather than BLAS. Then the next five
+  optimizations in value order, starting with keeping weights in both layouts.
 
-Also found by writing the tests
-  - Tensor.backward() did not exist; loss.backward() is the expected spelling.
-  - CharTokenizer.load passed a vocab argument the constructor does not accept,
-    so loading a saved tokenizer raised.
-  - decode() dropped multi-character special tokens even when asked to keep
-    them, so an id sequence with BOS and EOS decoded to the same string either
-    way.
-  - The checkpoint format could not hold a second module's tensors, which a
-    language model needs for its head. save_checkpoint now takes namespaced
-    groups.
-  - @no_grad() could not be used as a decorator; it is a context manager
-    whose instance is not callable.
-  - LanguageModel exposed no state_dict or named_parameters, so it could not
-    be checkpointed or inspected as a model.
+astrovox/examples/train_transformer.py
+  A runnable module, python -m astrovox.examples.train_transformer, that
+  trains a small language model and then runs the diagnostics over it. It uses
+  only the public API, so it also serves as a check that the documented entry
+  points exist. All 31 transformer parameters pass the gradient check.
 
-astrovox/tests/test_profiler.py (27 tests) checks flop counts against analytic
-values for matrices, batches, and vectors, and asserts a view costs nothing.
-
-astrovox/tests/test_language_model.py (38 tests) covers tokenizer round trips
-including control characters and unknown words, the shift-by-one dataset
-contract, training reducing loss and perplexity, every parameter receiving a
-gradient, a checkpoint reproducing predictions exactly, and resume continuing
-the same trajectory rather than restarting.
+Two fixes found by writing the example
+  - LanguageModel yielded the head's parameters both as a registered submodule
+    and explicitly, so every head weight appeared twice and the optimizer
+    applied each update to it twice.
+  - The reported figure in gradient_consistency was named as a norm-relative
+    error but was actually the largest element error over the gradient norm.
+    Renamed to match what it measures.
 
 887 tests across the repository, none failing.
