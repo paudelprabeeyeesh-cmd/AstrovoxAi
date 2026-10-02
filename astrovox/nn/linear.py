@@ -19,7 +19,25 @@ from astrovox.nn.module import (
 )
 from astrovox.ops.activation import gelu, relu, sigmoid, silu, softmax, tanh
 from astrovox.ops.math import add, matmul, mul
+from astrovox.tensor.storage import Storage
 from astrovox.tensor.tensor import Tensor
+
+
+def transposed_weight_parameter(
+    out_features: int, in_features: int, name: str = "weight"
+) -> Parameter:
+    """Build a weight whose transpose is contiguous.
+
+    A ``Linear`` layer computes ``x @ weight.T``. With a row-major weight
+    that transpose is strided, and NumPy has to copy the whole weight to hand
+    it to BLAS -- once per forward call. Storing the buffer in the transposed
+    layout makes the hot path contiguous and removes that copy, at the cost of
+    a strided write when an optimizer updates the weight. Forward and backward
+    dominate that trade, which is the same choice other frameworks make.
+    """
+    storage = Storage.from_array(np.zeros((in_features, out_features), dtype=np.float32))
+    weight = Parameter.from_storage(storage, (out_features, in_features), (1, out_features), name)
+    return weight
 
 
 class Linear(Module):
@@ -37,9 +55,7 @@ class Linear(Module):
             raise ValueError(f"Linear requires positive sizes, got in={in_features} out={out_features}")
         self.in_features = in_features
         self.out_features = out_features
-        self.weight = parameter(
-            np.empty((out_features, in_features), dtype=np.float32), f"weight:{out_features}x{in_features}"
-        )
+        self.weight = transposed_weight_parameter(out_features, in_features, f"weight:{out_features}x{in_features}")
         init_xavier_uniform(self.weight)
         if bias:
             self.bias = parameter(np.zeros(out_features, dtype=np.float32), f"bias:{out_features}")

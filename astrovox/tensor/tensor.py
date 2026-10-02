@@ -747,12 +747,19 @@ class Tensor:
         return self
 
     def _writable(self) -> np.ndarray:
-        """Return a dense array aliasing this tensor's buffer."""
-        if not self.is_contiguous or self._offset != 0:
-            dense = self._to_dense().copy()
-            self._storage.array[...] = dense.reshape(self._storage.array.shape)
-            self._offset = 0
-        return self._storage.array.reshape(self._shape.dims)
+        """Return an array aliasing this tensor's buffer, with its own strides.
+
+        A reshape of the storage is only correct for a row-major tensor. A
+        strided view needs a strided alias, or an in-place update would be
+        written to the wrong memory positions.
+        """
+        if self.is_contiguous and self._offset == 0:
+            return self._storage.array.reshape(self._shape.dims)
+        flat = self._storage.array.reshape(-1)
+        itemsize = self._storage.array.dtype.itemsize
+        return as_strided(
+            flat[self._offset :], shape=self._shape.dims, strides=tuple(s * itemsize for s in self._stride)
+        )
 
     # ------------------------------------------------------------------
     # Operators

@@ -1,57 +1,41 @@
-docs(astrovox): document the framework and add a runnable example
+perf(astrovox): fix the two bottlenecks measurement actually found
 
-Six documents covering what the package is, how each part works, and what is
-not there yet. The limitations section is deliberate: an empty list of known
-gaps is more useful than none.
+Profiling a training step contradicted the earlier guess. The cost was not
+graph construction or view materialization; it was an error function.
 
-astrovox/README.md
-  Status table, quick start, the four-call training loop, layout, and links.
-  Notes that the core has no PyTorch dependency, and says plainly what is
-  missing: no accelerator backend, no distributed execution, no compiler or
-  fusion, quadratic attention memory, and NumPy-bound performance.
+GELU computed erf through np.vectorize over a Python approximation, which
+made 12,582,924 interpreter calls per forward pass. That single line was 70
+percent of the forward and 60 percent of a whole training step. Replacing it
+with array operations over the same Abramowitz and Stegun 7.1.26 polynomial
+gives bit-comparable values and removed the interpreter entirely.
 
-astrovox/docs/tensor.md
-  Storage, stride, and why a strided view is materialized with as_strided over
-  a flattened alias. The three details that each cost a bug: flattening the
-  storage first, taking rank from .ndim rather than len, and the bounds check
-  that exempts empty views. The view-gradient table, why a strided reshape
-  needs the Materialize node, the broadcast and reduction inverses, dtype
-  promotion, and the serialization format with the reason it stores raw bytes
-  rather than pickle.
+The approximation is evaluated in the input's own precision. Its error is
+about 1.5e-7, which is the limit of float32, so promoting to float64 bought
+nothing the dtype could hold while allocating a wide temporary per call.
+Measured against a float64 reference, the float32 result is within 1e-7.
 
-astrovox/docs/autograd.md
-  The Function protocol, the implicit graph, and the backward contract with
-  the bare-tensor case spelled out. Ordering by sequence number, accumulation,
-  and why the gradient at position i belongs to node.inputs[i] rather than to
-  the parent's input list. The broadcast and reduction inverses, batched matmul
-  with einsum for vector operands, and why views are graph nodes. Three
-  verification strategies and the two situations that need explicit handling:
-  a non-smooth function at a kink, and a gradient that is legitimately zero.
+SciPy is used when installed, and the lookup is resolved once at import:
+attempting the import inside the hot path made every GELU call re-run a
+failing import, which cost real time on machines without SciPy.
 
-astrovox/docs/debugging.md
-  The tool for each failure mode, with the order to try them. Emphasises
-  calling check_graph before backward, since a backward releases the graph.
+A Linear weight is now stored so that its transpose is contiguous. The layer
+computes x @ weight.T, and with a row-major weight that transpose is strided,
+so NumPy copies the whole weight to hand it to BLAS on every forward call.
+Storing the buffer transposed makes the hot path contiguous. The trade is a
+strided write when an optimizer updates the weight, which is the right way
+round because forward and backward dominate.
 
-astrovox/docs/execution.md
-  What executes an operation today, FLOP accounting conventions, timing,
-  roofline ratios, and the memory figure that matters for training. Records
-  what measurement actually showed: a single wide Linear takes about 0.5 ms
-  while the full two-layer forward takes about 9 ms, so the cost is graph
-  construction and view materialization rather than BLAS. Then the next five
-  optimizations in value order, starting with keeping weights in both layouts.
+Fixing that surfaced a latent bug in Tensor._writable. It returned a
+row-major reshape of the storage, which is wrong for any strided tensor: an
+in-place update would be written to the wrong memory positions. It now
+returns a strided alias, so the layout is honoured. A weight is a leaf that is
+an optimizer writes every step, so this surfaced as a model that would not
+train at all rather than as a subtle numerical drift.
 
-astrovox/examples/train_transformer.py
-  A runnable module, python -m astrovox.examples.train_transformer, that
-  trains a small language model and then runs the diagnostics over it. It uses
-  only the public API, so it also serves as a check that the documented entry
-  points exist. All 31 transformer parameters pass the gradient check.
+Measured on a 3.0M-parameter transformer, batch 8 by 64:
+  before  1060 ms/step, 2.99 GFLOP/s
+  after    873 ms/step, 3.63 GFLOP/s
+The forward pass alone went from 3702 ms to about 620 ms, a factor of six,
+which is the erf change alone.
 
-Two fixes found by writing the example
-  - LanguageModel yielded the head's parameters both as a registered submodule
-    and explicitly, so every head weight appeared twice and the optimizer
-    applied each update to it twice.
-  - The reported figure in gradient_consistency was named as a norm-relative
-    error but was actually the largest element error over the gradient norm.
-    Renamed to match what it measures.
-
-887 tests across the repository, none failing.
+223 tests pass. The transformer still trains: validation loss 2.99 to 2.74.

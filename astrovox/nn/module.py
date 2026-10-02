@@ -12,6 +12,7 @@ from typing import Any, Callable, Iterator, Sequence
 import numpy as np
 
 from astrovox.tensor.dtype import DType
+from astrovox.tensor.device import CPU
 from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor
 
@@ -21,6 +22,10 @@ class Parameter(Tensor):
 
     A parameter is a leaf: it always requires gradients and never carries a
     graph node, so an optimizer can update it in place.
+
+    A parameter can be built over an existing storage with an arbitrary shape
+    and stride, which is how a weight is laid out so that its transpose is
+    contiguous without copying.
     """
 
     __slots__ = ("name", "requires_grad", "_grad_fn", "_grad", "_version", "_storage", "_shape", "_stride", "_offset", "dtype", "device")
@@ -38,6 +43,29 @@ class Parameter(Tensor):
         self.name = name
         self._grad_fn = None
         self._grad = None
+
+    @classmethod
+    def from_storage(
+        cls,
+        storage: Any,
+        shape: tuple[int, ...],
+        stride: tuple[int, ...],
+        name: str = "",
+    ) -> "Parameter":
+        """Wrap an existing storage with an explicit shape and stride."""
+        param = cls.__new__(cls)
+        param._storage = storage
+        param._shape = Shape(shape)
+        param._stride = tuple(stride)
+        param._offset = 0
+        param.dtype = storage.dtype
+        param.device = CPU
+        param.requires_grad = True
+        param._grad_fn = None
+        param._grad = None
+        param._version = 0
+        param.name = name
+        return param
 
     def __repr__(self) -> str:
         return f"Parameter containing:\n{str(self._to_dense())}"
