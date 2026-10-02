@@ -92,6 +92,13 @@ class Engine:
             # A node's backward receives a gradient shaped like its own output.
             grad_output = _align_to_outputs(node, grad_output)
 
+            if not node.function.supports_backward:
+                raise NotImplementedError(
+                    f"{node.function.name} does not support backward. It is a "
+                    "forward-only path; differentiating through it would leave "
+                    "every parameter before it without a gradient, so this is an "
+                    "error rather than a silent skip."
+                )
             try:
                 grads = node.function.backward(node.ctx, grad_output)
             except NotImplementedError:

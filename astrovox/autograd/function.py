@@ -25,6 +25,11 @@ class Function:
     #: Human-readable operation name, used by the compiler and profiler.
     name: str = "Function"
 
+    #: Whether a gradient flows through this operation. A false value makes
+    #: backward raise rather than silently return no gradient, so a forward-only
+    #: path cannot quietly stop training the layers before it.
+    supports_backward: bool = True
+
     @staticmethod
     def forward(ctx: Any, *args: Node) -> Node:
         """Compute the forward result. ``ctx`` is scratch state for backward."""
