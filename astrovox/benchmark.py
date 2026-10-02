@@ -192,15 +192,17 @@ def bench_matmul_backward(sizes: Sequence[tuple[int, int]] = ((256, 256), (512, 
     return report
 
 
-def bench_elementwise(size: int = 1_000_000) -> Report:
-    """Compare a broadcast multiply against NumPy."""
+def bench_elementwise(shape: tuple[int, int] = (1000, 1000)) -> Report:
+    """Compare a broadcast multiply and an exponential against NumPy."""
     report = Report(environment=environment())
-    a = np.random.default_rng(2).standard_normal(size).astype(np.float32)
-    b = np.random.default_rng(3).standard_normal(4).astype(np.float32)
+    rng = np.random.default_rng(2)
+    a = rng.standard_normal(shape).astype(np.float32)
+    b = rng.standard_normal((shape[1],)).astype(np.float32)
     ta, tb = tensor(a), tensor(b)
+    size = int(np.prod(shape))
     report.add(
         Case(
-            name=f"broadcast multiply {size // 1000}k",
+            name=f"broadcast multiply {shape[0]}x{shape[1]}",
             astrovox_ms=measure(lambda: ta * tb),
             reference_ms=measure(lambda: a * b),
             flops=size,
@@ -208,7 +210,7 @@ def bench_elementwise(size: int = 1_000_000) -> Report:
     )
     report.add(
         Case(
-            name="exp 1M",
+            name=f"exp {shape[0]}x{shape[1]}",
             astrovox_ms=measure(lambda: np.exp(ta.numpy())),
             reference_ms=measure(lambda: np.exp(a)),
             flops=size,
