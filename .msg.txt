@@ -1,0 +1,64 @@
+feat(astrovox): Hugging Face Hub integration and command line interface
+
+astrovox push my-user/astrovox-model uploads a trained model without the
+user assembling anything by hand.
+
+Checkpoint discovery (astrovox/hub/checkpoint.py)
+  Pushing should not require remembering where the weights are. Candidates
+  under a root are ranked by a preference for names like final, best or last,
+  then by modification time, then by shallowness. Directories that never hold
+  checkpoints are skipped rather than walked, because searching a virtual
+  environment or a package cache is slow and never finds anything. Zero-byte
+  files are ignored. A malformed config beside a checkpoint is tolerated: the
+  card simply says less rather than the push failing.
+
+Model cards (astrovox/hub/card.py)
+  YAML front matter, which is what the Hub reads to populate a model page,
+  followed by sections for details, training, evaluation, usage, intended use,
+  limitations, and licence. A section appears only when there is something to
+  put in it, so a model with no recorded metrics gets no empty Evaluation
+  table. Parameter counts render readably, and a manifest accompanies the card
+  so the same facts are available to tooling.
+
+Hub client (astrovox/hub/client.py)
+  Built on the official huggingface_hub package rather than hand-rolled HTTP,
+  so authentication, retries, and resumable transfers come from the client
+  that maintains them. The dependency is imported lazily: everything else in
+  Astrovox works without it, and only these operations need it.
+  The file set is assembled into a staging directory before upload, so it is
+  inspectable and testable without a network, and the same set is used for
+  both. Weights and configuration are renamed to predictable remote names
+  because a downstream loader should not have to know what the training
+  script called them.
+  Failures are typed: AuthenticationError, CheckpointNotFound,
+  RepositoryNotFound, HubError, each saying what to do next.
+
+Credentials (astrovox/hub/auth.py)
+  Read from an argument, then ASTROVOX_TOKEN or HF_TOKEN, then a file under
+  the user's config directory. The environment wins so CI can supply a token
+  without touching the machine. The file is owner-readable only, since a
+  token grants write access to everything the account can reach. It is never
+  logged and never uploaded, and status output masks all but the last four
+  characters.
+
+Command line (astrovox/cli.py)
+  login, logout, whoami, push, pull, list-models, card, checkpoints. Progress
+  goes to standard error and results to standard output, so output can be
+  piped, and every failure exits non-zero so the commands compose in a script.
+  The checkpoint is located before a token is required: it is a local check,
+  so someone pointing at the wrong directory hears about that rather than
+  about authentication.
+
+Tests (astrovox/tests/test_hub.py, 52 tests)
+  No network. Repository id parsing including malformed input and trailing
+  slashes, credential storage with environment precedence and the guarantee
+  that status output never contains the token, checkpoint ranking, staging,
+  card rendering, and the push path against a stub Hub client, which exercises
+  file selection and naming without needing a real token.
+
+Also fixed while testing: to_low_precision bit-cast a float32 array as uint16,
+doubling the element count and producing the wrong shape. It now casts, which
+is also the correct conversion; bfloat16 currently shares float16's width
+rather than using its own exponent layout, which the module documents.
+
+994 tests across the repository, none failing.
