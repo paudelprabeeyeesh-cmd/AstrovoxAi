@@ -42,3 +42,9 @@ logs/*.log
 
 # Code quality reports
 code-quality-reports/
+# Scratch files used while composing commit messages.
+.msg.txt
+# Embedded worktrees and agent scratch directories. These are local
+# state, not repository content, and a worktree is itself a git repo.
+.kilo/
+.prabeesh/
