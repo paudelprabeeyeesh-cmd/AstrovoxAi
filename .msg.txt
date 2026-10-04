@@ -1,0 +1,67 @@
+feat(astrovox): complete the math surface and add the data pipeline
+
+An audit against the 40-phase specification checked 97 named symbols by
+importing them: all 97 were present. Probing for extension modules that the
+specification asks for showed which were genuinely absent, and this fills two
+of the largest gaps.
+
+astrovox/ops/math_ext.py
+  The trigonometry, absolute value, sign, round, clamp and modulo the
+  specification lists for Phase 2, plus the norms and distance metrics, and the
+  linear algebra a model layer needs: inverse, Cholesky, QR, LU, SVD,
+  eigenvalues, solve, trace, determinant, and the Fourier transform.
+
+  The single-input operations are built from one factory rather than written out
+  four times, while each still carries its own name so graphs and profiles stay
+  readable.
+
+  The Fourier transform stacks its result as a trailing real/imaginary pair
+  rather than returning a complex array. This engine's dtypes are real-valued,
+  so a complex result would have been cast and the imaginary part discarded
+  without complaint. fft_magnitude is there for callers who only need the size.
+
+  LU comes from SciPy, which is imported inside the call so the rest of the
+  module works without it and the failure names what is missing.
+
+astrovox/data/loader.py
+  Phase 9 in full: a Dataset over an in-memory sequence, an IterableDataset
+  interface, TensorDataset, sequential, random and distributed samplers, a
+  batch sampler, a collation function, and a DataLoader with threaded
+  prefetching, shuffling, and an infinite stream for step-based training.
+
+  Three bugs were found by the tests rather than by reading:
+
+  The threaded loader started one producer per worker, and each walked the whole
+  batch list, so every batch was delivered num_workers times. There is now one
+  producer: the materialization is cheap next to the model's own compute, and
+  several producers would corrupt the stream.
+
+  DistributedSampler wrapped its padded indices back into range, which put the
+  same sample on two ranks. The padding no longer wraps.
+
+  The padding could also under-fill. With one sample and three replicas it
+  needed two pad entries but could only supply one, leaving the third rank
+  empty. It now resizes the order to exactly the number of pad entries needed.
+
+  Padding deliberately repeats samples across ranks so every rank gets the same
+  count and therefore the same batch shape. The tests assert the properties that
+  actually matter: equal shard lengths, no repeated index within a rank, and
+  full coverage; and that a clean partition appears when the count divides.
+
+astrovox/tests/test_math_and_data.py, 57 tests
+  Trigonometry against NumPy, gradients for the new elementwise operations
+  checked numerically, clamp's gradient being zero outside the range, the
+  decompositions reconstructing their input, a lossless fft/ifft round trip,
+  samplers partitioning and shuffling, the threaded loader matching the
+  single-threaded one batch for batch, and prefetching preserving order.
+
+Two notes on the specification as written. Phase 2 lists a gradient tape and
+Phase 3 lists higher-order gradients; the engine implements the dynamic graph
+directly and does not support second-order derivatives, which is stated in
+astrovox/docs/autograd.md rather than left implied. And Phases 18 through 40
+describe services, deployment, a studio, a UI and a model zoo: those are
+products rather than framework capabilities, and several already have partial
+coverage elsewhere in this repository under models/llm. I have not duplicated
+them into astrovox/.
+
+1051 tests across the repository, none failing.
