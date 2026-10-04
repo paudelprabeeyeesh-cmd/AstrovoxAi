@@ -519,6 +519,15 @@ class Tensor:
         axis = dim if dim >= 0 else dim + self._shape.ndim + 1
         return self._make_view(UnsqueezeSpec(axis, tuple(self._shape.dims)))
 
+    def expand(self, shape: Sequence[int]) -> Tensor:
+        """Expand the tensor to ``shape`` by adding dimensions of size 1 and repeating elements.
+
+        The shape must be compatible: each dimension of the original tensor must either
+        match the corresponding dimension of ``shape`` or the ``shape`` dimension must be 1.
+        """
+        from astrovox.ops.math import expand as expand_op
+        return expand_op(self, shape)
+
     def _raw_unsqueeze(self, axis: int) -> Tensor:
         """Build an unsqueezed view without recording a graph node."""
         dims = list(self._shape.dims)
@@ -551,11 +560,38 @@ class Tensor:
         return self._index(key)
 
     def _index(self, key: Any) -> Tensor:
+        """Index with an int, slice, ellipsis, boolean mask, or combination of these."""
+        
+        # SAVE ORIGINAL KEY to check for boolean masks before Tensor conversion
+        original_key = key
+        
         if isinstance(key, Tensor):
             key = key._to_dense().astype(np.int64)
         if not isinstance(key, tuple):
             key = (key,)
 
+        # FIRST: Check for boolean mask using original key (before Tensor conversion)
+        # Only check if original_key is iterable (not a scalar int/index)
+        if original_key is not None and hasattr(original_key, '__iter__') and not isinstance(original_key, str):
+            # Check if any element in original_key is a Tensor with boolean dtype
+            for i, k in enumerate(original_key):
+                if isinstance(k, Tensor) and getattr(k, 'dtype', None) and k.dtype.name == "bool":
+                    # Found a boolean tensor mask
+                    bool_ax = i
+                    mask = k._to_dense().astype(np.bool_)
+                    if mask.ndim != 1:
+                        raise IndexError("Boolean mask must be 1-D")
+                    if mask.shape[0] != self._shape.dims[bool_ax]:
+                        raise IndexError(f"Boolean mask size {mask.shape[0]} does not match dimension {bool_ax} size {self._shape.dims[bool_ax]}")
+                    # Apply boolean indexing
+                    dense = self._to_dense()
+                    idx = np.where(mask)[0]
+                    if len(idx) == 0:
+                        new_shape = [d for i, d in enumerate(self._shape.dims) if i != bool_ax]
+                        return Tensor._make(np.empty(tuple(new_shape), dtype=self.dtype), Shape(new_shape), self.dtype, self.device, self.requires_grad)
+                    selected = np.take(dense, idx, axis=bool_ax)
+                    return Tensor.from_numpy(selected, self.dtype, self.device).requires_grad_(self.requires_grad)
+        
         # Expand ellipsis against the remaining dimensions.
         if any(k is Ellipsis for k in key):
             if sum(1 for k in key if k is Ellipsis) > 1:
@@ -566,29 +602,12 @@ class Tensor:
 
         key = key + (slice(None),) * (self._shape.ndim - len(key))
 
+        # Check advanced indexing: list, ndarray, or Tensor (non-bool)
         if any(isinstance(k, (list, np.ndarray, Tensor)) for k in key):
             return self._advanced_index(key, [i for i, k in enumerate(key) if isinstance(k, (list, np.ndarray, Tensor))])
 
-# Boolean mask indexing: exactly one boolean tensor mask allowed
-        if any(isinstance(k, Tensor) and k.dtype.is_bool for k in key):
-            bool_ax = next(i for i, k in enumerate(key) if isinstance(k, Tensor) and k.dtype.is_bool)
-            mask = key[bool_ax]._to_dense().astype(np.bool_)
-            if mask.ndim != 1:
-                raise IndexError("Boolean mask must be 1-D")
-            if mask.shape[0] != self._shape.dims[bool_ax]:
-                raise IndexError(f"Boolean mask size {mask.shape[0]} does not match dimension {bool_ax} size {self._shape.dims[bool_ax]}")
-            # Materialize to dense and apply boolean indexing via numpy take
-            dense = self._to_dense()
-            idx = np.where(mask)[0]
-            if len(idx) == 0:
-                # Return empty tensor with the masked dimension removed
-                new_shape = [d for i, d in enumerate(self._shape.dims) if i != bool_ax]
-                return Tensor._make(np.empty(tuple(new_shape), dtype=self.dtype), Shape(new_shape), self.dtype, self.device, self.requires_grad)
-            # Use np.take to select elements along the specified axis
-            selected = np.take(dense, idx, axis=bool_ax)
-            return Tensor.from_numpy(selected, self.dtype, self.device).requires_grad_(self.requires_grad)
-
-
+        # Default: slice view
+        return self._slice_view(key)
 
     def _slice_view(self, key: tuple[Any, ...]) -> Tensor:
         """Build a strided view, recording a node so gradients route back.
@@ -738,6 +757,18 @@ class Tensor:
         """True when this tensor holds floating point values."""
         return self.dtype.is_float
 
+    def tile(self, reps: Sequence[int]) -> Tensor:
+        """Return a tensor with the entries of ``self`` tiled according to ``reps``.
+
+        ``reps`` is a sequence of positive integers specifying the number of
+        repetitions along each dimension. If ``reps`` has fewer dimensions
+        than ``self``, then the missing dimensions are assumed to have
+        repetition factor 1.
+        """
+        from astrovox.ops.math import tile as tile_op
+
+        return tile_op(self, reps)
+
     # ------------------------------------------------------------------
     # Mutation
     # ------------------------------------------------------------------
@@ -753,6 +784,66 @@ class Tensor:
         self._writable().fill(value)
         self._version += 1
         return self
+
+
+    def split(self, split_size: int, dim: int = 0) -> list[Tensor]:
+        """Split the tensor into chunks of size ``split_size`` along dimension ``dim``.
+        
+        Args:
+            split_size: Size of each chunk
+            dim: Dimension along which to split
+        
+        Returns:
+            List of tensors resulting from the split
+        """
+        from astrovox.tensor.shape import Shape
+        from astrovox.tensor.tensor import Tensor
+        
+        dim = _normalize_axis(dim, self._shape.ndim)
+        shape = self._shape
+        dim_size = shape.dims[dim]
+        
+        # Calculate number of splits
+        num_splits = (dim_size + split_size - 1) // split_size
+        
+        result = []
+        for i in range(num_splits):
+            start = i * split_size
+            end = min((i + 1) * split_size, dim_size)
+            
+            # Create a slice key
+            key = [slice(None)] * self._shape.ndim
+            key[dim] = slice(start, end)
+            
+            # Get the split tensor
+            split_tensor = self[tuple(key)]
+            result.append(split_tensor)
+        
+        return result
+    
+    def chunk(self, chunks: int, dim: int = 0) -> list[Tensor]:
+        """Split the tensor into roughly equal chunks along dimension ``dim``.
+        
+        Args:
+            chunks: Number of chunks
+            dim: Dimension along which to chunk
+        
+        Returns:
+            List of tensors resulting from the chunk
+        """
+        import math
+        from astrovox.tensor.shape import Shape
+        from astrovox.tensor.tensor import Tensor
+        
+        dim = _normalize_axis(dim, self._shape.ndim)
+        shape = self._shape
+        dim_size = shape.dims[dim]
+        
+        # Calculate split size
+        split_size = math.ceil(dim_size / chunks)
+        
+        return self.split(split_size, dim)
+
 
     def add_(self, other: Tensor | float) -> Tensor:
         """Add ``other`` in place and return this tensor."""
@@ -830,10 +921,30 @@ class Tensor:
 
         return pow_op(self, other)
 
+    def __mod__(self, other: Tensor | float) -> Tensor:
+        from astrovox.ops.math import mod as mod_op
+
+        return mod_op(self, other)
+
     def __neg__(self) -> Tensor:
         from astrovox.ops.math import neg
 
         return neg(self)
+
+    def repeat(self, repeats: int | Sequence[int], axis: int | None = None) -> Tensor:
+        """Repeat elements of this tensor along specified dimensions.
+
+        Args:
+            repeats: number of times to repeat each element, or a sequence of repeats
+                per dimension
+            axis: axis along which to repeat. If None, repeats along the last axis.
+
+        Returns:
+            tensor with repeated elements
+        """
+        from astrovox.ops.math import repeat as repeat_op
+
+        return repeat_op(self, repeats, axis)
 
     def __matmul__(self, other: Tensor) -> Tensor:
         from astrovox.ops.math import matmul

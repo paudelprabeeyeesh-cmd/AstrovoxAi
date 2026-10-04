@@ -50,15 +50,72 @@ class Add(Function):
             dtype,
             left.device,
         )
-        return _maybe_require_grad(out, a, b)
+        return out 
 
-    @staticmethod
-    def backward(ctx, grad_output):
-        a, b = ctx.load("a"), ctx.load("b")
-        ga = unbroadcast(grad_output, a.shape) if isinstance(a, Tensor) else None
-        gb = unbroadcast(grad_output, b.shape) if isinstance(b, Tensor) else None
-        return ga, gb
+def split(tensor: Tensor, split_size: int, dim: int = 0) -> list[Tensor]:
+    """Split a tensor into chunks along dimension dim.
+    
+    Args:
+        tensor: The tensor to split
+        split_size: Size of each chunk
+        dim: Dimension along which to split
+    
+    Returns:
+        List of tensors resulting from the split
+    """
+    from astrovox.tensor.shape import Shape
+    from astrovox.tensor.tensor import Tensor
+    
+    dim = _normalize_axis(dim, tensor.ndim)
+    shape = tensor.shape
+    dim_size = shape.dims[dim]
+    
+    # Calculate number of splits
+    num_splits = (dim_size + split_size - 1) // split_size
+    
+    result = []
+    for i in range(num_splits):
+        start = i * split_size
+        end = min((i + 1) * split_size, dim_size)
+        
+        # Create a slice key
+        key = [slice(None)] * tensor.ndim
+        key[dim] = slice(start, end)
+        
+        # Get the split tensor
+        split_tensor = tensor[tuple(key)]
+        result.append(split_tensor)
+    
+    return result
 
+
+def chunk(tensor: Tensor, chunks: int, dim: int = 0) -> list[Tensor]:
+    """Split a tensor into roughly equal chunks along dimension dim.
+    
+    Args:
+        tensor: The tensor to chunk
+        chunks: Number of chunks
+        dim: Dimension along which to chunk
+    
+    Returns:
+        List of tensors resulting from the chunk
+    """
+    from astrovox.tensor.shape import Shape
+    from astrovox.tensor.tensor import Tensor
+    import math
+    
+    dim = _normalize_axis(dim, tensor.ndim)
+    shape = tensor.shape
+    dim_size = shape.dims[dim]
+    
+    # Calculate split size
+    split_size = math.ceil(dim_size / chunks)
+    
+    return split(tensor, split_size, dim)
+
+
+# Alias for backward compatibility
+split_with_alias = split
 
 class Sub(Function):
     """Elementwise subtraction with broadcasting."""
@@ -424,6 +481,58 @@ def broadcast_tensor(a: Tensor, shape: Shape) -> Tensor:
     return BroadcastTensor.apply(a, shape)
 
 
+def expand(a: Tensor, shape: Sequence[int]) -> Tensor:
+    """Expand ``a`` to ``shape`` by adding dimensions of size 1 and repeating elements."""
+    from astrovox.tensor.shape import Shape
+    return BroadcastTensor.apply(a, Shape(shape))
+
+
+class Concat(Function):
+    """Concatenate a sequence of tensors along a given axis."""
+
+    name = "concat"
+
+    @staticmethod
+    def forward(ctx, tensors, axis):
+        ctx.save(tensors=tensors, axis=axis)
+        ndim = tensors[0].ndim
+        axis = _normalize_axis(axis, ndim)
+        ctx.axis = axis
+        # Verify all tensors have the same number of dimensions
+        for t in tensors[1:]:
+            if t.ndim != ndim:
+                raise ValueError(
+                    f"Expected all tensors to have the same number of dimensions "
+                    f"({ndim}), but got {t.ndim}"
+                )
+        # Check that the axis size is compatible for concatenation
+        cat_size = sum(t.shape.dims[axis] for t in tensors)
+        # Build the output shape
+        shape_list = list(tensors[0].shape.dims)
+        shape_list[axis] = cat_size
+        out_shape = Shape(shape_list)
+        # Concatenate using numpy
+        arrays = [t.numpy() for t in tensors]
+        out_array = np.concatenate(arrays, axis=axis)
+        out = Tensor.from_numpy(out_array, tensors[0].dtype, tensors[0].device)
+        return out.requires_grad_(any(t.requires_grad for t in tensors))
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        axis = ctx.axis
+        tensors = ctx.load("tensors")
+        grads = []
+        # Split the gradient along the concatenation axis
+        # We need to split grad_output into chunks corresponding to each tensor
+        input_sizes = [t.shape.dims[axis] for t in tensors]
+        # Use np.split to divide the gradient
+        grad_arrays = np.split(grad_output.numpy(), input_sizes, axis=axis)
+        for i, t in enumerate(tensors):
+            grad = Tensor.from_numpy(grad_arrays[i], t.dtype, t.device)
+            grads.append(grad.requires_grad_(t.requires_grad))
+        return tuple(grads), None
+
+
 def add_(a: Tensor, b: Tensor | float) -> Tensor:
     """In-place ``a += b``."""
     return a.add_(b)
@@ -447,3 +556,292 @@ def square(a: Tensor) -> Tensor:
 def reciprocal(a: Tensor) -> Tensor:
     """Elementwise ``1 / a``."""
     return div(Tensor.ones(a.shape.dims, a.dtype, a.device), a)
+
+
+def repeat(x: Tensor, repeats: int | Sequence[int], axis: int | None = None) -> Tensor:
+    """Repeat elements of a tensor along specified dimensions.
+
+    Args:
+        x: input tensor
+        repeats: number of times to repeat each element, or a sequence of repeats
+            per dimension
+        axis: axis along which to repeat. If None, repeats along the last axis.
+
+    Returns:
+        tensor with repeated elements
+    """
+    return Repeat.apply(x, repeats, axis)
+
+
+class Repeat(Function):
+    """Repeat elements of a tensor along specified dimensions."""
+
+    name = "repeat"
+
+    @staticmethod
+    def forward(ctx, x, repeats, axis=None):
+        ctx.save(x=x, repeats=repeats, axis=axis)
+        out = Tensor.from_numpy(
+            np.repeat(x.numpy(), repeats, axis=axis),
+            x.dtype,
+            x.device,
+        )
+        return out.requires_grad_(x.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        x, repeats, axis = ctx.load("x"), ctx.load("repeats"), ctx.load("axis")
+        x_arr = x.numpy()
+        grad = grad_output.numpy()
+        ndim = x_arr.ndim
+
+        if axis is None:
+            axis = ndim - 1
+
+        axis = axis if axis >= 0 else ndim + axis
+
+        out_shape = list(np.repeat(x_arr.shape, repeats if isinstance(repeats, (int, tuple, list)) else 1, axis=axis).shape)
+        # Determine the output shape along the repeated axis
+        axis_size = x_arr.shape[axis]
+        if isinstance(repeats, int) or (isinstance(repeats, (tuple, list)) and len(repeats) > 0 and axis < len(repeats)):
+            r = repeats if isinstance(repeats, int) else repeats[axis] if axis < len(repeats) else 1
+        else:
+            r = 1
+
+        # Build the index mapping for gradient scattering
+        # Each input element at position i along axis contributes to r output positions
+        # We need to sum grad_output across those r positions back to input position i
+
+        # Create an index array that maps output positions -> input positions
+        # Using np.repeat's inverse: for output position j, input position = j // r (along axis)
+        # But we need to handle the multi-dimensional case properly
+
+        # Reshape approach: collapse all dims except axis, do 1D scatter, reshape back
+        if axis == ndim - 1:
+            # Last axis case - simplest
+            in_size = x_arr.shape[axis]
+            out_size = in_size * r if isinstance(repeats, int) else in_size * (repeats[axis] if axis < len(repeats) else 1)
+
+            # Create output indices: 0, 1, ..., out_size-1
+            out_idx = np.arange(out_size, dtype=np.intp)
+
+            # Map output indices to input indices: each input element repeats r times
+            # input_idx = out_idx // r
+            in_idx = out_idx // r
+
+            # Scatter: grad_input[in_idx] += grad[out_idx]
+            # Use np.bincount for efficient scattering
+            grad_flat = grad.reshape(-1) if grad.ndim > 1 else grad
+            in_size_total = x_arr.numel
+
+            # Create a full gradient array initialized to zero
+            grad_input = np.zeros_like(x_arr, dtype=grad.dtype)
+
+            # Use np.add.at to scatter
+            np.add.at(grad_input.reshape(-1), in_idx, grad_flat)
+
+            # Reshape back to original shape
+            grad_input = grad_input.reshape(x_arr.shape)
+        else:
+            # General case: need to handle non-last axis
+            # Move the target axis to the last position, process, then move back
+            # Permute so axis becomes the last dimension
+            perm = list(range(ndim))
+            perm[axis], perm[-1] = perm[-1], perm[axis]
+            x_perm = np.transpose(x_arr, perm)
+            grad_perm = np.transpose(grad, perm)
+
+            # Now process along last axis
+            in_size = x_perm.shape[-1]
+            r_val = repeats if isinstance(repeats, int) else (repeats[axis] if isinstance(repeats, (tuple, list)) and axis < len(repeats) else 1)
+            out_size = in_size * r_val
+
+            out_idx = np.arange(out_size, dtype=np.intp)
+            in_idx = out_idx // r_val
+
+            grad_input_perm = np.zeros_like(x_perm, dtype=grad.dtype)
+            grad_flat = grad_perm.reshape(-1) if grad_perm.ndim > 1 else grad_perm
+
+            np.add.at(grad_input_perm.reshape(-1), in_idx, grad_flat)
+
+            # Permute back
+            grad_input = np.transpose(grad_input_perm, perm)
+
+        return Tensor.from_numpy(grad_input, x.dtype, x.device),
+
+
+class Stack(Function):
+    """Stack a sequence of tensors along a new axis."""
+
+    name = "stack"
+
+    @staticmethod
+    def forward(ctx, tensors, axis):
+        ctx.save(tensors=tensors, axis=axis)
+        dt = tensors[0].dtype
+        device = tensors[0].device
+        stacked = np.stack([t.numpy() for t in tensors], axis=axis)
+        out = Tensor.from_numpy(stacked, dt, device)
+        return out.requires_grad_(any(t.requires_grad for t in tensors))
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        tensors = ctx.load("tensors")
+        axis = ctx.load("axis")
+        grads = []
+        for i, t in enumerate(tensors):
+            # Build index tuple to select the i-th slice along axis
+            # then remove the stacking axis by reshaping
+            slices = [slice(None)] * grad_output.ndim
+            slices[axis] = i
+            gi = grad_output[numpy_index_tuple(slices)]
+            # gi still has the stacking axis of size 1, squeeze it out
+            gi = gi.reshape(t.shape.dims)
+            grads.append(Tensor.from_numpy(gi, t.dtype, t.device))
+        return tuple(grads), None
+
+
+def numpy_index_tuple(slices):
+    """Convert slice list to tuple for numpy indexing."""
+    return tuple(slices)
+
+
+def stack(tensors: Sequence[Tensor], axis: int = 0) -> Tensor:
+    """Stack a sequence of tensors along a new axis.
+
+    Args:
+        tensors: sequence of tensors to stack. All must have the same shape.
+        axis: axis along which to stack. Negative values are supported.
+
+    Returns:
+        A tensor with the stacked data, with the stacking axis inserted at ``axis``.
+    """
+    from astrovox.autograd.function import GraphContext, current_graph
+
+    # Normalize axis
+    ndim = max(t.ndim for t in tensors)
+    axis = axis if axis >= 0 else axis + ndim + 1
+
+    graph = current_graph()
+    result = Stack.apply(tensors, axis)
+
+    if graph.is_enabled() and result.requires_grad:
+        pass  # graph node already created by Stack.apply
+
+    return result
+
+
+def tile(x: Tensor, reps: Sequence[int]) -> Tensor:
+    """Tile ``x`` along each dimension according to ``reps``."""
+    return Tile.apply(x, reps)
+
+
+class Tile(Function):
+    """Tile an array by repeating elements along specified dimensions."""
+
+    name = "tile"
+
+    @staticmethod
+    def forward(ctx, x, reps):
+        ctx.save(x=x, reps=reps)
+        out = Tensor.from_numpy(np.tile(x.numpy(), reps), x.dtype, x.device)
+        return out.requires_grad_(x.requires_grad)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return (grad_output, None)
+
+
+def split(tensor, split_size: int, dim: int = 0) -> list:
+    """Split a tensor into chunks along dimension dim.
+
+    Args:
+        tensor: The tensor to split
+        split_size: Size of each chunk
+        dim: Dimension along which to split
+
+    Returns:
+        List of tensors resulting from the split
+    """
+    from astrovox.tensor.shape import Shape
+    from astrovox.tensor.tensor import Tensor
+    import math
+
+    dim = _normalize_axis(dim, tensor.ndim)
+    shape = tensor.shape
+    dim_size = shape.dims[dim]
+
+    # Calculate number of splits
+    num_splits = (dim_size + split_size - 1) // split_size
+
+    result = []
+    for i in range(num_splits):
+        start = i * split_size
+        end = min((i + 1) * split_size, dim_size)
+
+        # Create a slice key
+        key = [slice(None)] * tensor.ndim
+        key[dim] = slice(start, end)
+
+        # Get the split tensor
+        split_tensor = tensor[tuple(key)]
+        result.append(split_tensor)
+
+    return result
+
+
+def chunk(tensor, chunks: int, dim: int = 0) -> list:
+    """Split a tensor into roughly equal chunks along dimension dim.
+
+    Args:
+        tensor: The tensor to chunk
+        chunks: Number of chunks
+        dim: Dimension along which to chunk
+
+    Returns:
+        List of tensors resulting from the chunk
+    """
+    from astrovox.tensor.shape import Shape
+    from astrovox.tensor.tensor import Tensor
+    import math
+
+    dim = _normalize_axis(dim, tensor.ndim)
+    shape = tensor.shape
+    dim_size = shape.dims[dim]
+
+    # Calculate split size
+    split_size = math.ceil(dim_size / chunks)
+
+    return split(tensor, split_size, dim)
+    """Elementwise modulo ``a % b``.
+
+    Args:
+        a: The dividend tensor
+        b: The divisor tensor
+
+    Returns:
+        Result tensor with modulo of elements
+    """
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+
+    # Ensure both are tensors
+    if not isinstance(a, Tensor):
+        a = Tensor.from_numpy(np.asarray(a), DEFAULT, CPU)
+    if not isinstance(b, Tensor):
+        b = Tensor.from_numpy(np.asarray(b), DEFAULT, CPU)
+
+    # Promote dtypes
+    dtype = a.dtype.promote(b.dtype)
+
+    # Convert to common dtype
+    a_arr = a.numpy().astype(dtype.np_dtype, copy=False)
+    b_arr = b.numpy().astype(dtype.np_dtype, copy=False)
+
+    # Handle modulo operation
+    with np.errstate(divide='ignore', invalid='ignore'):
+        result_arr = np.mod(a_arr, b_arr)
+
+    out = Tensor.from_numpy(result_arr, dtype, a.device)
+    return out.requires_grad_(a.requires_grad or b.requires_grad)
