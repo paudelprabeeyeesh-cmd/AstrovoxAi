@@ -568,7 +568,27 @@ class Tensor:
 
         if any(isinstance(k, (list, np.ndarray, Tensor)) for k in key):
             return self._advanced_index(key, [i for i, k in enumerate(key) if isinstance(k, (list, np.ndarray, Tensor))])
-        return self._slice_view(key)
+
+# Boolean mask indexing: exactly one boolean tensor mask allowed
+        if any(isinstance(k, Tensor) and k.dtype.is_bool for k in key):
+            bool_ax = next(i for i, k in enumerate(key) if isinstance(k, Tensor) and k.dtype.is_bool)
+            mask = key[bool_ax]._to_dense().astype(np.bool_)
+            if mask.ndim != 1:
+                raise IndexError("Boolean mask must be 1-D")
+            if mask.shape[0] != self._shape.dims[bool_ax]:
+                raise IndexError(f"Boolean mask size {mask.shape[0]} does not match dimension {bool_ax} size {self._shape.dims[bool_ax]}")
+            # Materialize to dense and apply boolean indexing via numpy take
+            dense = self._to_dense()
+            idx = np.where(mask)[0]
+            if len(idx) == 0:
+                # Return empty tensor with the masked dimension removed
+                new_shape = [d for i, d in enumerate(self._shape.dims) if i != bool_ax]
+                return Tensor._make(np.empty(tuple(new_shape), dtype=self.dtype), Shape(new_shape), self.dtype, self.device, self.requires_grad)
+            # Use np.take to select elements along the specified axis
+            selected = np.take(dense, idx, axis=bool_ax)
+            return Tensor.from_numpy(selected, self.dtype, self.device).requires_grad_(self.requires_grad)
+
+
 
     def _slice_view(self, key: tuple[Any, ...]) -> Tensor:
         """Build a strided view, recording a node so gradients route back.
