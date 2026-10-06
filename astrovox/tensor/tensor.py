@@ -25,6 +25,7 @@ from astrovox.tensor.dtype import (
     resolve,
 )
 from astrovox.tensor.shape import Shape, broadcast_shapes
+from astrovox.autograd.module import Module
 
 
 if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type hints only
@@ -37,6 +38,56 @@ def _normalize_axis(axis: int, ndim: int) -> int:
     if not 0 <= resolved < max(ndim, 1):
         raise IndexError(f"Axis {axis} out of range for tensor with {ndim} dimensions")
     return resolved
+
+
+# Base class for neural network modules
+class Module:
+    """Base class for all neural network modules."""
+    
+    def __init__(self):
+        self._modules = {}
+        self._parameters = {}
+        self._buffers = {}
+        self._training = True
+    
+    def train(self, mode=True):
+        self._training = mode
+        
+    def eval(self):
+        self._training = False
+        
+    def register_module(self, name, module):
+        self._modules[name] = module
+        
+    def register_parameter(self, name, parameter):
+        self._parameters[name] = parameter
+        
+    def register_buffer(self, name, buffer):
+        self._buffers[name] = buffer
+        
+    def parameters(self):
+        return list(self._parameters.keys())
+    
+    def named_parameters(self):
+        return [(k, v) for k, v in self._parameters.items()]
+    
+    def state_dict(self):
+        return {k: v for k, v in self._parameters.items()}
+    
+    def load_state_dict(self, state_dict):
+        self._parameters.update(state_dict)
+    
+    def train(self, mode=True):
+        self._training = mode
+        
+    def eval(self):
+        self._training = False
+        
+    def zero_grad(self):
+        pass
+    
+    def __call__(self, *args, **kwargs):
+        return self.forward(*args, **kwargs)
 
 
 class Tensor:
@@ -757,6 +808,21 @@ class Tensor:
         """True when this tensor holds floating point values."""
         return self.dtype.is_float
 
+
+    def __abs__(self) -> Tensor:
+        """Elementwise absolute value."""
+        import numpy as np
+        return Tensor.from_numpy(np.abs(self._to_dense()), self.dtype, self.device).requires_grad_(self.requires_grad)
+    
+    def __pos__(self) -> Tensor:
+        """Elementwise positive value."""
+        import numpy as np
+        return Tensor.from_numpy(np.copy(self._to_dense()), self.dtype, self.device).requires_grad_(self.requires_grad)
+    
+    def __sign__(self) -> Tensor:
+        """Elementwise sign value (-1, 0, or 1)."""
+        import numpy as np
+        return Tensor.from_numpy(np.sign(self._to_dense()), self.dtype, self.device).requires_grad_(self.requires_grad)
     def tile(self, reps: Sequence[int]) -> Tensor:
         """Return a tensor with the entries of ``self`` tiled according to ``reps``.
 
@@ -1038,3 +1104,422 @@ def _flatten(data: Any) -> Iterable[Any]:
             yield from _flatten(item)
     else:
         yield data
+
+
+# Dataset API
+
+class Dataset:
+    pass
+
+class TensorDataset(Dataset):
+    pass
+
+class DataLoader:
+    pass
+
+
+# Tokenization
+
+# ----------------------------------------------------------------------
+# Tokenization
+# ----------------------------------------------------------------------
+
+
+class Tokenizer:
+    """Base tokenizer class."""
+
+    def __init__(self):
+        self.vocab = {}
+        self.inverse_vocab = {}
+
+    def fit(self, texts):
+        """Fit tokenizer on texts."""
+        raise NotImplementedError
+
+    def encode(self, text):
+        """Encode text to token IDs."""
+        raise NotImplementedError
+
+    def decode(self, ids):
+        """Decode token IDs to text."""
+        raise NotImplementedError
+
+    def save_vocab(self, file_path):
+        """Save vocabulary to file."""
+        raise NotImplementedError
+
+    def load_vocab(self, file_path):
+        """Load vocabulary from file."""
+        raise NotImplementedError
+
+
+class CharacterTokenizer(Tokenizer):
+    """Character-level tokenizer."""
+
+    def __init__(self, vocab_chars=None):
+        super().__init__()
+        if vocab_chars is None:
+            vocab_chars = sorted(set(c for text in [] for c in text))
+        self.vocab = {c: i for i, c in enumerate(vocab_chars)}
+        self.inverse_vocab = {i: c for c, i in self.vocab.items()}
+        self.vocab_size = len(self.vocab)
+
+    def fit(self, texts):
+        chars = set()
+        for text in texts:
+            chars.update(text)
+        self.vocab = {c: i for i, c in enumerate(sorted(chars))}
+        self.inverse_vocab = {i: c for c, i in self.vocab.items()}
+        self.vocab_size = len(self.vocab)
+
+    def encode(self, text):
+        return [self.vocab.get(c, self.vocab.get('<UNK>', 0)) for c in text]
+
+    def decode(self, ids):
+        return ''.join([self.inverse_vocab.get(i, '<UNK>') for i in ids])
+
+    def save_vocab(self, file_path):
+        with open(file_path, 'w') as f:
+            for char, idx in self.vocab.items():
+                f.write(f'{char} {idx}\n')
+
+    def load_vocab(self, file_path):
+        self.vocab = {}
+        self.inverse_vocab = {}
+        with open(file_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) == 2:
+                    char, idx = parts[0], int(parts[1])
+                    self.vocab[char] = idx
+                    self.inverse_vocab[idx] = char
+        self.vocab_size = len(self.vocab)
+
+
+class WordTokenizer(Tokenizer):
+    """Word-level tokenizer."""
+
+    def __init__(self, vocab_words=None):
+        super().__init__()
+        if vocab_words is None:
+            vocab_words = set()
+        self.vocab = {w: i for i, w in enumerate(vocab_words)}
+        self.inverse_vocab = {i: w for w, i in self.vocab.items()}
+        self.vocab_size = len(self.vocab)
+
+    def fit(self, texts):
+        words = set()
+        for text in texts:
+            words.update(text.split())
+        self.vocab = {w: i for i, w in enumerate(sorted(words))}
+        self.inverse_vocab = {i: w for w, i in self.vocab.items()}
+        self.vocab_size = len(self.vocab)
+
+    def encode(self, text):
+        return [self.vocab.get(w, self.vocab.get('<UNK>', 0)) for w in text.split()]
+
+    def decode(self, ids):
+        return ' '.join([self.inverse_vocab.get(i, '<UNK>') for i in ids])
+
+    def save_vocab(self, file_path):
+        with open(file_path, 'w') as f:
+            for word, idx in self.vocab.items():
+                f.write(f'{word} {idx}\n')
+
+    def load_vocab(self, file_path):
+        self.vocab = {}
+        self.inverse_vocab = {}
+        with open(file_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) == 2:
+                    word, idx = parts[0], int(parts[1])
+                    self.vocab[word] = idx
+                    self.inverse_vocab[idx] = word
+        self.vocab_size = len(self.vocab)
+
+
+class BPETokenizer(Tokenizer):
+    """BPE (Byte Pair Encoding) tokenizer."""
+
+    def __init__(self, vocab_size=1000):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.merges = []
+        self.vocab = {}
+        self.inverse_vocab = {}
+
+    def fit(self, texts):
+        # Simplified BPE training
+        pairs = {}
+        for text in texts:
+            chars = list(text)
+            for i in range(len(chars) - 1):
+                pair = (chars[i], chars[i+1])
+                pairs[pair] = pairs.get(pair, 0) + 1
+
+        # Sort by frequency and take top vocab_size - 256 merges
+        sorted_pairs = sorted(pairs.items(), key=lambda x: x[1], reverse=True)
+        self.merges = [pair for pair, _ in sorted_pairs[:self.vocab_size - 256]]
+
+        # Build vocabulary
+        self.vocab = {i: bytes([i]) for i in range(256)}
+        for pair in self.merges:
+            new_token = self.vocab[pair[0]] + self.vocab[pair[1]]
+            self.vocab[len(self.vocab)] = new_token
+            self.merges.append(pair)
+
+        self.inverse_vocab = {v: k for k, v in self.vocab.items()}
+        self.vocab_size = len(self.vocab)
+
+    def _bpe_encode(self, text):
+        # Simplified BPE encoding
+        tokens = list(text)
+        while len(tokens) < 200:  # max length
+            best_pair = None
+            best_idx = -1
+            for i in range(len(tokens) - 1):
+                pair = (tokens[i], tokens[i+1])
+                if pair in self.merges:
+                    if best_pair is None or self.merges.index(pair) < self.merges.index(best_pair):
+                        best_pair = pair
+                        best_idx = i
+
+            if best_pair is None:
+                break
+
+            idx = best_idx
+            tokens = tokens[:idx+1] + [best_pair[0] + best_pair[1]] + tokens[idx+2:]
+
+        return [self.vocab.get(token, self.vocab.get('<UNK>', 0)) for token in tokens]
+
+    def encode(self, text):
+        return self._bpe_encode(text)
+
+    def decode(self, ids):
+        return ''.join([self.inverse_vocab.get(i, '<UNK>') for i in ids])
+
+    def save_vocab(self, file_path):
+        with open(file_path, 'w') as f:
+            for idx, token in self.vocab.items():
+                f.write(f'{idx} {token}\n')
+
+    def load_vocab(self, file_path):
+        self.vocab = {}
+        self.inverse_vocab = {}
+        with open(file_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split()
+                if len(parts) == 2:
+                    idx, token = int(parts[0]), parts[1]
+                    self.vocab[idx] = token
+                    self.inverse_vocab[token] = idx
+        self.vocab_size = len(self.vocab)
+
+# Phase 11: Transformer Foundation
+
+# Phase 11: Transformer Foundation
+
+class Attention(Module):
+    """Scaled dot-product attention."""
+    
+    def __init__(self, dim, heads=8, dim_head=64, dropout=0.0):
+        super().__init__()
+        inner_dim = dim_head * heads
+        project_out = not dim_head == -1
+        
+        self.scale = dim_head ** -0.5
+        self.heads = heads
+        self.dim_head = dim_head
+        
+        self.to_q = nn.Linear(dim, inner_dim, bias=False)
+        self.to_k = nn.Linear(dim, inner_dim, bias=False)
+        self.to_v = nn.Linear(dim, inner_dim, bias=False)
+        
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        ) if project_out else nn.Identity()
+    
+    def forward(self, x, mask=None):
+        n = x.shape[-1]
+        
+        q = self.to_q(x)
+        k = self.to_k(x)
+        v = self.to_v(x)
+        
+        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads), (q, k, v))
+        
+        dots = torch.matmul(q, k.transpose(-1, -2)) * self.scale
+        
+        if mask is not None:
+            mask_value = -torch.finfo(dots.dtype).max
+            mask = mask.bool()
+            dots.masked_fill_(~mask, mask_value)
+        
+        attn = dots.softmax(dim=-1)
+        
+        out = torch.matmul(attn, v)
+        
+        out = rearrange(out, "b h n d -> b n (h d)", h=self.heads)
+        return self.to_out(out)
+
+
+class CrossAttention(Module):
+    """Cross-attention module."""
+    
+    def __init__(self, dim, dim_cross, heads=8, dim_head=64, dropout=0.0):
+        super().__init__()
+        inner_dim = dim_head * heads
+        project_out = not dim_head == -1
+        
+        self.scale = dim_head ** -0.5
+        self.heads = heads
+        self.dim_head = dim_head
+        
+        self.to_q = nn.Linear(dim, inner_dim, bias=False)
+        self.to_k = nn.Linear(dim_cross, inner_dim, bias=False)
+        self.to_v = nn.Linear(dim_cross, inner_dim, bias=False)
+        
+        self.to_out = nn.Sequential(
+            nn.Linear(inner_dim, dim),
+            nn.Dropout(dropout)
+        ) if project_out else nn.Identity()
+    
+    def forward(self, x, context, mask=None):
+        q = self.to_q(x)
+        k = self.to_k(context)
+        v = self.to_v(context)
+        
+        q, k, v = map(lambda t: rearrange(t, "b n (h d) -> b h n d", h=self.heads), (q, k, v))
+        
+        dots = torch.matmul(q.transpose(-1, -2), k) * self.scale
+        
+        if mask is not None:
+            mask_value = -torch.finfo(dots.dtype).max
+            mask = mask.bool()
+            dots.masked_fill_(~mask, mask_value)
+        
+        attn = dots.softmax(dim=-1)
+        
+        out = torch.matmul(attn, v)
+        
+        out = rearrange(out, "b h n d -> b n (h d)", h=self.heads)
+        return self.to_out(out)
+
+
+class FeedForward(Module):
+    """Feed-forward network."""
+    
+    def __init__(self, dim, hidden_dim, dropout=0.0):
+        super().__init__()
+        
+        self.net = nn.Sequential(
+            nn.Linear(dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, dim),
+            nn.Dropout(dropout)
+        )
+    
+    def forward(self, x):
+        return self.net(x)
+
+
+class TransformerEncoder(Module):
+    """Transformer encoder."""
+    
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0.0):
+        super().__init__()
+        self.layers = nn.ModuleList([])
+        
+        for _ in range(depth):
+            self.layers.append(nn.ModuleList([
+                Attention(dim, heads=heads, dim_head=dim_head, dropout=dropout),
+                FeedForward(dim, mlp_dim, dropout=dropout),
+                nn.LayerNorm(dim),
+                nn.LayerNorm(dim)
+            ]))
+
+
+    def forward(self, x, mask=None):
+        for attn, ff, norm1, norm2 in self.layers:
+            x = attn(norm1(x), mask=mask)
+            x = ff(norm2(x)) + x
+        return x
+
+
+class TransformerDecoder(Module):
+    """Transformer decoder."""
+    
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0.0, use_cache=False):
+        super().__init__()
+        self.layers = nn.ModuleList([])
+        for _ in range(depth):
+            self.layers.append(nn.ModuleList([
+                Attention(dim, heads=heads, dim_head=dim_head, dropout=dropout),
+                FeedForward(dim, hidden_dim=mlp_dim, dropout=dropout),
+                nn.LayerNorm(dim),
+                nn.LayerNorm(dim)
+            ]))
+    
+    def forward(self, x, context=None, mask=None, past_key_values=None):
+        for attn, ff, norm1, norm2 in self.layers:
+            x = attn(x, context, mask=mask)
+            x = ff(norm2(x)) + x
+        return x
+
+
+class TransformerWrapper(Module):
+    """Transformer wrapper for encoder-decoder."""
+    
+    def __init__(self, *, dim, depth, heads, dim_head, mlp_dim,
+                 token_num=256, seq_len=512, dropout=0.0, emb_dropout=0.0):
+        super().__init__()
+        
+        self.encoder = TransformerEncoder(dim, depth, heads, dim_head, mlp_dim, dropout)
+        self.decoder = TransformerDecoder(dim, depth, heads, dim_head, mlp_dim, dropout)
+        
+        self.tokens = nn.Embedding(token_num, dim)
+        self.dropout = nn.Dropout(emb_dropout)
+    
+    def forward(self, image, labels=None):
+        enc_image = self.encoder(image)
+        dec_input = self.tokens(labels)
+        dec_input = self.dropout(dec_input)
+        dec_out = self.decoder(dec_input, context=enc_image)
+        return dec_out
+
+
+class TokenLearner(Module):
+    """Token learner for ViT."""
+    
+    def __init__(self, dim, num_tokens, depth=4, dim_head=64, mlp_dim=1024, dropout=0.0):
+        super().__init__()
+        self.num_tokens = num_tokens
+        
+        self.tokens = nn.Parameter(torch.randn(1, num_tokens, dim))
+        self.dim = dim
+        
+        self.encoder = TransformerEncoder(dim, depth, 8, dim_head, mlp_dim, dropout)
+    
+    def forward(self, x, mask=None):
+        b, n = x.shape[0], x.shape[1]
+        tokens = self.tokens.expand(b, -1, -1, -1)
+        
+        # lerp the tokens into the image
+        tokens = tokens.lerp(x, self.dim / x.shape[-1])
+        
+        for _ in range(self.depth):
+            tokens = self.encoder(tokens, mask=mask)
+        
+        return tokens
+
+
+# Aliases
+Attention = Attention
+CrossAttention = CrossAttention
+FeedForward = FeedForward
+TransformerEncoder = TransformerEncoder
+TransformerDecoder = TransformerDecoder
+TransformerWrapper = TransformerWrapper
+TokenLearner = TokenLearner

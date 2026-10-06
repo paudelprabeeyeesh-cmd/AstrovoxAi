@@ -78,3 +78,8 @@ __all__ = [
     "tensor",
     "unbroadcast",
 ]
+
+
+from astrovox.tensor.tensor import Dataset, TensorDataset, DataLoader
+
+from astrovox.tensor.tensor import CharacterTokenizer, WordTokenizer, BPETokenizer

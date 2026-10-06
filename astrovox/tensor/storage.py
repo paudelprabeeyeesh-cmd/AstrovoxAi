@@ -197,3 +197,32 @@ class MemoryPool:
 
     def __iter__(self) -> Iterator[tuple[tuple[int, ...], str]]:
         return iter(self._buckets)
+
+def align_offset(offset: int, alignment: int = 16) -> int:
+    """Align an offset to the specified alignment boundary.
+    
+    Args:
+        offset: The offset to align
+        alignment: The alignment boundary (default 16 bytes)
+    
+    Returns:
+        The aligned offset
+    """
+    if alignment <= 1:
+        return offset
+    return (offset + alignment - 1) // alignment * alignment
+
+
+def align_size(size: int, alignment: int = 16) -> int:
+    """Align a size to the specified alignment boundary.
+    
+    Args:
+        size: The size to align
+        alignment: The alignment boundary (default 16 bytes)
+    
+    Returns:
+        The aligned size
+    """
+    if alignment <= 1:
+        return size
+    return (size + alignment - 1) // alignment * alignment

@@ -845,3 +845,406 @@ def chunk(tensor, chunks: int, dim: int = 0) -> list:
 
     out = Tensor.from_numpy(result_arr, dtype, a.device)
     return out.requires_grad_(a.requires_grad or b.requires_grad)
+def mse_loss(input: Tensor, target: Tensor) -> Tensor:
+    """Mean Squared Error loss."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        diff = input_arr - target_arr
+        squared = diff ** 2
+        mean = np.mean(squared)
+    
+    out = tensor.from_numpy(np.array([mean]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+
+def l1_loss(input: Tensor, target: Tensor) -> Tensor:
+    """Mean Absolute Error loss (L1 loss)."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        diff = input_arr - target_arr
+        abs_diff = np.abs(diff)
+        mean = np.mean(abs_diff)
+    
+    out = tensor.from_numpy(np.array([mean]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+
+def cross_entropy(input: Tensor, target: Tensor) -> Tensor:
+    """Cross Entropy loss."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    n = input_arr.shape[0]
+    c = input_arr.shape[1]
+    
+    input_stable = input_arr - np.max(input_arr, axis=1, keepdims=True)
+    exp_scores = np.exp(input_stable)
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    
+    correct_probs = probs[np.arange(n), target_arr.astype(int)]
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        log_likelihood = -np.log(correct_probs + 1e-10)
+        mean_loss = np.mean(log_likelihood)
+    
+    out = tensor.from_numpy(np.array([mean_loss]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+
+def bce_loss(input: Tensor, target: Tensor) -> Tensor:
+    """Binary Cross Entropy loss."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    input_clipped = np.clip(input_arr, -100, 100)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        bce = -((target_arr * np.log(input_clipped + 1e-10)) + 
+                ((1 - target_arr) * np.log(1 - input_clipped + 1e-10)))
+        mean_bce = np.mean(bce)
+    
+    out = tensor.from_numpy(np.array([mean_bce]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+
+def huber_loss(input: Tensor, target: Tensor, delta: float = 1.0) -> Tensor:
+    """Huber loss (Huber quantile loss)."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        diff = input_arr - target_arr
+        abs_diff = np.abs(diff)
+        huber = np.where(abs_diff <= delta,
+                         0.5 * diff ** 2,
+                         delta * (abs_diff - 0.5 * delta))
+        mean_huber = np.mean(huber)
+    
+    out = tensor.from_numpy(np.array([mean_huber]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+
+def smooth_l1_loss(input: Tensor, target: Tensor, beta: float = 1.0) -> Tensor:
+    """Smooth L1 loss (also known as Huber loss or CIELoss)."""
+    from astrovox.tensor.dtype import DEFAULT
+    from astrovox.tensor.tensor import Tensor
+    import numpy as np
+    
+    if not isinstance(input, Tensor):
+        input = tensor(input, DEFAULT, tensor.CPU)
+    if not isinstance(target, Tensor):
+        target = tensor(target, DEFAULT, tensor.CPU)
+    
+    dtype = input.dtype.promote(target.dtype)
+    input_arr = input.numpy().astype(dtype.np_dtype, copy=False)
+    target_arr = target.numpy().astype(dtype.np_dtype, copy=False)
+    
+    with np.errstate(divide='ignore', invalid='ignore'):
+        diff = np.abs(input_arr - target_arr)
+        loss = np.where(diff < beta, 0.5 * diff ** 2 / beta, diff - 0.5 * beta)
+        mean_loss = np.mean(loss)
+    
+    out = tensor.from_numpy(np.array([mean_loss]), dtype, input.device)
+    return out.requires_grad_(input.requires_grad or target.requires_grad)
+
+# Optimizer classes for Astrovox
+
+class Optimizer:
+    """Base optimizer class."""
+    
+    def __init__(self, params, lr=1e-3):
+        self.params = list(params)
+        self.lr = lr
+        self.step_count = 0
+    
+    def zero_grad(self):
+        for p in self.params:
+            if hasattr(p, 'grad') and p.grad is not None:
+                p.grad.zero_()
+    
+    def step(self):
+        self.step_count += 1
+    
+    def lr_schedule(self, step):
+        return self.lr
+
+
+class SGD(Optimizer):
+    """Stochastic Gradient Descent with optional momentum and Nesterov acceleration."""
+    
+    def __init__(self, params, lr=0.01, momentum=0.0, dampening=0.0, weight_decay=0.0, nesterov=False):
+        super().__init__(params, lr)
+        self.momentum = momentum
+        self.dampening = dampening
+        self.weight_decay = weight_decay
+        self.nesterov = nesterov
+        self.velocity = [None] * len(self.params)
+    
+    def step(self):
+        self.step_count += 1
+        for i, p in enumerate(self.params):
+            if p.grad is None:
+                continue
+            
+            d_p = p.grad
+            
+            # Apply weight decay
+            if self.weight_decay != 0:
+                d_p = d_p.add(p.data, alpha=self.weight_decay)
+            
+            if self.momentum != 0:
+                if self.velocity[i] is None:
+                    self.velocity[i] = d_p.clone()
+                else:
+                    self.velocity[i].mul_(self.momentum).add_(d_p, alpha=1 - self.dampening)
+                
+                if self.nesterov:
+                    d_p = self.velocity[i] + self.momentum * self.velocity[i]
+                else:
+                    d_p = self.velocity[i]
+            
+            p.data.add_(d_p, alpha=-self.lr)
+    
+    def lr_schedule(self, step):
+        return self.lr * (1 + np.cos(np.pi * step / 100)) / 2
+
+
+class Adam(Optimizer):
+    """Adam optimizer."""
+    
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.0):
+        super().__init__(params, lr)
+        self.betas = betas
+        self.eps = eps
+        self.weight_decay = weight_decay
+        self.m = [None] * len(self.params)
+        self.v = [None] * len(self.params)
+        self.t = 0
+    
+    def step(self):
+        self.step_count += 1
+        self.t += 1
+        
+        for i, p in enumerate(self.params):
+            if p.grad is None:
+                continue
+            
+            d_p = p.grad
+            
+            if self.weight_decay != 0:
+                d_p = d_p.add(p.data, alpha=self.weight_decay)
+            
+            if self.m[i] is None:
+                self.m[i] = d_p.clone()
+            else:
+                self.m[i].mul_(self.betas[0]).add_(d_p, alpha=1 - self.betas[0])
+            
+            if self.v[i] is None:
+                self.v[i] = d_p.clone() ** 2
+            else:
+                self.v[i].mul_(self.betas[1]).add_(d_p ** 2, alpha=1 - self.betas[1])
+            
+            m_hat = self.m[i] / (1 - self.betas[0] ** self.t)
+            v_hat = self.v[i] / (1 - self.betas[1] ** self.t)
+            
+            p.data.add_(m_hat, alpha=-self.lr / (v_hat.sqrt() + self.eps))
+    
+    def lr_schedule(self, step):
+        return self.lr * (1 + np.cos(np.pi * step / 100)) / 2
+
+
+class AdamW(Optimizer):
+    """AdamW optimizer with decoupled weight decay."""
+    
+    def __init__(self, params, lr=1e-3, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.01):
+        super().__init__(params, lr)
+        self.betas = betas
+        self.eps = eps
+        self.weight_decay = weight_decay
+        self.m = [None] * len(self.params)
+        self.v = [None] * len(self.params)
+        self.t = 0
+    
+    def step(self):
+        self.step_count += 1
+        self.t += 1
+        
+        for i, p in enumerate(self.params):
+            if p.grad is None:
+                continue
+            
+            d_p = p.grad
+            
+            if self.weight_decay != 0:
+                p.mul_(1 - self.lr * self.weight_decay)
+            
+            if self.m[i] is None:
+                self.m[i] = d_p.clone()
+            else:
+                self.m[i].mul_(self.betas[0]).add_(d_p, alpha=1 - self.betas[0])
+            
+            if self.v[i] is None:
+                self.v[i] = d_p.clone() ** 2
+            else:
+                self.v[i].mul_(self.betas[1]).add_(d_p ** 2, alpha=1 - self.betas[1])
+            
+            m_hat = self.m[i] / (1 - self.betas[0] ** self.t)
+            v_hat = self.v[i] / (1 - self.betas[1] ** self.t)
+            
+            p.data.add_(m_hat, alpha=-self.lr / (v_hat.sqrt() + self.eps))
+    
+    def lr_schedule(self, step):
+        return self.lr * (1 + np.cos(np.pi * step / 100)) / 2
+
+
+class RMSProp(Optimizer):
+    """RMSProp optimizer."""
+    
+    def __init__(self, params, lr=1e-2, alpha=0.99, eps=1e-8, weight_decay=0.0):
+        super().__init__(params, lr)
+        self.alpha = alpha
+        self.eps = eps
+        self.weight_decay = weight_decay
+        self.m = [None] * len(self.params)
+    
+    def step(self):
+        self.step_count += 1
+        
+        for i, p in enumerate(self.params):
+            if p.grad is None:
+                continue
+            
+            d_p = p.grad
+            
+            if self.weight_decay != 0:
+                d_p = d_p.add(p.data, alpha=self.weight_decay)
+            
+            if self.m[i] is None:
+                self.m[i] = d_p ** 2
+            else:
+                self.m[i].mul_(self.alpha).add_(d_p ** 2, alpha=1 - self.alpha)
+            
+            p.data.add_(d_p, alpha=-self.lr / (self.m[i].sqrt() + self.eps))
+
+
+class Lookahead(Optimizer):
+    """Lookahead optimizer wrapper."""
+    
+    def __init__(self, optimizer, k=5, alpha=0.5):
+        super().__init__(optimizer.params, optimizer.lr)
+        self.optimizer = optimizer
+        self.k = k
+        self.alpha = alpha
+        self.slow_weights = [None] * len(self.params)
+        self.step_count = 0
+    
+    def step(self):
+        self.step_count += 1
+        self.optimizer.step()
+        
+        for i, p in enumerate(self.params):
+            if self.slow_weights[i] is None:
+                self.slow_weights[i] = p.data.clone()
+            
+            p.data.lerp_(self.slow_weights[i], self.alpha)
+            
+            if self.step_count % self.k == 0:
+                self.slow_weights[i] = p.data.clone()
+    
+    def lr_schedule(self, step):
+        return self.optimizer.lr_schedule(step)
+
+
+# Aliases
+SGD = SGD
+Momentum = SGD
+Nesterov = lambda params, lr=0.01, momentum=0.9, weight_decay=0.0, **kwargs: SGD(params, lr, momentum, weight_decay=weight_decay, nesterov=True)
+Adam = Adam
+AdamW = AdamW
+RMSProp = RMSProp
+Lion = None  # Placeholder
+LAMB = None  # Placeholder
+
+
+__all__ = [
+    "Optimizer",
+    "SGD",
+    "Momentum",
+    "Nesterov",
+    "Adam",
+    "AdamW",
+    "RMSProp",
+    "Lion",
+    "LAMB",
+    "Lookahead",
+    "add",
+    "sub",
+    "mul",
+    "div",
+    "neg",
+    "pow",
+    "dot",
+    "square",
+    "reciprocal",
+    "mse_loss",
+    "l1_loss",
+    "cross_entropy",
+    "bce_loss",
+    "huber_loss",
+    "smooth_l1_loss",
+    "mod",
+]
