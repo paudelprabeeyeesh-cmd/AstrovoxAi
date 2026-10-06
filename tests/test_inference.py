@@ -2,16 +2,14 @@ import os
 import sys
 
 import pytest
-import torch
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+from models.llm.inference.engine import GenerationOutput, InferenceEngine, SamplingParams
 from models.llm.model.model import LLM
-from models.llm.inference.engine import InferenceEngine, SamplingParams, GenerationOutput
 from models.llm.tokenizer.train_tokenizer import load_tokenizer
-from models.llm.utils.helpers import load_config, get_device
 
 CONFIG_100M = os.path.join(ROOT, "models", "llm", "configs", "config_100m.yaml")
 TOKENIZER_PATH = os.path.join(ROOT, "models", "llm", "tokenizer.json")

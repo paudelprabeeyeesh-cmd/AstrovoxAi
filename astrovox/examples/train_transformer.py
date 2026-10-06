@@ -9,20 +9,18 @@ from __future__ import annotations
 
 import sys
 
-import numpy as np
-
 from astrovox.debug import (
     dashboard,
     format_consistency,
+    format_updates,
     gradient_consistency,
     propagation_trace,
     verify_updates,
-    format_updates,
 )
 from astrovox.nlp import (
     CharTokenizer,
-    LMConfig,
     LanguageModel,
+    LMConfig,
     build_dataset,
     synthetic_corpus,
     train,

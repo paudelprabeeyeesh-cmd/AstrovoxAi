@@ -18,11 +18,11 @@ the required hardware is unavailable.
 """
 
 import os
-import sys
-import time
-import tempfile
-import subprocess
 import string
+import subprocess
+import sys
+import tempfile
+import time
 
 import pytest
 import torch
@@ -41,24 +41,19 @@ if ROOT not in sys.path:
 # ---------------------------------------------------------------------------
 from models.llm.distributed_training import (
     DistributedStrategy,
-    DistributedTrainer,
-    wrap_model,
-    init_distributed,
-    destroy_distributed,
+    barrier,
     get_num_gpus,
     get_rank,
     get_world_size,
     is_distributed,
-    barrier,
+    wrap_model,
 )
 
 # Optional ASTROVOX_AI distributed components
 try:
     from ASTROVOX_AI.ai_core.distributed import (
-        ZeROOptimizer,
-        ZeroConfig,
-        FaultRecoveryManager,
         FaultRecoveryConfig,
+        FaultRecoveryManager,
     )
 
     HAS_ASTROVOX = True
@@ -68,9 +63,9 @@ except Exception:
 # Optional tensor / pipeline parallel
 try:
     from torch.distributed.tensor.parallel import (
-        parallelize_module,
         ColwiseParallel,
         RowwiseParallel,
+        parallelize_module,
     )
 
     HAS_TP = True
@@ -746,11 +741,11 @@ class TestScalingEfficiency:
         results_file = tempfile.mktemp(suffix=".pkl")
         try:
             _run_distributed_2gpus(
-                f"""
+                """
 def test_fn(rank, world_size):
     import pickle
     results_file = os.environ.get("TEST_RESULTS_FILE", "")
-    model = TinyModel().to(f"cuda:{{rank}}")
+    model = TinyModel().to(f"cuda:{rank}")
     if world_size > 1:
         model = nn.parallel.DistributedDataParallel(model, device_ids=[rank])
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -761,8 +756,8 @@ def test_fn(rank, world_size):
     total_loss = 0.0
     steps = 0
     for batch in loader:
-        input_ids = batch["input_ids"].to(f"cuda:{{rank}}")
-        labels = batch["labels"].to(f"cuda:{{rank}}")
+        input_ids = batch["input_ids"].to(f"cuda:{rank}")
+        labels = batch["labels"].to(f"cuda:{rank}")
         optimizer.zero_grad()
         out = model(input_ids)
         loss = F.cross_entropy(out.view(-1, 100), labels.view(-1))
@@ -774,7 +769,7 @@ def test_fn(rank, world_size):
     avg_loss = total_loss / steps if steps > 0 else 0.0
     if rank == 0 and results_file:
         with open(results_file, "wb") as f:
-            pickle.dump({{"elapsed": elapsed, "avg_loss": avg_loss, "steps": steps}})
+            pickle.dump({"elapsed": elapsed, "avg_loss": avg_loss, "steps": steps})
 """,
                 env={"TEST_RESULTS_FILE": results_file.replace("\\", "/")},
             )

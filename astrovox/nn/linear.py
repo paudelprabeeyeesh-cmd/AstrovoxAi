@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 from typing import Any, Sequence
 
 import numpy as np
@@ -11,14 +10,12 @@ from astrovox.autograd.function import Function
 from astrovox.nn.module import (
     Module,
     Parameter,
-    init_kaiming_uniform,
     init_normal,
     init_xavier_uniform,
-    init_zeros,
     parameter,
 )
 from astrovox.ops.activation import gelu, relu, sigmoid, silu, softmax, tanh
-from astrovox.ops.math import add, matmul, mul
+from astrovox.ops.math import matmul, mul
 from astrovox.tensor.storage import Storage
 from astrovox.tensor.tensor import Tensor
 

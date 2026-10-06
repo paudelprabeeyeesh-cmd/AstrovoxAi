@@ -2,11 +2,11 @@
 
 from astrovox.nn.layernorm import LayerNorm
 from astrovox.nn.linear import (
+    GELU,
     Activation,
     Dropout,
     Embedding,
     Flatten,
-    GELU,
     Linear,
     ReLU,
     Reshape,

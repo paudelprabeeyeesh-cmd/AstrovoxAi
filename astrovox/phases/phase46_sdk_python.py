@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
-from urllib.request import Request, urlopen
+from dataclasses import dataclass
+from typing import Any
 from urllib.error import URLError
+from urllib.request import Request, urlopen
 
 
 @dataclass

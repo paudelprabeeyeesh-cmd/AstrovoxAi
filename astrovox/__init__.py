@@ -56,8 +56,8 @@ def _load_tensor() -> None:
         return
     try:
         from astrovox.tensor import Shape, Storage, Tensor, tensor
-        from astrovox.tensor.dtype import FLOAT32, DType
         from astrovox.tensor.device import CPU, Device, default_device
+        from astrovox.tensor.dtype import FLOAT32, DType
         from astrovox.tensor.serialization import load_checkpoint, save_checkpoint
         globals()["Shape"] = Shape
         globals()["Storage"] = Storage
@@ -80,7 +80,7 @@ def _load_autograd() -> None:
     if _autograd_loaded:
         return
     try:
-        from astrovox.autograd import backward, no_grad, gradcheck, check_gradients
+        from astrovox.autograd import backward, check_gradients, gradcheck, no_grad
         globals()["backward"] = backward
         globals()["no_grad"] = no_grad
         globals()["gradcheck"] = gradcheck
@@ -96,8 +96,22 @@ def _load_ops() -> None:
         return
     try:
         from astrovox.ops import (
-            add, cross_entropy, div, exp, gelu, log, matmul, mean, mul, relu,
-            sigmoid, softmax, sqrt, sub, sum, tanh,
+            add,
+            cross_entropy,
+            div,
+            exp,
+            gelu,
+            log,
+            matmul,
+            mean,
+            mul,
+            relu,
+            sigmoid,
+            softmax,
+            sqrt,
+            sub,
+            sum,
+            tanh,
         )
         for _n, _v in list(globals().items()):
             if _n in ("add", "cross_entropy", "div", "exp", "gelu", "log",

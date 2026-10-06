@@ -1,6 +1,5 @@
 """Tests for chunked attention and its memory accounting."""
 
-import math
 
 import numpy as np
 import pytest

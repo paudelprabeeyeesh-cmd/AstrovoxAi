@@ -8,11 +8,13 @@ if ROOT not in sys.path:
 
 import pytest
 
-from models.llm.marketplace.models import ModelMarketplace, ModelLicense, ModelVisibility
-from models.llm.marketplace.datasets import DatasetMarketplace, DatasetLicense as DLicense, DatasetVisibility as DVis
-from models.llm.marketplace.loras import LoRAMarketplace, LoRACompatibility
 from models.llm.marketplace.benchmarks import BenchmarkManager
-from models.llm.marketplace.prompts import PromptMarketplace, PromptVisibility as PVis
+from models.llm.marketplace.datasets import DatasetLicense as DLicense
+from models.llm.marketplace.datasets import DatasetMarketplace
+from models.llm.marketplace.loras import LoRACompatibility, LoRAMarketplace
+from models.llm.marketplace.models import ModelLicense, ModelMarketplace
+from models.llm.marketplace.prompts import PromptMarketplace
+from models.llm.marketplace.prompts import PromptVisibility as PVis
 
 
 @pytest.fixture

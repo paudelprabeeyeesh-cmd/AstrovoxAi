@@ -1,7 +1,6 @@
 import json
 import math
 import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -32,7 +31,6 @@ from models.llm.alignment import (
     preference_collate_fn,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -47,9 +45,9 @@ def _write_jsonl(path: str, records: list[dict]) -> None:
 def _dummy_tokenizer(tmp_path: Path, vocab_size: int = 100):
     from tokenizers import Tokenizer
     from tokenizers.models import BPE
-    from tokenizers.trainers import BpeTrainer
     from tokenizers.pre_tokenizers import Whitespace
     from tokenizers.processors import TemplateProcessing
+    from tokenizers.trainers import BpeTrainer
 
     tok = Tokenizer(BPE(unk_token="<unk>"))
     tok.pre_tokenizer = Whitespace()
@@ -352,7 +350,6 @@ class TestDPOTrainer:
         assert math.isfinite(result["final_train_loss"])
 
     def test_missing_reference_raises(self, config, tokenizer):
-        from models.llm.model.model import LLM
         import torch
         cfg = dict(config)
         cfg["tokenizer_path"] = None
@@ -670,7 +667,6 @@ class TestAlignmentPackage:
             PreferenceDataset("nonexistent.jsonl", tokenizer)
 
     def test_reward_trainer_invalid_model_type(self, config, tokenizer):
-        from models.llm.model.model import LLM
         import torch
         fake_llm = _build_model(config, torch.device("cpu"))
         ds = None

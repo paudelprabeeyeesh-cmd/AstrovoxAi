@@ -1,7 +1,5 @@
-from locust import HttpUser, task, between
-from locust import events
-import json
-import time
+
+from locust import HttpUser, between, events, task
 
 
 class AstrovoxUser(HttpUser):

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import cProfile
-import pstats
 import io
+import pstats
 from dataclasses import dataclass, field
 from typing import Any
 

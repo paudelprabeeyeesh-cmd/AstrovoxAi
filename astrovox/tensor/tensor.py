@@ -8,28 +8,21 @@ views, is derived from those fields.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Any, Iterator, Sequence
+from typing import Any, Iterator, Sequence
 
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
-from astrovox.tensor.device import CPU, Backend, Device, get_backend
+from astrovox.tensor.device import CPU, Device, get_backend
 from astrovox.tensor.dtype import (
     BOOL,
     DEFAULT,
     DEFAULT_INT,
-    FLOAT32,
     DType,
-    accumulator_dtype,
     from_numpy,
     resolve,
 )
-from astrovox.tensor.shape import Shape, broadcast_shapes
-from astrovox.autograd.module import Module
-
-
-if TYPE_CHECKING:  # pragma: no cover - import cycle guard for type hints only
-    from astrovox.ops.view import ViewSpec
+from astrovox.tensor.shape import Shape
 
 
 def _normalize_axis(axis: int, ndim: int) -> int:
@@ -862,8 +855,6 @@ class Tensor:
         Returns:
             List of tensors resulting from the split
         """
-        from astrovox.tensor.shape import Shape
-        from astrovox.tensor.tensor import Tensor
         
         dim = _normalize_axis(dim, self._shape.ndim)
         shape = self._shape
@@ -898,8 +889,7 @@ class Tensor:
             List of tensors resulting from the chunk
         """
         import math
-        from astrovox.tensor.shape import Shape
-        from astrovox.tensor.tensor import Tensor
+
         
         dim = _normalize_axis(dim, self._shape.ndim)
         shape = self._shape

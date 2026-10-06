@@ -13,12 +13,11 @@ from astrovox.autograd import backward
 from astrovox.debug import (
     check_graph,
     describe_tensor,
-    find_constant_subgraphs,
     format_gradient_table,
     gradient_table,
     inspect,
 )
-from astrovox.nn import Embedding, Linear, ReLU, Sequential
+from astrovox.nn import Linear, ReLU, Sequential
 from astrovox.ops import cross_entropy
 from astrovox.tensor import Shape
 from astrovox.tensor.shape import broadcast_shapes
@@ -205,7 +204,6 @@ class TestStressAndMemory:
         assert total.item() > 0
 
     def test_many_small_allocations_do_not_leak_storage_references(self):
-        from astrovox.tensor.tensor import Tensor
 
         base = tensor(np.zeros((10, 10), dtype=np.float32))
         before = base._storage.view_count
@@ -299,7 +297,6 @@ class TestGraphInspector:
 
     def test_constant_subgraphs_are_findable(self):
         from astrovox.autograd import no_grad
-        from astrovox.nn import Linear as L
 
         model = Sequential(Linear(4, 4))
         x = tensor(np.random.default_rng(17).standard_normal((3, 4)).astype(np.float32))

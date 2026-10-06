@@ -16,8 +16,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Callable, Sequence
 
-import numpy as np
-
 from astrovox.autograd.function import GraphNode
 from astrovox.autograd.graph import walk_from
 from astrovox.tensor.shape import Shape

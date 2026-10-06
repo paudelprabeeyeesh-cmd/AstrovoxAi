@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from astrovox import tensor
-from astrovox.autograd import backward
 from astrovox.nn import Linear, ReLU, Sequential
 from astrovox.ops import cross_entropy, matmul
 from astrovox.profile import (

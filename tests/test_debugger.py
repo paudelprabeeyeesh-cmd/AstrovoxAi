@@ -9,10 +9,35 @@ if ROOT not in sys.path:
 
 import torch
 import torch.nn as nn
-from models.llm.debugger.inspector import ActivationInfo, ActivationViewer, GradientInfo, GradientInspector, TokenInfo, TokenInspector, WeightInfo, WeightInspector
-from models.llm.debugger.profiler import ComputeProfiler, ComputeSnapshot, MemoryProfiler, MemorySnapshot, TokenProbabilityEntry, TokenProbabilityTracker
+
+from models.llm.debugger.inspector import (
+    ActivationInfo,
+    ActivationViewer,
+    GradientInfo,
+    GradientInspector,
+    TokenInfo,
+    TokenInspector,
+    WeightInfo,
+    WeightInspector,
+)
+from models.llm.debugger.profiler import (
+    ComputeProfiler,
+    ComputeSnapshot,
+    MemoryProfiler,
+    MemorySnapshot,
+    TokenProbabilityTracker,
+)
 from models.llm.debugger.server import DebugServer, create_debug_app
-from models.llm.debugger.visualizer import AttentionMapData, AttentionMapVisualizer, GradientFlowData, GradientFlowVisualizer, HiddenStateData, HiddenStateVisualizer, KVCacheData, KVCacheVisualizer
+from models.llm.debugger.visualizer import (
+    AttentionMapData,
+    AttentionMapVisualizer,
+    GradientFlowData,
+    GradientFlowVisualizer,
+    HiddenStateData,
+    HiddenStateVisualizer,
+    KVCacheData,
+    KVCacheVisualizer,
+)
 
 
 def make_tiny_model() -> nn.Module:

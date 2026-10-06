@@ -42,8 +42,8 @@ from astrovox.ops.math import (
     outer,
     pow,
     reciprocal,
-    square,
     sqrt,
+    square,
     sub,
 )
 from astrovox.ops.normalization import group_norm, layer_norm, rms_norm

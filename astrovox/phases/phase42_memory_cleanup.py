@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 import time
-from astrovox.phases._shared.compression import compress_text
+
 from astrovox.phases.phase42_memory_storage import MemoryStore
-from astrovox.phases.phase42_memory_retrieval import search
 
 
 def cleanup_expired(store: MemoryStore, now: float | None = None) -> int:

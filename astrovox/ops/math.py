@@ -63,8 +63,6 @@ def split(tensor: Tensor, split_size: int, dim: int = 0) -> list[Tensor]:
     Returns:
         List of tensors resulting from the split
     """
-    from astrovox.tensor.shape import Shape
-    from astrovox.tensor.tensor import Tensor
     
     dim = _normalize_axis(dim, tensor.ndim)
     shape = tensor.shape
@@ -100,9 +98,6 @@ def chunk(tensor: Tensor, chunks: int, dim: int = 0) -> list[Tensor]:
     Returns:
         List of tensors resulting from the chunk
     """
-    from astrovox.tensor.shape import Shape
-    from astrovox.tensor.tensor import Tensor
-    import math
     
     dim = _normalize_axis(dim, tensor.ndim)
     shape = tensor.shape
@@ -716,7 +711,7 @@ def stack(tensors: Sequence[Tensor], axis: int = 0) -> Tensor:
     Returns:
         A tensor with the stacked data, with the stacking axis inserted at ``axis``.
     """
-    from astrovox.autograd.function import GraphContext, current_graph
+    from astrovox.autograd.function import current_graph
 
     # Normalize axis
     ndim = max(t.ndim for t in tensors)
@@ -763,9 +758,6 @@ def split(tensor, split_size: int, dim: int = 0) -> list:
     Returns:
         List of tensors resulting from the split
     """
-    from astrovox.tensor.shape import Shape
-    from astrovox.tensor.tensor import Tensor
-    import math
 
     dim = _normalize_axis(dim, tensor.ndim)
     shape = tensor.shape
@@ -801,9 +793,7 @@ def chunk(tensor, chunks: int, dim: int = 0) -> list:
     Returns:
         List of tensors resulting from the chunk
     """
-    from astrovox.tensor.shape import Shape
     from astrovox.tensor.tensor import Tensor
-    import math
 
     dim = _normalize_axis(dim, tensor.ndim)
     shape = tensor.shape
@@ -822,9 +812,9 @@ def chunk(tensor, chunks: int, dim: int = 0) -> list:
     Returns:
         Result tensor with modulo of elements
     """
-    from astrovox.tensor.dtype import DEFAULT
-    from astrovox.tensor.tensor import Tensor
     import numpy as np
+
+    from astrovox.tensor.dtype import DEFAULT
 
     # Ensure both are tensors
     if not isinstance(a, Tensor):
@@ -847,9 +837,10 @@ def chunk(tensor, chunks: int, dim: int = 0) -> list:
     return out.requires_grad_(a.requires_grad or b.requires_grad)
 def mse_loss(input: Tensor, target: Tensor) -> Tensor:
     """Mean Squared Error loss."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)
@@ -871,9 +862,10 @@ def mse_loss(input: Tensor, target: Tensor) -> Tensor:
 
 def l1_loss(input: Tensor, target: Tensor) -> Tensor:
     """Mean Absolute Error loss (L1 loss)."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)
@@ -895,9 +887,10 @@ def l1_loss(input: Tensor, target: Tensor) -> Tensor:
 
 def cross_entropy(input: Tensor, target: Tensor) -> Tensor:
     """Cross Entropy loss."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)
@@ -927,9 +920,10 @@ def cross_entropy(input: Tensor, target: Tensor) -> Tensor:
 
 def bce_loss(input: Tensor, target: Tensor) -> Tensor:
     """Binary Cross Entropy loss."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)
@@ -953,9 +947,10 @@ def bce_loss(input: Tensor, target: Tensor) -> Tensor:
 
 def huber_loss(input: Tensor, target: Tensor, delta: float = 1.0) -> Tensor:
     """Huber loss (Huber quantile loss)."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)
@@ -980,9 +975,10 @@ def huber_loss(input: Tensor, target: Tensor, delta: float = 1.0) -> Tensor:
 
 def smooth_l1_loss(input: Tensor, target: Tensor, beta: float = 1.0) -> Tensor:
     """Smooth L1 loss (also known as Huber loss or CIELoss)."""
+    import numpy as np
+
     from astrovox.tensor.dtype import DEFAULT
     from astrovox.tensor.tensor import Tensor
-    import numpy as np
     
     if not isinstance(input, Tensor):
         input = tensor(input, DEFAULT, tensor.CPU)

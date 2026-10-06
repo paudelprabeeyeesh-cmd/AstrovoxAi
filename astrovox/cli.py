@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import argparse
 import sys
-from typing import Any, Callable, Sequence
+from typing import Sequence
 
 from astrovox.hub import (
     AuthenticationError,
@@ -27,12 +27,10 @@ from astrovox.hub import (
     build_card,
     collect_bundle,
     find_checkpoints,
-    latest_checkpoint,
     list_models,
     login,
     logout,
     normalize_repo_id,
-    parameter_count_of,
     pull_model,
     push_model,
     status,

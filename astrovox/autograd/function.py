@@ -55,7 +55,7 @@ class Function:
         Grad mode is honoured: under ``no_grad`` no node is created, so the
         result carries no graph and backward is a no-op.
         """
-        from astrovox.autograd.graph import GraphContext, current_graph
+        from astrovox.autograd.graph import current_graph
 
         graph = current_graph()
         ctx = _FunctionContext()

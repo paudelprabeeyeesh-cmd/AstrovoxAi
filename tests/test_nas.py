@@ -2,18 +2,15 @@ import os
 import sys
 
 import pytest
-import torch
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
-from models.llm.architectures.base import ArchitectureRegistry
-from models.llm.nas.evaluator import ArchitectureEvaluator, EvalResult
-from models.llm.nas.evolution import NASEvolution, SearchRecord
+from models.llm.nas.evaluator import ArchitectureEvaluator
+from models.llm.nas.evolution import NASEvolution
 from models.llm.nas.manager import NASManager
-from models.llm.nas.search import NASSearchSpace, ArchitectureGenome
-
+from models.llm.nas.search import ArchitectureGenome, NASSearchSpace
 
 SEED_GPT2 = {
     "architecture_family": "gpt2",

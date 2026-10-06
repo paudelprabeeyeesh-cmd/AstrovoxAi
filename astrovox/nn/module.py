@@ -11,7 +11,6 @@ from typing import Any, Callable, Iterator, Sequence
 
 import numpy as np
 
-from astrovox.tensor.dtype import DType
 from astrovox.tensor.device import CPU
 from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor

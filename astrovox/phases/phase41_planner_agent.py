@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 
 from astrovox.phases._shared.base import BaseAgent

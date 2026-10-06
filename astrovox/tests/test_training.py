@@ -19,9 +19,8 @@ from astrovox.nn import (
     RMSNorm,
     Sequential,
     TransformerBlock,
-    TransformerEncoder,
 )
-from astrovox.ops import cross_entropy, mse_loss
+from astrovox.ops import cross_entropy
 from astrovox.optim import SGD, Adam, AdamW, Lion
 
 
@@ -345,7 +344,7 @@ class TestNumericalStability:
         for _ in range(10):
             optimizer.zero_grad()
             loss = cross_entropy(model(x), y)
-            assert np.isfinite(loss.item()), f"non-finite loss at step"
+            assert np.isfinite(loss.item()), "non-finite loss at step"
             backward(loss)
             optimizer.step()
         for name, p in model.named_parameters():

@@ -7,18 +7,22 @@ ROOT = __import__("os").path.abspath(__import__("os").path.join(__import__("os")
 if ROOT not in __import__("sys").path:
     __import__("sys").path.insert(0, ROOT)
 
-from models.llm.multimodal.vision import VisionEncoder, preprocess_image, resize_image
-from models.llm.multimodal.ocr import OCRTool
-from models.llm.multimodal.speech import SpeechEncoder, WhisperStyleSTT, AudioPreprocessor
-from models.llm.multimodal.tts import SpeechSynthesizer
-from models.llm.multimodal.image_understanding import (
-    ImageCaptioner,
-    VisualQuestionAnswerer,
-    ObjectDetector,
+from models.llm.multimodal.cross_modal import (
+    MultiModalEmbedder,
+    RetrievalAugmentedGenerator,
+    SimilaritySearch,
 )
 from models.llm.multimodal.document import DocumentParser, LayoutAnalyzer, TableExtractor
-from models.llm.multimodal.video import VideoEncoder, sample_frames_uniform, sample_frames_adaptive
-from models.llm.multimodal.cross_modal import MultiModalEmbedder, SimilaritySearch, RetrievalAugmentedGenerator
+from models.llm.multimodal.image_understanding import (
+    ImageCaptioner,
+    ObjectDetector,
+    VisualQuestionAnswerer,
+)
+from models.llm.multimodal.ocr import OCRTool
+from models.llm.multimodal.speech import AudioPreprocessor, SpeechEncoder, WhisperStyleSTT
+from models.llm.multimodal.tts import SpeechSynthesizer
+from models.llm.multimodal.video import VideoEncoder, sample_frames_adaptive, sample_frames_uniform
+from models.llm.multimodal.vision import VisionEncoder, preprocess_image, resize_image
 
 
 @pytest.fixture

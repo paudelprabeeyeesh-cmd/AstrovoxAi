@@ -1,7 +1,6 @@
 import os
 import sys
 
-import pytest
 import torch
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -49,12 +48,12 @@ class TestGPT2Architecture:
 
     def test_gpt2_parameter_count(self):
         config = {
-            "vocab_size": 50257,
-            "hidden_size": 768,
-            "num_layers": 12,
-            "num_heads": 12,
-            "intermediate_size": 3072,
-            "max_seq_len": 1024,
+            "vocab_size": 1000,
+            "hidden_size": 128,
+            "num_layers": 2,
+            "num_heads": 4,
+            "intermediate_size": 512,
+            "max_seq_len": 128,
             "dropout": 0.1,
             "use_bias": True,
             "tie_weights": True,

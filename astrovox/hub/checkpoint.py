@@ -11,7 +11,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterator, Sequence
+from typing import Any, Sequence
 
 #: Extensions a trained artifact may carry. ``.avz`` is this framework's
 #: checkpoint container; the rest are what other tooling tends to emit.

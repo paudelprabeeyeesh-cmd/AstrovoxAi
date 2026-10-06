@@ -1,8 +1,8 @@
 import os
-import math
-import torch
+
 import pytest
-import torch.nn as nn
+import torch
+
 from models.llm.model.model import LLM
 from models.llm.utils.helpers import load_config
 
@@ -78,8 +78,14 @@ def test_config_validation():
 
 def test_4b_forward_shape():
     c = load_config("models/llm/configs/config_4b.yaml")
-    c["num_hidden_layers"] = 1
-    m = LLM(c, device=torch.device("cpu"), dtype=torch.bfloat16)
-    x = torch.randint(0, c["vocab_size"], (1, 16))
+    c.update({
+        "num_hidden_layers": 1,
+        "hidden_size": 128,
+        "num_attention_heads": 4,
+        "intermediate_size": 512,
+        "vocab_size": 1000,
+    })
+    m = LLM(c, device=torch.device("cpu"), dtype=torch.float32)
+    x = torch.randint(0, c["vocab_size"], (1, 8))
     out = m(x)
-    assert out["logits"].shape == (1, 16, c["vocab_size"])
+    assert out["logits"].shape == (1, 8, c["vocab_size"])

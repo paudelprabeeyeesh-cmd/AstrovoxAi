@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 
 @dataclass

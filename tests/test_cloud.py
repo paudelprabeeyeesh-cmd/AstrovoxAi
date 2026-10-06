@@ -7,9 +7,9 @@ if ROOT not in sys.path:
 
 import pytest
 
-from models.llm.cloud.hosting import ModelHostingService
-from models.llm.cloud.billing import BillingSystem, PricingTier
 from models.llm.cloud.autoscaling import Autoscaler, ScalingPolicy
+from models.llm.cloud.billing import BillingSystem, PricingTier
+from models.llm.cloud.hosting import ModelHostingService
 
 
 class TestModelHostingService:

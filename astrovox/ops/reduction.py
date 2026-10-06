@@ -12,7 +12,6 @@ import builtins
 import numpy as np
 
 from astrovox.autograd.function import Function
-from astrovox.tensor.broadcast import unbroadcast
 from astrovox.tensor.dtype import accumulator_dtype
 from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor

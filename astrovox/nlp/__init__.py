@@ -1,8 +1,8 @@
 """Language modelling: tokenizers, datasets, training, and generation."""
 
 from astrovox.nlp.language_model import (
-    LMConfig,
     LanguageModel,
+    LMConfig,
     build_dataset,
     count_model_flops,
     diagnose,

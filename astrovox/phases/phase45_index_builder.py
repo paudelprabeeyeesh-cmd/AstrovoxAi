@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from astrovox.phases.phase45_embedding_storage import VectorStorage
-from astrovox.phases.phase45_similarity_search import SimSearch, NaiveHNSW
+from astrovox.phases.phase45_similarity_search import NaiveHNSW, SimSearch
 
 
 class IndexBuilder:

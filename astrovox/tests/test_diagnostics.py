@@ -5,7 +5,6 @@ tests deliberately build the broken cases and assert the tool notices.
 """
 
 import numpy as np
-import pytest
 
 from astrovox import tensor
 from astrovox.autograd import backward

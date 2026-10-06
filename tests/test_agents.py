@@ -3,8 +3,6 @@ from __future__ import annotations
 import os
 import sys
 
-import pytest
-
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
@@ -13,8 +11,8 @@ from models.llm.agents.browser import WebBrowser
 from models.llm.agents.code import CodeExecutor
 from models.llm.agents.file import DirectoryTraversal, FileReader, FileSearch, FileWriter
 from models.llm.agents.memory import AgentMemory, FileStorage, InMemoryStorage, MemoryEntry
-from models.llm.agents.multi import Agent, AgentConfig, AgentTeam, Message
-from models.llm.agents.planner import Plan, SequentialPlanner, Task
+from models.llm.agents.multi import Agent, AgentConfig, AgentTeam
+from models.llm.agents.planner import SequentialPlanner
 from models.llm.agents.reflection import ReflectionEngine, ReflectionResult, SelfCritiqueAgent
 from models.llm.agents.tools import ParameterSpec, Tool, ToolRegistry, ToolResult
 

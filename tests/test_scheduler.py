@@ -2,7 +2,6 @@
 
 import os
 import sys
-import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
@@ -15,13 +14,12 @@ from models.llm.scheduler.elastic import (
     CostOptimizer,
     ElasticScaler,
     InstancePricing,
-    ScalingPolicy,
     ScalingPolicyConfig,
 )
 from models.llm.scheduler.failover import (
     FailoverManager,
-    HealthCheckResult,
     HealthChecker,
+    HealthCheckResult,
     HealthStatus,
     RecoveryStrategy,
 )

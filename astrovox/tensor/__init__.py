@@ -80,6 +80,11 @@ __all__ = [
 ]
 
 
-from astrovox.tensor.tensor import Dataset, TensorDataset, DataLoader
-
-from astrovox.tensor.tensor import CharacterTokenizer, WordTokenizer, BPETokenizer
+from astrovox.tensor.tensor import (
+    BPETokenizer,
+    CharacterTokenizer,
+    DataLoader,
+    Dataset,
+    TensorDataset,
+    WordTokenizer,
+)

@@ -19,7 +19,6 @@ from typing import Any, Sequence
 
 import numpy as np
 
-from astrovox.autograd.engine import grad_norm
 from astrovox.autograd.function import GraphNode
 from astrovox.autograd.gradients import check_gradients
 from astrovox.autograd.graph import walk_from

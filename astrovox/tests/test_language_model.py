@@ -8,8 +8,8 @@ import pytest
 from astrovox.nlp import (
     CharTokenizer,
     Dataset,
-    LMConfig,
     LanguageModel,
+    LMConfig,
     WordTokenizer,
     build_dataset,
     count_model_flops,

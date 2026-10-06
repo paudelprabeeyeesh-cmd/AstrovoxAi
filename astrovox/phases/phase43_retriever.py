@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from astrovox.phases._shared.base import BaseStore
-from astrovox.phases._shared.retrieval_engine import EmbeddingVector, simple_text_embedding
 from astrovox.phases._shared.ranking import Ranker
+from astrovox.phases._shared.retrieval_engine import EmbeddingVector, simple_text_embedding
 
 
 class VectorRetriever:

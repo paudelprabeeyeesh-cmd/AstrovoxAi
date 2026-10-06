@@ -8,19 +8,18 @@ exactly, and generates text by sampling.
 
 from __future__ import annotations
 
-import json
 import math
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Sequence
+from typing import Any
 
 import numpy as np
 
 from astrovox.autograd import backward, no_grad
 from astrovox.debug import dashboard, gradient_consistency
+from astrovox.nlp.tokenizer import CharTokenizer, Dataset, Tokenizer
 from astrovox.nn import Linear, Module, TransformerEncoder
-from astrovox.nlp.tokenizer import BOS, EOS, CharTokenizer, Dataset, Tokenizer
 from astrovox.ops import cross_entropy
 from astrovox.optim import AdamW
 from astrovox.profile import Profiler, count_flops

@@ -6,7 +6,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any, Callable, Dict
+from typing import Any, Callable
 
 
 @dataclass

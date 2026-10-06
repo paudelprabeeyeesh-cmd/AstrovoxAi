@@ -2,18 +2,16 @@ import os
 import sys
 
 import pytest
-import torch
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from models.llm.export import (
-    ExportFormat,
     ExportMetadata,
-    validate_export,
-    report_export_sizes,
     list_supported_formats,
+    report_export_sizes,
+    validate_export,
 )
 
 

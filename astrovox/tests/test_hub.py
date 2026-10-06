@@ -7,7 +7,6 @@ the thin layer that calls the Hub client is checked against a stub.
 
 import json
 
-import numpy as np
 import pytest
 
 from astrovox.hub import (
@@ -18,11 +17,9 @@ from astrovox.hub import (
     build_card,
     build_manifest,
     collect_bundle,
-    credential_path,
     delete_token,
     find_checkpoints,
     latest_checkpoint,
-    list_models,
     login,
     logout,
     normalize_repo_id,

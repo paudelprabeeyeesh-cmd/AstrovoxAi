@@ -9,13 +9,11 @@ same code works for classification and distillation.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 
 from astrovox.autograd.function import Function
 from astrovox.tensor.dtype import INT64
-from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor
 
 #: Below this, log() is replaced by its first-order expansion.

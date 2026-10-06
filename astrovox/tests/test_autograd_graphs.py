@@ -11,8 +11,8 @@ import pytest
 
 from astrovox import tensor
 from astrovox.autograd import backward, check_gradients, no_grad
-from astrovox.ops import add, cross_entropy, exp, log, matmul, mean, mul, neg, sqrt, sub, sum as sum_op
-from astrovox.tensor.tensor import Tensor
+from astrovox.ops import add, exp, log, matmul, mean, mul, neg, sqrt, sub
+from astrovox.ops import sum as sum_op
 
 
 class TestSingleOpGraphs:

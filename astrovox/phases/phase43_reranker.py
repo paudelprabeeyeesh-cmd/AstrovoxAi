@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 
 @dataclass
@@ -37,7 +35,7 @@ class SimpleReranker:
         return len(common) / len(q)
 
     def _embed_overlap(self, query: str, text: str, dim: int = 8) -> float:
-        from astrovox.phases._shared.retrieval_engine import EmbeddingVector, simple_text_embedding
+        from astrovox.phases._shared.retrieval_engine import simple_text_embedding
         q = simple_text_embedding(query, dim=dim)
         t = simple_text_embedding(text, dim=dim)
         return q.similarity(t)

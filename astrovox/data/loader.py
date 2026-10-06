@@ -368,7 +368,6 @@ def infinite_loader(loader: DataLoader) -> Iterator[Any]:
     Training runs for a configured number of steps, which is usually more than
     one epoch of batches, so the stream has to repeat.
     """
-    from itertools import islice
 
     epoch = 0
     while True:

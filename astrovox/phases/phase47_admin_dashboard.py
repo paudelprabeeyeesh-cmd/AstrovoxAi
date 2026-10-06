@@ -12,7 +12,7 @@ class AdminDashboard:
 
     def render(self, context: dict | None = None) -> str:
         ctx = context or {}
-        return f"<html><body><h1>Astrovox Admin Dashboard</h1><p>Welcome, admin.</p></body></html>"
+        return "<html><body><h1>Astrovox Admin Dashboard</h1><p>Welcome, admin.</p></body></html>"
 
     def get_stats(self) -> dict:
         return {"users": 0, "models": 0, "requests": 0, "errors": 0}

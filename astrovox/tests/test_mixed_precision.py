@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 
 from astrovox import tensor
-from astrovox.autograd import backward
 from astrovox.mixed_precision import (
     GradScaler,
     MixedPrecisionTrainer,

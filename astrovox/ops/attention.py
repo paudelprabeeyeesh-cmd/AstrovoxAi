@@ -21,12 +21,10 @@ accumulation error of summing in a different order.
 from __future__ import annotations
 
 import math
-from typing import Any, Sequence
 
 import numpy as np
 
 from astrovox.autograd.function import Function
-from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor
 
 

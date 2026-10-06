@@ -10,8 +10,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Sequence
 
-import numpy as np
-
 from astrovox.tensor.shape import Shape, broadcast_shapes, broadcast_strides
 from astrovox.tensor.tensor import Tensor
 

@@ -16,13 +16,10 @@ from pathlib import Path
 from typing import Any, Callable, Sequence
 
 from astrovox.hub import auth as hub_auth
-from astrovox.hub.card import DEFAULT_LICENSE, ModelInfo, build_card, build_manifest
+from astrovox.hub.card import ModelInfo, build_card, build_manifest
 from astrovox.hub.checkpoint import (
-    CheckpointNotFound,
     ModelBundle,
-    architecture_of,
     collect_bundle,
-    parameter_count_of,
 )
 
 #: Name given to the weight file in the repository, whatever it was called

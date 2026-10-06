@@ -12,7 +12,7 @@ class UserDashboard:
 
     def render(self, context: dict | None = None) -> str:
         ctx = context or {}
-        return f"<html><body><h1>Astrovox User Dashboard</h1><p>Welcome, user.</p></body></html>"
+        return "<html><body><h1>Astrovox User Dashboard</h1><p>Welcome, user.</p></body></html>"
 
     def get_summary(self) -> dict:
         return {"projects": 0, "runs": 0, "models": 0}

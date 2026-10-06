@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterator, Sequence
+from typing import Any, Sequence
 
 import numpy as np
 
 from astrovox.autograd.engine import clip_grad_norm, grad_norm
-from astrovox.nn.module import Module, Parameter
+from astrovox.nn.module import Parameter
 from astrovox.tensor.tensor import Tensor
 
 

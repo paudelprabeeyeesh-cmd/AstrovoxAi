@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
 from typing import Any
 
 
@@ -47,7 +46,8 @@ class VectorStorage:
         self._load()
 
     def _load(self) -> None:
-        import sqlite3, pickle
+        import pickle
+        import sqlite3
         conn = sqlite3.connect(self.path)
         for row in conn.execute("SELECT id, vector, metadata FROM vectors"):
             vec = pickle.loads(row[1]) if isinstance(row[1], bytes) else row[1]
@@ -64,7 +64,8 @@ class VectorStorage:
         return vid
 
     def _save_rec(self, rec: VectorRecord) -> None:
-        import sqlite3, pickle
+        import pickle
+        import sqlite3
         conn = sqlite3.connect(self.path)
         conn.execute("INSERT OR REPLACE INTO vectors (id, vector, metadata) VALUES (?, ?, ?)",
                      (rec.id, pickle.dumps(rec.vector), json.dumps(rec.metadata)))

@@ -6,12 +6,9 @@ backend can substitute its own backward without touching the graph.
 
 from __future__ import annotations
 
-from typing import Callable
-
-from astrovox.autograd.engine import ones_like, zeros_like
 from astrovox.autograd.function import Function
 from astrovox.tensor.broadcast import unbroadcast
-from astrovox.tensor.shape import Shape, broadcast_shapes
+from astrovox.tensor.shape import Shape
 from astrovox.tensor.tensor import Tensor
 
 

@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from astrovox.phases._shared.base import BaseStore
-from astrovox.phases._shared.retrieval_engine import RetrievalEngine
 from astrovox.phases._shared.ranking import Ranker
-from astrovox.phases._shared.compression import compress_text
+from astrovox.phases._shared.retrieval_engine import RetrievalEngine
 
 
 def search(store: BaseStore, query: str, top: int = 10,

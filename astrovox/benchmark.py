@@ -22,8 +22,7 @@ import numpy as np
 from astrovox import tensor
 from astrovox.autograd import backward
 from astrovox.nn import Linear, ReLU, Sequential
-from astrovox.ops import cross_entropy, matmul
-from astrovox.profile import count_flops
+from astrovox.ops import matmul
 
 
 @dataclass

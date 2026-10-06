@@ -9,8 +9,6 @@ from __future__ import annotations
 
 from typing import Sequence
 
-import numpy as np
-
 from astrovox.nn.module import Parameter
 from astrovox.optim.base import Optimizer
 from astrovox.tensor.tensor import Tensor
