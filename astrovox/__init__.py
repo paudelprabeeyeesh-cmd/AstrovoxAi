@@ -5,7 +5,7 @@ it, the dynamic graph, the operator set, the module system, and the optimizers,
 is implemented in this package.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0-rc1"
 
 __all__ = [
     "CPU",

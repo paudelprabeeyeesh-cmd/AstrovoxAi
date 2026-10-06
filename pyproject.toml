@@ -1,3 +1,11 @@
+[project]
+name = "astrovox"
+version = "1.0.0-rc1"
+description = "Advanced AI Chat Platform — Multi-provider support, persistent memory, agent systems, enterprise-grade infrastructure, and cutting-edge AI research."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
 [project.scripts]
 astrovox = "astrovox.cli:main"
 
