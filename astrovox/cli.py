@@ -253,6 +253,29 @@ def build_parser() -> argparse.ArgumentParser:
     checkpoints_parser.add_argument("--limit", type=int, default=30)
     checkpoints_parser.set_defaults(func=cmd_checkpoints)
 
+    init_parser = sub.add_parser("init", help="initialize a new Astrovox project")
+    init_parser.add_argument("path", nargs="?", default=".", help="target directory")
+    init_parser.set_defaults(func=cmd_init)
+
+    build_parser_cmd = sub.add_parser("build", help="build the current project")
+    build_parser_cmd.add_argument("--target", default="production", help="build target")
+    build_parser_cmd.set_defaults(func=cmd_build)
+
+    test_parser_cmd = sub.add_parser("test", help="run tests")
+    test_parser_cmd.add_argument("path", nargs="?", default="tests", help="test path")
+    test_parser_cmd.set_defaults(func=cmd_test)
+
+    benchmark_parser_cmd = sub.add_parser("benchmark", help="run benchmarks")
+    benchmark_parser_cmd.add_argument("--suite", default="core", help="benchmark suite")
+    benchmark_parser_cmd.set_defaults(func=cmd_benchmark)
+
+    deploy_parser_cmd = sub.add_parser("deploy", help="deploy the project")
+    deploy_parser_cmd.add_argument("target", help="deployment target")
+    deploy_parser_cmd.set_defaults(func=cmd_deploy)
+
+    doctor_parser_cmd = sub.add_parser("doctor", help="check project health")
+    doctor_parser_cmd.set_defaults(func=cmd_doctor)
+
     return parser
 
 

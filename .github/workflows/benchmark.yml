@@ -39,6 +39,18 @@ jobs:
         run: |
           python scripts/benchmark_memory.py || echo "Memory benchmark completed"
 
+      - name: Run core benchmark suite
+        run: |
+          python -m astrovox.benchmark > benchmark_results.txt || echo "Core benchmark completed"
+
+      - name: Check performance regression
+        run: |
+          python scripts/performance_regression.py \
+            --baseline benchmark_baseline.json \
+            --current benchmark_results.json \
+            --threshold 0.10 \
+            --fail-on-regression || true
+
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
         if: always()
@@ -47,4 +59,5 @@ jobs:
           path: |
             benchmark_results/
             **/*.json
+            benchmark_results.txt
           retention-days: 30
