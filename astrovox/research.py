@@ -62,6 +62,12 @@ def passes_threshold(regression: float, threshold: float = 0.10) -> bool:
     return regression <= threshold
 
 
+def acceptance_rate(registry: Dict[str, ExperimentResult]) -> float:
+    if not registry:
+        return 0.0
+    return sum(1 for result in registry.values() if result.passed) / len(registry)
+
+
 def summarize(results: List[ExperimentResult]) -> Dict[str, Any]:
     return {
         "count": len(results),

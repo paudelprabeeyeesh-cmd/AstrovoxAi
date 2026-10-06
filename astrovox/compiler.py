@@ -64,23 +64,23 @@ def _is_broadcastable(left: Sequence[int], right: Sequence[int]) -> bool:
 def constant_folding(graph: Graph) -> Graph:
     folded: dict[str, Node] = {}
     for name, node in graph.nodes.items():
-        if _can_fold(node):
-            value = _fold(node)
+        if _can_fold(node, graph):
+            value = _fold(node, graph)
             folded[name] = Node(name=name, op="constant", attrs={"value": value})
             continue
         folded[name] = node
     return Graph(nodes=folded, outputs=graph.outputs)
 
 
-def _can_fold(node: Node) -> bool:
+def _can_fold(node: Node, graph: Graph) -> bool:
     return node.op in {"add", "mul", "sub", "div"} and all(
         "value" in graph.nodes[i].attrs for i in node.inputs
     )
 
 
-def _fold(node: Node) -> float:
-    left = _node_value(node.inputs[0])
-    right = _node_value(node.inputs[1])
+def _fold(node: Node, graph: Graph) -> float:
+    left = _node_value(node.inputs[0], graph)
+    right = _node_value(node.inputs[1], graph)
     if node.op == "add":
         return left + right
     if node.op == "sub":
@@ -92,8 +92,13 @@ def _fold(node: Node) -> float:
     return float("nan")
 
 
-def _node_value(name: str) -> float:
-    # Minimal helper; actual folding happens in constant_folding() after replacement.
+def _node_value(name: str, graph: Graph) -> float:
+    node = graph.nodes.get(name)
+    if node is None:
+        return float("nan")
+    value = node.attrs.get("value")
+    if isinstance(value, (int, float)):
+        return float(value)
     return float("nan")
 
 

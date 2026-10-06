@@ -74,8 +74,10 @@ def rope(x: Tensor, dim: int = -1, base: float = 10000.0) -> Tensor:
     sin = np.sin(sinusoids)
     cos = np.cos(sinusoids)
     out = np.empty_like(array)
-    out[..., ::2] = array[..., ::2] * cos - array[..., 1::2] * sin
-    out[..., 1::2] = array[..., ::2] * sin + array[..., 1::2] * cos
+    for idx in np.ndindex(shape[:-1]):
+        out[idx + (slice(None),)] = np.empty_like(array[idx + (slice(None),)])
+    out[..., ::2] = array[..., ::2] * cos[np.newaxis, ...] - array[..., 1::2] * sin[np.newaxis, ...]
+    out[..., 1::2] = array[..., ::2] * sin[np.newaxis, ...] + array[..., 1::2] * cos[np.newaxis, ...]
     return Tensor.from_numpy(out.astype(x.dtype.np_dtype), x.dtype, x.device)
 
 
