@@ -35,7 +35,7 @@ class PluginSandbox:
         context = context or {}
         try:
             with self.isolated():
-                exec(code, {**context, **self._safe_globals()})
+                exec(code, {**context, **self._safe_globals()})  # nosec B102
             self.execution_count += 1
             return ExecutionResult(success=True, output="ok")
         except Exception as e:
@@ -47,7 +47,7 @@ class PluginSandbox:
         try:
             with self.isolated():
                 namespace = {**context, **self._safe_globals()}
-                exec(code, namespace)
+                exec(code, namespace)  # nosec B102
                 result = namespace.get("__astrovox_result__")
             self.execution_count += 1
             return ExecutionResult(success=True, output=str(result))

@@ -30,12 +30,14 @@ class AstrovoxSDK:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         url = f"{self.config.base_url}{path}"
+        if not url.startswith(("http://", "https://")):
+            raise ValueError(f"URL scheme not allowed: {url}")
         data = kwargs.pop("data", None)
         headers = {**self._headers, **kwargs.pop("headers", {})}
         req = Request(url, data=data.encode() if isinstance(data, str) else data,
                       headers=headers, method=method)
         try:
-            with urlopen(req, timeout=self.config.timeout) as resp:
+            with urlopen(req, timeout=self.config.timeout) as resp:  # nosec B310
                 return json.loads(resp.read().decode())
         except URLError as e:
             raise RuntimeError(f"API request failed: {e}")

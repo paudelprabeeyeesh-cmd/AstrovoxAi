@@ -36,8 +36,10 @@ class ModelDownloader:
         if cached.exists() and not force:
             return DownloadResult(success=True, path=str(cached))
         url = self._generate_url(name, version)
+        if not url.startswith(("http://", "https://")):
+            return DownloadResult(success=False, error="URL scheme not allowed")
         try:
-            local, _ = urllib.request.urlretrieve(url, str(cached))
+            local, _ = urllib.request.urlretrieve(url, str(cached))  # nosec B310
             size = cached.stat().st_size if cached.exists() else 0
             return DownloadResult(success=True, path=str(cached), bytes_downloaded=size)
         except Exception as e:

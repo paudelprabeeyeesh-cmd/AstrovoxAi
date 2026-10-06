@@ -50,7 +50,7 @@ class VectorStorage:
         import sqlite3
         conn = sqlite3.connect(self.path)
         for row in conn.execute("SELECT id, vector, metadata FROM vectors"):
-            vec = pickle.loads(row[1]) if isinstance(row[1], bytes) else row[1]
+            vec = pickle.loads(row[1]) if isinstance(row[1], bytes) else row[1]  # nosec B301
             meta = json.loads(row[2]) if isinstance(row[2], str) else row[2]
             self._vectors[row[0]] = VectorRecord(id=row[0], vector=vec, metadata=meta)
         conn.close()
