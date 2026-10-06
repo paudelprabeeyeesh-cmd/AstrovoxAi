@@ -40,11 +40,8 @@ class TestingAgent:
         return self._generate_tests(target)
 
     def _run_pytest(self, path: str) -> TestResult:
-        cmd = [subprocess.list2cmdline([
-            "python", "-m", "pytest", path, "-q", "--timeout=30", "-W", "ignore"
-        ])]
-        r = subprocess.run(" ".join(cmd), shell=True, capture_output=True, text=True,
-                           timeout=180)
+        cmd = ["python", "-m", "pytest", path, "-q", "--timeout=30", "-W", "ignore"]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
         passed = 0
         failed = 0
         for line in r.stdout.splitlines():
