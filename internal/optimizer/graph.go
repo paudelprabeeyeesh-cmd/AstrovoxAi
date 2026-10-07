@@ -32,11 +32,18 @@ func NewGraph() *Graph {
 
 // AddNode adds a node to the graph.
 func (g *Graph) AddNode(name, op string, inputs []string) {
-	g.Nodes[name] = &Node{
+	node := &Node{
 		Name:   name,
 		Op:     op,
 		Inputs: inputs,
 	}
+	if op == "constant" {
+		if val, ok := g.Constants[name]; ok {
+			node.Value = val
+			node.Computed = true
+		}
+	}
+	g.Nodes[name] = node
 }
 
 // TopologicalSort returns nodes in topological order.

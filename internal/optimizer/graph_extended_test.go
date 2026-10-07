@@ -234,7 +234,7 @@ func TestDeadCodeEliminationRemovesDead(t *testing.T) {
 	g := NewGraph()
 	g.AddNode("a", "constant", nil)
 	g.AddNode("dead", "constant", nil)
-	g.AddNode("c", "add", []string{"a", "dead"})
+	g.AddNode("c", "add", []string{"a"})
 	g.Output = "c"
 	g.DeadCodeElimination()
 	if _, ok := g.Nodes["dead"]; ok {
