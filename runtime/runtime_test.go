@@ -19,7 +19,7 @@ func linearGraph(t *testing.T) *graph.Graph {
 	t.Helper()
 	g := graph.New("linear")
 	src, err := g.AddNode(graph.OpFunc{
-		OpName:  "src",
+		OpName: "src",
 		ShapeFn: func([]tensor.Shape) ([]tensor.Shape, error) {
 			return []tensor.Shape{tensor.MustShape(3)}, nil
 		},
@@ -128,7 +128,7 @@ func twoSourceAddGraph(t *testing.T) *graph.Graph {
 	g := graph.New("add2")
 	mk := func(name string) int {
 		id, err := g.AddNode(graph.OpFunc{
-			OpName:  name,
+			OpName: name,
 			ShapeFn: func([]tensor.Shape) ([]tensor.Shape, error) {
 				return []tensor.Shape{tensor.MustShape(3)}, nil
 			},
@@ -590,13 +590,13 @@ func TestGraphExecutorIntegration(t *testing.T) {
 	// the session: two sources, one add.
 	g := graph.New("two")
 	n0, _ := g.AddNode(graph.OpFunc{
-		OpName:  "a",
+		OpName: "a",
 		ShapeFn: func([]tensor.Shape) ([]tensor.Shape, error) {
 			return []tensor.Shape{tensor.MustShape(2)}, nil
 		},
 	}, nil)
 	n1, _ := g.AddNode(graph.OpFunc{
-		OpName:  "b",
+		OpName: "b",
 		ShapeFn: func([]tensor.Shape) ([]tensor.Shape, error) {
 			return []tensor.Shape{tensor.MustShape(2)}, nil
 		},

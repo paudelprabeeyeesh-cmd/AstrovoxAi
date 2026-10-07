@@ -9,13 +9,13 @@ import (
 // constant folding, dead code elimination, and
 // elementwise operator fusion.
 type Optimizer struct {
-	MaxPasses     int
-	EnableFold    bool
-	EnableDCE     bool
-	EnableFusion  bool
-	passesRun     int
-	nodesRemoved  int
-	nodesFused    int
+	MaxPasses    int
+	EnableFold   bool
+	EnableDCE    bool
+	EnableFusion bool
+	passesRun    int
+	nodesRemoved int
+	nodesFused   int
 }
 
 // NewOptimizer creates an optimizer with default passes.

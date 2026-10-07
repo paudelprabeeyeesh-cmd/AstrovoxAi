@@ -21,9 +21,9 @@ type Op interface {
 
 // OpFunc adapts a function to the Op interface.
 type OpFunc struct {
-	OpName     string
-	ShapeFn    func(inputs []tensor.Shape) ([]tensor.Shape, error)
-	ForwardFn  func(inputs []*tensor.Tensor) ([]*tensor.Tensor, error)
+	OpName    string
+	ShapeFn   func(inputs []tensor.Shape) ([]tensor.Shape, error)
+	ForwardFn func(inputs []*tensor.Tensor) ([]*tensor.Tensor, error)
 }
 
 // Name implements Op.

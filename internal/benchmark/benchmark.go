@@ -38,8 +38,8 @@ type Result struct {
 
 // Harness executes timed workloads with fixed warmup and run counts.
 type Harness struct {
-	WarmupRuns int
-	Runs       int
+	WarmupRuns  int
+	Runs        int
 	DropOutlier bool
 }
 
@@ -106,8 +106,7 @@ func (h Harness) RunBytes(name string, fn func(int)) (*Result, int64, error) {
 		fn(i)
 		after := runtimeStats()
 		if i == 0 {
-			bytesPerOp = int64(after.mallocs - before.mallocs)
-			_ = after.total - before.total
+			bytesPerOp = int64(after.total - before.total)
 		}
 	}
 	res, err := h.Run(name, wrapped)

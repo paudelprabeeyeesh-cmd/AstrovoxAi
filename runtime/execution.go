@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	irt "github.com/astrovox/astrovox/internal/runtime"
 	"github.com/astrovox/astrovox/internal/errors"
+	irt "github.com/astrovox/astrovox/internal/runtime"
 	"github.com/astrovox/astrovox/tensor"
 )
 
@@ -22,7 +22,7 @@ type Future interface {
 
 // typedFuture adapts the internal future.
 type typedFuture struct {
-	inner irt.Future
+	inner  irt.Future
 	result []*tensor.Tensor
 	mu     sync.Mutex
 }
