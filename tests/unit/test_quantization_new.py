@@ -17,7 +17,7 @@ def test_quantize_tensor_returns_int8():
 
 
 def test_quantized_linear_forward_shape():
-    weight = Tensor.from_numpy(np.ones((4, 8), dtype=np.float32))
+    weight = Tensor.from_numpy(np.ones((8, 4), dtype=np.float32))
     layer = QuantizedLinear(weight)
     x = np.ones((1, 4), dtype=np.float32)
     result = layer.forward(x)
@@ -25,7 +25,7 @@ def test_quantized_linear_forward_shape():
 
 
 def test_quantized_linear_with_bias():
-    weight = Tensor.from_numpy(np.ones((4, 8), dtype=np.float32))
+    weight = Tensor.from_numpy(np.ones((8, 4), dtype=np.float32))
     bias = Tensor.from_numpy(np.ones((8,), dtype=np.float32))
     layer = QuantizedLinear(weight, bias=bias)
     x = np.ones((1, 4), dtype=np.float32)

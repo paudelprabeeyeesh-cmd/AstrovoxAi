@@ -1,4 +1,4 @@
-"""Tests for streaming inference utilities."""
+"""Tests for streaming inference utilities - expanded coverage."""
 
 from __future__ import annotations
 

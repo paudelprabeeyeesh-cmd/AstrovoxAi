@@ -1,4 +1,4 @@
-"""Tests for distributed training and inference utilities."""
+"""Tests for distributed training and inference utilities - expanded coverage."""
 
 from __future__ import annotations
 

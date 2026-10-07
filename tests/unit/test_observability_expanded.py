@@ -6,13 +6,13 @@ import logging
 
 import pytest
 
-from astrovox.observability import Tracer, configure_logging, log_event, reset_metrics, timing
+from astrovox.observability import Tracer, configure_logging, incr, log_event, reset_metrics, timing
 
 
 def test_timing_updates_metric():
     reset_metrics()
     timing("latency", 10.0)
-    assert _get_metric("latency") == 10.0
+    assert _get_metric("latency_ms") == 10.0
 
 
 def test_reset_metrics_clears_all():

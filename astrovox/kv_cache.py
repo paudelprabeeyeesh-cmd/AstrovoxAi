@@ -68,16 +68,20 @@ def rope(x: Tensor, dim: int = -1, base: float = 10000.0) -> Tensor:
     if dim < 0:
         dim = len(shape) + dim
     length = shape[dim]
-    positions = np.arange(length, dtype=np.float64)
-    freqs = 1.0 / (base ** (np.arange(0, array.shape[-1], 2, dtype=np.float64) / array.shape[-1]))
-    sinusoids = np.einsum("i,j->ij", positions, freqs)
+    positions = np.arange(length, dtype=np.float64).reshape((-1, 1))
+    half = array.shape[-1] // 2
+    freqs = 1.0 / (base ** (np.arange(0, half, dtype=np.float64) / array.shape[-1]))
+    sinusoids = positions * freqs.reshape((1, -1))
     sin = np.sin(sinusoids)
     cos = np.cos(sinusoids)
-    out = np.empty_like(array)
-    for idx in np.ndindex(shape[:-1]):
-        out[idx + (slice(None),)] = np.empty_like(array[idx + (slice(None),)])
-    out[..., ::2] = array[..., ::2] * cos[np.newaxis, ...] - array[..., 1::2] * sin[np.newaxis, ...]
-    out[..., 1::2] = array[..., ::2] * sin[np.newaxis, ...] + array[..., 1::2] * cos[np.newaxis, ...]
+    flat = array.reshape((-1, length, array.shape[-1]))
+    out_flat = np.empty_like(flat)
+    for i in range(length):
+        for j in range(0, array.shape[-1], 2):
+            idx = j // 2
+            out_flat[:, i, j] = flat[:, i, j] * cos[i, idx] - flat[:, i, j + 1] * sin[i, idx]
+            out_flat[:, i, j + 1] = flat[:, i, j] * sin[i, idx] + flat[:, i, j + 1] * cos[i, idx]
+    out = out_flat.reshape(shape)
     return Tensor.from_numpy(out.astype(x.dtype.np_dtype), x.dtype, x.device)
 
 

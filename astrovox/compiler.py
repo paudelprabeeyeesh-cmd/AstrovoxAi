@@ -136,6 +136,8 @@ def optimize(graph: Graph) -> Graph:
 def infer_shapes(graph: Graph, input_shapes: Dict[str, tuple[int, ...]]) -> Dict[str, tuple[int, ...]]:
     shapes = dict(input_shapes)
     for name, node in graph.nodes.items():
+        if name in shapes:
+            continue
         if node.op == "constant":
             value = node.attrs.get("value")
             shapes[name] = () if isinstance(value, (int, float)) else (len(value),) if hasattr(value, "__len__") else ()

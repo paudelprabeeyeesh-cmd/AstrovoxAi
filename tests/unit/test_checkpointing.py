@@ -16,7 +16,7 @@ def test_checkpoint_manager_save_and_latest(tmp_path):
     assert latest is not None
     assert latest.step == 10
     assert latest.loss == 0.5
-    assert latest.path.endswith(name)
+    assert latest.path.endswith(name + ".json")
 
 
 def test_checkpoint_manager_recover_returns_weights(tmp_path):

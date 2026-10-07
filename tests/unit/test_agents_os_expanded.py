@@ -54,5 +54,6 @@ def test_debugger_debug_mentions_id():
 
 def test_doc_search_search_mentions_goal():
     doc = DocSearch()
-    result = doc.search(type("T", (), {"payload": {"goal": "auth"}})())
+    task = type("T", (), {"id": "1", "payload": {"goal": "auth"}})()
+    result = doc.search(task)
     assert "auth" in result

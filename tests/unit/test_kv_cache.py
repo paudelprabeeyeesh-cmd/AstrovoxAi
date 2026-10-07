@@ -40,7 +40,7 @@ def test_chunked_prefill_splits_sequence():
 
 def test_rope_preserves_shape():
     x = Tensor.from_numpy(np.ones((1, 4, 8), dtype=np.float32))
-    result = rope(x, dim=-1)
+    result = rope(x, dim=-2)
     assert result.shape.dims == (1, 4, 8)
 
 

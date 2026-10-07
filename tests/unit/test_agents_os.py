@@ -40,7 +40,8 @@ def test_debugger_reports_debug():
 
 def test_doc_search_returns_docs():
     doc = DocSearch()
-    result = doc.search(type("T", (), {"payload": {"goal": "app"}})())
+    task = type("T", (), {"id": "1", "payload": {"goal": "app"}})()
+    result = doc.search(task)
     assert "docs" in result
 
 

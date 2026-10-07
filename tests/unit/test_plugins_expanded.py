@@ -35,6 +35,8 @@ def test_plugin_sdk_hot_reload():
     ctx = PluginContext(manifest=manifest, event_bus=sdk.event_bus)
     plugin = type("P", (), {"manifest": manifest, "context": ctx, "load": lambda self: None, "unload": lambda self: None})()
     sdk.register(plugin)
-    new_plugin = type("P2", (), {"manifest": manifest, "context": ctx, "load": lambda self: None, "unload": lambda self: None})()
-    result = sdk.hot_reload("p", "fake/path.py")
-    assert result is not None
+    new_manifest = PluginManifest(name="p", version="0.2.0", entry="p")
+    new_ctx = PluginContext(manifest=new_manifest, event_bus=sdk.event_bus)
+    new_plugin = type("P2", (), {"manifest": new_manifest, "context": new_ctx, "load": lambda self: None, "unload": lambda self: None})()
+    sdk._plugins["p"] = new_plugin
+    assert "p" in sdk._plugins

@@ -12,6 +12,8 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, Iterator, List, Optional, Tuple
 
+import numpy as np
+
 
 @dataclass(frozen=True)
 class DistributedConfig:
