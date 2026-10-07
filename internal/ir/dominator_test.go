@@ -135,8 +135,8 @@ func TestShapePropagatorAdd(t *testing.T) {
 func TestShapePropagatorMatMul(t *testing.T) {
 	s := NewShapePropagator()
 	out := s.Propagate("matmul", []Shape{{2, 3}, {3, 4}})
-	if len(out) != 1 || out[0] != 2 {
-		t.Fatalf("expected [2], got %v", out)
+	if len(out) != 2 || out[0] != 2 || out[1] != 4 {
+		t.Fatalf("expected [2,4], got %v", out)
 	}
 }
 

@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -60,8 +61,8 @@ func TestRuntimeTracerMultipleSpans(t *testing.T) {
 	tr := runtime.NewTracer()
 	s1 := tr.Start("span1")
 	s2 := tr.Start("span2")
-	s1.End(10)
-	s2.End(20)
+	s1.End(nil)
+	s2.End(nil)
 	events := tr.Events()
 	if len(events) != 2 {
 		t.Fatalf("expected 2 events, got %d", len(events))

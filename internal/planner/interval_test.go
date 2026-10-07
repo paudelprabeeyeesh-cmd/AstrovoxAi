@@ -54,7 +54,7 @@ func TestIntervalIntersect(t *testing.T) {
 		t.Errorf("intersect = %v, want [5, 10)", got)
 	}
 	empty := Interval{0, 5}.Intersect(Interval{5, 10})
-	if !empty.Contains(0) {
+	if empty.Contains(0) {
 		t.Error("disjoint intersection should be empty")
 	}
 }

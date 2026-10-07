@@ -1,6 +1,9 @@
 package planner
 
-import "testing"
+import (
+	"sort"
+	"testing"
+)
 
 func TestAnalyzeLifetimes(t *testing.T) {
 	ops := []OpInfo{

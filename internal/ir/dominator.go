@@ -2,6 +2,7 @@ package ir
 
 import (
 	"fmt"
+	"sort"
 )
 
 // DominatorTree represents the dominator tree of a CFG.
@@ -10,37 +11,77 @@ type DominatorTree struct {
 	DomTree map[int][]int
 }
 
-// ComputeDominators computes the immediate dominators of a CFG.
+// ComputeDominators computes the immediate dominators of a CFG using the
+// Cooper-Harvey-Kennedy algorithm over reverse postorder numbering.
 func ComputeDominators(cfg *CFG) *DominatorTree {
 	if cfg == nil || len(cfg.Nodes) == 0 {
 		return &DominatorTree{IDom: make(map[int]int), DomTree: make(map[int][]int)}
 	}
 
-	idom := make(map[int]int)
+	po := make(map[int]int, len(cfg.Nodes))
+	visited := make(map[int]bool, len(cfg.Nodes))
+	var counter int
+	var dfs func(int)
+	dfs = func(id int) {
+		visited[id] = true
+		if node := cfg.Nodes[id]; node != nil {
+			for _, succ := range node.Successors {
+				if !visited[succ] {
+					dfs(succ)
+				}
+			}
+		}
+		po[id] = counter
+		counter++
+	}
+	dfs(cfg.Entry)
 	for id := range cfg.Nodes {
-		if id == cfg.Entry {
-			idom[id] = id
-		} else {
-			idom[id] = 0
+		if !visited[id] {
+			dfs(id)
 		}
 	}
+
+	order := make([]int, 0, len(cfg.Nodes))
+	for id := range cfg.Nodes {
+		order = append(order, id)
+	}
+	sort.Slice(order, func(i, j int) bool { return po[order[i]] > po[order[j]] })
+
+	idom := make(map[int]int, len(cfg.Nodes))
+	idom[cfg.Entry] = cfg.Entry
+
+	processed := func(p int) bool { return p == cfg.Entry || idom[p] != 0 }
 
 	changed := true
 	for changed {
 		changed = false
-		for id, node := range cfg.Nodes {
+		for _, id := range order {
 			if id == cfg.Entry {
+				continue
+			}
+			node := cfg.Nodes[id]
+			if node == nil {
 				continue
 			}
 			preds := node.Predecessors
 			if len(preds) == 0 {
 				continue
 			}
-			newIdom := preds[0]
-			for _, p := range preds[1:] {
-				if idom[p] != 0 && (idom[newIdom] == 0 || intersect(idom[p], idom[newIdom], idom) != newIdom) {
+			var newIdom int
+			for _, p := range preds {
+				if processed(p) {
 					newIdom = p
+					break
 				}
+			}
+			if newIdom == 0 {
+				continue
+			}
+			for _, p := range preds {
+				if p == newIdom || !processed(p) {
+					continue
+				}
+				newIdom = intersect(p, newIdom, idom, po)
 			}
 			if idom[id] != newIdom {
 				idom[id] = newIdom
@@ -51,7 +92,10 @@ func ComputeDominators(cfg *CFG) *DominatorTree {
 
 	domTree := make(map[int][]int)
 	for id, parent := range idom {
-		if id != parent && parent != 0 {
+		if id == parent {
+			continue
+		}
+		if _, ok := cfg.Nodes[parent]; ok {
 			domTree[parent] = append(domTree[parent], id)
 		}
 	}
@@ -59,12 +103,12 @@ func ComputeDominators(cfg *CFG) *DominatorTree {
 	return &DominatorTree{IDom: idom, DomTree: domTree}
 }
 
-func intersect(b1, b2 int, idom map[int]int) int {
+func intersect(b1, b2 int, idom map[int]int, po map[int]int) int {
 	for b1 != b2 {
-		for b1 > b2 {
+		for po[b1] < po[b2] {
 			b1 = idom[b1]
 		}
-		for b2 > b1 {
+		for po[b2] < po[b1] {
 			b2 = idom[b2]
 		}
 	}
@@ -167,8 +211,8 @@ func NewMetadata() *Metadata {
 
 // TypePromotion defines promotion rules between types.
 var TypePromotion = map[string]string{
-	"int32":  "int64",
-	"int64":  "int64",
+	"int32":   "int64",
+	"int64":   "int64",
 	"float32": "float64",
 	"float64": "float64",
 }

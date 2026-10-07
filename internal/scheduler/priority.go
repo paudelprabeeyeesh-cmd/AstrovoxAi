@@ -8,9 +8,9 @@ type PriorityQueue struct {
 }
 
 type priorityItem struct {
-	task    *Task
+	task     *Task
 	priority int
-	index   int
+	index    int
 }
 
 func (pq PriorityQueue) Len() int { return len(pq.items) }

@@ -1,6 +1,9 @@
 package scheduler
 
-import "testing"
+import (
+	"sync"
+	"testing"
+)
 
 func TestDAG_TopologicalOrder(t *testing.T) {
 	dag := NewDAG()

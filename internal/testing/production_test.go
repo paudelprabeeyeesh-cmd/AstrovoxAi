@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/astrovox/astrovox/internal/testing/util"
 )
 
 var ErrFuzzFailure = errors.New("fuzz failure")
@@ -80,7 +82,7 @@ func TestStabilityConcurrentAccess(t *testing.T) {
 
 func TestAPIGoldenFile(t *testing.T) {
 	got := []byte("expected output")
-	Golden(t, got, "testdata/golden_api.txt")
+	util.Golden(t, got, "testdata/golden_api.txt")
 }
 
 func TestPerformanceRegression(t *testing.T) {

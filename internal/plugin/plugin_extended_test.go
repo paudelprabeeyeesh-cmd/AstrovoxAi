@@ -1,175 +1,143 @@
 package plugin_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/astrovox/astrovox/internal/plugin"
 )
 
-func TestPluginManagerCreate(t *testing.T) {
-	m := plugin.NewManager("test_plugins")
-	if m == nil {
-		t.Fatal("expected manager")
-	}
+type stubPlugin struct {
+	name string
 }
 
-func TestPluginRegistry(t *testing.T) {
+func (s *stubPlugin) Name() string                         { return s.name }
+func (s *stubPlugin) Version() string                      { return "1.0.0" }
+func (s *stubPlugin) Initialize(ctx *plugin.Context) error { return nil }
+func (s *stubPlugin) Shutdown() error                      { return nil }
+
+type memStore struct {
+	data map[string][]byte
+}
+
+func (m *memStore) Get(key string) ([]byte, error) { return m.data[key], nil }
+func (m *memStore) Set(key string, value []byte) error {
+	m.data[key] = value
+	return nil
+}
+
+func TestPluginRegistryRegister(t *testing.T) {
 	r := plugin.NewRegistry()
-	if r == nil {
-		t.Fatal("expected registry")
+	p := &stubPlugin{name: "test"}
+	m := &plugin.Manifest{Name: "test", Version: "1.0.0", Entry: "test"}
+	if err := r.Register(p, m); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := r.Get("test"); !ok {
+		t.Fatal("expected plugin registered")
 	}
 }
 
-func TestPluginEventBus(t *testing.T) {
-	bus := plugin.NewEventBus()
-	if bus == nil {
-		t.Fatal("expected event bus")
+func TestPluginRegistryDuplicate(t *testing.T) {
+	r := plugin.NewRegistry()
+	p := &stubPlugin{name: "test"}
+	m := &plugin.Manifest{Name: "test", Version: "1.0.0", Entry: "test"}
+	_ = r.Register(p, m)
+	if err := r.Register(p, m); err == nil {
+		t.Fatal("expected error for duplicate registration")
+	}
+}
+
+func TestPluginRegistryList(t *testing.T) {
+	r := plugin.NewRegistry()
+	_ = r.Register(&stubPlugin{name: "a"}, &plugin.Manifest{Name: "a", Version: "1.0.0", Entry: "a"})
+	_ = r.Register(&stubPlugin{name: "b"}, &plugin.Manifest{Name: "b", Version: "1.0.0", Entry: "b"})
+	if list := r.List(); len(list) != 2 {
+		t.Fatalf("expected 2 plugins, got %d", len(list))
+	}
+}
+
+func TestPluginRegistryManifest(t *testing.T) {
+	r := plugin.NewRegistry()
+	p := &stubPlugin{name: "test"}
+	m := &plugin.Manifest{Name: "test", Version: "1.0.0", Entry: "test"}
+	if err := r.Register(p, m); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got, ok := r.Manifest("test")
+	if !ok || got.Name != "test" {
+		t.Fatal("expected manifest for plugin")
+	}
+}
+
+func TestPluginLoaderVerify(t *testing.T) {
+	l := plugin.NewLoader(plugin.NewRegistry(), &memStore{data: make(map[string][]byte)})
+	data := []byte("hello")
+	hash := "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+	if !l.Verify(data, hash) {
+		t.Fatal("expected verification to pass")
+	}
+}
+
+func TestPluginLoaderLoadFromDir(t *testing.T) {
+	dir := t.TempDir()
+	pluginDir := filepath.Join(dir, "test_plugin")
+	if err := os.MkdirAll(pluginDir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	manifest := `{"name":"test_plugin","version":"1.0.0","entry":"plugin.zip"}`
+	if err := os.WriteFile(filepath.Join(pluginDir, "manifest.json"), []byte(manifest), 0644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	r := plugin.NewRegistry()
+	l := plugin.NewLoader(r, &memStore{data: make(map[string][]byte)})
+	if err := l.LoadFromDir(dir); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := r.Manifest("test_plugin"); !ok {
+		t.Fatal("expected manifest loaded from dir")
+	}
+}
+
+func TestPluginInstallerInstall(t *testing.T) {
+	baseDir := t.TempDir()
+	r := plugin.NewRegistry()
+	store := &memStore{data: make(map[string][]byte)}
+	i := plugin.NewInstaller(r, store, baseDir)
+	m := &plugin.Manifest{Name: "test_plugin", Version: "1.0.0", Entry: "plugin.zip"}
+	if err := i.Install("test_plugin", []byte("data"), m); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := r.Manifest("test_plugin"); !ok {
+		t.Fatal("expected plugin installed")
+	}
+	if _, err := os.ReadFile(filepath.Join(baseDir, "test_plugin", "manifest.json")); err != nil {
+		t.Fatalf("expected manifest on disk: %v", err)
+	}
+}
+
+func TestPluginPermissionChecker(t *testing.T) {
+	p := plugin.NewPermissionChecker()
+	p.Allow("test_plugin", "read")
+	if !p.Allowed("test_plugin", "read") {
+		t.Fatal("expected permission allowed")
+	}
+	if p.Allowed("test_plugin", "write") {
+		t.Fatal("expected permission denied")
 	}
 }
 
 func TestPluginContext(t *testing.T) {
-	ctx := plugin.NewContext()
+	ctx := &plugin.Context{}
 	if ctx == nil {
 		t.Fatal("expected context")
 	}
 }
 
-func TestPluginLoader(t *testing.T) {
-	loader := plugin.NewLoader()
-	if loader == nil {
-		t.Fatal("expected loader")
-	}
-}
-
-func TestPluginInstaller(t *testing.T) {
-	installer := plugin.NewInstaller()
-	if installer == nil {
-		t.Fatal("expected installer")
-	}
-}
-
-func TestPluginManagerRegister(t *testing.T) {
-	m := plugin.NewManager("test_plugins")
-	p := &plugin.Plugin{Name: "test"}
-	m.Register(p)
-	if !m.Has("test") {
-		t.Fatal("expected plugin registered")
-	}
-}
-
-func TestPluginManagerUnregister(t *testing.T) {
-	m := plugin.NewManager("test_plugins")
-	p := &plugin.Plugin{Name: "test"}
-	m.Register(p)
-	m.Unregister("test")
-	if m.Has("test") {
-		t.Fatal("expected plugin unregistered")
-	}
-}
-
-func TestPluginRegistryAdd(t *testing.T) {
-	r := plugin.NewRegistry()
-	p := &plugin.Plugin{Name: "test"}
-	r.Add(p)
-	if !r.Has("test") {
-		t.Fatal("expected plugin in registry")
-	}
-}
-
-func TestPluginRegistryRemove(t *testing.T) {
-	r := plugin.NewRegistry()
-	p := &plugin.Plugin{Name: "test"}
-	r.Add(p)
-	r.Remove("test")
-	if r.Has("test") {
-		t.Fatal("expected plugin removed")
-	}
-}
-
-func TestPluginEventBusSubscribe(t *testing.T) {
-	bus := plugin.NewEventBus()
-	received := false
-	bus.Subscribe("test", func(e plugin.Event) { received = true })
-	bus.Publish(plugin.Event{Type: "test"})
-	if !received {
-		t.Fatal("expected event received")
-	}
-}
-
-func TestPluginEventBusUnsubscribe(t *testing.T) {
-	bus := plugin.NewEventBus()
-	received := false
-	bus.Subscribe("test", func(e plugin.Event) { received = true })
-	bus.Unsubscribe("test", func(e plugin.Event) { received = true })
-	bus.Publish(plugin.Event{Type: "test"})
-	if received {
-		t.Fatal("expected event not received after unsubscribe")
-	}
-}
-
-func TestPluginContextSet(t *testing.T) {
-	ctx := plugin.NewContext()
-	ctx.Set("key", "value")
-	if ctx.Get("key") != "value" {
-		t.Fatal("expected value")
-	}
-}
-
-func TestPluginContextGetMissing(t *testing.T) {
-	ctx := plugin.NewContext()
-	if ctx.Get("missing") != nil {
-		t.Fatal("expected nil")
-	}
-}
-
-func TestPluginLoaderLoad(t *testing.T) {
-	loader := plugin.NewLoader()
-	p, err := loader.Load("test_plugin")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if p == nil {
-		t.Fatal("expected plugin")
-	}
-}
-
-func TestPluginInstallerInstall(t *testing.T) {
-	installer := plugin.NewInstaller()
-	err := installer.Install("test_plugin")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestPluginInstallerUninstall(t *testing.T) {
-	installer := plugin.NewInstaller()
-	installer.Install("test_plugin")
-	err := installer.Uninstall("test_plugin")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-}
-
-func TestPluginStruct(t *testing.T) {
-	p := plugin.Plugin{Name: "test", Version: "1.0.0"}
-	if p.Name != "test" || p.Version != "1.0.0" {
-		t.Fatal("unexpected plugin")
-	}
-}
-
-func TestPluginEventStruct(t *testing.T) {
-	e := plugin.Event{Type: "test", Plugin: "p"}
-	if e.Type != "test" || e.Plugin != "p" {
-		t.Fatal("unexpected event")
-	}
-}
-
-func TestPluginManagerList(t *testing.T) {
-	m := plugin.NewManager("test_plugins")
-	m.Register(&plugin.Plugin{Name: "a"})
-	m.Register(&plugin.Plugin{Name: "b"})
-	plugins := m.List()
-	if len(plugins) != 2 {
-		t.Fatalf("expected 2 plugins, got %d", len(plugins))
+func TestPluginManifestStruct(t *testing.T) {
+	m := plugin.Manifest{Name: "test", Version: "1.0.0"}
+	if m.Name != "test" || m.Version != "1.0.0" {
+		t.Fatal("unexpected manifest")
 	}
 }

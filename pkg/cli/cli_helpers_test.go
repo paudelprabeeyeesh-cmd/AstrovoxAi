@@ -1,6 +1,11 @@
 package cli
 
-import "testing"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+)
 
 func TestNewCLI(t *testing.T) {
 	c := NewCLI("astrovox", "1.0.0")

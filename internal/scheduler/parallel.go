@@ -13,6 +13,7 @@ type WorkerPool struct {
 	ctx     context.Context
 	cancel  context.CancelFunc
 	wg      sync.WaitGroup
+	pending sync.WaitGroup
 }
 
 // NewWorkerPool creates a pool with the given worker count.
@@ -36,24 +37,19 @@ func NewWorkerPool(workers int) *WorkerPool {
 
 func (wp *WorkerPool) worker() {
 	defer wp.wg.Done()
-	for {
-		select {
-		case task, ok := <-wp.tasks:
-			if !ok {
-				return
-			}
-			_ = task.Run()
-		case <-wp.ctx.Done():
-			return
-		}
+	for task := range wp.tasks {
+		_ = task.Run()
+		wp.pending.Done()
 	}
 }
 
 // Submit enqueues a task.
 func (wp *WorkerPool) Submit(task *Task) {
+	wp.pending.Add(1)
 	select {
 	case wp.tasks <- task:
 	case <-wp.ctx.Done():
+		wp.pending.Done()
 	}
 }
 
@@ -66,7 +62,7 @@ func (wp *WorkerPool) SubmitMany(tasks []*Task) {
 
 // Wait blocks until all submitted tasks complete.
 func (wp *WorkerPool) Wait() {
-	wp.wg.Wait()
+	wp.pending.Wait()
 }
 
 // Stop shuts down the pool.

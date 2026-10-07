@@ -19,7 +19,7 @@ func (a ByStart) Less(i, j int) bool {
 	if a[i].Start != a[j].Start {
 		return a[i].Start < a[j].Start
 	}
-	return a[i].End > a[j].End
+	return a[i].End < a[j].End
 }
 
 // ByEnd sorts lifetimes by ascending end time.
@@ -33,9 +33,9 @@ func (a ByEnd) Less(i, j int) bool {
 
 // OpInfo describes a single operation for lifetime analysis.
 type OpInfo struct {
-	Name     string
-	Inputs   []string
-	Outputs  []string
+	Name    string
+	Inputs  []string
+	Outputs []string
 }
 
 // AnalyzeLifetimes computes live intervals from an op sequence.

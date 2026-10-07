@@ -1,9 +1,8 @@
 package cli
 
 import (
-	"bytes"
 	"bufio"
-	"os"
+	"bytes"
 	"strings"
 	"testing"
 )
@@ -37,14 +36,5 @@ func TestCLIRunUnknown(t *testing.T) {
 	err := c.Run([]string{"unknown"})
 	if err == nil {
 		t.Fatal("expected error for unknown command")
-	}
-}
-
-func TestParseEnvFlags(t *testing.T) {
-	os.Setenv("ASTROVOX_TEST", "1")
-	defer os.Unsetenv("ASTROVOX_TEST")
-	env := ParseEnvFlags("ASTROVOX_")
-	if _, ok := env["ASTROVOX_TEST"]; !ok {
-		t.Fatal("expected ASTROVOX_TEST in env flags")
 	}
 }

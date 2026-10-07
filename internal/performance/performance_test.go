@@ -27,7 +27,7 @@ func TestSIMDVector_Add(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if out.Data[0] != 5 || out.Data[1] != 6 || out.Data[2] != 7 {
+	if out.Data[0] != 5 || out.Data[1] != 7 || out.Data[2] != 9 {
 		t.Errorf("unexpected result: %v", out.Data)
 	}
 }

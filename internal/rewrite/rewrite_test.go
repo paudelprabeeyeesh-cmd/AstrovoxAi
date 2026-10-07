@@ -1,6 +1,10 @@
 package rewrite
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/astrovox/astrovox/internal/ir"
+)
 
 func TestMatcherMatch(t *testing.T) {
 	m := NewMatcher()

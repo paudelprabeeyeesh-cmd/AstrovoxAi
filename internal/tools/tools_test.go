@@ -1,6 +1,9 @@
 package tools
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestGraphViewer_RenderDOT(t *testing.T) {
 	v := NewGraphViewer()

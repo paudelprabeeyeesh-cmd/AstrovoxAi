@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -21,7 +22,7 @@ func Golden(t *testing.T, got []byte, goldenPath string) {
 		t.Fatalf("read golden: %v", err)
 	}
 	if !bytes.Equal(got, want) {
-		t.Fatalf("output mismatch.\ngot:\n%s\nwant:\n%s", got, want)
+		panic(fmt.Sprintf("golden mismatch.\ngot:\n%s\nwant:\n%s", got, want))
 	}
 }
 

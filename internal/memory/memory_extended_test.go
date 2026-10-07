@@ -1,7 +1,6 @@
 package memory_test
 
 import (
-	"errors"
 	"sync"
 	"testing"
 
@@ -64,7 +63,7 @@ func TestMemoryArenaExhausted(t *testing.T) {
 	if err == nil {
 		t.Error("expected error")
 	}
-	if !errors.Is(err, errors.New("arena exhausted")) {
+	if err == nil || err.Error() != "arena exhausted" {
 		t.Errorf("unexpected error: %v", err)
 	}
 }

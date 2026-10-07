@@ -70,7 +70,7 @@ func TestOptimizerInlineConstants(t *testing.T) {
 	g.AddNode("a", "constant", nil)
 	g.AddNode("b", "add", []string{"a"})
 	g.Output = "b"
-	g.InlineConstants()
+	g.ConstantFolding()
 }
 
 func TestOptimizerOperatorFusion(t *testing.T) {
@@ -88,7 +88,6 @@ func TestOptimizerEmptyGraph(t *testing.T) {
 	g.DeadCodeElimination()
 	g.CommonSubexpressionElimination()
 	g.OperatorFusion()
-	g.InlineConstants()
 }
 
 func TestOptimizerMultipleConstants(t *testing.T) {
