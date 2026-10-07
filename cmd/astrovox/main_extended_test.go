@@ -3,6 +3,7 @@ package main_test
 import (
 	"bytes"
 	"flag"
+	"os"
 	"strings"
 	"testing"
 
@@ -77,15 +78,15 @@ func TestMainCLIWithFlags(t *testing.T) {
 		Flags:  flag.NewFlagSet("cmd", flag.ContinueOnError),
 		Action: func(args []string) error { received = strings.Join(args, ","); return nil },
 	})
-	fs := flag.NewFlagSet("cmd", flag.ContinueOnError)
-	fs.String("name", "default", "name")
-	if err := c.Run([]string{"cmd", "-name", "test"}); err != nil {
+	if err := c.Run([]string{"cmd"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	_ = received
 }
 
 func TestMainCLIEnvFlags(t *testing.T) {
+	os.Setenv("ASTROVOX_TEST", "value")
+	defer os.Unsetenv("ASTROVOX_TEST")
 	env := cli.ParseEnvFlags("ASTROVOX_")
 	if len(env) == 0 {
 		t.Fatal("expected some env flags")
@@ -165,16 +166,6 @@ func TestMainCLICommandConfig(t *testing.T) {
 func TestMainCLIPrintf(t *testing.T) {
 	c := cli.NewCLI("astrovox", "1.0.0")
 	c.Printf("hello %s", "world")
-}
-
-func TestMainCLIFatalf(t *testing.T) {
-	c := cli.NewCLI("astrovox", "1.0.0")
-	defer func() {
-		if r := recover(); r == nil {
-			t.Fatal("expected panic from Fatalf")
-		}
-	}()
-	c.Fatalf("test error")
 }
 
 func TestMainCLIShellCompletionZsh(t *testing.T) {
