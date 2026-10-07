@@ -133,7 +133,7 @@ func TestIntegrationIRBuilder(t *testing.T) {
 	b.SetOutput(c)
 	g := b.Build()
 	if g.NodeCount() != 3 {
-		t.Fatalf("expected 3 nodes, got %d", g.NodeCount()))
+		t.Fatalf("expected 3 nodes, got %d", g.NodeCount())
 	}
 }
 

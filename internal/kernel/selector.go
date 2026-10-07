@@ -1,9 +1,5 @@
 package kernel
 
-import (
-	"fmt"
-)
-
 // Selector picks the best kernel for a backend and version.
 type Selector struct {
 	registry *Registry

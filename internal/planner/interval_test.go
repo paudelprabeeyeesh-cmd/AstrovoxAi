@@ -22,13 +22,16 @@ func TestIntervalOverlaps(t *testing.T) {
 }
 
 func TestIntervalLength(t *testing.T) {
-	if Interval{0, 10}.Length() != 10 {
+	i := Interval{0, 10}
+	if i.Length() != 10 {
 		t.Error("length mismatch")
 	}
-	if Interval{5, 5}.Length() != 0 {
+	j := Interval{5, 5}
+	if j.Length() != 0 {
 		t.Error("zero-length mismatch")
 	}
-	if Interval{10, 5}.Length() != 0 {
+	k := Interval{10, 5}
+	if k.Length() != 0 {
 		t.Error("negative length mismatch")
 	}
 }
@@ -50,7 +53,8 @@ func TestIntervalIntersect(t *testing.T) {
 	if got.Start != 5 || got.End != 10 {
 		t.Errorf("intersect = %v, want [5, 10)", got)
 	}
-	if !Interval{0, 5}.Intersect(Interval{5, 10}).Contains(0) {
+	empty := Interval{0, 5}.Intersect(Interval{5, 10})
+	if !empty.Contains(0) {
 		t.Error("disjoint intersection should be empty")
 	}
 }

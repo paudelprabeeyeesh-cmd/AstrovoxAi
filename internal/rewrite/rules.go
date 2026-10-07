@@ -1,5 +1,7 @@
 package rewrite
 
+import "github.com/astrovox/astrovox/internal/ir"
+
 // Built-in rewrite rules.
 var (
 	RuleMatMulBias = &RewriteRule{

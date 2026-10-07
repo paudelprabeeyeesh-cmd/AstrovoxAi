@@ -2,6 +2,7 @@ package main_test
 
 import (
 	"bytes"
+	"flag"
 	"strings"
 	"testing"
 
@@ -73,10 +74,10 @@ func TestMainCLIWithFlags(t *testing.T) {
 	received := ""
 	c.AddCommand(&cli.Command{
 		Name:   "cmd",
-		Flags:  cli.NewFlagSet("cmd"),
+		Flags:  flag.NewFlagSet("cmd", flag.ContinueOnError),
 		Action: func(args []string) error { received = strings.Join(args, ","); return nil },
 	})
-	fs := cli.NewFlagSet("cmd")
+	fs := flag.NewFlagSet("cmd", flag.ContinueOnError)
 	fs.String("name", "default", "name")
 	if err := c.Run([]string{"cmd", "-name", "test"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -164,7 +165,6 @@ func TestMainCLICommandConfig(t *testing.T) {
 func TestMainCLIPrintf(t *testing.T) {
 	c := cli.NewCLI("astrovox", "1.0.0")
 	c.Printf("hello %s", "world")
-	c.out.Flush()
 }
 
 func TestMainCLIFatalf(t *testing.T) {

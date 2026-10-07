@@ -2,7 +2,6 @@ package ir_test
 
 import (
 	"bytes"
-	"encoding/json"
 	"testing"
 
 	"github.com/astrovox/astrovox/internal/ir"

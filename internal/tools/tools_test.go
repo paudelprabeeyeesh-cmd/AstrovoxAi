@@ -100,7 +100,7 @@ func TestDebugger_Step(t *testing.T) {
 func TestTracer_StartEnd(t *testing.T) {
 	tracer := NewTracer()
 	span := tracer.Start("test")
-	span.End(10)
+	span.Complete(10)
 	spans := tracer.SpansList()
 	if len(spans) != 1 {
 		t.Fatalf("expected 1 span")

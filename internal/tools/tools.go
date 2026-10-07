@@ -159,8 +159,8 @@ func (t *Tracer) Start(name string) *Span {
 	return span
 }
 
-// End completes a span.
-func (s *Span) End(end int64) {
+// Complete completes a span.
+func (s *Span) Complete(end int64) {
 	s.End = end
 }
 
