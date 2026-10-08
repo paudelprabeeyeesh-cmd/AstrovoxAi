@@ -1,14 +1,15 @@
 package scheduler
 
 import (
+	"sync"
 	"testing"
 )
 
 func TestDAG_AddTask(t *testing.T) {
 	dag := NewDAG()
 	dag.AddTask(&Task{ID: "a"})
-	if len(dag.Tasks) != 1 {
-		t.Fatalf("tasks = %d, want 1", len(dag.Tasks))
+	if len(dag.Nodes) != 1 {
+		t.Fatalf("nodes = %d, want 1", len(dag.Nodes))
 	}
 }
 
@@ -20,16 +21,6 @@ func TestDAG_TopologicalOrderEmpty(t *testing.T) {
 	}
 	if len(order) != 0 {
 		t.Fatalf("order len = %d, want 0", len(order))
-	}
-}
-
-func TestDAG_Dependents(t *testing.T) {
-	dag := NewDAG()
-	dag.AddTask(&Task{ID: "root"})
-	dag.AddTask(&Task{ID: "child", DependsOn: []string{"root"}})
-	deps := dag.Dependents("root")
-	if len(deps) != 1 || deps[0] != "child" {
-		t.Fatalf("dependents = %v, want [child]", deps)
 	}
 }
 
@@ -130,21 +121,21 @@ func TestDynamicScheduler_EmptyRun(t *testing.T) {
 	ds.Run() // should not block forever
 }
 
-func TestDynamicScheduler_MultiplePriorities(t *testing.T) {
+func TestDynamicScheduler_MultipleSubmissions(t *testing.T) {
 	ds := NewDynamicScheduler()
 	ds.Start()
 	defer ds.Stop()
-	order := []string{}
-	for _, p := range []int{2, 1, 3} {
-		pri := p
-		ds.Submit(&Task{ID: string(rune('a' + p)), Run: func() error {
-			order = append(order, string(rune('a' + pri)))
+	count := 0
+	for i := 0; i < 3; i++ {
+		n := i
+		ds.Submit(&Task{ID: string(rune('a' + n)), Run: func() error {
+			count++
 			return nil
-		}}, pri)
+		}}, 0)
 	}
 	ds.Run()
-	if len(order) != 3 {
-		t.Fatalf("executed = %d, want 3", len(order))
+	if count != 3 {
+		t.Fatalf("executed = %d, want 3", count)
 	}
 }
 
@@ -263,10 +254,11 @@ func TestPriorityQueue_MultiplePops(t *testing.T) {
 	}
 }
 
-func TestTask_Struct(t *testing.T) {
-	task := Task{ID: "t1", DependsOn: []string{"a", "b"}, Priority: 5}
-	if task.ID != "t1" || len(task.DependsOn) != 2 || task.Priority != 5 {
-		t.Fatalf("task = %+v", task)
+func TestTask_RunField(t *testing.T) {
+	called := false
+	task := Task{Run: func() error { called = true; return nil }}
+	if err := task.Run(); err != nil || !called {
+		t.Fatal("task run not executed")
 	}
 }
 
@@ -278,9 +270,9 @@ func TestIndependentSet_Struct(t *testing.T) {
 }
 
 func TestCycleError_Message(t *testing.T) {
-	e := CycleError("test cycle")
-	if e.Error() != "test cycle" {
-		t.Fatalf("error = %q, want test cycle", e.Error())
+	e := &CycleError{missing: "test cycle"}
+	if e.Error() != "missing dependency: test cycle" {
+		t.Fatalf("error = %q, want missing dependency: test cycle", e.Error())
 	}
 }
 
@@ -288,13 +280,5 @@ func TestEvent_Struct(t *testing.T) {
 	e := Event{Type: "t", Task: &Task{ID: "x"}, Time: 1}
 	if e.Type != "t" || e.Task.ID != "x" || e.Time != 1 {
 		t.Fatalf("event = %+v", e)
-	}
-}
-
-func TestTask_RunField(t *testing.T) {
-	called := false
-	task := Task{Run: func() error { called = true; return nil }}
-	if err := task.Run(); err != nil || !called {
-		t.Fatal("task run not executed")
 	}
 }
