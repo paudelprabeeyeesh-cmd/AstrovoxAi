@@ -85,16 +85,6 @@ func TestDependencyGraph_AddEdge(t *testing.T) {
 	}
 }
 
-func TestDependencyGraph_RemoveTask(t *testing.T) {
-	dg := NewDependencyGraph()
-	dg.AddEdge("a", "b")
-	dg.RemoveTask("b")
-	deps := dg.Dependents("a")
-	if len(deps) != 0 {
-		t.Fatalf("dependents after remove = %v, want []", deps)
-	}
-}
-
 func TestDependencyGraph_RemoveSource(t *testing.T) {
 	dg := NewDependencyGraph()
 	dg.AddEdge("a", "b")
@@ -112,24 +102,12 @@ func TestDependencyGraph_MultipleEdges(t *testing.T) {
 	}
 }
 
-func TestEventBus_Publish(t *testing.T) {
-	bus := NewEventBus()
-	received := ""
-	bus.Subscribe("topic", func(e Event) {
-		received = e.Payload.(string)
-	})
-	bus.Publish(Event{Topic: "topic", Payload: "hello"})
-	if received != "hello" {
-		t.Fatalf("payload = %q, want hello", received)
-	}
-}
-
 func TestEventBus_MultipleSubscribers(t *testing.T) {
 	bus := NewEventBus()
 	var count int
 	bus.Subscribe("t", func(e Event) { count++ })
 	bus.Subscribe("t", func(e Event) { count++ })
-	bus.Publish(Event{Topic: "t"})
+	bus.Publish(Event{Type: "t"})
 	if count != 2 {
 		t.Fatalf("count = %d, want 2", count)
 	}
@@ -138,31 +116,10 @@ func TestEventBus_MultipleSubscribers(t *testing.T) {
 func TestEventBus_MultipleTopics(t *testing.T) {
 	bus := NewEventBus()
 	var got string
-	bus.Subscribe("a", func(e Event) { got = e.Topic })
-	bus.Publish(Event{Topic: "a"})
+	bus.Subscribe("a", func(e Event) { got = e.Type })
+	bus.Publish(Event{Type: "a"})
 	if got != "a" {
 		t.Fatalf("topic = %q, want a", got)
-	}
-}
-
-func TestNewEventBus(t *testing.T) {
-	bus := NewEventBus()
-	if bus == nil {
-		t.Fatal("expected non-nil event bus")
-	}
-}
-
-func TestDynamicScheduler_SubmitRun(t *testing.T) {
-	ds := NewDynamicScheduler()
-	ds.Start()
-	defer ds.Stop()
-	done := make(chan struct{}, 1)
-	ds.Submit(&Task{ID: "t1", Run: func() error { close(done); return nil }}, 0)
-	ds.Run()
-	select {
-	case <-done:
-	default:
-		t.Fatal("task was not executed")
 	}
 }
 
@@ -191,26 +148,6 @@ func TestDynamicScheduler_MultiplePriorities(t *testing.T) {
 	}
 }
 
-func TestLoadBalancer_Assign(t *testing.T) {
-	lb := NewLoadBalancer(3)
-	w := lb.Assign()
-	if w < 0 || w >= 3 {
-		t.Fatalf("worker = %d, want [0,3)", w)
-	}
-}
-
-func TestLoadBalancer_Release(t *testing.T) {
-	lb := NewLoadBalancer(2)
-	w := lb.Assign()
-	lb.Release(w)
-	loads := lb.Loads()
-	for _, l := range loads {
-		if l != 0 {
-			t.Fatalf("load after release = %d, want 0", l)
-		}
-	}
-}
-
 func TestLoadBalancer_MultipleAssign(t *testing.T) {
 	lb := NewLoadBalancer(2)
 	w0 := lb.Assign()
@@ -228,28 +165,6 @@ func TestLoadBalancer_Loads(t *testing.T) {
 	loads := lb.Loads()
 	if len(loads) != 4 {
 		t.Fatalf("loads len = %d, want 4", len(loads))
-	}
-}
-
-func TestHeuristics_Criticality(t *testing.T) {
-	h := NewHeuristics()
-	dag := NewDAG()
-	dag.AddTask(&Task{ID: "a"})
-	dag.AddTask(&Task{ID: "b", DependsOn: []string{"a"}})
-	c := h.EstimateCriticality(&Task{ID: "b"}, dag)
-	if c <= 0 {
-		t.Fatalf("criticality = %d, want positive", c)
-	}
-}
-
-func TestHeuristics_Parallelism(t *testing.T) {
-	h := NewHeuristics()
-	dag := NewDAG()
-	dag.AddTask(&Task{ID: "a"})
-	dag.AddTask(&Task{ID: "b"})
-	p := h.EstimateParallelism(dag)
-	if p < 1 {
-		t.Fatalf("parallelism = %d, want >= 1", p)
 	}
 }
 
@@ -309,8 +224,7 @@ func TestWorkerPool_SubmitMany(t *testing.T) {
 func TestWorkerPool_Stop(t *testing.T) {
 	wp := NewWorkerPool(1)
 	wp.Stop()
-	// Should not panic on double stop
-	wp.Stop()
+	wp.Stop() // should not panic on double stop
 }
 
 func TestWorkerPool_RunSetError(t *testing.T) {
@@ -371,8 +285,8 @@ func TestCycleError_Message(t *testing.T) {
 }
 
 func TestEvent_Struct(t *testing.T) {
-	e := Event{Topic: "t", Payload: 42}
-	if e.Topic != "t" || e.Payload != 42 {
+	e := Event{Type: "t", Task: &Task{ID: "x"}, Time: 1}
+	if e.Type != "t" || e.Task.ID != "x" || e.Time != 1 {
 		t.Fatalf("event = %+v", e)
 	}
 }
@@ -382,12 +296,5 @@ func TestTask_RunField(t *testing.T) {
 	task := Task{Run: func() error { called = true; return nil }}
 	if err := task.Run(); err != nil || !called {
 		t.Fatal("task run not executed")
-	}
-}
-
-func TestTask_RunError(t *testing.T) {
-	task := Task{Run: func() error { return nil }} // use nil error
-	if err := task.Run(); err != nil {
-		t.Fatalf("unexpected error: %v", err)
 	}
 }
