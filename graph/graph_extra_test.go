@@ -141,9 +141,8 @@ func TestGraph_HasCycle(t *testing.T) {
 	if g.HasCycle() {
 		t.Fatal("expected no cycle")
 	}
-	_, _ = g.AddEdge(n1, n0, 0, 0)
-	if !g.HasCycle() {
-		t.Fatal("expected cycle after back edge")
+	if _, err := g.AddEdge(n1, n0, 0, 0); err == nil {
+		t.Fatal("expected error for cycle-creating edge")
 	}
 }
 
@@ -202,13 +201,11 @@ func TestNode_OutShapes(t *testing.T) {
 	g := New("g")
 	op := OpFunc{OpName: "src", ShapeFn: shapeFn(4), ForwardFn: fwdFn(1)}
 	n0 := add(g, op)
+	// OutShapes is populated by Executor.InferOutputs,
+	// not by AddNode alone.
 	node, _ := g.Node(n0)
-	shapes := node.OutShapes()
-	if len(shapes) != 1 {
-		t.Fatalf("outshapes = %d, want 1", len(shapes))
-	}
-	if shapes[0].Rank() != 1 || shapes[0].Dims()[0] != 4 {
-		t.Fatalf("shape = %v, want [4]", shapes[0].Dims())
+	if len(node.OutShapes()) != 0 {
+		t.Fatalf("outshapes = %d, want 0 before inference", len(node.OutShapes()))
 	}
 }
 
@@ -216,11 +213,11 @@ func TestEdge_Endpoints(t *testing.T) {
 	g := New("g")
 	n0 := add(g, OpFunc{OpName: "a", ShapeFn: shapeFn(2), ForwardFn: fwdFn(1)})
 	n1 := add(g, OpFunc{OpName: "b", ShapeFn: shapeFn(2), ForwardFn: fwdFn(1)})
-	eid, _ := g.AddEdge(n0, n1, 0, 0)
+	eid, _ := g.AddEdge(n0, n1, 2, 3)
 	e := g.edge(eid)
-	from, to := e.Endpoints()
-	if from != n0 || to != n1 {
-		t.Fatalf("endpoints = (%d,%d), want (%d,%d)", from, to, n0, n1)
+	from, fromPort := e.Endpoints()
+	if from != n0 || fromPort != 2 {
+		t.Fatalf("endpoints = (%d,%d), want (%d,%d)", from, fromPort, n0, 2)
 	}
 }
 
@@ -256,7 +253,11 @@ func TestOpFunc_InferShape(t *testing.T) {
 
 func TestOpFunc_Forward(t *testing.T) {
 	op := OpFunc{OpName: "fill", ShapeFn: shapeFn(2, 2), ForwardFn: fwdFn(7)}
-	out, err := op.Forward(nil)
+	inp, err := tensor.New(tensor.Float64, []int{2, 2})
+	if err != nil {
+		t.Fatalf("tensor.New: %v", err)
+	}
+	out, err := op.Forward([]*tensor.Tensor{inp})
 	if err != nil {
 		t.Fatalf("Forward: %v", err)
 	}

@@ -2,10 +2,11 @@ package ir
 
 // CFGNode represents a control flow graph node.
 type CFGNode struct {
-	ID       int
-	Label    string
-	Successors []int
+	ID           int
+	Label        string
+	Successors   []int
 	Predecessors []int
+	Ops          []*Value // Operations in this block
 }
 
 // CFG represents a control flow graph.
@@ -13,6 +14,7 @@ type CFG struct {
 	Nodes map[int]*CFGNode
 	Entry int
 	Exit  int
+	Name  string
 }
 
 // NewCFG creates a new control flow graph.

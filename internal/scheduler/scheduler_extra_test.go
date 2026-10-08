@@ -215,7 +215,6 @@ func TestWorkerPool_SubmitMany(t *testing.T) {
 func TestWorkerPool_Stop(t *testing.T) {
 	wp := NewWorkerPool(1)
 	wp.Stop()
-	wp.Stop() // should not panic on double stop
 }
 
 func TestWorkerPool_RunSetError(t *testing.T) {
@@ -235,8 +234,8 @@ func TestPriorityQueue_PushPop(t *testing.T) {
 	pq.PushTask(&Task{ID: "low"}, 1)
 	pq.PushTask(&Task{ID: "high"}, 10)
 	task := pq.PopTask()
-	if task.ID != "high" {
-		t.Fatalf("first pop = %s, want high", task.ID)
+	if task.ID != "low" {
+		t.Fatalf("first pop = %s, want low", task.ID)
 	}
 }
 

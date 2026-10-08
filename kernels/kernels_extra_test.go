@@ -7,18 +7,18 @@ import (
 )
 
 func TestVecAddZeroLength(t *testing.T) {
-	a := view([]int{0})
-	b := view([]int{0})
-	out := view([]int{0})
+	a := view([]int{0}, float64(0))
+	b := view([]int{0}, float64(0))
+	out := view([]int{0}, float64(0))
 	if err := (VecAddKernel{}).Execute([]TensorView{a, b}, []TensorView{out}, nil); err != nil {
 		t.Fatalf("zero-length: %v", err)
 	}
 }
 
 func TestVecMulZeroLength(t *testing.T) {
-	a := view([]int{0})
-	b := view([]int{0})
-	out := view([]int{0})
+	a := view([]int{0}, float64(0))
+	b := view([]int{0}, float64(0))
+	out := view([]int{0}, float64(0))
 	if err := (VecMulKernel{}).Execute([]TensorView{a, b}, []TensorView{out}, nil); err != nil {
 		t.Fatalf("zero-length: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestTanhZero(t *testing.T) {
 }
 
 func TestSumEmpty(t *testing.T) {
-	a := view([]int{0})
+	a := view([]int{0}, float64(0))
 	out := view([]int{1}, 0)
 	if err := (SumKernel{}).Execute([]TensorView{a}, []TensorView{out}, nil); err != nil {
 		t.Fatalf("sum empty: %v", err)
