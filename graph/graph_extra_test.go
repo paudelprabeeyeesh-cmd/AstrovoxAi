@@ -152,7 +152,7 @@ func TestGraph_Validate(t *testing.T) {
 	if err := g.Validate(); err != nil {
 		t.Fatalf("empty graph validate: %v", err)
 	}
-	n0 := add(g, OpFunc{OpName: "a", ShapeFn: shapeFn(2), ForwardFn: fwdFn(1)})
+	_ = add(g, OpFunc{OpName: "a", ShapeFn: shapeFn(2), ForwardFn: fwdFn(1)})
 	if err := g.Validate(); err != nil {
 		t.Fatalf("single node validate: %v", err)
 	}

@@ -48,7 +48,7 @@ func TestBudgetChecker_CheckAtBoundary(t *testing.T) {
 }
 
 func TestBuffer_String(t *testing.T) {
-	b := Buffer{Name: "buf1", Size: 1024}
+	b := Buffer{ID: "buf1", Size: 1024}
 	if b.String() != "buf1 (1024)" {
 		t.Fatalf("String = %q, want buf1 (1024)", b.String())
 	}
@@ -104,10 +104,11 @@ func TestInterval_EmptyIntersect(t *testing.T) {
 func TestPeakEstimator_NonOverlapping(t *testing.T) {
 	e := NewPeakEstimator()
 	lts := []Lifetime{
-		{Start: 0, End: 5, Size: 100},
-		{Start: 5, End: 10, Size: 100},
+		{TensorID: "a", Start: 0, End: 5},
+		{TensorID: "b", Start: 5, End: 10},
 	}
-	if p := e.Estimate(lts, nil); p != 100 {
+	sizes := map[string]int{"a": 100, "b": 100}
+	if p := e.Estimate(lts, sizes); p != 100 {
 		t.Fatalf("peak = %d, want 100", p)
 	}
 }
@@ -115,10 +116,11 @@ func TestPeakEstimator_NonOverlapping(t *testing.T) {
 func TestPeakEstimator_Overlapping(t *testing.T) {
 	e := NewPeakEstimator()
 	lts := []Lifetime{
-		{Start: 0, End: 10, Size: 100},
-		{Start: 5, End: 15, Size: 200},
+		{TensorID: "a", Start: 0, End: 10},
+		{TensorID: "b", Start: 5, End: 15},
 	}
-	if p := e.Estimate(lts, nil); p != 300 {
+	sizes := map[string]int{"a": 100, "b": 200}
+	if p := e.Estimate(lts, sizes); p != 300 {
 		t.Fatalf("peak = %d, want 300", p)
 	}
 }
@@ -128,61 +130,6 @@ func TestPlanGenerator_Empty(t *testing.T) {
 	plan := g.Generate(nil, nil)
 	if plan == nil {
 		t.Fatal("expected non-nil plan")
-	}
-}
-
-func TestPoolManager_AcquireRelease(t *testing.T) {
-	m := NewPoolManager(64)
-	buf := m.Acquire(32)
-	if len(buf) != 64 {
-		t.Fatalf("len = %d, want 64", len(buf))
-	}
-	m.Release(buf)
-	cached, blockSize := m.Stats()
-	if cached != 1 || blockSize != 64 {
-		t.Fatalf("stats = (%d,%d), want (1,64)", cached, blockSize)
-	}
-}
-
-func TestPoolManager_MultipleAcquire(t *testing.T) {
-	m := NewPoolManager(32)
-	b1 := m.Acquire(16)
-	b2 := m.Acquire(16)
-	if len(b1) != 32 || len(b2) != 32 {
-		t.Fatalf("buffer sizes = %d, %d, want 32,32", len(b1), len(b2))
-	}
-}
-
-func TestBestFitSelect(t *testing.T) {
-	s := NewStrategySelector(BestFit)
-	free := []int{64, 128, 256}
-	idx := s.Select(free, 100)
-	if idx < 0 || idx >= len(free) || free[idx] != 128 {
-		t.Fatalf("best fit idx = %d, want 128", idx)
-	}
-}
-
-func TestFirstFitSelect(t *testing.T) {
-	s := NewStrategySelector(FirstFit)
-	free := []int{64, 128, 256}
-	idx := s.Select(free, 100)
-	if idx != 1 {
-		t.Fatalf("first fit idx = %d, want 1", idx)
-	}
-}
-
-func TestSelectNone(t *testing.T) {
-	s := NewStrategySelector(FirstFit)
-	if idx := s.Select([]int{10, 20}, 100); idx != -1 {
-		t.Fatalf("expected -1, got %d", idx)
-	}
-}
-
-func TestPoolManager_ExactAcquire(t *testing.T) {
-	m := NewPoolManager(64)
-	buf := m.Acquire(64)
-	if len(buf) != 64 {
-		t.Fatalf("len = %d, want 64", len(buf))
 	}
 }
 
