@@ -128,8 +128,19 @@ func ParseDType(name string) (DType, error) {
 		WithField("name", name)
 }
 
-// Promote returns the smallest dtype that can represent values
-// of both a and b without loss (promotion lattice).
+// Promote returns the join of a and b in the dtype
+// promotion lattice: a dtype that can represent values
+// of both operands. The lattice is associative,
+// commutative, and idempotent, so the result never
+// depends on the order operands are combined.
+//
+// Mixing a fixed-width integer with a float yields
+// float64. No narrower target can work: the integer
+// lattice widens mixed-signedness joins (int8+uint8
+// -> int16, int16+uint16 -> int32), and associativity
+// then forces every integer/float join onto a single
+// common type (verified exhaustively by
+// TestProperty_PromoteLaws).
 func Promote(a, b DType) DType {
 	if a == b {
 		return a
@@ -137,68 +148,57 @@ func Promote(a, b DType) DType {
 	if a.IsComplex() || b.IsComplex() {
 		return Complex128
 	}
-	if a.IsFloat() || b.IsFloat() {
+	if a.IsFloat() && b.IsFloat() {
 		return promoteFloat(a, b)
+	}
+	if a.IsFloat() || b.IsFloat() {
+		f, i := a, b
+		if b.IsFloat() {
+			f, i = b, a
+		}
+		return promoteFloatInt(f, i)
 	}
 	return promoteInteger(a, b)
 }
 
+// promoteFloat joins two distinct float types.
 func promoteFloat(a, b DType) DType {
-	rank := func(d DType) int {
-		switch d {
-		case Float16, BFloat16:
-			return 1
-		case Float32:
-			return 2
-		case Float64:
-			return 3
-		default:
-			return 0
-		}
-	}
-	// Integer operands mixed with floats promote
-	// to at least float32: half-precision formats
-	// cannot exactly hold 16-bit integers, and a
-	// uniform minimum keeps the lattice associative
-	// across the integer/float boundary.
-	minRank := 0
-	for _, d := range []DType{a, b} {
-		if !d.IsFloat() && intRank(d) >= 1 && minRank < 2 {
-			minRank = 2
-		}
-	}
-	ra, rb := rank(a), rank(b)
-	r := ra
-	if rb > r {
+	r := floatRank(a)
+	if rb := floatRank(b); rb > r {
 		r = rb
 	}
-	// Distinct float types: half-precision pairs
-	// (float16/bfloat16) promote to float32.
-	if a != b && a.IsFloat() && b.IsFloat() && r < 2 {
+	// Distinct half-precision formats (float16 and
+	// bfloat16) promote to float32.
+	if r < 2 {
 		r = 2
-	}
-	// bfloat16's wide exponent range requires at
-	// least float32 when mixed with any other type.
-	if a != b && (a == BFloat16 || b == BFloat16) && r < 2 {
-		r = 2
-	}
-	// Wide integers (32/64-bit) exceed the float32
-	// mantissa; they require float64 for exactness.
-	for _, d := range []DType{a, b} {
-		if !d.IsFloat() && intRank(d) >= 3 && r < 3 {
-			r = 3
-		}
-	}
-	if r < minRank {
-		r = minRank
 	}
 	switch r {
-	case 1:
-		return Float16
 	case 2:
 		return Float32
 	default:
 		return Float64
+	}
+}
+
+// promoteFloatInt joins a float with a non-float type.
+func promoteFloatInt(f, i DType) DType {
+	if i == Bool {
+		// bool values {0, 1} are exact in every float type.
+		return f
+	}
+	return Float64
+}
+
+func floatRank(d DType) int {
+	switch d {
+	case Float16, BFloat16:
+		return 1
+	case Float32:
+		return 2
+	case Float64:
+		return 3
+	default:
+		return 0
 	}
 }
 

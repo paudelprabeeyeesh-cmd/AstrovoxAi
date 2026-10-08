@@ -2,6 +2,7 @@ package tensor_test
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"testing"
 
@@ -151,33 +152,59 @@ func TestProperty_PromoteLaws(t *testing.T) {
 }
 
 // Property_CastSaturation: integer casts saturate to the
-// representable range; float casts stay finite.
+// representable range of the dtype.
 func TestProperty_CastSaturation(t *testing.T) {
+	bounds := []struct {
+		dt tensor.DType
+		lo float64
+		hi float64
+	}{
+		{tensor.Int8, math.MinInt8, math.MaxInt8},
+		{tensor.Int16, math.MinInt16, math.MaxInt16},
+		{tensor.Int32, math.MinInt32, math.MaxInt32},
+		{tensor.Int64, math.MinInt64, math.MaxInt64},
+		{tensor.Uint8, 0, math.MaxUint8},
+		{tensor.Uint16, 0, math.MaxUint16},
+		{tensor.Uint32, 0, math.MaxUint32},
+		{tensor.Uint64, 0, math.MaxUint64},
+	}
 	property.Check(t, "cast-saturation", 1000, func(rng *rand.Rand) error {
-		dt := property.GenDType(rng)
-		if !dt.IsInteger() {
-			return nil
-		}
+		b := bounds[rng.Intn(len(bounds))]
 		v := property.GenFloat(rng) * 1e10 // far out of range
-		got := dt.Cast(v).(int64)
-		switch dt {
-		case tensor.Int8:
-			if v > 127 && got != 127 {
-				return fmt.Errorf("Int8 cast(%v) = %d, want 127", v, got)
-			}
-			if v < -128 && got != -128 {
-				return fmt.Errorf("Int8 cast(%v) = %d, want -128", v, got)
-			}
-		case tensor.Uint8:
-			if v > 255 && got != 255 {
-				return fmt.Errorf("Uint8 cast(%v) = %d, want 255", v, got)
-			}
-			if v < 0 && got != 0 {
-				return fmt.Errorf("Uint8 cast(%v) = %d, want 0", v, got)
-			}
+		got := integerValue(b.dt.Cast(v))
+		if v > b.hi && got != b.hi {
+			return fmt.Errorf("%s cast(%v) = %v, want %v", b.dt, v, got, b.hi)
+		}
+		if v < b.lo && got != b.lo {
+			return fmt.Errorf("%s cast(%v) = %v, want %v", b.dt, v, got, b.lo)
 		}
 		return nil
 	})
+}
+
+// integerValue extracts the numeric value of an
+// integer cast result.
+func integerValue(v any) float64 {
+	switch n := v.(type) {
+	case int8:
+		return float64(n)
+	case int16:
+		return float64(n)
+	case int32:
+		return float64(n)
+	case int64:
+		return float64(n)
+	case uint8:
+		return float64(n)
+	case uint16:
+		return float64(n)
+	case uint32:
+		return float64(n)
+	case uint64:
+		return float64(n)
+	default:
+		return math.NaN()
+	}
 }
 
 // Property_PermuteInverse: applying a permutation and its
