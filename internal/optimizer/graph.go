@@ -233,9 +233,18 @@ func evaluate(op string, inputs []float64) (float64, bool) {
 }
 
 // CommonSubexpressionElimination removes duplicate computations.
+// Iteration is over sorted node names so the pass is
+// deterministic: for a duplicate pair, the
+// lexicographically-first name is always kept.
 func (g *Graph) CommonSubexpressionElimination() {
 	exprMap := make(map[string]string)
-	for name, node := range g.Nodes {
+	names := make([]string, 0, len(g.Nodes))
+	for name := range g.Nodes {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		node := g.Nodes[name]
 		if node.Op == "constant" || node.Computed {
 			continue
 		}

@@ -156,29 +156,88 @@ func promoteFloat(a, b DType) DType {
 			return 0
 		}
 	}
+	// Integer operands mixed with floats promote
+	// to at least float32: half-precision formats
+	// cannot exactly hold 16-bit integers, and a
+	// uniform minimum keeps the lattice associative
+	// across the integer/float boundary.
+	minRank := 0
+	for _, d := range []DType{a, b} {
+		if !d.IsFloat() && intRank(d) >= 1 && minRank < 2 {
+			minRank = 2
+		}
+	}
 	ra, rb := rank(a), rank(b)
-	if ra >= rb && ra >= 2 {
-		if ra == 3 {
-			return Float64
-		}
-		return Float32
+	r := ra
+	if rb > r {
+		r = rb
 	}
-	if rb >= 2 {
-		if rb == 3 {
-			return Float64
-		}
-		return Float32
+	// Distinct float types: half-precision pairs
+	// (float16/bfloat16) promote to float32.
+	if a != b && a.IsFloat() && b.IsFloat() && r < 2 {
+		r = 2
 	}
-	return Float32
+	// bfloat16's wide exponent range requires at
+	// least float32 when mixed with any other type.
+	if a != b && (a == BFloat16 || b == BFloat16) && r < 2 {
+		r = 2
+	}
+	// Wide integers (32/64-bit) exceed the float32
+	// mantissa; they require float64 for exactness.
+	for _, d := range []DType{a, b} {
+		if !d.IsFloat() && intRank(d) >= 3 && r < 3 {
+			r = 3
+		}
+	}
+	if r < minRank {
+		r = minRank
+	}
+	switch r {
+	case 1:
+		return Float16
+	case 2:
+		return Float32
+	default:
+		return Float64
+	}
 }
 
 func promoteInteger(a, b DType) DType {
-	ra := intRank(a)
-	rb := intRank(b)
-	if ra >= rb {
+	if a == b {
 		return a
 	}
-	return b
+	// Same signedness: the wider type wins.
+	if a.IsSigned() == b.IsSigned() {
+		if intRank(a) >= intRank(b) {
+			return a
+		}
+		return b
+	}
+	// Mixed signedness: the result must hold both
+	// the signed minimum and the unsigned maximum.
+	signed, unsigned := a, b
+	if !a.IsSigned() {
+		signed, unsigned = b, a
+	}
+	if intRank(signed) > intRank(unsigned) {
+		// The signed type already covers the
+		// unsigned range (e.g. int16 + uint8).
+		return signed
+	}
+	// Otherwise widen to the next signed type
+	// above the unsigned rank (e.g. int8 +
+	// uint8 -> int16). uint64 has no integer
+	// successor that holds both ranges.
+	switch intRank(unsigned) {
+	case 1:
+		return Int16
+	case 2:
+		return Int32
+	case 3:
+		return Int64
+	default:
+		return Float64
+	}
 }
 
 func intRank(d DType) int {
@@ -211,7 +270,18 @@ func (d DType) Cast(v float64) any {
 	case Int32:
 		return int32(saturate(v, math.MinInt32, math.MaxInt32))
 	case Int64:
-		return int64(saturate(v, math.MinInt64, math.MaxInt64))
+		if math.IsNaN(v) {
+			return int64(0)
+		}
+		if v <= math.MinInt64 {
+			return math.MinInt64
+		}
+		// float64 cannot represent MaxInt64 (2^63-1);
+		// any value >= 2^63 saturates to MaxInt64.
+		if v >= 9223372036854775808.0 {
+			return math.MaxInt64
+		}
+		return int64(v)
 	case Uint8:
 		return uint8(saturate(v, 0, math.MaxUint8))
 	case Uint16:
@@ -219,7 +289,18 @@ func (d DType) Cast(v float64) any {
 	case Uint32:
 		return uint32(saturate(v, 0, math.MaxUint32))
 	case Uint64:
-		return uint64(saturate(v, 0, math.MaxUint64))
+		if math.IsNaN(v) {
+			return uint64(0)
+		}
+		if v <= 0 {
+			return uint64(0)
+		}
+		// float64 cannot represent MaxUint64 (2^64-1);
+		// any value >= 2^64 saturates to MaxUint64.
+		if v >= 18446744073709551616.0 {
+			return uint64(math.MaxUint64)
+		}
+		return uint64(v)
 	case Float16:
 		return Float16bits(float32(v))
 	case BFloat16:

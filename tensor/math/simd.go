@@ -49,8 +49,8 @@ type Kernel struct {
 }
 
 var (
-	kernelMu    sync.RWMutex
-	kernelTable = map[string]*Kernel{}
+	kernelMu      sync.RWMutex
+	kernelTable   = map[string]*Kernel{}
 	activeFeature = detectFeature()
 )
 

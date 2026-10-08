@@ -83,9 +83,12 @@ func Load(data []byte) (*Tensor, error) {
 		return nil, errors.New(errors.CodeCorruptData, "rank exceeds maximum").
 			WithField("rank", rank)
 	}
-	need := headerSize + rank*16 + rank*8 + 16 + 8
+	// Minimal stream: header + dims + strides + offset +
+	// payloadSize + checksum (payload may be empty).
+	need := headerSize + rank*16 + 24
 	if len(data) < need {
-		return nil, errors.New(errors.CodeCorruptData, "truncated header")
+		return nil, errors.New(errors.CodeCorruptData, "truncated header").
+			WithField("have", len(data)).WithField("need", need)
 	}
 	dims := make([]int, rank)
 	for i := range dims {

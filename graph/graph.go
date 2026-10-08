@@ -54,15 +54,46 @@ func (g *Graph) AddEdge(from, to, fromPort, toPort int) (int, error) {
 	g.edges = append(g.edges, edge)
 	g.nodes[from].Outputs = append(g.nodes[from].Outputs, id)
 	g.nodes[to].Inputs = append(g.nodes[to].Inputs, id)
-	if _, err := g.topologicalSortLocked(); err != nil {
+	// A cycle exists iff `to` can already reach `from`.
+	if g.reachesLocked(to, from) {
 		// Roll back the edge: it created a cycle.
 		g.edges = g.edges[:len(g.edges)-1]
 		g.nodes[from].Outputs = g.nodes[from].Outputs[:len(g.nodes[from].Outputs)-1]
 		g.nodes[to].Inputs = g.nodes[to].Inputs[:len(g.nodes[to].Inputs)-1]
-		return 0, errors.Wrap(err, errors.CodeCycleDetected, "edge creates a cycle").
+		return 0, errors.New(errors.CodeCycleDetected, "edge creates a cycle").
 			WithField("from", from).WithField("to", to)
 	}
 	return id, nil
+}
+
+// reachesLocked reports whether target is reachable
+// from src via forward edges. The caller must hold
+// the lock.
+func (g *Graph) reachesLocked(src, target int) bool {
+	if src == target {
+		return true
+	}
+	visited := make([]bool, len(g.nodes))
+	stack := make([]int, 0, 16)
+	stack = append(stack, src)
+	for len(stack) > 0 {
+		n := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if n == target {
+			return true
+		}
+		if visited[n] {
+			continue
+		}
+		visited[n] = true
+		for _, eid := range g.nodes[n].Outputs {
+			e := g.edge(eid)
+			if e != nil && !visited[e.To] {
+				stack = append(stack, e.To)
+			}
+		}
+	}
+	return false
 }
 
 // Connect adds edges for each (from, to) pair on port 0.

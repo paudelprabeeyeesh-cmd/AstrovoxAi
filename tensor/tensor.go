@@ -27,6 +27,12 @@ func NewStorage(dtype DType, numel int) (*Storage, error) {
 		return nil, errors.New(errors.CodeInvalidArgument, "negative element count")
 	}
 	size := dtype.Size() * numel
+	if size < 1 {
+		// Typed views take &data[0]; keep a 1-byte
+		// backing for empty storages. The element
+		// count still bounds all access.
+		size = 1
+	}
 	return &Storage{
 		data:  memory.AlignedAlloc(size, memory.DefaultAlignment),
 		dtype: dtype,
@@ -47,7 +53,7 @@ func (s *Storage) Bytes() []byte { return s.data }
 // A Tensor may share its Storage with other views (zero-copy).
 type Tensor struct {
 	st      *Storage
-	offset  int   // element offset into storage
+	offset  int // element offset into storage
 	shape   Shape
 	strides []int // element strides
 	view    bool
@@ -116,20 +122,74 @@ func Fill(t *Tensor, value float64) (*Tensor, error) {
 		for i := range s {
 			s[i] = value
 		}
-	case Int64:
-		s := t.Int64()
+	case Int8:
+		s := t.Int8()
 		for i := range s {
-			s[i] = int64(value)
+			s[i] = int8(value)
+		}
+	case Int16:
+		s := t.Int16()
+		for i := range s {
+			s[i] = int16(value)
 		}
 	case Int32:
 		s := t.Int32()
 		for i := range s {
 			s[i] = int32(value)
 		}
+	case Int64:
+		s := t.Int64()
+		for i := range s {
+			s[i] = int64(value)
+		}
+	case Uint8:
+		s := t.Uint8()
+		for i := range s {
+			s[i] = uint8(value)
+		}
+	case Uint16:
+		s := t.Uint16()
+		for i := range s {
+			s[i] = uint16(value)
+		}
+	case Uint32:
+		s := t.Uint32()
+		for i := range s {
+			s[i] = uint32(value)
+		}
+	case Uint64:
+		s := t.Uint64()
+		for i := range s {
+			s[i] = uint64(value)
+		}
 	case Bool:
 		s := t.Bool()
 		for i := range s {
 			s[i] = value != 0
+		}
+	case Float16:
+		s := t.Float16View()
+		bits := Float16bits(float32(value))
+		for i := range s {
+			s[i] = bits
+		}
+	case BFloat16:
+		s := t.BFloat16View()
+		bits := BFloat16bits(float32(value))
+		for i := range s {
+			s[i] = bits
+		}
+	case Complex64:
+		s := t.Complex64()
+		v := complex(float32(value), 0)
+		for i := range s {
+			s[i] = v
+		}
+	case Complex128:
+		s := t.Complex128()
+		v := complex(value, 0)
+		for i := range s {
+			s[i] = v
 		}
 	default:
 		return nil, errors.New(errors.CodeUnimplemented, "Fill for dtype").
@@ -278,6 +338,51 @@ func (t *Tensor) Uint8() []uint8 {
 	return base[t.offset : t.offset+t.shape.NumElements()]
 }
 
+// Int8 returns a zero-copy typed view (contiguous only).
+func (t *Tensor) Int8() []int8 {
+	if t.st.dtype != Int8 {
+		return nil
+	}
+	base := unsafe.Slice((*int8)(unsafe.Pointer(&t.st.data[0])), t.st.numel)
+	return base[t.offset : t.offset+t.shape.NumElements()]
+}
+
+// Int16 returns a zero-copy typed view (contiguous only).
+func (t *Tensor) Int16() []int16 {
+	if t.st.dtype != Int16 {
+		return nil
+	}
+	base := unsafe.Slice((*int16)(unsafe.Pointer(&t.st.data[0])), t.st.numel)
+	return base[t.offset : t.offset+t.shape.NumElements()]
+}
+
+// Uint16 returns a zero-copy typed view (contiguous only).
+func (t *Tensor) Uint16() []uint16 {
+	if t.st.dtype != Uint16 {
+		return nil
+	}
+	base := unsafe.Slice((*uint16)(unsafe.Pointer(&t.st.data[0])), t.st.numel)
+	return base[t.offset : t.offset+t.shape.NumElements()]
+}
+
+// Uint32 returns a zero-copy typed view (contiguous only).
+func (t *Tensor) Uint32() []uint32 {
+	if t.st.dtype != Uint32 {
+		return nil
+	}
+	base := unsafe.Slice((*uint32)(unsafe.Pointer(&t.st.data[0])), t.st.numel)
+	return base[t.offset : t.offset+t.shape.NumElements()]
+}
+
+// Uint64 returns a zero-copy typed view (contiguous only).
+func (t *Tensor) Uint64() []uint64 {
+	if t.st.dtype != Uint64 {
+		return nil
+	}
+	base := unsafe.Slice((*uint64)(unsafe.Pointer(&t.st.data[0])), t.st.numel)
+	return base[t.offset : t.offset+t.shape.NumElements()]
+}
+
 // Bool returns a zero-copy typed view (contiguous only).
 func (t *Tensor) Bool() []bool {
 	if t.st.dtype != Bool {
@@ -334,14 +439,32 @@ func (t *Tensor) Get(idx ...int) (any, error) {
 		return t.Float32()[off], nil
 	case Float64:
 		return t.Float64()[off], nil
-	case Int64:
-		return t.Int64()[off], nil
+	case Int8:
+		return t.Int8()[off], nil
+	case Int16:
+		return t.Int16()[off], nil
 	case Int32:
 		return t.Int32()[off], nil
+	case Int64:
+		return t.Int64()[off], nil
 	case Uint8:
 		return t.Uint8()[off], nil
+	case Uint16:
+		return t.Uint16()[off], nil
+	case Uint32:
+		return t.Uint32()[off], nil
+	case Uint64:
+		return t.Uint64()[off], nil
 	case Bool:
 		return t.Bool()[off], nil
+	case Float16:
+		return t.Float16View()[off], nil
+	case BFloat16:
+		return t.BFloat16View()[off], nil
+	case Complex64:
+		return t.Complex64()[off], nil
+	case Complex128:
+		return t.Complex128()[off], nil
 	default:
 		return nil, errors.New(errors.CodeUnimplemented, "Get for dtype").
 			WithField("dtype", t.st.dtype.String())
@@ -359,14 +482,32 @@ func (t *Tensor) Set(value any, idx ...int) error {
 		t.Float32()[off] = float32(toFloat(value))
 	case Float64:
 		t.Float64()[off] = toFloat(value)
-	case Int64:
-		t.Int64()[off] = int64(toFloat(value))
+	case Int8:
+		t.Int8()[off] = int8(toFloat(value))
+	case Int16:
+		t.Int16()[off] = int16(toFloat(value))
 	case Int32:
 		t.Int32()[off] = int32(toFloat(value))
+	case Int64:
+		t.Int64()[off] = int64(toFloat(value))
 	case Uint8:
 		t.Uint8()[off] = uint8(toFloat(value))
+	case Uint16:
+		t.Uint16()[off] = uint16(toFloat(value))
+	case Uint32:
+		t.Uint32()[off] = uint32(toFloat(value))
+	case Uint64:
+		t.Uint64()[off] = uint64(toFloat(value))
 	case Bool:
 		t.Bool()[off] = toFloat(value) != 0
+	case Float16:
+		t.Float16View()[off] = Float16bits(float32(toFloat(value)))
+	case BFloat16:
+		t.BFloat16View()[off] = BFloat16bits(float32(toFloat(value)))
+	case Complex64:
+		t.Complex64()[off] = toComplex64(value)
+	case Complex128:
+		t.Complex128()[off] = toComplex128(value)
 	default:
 		return errors.New(errors.CodeUnimplemented, "Set for dtype").
 			WithField("dtype", t.st.dtype.String())
@@ -382,19 +523,59 @@ func toFloat(v any) float64 {
 		return float64(x)
 	case int:
 		return float64(x)
-	case int64:
+	case int8:
+		return float64(x)
+	case int16:
 		return float64(x)
 	case int32:
 		return float64(x)
+	case int64:
+		return float64(x)
+	case uint:
+		return float64(x)
 	case uint8:
+		return float64(x)
+	case uint16:
+		return float64(x)
+	case uint32:
+		return float64(x)
+	case uint64:
 		return float64(x)
 	case bool:
 		if x {
 			return 1
 		}
 		return 0
+	case complex64:
+		return float64(real(x))
+	case complex128:
+		return real(x)
 	default:
 		return 0
+	}
+}
+
+// toComplex64 coerces a scalar value to complex64.
+func toComplex64(v any) complex64 {
+	switch x := v.(type) {
+	case complex64:
+		return x
+	case complex128:
+		return complex64(x)
+	default:
+		return complex(float32(toFloat(v)), 0)
+	}
+}
+
+// toComplex128 coerces a scalar value to complex128.
+func toComplex128(v any) complex128 {
+	switch x := v.(type) {
+	case complex128:
+		return x
+	case complex64:
+		return complex128(x)
+	default:
+		return complex(toFloat(v), 0)
 	}
 }
 
@@ -676,6 +857,69 @@ func (t *Tensor) Equal(o *Tensor) (bool, error) {
 		}
 	case Bool:
 		a, b := t.Bool(), o.Bool()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Int8:
+		a, b := t.Int8(), o.Int8()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Int16:
+		a, b := t.Int16(), o.Int16()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Uint16:
+		a, b := t.Uint16(), o.Uint16()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Uint32:
+		a, b := t.Uint32(), o.Uint32()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Uint64:
+		a, b := t.Uint64(), o.Uint64()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Float16:
+		a, b := t.Float16View(), o.Float16View()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case BFloat16:
+		a, b := t.BFloat16View(), o.BFloat16View()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Complex64:
+		a, b := t.Complex64(), o.Complex64()
+		for i := range a {
+			if a[i] != b[i] {
+				return false, nil
+			}
+		}
+	case Complex128:
+		a, b := t.Complex128(), o.Complex128()
 		for i := range a {
 			if a[i] != b[i] {
 				return false, nil

@@ -10,13 +10,13 @@ import (
 
 // Plan describes a reduction over the input shape.
 type Plan struct {
-	InputShape  []int
-	OutputShape []int
-	ReduceDims  []int
-	KeepDims    bool
+	InputShape   []int
+	OutputShape  []int
+	ReduceDims   []int
+	KeepDims     bool
 	InputStrides []int
-	OuterDims   []int
-	ReduceSet   []bool
+	OuterDims    []int
+	ReduceSet    []bool
 }
 
 // PlanReduction computes the reduction plan for reducing dims (empty

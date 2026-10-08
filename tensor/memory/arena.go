@@ -34,13 +34,13 @@ func AlignedAlloc(size, align int) []byte {
 // Allocations must not outlive the arena's Reset: the contract is
 // enforced in debug builds by poisoning on reset.
 type Arena struct {
-	mu      sync.Mutex
-	buf     []byte
-	off     int
-	peak    int
-	allocs  int64
-	resets  int64
-	poison  bool
+	mu        sync.Mutex
+	buf       []byte
+	off       int
+	peak      int
+	allocs    int64
+	resets    int64
+	poison    bool
 	highWater int
 }
 
@@ -111,11 +111,11 @@ func (a *Arena) Stats() ArenaStats {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	return ArenaStats{
-		Capacity:  len(a.buf),
-		Used:      a.off,
-		Peak:      a.highWater,
-		Allocs:    a.allocs,
-		Resets:    a.resets,
+		Capacity:      len(a.buf),
+		Used:          a.off,
+		Peak:          a.highWater,
+		Allocs:        a.allocs,
+		Resets:        a.resets,
 		Fragmentation: float64(len(a.buf)-a.off) / float64(len(a.buf)),
 	}
 }
@@ -261,11 +261,11 @@ func (h *ImportHandle) Release() {
 // COWBuffer implements copy-on-write escalation: the first write
 // clones the shared buffer exactly once.
 type COWBuffer struct {
-	mu      sync.Mutex
-	shared  []byte
-	owned   []byte
-	copied  bool
-	copies  int64
+	mu     sync.Mutex
+	shared []byte
+	owned  []byte
+	copied bool
+	copies int64
 }
 
 // NewCOWBuffer wraps a shared buffer with copy-on-write semantics.

@@ -32,25 +32,25 @@ func copyOp(name string) graph.Op {
 	}
 }
 
-func graphChain(b *testing.B, nodes int) *graph.Graph {
+func graphChain(tb testing.TB, nodes int) *graph.Graph {
 	g := graph.New("bench")
 	src, err := g.AddNode(copyOp("source"), nil)
 	if err != nil {
-		b.Fatal(err)
+		tb.Fatal(err)
 	}
 	prev := src
 	for i := 1; i < nodes; i++ {
 		id, err := g.AddNode(copyOp("op"), nil)
 		if err != nil {
-			b.Fatal(err)
+			tb.Fatal(err)
 		}
 		if _, err := g.AddEdge(prev, id, 0, 0); err != nil {
-			b.Fatal(err)
+			tb.Fatal(err)
 		}
 		prev = id
 	}
 	if err := g.MarkOutput(prev); err != nil {
-		b.Fatal(err)
+		tb.Fatal(err)
 	}
 	return g
 }

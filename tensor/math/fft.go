@@ -151,7 +151,7 @@ func nextPow2(n int) int {
 	if n <= 1 {
 		return 1
 	}
-	return 1 << (bits.Len(uint(n-1)))
+	return 1 << (bits.Len(uint(n - 1)))
 }
 
 // IsPow2 reports whether n is a positive power of two.

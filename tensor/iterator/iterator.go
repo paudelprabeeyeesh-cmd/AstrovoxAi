@@ -17,16 +17,16 @@ type InputSpec struct {
 // Iterator traverses every element of the broadcast output shape,
 // yielding the corresponding input offsets for each input.
 type Iterator struct {
-	shape     []int
-	rank      int
-	inStride  [][]int
-	idx       []int
-	inOff     []int
-	outOff    int
+	shape      []int
+	rank       int
+	inStride   [][]int
+	idx        []int
+	inOff      []int
+	outOff     int
 	outStrides []int
-	done      bool
-	total     int
-	visited   int
+	done       bool
+	total      int
+	visited    int
 }
 
 // NewIterator builds an execution plan over the given inputs,
