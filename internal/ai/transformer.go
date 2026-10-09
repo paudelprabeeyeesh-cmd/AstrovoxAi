@@ -103,7 +103,6 @@ func (t *Transformer) Forward(input *tensor.Tensor, pastKV *KVCache) (*tensor.Te
 	}
 
 	batch := input.Shape().Dim(0)
-	seqLen := input.Shape().Dim(1)
 
 	// Embedding
 	x, err := t.embed.Forward(input)
@@ -228,8 +227,8 @@ func (e *Embedding) Forward(input *tensor.Tensor) (*tensor.Tensor, error) {
 	dim := e.weight.Shape().Dim(1)
 
 	for i := 0; i < batch*seqLen; i++ {
-		idx := ids[i]
-		if idx >= 0 && idx < int64(e.weight.Shape().Dim(0)) {
+		idx := int(ids[i])
+		if idx >= 0 && idx < e.weight.Shape().Dim(0) {
 			copy(outV[i*dim:], wV[idx*dim:(idx+1)*dim])
 		}
 	}
@@ -255,7 +254,11 @@ func NewLinear(inDim, outDim int, bias bool) *Linear {
 func (l *Linear) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 	// x: [*, inDim], weight: [outDim, inDim]
 	// output: [*, outDim]
-	return tmath.MatMul(x, l.weight.Transpose(1, 0))
+	weightT, err := l.weight.Transpose(1, 0)
+	if err != nil {
+		return nil, err
+	}
+	return tmath.MatMul(x, weightT)
 }
 
 // TransformerLayer is a single Transformer layer.
