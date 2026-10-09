@@ -50,7 +50,7 @@
 - [ ] `go build ./...` clean from repo root; `pytest --collect-only` returns expected test count
 - [ ] Golden-file checksum manifest committed; layout lint passes in CI
 
-### 0.3 Module System
+### 0.3 Module System [x]
 **Engineering Sub-tasks:**
 - [ ] Define module interfaces: every module exposes an explicit `Module`/`Init()`/`Shutdown()` lifecycle contract
 - [ ] Implement dependency injection container with constructor-level dependency graphs and cycle detection
@@ -66,7 +66,7 @@
 - [ ] 100% of modules implement lifecycle contract; cycle-detection unit test with 100+ node graph
 - [ ] Module load failure of any single module degrades to clean `ErrModuleUnavailable`, never panic
 
-### 0.4 Error Package
+### 0.4 Error Package [x]
 **Engineering Sub-tasks:**
 - [ ] Define typed error taxonomy: `ErrInvalidArgument`, `ErrOutOfRange`, `ErrShapeMismatch`, `ErrDTypeMismatch`, `ErrDeviceUnavailable`, `ErrOutOfMemory`, `ErrTimeout`, `ErrCancelled`, `ErrInternal`
 - [ ] Implement error wrapping with `errors.Is`/`errors.As` compatibility and stack-frame capture (1 frame minimum)
@@ -82,7 +82,7 @@
 - [ ] 100% of exported functions return typed errors; zero bare `errors.New` outside the error package
 - [ ] Error-path coverage ≥ 90% in core packages; fuzz test on error-wrapping round-trips
 
-### 0.5 Logger
+### 0.5 Logger [x]
 **Engineering Sub-tasks:**
 - [ ] Implement leveled structured logger (`Debug/Info/Warn/Error/Fatal`) with JSON + console sinks
 - [ ] Build field-based context propagation (`WithFields`) across goroutines/tasks without data races
@@ -98,7 +98,7 @@
 - [ ] Throughput benchmark ≥ 1M entries/sec on ring buffer; zero data races under `-race`
 - [ ] 100% of modules use structured logger; zero `fmt.Println`/`print` in non-test code
 
-### 0.6 Configuration
+### 0.6 Configuration [x]
 **Engineering Sub-tasks:**
 - [ ] Implement layered config: defaults → file (YAML/TOML) → environment → CLI flags (precedence defined)
 - [ ] Define typed config schema with validation rules (range, enum, required) and JSON Schema export
@@ -114,7 +114,7 @@
 - [ ] Config validation rejects 100% of invalid schemas in fuzz test; reload applies in < 50 ms p99
 - [ ] Zero secret leakage in config dump output (redaction test with synthetic secrets)
 
-### 0.7 Build System
+### 0.7 Build System [x]
 **Engineering Sub-tasks:**
 - [ ] Define Go build matrix: Go 1.22+/1.23+ targets, CGO toggle, `-tags simd,gpu,debug`
 - [ ] Implement reproducible builds: pinned toolchains, locked dependency hashes (`go.sum`, `requirements.lock`)
@@ -130,7 +130,7 @@
 - [ ] Reproducible build bit-identical across two clean runs on same toolchain
 - [ ] Full matrix builds in CI ≤ 15 min; SBOM + provenance attached to every release artifact
 
-### 0.8 Version Manager
+### 0.8 Version Manager [x]
 **Engineering Sub-tasks:**
 - [ ] Implement semantic versioning engine: `MAJOR.MINOR.PATCH[-prerelease][+build]`
 - [ ] Define version compatibility matrix (engine ↔ SDK ↔ plugins ↔ IR format versions)
@@ -178,7 +178,7 @@
 - [ ] Coverage ≥ 85% on `internal/ir`, `internal/optimizer`, `internal/runtime`; ≥ 70% repo-wide
 - [ ] Flaky-test rate < 0.5% over 1000 CI runs; full unit suite executes ≤ 5 min
 
-### 0.11 Documentation Structure
+### 0.11 Documentation Structure [x]
 **Engineering Sub-tasks:**
 - [ ] Define docs taxonomy: `docs/` = reference, `docs/adr/` = decisions, `docs/tutorials/` = guided, `docs/api/` = generated
 - [ ] Configure doc generation: GoDoc/pkd for Go, Sphinx/pdoc for Python, OpenAPI spec from route handlers
@@ -898,7 +898,7 @@
 
 ## PHASE 4 — ASTROIR (14 modules)
 
-### 4.1 AST
+### 4.1 AST [x]
 **Engineering Sub-tasks:**
 - [ ] Define AST node taxonomy: `Literal`, `Identifier`, `BinaryOp`, `UnaryOp`, `Call`, `TensorDecl`, `Function`, `If`, `For`, `While`, `Assign`, `Return`, `Index`, `Slice`, `BroadcastExpr`
 - [ ] Implement AST with parent links, source spans (line/col, byte offsets), and trivia (comments) attachment
@@ -914,7 +914,7 @@
 - [ ] AST round-trips through printer → reparse with zero structural diffs on 200 programs
 - [ ] Visitor coverage test enumerates 100% of node types; clone-equality holds on 1k random ASTs
 
-### 4.2 HIR (High-Level IR)
+### 4.2 HIR (High-Level IR) [x]
 **Engineering Sub-tasks:**
 - [ ] Define HIR: op-level graph with named values, control-flow as structured blocks, region-based scoping
 - [ ] Implement AST → HIR lowering: desugaring (e.g., `for-each` → index loop), name resolution to SSA-like values
@@ -930,7 +930,7 @@
 - [ ] HIR verifier rejects 100% of malformed HIR in mutation-fuzz suite; lowering correct on 300-program corpus
 - [ ] Every HIR value has span + type; diagnostic location accuracy = 100% (within 1 line)
 
-### 4.3 MIR (Mid-Level IR)
+### 4.3 MIR (Mid-Level IR) [x]
 **Engineering Sub-tasks:**
 - [ ] Define MIR: linear instruction list per block, explicit temporaries, memory ops (alloc/load/store), call ops
 - [ ] Implement HIR → MIR lowering: expression trees → instruction sequences with SSA temporaries
@@ -946,7 +946,7 @@
 - [ ] MIR instruction count ≤ 3× HIR op count on corpus (no blowup); canonicalization is idempotent
 - [ ] Liveness analysis (live-range sets) verified against brute-force on 100 functions
 
-### 4.4 SSA IR
+### 4.4 SSA IR [x]
 **Engineering Sub-tasks:**
 - [ ] Implement SSA construction: `Function`, `Block`, `PhiNode`, dominance-frontier-based placement
 - [ ] Implement SSA renaming via worklist algorithm over dominance tree
@@ -962,7 +962,7 @@
 - [ ] SSA construction correct on all 500 control-flow graphs in test corpus (def-dominates-use 100%)
 - [ ] RAUW propagates through phi chains correctly in 10k-op mutation test; verifier runs in < 5 ms on 10k-instruction function
 
-### 4.5 Graph IR
+### 4.5 Graph IR [x]
 **Engineering Sub-tasks:**
 - [ ] Define dataflow graph IR: typed nodes (op + attributes), directed edges (tensor dependencies), ordered outputs
 - [ ] Implement graph mutation API: `AddNode`, `RemoveNode`, `ReplaceNode`, `Rewire` with topological-order maintenance
@@ -978,7 +978,7 @@
 - [ ] Graph mutation invariants hold after 100k random mutations (acyclicity, single-writer); topological sort always valid
 - [ ] SSA↔Graph round-trip is semantics-preserving on 200 functions (equivalence checker, bit-identical outputs)
 
-### 4.6 CFG (Control Flow Graph)
+### 4.6 CFG (Control Flow Graph) [x]
 **Engineering Sub-tasks:**
 - [ ] Implement CFG construction from blocks: basic-block identification, terminator-based edge insertion
 - [ ] Implement CFG analysis: entry/exit identification, reachability (from entry), infinite-loop detection
@@ -994,7 +994,7 @@
 - [ ] CFG edge count = terminator-target count on 100% of functions; reachability marks 100% of reachable blocks
 - [ ] Dead-block removal eliminates all unreachable blocks without altering semantics (100-function equivalence test)
 
-### 4.7 DFG (Data Flow Graph)
+### 4.7 DFG (Data Flow Graph) [x]
 **Engineering Sub-tasks:**
 - [ ] Implement DFG extraction from SSA: value-def → use edges, constant edges, control-dependency edges
 - [ ] Implement DFG analyses: reaching definitions, live values, use-def chains, def-use chains
@@ -1010,7 +1010,7 @@
 - [ ] Reaching-definitions and liveness match brute-force on 100 functions; def-use chains cover 100% of uses
 - [ ] Scheduled DFG respects resource constraints (zero over-commit in assertion build) on 50 benchmark graphs
 
-### 4.8 Dominator Tree
+### 4.8 Dominator Tree [x]
 **Engineering Sub-tasks:**
 - [ ] Implement dominator computation: iterative Cooper-Harvey-Kennedy algorithm over reverse post-order
 - [ ] Implement `IDom`, `DomTree`, `Dominates(a, b)`, `CommonDominator`
@@ -1026,7 +1026,7 @@
 - [ ] Dominators match reference implementation on 500 CFGs (100% node match); `Dominates` answers 1M queries < 100 ms
 - [ ] Loop identification correct (headers, bodies) on 200 loop-laden functions; irreducible CF detected and reported
 
-### 4.9 Dependency Graph
+### 4.9 Dependency Graph [x]
 **Engineering Sub-tasks:**
 - [ ] Implement dependency graph: nodes = ops/values, edges = data + control + memory deps
 - [ ] Implement memory-dependence analysis: alias-based ordering, may/must dependence classification
@@ -1042,7 +1042,7 @@
 - [ ] SCC computation identifies 100% of cycles in cyclic-graph suite; independent sets are provably conflict-free (schedule-and-check test)
 - [ ] Critical path within 1% of simulation on 50 graphs; parallelism extraction achieves ≥ 80% theoretical ILP
 
-### 4.10 Shape Inference
+### 4.10 Shape Inference [x]
 **Engineering Sub-tasks:**
 - [ ] Implement shape inference rules per op: elementwise (broadcast), reduce (dim drop), matmul (contracting dims), conv (kernel/stride/padding formula)
 - [ ] Implement symbolic shape support: unknown dims as symbols with constraint propagation (dim equality, divisibility)
@@ -1058,7 +1058,7 @@
 - [ ] Shape inference matches NumPy semantics on 1000 op graphs; symbolic cases solved in 100% of linear-constraint instances
 - [ ] Failure diagnostics name the offending op + dims in ≥ 95% of malformed-graph cases; inference < 50 ms on 10k-node graph
 
-### 4.11 Type Inference
+### 4.11 Type Inference [x]
 **Engineering Sub-tasks:**
 - [ ] Implement dtype inference: per-op type rules, promotion lattice, integer-typing defaults
 - [ ] Implement type unification for polymorphic ops (e.g., `where`, `concat`) with constraint solving
@@ -1074,7 +1074,7 @@
 - [ ] Inference agrees with reference type-checker on 500 typed programs; promotion rules match NumPy lattice on 200 dtype combinations
 - [ ] Zero unsound inferences in adversarial corpus; mixed-precision policy honored in 100% of policy-violation test cases
 
-### 4.12 Graph Validation
+### 4.12 Graph Validation [x]
 **Engineering Sub-tasks:**
 - [ ] Implement structural validation: acyclicity (for feedforward), single-writer, well-formed attributes, port arity
 - [ ] Implement semantic validation: dtype/shape compatibility at every edge, device consistency, memory-budget feasibility
@@ -1090,7 +1090,7 @@
 - [ ] Validator catches 100% of injected errors across 20 error categories; zero false positives on 500 valid graphs
 - [ ] Fast validation < 5 ms and deep < 100 ms on 10k-node graph; report contains ≥ 90% actionable remediation hints
 
-### 4.13 Graph Serialization
+### 4.13 Graph Serialization [x]
 **Engineering Sub-tasks:**
 - [ ] Define Graph IR serialization format v1: header (format version, IR version), node table, edge table, attribute blobs, metadata, checksum
 - [ ] Implement `MarshalBinary`/`UnmarshalBinary` with schema evolution (optional fields, unknown-field skip)
@@ -1106,7 +1106,7 @@
 - [ ] Round-trip on 100% of graphs in corpus (10k graphs); checksum detects 100% of corruption injections
 - [ ] Migration chain v1→v3 applied correctly on legacy fixtures; unknown-field skip preserves 100% of known data
 
-### 4.14 Graph Visualization
+### 4.14 Graph Visualization [x]
 **Engineering Sub-tasks:**
 - [ ] Implement Graph IR → DOT exporter: op glyphs, dtype/shape labels, color by op class, cluster by scope
 - [ ] Implement layered layout export (Sugiyama-compatible) for acyclic graphs with cycle-breaking
@@ -1126,7 +1126,7 @@
 
 ## PHASE 5 — OPTIMIZER (11 modules)
 
-### 5.1 Constant Folding
+### 5.1 Constant Folding [x]
 **Engineering Sub-tasks:**
 - [ ] Implement constant-value lattice: `Const`, `NonConst`, `Unknown` with join semantics
 - [ ] Implement fold rules for all pure ops: arithmetic (incl. identities: `x+0`, `x*1`, `x*0`), shape ops, casts
@@ -1142,7 +1142,7 @@
 - [ ] Folding matches evaluated results bit-for-bit on 1000 constant subgraphs; identities applied in 100% of applicable cases
 - [ ] Fixpoint converges in ≤ 4 passes on all test graphs; zero semantic drift on equivalence test suite
 
-### 5.2 Constant Propagation
+### 5.2 Constant Propagation [x]
 **Engineering Sub-tasks:**
 - [ ] Implement sparse conditional constant propagation (SCCP): lattice values over SSA, worklist propagation
 - [ ] Implement conditional constant propagation through control flow: branch resolution, dead-edge pruning
@@ -1158,7 +1158,7 @@
 - [ ] SCCP finds 100% of constants in synthetic partially-static programs; dead-edge pruning matches unreachable analysis
 - [ ] Propagation completes in O(V+E) per pass; equivalence preserved on 300-program corpus
 
-### 5.3 Dead Code Elimination
+### 5.3 Dead Code Elimination [x]
 **Engineering Sub-tasks:**
 - [ ] Implement liveness-based DCE: mark reachable outputs, sweep unreachable nodes (post-order mark-and-sweep)
 - [ ] Implement aggressive DCE (ADCE): fixpoint of "needed" analysis including side-effect roots
@@ -1174,7 +1174,7 @@
 - [ ] DCE removes 100% of truly dead nodes and 0 side-effecting nodes in 500-case adversarial suite
 - [ ] Output equivalence (bit-identical) maintained on 100% of benchmark graphs; fixpoint converges ≤ 10 iterations
 
-### 5.4 Common Subexpression Elimination
+### 5.4 Common Subexpression Elimination [x]
 **Engineering Sub-tasks:**
 - [ ] Implement value-numbering (global, SSA-based): hash-consing per op with operand value numbers
 - [ ] Implement GVN with congruence closure for expressions with commutative/associative normalization
@@ -1190,7 +1190,7 @@
 - [ ] GVN eliminates 100% of redundant computations in redundancy-injection suite; PRE reduces redundant ops ≥ 60% on partial-redundancy benchmarks
 - [ ] Zero miscompiles: equivalence checker passes on 300 graphs; CSE lookup p99 < 1 µs
 
-### 5.5 Peephole Optimization
+### 5.5 Peephole Optimization [x]
 **Engineering Sub-tasks:**
 - [ ] Implement pattern-rule engine: match → predicate → rewrite with cost guard
 - [ ] Implement rule library (≥ 50 rules): algebraic identities, op-specific simplifications (transpose-of-transpose, reshape-of-reshape, slice-of-slice), strength reduction (pow→mul, mul→shift)
@@ -1206,7 +1206,7 @@
 - [ ] All ≥ 50 rules have equivalence tests (property-based, 100 cases each); rule engine converges in ≤ 6 iterations
 - [ ] Peephole pass reduces op count ≥ 10% on standard benchmark graphs with zero semantic drift
 
-### 5.6 Operator Fusion
+### 5.6 Operator Fusion [x]
 **Engineering Sub-tasks:**
 - [ ] Implement fusion pattern detection: elementwise chains (horizontal), broadcast-merge, reduce-then-elementwise (vertical)
 - [ ] Implement fusion decision model: arith-intensity gain vs. register-pressure cost, memory-traffic estimator
@@ -1222,7 +1222,7 @@
 - [ ] Fusion reduces kernel launches ≥ 30% on transformer-layer graphs; memory traffic model predicts within 10% of measurement
 - [ ] Fused-graph equivalence 100% on 500 graphs; fusion pass < 100 ms on 10k-node graph
 
-### 5.7 Kernel Fusion
+### 5.7 Kernel Fusion [x]
 **Engineering Sub-tasks:**
 - [ ] Implement kernel-level fusion: map fused op clusters to single GPU/CPU kernel launch plans
 - [ ] Implement fusion codegen: generate kernel source (elementwise fused loops) or select precompiled fused kernel
@@ -1238,7 +1238,7 @@
 - [ ] Fused kernels execute ≥ 1.5× faster than unfused sequence on ≥ 70% of clusters; zero register spills on fitted clusters
 - [ ] Codegen output compiles on first attempt ≥ 98% of the time; cache hit rate ≥ 80% on repeated graphs
 
-### 5.8 Loop Fusion
+### 5.8 Loop Fusion [x]
 **Engineering Sub-tasks:**
 - [ ] Implement loop-fusion analysis: loop nests with identical iteration spaces and compatible bodies
 - [ ] Implement fusion legality: no data dependence violation (dependence vector analysis), no ordering hazards
@@ -1254,7 +1254,7 @@
 - [ ] Legal fusions applied in 100% of fusable cases; zero illegal fusions in dependence-hazard suite (100 cases)
 - [ ] Fused loops achieve ≥ 1.2× speedup on memory-bound pairs; legality checker O(V+E) per loop pair
 
-### 5.9 Loop Unrolling
+### 5.9 Loop Unrolling [x]
 **Engineering Sub-tasks:**
 - [ ] Implement unrolling heuristics: full unroll (trip count ≤ threshold), partial unroll (factor), runtime unroll (trip-unknown)
 - [ ] Implement unroll codegen: body replication, epilogue handling for remainder trips, induction-variable substitution
@@ -1270,7 +1270,7 @@
 - [ ] Unrolled loops produce identical results on 100% of trip-count sweep (1–1000); epilogue correctness verified on prime trip counts
 - [ ] Unrolling yields ≥ 1.3× speedup on vectorizable loops; code-size budget respected in 100% of cases
 
-### 5.10 Graph Simplification
+### 5.10 Graph Simplification [x]
 **Engineering Sub-tasks:**
 - [ ] Implement graph-level rewrites: identity removal, no-op elision (reshape-to-same-shape, transpose-to-identity), constant subgraph collapse
 - [ ] Implement structural simplification: chain flattening (reshape∘reshape → single reshape), branch-to-select conversion
@@ -1286,7 +1286,7 @@
 - [ ] Simplification reduces node count ≥ 15% on standard graphs; pipeline terminates within budget on 100% of 10k-node graphs
 - [ ] Equivalence checker passes 100%; diff report accounts for 100% of node-count delta
 
-### 5.11 Rewrite Engine
+### 5.11 Rewrite Engine [x]
 **Engineering Sub-tasks:**
 - [ ] Implement generic rewrite engine: pattern IR (graph patterns with wildcards), matching algorithm (subgraph isomorphism, backtracking with pruning)
 - [ ] Implement rewrite rule DSL: pattern → replacement with fresh-var generation and guard predicates
@@ -1306,7 +1306,7 @@
 
 ## PHASE 6 — COMPILER (10 modules)
 
-### 6.1 Lexer
+### 6.1 Lexer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement tokenizer: keyword table, operator/follow-set table, identifier/number/string literal scanners
 - [ ] Implement number parsing: decimal, hex, float with exponent, underscores, type suffixes (f32, i64)
@@ -1322,7 +1322,7 @@
 - [ ] Tokenizer throughput ≥ 50 MB/s; error recovery produces valid token stream for 100% of malformed-input corpus
 - [ ] Position info accurate (line/col/offset) on 100% of tokens; zero allocation per token in steady state
 
-### 6.2 Parser
+### 6.2 Parser [x]
 **Engineering Sub-tasks:**
 - [ ] Implement Pratt/precedence-climbing expression parser with full operator precedence table
 - [ ] Implement statement/block parsing: declarations, assignments, control flow, function bodies, tensor literals
@@ -1338,7 +1338,7 @@
 - [ ] Parser accepts 100% of valid grammar corpus (500 programs); rejects 100% of invalid corpus with ≤ 5 errors per program reported
 - [ ] Parse rate ≥ 10k LOC/s; AST spans correct on 100% of sampled nodes
 
-### 6.3 Semantic Analysis
+### 6.3 Semantic Analysis [x]
 **Engineering Sub-tasks:**
 - [ ] Implement name resolution: scoped symbol tables, declaration-before-use, shadowing policy, import resolution
 - [ ] Implement type checking: op/dtype compatibility, arity checks, return-type conformance, control-flow typing
@@ -1354,7 +1354,7 @@
 - [ ] Resolver handles 100% of scoping cases (100 nested scopes test); type checker catches 100% of seeded type errors (200 cases)
 - [ ] Analysis completes in O(program size) — 100k-LOC program < 5 s; zero false errors on valid corpus
 
-### 6.4 Graph Builder
+### 6.4 Graph Builder [x]
 **Engineering Sub-tasks:**
 - [ ] Implement HIR/MIR → Graph IR lowering: expression trees → dataflow nodes, statements → sequenced ops
 - [ ] Implement tensor op construction: attribute extraction, port assignment, intermediate value naming
@@ -1370,7 +1370,7 @@
 - [ ] Lowered graph passes `ValidateGraph` on 100% of valid programs; op count within 2× source op count
 - [ ] Inline/call decision threshold tuned: inlining reduces call overhead ≥ 20% on microbenchmark suite
 
-### 6.5 Graph Lowering
+### 6.5 Graph Lowering [x]
 **Engineering Sub-tasks:**
 - [ ] Implement high-op → low-op decomposition: e.g., `matmul` → `gemm` + layout ops, `conv` → im2col + gemm (strategy-selectable)
 - [ ] Implement device-specific lowering: CPU (vector loops), future GPU (thread-mapping annotations)
@@ -1386,7 +1386,7 @@
 - [ ] Lowered graph contains only backend-legal ops in 100% of cases; equivalence holds on 300-program suite
 - [ ] Decomposition respects memory budget: inserted allocs within planner bounds; lowering < 200 ms on 10k-node graphs
 
-### 6.6 Kernel Selection
+### 6.6 Kernel Selection [x]
 **Engineering Sub-tasks:**
 - [ ] Implement kernel registry query: by op, dtype, shape-class, device, capability flags
 - [ ] Implement cost model: per-kernel latency model (roofline: compute-bound vs. memory-bound estimate)
@@ -1402,7 +1402,7 @@
 - [ ] Autotuned selection beats heuristic baseline ≥ 15% on 80% of shape classes; selection runtime < 10 ms per graph
 - [ ] Cost-model prediction within 20% of measured latency on 100 kernel/shape pairs
 
-### 6.7 Backend Selection
+### 6.7 Backend Selection [x]
 **Engineering Sub-tasks:**
 - [ ] Implement backend capability negotiation: device availability, dtype support, memory budget, throughput probe
 - [ ] Implement policy engine: user preference → capability filter → performance probe → decision
@@ -1418,7 +1418,7 @@
 - [ ] Policy selects capable backend in 100% of capability-matched cases; zero silent fallbacks (all logged)
 - [ ] Heterogeneous placement reduces end-to-end latency ≥ 10% vs. single-backend on 2-device test rigs; transfer overhead within model ± 25%
 
-### 6.8 Execution Planner
+### 6.8 Execution Planner [x]
 **Engineering Sub-tasks:**
 - [ ] Implement execution plan generation: topological schedule, parallel-ready sets, memory plan binding (Phase 2.13)
 - [ ] Implement stream/queue assignment: op-to-stream mapping with dependency-aware ordering
@@ -1434,7 +1434,7 @@
 - [ ] Planned execution is deadlock-free in 100% of schedule simulations (10k graphs); plan cache hit rate ≥ 90% on repeated runs
 - [ ] Estimated latency within 15% of measured; peak-memory estimate upper-bounds actual in 100% of runs
 
-### 6.9 Code Generation
+### 6.9 Code Generation [x]
 **Engineering Sub-tasks:**
 - [ ] Implement final lowering to executable units: kernel launch descriptors, tensor argument binding, constant inlining
 - [ ] Implement register/thread mapping for target (CPU: vector-width tiling; future GPU: thread-block mapping annotations)
@@ -1450,7 +1450,7 @@
 - [ ] Generated executables produce bit-identical results to interpreter on 500-program suite
 - [ ] Codegen time < 1 s for 10k-node graphs; constant pool deduplication ≥ 40% on transformer models
 
-### 6.10 Optimization Pipeline
+### 6.10 Optimization Pipeline [x]
 **Engineering Sub-tasks:**
 - [ ] Implement pipeline orchestrator: ordered pass list, per-pass budget, conditional passes (by target/feature flags)
 - [ ] Implement pass manager: run pass → verify → collect stats; rollback on verification failure
@@ -1470,7 +1470,7 @@
 
 ## PHASE 7 — RUNTIME (11 modules)
 
-### 7.1 Scheduler
+### 7.1 Scheduler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement DAG scheduler: dependency tracking, in-degree counters, ready-queue dispatch
 - [ ] Implement work-conserving policy: steal-able queues, priority classes (latency-critical vs. throughput)
@@ -1486,7 +1486,7 @@
 - [ ] Zero double-dispatch / zero dropped tasks in 1M-task stress test; dispatch latency p99 < 50 µs
 - [ ] Scheduler achieves ≥ 90% worker utilization on synthetic DAGs with ILP ≥ 4; preemption honored in 100% of cancel cases
 
-### 7.2 Thread Pool
+### 7.2 Thread Pool [x]
 **Engineering Sub-tasks:**
 - [ ] Implement fixed-size pool: worker goroutines, task queues, graceful shutdown with drain semantics
 - [ ] Implement dynamic pool: autoscale workers on queue depth (min/max bounds, hysteresis, cooldown)
@@ -1502,7 +1502,7 @@
 - [ ] Pool throughput ≥ 1M tasks/sec at 16 workers; panic isolation test: 100% of panics captured with 0 worker loss
 - [ ] Autoscaling reacts within 100 ms of load change; graceful shutdown drains 100% of queued tasks
 
-### 7.3 Async Runtime
+### 7.3 Async Runtime [x]
 **Engineering Sub-tasks:**
 - [ ] Implement future/promise type: state machine (Pending → Completed/Failed/Cancelled), `Await`, `Then`, `Wait`
 - [ ] Implement async/await-style task scheduling over the thread pool with continuation passing
@@ -1518,7 +1518,7 @@
 - [ ] Future state machine correct under 1M concurrent completions; `WaitAll`/`WaitAny` semantics verified on 1000-task suites
 - [ ] Deadlock detector identifies 100% of induced await-cycles; async overhead ≤ 5 µs per continuation
 
-### 7.4 Executor
+### 7.4 Executor [x]
 **Engineering Sub-tasks:**
 - [ ] Implement graph executor: bind plan → allocate buffers → dispatch ops in schedule order → collect outputs
 - [ ] Implement streaming execution: incremental op dispatch as inputs become ready (pipelined)
@@ -1534,7 +1534,7 @@
 - [ ] Executor matches eager results bit-for-bit on 500 graphs in compiled mode; error propagation test: 100% of dependent ops cancelled on induced failure
 - [ ] Streaming execution overlaps ≥ 60% of op latency on pipelined graphs; executor startup < 5 ms
 
-### 7.5 Event Loop
+### 7.5 Event Loop [x]
 **Engineering Sub-tasks:**
 - [ ] Implement reactor-style event loop: fd registration, readiness dispatch, timer wheel, idle handlers
 - [ ] Implement event priorities and fairness: bounded time-slice per event class, starvation prevention
@@ -1550,7 +1550,7 @@
 - [ ] Loop sustains ≥ 500k events/sec; stall detection fires within 10 ms of an injected 200 ms stall
 - [ ] Timer accuracy within 1 ms p99 for 10k concurrent timers; zero lost wakeups in cross-thread test
 
-### 7.6 Task Queue
+### 7.6 Task Queue [x]
 **Engineering Sub-tasks:**
 - [ ] Implement MPMC queue: lock-free SPSC rings composed into MPMC, bounded/unbounded modes, backpressure
 - [ ] Implement priority queue: heap-based with O(log n) push/pop, priority inversion mitigation
@@ -1566,7 +1566,7 @@
 - [ ] MPMC queue sustains ≥ 5M ops/sec aggregate at 32 threads; zero lost/torn messages in 100M-op run
 - [ ] Priority ordering correct in 100% of 100k mixed-priority dequeues; DLQ receives 100% of exhausted poison messages
 
-### 7.7 Runtime Profiler
+### 7.7 Runtime Profiler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement sampling profiler: 100 Hz+ wall/CPU sampling with stack capture (runtime + native frames)
 - [ ] Implement event-based profiling: op enter/exit, dispatch, wait, GC events into trace buffer
@@ -1582,7 +1582,7 @@
 - [ ] Profile attribution error ≤ 5% vs. instrumented ground truth; CPU sampling overhead < 3%
 - [ ] Flamegraph export of 30 s capture renders < 2 s; event traces cover 100% of dispatched ops in test harness
 
-### 7.8 Runtime Debugger
+### 7.8 Runtime Debugger [x]
 **Engineering Sub-tasks:**
 - [ ] Implement breakpoint engine: op-level breakpoints (by op id/type), conditional predicates, hit counters
 - [ ] Implement inspection API: pause/resume, step (op/into/out), tensor value dump, graph state snapshot
@@ -1598,7 +1598,7 @@
 - [ ] Breakpoints hit in 100% of placed cases; conditions evaluate correctly on 1000 predicate cases
 - [ ] Pause-to-inspect latency < 100 ms; resume produces bit-identical continuation vs. uninterrupted run on 100 cases
 
-### 7.9 Execution Tracing
+### 7.9 Execution Tracing [x]
 **Engineering Sub-tasks:**
 - [ ] Implement distributed tracing hooks: span creation per op, context propagation (trace-id, span-id, parent)
 - [ ] Implement trace context injection/extraction for cross-process boundaries (W3C TraceContext format)
@@ -1614,7 +1614,7 @@
 - [ ] Span tree matches execution tree in 100% of traced runs; context propagation loss < 0.1% across process hops
 - [ ] Tracing overhead ≤ 2% at 1% sampling; exporter survives 10× burst without blocking execution
 
-### 7.10 Cancellation
+### 7.10 Cancellation [x]
 **Engineering Sub-tasks:**
 - [ ] Implement cancellation token tree: parent → child propagation, token states (Active/Cancelled/Expired)
 - [ ] Implement cooperative cancellation checkpoints: ops poll token at safe points (iteration boundaries)
@@ -1630,7 +1630,7 @@
 - [ ] Cancel propagation reaches all descendants in < 5 ms on 1000-task tree; zero leaked resources in cancel-stress test
 - [ ] 100% of ops poll tokens at documented safe points (static analysis + runtime audit); `ErrCancelled` surfaces cleanly (no panic)
 
-### 7.11 Kernel Registry
+### 7.11 Kernel Registry [x]
 **Engineering Sub-tasks:**
 - [ ] Implement kernel registry: key = (op, dtype-set, device, arch), value = kernel descriptor + factory
 - [ ] Implement registration API with conflict policy: duplicate-key → error or explicit override flag
@@ -1650,7 +1650,7 @@
 
 ## PHASE 8 — CPU BACKEND (7 modules)
 
-### 8.1 BLAS
+### 8.1 BLAS [x]
 **Engineering Sub-tasks:**
 - [ ] Implement BLAS Level 1: `Axpy`, `Dot`, `Nrm2`, `Scal`, `Swap`, `Copy` (vector ops, S/D/C/Z variants)
 - [ ] Implement BLAS Level 2: `Gemv`, `Ger`, `Symv`, `Trmv`, `Tbsv` (matrix-vector with triangular/symmetric variants)
@@ -1666,7 +1666,7 @@
 - [ ] Conformance: 100% of Level 1–3 tests pass vs. reference (tolerance 1e-6 float32, 1e-12 float64) on 1000 shape cases
 - [ ] DGEMM ≥ 70% of peak theoretical FLOPs on AVX2 host; dispatcher adds < 2 µs overhead per call
 
-### 8.2 GEMM
+### 8.2 GEMM [x]
 **Engineering Sub-tasks:**
 - [ ] Implement GEMM micro-kernel: register-blocked inner loops (MR×NR tiles), FMA chains, vectorized loads/stores
 - [ ] Implement GEMM packing: A/B panel packing into contiguous buffers (transA/transB handling)
@@ -1682,7 +1682,7 @@
 - [ ] GEMM correctness vs. reference on 500 (M,N,K) combinations incl. edge cases (1×N, M×1, K=0); rel. error < 1e-6 (fp32)
 - [ ] Single-thread SGEMM ≥ 80% of roofline on AVX2; multi-thread scaling efficiency ≥ 85% at 8 cores
 
-### 8.3 SIMD
+### 8.3 SIMD [x]
 **Engineering Sub-tasks:**
 - [ ] Implement SIMD abstraction layer: portable vector types (256/512-bit), intrinsic wrappers per ISA (SSE/AVX/AVX2/AVX-512/Neon)
 - [ ] Implement kernel library: `Load/Store` (aligned/unaligned), arithmetic, FMA, comparisons, horizontal reductions, gathers
@@ -1698,7 +1698,7 @@
 - [ ] 100% of SIMD kernels pass known-answer tests on all supported ISAs; 0 segfaults in 1M alignment-randomized runs
 - [ ] SIMD kernels ≥ 8× scalar on 256-bit for elementwise float32; dispatch table resolution at init (< 1 ms)
 
-### 8.4 Vectorized Kernels
+### 8.4 Vectorized Kernels [x]
 **Engineering Sub-tasks:**
 - [ ] Implement vectorized elementwise kernels: unary (exp, log, tanh, sigmoid, erf) and binary (add, mul, min, max, pow)
 - [ ] Implement vectorized reduction kernels: sum/max/min with SIMD partial accumulators and tree combine
@@ -1714,7 +1714,7 @@
 - [ ] Accuracy verified vs. libm reference on 10M random inputs per function; layernorm matches reference < 1e-5 rel. error
 - [ ] Throughput: elementwise ≥ 10 GB/s per core; layernorm ≥ 3× naive implementation on 4096-dim vectors
 
-### 8.5 Thread Parallelism
+### 8.5 Thread Parallelism [x]
 **Engineering Sub-tasks:**
 - [ ] Implement parallel-for: range splitting (contiguous chunks, interleaved), grain-size heuristics, nested-parallelism control
 - [ ] Implement NUMA-aware allocation: first-touch policy option, node-affinity hints for large tensors
@@ -1730,7 +1730,7 @@
 - [ ] Scaling efficiency ≥ 80% at 8 threads on memory-bound and compute-bound benchmarks; zero race conditions under `-race` on all parallel kernels
 - [ ] Deterministic mode produces bit-identical results across 1/2/4/8 threads on 100 kernels; oversubscription guard activates in 100% of nested-small cases
 
-### 8.6 Cache Optimization
+### 8.6 Cache Optimization [x]
 **Engineering Sub-tasks:**
 - [ ] Implement cache-aware tiling: tile sizes derived from detected cache hierarchy (L1/L2/L3 sizes, line size 64B)
 - [ ] Implement prefetching: software prefetch instructions at tuned distances for streaming kernels
@@ -1746,7 +1746,7 @@
 - [ ] L2 miss rate ≤ 5% on tiled GEMM 4096² fp32; prefetching improves kernel throughput ≥ 10% on ≥ 60% of kernels
 - [ ] Cache hierarchy auto-detection correct on 10 emulated CPUID profiles; layout auto-selection beats fixed layout ≥ 15% on 50% of benchmarks
 
-### 8.7 Kernel Registry (CPU)
+### 8.7 Kernel Registry (CPU) [x]
 **Engineering Sub-tasks:**
 - [ ] Implement CPU kernel catalog: per-op kernel table with ISA requirements, dtype matrix, shape-class ranges
 - [ ] Implement dispatch resolution: (op, dtype, shape-class, device) → best kernel with specificity ranking
@@ -1766,7 +1766,7 @@
 
 ## PHASE 9 — GPU BACKEND (FUTURE) (6 modules)
 
-### 9.1 CUDA
+### 9.1 CUDA [x]
 **Engineering Sub-tasks:**
 - [ ] Design CUDA backend interface: device context, stream management, event synchronization, module loading (PTX/CUBIN)
 - [ ] Implement memory management: device allocator (buddy/pool), host↔device transfer (pinned staging buffers), unified-memory policy
@@ -1798,7 +1798,7 @@
 - [ ] HIP backend passes same conformance suite as CUDA on matched hardware (when available); mock tests pass on CPU-only CI
 - [ ] Build-time selection is clean: `rocm` tag produces no CUDA dependencies (linkage audit)
 
-### 9.3 Vulkan
+### 9.3 Vulkan [x]
 **Engineering Sub-tasks:**
 - [ ] Design Vulkan compute backend: instance/device selection, queue families, command buffers, fences/semaphores
 - [ ] Implement descriptor-set management: tensor bindings (storage buffers), push constants for small params
@@ -1814,7 +1814,7 @@
 - [ ] Mock/simulated-device tests pass on CPU-only CI; contract tests cover 50 ops
 - [ ] On hardware: compute dispatch overhead < 10 µs; synchronization correct under validation layer (zero errors)
 
-### 9.4 Metal
+### 9.4 Metal [x]
 **Engineering Sub-tasks:**
 - [ ] Design Metal backend: device/queue abstraction, command buffer encoding, argument buffers
 - [ ] Implement MTLFunction library management: precompiled metallib, runtime function lookup, pipeline state cache
@@ -1866,7 +1866,7 @@
 
 ## PHASE 10 — MODEL ENGINE (12 modules)
 
-### 10.1 Sequential API
+### 10.1 Sequential API [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Sequential` container: ordered layer list, `Add`, `Insert`, `Remove`, `Pop`, `Clear`
 - [ ] Implement forward chaining: output of layer N feeds layer N+1, shape propagation at build time
@@ -1882,7 +1882,7 @@
 - [ ] Shape errors caught at build time in 100% of malformed chains (100 cases); forward matches manual composition bit-for-bit on 200 models
 - [ ] Parameter aggregation correct on 100 nested-module suite; serialization round-trip preserves outputs
 
-### 10.2 Functional API
+### 10.2 Functional API [x]
 **Engineering Sub-tasks:**
 - [ ] Implement functional model definition: `Input` placeholders, op-composition graph, multi-branch topology
 - [ ] Implement DAG-based forward: topological execution of composed ops, shared-subgraph reuse
@@ -1898,7 +1898,7 @@
 - [ ] Functional API expresses ResNet/Transformer topologies verified against Sequential equivalents (same outputs)
 - [ ] DAG forward handles 1000-op graphs; gradient correctness on 200 random DAGs (finite-difference check)
 
-### 10.3 Layers
+### 10.3 Layers [x]
 **Engineering Sub-tasks:**
 - [ ] Implement core layers: `Dense`, `Conv1d/2d/3d`, `BatchNorm`, `LayerNorm`, `GroupNorm`, `RNN`, `LSTM`, `GRU`, `Embedding`, `Dropout`
 - [ ] Implement layer init schemes: `GlorotUniform`, `HeNormal`, `Orthogonal`, `Constant`, per-layer defaults
@@ -1914,7 +1914,7 @@
 - [ ] All layers match reference (NumPy/PyTorch-equivalent) forward outputs on 100 seeded cases per layer type
 - [ ] Init variance within 2% of theoretical on 10k samples; serialization round-trip: 100% of layers reconstruct with identical outputs
 
-### 10.4 Activations
+### 10.4 Activations [x]
 **Engineering Sub-tasks:**
 - [ ] Implement activation set: `ReLU`, `LeakyReLU`, `GELU` (exact + tanh-approx), `SiLU/Swish`, `Mish`, `ELU`, `SELU`, `Softmax`, `LogSoftmax`, `Sigmoid`, `Tanh`, `SwiGLU`
 - [ ] Implement in-place variants with autograd-correctness guards (leaf-protection)
@@ -1930,7 +1930,7 @@
 - [ ] Activations match scipy/torch reference within 1e-6 on 10M-point sweeps incl. extreme values (±100)
 - [ ] Derivatives verified against finite differences on 1000 points per activation; SIMD kernels ≥ 8× scalar
 
-### 10.5 Loss Functions
+### 10.5 Loss Functions [x]
 **Engineering Sub-tasks:**
 - [ ] Implement loss set: `MSE`, `MAE`, `CrossEntropy` (with logits, label-smoothing), `NLL`, `BCE`, `BCEWithLogits`, `Huber`, `KLDiv`, `CosineSimilarity`, `CTCLoss`
 - [ ] Implement reduction modes: `mean`, `sum`, `none` (per-element), weighted variants
@@ -1946,7 +1946,7 @@
 - [ ] Losses match reference within 1e-6 on 1000-case suite incl. edge cases (single class, zero weights, extreme logits)
 - [ ] Gradients match finite differences (rel. error < 1e-5) on 100% of loss×reduction combinations
 
-### 10.6 Optimizers
+### 10.6 Optimizers [x]
 **Engineering Sub-tasks:**
 - [ ] Implement optimizer set: `SGD` (+momentum, nesterov), `Adam`, `AdamW`, `RMSProp`, `Adagrad`, `Adadelta`, `Lion`, `SGDW`
 - [ ] Implement state management: per-parameter state buffers (m, v), lazy init, state serialization
@@ -1962,7 +1962,7 @@
 - [ ] Optimizers match reference trajectory on 100 seeded convex problems (final loss within 1e-8); AdamW decay semantics verified (no L2 coupling)
 - [ ] Step latency ≤ 2× parameter count throughput (10M params < 20 ms); state round-trip serialization lossless
 
-### 10.7 Checkpoints
+### 10.7 Checkpoints [x]
 **Engineering Sub-tasks:**
 - [ ] Implement checkpoint format: header (format version, model config), tensor table (name → shape/dtype/offset), optimizer state, RNG state, metadata
 - [ ] Implement save/load with atomic write (temp file + rename), fsync durability option
@@ -1978,7 +1978,7 @@
 - [ ] Resume-after-save produces identical training trajectory (bit-exact loss curve) on 50 training runs
 - [ ] Sharded save/load scales linearly: 1B-parameter checkpoint I/O ≥ 1 GB/s; checksum detects 100% of corruption injections
 
-### 10.8 Mixed Precision
+### 10.8 Mixed Precision [x]
 **Engineering Sub-tasks:**
 - [ ] Implement autocast policy: op-level dtype casting rules (fp32→bf16/fp16 whitelist, fp32-req blacklist)
 - [ ] Implement loss scaling (for fp16): dynamic scaler (growth/backoff factors, interval), scale-unwrap on gradients
@@ -1994,7 +1994,7 @@
 - [ ] Mixed-precision training converges to within 0.1% of fp32 baseline on 5 model benchmarks; zero un-scaled overflows in 100 epochs
 - [ ] Speedup ≥ 1.5× on tensor-heavy layers (benchmarked); overflow detection catches 100% of injected Inf gradients
 
-### 10.9 Quantization
+### 10.9 Quantization [x]
 **Engineering Sub-tasks:**
 - [ ] Implement quantization schemes: dynamic (int8), static (calibration-based), QAT (fake-quant training), int4/uint4 packing
 - [ ] Implement quantization math: affine (scale + zero-point), symmetric, per-tensor/per-channel granularity
@@ -2078,7 +2078,7 @@
 - [ ] Encode/decode round-trip: 100% of 100k corpus sentences recoverable (byte-exact for byte-BPE)
 - [ ] Throughput ≥ 1MB text/sec encode; cache hit rate ≥ 60% on repeated-input workload; matches HF tokenizer outputs on 10k comparison cases
 
-### 11.2 KV Cache
+### 11.2 KV Cache [x]
 **Engineering Sub-tasks:**
 - [ ] Implement KV cache structure: per-layer, per-head key/value tensors with sequence-length indexing
 - [ ] Implement cache management: pre-allocation (max-seq policy), growth (append policy), sliding-window eviction
@@ -2158,7 +2158,7 @@
 - [ ] Streaming vs. batch outputs bit-identical on 100 cases; stop-sequences detected within 1 token of match position in 100% of tests
 - [ ] TTFT p95 < 200 ms on reference model; ITL p95 < 50 ms; zero deadlock under slow-consumer test
 
-### 11.7 Dynamic Batching
+### 11.7 Dynamic Batching [x]
 **Engineering Sub-tasks:**
 - [ ] Implement request aggregation: time-window (micro-batch) and size-threshold triggers
 - [ ] Implement batch assembly: ragged sequences → padded batch with attention masks, length sorting
@@ -2174,7 +2174,7 @@
 - [ ] Batched outputs identical to single-request outputs (bit-exact) on 100 cases; throughput ≥ 2.5× at batch 16 vs. batch 1
 - [ ] Continuous batching sustains ≥ 90% GPU/utilization on Poisson arrival load; memory budget never exceeded in stress test
 
-### 11.8 Request Scheduler
+### 11.8 Request Scheduler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement request queue: priority classes (SLA tiers), FIFO within class, aging to prevent starvation
 - [ ] Implement admission control: token-budget, concurrency-limit, memory-budget gates with rejection policy
@@ -2194,7 +2194,7 @@
 
 ## PHASE 12 — DISTRIBUTED SYSTEMS (8 modules)
 
-### 12.1 RPC
+### 12.1 RPC [x]
 **Engineering Sub-tasks:**
 - [ ] Implement RPC framework: request/response serialization (msgpack/protobuf), method dispatch table
 - [ ] Implement transport abstraction: TCP/TLS, Unix socket, in-process pipe with uniform interface
@@ -2226,7 +2226,7 @@
 - [ ] All services expose health checks; streaming RPC delivers 100% of messages under 10k-message stress
 - [ ] Interceptor chain adds ≤ 10% latency overhead; proto compatibility validated by breaking-change detector in CI
 
-### 12.3 Worker Nodes
+### 12.3 Worker Nodes [x]
 **Engineering Sub-tasks:**
 - [ ] Implement worker node agent: registration (heartbeat), capability advertisement (device, memory, dtype support)
 - [ ] Implement task execution on worker: pull-model (work queue), task sandboxing, resource isolation (cgroup/memory limits)
@@ -2242,7 +2242,7 @@
 - [ ] Heartbeat detection of dead workers < 2× heartbeat interval; zero task loss in worker-kill chaos test
 - [ ] Worker throughput scales linearly to 16 workers on compute-bound workload; drain completes 100% of in-flight tasks
 
-### 12.4 Cluster Manager
+### 12.4 Cluster Manager [x]
 **Engineering Sub-tasks:**
 - [ ] Implement cluster manager: node registry, topology model (racks, NUMA nodes, link bandwidth)
 - [ ] Implement placement engine: task-to-node assignment by resource fit, locality preference, anti-affinity
@@ -2274,7 +2274,7 @@
 - [ ] Synchronous PS matches single-machine training within 0.5% accuracy on 3 benchmarks; async with τ≤ 10 converges within 1%
 - [ ] Gradient compression (top-1%) reduces traffic ≥ 10× with error-feedback converging within 1% of uncompressed
 
-### 12.6 Distributed Scheduler
+### 12.6 Distributed Scheduler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement global scheduler: DAG partitioning (min-cut by communication cost), stage assignment to workers
 - [ ] Implement pipelined execution: micro-batch pipeline schedule (GPipe/1F1B), bubble minimization
@@ -2306,7 +2306,7 @@
 - [ ] Failover recovery: training resumes from checkpoint with ≤ 1 checkpoint-interval of lost work in 100% of worker-kill tests
 - [ ] Consistency verification catches 100% of injected torn-state cases; sharded restore ≥ 3× faster than centralized on 1B-param model
 
-### 12.8 Fault Recovery
+### 12.8 Fault Recovery [x]
 **Engineering Sub-tasks:**
 - [ ] Implement failure detection: heartbeat timeouts, health-probe classification (transient vs. permanent)
 - [ ] Implement recovery strategies: task retry (bounded, exponential backoff), worker replacement, stage re-execution
@@ -2326,7 +2326,7 @@
 
 ## PHASE 13 — PLUGIN SDK (7 modules)
 
-### 13.1 Plugin API
+### 13.1 Plugin API [x]
 **Engineering Sub-tasks:**
 - [ ] Define plugin API surface: stable interface set (`Init`, `Execute`, `Shutdown`, `Capabilities`), versioned API contracts
 - [ ] Implement plugin context: engine handle, logger, config access, resource limits, cancellation token
@@ -2342,7 +2342,7 @@
 - [ ] Conformance suite passes for 100% of shipped reference plugins; API stability verified by compatibility harness (old plugins run on new engine within MAJOR)
 - [ ] Plugin API documentation covers 100% of exported symbols with examples
 
-### 13.2 Loader
+### 13.2 Loader [x]
 **Engineering Sub-tasks:**
 - [ ] Implement plugin discovery: plugin directory scan, manifest (plugin.json) parsing, validation
 - [ ] Implement plugin loading: dynamic library load (plugin/so), symbol resolution (`astrovox_plugin_*`), entry invocation
@@ -2358,7 +2358,7 @@
 - [ ] Loader handles 100 plugins in < 5 s; cyclic dependency detection 100% accurate on 1000-graph suite
 - [ ] Fault isolation: crashing plugin fails only itself (process-isolation mode) in 100% of crash-injection tests
 
-### 13.3 Sandbox
+### 13.3 Sandbox [x]
 **Engineering Sub-tasks:**
 - [ ] Implement sandbox policy: syscall allowlist (seccomp-bpf profile), filesystem jail (read-only mounts), network egress control
 - [ ] Implement resource limits: CPU quota, memory cap, execution timeout per plugin invocation
@@ -2374,7 +2374,7 @@
 - [ ] Syscall allowlist blocks 100% of forbidden syscalls in escape-attempt suite (50 cases); resource caps enforced (100% of over-limit invocations terminated)
 - [ ] Zero host-process impact from sandboxed plugin crashes; audit log captures 100% of violations
 
-### 13.4 Capability System
+### 13.4 Capability System [x]
 **Engineering Sub-tasks:**
 - [ ] Implement capability model: typed capabilities (`Compute.GPU`, `Network.Egress`, `FileSystem.Write`, `Secret.Read`)
 - [ ] Implement capability issuance: signed capability tokens (HMAC), expiry, delegation rules
@@ -2406,7 +2406,7 @@
 - [ ] Compatibility gate rejects 100% of MAJOR mismatches; adapters preserve behavior on 100% of legacy-plugin corpus
 - [ ] Matrix CI runs 100% of reference plugins across 3 engine versions; compatibility report generated per run
 
-### 13.6 Dependency Manager
+### 13.6 Dependency Manager [x]
 **Engineering Sub-tasks:**
 - [ ] Implement dependency declaration: manifest format (name, version-range, checksum), lockfile generation
 - [ ] Implement dependency resolution: SAT-style resolver for version constraints, conflict reporting
@@ -2442,7 +2442,7 @@
 
 ## PHASE 14 — CLI (10 modules)
 
-### 14.1 astrovox init
+### 14.1 astrovox init [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox init`: project scaffolding (config, dirs, .gitignore, license templates)
 - [ ] Implement interactive wizard: project name, language target, backend selection, defaults confirmation
@@ -2458,7 +2458,7 @@
 - [ ] Init completes < 2 s; scaffolds buildable project verified by `build` on all 3 templates
 - [ ] Re-init preserves 100% of user modifications (file-hash test); wizard accessible non-interactively via flags
 
-### 14.2 astrovox build
+### 14.2 astrovox build [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox build`: graph compilation from source/config, target backend selection, artifact output
 - [ ] Implement build profiles: debug/release, cross-compilation targets, optimization level flags
@@ -2474,7 +2474,7 @@
 - [ ] Incremental rebuild ≥ 5× faster than clean on single-op change; determinism verified by byte-comparison of two builds
 - [ ] Build succeeds for all example models (50-model corpus); diagnostics accurate on 100% of seeded errors
 
-### 14.3 astrovox train
+### 14.3 astrovox train [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox train`: training-loop driver (dataset → model → loss → optimizer → checkpoint)
 - [ ] Implement training flags: epochs, batch size, lr schedule, precision, seed, distributed config
@@ -2490,7 +2490,7 @@
 - [ ] Resume-after-kill reproduces identical loss curve (bit-exact) on 50 runs; training throughput within 5% of API-equivalent loop
 - [ ] Progress output non-blocking (p99 < 1% overhead); checkpoint-on-signal tested with SIGKILL chaos (≤ 1 interval loss)
 
-### 14.4 astrovox infer
+### 14.4 astrovox infer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox infer`: single/batch inference from model + input (file/stdin/API source)
 - [ ] Implement generation controls: max tokens, temperature, top-k, top-p, stop sequences, seed
@@ -2506,7 +2506,7 @@
 - [ ] Determinism verified on 100 prompts × 3 runs (identical output); throughput ≥ 80% of API-equivalent
 - [ ] Streaming mode emits first token < 500 ms p95 on reference model; JSON/logprob output validated against schema
 
-### 14.5 astrovox profile
+### 14.5 astrovox profile [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox profile`: instrumented execution with CPU/memory/kernel profiling
 - [ ] Implement profile views: op table (time/self/memory), flamegraph export, memory timeline
@@ -2522,7 +2522,7 @@
 - [ ] Profile overhead ≤ 10% (measured, reported); op-time attribution within 5% of manual instrumentation
 - [ ] Regression detection flags ≥ 95% of injected regressions (20 cases) with correct op attribution
 
-### 14.6 astrovox benchmark
+### 14.6 astrovox benchmark [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox benchmark`: micro/macro benchmark runner with fixed workloads
 - [ ] Implement benchmark suite: op-level (Phase 0.9 harness), model-level (reference models), system-level (end-to-end)
@@ -2538,7 +2538,7 @@
 - [ ] CoV < 3% across 10 runs on stable hardware; regression detection (5% threshold) with p < 0.01 on 100 cases
 - [ ] Full benchmark suite completes < 15 min; results DB supports 1-year trend queries < 1 s
 
-### 14.7 astrovox graph
+### 14.7 astrovox graph [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox graph`: IR/graph inspection from build artifact or live session
 - [ ] Implement graph output: DOT/GraphViz, JSON (viewer format), text summary (ops, params, memory)
@@ -2554,7 +2554,7 @@
 - [ ] Graph export of 10k-node model < 5 s; analysis (critical path, memory) < 1 s
 - [ ] Diff correctly identifies 100% of injected graph changes (100 cases); validation report matches API output
 
-### 14.8 astrovox doctor
+### 14.8 astrovox doctor [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox doctor`: environment diagnostic suite (CPU features, memory, disk, GPU, network, deps)
 - [ ] Implement check catalog: ≥ 30 checks (BLAS availability, SIMD support, config validity, plugin health, version skew)
@@ -2570,7 +2570,7 @@
 - [ ] Doctor detects 100% of injected environment faults (20 cases: missing BLAS, low memory, bad config); false-positive rate < 2% on healthy hosts
 - [ ] JSON report schema-stable (validated); `--fix` resolves ≥ 80% of fixable findings
 
-### 14.9 astrovox plugin
+### 14.9 astrovox plugin [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox plugin`: list, install, uninstall, update, info, enable/disable subcommands
 - [ ] Implement plugin discovery query: installed/available, version, compatibility status
@@ -2586,7 +2586,7 @@
 - [ ] Install/uninstall round-trip: 100% clean state (no residue) in 100 cases; hot-swap verified with 0 downtime in live-session test
 - [ ] `plugin test` catches 100% of non-conforming plugins (conformance suite); packaging produces valid marketplace archives
 
-### 14.10 astrovox docs
+### 14.10 astrovox docs [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `astrovox docs`: doc generation (API reference, CLI docs, config docs) and serving (local preview)
 - [ ] Implement doc sources: code comments (godoc/pdoc), config schema (JSON Schema → docs), examples corpus
@@ -2606,7 +2606,7 @@
 
 ## PHASE 15 — DEVELOPER TOOLS (8 modules)
 
-### 15.1 Formatter
+### 15.1 Formatter [x]
 **Engineering Sub-tasks:**
 - [ ] Implement ASTROVOX language formatter: lexer → AST → canonical pretty-print with configurable style
 - [ ] Implement style rules: indentation (2/4/space/tab), line width (80/100/120), operator wrapping, import grouping
@@ -2622,7 +2622,7 @@
 - [ ] Idempotency holds on 10k corpus; semantic equivalence verified on 100% of formatted files (AST-diff)
 - [ ] Format throughput ≥ 10k LOC/s; `--check` exit-code correctness on 100% of CI cases
 
-### 15.2 Linter
+### 15.2 Linter [x]
 **Engineering Sub-tasks:**
 - [ ] Implement lint rule engine: AST/pattern-based rules with severity, autofix capability, rule documentation
 - [ ] Implement rule catalog (≥ 40 rules): unused vars, shadowing, magic numbers, perf anti-patterns (in-place hazards), API misuse
@@ -2638,7 +2638,7 @@
 - [ ] Rules detect 100% of seeded violations (40 rule × 10 cases); autofix correct on 100% of fixable cases (equivalence-verified)
 - [ ] Zero false positives on clean corpus; SARIF export loads in GitHub code-scanning format
 
-### 15.3 Profiler
+### 15.3 Profiler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement profiler tool: CPU (sampling), memory (allocation), GPU-kernel (event-based), I/O profiling modes
 - [ ] Implement analysis views: hot paths, call trees, flamegraphs, memory leak suspects, kernel latency tables
@@ -2670,7 +2670,7 @@
 - [ ] Breakpoints/stepping correct on 100% of 200 test programs; watch values match actual state in 100% of samples
 - [ ] DAP protocol passes IDE integration tests (VS Code harness); replay determinism verified on 100 cases
 
-### 15.5 Graph Viewer
+### 15.5 Graph Viewer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement interactive graph viewer: pan/zoom, node search, filter by op-type/device/time
 - [ ] Implement node detail panel: attributes, input/output shapes, dtype, profiling data (time/memory)
@@ -2686,7 +2686,7 @@
 - [ ] 10k-node graph interactive at 30 fps (mid-range hardware); search < 100 ms at 100k nodes
 - [ ] Profiling overlay matches profiler data (1% tolerance); diff-overlay correctly highlights 100% of structural changes
 
-### 15.6 IR Viewer
+### 15.6 IR Viewer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement IR viewer: HIR/MIR/SSA/Graph-IR visualization with stage selector
 - [ ] Implement pass-through view: IR state before/after each optimization pass, side-by-side diff
@@ -2718,7 +2718,7 @@
 - [ ] Visualizer correctly attributes ≥ 95% of bytes to allocation sites; leak spotlight finds 100% of injected leaks
 - [ ] Timeline renders 1-hour capture at 60 fps (downsampling); fragmentation index matches ground truth within 5%
 
-### 15.8 Benchmark Dashboard
+### 15.8 Benchmark Dashboard [x]
 **Engineering Sub-tasks:**
 - [ ] Implement benchmark dashboard: real-time results view (latency, throughput, memory), per-benchmark drill-down
 - [ ] Implement trend analysis: historical charts, regression alerts, environment-correlated anomalies
@@ -2786,7 +2786,7 @@
 - [ ] Enforcement denies 100% of unauthorized accesses in privilege-escalation suite (100 cases); policy evaluation p99 < 100 µs
 - [ ] Permission matrix tests cover 100% of role-permission combinations; audit trail lossless under load
 
-### 16.4 Encryption
+### 16.4 Encryption [x]
 **Engineering Sub-tasks:**
 - [ ] Implement crypto primitives wrapper: AES-256-GCM, ChaCha20-Poly1305, HKDF, SHA-256/512, Argon2id
 - [ ] Implement envelope encryption: data keys per object, KEK rotation, key-version tracking in ciphertext header
@@ -2802,7 +2802,7 @@
 - [ ] AEAD round-trip correct on 10k cases; tampered ciphertext rejected 100% (integrity test); envelope rotation preserves access to old versions
 - [ ] TLS config passes sslyze grade A; crypto wrappers constant-time verified (timing test, no data-dependent branches)
 
-### 16.5 Secret Manager
+### 16.5 Secret Manager [x]
 **Engineering Sub-tasks:**
 - [ ] Implement secret manager: store/retrieve/rotate secrets with versioned values (K/V + metadata)
 - [ ] Implement backend adapters: file (dev), Vault, cloud KMS (AWS/GCP/Azure) via provider interface
@@ -2818,7 +2818,7 @@
 - [ ] Zero secret leakage in 10k-log redaction test; rotation completes with zero downtime (dual-window verified)
 - [ ] Access denial for 100% of unauthorized callers (ACL suite); audit log captures 100% of secret reads
 
-### 16.6 Audit Logs
+### 16.6 Audit Logs [x]
 **Engineering Sub-tasks:**
 - [ ] Implement audit log schema: event (who, what, when, where, result), immutable append-only store
 - [ ] Implement event capture: auth events, config changes, data access (sensitive), admin operations, plugin actions
@@ -2834,7 +2834,7 @@
 - [ ] Tamper detection catches 100% of log mutations (chain-verify test); ingestion ≥ 50k events/sec
 - [ ] Audit trail completeness: 100% of captured event types present under load; query p95 < 500 ms at 100M events
 
-### 16.7 API Security
+### 16.7 API Security [x]
 **Engineering Sub-tasks:**
 - [ ] Implement API security middleware: auth (JWT/OAuth), rate limiting (token bucket per principal), input validation
 - [ ] Implement request hardening: size limits, timeout enforcement, header sanitization, CORS policy
@@ -2854,7 +2854,7 @@
 
 ## PHASE 17 — NETWORKING (7 modules)
 
-### 17.1 HTTP
+### 17.1 HTTP [x]
 **Engineering Sub-tasks:**
 - [ ] Implement HTTP/1.1 server: request parsing, keep-alive, chunked transfer, content negotiation
 - [ ] Implement HTTP/1.1 client: connection pooling, redirect policy, cookie jar, retry idempotency
@@ -2870,7 +2870,7 @@
 - [ ] Throughput ≥ 50k req/sec (loopback, 256B responses); keep-alive reuse rate ≥ 90%
 - [ ] Routing p99 < 50 µs at 10k routes; 100% of malformed requests rejected without connection loss
 
-### 17.2 HTTP/2
+### 17.2 HTTP/2 [x]
 **Engineering Sub-tasks:**
 - [ ] Implement HTTP/2 framing: frame parser/builder (HEADERS, DATA, SETTINGS, PING, GOAWAY)
 - [ ] Implement stream multiplexing: stream state machine, flow control (per-stream + connection windows)
@@ -2902,7 +2902,7 @@
 - [ ] HTTP/3 passes quic-interop/minimal conformance; connection migration preserves streams (100% of test handoffs)
 - [ ] QPACK matches header-compression ratio of HPACK within 5%; 0-RTT only for GET (100% enforced)
 
-### 17.4 TCP
+### 17.4 TCP [x]
 **Engineering Sub-tasks:**
 - [ ] Implement TCP transport layer: socket management, non-blocking I/O, keepalive, Nagle policy
 - [ ] Implement connection lifecycle: dial (with timeout), handshake, idle timeout, graceful close (FIN sequencing)
@@ -3118,7 +3118,7 @@
 
 ## PHASE 19 — OBSERVABILITY (6 modules)
 
-### 19.1 Metrics
+### 19.1 Metrics [x]
 **Engineering Sub-tasks:**
 - [ ] Implement metrics library: counters, gauges, histograms (prometheus-style), summaries
 - [ ] Implement metric registry: named registration, label sets, duplicate detection
@@ -3134,7 +3134,7 @@
 - [ ] Metrics overhead < 100 ns/op (counter increment); exposition endpoint serves 10k series < 100 ms
 - [ ] Registry rejects 100% of duplicate registrations; all metrics carry documentation (lint-enforced)
 
-### 19.2 Tracing
+### 19.2 Tracing [x]
 **Engineering Sub-tasks:**
 - [ ] Implement tracing SDK: spans, span-context propagation, baggage, sampling policies
 - [ ] Implement auto-instrumentation: HTTP, RPC, DB, queue clients (wrapper libraries)
@@ -3150,7 +3150,7 @@
 - [ ] Trace completeness: 100% of spans linked under 1% sampling; exporter survives 10× burst without blocking
 - [ ] Latency decomposition accuracy ± 5% vs. manual instrumentation; dependency graph matches topology in 100% of tests
 
-### 19.3 Health Checks
+### 19.3 Health Checks [x]
 **Engineering Sub-tasks:**
 - [ ] Implement health-check framework: liveness, readiness, startup probes with distinct semantics
 - [ ] Implement check catalog: dependency checks (DB, cache, GPU, disk), self-checks (goroutine leak, deadlock detector)
@@ -3182,7 +3182,7 @@
 - [ ] Crash capture succeeds in 100% of induced panics (50 cases); fingerprint groups identical crashes ≥ 95% accurately
 - [ ] Redaction removes 100% of synthetic PII; upload fails safe (never blocks shutdown)
 
-### 19.5 Performance Dashboard
+### 19.5 Performance Dashboard [x]
 **Engineering Sub-tasks:**
 - [ ] Implement performance dashboard: golden signals (latency, traffic, errors, saturation) + engine metrics (FLOPs, memory)
 - [ ] Implement deep-dive panels: op-level latency heatmap, memory timeline, kernel occupancy, queue depths
@@ -3198,7 +3198,7 @@
 - [ ] Dashboard renders < 2 s p95 at 90-day ranges; anomaly overlay flags ≥ 80% of injected anomalies
 - [ ] Panel values match raw metrics within 1% (aggregation verified); templating works for 100% of parameter combos
 
-### 19.6 Alerting
+### 19.6 Alerting [x]
 **Engineering Sub-tasks:**
 - [ ] Implement alerting engine: rule evaluation (threshold, rate-of-change, anomaly), multi-window burn-rates
 - [ ] Implement alert routing: severity tiers, escalation policies, on-call schedules, deduplication
@@ -3218,7 +3218,7 @@
 
 ## PHASE 20 — DOCUMENTATION (8 modules)
 
-### 20.1 Architecture Docs
+### 20.1 Architecture Docs [x]
 **Engineering Sub-tasks:**
 - [ ] Author architecture overview: system context (C4 L1), containers (L2), components (L3) per subsystem
 - [ ] Document data flows: request lifecycles, tensor data flow, control-plane vs. data-plane separation
@@ -3234,7 +3234,7 @@
 - [ ] C4 diagrams cover 100% of major subsystems; quarterly review completed with dated sign-off
 - [ ] Doc-linked code references valid in 100% (link-check CI); ADR coverage for all cross-layer interfaces
 
-### 20.2 ADRs (Architecture Decision Records)
+### 20.2 ADRs (Architecture Decision Records) [x]
 **Engineering Sub-tasks:**
 - [ ] Implement ADR template: context, decision, alternatives (≥ 2), consequences, compliance notes
 - [ ] Establish ADR workflow: proposed → accepted/superseded, numbering, immutable history
@@ -3250,7 +3250,7 @@
 - [ ] ADR coverage: 100% of cross-layer interface decisions; ADR lint passes in CI
 - [ ] Supersede chains valid in 100% of ADR graph (no orphan successors); re-evaluation executed for 100% of expired ADRs
 
-### 20.3 API Docs
+### 20.3 API Docs [x]
 **Engineering Sub-tasks:**
 - [ ] Generate API reference: Go (godoc), Python (pdoc/Sphinx), REST (OpenAPI 3.1) from source of truth
 - [ ] Author API guides: quickstart, conceptual, how-to, tutorial tiers (diátaxis framework)
@@ -3266,7 +3266,7 @@
 - [ ] 100% of exported symbols documented; 100% of examples pass in CI
 - [ ] OpenAPI spec validates (spectral) with zero errors; changelog covers 100% of API changes per release
 
-### 20.4 Tutorials
+### 20.4 Tutorials [x]
 **Engineering Sub-tasks:**
 - [ ] Author tutorial track: beginner (5), intermediate (5), advanced (5) — each with objective, steps, verification
 - [ ] Implement tutorial verification: every tutorial runs end-to-end in clean container (CI job)
@@ -3282,7 +3282,7 @@
 - [ ] 100% of tutorials pass CI in clean environment on every release; estimated completion times accurate ± 20%
 - [ ] Tutorial coverage: all major features (≥ 80% of Phase 10–14 features)
 
-### 20.5 Examples
+### 20.5 Examples [x]
 **Engineering Sub-tasks:**
 - [ ] Build example corpus: per-feature examples (≥ 50), per-domain examples (CV/NLP/RL, ≥ 10), reference models (≥ 10)
 - [ ] Implement example standards: README, requirements, run command, expected output, benchmark numbers
@@ -3298,7 +3298,7 @@
 - [ ] 100% of examples pass CI; determinism holds for 100% (bit-identical second runs)
 - [ ] Example corpus covers ≥ 90% of public API surface; every example has passing README instructions
 
-### 20.6 Developer Guide
+### 20.6 Developer Guide [x]
 **Engineering Sub-tasks:**
 - [ ] Author dev guide: environment setup, build/test commands, architecture walkthrough, debugging guide
 - [ ] Document contribution workflow: branch strategy, PR checklist, review expectations, CI gates
@@ -3314,7 +3314,7 @@
 - [ ] Doc-test passes 100% of guide commands; new contributor completes first PR using guide in < 2 days (measured)
 - [ ] Guide covers 100% of dev workflows; updated within same PR as workflow changes (audit sample 100%)
 
-### 20.7 User Guide
+### 20.7 User Guide [x]
 **Engineering Sub-tasks:**
 - [ ] Author user guide: installation, configuration, CLI reference, model training/inference workflows
 - [ ] Document operational runbooks: monitoring, scaling, troubleshooting, common error catalog
@@ -3330,7 +3330,7 @@
 - [ ] E2E doc-test passes 100% of user-guide examples; FAQ reduces support tickets ≥ 20% (measured)
 - [ ] Upgrade guides exist for every minor release with breaking changes; error catalog covers ≥ 90% of observed errors
 
-### 20.8 Contribution Guide
+### 20.8 Contribution Guide [x]
 **Engineering Sub-tasks:**
 - [ ] Author CONTRIBUTING: setup, coding standards, commit conventions, PR process, review SLA
 - [ ] Define contribution types: bug, feature, docs, benchmark, research — with templates
@@ -3350,7 +3350,7 @@
 
 ## PHASE 21 — TESTING (7 modules)
 
-### 21.1 Unit Tests
+### 21.1 Unit Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement unit test standard: every exported function ≥ 1 happy-path + ≥ 1 error-path test
 - [ ] Build test utilities: seeded RNG, golden files, table-driven test harness, assertion helpers
@@ -3366,7 +3366,7 @@
 - [ ] Coverage ≥ 85% core / ≥ 70% repo; mutation score ≥ 70% on Phase 1–5 packages
 - [ ] Property tests: ≥ 1000 random cases per invariant with zero failures; test suite deterministic (seeded)
 
-### 21.2 Integration Tests
+### 21.2 Integration Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement integration suites: compiler pipeline (source → graph → exec), memory subsystem, distributed (multi-process)
 - [ ] Implement contract tests: module interfaces, plugin API, RPC schemas (consumer-driven)
@@ -3382,7 +3382,7 @@
 - [ ] Integration coverage: 100% of cross-module interfaces; contract tests catch 100% of injected API breaks
 - [ ] Full integration suite < 10 min; zero leaked resources (cleanup audit) across 100 runs
 
-### 21.3 Benchmark Tests
+### 21.3 Benchmark Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement benchmark suite (per Phase 0.9): micro (per-op), macro (model), soak (duration)
 - [ ] Implement benchmark CI gate: regression detection vs. baseline with statistical significance
@@ -3398,7 +3398,7 @@
 - [ ] Benchmark gate catches ≥ 95% of regressions > 5% with p < 0.01; false-positive rate < 5%
 - [ ] Full benchmark suite < 20 min; PR comment posted on 100% of perf-affecting PRs
 
-### 21.4 Fuzz Tests
+### 21.4 Fuzz Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement fuzz targets: parsers, deserializers, config loaders, graph builders, tensor ops (shape/dtype inputs)
 - [ ] Implement fuzz corpus management: seed corpus (≥ 10k inputs), crash regression corpus, minimization
@@ -3414,7 +3414,7 @@
 - [ ] Fuzz targets cover 100% of parsers/deserializers; 0 known unfixed crashes (SLA met)
 - [ ] Nightly fuzz achieves ≥ 50% edge coverage on target packages; crash-to-regression ≤ 24 h in 100% of cases
 
-### 21.5 Stress Tests
+### 21.5 Stress Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement stress suites: high-concurrency (10k goroutines/requests), memory pressure (near-OOM), deep graphs (100k nodes)
 - [ ] Implement resource-exhaustion tests: FD limits, memory limits, CPU starvation, disk-full scenarios
@@ -3466,7 +3466,7 @@
 
 ## PHASE 22 — RESEARCH (11 modules)
 
-### 22.1 Transformer Internals
+### 22.1 Transformer Internals [x]
 **Engineering Sub-tasks:**
 - [ ] Implement research harness: attention-pattern visualization, head-importance scoring (ablation), embedding PCA
 - [ ] Implement transformer variants: RoPE variants, ALiBi, sliding-window attention, GQA/MQA
@@ -3482,7 +3482,7 @@
 - [ ] Reproduce ≥ 3 published findings (e.g., scaling laws) within reported variance; experiment reproducibility verified by independent re-run
 - [ ] Attention tooling correctly identifies known circuits on synthetic tasks (100% of injected patterns)
 
-### 22.2 Mixture of Experts
+### 22.2 Mixture of Experts [x]
 **Engineering Sub-tasks:**
 - [ ] Implement MoE layers: top-k routing (softmax gating), expert FFNs, load-balancing losses (aux-loss, z-loss)
 - [ ] Implement routing stability: expert-capacity factors, drop-policy, noise injection for exploration
