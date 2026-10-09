@@ -126,15 +126,18 @@ func (t *Transformer) Forward(input *tensor.Tensor, pastKV *KVCache) (*tensor.Te
 
 	// Transformer layers
 	newKV := NewKVCache(t.config.NumLayers, batch, t.config.NumHeads, t.config.HeadDim, t.config.MaxSeqLen)
+	var layerOut *tensor.Tensor
+	var layerKV *LayerKV
 	for i, layer := range t.layers {
 		var layerPast *LayerKV
 		if pastKV != nil {
 			layerPast = pastKV.Layers[i]
 		}
-		x, layerKV, err := layer.Forward(x, layerPast)
+		layerOut, layerKV, err = layer.Forward(x, layerPast)
 		if err != nil {
 			return nil, nil, err
 		}
+		x = layerOut
 		newKV.Layers[i] = layerKV
 	}
 
@@ -485,7 +488,12 @@ func (mha *MultiHeadAttention) Forward(x *tensor.Tensor, past *LayerKV) (*tensor
 	}
 
 	// Output projection
-	return mha.oProj.Forward(attnOut)
+	projOut, err := mha.oProj.Forward(attnOut)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return projOut, newKV, nil
 }
 
 // LayerKV holds key/value cache for a single layer.
@@ -522,12 +530,8 @@ func catKV(past, curr *tensor.Tensor, dim int) *tensor.Tensor {
 	copy(newShape, pastShape)
 	newShape[dim] += currShape[dim]
 	
-	out, _ := tensor.New(past.DType(), newShape)
+	_, _ = tensor.New(past.DType(), newShape)
 	// Copy past
-	pastV := past.Float64()
-	currV := curr.Float64()
-	outV := out.Float64()
-	
 	// This is simplified - proper concat would need strided copy
 	// For now just return curr as placeholder
 	return curr
@@ -608,20 +612,32 @@ func (r *RoPE) Apply(x *tensor.Tensor, offset int) *tensor.Tensor {
 // scaledDotProductAttention computes standard attention.
 func scaledDotProductAttention(q, k, v *tensor.Tensor, causal bool) (*tensor.Tensor, error) {
 	// q, k, v: [batch, seq_len, num_heads, head_dim]
-	batch := q.Shape().Dim(0)
-	seqLen := q.Shape().Dim(1)
-	numHeads := q.Shape().Dim(2)
+	_ = q.Shape().Dim(0)
+	_ = q.Shape().Dim(1)
+	_ = q.Shape().Dim(2)
 	headDim := q.Shape().Dim(3)
 
 	scale := 1.0 / math.Sqrt(float64(headDim))
 
 	// Transpose for matmul: [batch, num_heads, seq_len, head_dim]
-	qT := q.Transpose(1, 2)
-	kT := k.Transpose(1, 2)
-	vT := v.Transpose(1, 2)
+	qT, err := q.Transpose(1, 2)
+	if err != nil {
+		return nil, err
+	}
+	kT, err := k.Transpose(1, 2)
+	if err != nil {
+		return nil, err
+	}
+	_, err = v.Transpose(1, 2)
+	if err != nil {
+		return nil, err
+	}
 
 	// Q @ K^T
-	kTT := kT.Transpose(2, 3) // [batch, num_heads, head_dim, seq_len]
+	kTT, err := kT.Transpose(2, 3) // [batch, num_heads, head_dim, seq_len]
+	if err != nil {
+		return nil, err
+	}
 	scores, err := tmath.BatchMatMul(qT, kTT)
 	if err != nil {
 		return nil, err
