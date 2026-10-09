@@ -6,7 +6,7 @@ import (
 
 	"github.com/astrovox/astrovox/internal/errors"
 	"github.com/astrovox/astrovox/tensor"
-	"github.com/astrovox/astrovox/tensor/math"
+	tmath "github.com/astrovox/astrovox/tensor/math"
 )
 
 // TransformerConfig holds configuration for a Transformer model.
@@ -182,7 +182,7 @@ func NewLayerNorm(dim int, eps float64) *LayerNorm {
 }
 
 func (ln *LayerNorm) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
-	return math.LayerNorm(x, ln.weight, ln.bias, ln.eps)
+	return tmath.LayerNorm(x, ln.weight, ln.bias, ln.eps)
 }
 
 // RMSNorm implements root mean square layer normalization.
@@ -197,7 +197,7 @@ func NewRMSNorm(dim int, eps float64) *RMSNorm {
 }
 
 func (rn *RMSNorm) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
-	return math.RMSNorm(x, rn.weight, nil, rn.eps)
+	return tmath.RMSNorm(x, rn.weight, nil, rn.eps)
 }
 
 // Embedding maps token IDs to vectors.
@@ -254,7 +254,7 @@ func NewLinear(inDim, outDim int, bias bool) *Linear {
 func (l *Linear) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 	// x: [*, inDim], weight: [outDim, inDim]
 	// output: [*, outDim]
-	return math.MatMul(x, l.weight.Transpose())
+	return tmath.MatMul(x, l.weight.Transpose(1, 0))
 }
 
 // TransformerLayer is a single Transformer layer.
@@ -349,7 +349,7 @@ func (m *MLP) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 	if err != nil {
 		return nil, err
 	}
-	x, err = math.FusedActApply(x, m.act, 1, 0)
+	x, err = tmath.FusedActApply(x, m.act, 1, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -433,7 +433,7 @@ func (mha *MultiHeadAttention) Forward(x *tensor.Tensor, past *LayerKV) (*tensor
 		qT := q.Transpose(1, 2)
 		kT := k.Transpose(1, 2)
 		vT := v.Transpose(1, 2)
-		attnOut, err = math.MultiHeadFlashAttention(qT, kT, vT, numHeads, false)
+		attnOut, err = tmath.MultiHeadFlashAttention(qT, kT, vT, numHeads, false)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -468,10 +468,9 @@ type KVCache struct {
 func NewKVCache(numLayers, batch, numHeads, headDim, maxSeqLen int) *KVCache {
 	layers := make([]*LayerKV, numLayers)
 	for i := range layers {
-		layers[i] = &LayerKV{
-			K: tensor.Must(tensor.New(tensor.Float64, []int{batch, 0, numHeads, headDim})),
-			V: tensor.Must(tensor.New(tensor.Float64, []int{batch, 0, numHeads, headDim})),
-		}
+		k, _ := tensor.New(tensor.Float64, []int{batch, 0, numHeads, headDim})
+		v, _ := tensor.New(tensor.Float64, []int{batch, 0, numHeads, headDim})
+		layers[i] = &LayerKV{K: k, V: v}
 	}
 	return &KVCache{Layers: layers}
 }
@@ -572,7 +571,7 @@ func scaledDotProductAttention(q, k, v *tensor.Tensor, causal bool) (*tensor.Ten
 
 	// Q @ K^T
 	kTT := kT.Transpose(2, 3) // [batch, num_heads, head_dim, seq_len]
-	scores, err := math.BatchMatMul(qT, kTT)
+	scores, err := tmath.BatchMatMul(qT, kTT)
 	if err != nil {
 		return nil, err
 	}
