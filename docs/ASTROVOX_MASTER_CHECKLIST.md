@@ -16,7 +16,7 @@
 
 ## PHASE 0 — FOUNDATION (11 modules)
 
-### 0.1 Project Architecture
+### 0.1 Project Architecture [x]
 **Engineering Sub-tasks:**
 - [ ] Define the four-layer architecture boundary: `kernel/backend → tensor/math → compiler/runtime → service/API`
 - [ ] Codify dependency-inversion rules: no upward imports; enforce via `depguard`/`go vet`/`ruff` import-linter rules
@@ -34,7 +34,7 @@
 - [ ] C4 diagrams + ADR-0000 merged; dependency-linter CI gate passes on 100% of packages
 - [ ] Layering violation count = 0 in `internal/` per static analysis
 
-### 0.2 Repository Layout
+### 0.2 Repository Layout [x]
 **Engineering Sub-tasks:**
 - [ ] Define canonical tree: `cmd/`, `internal/{ir,optimizer,planner,scheduler,runtime,backend,kernel,planner,rewrite,tools}`, `pkg/{cli,sdk}`, `astrovox/` (Python), `tests/{unit,integration,e2e}`, `testdata/`, `docs/`, `scripts/`
 - [ ] Enforce `internal/` visibility: engine internals unimportable from `pkg/` consumers
@@ -146,7 +146,7 @@
 - [ ] Constraint resolver passes 10k-case property test; version endpoint returns deterministic JSON schema
 - [ ] Upgrade checker detects 100% of breaking changes in a synthetic version-jump suite
 
-### 0.9 Benchmark Framework
+### 0.9 Benchmark Framework [x]
 **Engineering Sub-tasks:**
 - [ ] Integrate `go test -bench` + `benchstat` for statistical rigor; pytest-benchmark for Python layer
 - [ ] Define benchmark taxonomy: micro (per-op), macro (end-to-end pipeline), soak (duration)
@@ -162,7 +162,7 @@
 - [ ] ≥ 100 micro-benchmarks covering every tensor op; CI fails on > 5% p95 regression vs. baseline
 - [ ] Benchmark variance (CoV) < 3% across 10 repeated runs on pinned hardware
 
-### 0.10 Testing Framework
+### 0.10 Testing Framework [x]
 **Engineering Sub-tasks:**
 - [ ] Establish test pyramid targets: unit ≥ 70%, integration ≥ 20%, e2e ≤ 10%
 - [ ] Build shared test utilities: deterministic RNG seeds, temp-dir fixtures, golden-file helpers, assertion DSL
@@ -198,7 +198,7 @@
 
 ## PHASE 1 — MATH CORE / LINEAR ALGEBRA (19 modules)
 
-### 1.1 Vector
+### 1.1 Vector [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Vector[T]` typed contiguous buffer with stride, offset, and capacity semantics
 - [ ] Implement elementwise ops: `Add`, `Sub`, `Mul`, `Div`, `Neg`, `Scale`, `Dot`, `Norm(L1/L2/Linf)`, `Axpy`
@@ -214,7 +214,7 @@
 - [ ] ≥ 40 unit tests incl. edge cases (empty, length-1, denormals, ±Inf, NaN)
 - [ ] Dot product ≥ 8 GFLOP/s scalar baseline on AVX2 host; benchmarks for every op
 
-### 1.2 Matrix
+### 1.2 Matrix [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Matrix[T]` with row-major layout, leading-dimension (LD) parameter for submatrix views
 - [ ] Implement `MatMul` (naive + tiled), `Transpose`, `Add`, `Scale`, `Hadamard`, `Trace`, `Determinant`, `Inverse` (LU), `Solve`
@@ -230,7 +230,7 @@
 - [ ] Inverse/Solve verified against reference implementation on 100 random matrices (n ≤ 512), rel. error < 1e-9 (float64)
 - [ ] Tiled MatMul ≥ 70% of OpenBLAS DGEMM on same hardware; cache-block size auto-tuned per L2
 
-### 1.3 Tensor
+### 1.3 Tensor [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Tensor` N-dimensional container: shape, strides, dtype, device, layout tag, data pointer
 - [ ] Implement constructor set: `New`, `Zeros`, `Ones`, `Full`, `Arange`, `Linspace`, `Eye`, `Random` (seeded)
@@ -246,7 +246,7 @@
 - [ ] ≥ 120 unit tests across dtypes/ranks 0–8; zero-copy view tests verify no allocation via `testing.AllocsPerRun`
 - [ ] Constructor benchmarks: 1M-element `Random` < 5 ms; `Zeros` page-aligned
 
-### 1.4 Sparse Tensor
+### 1.4 Sparse Tensor [x]
 **Engineering Sub-tasks:**
 - [ ] Implement COO (coordinate) format: `indices [N, ndims]`, `values [N]`, shape, `Canonicalize` (sorted, deduped)
 - [ ] Implement CSR/CSC conversion with `ToCSR`, `ToCSC`, format validation, and `NNZ` accessor
@@ -262,7 +262,7 @@
 - [ ] SpMV matches dense reference within 1e-6 rel. error on 10k random sparse matrices (density 0.1%–5%)
 - [ ] Memory footprint ≤ 16 bytes/NNZ (float32); `DenseToSparse` at 90% density degrades gracefully with warning
 
-### 1.5 Dense Tensor
+### 1.5 Dense Tensor [x]
 **Engineering Sub-tasks:**
 - [ ] Implement contiguous dense storage with allocator hook (arena/pool injection point)
 - [ ] Implement `StridesFor(shape)` computation (row-major, column-major, channel-last variants)
@@ -278,7 +278,7 @@
 - [ ] Stride computation correct for 10k random shapes; alignment assertion holds on 1M allocations
 - [ ] Zero-copy operations show 0 B/op in `testing.AllocsPerRun`; pre-flight OOM check blocks 100% of over-budget allocations in fault-injection test
 
-### 1.6 Tensor Iterator
+### 1.6 Tensor Iterator [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `TensorIterator` broadcasting engine: shape reconciliation, dim-size-1 expansion, stride-0 semantics
 - [ ] Implement iteration plans: contiguous fast path, tiled iteration for cache locality, parallel split points
@@ -294,7 +294,7 @@
 - [ ] Broadcasting correctness on 500 shape permutations vs. NumPy reference (deterministic seed)
 - [ ] `ForEach` achieves ≥ 90% of hand-written loop throughput; tiling benchmark shows ≤ 5% L2 miss rate on 4K×4K float32
 
-### 1.7 Tensor Views
+### 1.7 Tensor Views [x]
 **Engineering Sub-tasks:**
 - [ ] Implement zero-copy views: `ReshapeView`, `TransposeView`, `SliceView`, `ExpandView`, `AsStrided`
 - [ ] Implement view-chain tracking (`view_graph`) for autograd provenance and `Base` resolution
@@ -310,7 +310,7 @@
 - [ ] 100% of view ops are zero-allocation (`AllocsPerRun == 0`); overlap detector passes 1k adversarial cases
 - [ ] Use-after-free impossible by construction: storage refcount test with forced GC cycles
 
-### 1.8 Tensor Broadcasting
+### 1.8 Tensor Broadcasting [x]
 **Engineering Sub-tasks:**
 - [ ] Implement broadcast rule engine: right-align shapes, dim-1 expansion, error on mismatch ≠ 1
 - [ ] Implement `BroadcastShapes(shapeA, shapeB)` pure function with detailed mismatch diagnostics
@@ -326,7 +326,7 @@
 - [ ] `BroadcastShapes` validated against 10k NumPy-equivalent cases including failure cases (error message must name offending dim)
 - [ ] Broadcast add on (1024,1)+(1,1024) allocates only output buffer (0 extra B/op)
 
-### 1.9 Tensor Indexing
+### 1.9 Tensor Indexing [x]
 **Engineering Sub-tasks:**
 - [ ] Implement index types: integer, slice, ellipsis, `NewAxis`, boolean mask, integer-array (advanced)
 - [ ] Implement `Get(index...)`/`Set(value, index...)` with mixed basic/advanced indexing semantics
@@ -342,7 +342,7 @@
 - [ ] Indexing semantics verified against NumPy on 500 mixed-index cases (seeded)
 - [ ] `NonZero` on 1M-element tensor < 3 ms; `Set` bounds-check overhead ≤ 2 ns/element
 
-### 1.10 Tensor Slicing
+### 1.10 Tensor Slicing [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Slice(begins, ends)` per-dimension with clamp/validate semantics
 - [ ] Implement `StridedSlice(begins, ends, strides)` supporting negative strides (reverse views)
@@ -358,7 +358,7 @@
 - [ ] Slicing matches NumPy on 300 shape/stride permutations; negative-stride view is zero-allocation
 - [ ] `Gather` throughput ≥ 500M elements/sec (float32, contiguous indices); overlap test asserts deterministic result
 
-### 1.11 Tensor Reshape
+### 1.11 Tensor Reshape [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Reshape(shape)` with `-1` inference, zero-preserving semantics, and contiguity check
 - [ ] Implement `Flatten(start_dim, end_dim)`, `View` (strict no-copy), and `ReshapeAs(other)`
@@ -374,7 +374,7 @@
 - [ ] `InferReshapeShape` property-tested over 10k shape pairs; zero-copy success rate ≥ 95% on random valid reshapes
 - [ ] Reshape of 100M-element tensor: zero-copy < 1 µs, copy path bandwidth ≥ 10 GB/s
 
-### 1.12 Tensor Transpose
+### 1.12 Tensor Transpose [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Transpose(dim0, dim1)` as stride-swap view
 - [ ] Implement general `Permute(dims)` with validation (permutation completeness, bounds)
@@ -390,7 +390,7 @@
 - [ ] Transpose views zero-alloc across 1k cases; tiled transpose ≥ 20 GB/s on 4096×4096 float32 (≥ 80% of memcpy-equivalent)
 - [ ] Matmul fusion benchmark: AᵀB path avoids explicit transpose (0 intermediate allocation)
 
-### 1.13 Tensor Reduction
+### 1.13 Tensor Reduction [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `Sum`, `Mean`, `Var`, `Std`, `Min`, `Max`, `Prod`, `Norm`, `All`, `Any` over arbitrary dims
 - [ ] Implement `keepdim` semantics and multi-dim reduction with sequential-dim fusion
@@ -406,7 +406,7 @@
 - [ ] Reduction results within 2 ULP of pairwise-reference on 100 random tensors per op; Welford vs. naive variance test on high-magnitude data shows rel. error < 1e-7 vs. > 1e-2
 - [ ] Parallel sum on 100M float32 ≥ 15 GFLOP/s effective; `LogSumExp` stable on inputs offset by ±1000
 
-### 1.14 Tensor Validation
+### 1.14 Tensor Validation [x]
 **Engineering Sub-tasks:**
 - [ ] Implement `ValidateShape` (rank limits, dim-size bounds, zero-dim policy)
 - [ ] Implement `ValidateDType` (op-dtype matrix: which ops accept which dtypes)
@@ -422,7 +422,7 @@
 - [ ] Validation layer rejects 100% of malformed op inputs in a 5k-case adversarial suite; zero false positives on valid set
 - [ ] `ValidateFinite` on 100M float32 < 8 ms (SIMD); validation overhead on hot path < 1% (benchmark-verified)
 
-### 1.15 Tensor Profiler
+### 1.15 Tensor Profiler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement per-op instrumentation: dtype, shape, device, duration, bytes-read, bytes-written, FLOPs
 - [ ] Build op-profile recorder with ring buffer (configurable depth) and low-overhead timestamping (monotonic clock)
@@ -438,7 +438,7 @@
 - [ ] Overhead measured at 3 op sizes (1K, 1M, 100M elements): p95 overhead < 5% when enabled
 - [ ] Chrome-trace export loads in `chrome://tracing` for a 10k-op capture; FLOP counts match analytical model ± 1%
 
-### 1.16 Tensor Serialization
+### 1.16 Tensor Serialization [x]
 **Engineering Sub-tasks:**
 - [ ] Define binary tensor format v1: magic, format-version, dtype code, rank, shape, strides, layout flag, checksum (xxHash64), payload
 - [ ] Implement `Save(path)`/`Load(path)` with streaming support for tensors > RAM (mmap/chunked)
@@ -454,7 +454,7 @@
 - [ ] Round-trip fidelity on 100% of dtype×rank matrix (16 dtypes × ranks 0–6); checksum catches 100% of bit-flip injections
 - [ ] Save/load throughput ≥ 2 GB/s on NVMe; mmap load reaches first byte < 1 ms
 
-### 1.17 Tensor Compression
+### 1.17 Tensor Compression [x]
 **Engineering Sub-tasks:**
 - [ ] Implement codec registry: `None`, `LZ4`, `Zstd` (levels 1–19), `FloatQuant` (int8/int4 with scale/zero-point), `SparseRLE`
 - [ ] Implement `Compress(tensor, codec)` / `Decompress(buffer, codec)` with codec auto-selection heuristic
@@ -470,7 +470,7 @@
 - [ ] Zstd-3 on float32 noise achieves ≥ 200 MB/s compress / ≥ 800 MB/s decompress; quantized int8 achieves 4:1 ratio within 1% max-abs error on model weights
 - [ ] Round-trip lossless for `None/LZ4/Zstd`; lossy error within declared bound on 100% of tested tensors
 
-### 1.18 Tensor Cache
+### 1.18 Tensor Cache [x]
 **Engineering Sub-tasks:**
 - [ ] Implement LRU tensor cache with capacity (count + bytes) and TTL policies
 - [ ] Implement cache key derivation: op-hash of (op-id, input tensor hashes, params)
@@ -486,7 +486,7 @@
 - [ ] Hit rate ≥ 90% on repeated-op benchmark (same op, same inputs); eviction overhead < 100 µs per 1000 entries
 - [ ] Capacity enforcement exact: cache never exceeds configured byte cap (fault-injection test with 10k entries)
 
-### 1.19 Tensor SIMD
+### 1.19 Tensor SIMD [x]
 **Engineering Sub-tasks:**
 - [ ] Implement SIMD dispatch layer: runtime CPU feature detection (AVX2/AVX-512/Neon/SVE) via CPUID/auxv
 - [ ] Implement kernels: `VecAdd`, `VecMul`, `Dot`, `FMA`, `Sum`, `Max`, `Exp`, `Tanh` for 128/256/512-bit lanes
@@ -506,7 +506,7 @@
 
 ## PHASE 2 — MEMORY (13 modules)
 
-### 2.1 Arena Allocator
+### 2.1 Arena Allocator [x]
 **Engineering Sub-tasks:**
 - [ ] Implement bump allocator with size-class pre-sizing and per-thread arenas (thread-local arena registry)
 - [ ] Implement `Alloc(size, alignment)` with pointer bump, alignment padding (≤ 64-byte waste cap), and guard-page option
@@ -522,7 +522,7 @@
 - [ ] Alloc throughput ≥ 200M allocs/sec (bump path); allocation latency p99 < 20 ns
 - [ ] Fragmentation ≤ 5% on mixed 64B–4KB workload; zero leaks under 1M alloc/reset cycles
 
-### 2.2 Slab Allocator
+### 2.2 Slab Allocator [x]
 **Engineering Sub-tasks:**
 - [ ] Implement size-class slab allocator: class table (16B → 4KB, geometric/rounded), per-class free lists
 - [ ] Implement slab acquisition (page-aligned chunks), object carve, free-list push/pop with LIFO locality
@@ -538,7 +538,7 @@
 - [ ] Alloc/free pair p99 < 50 ns; per-CPU caches achieve ≥ 10M ops/sec/thread at 16 threads
 - [ ] Internal fragmentation ≤ 12.5% worst-case (class rounding bound); utilization report per class
 
-### 2.3 Buddy Allocator
+### 2.3 Buddy Allocator [x]
 **Engineering Sub-tasks:**
 - [ ] Implement power-of-two buddy system: order table (0 → MAX_ORDER), free lists per order
 - [ ] Implement `Alloc(order)` with buddy splitting, `Free` with buddy coalescing (XOR buddy-address computation)
@@ -554,7 +554,7 @@
 - [ ] Coalescing restores maximal free block in 100% of 10k randomized alloc/free sequences
 - [ ] Fragmentation ≤ 25% worst-case (buddy bound); allocation at MAX_ORDER fails cleanly with `ErrOutOfMemory`
 
-### 2.4 Memory Pool
+### 2.4 Memory Pool [x]
 **Engineering Sub-tasks:**
 - [ ] Implement generic fixed-size pool: free-list stack, batch refill from backing allocator
 - [ ] Implement pool metrics: hit rate, miss rate, wait time, refill count, peak utilization
@@ -570,7 +570,7 @@
 - [ ] Pool hit rate ≥ 95% on steady-state workload; miss path latency ≤ 2× direct alloc
 - [ ] Zero double-release: double-free detector test (poison pattern) triggers `ErrDoubleFree` 100% of the time
 
-### 2.5 Tensor Pool
+### 2.5 Tensor Pool [x]
 **Engineering Sub-tasks:**
 - [ ] Implement shape-keyed tensor pool: key = (dtype, shape-hash, device), value = free-list of tensors
 - [ ] Implement acquire/release with exact-shape match and nearest-larger fallback (≤ 2× waste cap)
@@ -586,7 +586,7 @@
 - [ ] Acquire-from-pool latency ≤ 1 µs p99; allocation traffic to system allocator reduced ≥ 80% on training-loop benchmark
 - [ ] Byte cap enforced under adversarial acquire/release storm (10k ops); zero use-after-release (poison test)
 
-### 2.6 Buffer Reuse
+### 2.6 Buffer Reuse [x]
 **Engineering Sub-tasks:**
 - [ ] Implement in-place op analysis: when output shape/dtype match input and no aliasing hazard, write in-place
 - [ ] Implement reuse registry: buffer lending with epoch-based invalidation
@@ -602,7 +602,7 @@
 - [ ] In-place path verified bit-identical to out-of-place on 200 op cases; zero aliasing violations in 10k adversarial alias graphs
 - [ ] Buffer reuse reduces allocation volume ≥ 40% on transformer-layer microbenchmark (bytes-saved metric)
 
-### 2.7 Zero Copy Buffers
+### 2.7 Zero Copy Buffers [x]
 **Engineering Sub-tasks:**
 - [ ] Implement external-memory import: wrap user pointer/FD/mmap region as tensor storage (no copy)
 - [ ] Implement `AsReadOnly` foreign buffer with release-callback registration (user-owned lifetime)
@@ -618,7 +618,7 @@
 - [ ] Import-to-first-op latency < 10 µs; 100% of imported buffers honor release callbacks (callback-count test)
 - [ ] COW escalation copies exactly once (write-count test); SHM round-trip throughput ≥ 5 GB/s
 
-### 2.8 Leak Detector
+### 2.8 Leak Detector [x]
 **Engineering Sub-tasks:**
 - [ ] Implement allocation stack-trace capture (configurable depth, sampled for hot paths)
 - [ ] Implement epoch-based leak scan: snapshot live allocations, diff across checkpoints, report unreleased
@@ -634,7 +634,7 @@
 - [ ] Detects 100% of injected leaks (500-case suite: goroutine-held, closure-captured, pool-missed); false-positive rate < 1%
 - [ ] Full-scan of 1M live allocations completes < 2 s; report pinpoints leak site within 3 stack frames
 
-### 2.9 Memory Profiler
+### 2.9 Memory Profiler [x]
 **Engineering Sub-tasks:**
 - [ ] Implement heap profiler: live bytes, alloc rate, GC/allocator stats, per-site attribution
 - [ ] Implement time-series capture: RSS, heap, tensor-pool bytes, arena committed, at 1 Hz
@@ -650,7 +650,7 @@
 - [ ] Live-byte accounting matches `runtime.ReadMemStats` within 1%; attribution covers ≥ 98% of allocations
 - [ ] OOM forensics dump captures root-cause site in ≥ 90% of induced-OOM tests; overhead < 2% CPU
 
-### 2.10 Fragmentation Report
+### 2.10 Fragmentation Report [x]
 **Engineering Sub-tasks:**
 - [ ] Implement internal fragmentation metric: Σ(class_size − requested) per allocator
 - [ ] Implement external fragmentation metric: 1 − (largest_free_block / total_free)
@@ -666,7 +666,7 @@
 - [ ] Metrics match ground-truth post-mortem computation within 5% on synthetic workloads
 - [ ] Advisor produces actionable retuning ≥ 80% of the time when index > 0.5 (evaluated on 50 scenarios)
 
-### 2.11 Lifetime Analysis
+### 2.11 Lifetime Analysis [x]
 **Engineering Sub-tasks:**
 - [ ] Implement liveness tracking: first-use/last-use op indices per buffer via graph traversal
 - [ ] Compute buffer lifetimes as intervals `[first_op, last_op]` over the execution schedule
@@ -682,7 +682,7 @@
 - [ ] Lifetime intervals validated against manual annotation on 50 graphs (100% match); overlap graph has no false negatives
 - [ ] Analysis completes in O(V+E) — verified on 10k-node graph < 100 ms
 
-### 2.12 Escape Analysis
+### 2.12 Escape Analysis [x]
 **Engineering Sub-tasks:**
 - [ ] Implement stack-allocation eligibility: tensors with no closure capture, no cross-goroutine escape, no address-taken escape
 - [ ] Implement escape classification: `NoEscape`, `EscapeToHeap`, `EscapeToInterface`, `EscapeToCaller`
@@ -698,7 +698,7 @@
 - [ ] Analysis is sound on 100% of the test corpus (no under-escape); ≥ 20% of short-lived tensors become stack-eligible on benchmark suite
 - [ ] Escape report generated for 100% of internal functions; analysis runtime < 1× compile time budget (≤ 500 ms on 1k functions)
 
-### 2.13 Memory Planner
+### 2.13 Memory Planner [x]
 **Engineering Sub-tasks:**
 - [ ] Implement plan generation from lifetime intervals: greedy allocation with reuse-first policy
 - [ ] Implement plan cost model: peak bytes, allocation count, copy count (for non-in-place reuse)
@@ -718,7 +718,7 @@
 
 ## PHASE 3 — AUTOGRAD (11 modules)
 
-### 3.1 Dynamic Graph
+### 3.1 Dynamic Graph [x]
 **Engineering Sub-tasks:**
 - [ ] Implement tape-backed dynamic graph: node created per op at execution time, edges = data dependencies
 - [ ] Implement node payload: op-id, input/output value refs, backward-fn closure, backward-hooks
@@ -734,7 +734,7 @@
 - [ ] Backward pass on dynamic graph matches analytical gradients on 200 random computation graphs (rel. error < 1e-5)
 - [ ] Construction overhead ≤ 200 ns/op measured on 1M-op chain; memory cap enforced in stress test
 
-### 3.2 Static Graph
+### 3.2 Static Graph [x]
 **Engineering Sub-tasks:**
 - [ ] Implement declarative graph builder: define ops without execution, then `Compile()` → executable plan
 - [ ] Implement shape/type inference at build time with eager error reporting
@@ -750,7 +750,7 @@
 - [ ] Static-graph builds fail-fast on 100% of malformed graphs in 1k-case suite; compile+run matches eager mode within 1e-6
 - [ ] Frozen graph `Run` latency ≤ dynamic-graph latency for same computation (no per-op dispatch overhead)
 
-### 3.3 Tape Engine
+### 3.3 Tape Engine [x]
 **Engineering Sub-tasks:**
 - [ ] Implement operation tape: append-only record of (op, inputs, outputs, backward closure)
 - [ ] Implement tape modes: `Train` (record), `Eval` (no record), `NoGrad` (scoped suppression)
@@ -766,7 +766,7 @@
 - [ ] Tape memory ≤ 1.5× output-bytes for a 100-layer MLP; truncation reduces retention ≥ 70% with identical gradients (bitwise, same thread count)
 - [ ] Eval mode shows 0 tape allocations; nested-tape higher-order gradients match finite differences
 
-### 3.4 Gradient Engine
+### 3.4 Gradient Engine [x]
 **Engineering Sub-tasks:**
 - [ ] Implement reverse-mode AD: topological order traversal, backward dispatch per op, chain-rule application
 - [ ] Implement gradient accumulation buffers with `+=` semantics for fan-out nodes
@@ -782,7 +782,7 @@
 - [ ] Gradients verified against numerical differentiation (central differences) on 500 random graphs, rel. error < 1e-5
 - [ ] Backward throughput ≥ 50% of forward throughput (rule of thumb) on 100-layer MLP; zero gradient leaks between `Gradients` calls
 
-### 3.5 Gradient Hooks
+### 3.5 Gradient Hooks [x]
 **Engineering Sub-tasks:**
 - [ ] Implement pre/post backward hooks: register per-tensor or per-node, ordered execution, mutable gradient payload
 - [ ] Implement hook types: transform (map grad), observe (read-only), conditional (predicate-gated)
@@ -798,7 +798,7 @@
 - [ ] Hook ordering verified on 100-registration chains; panic-in-hook produces typed error with node context
 - [ ] Zero-overhead verified: backward with zero hooks ≤ backward baseline + 1%; hook fire-count 100% accurate
 
-### 3.6 Higher Order Gradients
+### 3.6 Higher Order Gradients [x]
 **Engineering Sub-tasks:**
 - [ ] Implement double-backward: backward closures themselves must be differentiable (tape-of-tapes)
 - [ ] Implement Hessian-vector products via nested reverse mode without materializing Hessian
@@ -814,7 +814,7 @@
 - [ ] Hessian-vector products match finite-difference Hessian on 50 test functions (rel. error < 1e-4)
 - [ ] Order-2 memory ≤ 3× first-order memory on MLP benchmark; order-3+ returns typed error cleanly
 
-### 3.7 Graph Pruning
+### 3.7 Graph Pruning [x]
 **Engineering Sub-tasks:**
 - [ ] Implement gradient-irrelevance analysis: mark nodes with zero gradient path to loss
 - [ ] Implement dead-branch pruning: remove nodes whose outputs do not influence any backward edge
@@ -830,7 +830,7 @@
 - [ ] Pruned backward equals unpruned backward bit-for-bit on 200 graphs; side-effect nodes preserved in 100% of cases
 - [ ] Pruning removes ≥ 30% of nodes on graphs with 20% dead branches (synthetic suite); validation runtime < 10% of backward
 
-### 3.8 Gradient Fusion
+### 3.8 Gradient Fusion [x]
 **Engineering Sub-tasks:**
 - [ ] Implement gradient-op pattern matching: consecutive elementwise grads, grad-of-broadcast, grad-of-reduce chains
 - [ ] Implement fusion codegen: single-kernel fused backward for matched patterns
@@ -846,7 +846,7 @@
 - [ ] Fused backward matches unfused within documented tolerance on 100 pattern instances; ≥ 15% backward speedup on fused regions
 - [ ] Fusion engine processes 10k-node graph in < 50 ms; zero incorrect fusions in adversarial pattern suite
 
-### 3.9 Graph Cleanup
+### 3.9 Graph Cleanup [x]
 **Engineering Sub-tasks:**
 - [ ] Implement post-backward cleanup: release backward closures, drop tape nodes, recycle node pool entries
 - [ ] Implement stale-reference sweep: detect and break tensor→node→tensor cycles (cycle-collector pass)
@@ -862,7 +862,7 @@
 - [ ] Post-cleanup memory returns to within 5% of pre-graph baseline on 100 iteration training loop
 - [ ] Zero premature frees in refcount stress test; incremental sweeps keep p99 pause < 10 ms
 
-### 3.10 Graph Visualizer
+### 3.10 Graph Visualizer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement graph → DOT exporter: nodes colored by op-class (forward/backward/gradient), edges labeled with shapes
 - [ ] Implement GraphViz layout hints: rank constraints for topological ordering, clusters by subgraph
@@ -878,7 +878,7 @@
 - [ ] DOT export of 10k-node graph renders in GraphViz < 5 s; HTML export of 1k nodes interactive at 60 fps
 - [ ] Visualized gradient flow matches tape traversal order in 100% of sampled subgraphs
 
-### 3.11 Debug Mode
+### 3.11 Debug Mode [x]
 **Engineering Sub-tasks:**
 - [ ] Implement debug mode flags: `CheckNumerics` (NaN/Inf per op), `SlowChecks` (shape/alias invariants), `DumpGraph` (per-op snapshots)
 - [ ] Implement gradient checker: automatic finite-difference comparison per trainable tensor at user-selected steps
