@@ -413,7 +413,7 @@ func NewMoELayer(config *MoEConfig) *MoELayer {
 func (m *MoELayer) SetTraining(training bool) {
 	m.training = training
 	m.router.training = training
-	for _, e := range m.experts {
+	for range m.experts {
 		// Experts don't have separate training flag
 	}
 }
