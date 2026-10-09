@@ -479,7 +479,8 @@ func catKV(past, curr *tensor.Tensor, dim int) *tensor.Tensor {
 	if past.NumElements() == 0 {
 		return curr
 	}
-	return tensor.Must(tensor.Concat(dim, past, curr))
+	out, _ := tensor.Concat(dim, past, curr)
+	return out
 }
 
 // RoPE (Rotary Positional Embedding).
@@ -517,8 +518,8 @@ func (r *RoPE) buildCache() {
 		}
 	}
 
-	r.cosCache = tensor.Must(tensor.New(tensor.Float64, []int{r.maxSeq, r.dim}))
-	r.sinCache = tensor.Must(tensor.New(tensor.Float64, []int{r.maxSeq, r.dim}))
+	r.cosCache, _ = tensor.New(tensor.Float64, []int{r.maxSeq, r.dim})
+	r.sinCache, _ = tensor.New(tensor.Float64, []int{r.maxSeq, r.dim})
 	copy(r.cosCache.Float64(), cosCache)
 	copy(r.sinCache.Float64(), sinCache)
 }

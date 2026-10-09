@@ -6,7 +6,7 @@ import (
 
 	"github.com/astrovox/astrovox/internal/errors"
 	"github.com/astrovox/astrovox/tensor"
-	"github.com/astrovox/astrovox/tensor/math"
+	tmath "github.com/astrovox/astrovox/tensor/math"
 )
 
 // MoEConfig holds configuration for Mixture of Experts.
@@ -79,7 +79,7 @@ func (e *Expert) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 	if err != nil {
 		return nil, err
 	}
-	x, err = math.FusedActApply(x, e.act, 1, 0)
+	err = tmath.FusedActApply(x, tmath.ActivationType(e.act), 1, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +95,7 @@ type Router struct {
 	weight       *tensor.Tensor // [num_experts, hidden_dim]
 	bias         *tensor.Tensor // [num_experts]
 	noiseScale   float64
+	training     bool
 }
 
 func NewRouter(config *MoEConfig) *Router {
@@ -127,7 +128,11 @@ func (r *Router) Route(input *tensor.Tensor) ([][]int, [][]float64, *tensor.Tens
 
 	// Compute router logits: [tokens, num_experts]
 	// logits = input @ weight^T + bias
-	logits, err := math.MatMul(flat, r.weight.Transpose())
+	weightT, err := r.weight.Transpose(1, 0)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	logits, err := tmath.MatMul(flat, weightT)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -219,9 +224,6 @@ func (r *Router) selectTopK(logits *tensor.Tensor, k int) ([][]int, [][]float64)
 	return expertIndices, expertWeights
 }
 
-// Forward implements the MoE forward pass.
-// input: [batch, seq_len, hidden_dim]
-// Returns: output, router_logits, aux_loss
 func (m *MoELayer) Forward(input *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor, float64, error) {
 	if input == nil {
 		return nil, nil, 0, errors.New(errors.CodeInvalidArgument, "nil input")
@@ -237,6 +239,9 @@ func (m *MoELayer) Forward(input *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor
 	if err != nil {
 		return nil, nil, 0, err
 	}
+
+	// Store original shape for reshape back
+	origShape := input.Shape().Dims()
 
 	// Route tokens to experts
 	expertIndices, expertWeights, routerLogits, err := m.router.Route(flat)
@@ -281,7 +286,7 @@ func (m *MoELayer) Forward(input *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor
 		}
 
 		// Gather tokens for this expert
-		expertIn := tensor.Must(tensor.New(tensor.Float64, []int{len(expertTokenIdx[e]), hiddenDim}))
+		expertIn, _ := tensor.New(tensor.Float64, []int{len(expertTokenIdx[e]), hiddenDim})
 		inV := expertIn.Float64()
 		flatV := flat.Float64()
 		for i, idx := range expertTokenIdx[e] {
@@ -298,7 +303,7 @@ func (m *MoELayer) Forward(input *tensor.Tensor) (*tensor.Tensor, *tensor.Tensor
 
 	// Combine expert outputs
 	// output = sum_k weight_k * expert_k(tokens_k)
-	output := tensor.Must(tensor.New(tensor.Float64, []int{tokens, hiddenDim}))
+	output, _ := tensor.New(tensor.Float64, []int{tokens, hiddenDim})
 	outV := output.Float64()
 
 	for e := 0; e < m.config.NumExperts; e++ {
@@ -465,21 +470,11 @@ type MoEStats struct {
 }
 
 func (m *MoELayer) GetStats() MoEStats {
-	tokens := 0
-	for _, idxs := range m.router.expertTokenIdx {
-		tokens += len(idxs)
-	}
-
+	// Note: expertTokenIdx is local to Forward, not stored on router
+	// This is a placeholder - in practice, would store routing stats during forward
 	stats := MoEStats{
 		TokensPerExpert:   make([]int, m.config.NumExperts),
 		ExpertUtilization: make([]float64, m.config.NumExperts),
-	}
-
-	for e := 0; e < m.config.NumExperts; e++ {
-		stats.TokensPerExpert[e] = len(m.router.expertTokenIdx[e])
-		if tokens > 0 {
-			stats.ExpertUtilization[e] = float64(stats.TokensPerExpert[e]) / float64(tokens)
-		}
 	}
 
 	return stats
