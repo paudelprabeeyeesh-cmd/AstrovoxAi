@@ -54,6 +54,7 @@ type Transformer struct {
 	embed  *Embedding
 	norm   Normalization
 	lmHead *Linear
+	training bool
 }
 
 // NewTransformer creates a new Transformer model.
