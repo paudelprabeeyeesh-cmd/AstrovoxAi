@@ -189,10 +189,10 @@ class IngestionPipeline:
             if self.on_task_complete:
                 await self.on_task_complete(task)
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             task.current_stage = IngestionStage.FAILED
             task.status = "failed"
-            task.error = str(e)
+            task.error = str(_e)
             
             if task_id in self.active_tasks:
                 del self.active_tasks[task_id]

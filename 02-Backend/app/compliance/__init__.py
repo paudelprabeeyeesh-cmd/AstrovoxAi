@@ -1,5 +1,6 @@
 
 import uuid
+<<<<<<< HEAD
 import json
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -8,6 +9,15 @@ from .collector import EvidenceCollector
 from .reporter import ComplianceReporter
 from .soc2 import SOC2Evidence
 from .gdpr import GDPRCompliance
+=======
+from datetime import datetime  # noqa: F401
+from typing import Dict, List, Optional  # noqa: F401
+from ..database import get_db
+from .collector import EvidenceCollector  # noqa: F401
+from .reporter import ComplianceReporter  # noqa: F401
+from .soc2 import SOC2Evidence  # noqa: F401
+from .gdpr import GDPRCompliance  # noqa: F401
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 def ensure_consent_table():
@@ -69,7 +79,7 @@ def export_user_data(user_id: str) -> dict:
                 else:
                     rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (user_id,)).fetchall()
                 data[table] = [dict(r) for r in rows]
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 data[table] = []
 
     def _serialize(obj):

@@ -46,8 +46,8 @@ def run_benchmark(golden_dataset: list[dict], model: str | None = None) -> dict:
                     "recall_at_5": eval_row["recall_at_5"],
                 }
             )
-        except Exception as e:
-            results.append({"query": query, "error": str(e)})
+        except Exception as _e:  # noqa: BLE001
+            results.append({"query": query, "error": str(_e)})
     return _summarize(results)
 
 

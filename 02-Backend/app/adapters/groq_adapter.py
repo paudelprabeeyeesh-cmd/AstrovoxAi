@@ -36,7 +36,7 @@ class GroqAdapter(BaseLLMAdapter):
             import tiktoken
             encoding = tiktoken.encoding_for_model("gpt-4o")
             return len(encoding.encode(text))
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return max(1, len(text) // 4)
 
     def generate(self, prompt: str, **kwargs) -> str:

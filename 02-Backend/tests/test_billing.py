@@ -113,7 +113,7 @@ def test_dunning_flow():
         }}}
         mock_stripe.Webhook.construct_event.return_value = mock_event
 
-        with patch("app.billing._get_user_by_customer_id", return_value={"id": user_id, "stripe_customer_id": "cus_123"}) as mock_get_user, \
+        with patch("app.billing._get_user_by_customer_id", return_value={"id": user_id, "stripe_customer_id": "cus_123"}), \
              patch("app.billing._increment_failed_payment_count", side_effect=[1, 2, 3]) as mock_increment:
 
             payload = _make_webhook("invoice.payment_failed", {"customer": "cus_123"})

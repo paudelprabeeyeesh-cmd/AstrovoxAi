@@ -7,7 +7,12 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "typecheck": "tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "test": "jest",
+        "test:coverage": "jest --coverage",
+        "test:e2e": "playwright test",
+        "test:security": "jest --testPathPattern=security",
+        "test:load": "k6 run tests/load/analytics-load.js"
     },
     "dependencies": {
         "@hookform/resolvers": "^3.x",
@@ -15,6 +20,8 @@
         "@radix-ui/react-dialog": "^1.x",
         "@radix-ui/react-dropdown-menu": "^2.x",
         "@radix-ui/react-label": "^2.x",
+        "@radix-ui/react-popover": "^1.x",
+        "@radix-ui/react-resizable": "^1.x",
         "@radix-ui/react-select": "^2.x",
         "@radix-ui/react-separator": "^1.x",
         "@radix-ui/react-slot": "^1.x",
@@ -40,6 +47,10 @@
         "rehype-highlight": "^7.x",
         "rehype-raw": "^7.x",
         "remark-gfm": "^4.x",
+        "remark-math": "^6.x",
+        "rehype-katex": "^7.x",
+        "katex": "^0.16.x",
+        "mermaid": "^11.x",
         "tailwind-merge": "^2.x",
         "tailwindcss": "^3.4.0",
         "typescript": "^5.x",
@@ -47,10 +58,18 @@
         "zustand": "^5.0.0"
     },
     "devDependencies": {
+        "@playwright/test": "^1.49.0",
+        "@testing-library/jest-dom": "^6.x",
+        "@types/jest": "^30.x",
         "@types/node": "^22.10.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
         "eslint": "^9.17.0",
-        "eslint-config-next": "^16.0.0"
+        "eslint-config-next": "^16.0.0",
+        "fast-check": "^3.21.0",
+        "jest": "^30.5.2",
+        "jest-image-snapshot": "^6.4.0",
+        "k6": "^0.49.0",
+        "ts-jest": "^29.x"
     }
 }

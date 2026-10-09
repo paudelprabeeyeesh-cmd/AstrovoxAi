@@ -58,7 +58,7 @@ class HallucinationReductionPipeline:
                 max_tokens=1024,
             )
             return result.choices[0].message.content or response
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("Hallucination reduction failed: %s", exc)
             return response
 

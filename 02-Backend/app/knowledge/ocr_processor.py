@@ -143,7 +143,7 @@ class OCRProcessor:
                 processing_time_ms=processing_time,
             )
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             processing_time = (time.time() - start_time) * 1000
             
             # Log processing
@@ -155,7 +155,7 @@ class OCRProcessor:
                 confidence=0.0,
                 language="",
                 processing_time_ms=processing_time,
-                error=str(e),
+                error=str(_e),
             )
     
     def _detect_image_format(self, image_path: str) -> Optional[ImageFormat]:
@@ -201,7 +201,7 @@ class OCRProcessor:
         except ImportError:
             # PIL not available, skip preprocessing
             pass
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             # Preprocessing failed, continue with original
             pass
     
@@ -222,9 +222,9 @@ class OCRProcessor:
             # pytesseract not available, return placeholder
             return f"[OCR text extraction for {image_path} - pytesseract not installed]"
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             # OCR failed
-            return f"[OCR failed for {image_path}: {str(e)}]"
+            return f"[OCR failed for {image_path}: {str(_e)}]"
     
     def _calculate_confidence(self, text: str) -> float:
         """Calculate confidence in OCR result"""
@@ -317,10 +317,10 @@ class OCRProcessor:
                 "language": language or self.default_language,
             }
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "text": "",
                 "images_processed": 0,
             }

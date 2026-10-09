@@ -308,8 +308,10 @@ func (d *DDP) Forward(ctx context.Context, input *tensor.Tensor) (*tensor.Tensor
 
 // Backward performs backward pass and prepares gradients for sync.
 func (d *DDP) Backward(ctx context.Context, gradOutput *tensor.Tensor) error {
-	if err := d.model.backwardFn(ctx, gradOutput); err != nil {
-		return err
+	if d.model.backwardFn != nil {
+		if err := d.model.backwardFn(ctx, gradOutput); err != nil {
+			return err
+		}
 	}
 	
 	// Notify hooks

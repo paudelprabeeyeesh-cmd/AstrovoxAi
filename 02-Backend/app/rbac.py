@@ -1,7 +1,12 @@
+<<<<<<< HEAD
 import logging
 from enum import Enum
 from typing import List, Dict
 from fastapi import Depends, HTTPException
+=======
+from enum import Enum
+from fastapi import APIRouter, Depends, HTTPException
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +99,20 @@ def require_permission(permission: str, resource: str = ""):
     return _checker
 
 
+<<<<<<< HEAD
 def get_current_user():
     from services.auth.auth import get_current_user as _get_current_user
     return _get_current_user
+=======
+router = APIRouter(tags=["rbac"])
+
+
+@router.get("/rbac/roles")
+def list_rbac_roles(user_id: str = Depends(get_current_user)):
+    return [{"name": r.value, "permissions": [p.value for p in ROLE_PERMISSIONS.get(r, [])]} for r in Role]
+
+
+@router.get("/rbac/permissions")
+def list_permissions(user_id: str = Depends(get_current_user)):
+    return [{"name": p.value, "description": p.value} for p in Permission]
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

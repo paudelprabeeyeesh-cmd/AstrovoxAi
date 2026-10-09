@@ -19,8 +19,8 @@ class OSSFallback:
             )
             if response.status_code == 200:
                 return response.json().get("response", "")
-        except Exception as e:
-            logger.error(f"OSS fallback failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"OSS fallback failed: {_e}")
         return None
 
 
@@ -35,15 +35,15 @@ class GracefulDegradationChain:
             response = self.primary.generate(prompt)
             if response:
                 return response, "primary"
-        except Exception as e:
-            logger.warning(f"Primary LLM failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Primary LLM failed: {_e}")
 
         try:
             response = self.oss.generate(prompt)
             if response:
                 return response, "oss"
-        except Exception as e:
-            logger.warning(f"OSS fallback failed: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"OSS fallback failed: {_e}")
 
         if self.cache:
             cached = self.cache.get(user_id, prompt, "fallback")

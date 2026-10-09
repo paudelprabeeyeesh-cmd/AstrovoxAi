@@ -14,7 +14,7 @@ def get_tokenizer(model: str):
     encoding_name = MODEL_TOKENIZERS.get(model, "cl100k_base")
     try:
         return tiktoken.get_encoding(encoding_name)
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         return tiktoken.get_encoding("cl100k_base")
 
 

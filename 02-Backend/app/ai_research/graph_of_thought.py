@@ -53,7 +53,7 @@ class GraphOfThought:
             )
             text = result.choices[0].message.content or ""
             return [line.strip("- ") for line in text.splitlines() if line.strip()]
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             logger.error("GoT decomposition failed: %s", exc)
             return [goal]
 

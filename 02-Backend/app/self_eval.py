@@ -55,9 +55,9 @@ class SelfEvaluator:
             )
             evaluation.confidence = self.calculate_confidence(response, context or {})
             return evaluation
-        except Exception as e:
-            logger.error(f"Self-evaluation failed: {e}")
-            return Evaluation(prompt=prompt, response=response, score=0.0, issues=[str(e)], improvements=[])
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Self-evaluation failed: {_e}")
+            return Evaluation(prompt=prompt, response=response, score=0.0, issues=[str(_e)], improvements=[])
 
     def calculate_confidence(self, response: str, context: dict[str, Any]) -> float:
         length_score = min(len(response) / 500.0, 1.0)

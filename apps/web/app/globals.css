@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -44,7 +45,112 @@
     --ring: 262 83% 58%;
   }
 }
+
 @layer base {
-  * { @apply border-border; }
-  body { @apply bg-background text-foreground; }
+  * {
+    @apply border-border;
+    min-height: 0;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+
+  [role="button"]:focus-visible,
+  [tabindex]:focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+}
+
+@layer components {
+  .markdown-body {
+    @apply text-sm leading-relaxed;
+  }
+
+  .markdown-body h1 {
+    @apply scroll-mt-20 text-2xl font-bold mt-6 mb-4 pb-2 border-b border-border;
+  }
+
+  .markdown-body h2 {
+    @apply scroll-mt-20 text-xl font-semibold mt-5 mb-3;
+  }
+
+  .markdown-body h3 {
+    @apply scroll-mt-20 text-lg font-medium mt-4 mb-2;
+  }
+
+  .markdown-body p {
+    @apply mb-3 last:mb-0;
+  }
+
+  .markdown-body code {
+    @apply rounded-md bg-muted/80 px-1.5 py-0.5 font-mono text-xs text-foreground;
+  }
+
+  .markdown-body pre {
+    @apply my-4 rounded-lg border border-border bg-muted/50 overflow-x-auto;
+  }
+
+  .markdown-body pre code {
+    @apply bg-transparent p-0 rounded-none;
+  }
+
+  .markdown-body blockquote {
+    @apply my-4 border-l-4 border-primary/30 pl-4 italic text-muted-foreground;
+  }
+
+  .markdown-body table {
+    @apply my-4 overflow-x-auto rounded-lg border border-border;
+  }
+
+  .markdown-body ul {
+    @apply my-2 list-disc space-y-1 pl-6;
+  }
+
+  .markdown-body ol {
+    @apply my-2 list-decimal space-y-1 pl-6;
+  }
+
+  .markdown-body li {
+    @apply leading-relaxed;
+  }
+
+  .markdown-body a {
+    @apply text-primary underline underline-offset-2 hover:text-primary/80 transition-colors;
+  }
+
+  .markdown-body img {
+    @apply max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity;
+  }
+
+  .markdown-body hr {
+    @apply my-6 border-border;
+  }
+}
+
+@layer utilities {
+  .animate-in {
+    animation: animate-in 0.2s ease-out;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }

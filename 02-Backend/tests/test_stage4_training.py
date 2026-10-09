@@ -1,9 +1,8 @@
-import pytest
 import torch
 import torch.nn as nn
 
 from app.core.training import MixedPrecisionTrainer, TrainConfig, AdamW, CosineLRScheduler
-from app.core.rlhf import RLHFTrainer, RewardModel, PPOConfig, ppo_loss, compute_advantages, ConstitutionalAI
+from app.core.rlhf import RewardModel, PPOConfig, ppo_loss, compute_advantages, ConstitutionalAI
 from app.core.quantization import quantize_weight_int4, dequantize_weight_int4, awq_quantize, gptq_quantize, FakeQuantize, QATTrainer
 
 

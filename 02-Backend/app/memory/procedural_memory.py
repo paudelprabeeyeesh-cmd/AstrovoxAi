@@ -95,11 +95,11 @@ class Procedure:
                     "success": True,
                     "result": result,
                 })
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 results.append({
                     "step_id": step.step_id,
                     "success": False,
-                    "error": str(e),
+                    "error": str(_e),
                 })
         
         self.usage_count += 1

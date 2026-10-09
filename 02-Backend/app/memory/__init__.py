@@ -3,15 +3,18 @@ Astrovox AI Memory Architecture
 Phase 3: Memory System Implementation
 
 This module provides a structured, persistent memory system with:
-- Layered memory architecture (context, conversation, semantic, episodic, procedural, workspace)
+- Layered memory architecture (context, conversation, semantic, episodic, procedural, workspace, long-term, user)
 - Memory importance scoring
 - Vector database integration for semantic search
 - Memory retrieval and ranking engine
 - Memory lifecycle management
 - Workspace isolation
 - Privacy controls
+- Compression and sync
+- Visualization
 """
 
+<<<<<<< HEAD
 from .context_memory import ContextMemory
 from .conversation_memory import ConversationMemory
 from .semantic_memory import SemanticMemory
@@ -25,6 +28,25 @@ from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceSc
 from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
 from .memory_ranking import MemoryRanker, RankedMemory
 from .memory_manager import MemoryManager, get_memory_manager
+=======
+from .context_memory import ContextMemory  # noqa: F401
+from .conversation_memory import ConversationMemory  # noqa: F401
+from .semantic_memory import SemanticMemory  # noqa: F401
+from .episodic_memory import EpisodicMemory  # noqa: F401
+from .procedural_memory import ProceduralMemory  # noqa: F401
+from .workspace_memory import WorkspaceMemory  # noqa: F401
+from .long_term_memory import LongTermMemory  # noqa: F401
+from .user_memory import UserMemory  # noqa: F401
+from .memory_manager import MemoryManager  # noqa: F401
+from .memory_consolidation import MemoryConsolidationService  # noqa: F401
+from .memory_compression import MemoryCompression  # noqa: F401
+from .memory_sync import MemorySync  # noqa: F401
+from .memory_visualization import MemoryVisualization  # noqa: F401
+from .importance_scorer import ImportanceScorer  # noqa: F401
+from .retrieval_engine import RetrievalEngine, RetrievalMethod  # noqa: F401
+from .vector_store import VectorStore  # noqa: F401
+from ..memory_service import memory_service
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 __all__ = [
     "ContextMemory",
@@ -33,8 +55,19 @@ __all__ = [
     "EpisodicMemory",
     "ProceduralMemory",
     "WorkspaceMemory",
+<<<<<<< HEAD
+=======
+    "LongTermMemory",
+    "UserMemory",
+    "MemoryManager",
+    "MemoryConsolidationService",
+    "MemoryCompression",
+    "MemorySync",
+    "MemoryVisualization",
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     "ImportanceScorer",
     "RetrievalEngine",
+    "RetrievalMethod",
     "VectorStore",
     "AdvancedMemoryManager",
     "MemoryFragment",
@@ -46,3 +79,44 @@ __all__ = [
     "MemoryManager",
     "get_memory_manager",
 ]
+
+
+class _MemoryResult:
+    def __init__(self, data):
+        self.id = data["id"]
+        self.key = data["key"]
+        self.value = data["value"]
+
+
+def create_memory(user_id: str, memory_obj):
+    data = memory_obj.dict() if hasattr(memory_obj, "dict") else {
+        "key": getattr(memory_obj, "key", ""),
+        "value": getattr(memory_obj, "value", ""),
+    }
+    result = memory_service.store_memory(user_id, data["key"], data["value"])
+    return _MemoryResult(result)
+
+
+def list_memories(user_id: str):
+    from .database import get_db  # noqa: F401
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, key, value, created_at FROM memories WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,),
+        ).fetchall()
+        return [_MemoryResult(dict(r)) for r in rows]
+
+
+def search_memories(user_id: str, query: str):
+    results = memory_service.search_memories(user_id, query)
+    return [_MemoryResult(r) for r in results]
+
+
+def delete_memory(memory_id: str, user_id: str):
+    from .database import get_db  # noqa: F401
+    with get_db() as conn:
+        conn.execute(
+            "DELETE FROM memories WHERE id = ? AND user_id = ?",
+            (memory_id, user_id),
+        )
+        conn.commit()

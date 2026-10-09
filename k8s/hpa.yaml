@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: astrovox-hpa
+  name: astrovox-backend-hpa
   namespace: astrovox
 spec:
   scaleTargetRef:
@@ -23,6 +23,7 @@ spec:
       target:
         type: Utilization
         averageUtilization: 80
+<<<<<<< HEAD
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 60
@@ -30,9 +31,45 @@ spec:
       - type: Percent
         value: 100
         periodSeconds: 15
+=======
+  - type: Pods
+    pods:
+      metric:
+        name: http_requests_per_second
+      target:
+        type: AverageValue
+        averageValue: 100
+  - type: Object
+    object:
+      metric:
+        name: queue_messages_ready
+      describedObject:
+        apiVersion: apps/v1
+        kind: Deployment
+        name: astrovox-backend
+      target:
+        type: Value
+        value: "50"
+  behavior:
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     scaleDown:
       stabilizationWindowSeconds: 300
       policies:
       - type: Percent
+<<<<<<< HEAD
         value: 10
         periodSeconds: 60
+=======
+        value: 50
+        periodSeconds: 15
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15
+      - type: Pods
+        value: 2
+        periodSeconds: 15
+      selectPolicy: Max
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

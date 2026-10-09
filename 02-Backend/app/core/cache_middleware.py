@@ -25,8 +25,8 @@ async def _get_embedding(text):
         client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
         response = await client.embeddings.create(input=text, model="text-embedding-3-small")
         return response.data[0].embedding
-    except Exception as e:
-        logger.warning(f"Embedding lookup failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.warning(f"Embedding lookup failed: {_e}")
         return None
 
 
@@ -59,7 +59,7 @@ def _get_user_id(request):
             payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
             if payload.get("type") == "access":
                 return str(payload.get("sub", "anonymous"))
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             pass
     return "anonymous"
 

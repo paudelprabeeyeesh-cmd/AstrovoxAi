@@ -4,12 +4,14 @@ import { EmptyState } from './empty-state'
 import { MessageList } from './message-list'
 import { Composer } from './composer'
 import { ToolVisualization } from './tool-visualization'
+import { VoiceOutput } from './voice-output'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useChatStore } from '@/lib/store/chat-store'
 
 interface ChatContainerProps {
   messages: Message[]
-  onSendMessage: (content: string, options?: { imageUrl?: string; files?: File[] }) => void
+  onSendMessage: (content: string, options?: { imageUrl?: string; files?: File[]; cameraImage?: string; screenShare?: boolean }) => void
   isLoading?: boolean
   isStreaming?: boolean
   streamingMessageId?: string | null
@@ -42,6 +44,7 @@ export function ChatContainer({
 }: ChatContainerProps) {
   const isStreamingActive = isStreaming || isLoading
   const latestTools = messages.length > 0 ? messages[messages.length - 1].tools : undefined
+  const { settings } = useChatStore()
 
   return (
     <div className="flex h-full flex-col">

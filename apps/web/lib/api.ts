@@ -1,4 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api'
+import type { Conversation, Message } from '@/types'
 
 async function getAuthToken(): Promise<string | null> {
   if (typeof window === 'undefined') return null
@@ -132,6 +133,7 @@ export const api = {
       body: JSON.stringify({ name, args }),
     }),
 
+<<<<<<< HEAD
   // Help Center
   getHelpArticles: (category?: string) =>
     request<{ articles: HelpArticle[] }>(`/support/articles${category ? `?category=${category}` : ''}`),
@@ -470,6 +472,65 @@ export interface Ticket {
   created_at: number
   updated_at: number
   resolved_at?: number
+=======
+  createConversation: (title?: string, model?: string) =>
+    request<{ status: string; conversation: Conversation }>('/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ title: title || 'New Chat', model: model || 'gpt-4' }),
+    }),
+
+  getConversations: (params?: { pinned?: boolean; archived?: boolean; folder?: string; limit?: number; offset?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.pinned !== undefined) query.set('pinned', String(params.pinned))
+    if (params?.archived !== undefined) query.set('archived', String(params.archived))
+    if (params?.folder) query.set('folder', params.folder)
+    if (params?.limit) query.set('limit', String(params.limit))
+    if (params?.offset) query.set('offset', String(params.offset))
+    const qs = query.toString()
+    return request<{ status: string; conversations: Conversation[] }>(`/conversations${qs ? `?${qs}` : ''}`)
+  },
+
+  getConversation: (id: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}`),
+
+  updateConversation: (id: string, data: Record<string, unknown>) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  deleteConversation: (id: string) =>
+    request<void>(`/conversations/${id}`, { method: 'DELETE' }),
+
+  renameConversation: (id: string, title: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}/rename`, {
+      method: 'POST',
+      body: JSON.stringify({ title }),
+    }),
+
+  pinConversation: (id: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}/pin`, {
+      method: 'POST',
+    }),
+
+  unpinConversation: (id: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}/unpin`, {
+      method: 'POST',
+    }),
+
+  archiveConversation: (id: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}/archive`, {
+      method: 'POST',
+    }),
+
+  unarchiveConversation: (id: string) =>
+    request<{ status: string; conversation: Conversation }>(`/conversations/${id}/unarchive`, {
+      method: 'POST',
+    }),
+
+  getConversationMessages: (id: string) =>
+    request<{ status: string; messages: Message[] }>(`/conversations/${id}/messages`),
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 }
 
 export interface SearchResult {

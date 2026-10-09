@@ -159,7 +159,7 @@ class GeminiProvider(AIProvider):
                     )
                 else:
                     results.append(EmbeddingVector(vector=embedding, model=model))
-            except Exception as e:
-                raise RuntimeError(f"Gemini embedding error: {self.sanitize_error(e)}") from e
+            except Exception as _e:  # noqa: BLE001
+                raise RuntimeError(f"Gemini embedding error: {self.sanitize_error(_e)}") from _e
 
         return results

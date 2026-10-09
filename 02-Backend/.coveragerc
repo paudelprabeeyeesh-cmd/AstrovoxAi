@@ -1,0 +1,22 @@
+[run]
+source = app
+branch = True
+
+[report]
+precision = 2
+show_missing = True
+omit =
+    */tests/*
+    */__pycache__/*
+    */migrations/*
+    */alembic/*
+    .venv/*
+    venv/*
+    */site-packages/*
+fail_under = 80
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml

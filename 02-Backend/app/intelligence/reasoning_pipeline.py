@@ -142,13 +142,13 @@ class ReasoningPipeline:
                 "plan_used": state.plan,
             }
         
-        except Exception as e:
-            state.record_failure(state.current_step, str(e))
+        except Exception as _e:  # noqa: BLE001
+            state.record_failure(state.current_step, str(_e))
             state.complete()
             
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "reasoning_state": state.to_dict(),
             }
     
@@ -175,8 +175,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_assess_info_needs(
         self,
@@ -186,7 +186,7 @@ class ReasoningPipeline:
     ) -> Dict[str, Any]:
         """Step 2: Determine whether additional information is required"""
         try:
-            understanding = state.context.get("understanding", {})
+            state.context.get("understanding", {})
             message = state.user_message
             
             # Assess if we need more information
@@ -201,8 +201,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_retrieve_context(
         self,
@@ -229,8 +229,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_plan_execution(
         self,
@@ -261,8 +261,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_execute_tools(
         self,
@@ -275,7 +275,7 @@ class ReasoningPipeline:
             if state.plan and state.plan.get("type") != "tool_execution":
                 return {"success": True}
             
-            tools = state.context.get("tools", {})
+            state.context.get("tools", {})
             tool_calls = []
             tool_results = []
             
@@ -290,8 +290,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_validate_results(
         self,
@@ -311,8 +311,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     async def _handle_generate_response(
         self,
@@ -328,8 +328,8 @@ class ReasoningPipeline:
             
             return {"success": True}
         
-        except Exception as e:
-            return {"success": False, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            return {"success": False, "error": str(_e)}
     
     def _assess_complexity(self, message: str) -> str:
         """Assess the complexity of a message"""

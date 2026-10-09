@@ -26,7 +26,7 @@ class VLLMAdapter(BaseLLMAdapter):
             with httpx.Client(timeout=5) as client:
                 response = client.get(f"{self._base_url}/health")
                 return response.status_code == 200
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     @retry(
@@ -89,5 +89,5 @@ class VLLMAdapter(BaseLLMAdapter):
                             content = delta.get("content", "")
                             if content:
                                 yield content
-                        except Exception:
+                        except Exception as _e:  # noqa: BLE001
                             continue

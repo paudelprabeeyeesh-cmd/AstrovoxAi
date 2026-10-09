@@ -1,6 +1,7 @@
 name: Lint
 
 on:
+<<<<<<< HEAD
   pull_request:
     branches: [main, develop]
   push:
@@ -29,3 +30,34 @@ jobs:
       - name: Run mypy
         run: |
           mypy models examples --ignore-missing-imports --follow-imports=silent || true
+=======
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  eslint:
+    name: ESLint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run lint
+
+  ruff:
+    name: Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: 'pip'
+      - run: pip install ruff
+      - run: ruff check 02-Backend/app 02-Backend/tests
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

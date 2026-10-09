@@ -5,8 +5,13 @@ Continuous batching for high-throughput LLM inference with dynamic request sched
 from __future__ import annotations
 
 import logging
+<<<<<<< HEAD
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
+=======
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 import torch
 

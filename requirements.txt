@@ -10,7 +10,12 @@ anthropic==0.39.0
 httpx==0.27.2
 tiktoken==0.7.0
 redis==5.1.1
+<<<<<<< HEAD
 cryptography==46.0.6
+=======
+psycopg2-binary==2.9.9
+cryptography==43.0.3
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 passlib[bcrypt]==1.7.4
 bcrypt==4.2.0
 python-jose[cryptography]==3.4.0
@@ -20,6 +25,7 @@ apscheduler==3.10.4
 slowapi==0.1.9
 prometheus-client==0.21.0
 structlog==24.4.0
+<<<<<<< HEAD
 tokenizers>=0.19.1
 
 # Model / ML dependencies
@@ -40,4 +46,10 @@ pyyaml>=6.0
 pandas>=2.2.0
 evaluate>=0.4.0
 requests>=2.31.0
+=======
+opentelemetry-api==1.27.0
+opentelemetry-sdk==1.27.0
+opentelemetry-instrumentation-fastapi==0.48b0
+opentelemetry-exporter-otlp==1.27.0
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 psutil==6.1.1

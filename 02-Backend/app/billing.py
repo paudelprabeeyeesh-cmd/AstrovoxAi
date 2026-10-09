@@ -24,14 +24,6 @@ STRIPE_TEAM_PRICE_ID = os.getenv("STRIPE_TEAM_PRICE_ID")
 STRIPE_EMBED_PRICE_ID = os.getenv("STRIPE_EMBED_PRICE_ID")
 STRIPE_PREMIUM_ACTION_PRICE_ID = os.getenv("STRIPE_PREMIUM_ACTION_PRICE_ID")
 
-if _STRIPE_CONFIGURED and not all(
-    [STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, STRIPE_PREMIUM_ACTION_PRICE_ID]
-):
-    raise RuntimeError(
-        "STRIPE_PRO_PRICE_ID, STRIPE_TEAM_PRICE_ID, STRIPE_EMBED_PRICE_ID, "
-        "and STRIPE_PREMIUM_ACTION_PRICE_ID must be set when STRIPE_SECRET_KEY is configured"
-    )
-
 MAX_CONSECUTIVE_FAILURES = 3
 
 
@@ -156,8 +148,8 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
     webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except Exception as e:
-        raise ValueError(f"Invalid webhook signature: {e}")
+    except Exception as e:  # noqa: BLE001
+        raise ValueError(f"Invalid webhook signature: {e}") from None
 
     event_type = event["type"]
     data = event["data"]["object"]

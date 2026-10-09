@@ -5,20 +5,22 @@ services:
   # FastAPI Backend
   - type: web
     name: astrovox-backend
-    runtime: python
-    plan: free
-    buildCommand: cd 02-Backend && pip install -r requirements.txt
-    startCommand: cd 02-Backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    runtime: docker
+    plan: standard
+    dockerfilePath: ./Dockerfile.backend
+    dockerContext: .
     healthCheckPath: /health
     envVars:
-      - key: VITE_SUPABASE_URL
-        sync: false
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false
       - key: OPENAI_API_KEY
         sync: false
-      - key: ALLOWED_ORIGINS
+      - key: SECRET_KEY
         sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://astrovox.ai,https://www.astrovox.ai
       - key: ENVIRONMENT
         value: production
       - key: LOG_LEVEL
@@ -27,9 +29,14 @@ services:
         value: 120/minute
       - key: DAILY_AI_LIMIT
         value: 50
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: METRICS_ENABLED
+        value: "true"
 
   # Redis (optional, for caching)
   - type: redis
     name: astrovox-redis
     plan: free
-    ipAllowList: [] # required for Redis
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru

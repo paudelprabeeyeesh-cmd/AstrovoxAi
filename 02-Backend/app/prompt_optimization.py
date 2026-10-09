@@ -63,8 +63,8 @@ class PromptOptimizer:
                 max_tokens=512,
             )
             improved = result.choices[0].message.content or current_template
-        except Exception as exc:
-            logger.error("Prompt optimization failed: %s", exc)
+        except Exception as _e:  # noqa: BLE001
+            logger.error("Prompt optimization failed: %s", _e)
             improved = current_template
         variant = self.register(f"{prompt_id}:optimized:{len(self._variants.get(prompt_id, []))}", improved)
         return variant

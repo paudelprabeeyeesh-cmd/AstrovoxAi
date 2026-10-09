@@ -11,8 +11,13 @@ Everything else the terminal needs is served by /api/status, /api/stats,
 from fastapi import APIRouter, Header, HTTPException, status
 from pydantic import BaseModel, Field
 
+<<<<<<< HEAD
 from app.utils.auth.auth_utils import get_user_id_from_token
 from app.repositories.database.client import save_memory
+=======
+from .auth_utils import get_user_id_from_token
+from .database import save_memory
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from .supabase_client import get_supabase
 from .usage import DailyUsageTracker
 
@@ -61,11 +66,11 @@ async def purge_memory(authorization: str = Header(None)):
         )
         deleted = len(response.data) if response.data else 0
         return {"status": "OK", "deleted": deleted}
-    except Exception as exc:
+    except Exception as _e:  # noqa: BLE001
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to purge memory: {str(exc)}",
-        ) from exc
+            detail=f"Failed to purge memory: {str(_e)}",
+        ) from _e
 
 
 @router.get("/usage")

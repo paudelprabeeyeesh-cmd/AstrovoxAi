@@ -1,5 +1,9 @@
 
 from datetime import datetime, timezone
+<<<<<<< HEAD
+=======
+from ..database import get_db
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from .reporter import ComplianceReporter
 from .collector import EvidenceCollector
 
@@ -17,7 +21,7 @@ class GDPRCompliance:
                 try:
                     rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (user_id,)).fetchall()
                     data[table] = len(rows)
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     data[table] = 0
         return {
             "right": "right_to_access",
@@ -40,8 +44,13 @@ class GDPRCompliance:
         }
 
     def verify_data_portability(self, org_id: str, user_id: str, format: str = "json") -> dict:
+<<<<<<< HEAD
         from ...compliance import export_user_data
         data = export_user_data(user_id)
+=======
+        from ..compliance import export_user_data
+        export_user_data(user_id)
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return {
             "right": "right_to_data_portability",
             "user_id": user_id,

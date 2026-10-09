@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """Enterprise Compliance — GDPR, data export, right-to-delete, retention, reporting."""
 
 import time
@@ -8,6 +9,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
+=======
+import uuid
+from datetime import datetime
+from .database import get_db
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @dataclass
@@ -31,6 +37,7 @@ class RetentionPolicy:
     created_at: float = field(default_factory=datetime.now(timezone.utc).timestamp)
 
 
+<<<<<<< HEAD
 @dataclass
 class ConsentRecord:
     id: str
@@ -39,6 +46,47 @@ class ConsentRecord:
     granted: bool
     timestamp: float
     ip_address: str = ""
+=======
+def export_user_data(user_id: str) -> dict:
+    ensure_consent_table()
+    data = {"user_id": user_id}
+    with get_db() as conn:
+        tables = [
+            "users", "refresh_tokens", "memories", "conversations", "messages",
+            "templates", "schedules", "knowledge_docs", "user_profiles",
+            "workflows", "tools", "feedback", "usage", "subscriptions",
+            "teams", "team_members", "api_keys", "marketplace_prompts",
+            "addons", "ipo_metrics", "referrals", "integrations", "posts",
+            "comments", "amas", "case_studies", "outreach", "ad_campaigns",
+            "affiliates", "enterprise_accounts", "sso_connections",
+            "enterprise_audit_logs", "audit_logs", "custom_models",
+            "verticals", "regions", "sdk_keys", "ma_targets", "interactions",
+            "interaction_labels", "consent_records"
+        ]
+        for table in tables:
+            try:
+                if table == "teams":
+                    rows = conn.execute(f"SELECT * FROM {table} WHERE owner_id = ?", (user_id,)).fetchall()
+                elif table == "interaction_labels":
+                    rows = conn.execute(f"SELECT * FROM {table} WHERE interaction_id IN (SELECT id FROM interactions WHERE user_id = ?)", (user_id,)).fetchall()
+                elif table == "messages":
+                    rows = conn.execute(f"SELECT * FROM {table} WHERE conversation_id IN (SELECT id FROM conversations WHERE user_id = ?)", (user_id,)).fetchall()
+                else:
+                    rows = conn.execute(f"SELECT * FROM {table} WHERE user_id = ?", (user_id,)).fetchall()
+                data[table] = [dict(r) for r in rows]
+            except Exception as _e:  # noqa: BLE001
+                data[table] = []
+    def _serialize(obj):
+        if isinstance(obj, dict):
+            return {k: _serialize(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_serialize(v) for v in obj]
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return obj
+
+    return _serialize(data)
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class ComplianceManager:

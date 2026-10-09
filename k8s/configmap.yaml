@@ -7,6 +7,7 @@ data:
   APP_ENV: production
   LOG_LEVEL: info
   REDIS_URL: redis://redis-master:6379
+<<<<<<< HEAD
   REDIS_SENTINEL_URL: redis://redis-sentinel:26379
   DATABASE_URL: postgresql://astrovox:astrovox_pass@postgres:5432/astrovox
   DATABASE_REPLICA_URL: postgresql://astrovox:astrovox_pass@postgres-replica:5432/astrovox
@@ -24,3 +25,10 @@ data:
   ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai,https://app.astrovox.ai
   RATE_LIMIT: "120/minute"
   DAILY_AI_LIMIT: "50"
+=======
+  METRICS_ENABLED: "true"
+  ALLOWED_ORIGINS: https://astrovox.ai,https://www.astrovox.ai
+  RATE_LIMIT: 120/minute
+  DAILY_AI_LIMIT: "50"
+  PROMETHEUS_MULTIPROC_DIR: /tmp
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

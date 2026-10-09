@@ -435,8 +435,8 @@ func (c *CUDA) Softmax(x []float64, dim int) ([]float64, error) {
 }
 
 // Stats returns CUDA statistics.
-func (c *CUDA) Stats() CUDAStats {
-	return c.stats
+func (c *CUDA) Stats() *CUDAStats {
+	return &c.stats
 }
 
 // Capabilities returns CUDA capabilities.

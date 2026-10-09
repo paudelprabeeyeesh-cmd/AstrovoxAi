@@ -1,4 +1,3 @@
-import pytest
 from app.cache import cached
 
 def test_cached():

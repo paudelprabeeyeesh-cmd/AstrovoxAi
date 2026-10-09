@@ -46,8 +46,8 @@ def restore_database(backup_file: str) -> bool:
 
         logger.info(f"Restore completed from {backup_file}")
         return True
-    except Exception as exc:
-        logger.error(f"Restore failed: {exc}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Restore failed: {_e}")
         return False
 
 

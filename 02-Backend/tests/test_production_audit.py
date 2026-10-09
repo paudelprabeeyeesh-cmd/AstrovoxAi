@@ -2,7 +2,6 @@ import logging
 from app.core.guardrails import detect_injection, redact_injection
 from app.core.pii import has_pii, redact_pii
 from app.core.moderation import check_moderation
-from app.core.tracing import get_prompt_hash
 
 logger = logging.getLogger(__name__)
 

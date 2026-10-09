@@ -63,22 +63,6 @@ if pythonjsonlogger is not None:
 else:
     StructuredJsonFormatter = _FallbackFormatter
 
-_request_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "request_id", default=None
-)
-_user_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "user_id", default=None
-)
-_endpoint: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
-    "endpoint", default=None
-)
-_latency_ms: contextvars.ContextVar[Optional[float]] = contextvars.ContextVar(
-    "latency_ms", default=None
-)
-_cost: contextvars.ContextVar[Optional[float]] = contextvars.ContextVar(
-    "cost", default=None
-)
-
 
 class _StructuredLogFilter(logging.Filter):
     def filter(self, record):
@@ -89,34 +73,6 @@ class _StructuredLogFilter(logging.Filter):
         record.latency_ms = _latency_ms.get(None)
         record.cost = _cost.get(None)
         return True
-
-
-_configured = False
-
-
-def configure_logging():
-    global _configured
-    if _configured:
-        return
-    _configured = True
-
-    root = logging.getLogger()
-    root.setLevel(logging.INFO)
-
-    handler = logging.StreamHandler(sys.stdout)
-    formatter = StructuredJsonFormatter(
-        "%(timestamp)s %(levelname)s %(message)s %(request_id)s %(user_id)s %(endpoint)s %(latency_ms)s %(cost)s"
-    )
-    handler.setFormatter(formatter)
-    handler.addFilter(_StructuredLogFilter())
-
-    root.addHandler(handler)
-
-
-def get_logger(name: str) -> logging.Logger:
-    if not _configured:
-        configure_logging()
-    return logging.getLogger(name)
 
 
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):

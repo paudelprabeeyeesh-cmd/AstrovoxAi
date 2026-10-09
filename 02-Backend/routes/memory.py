@@ -1,8 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Optional
-import json
-import os
+from typing import List
 
 router = APIRouter()
 

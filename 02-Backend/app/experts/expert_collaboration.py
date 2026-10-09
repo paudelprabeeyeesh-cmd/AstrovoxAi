@@ -170,13 +170,13 @@ class ExpertCollaborator:
                 "review": review_result,
             }
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             plan.status = "failed"
             del self.active_collaborations[plan_id]
             
             return {
                 "success": False,
-                "error": str(e),
+                "error": str(_e),
                 "plan_id": plan_id,
             }
     

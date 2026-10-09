@@ -1,0 +1,73 @@
+groups:
+  - name: astravox_backend_alerts
+    interval: 10s
+    rules:
+      - alert: BackendDown
+        expr: up{job="astravox-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "AstrovoxAI backend is down"
+          description: "Backend has been down for more than 1 minute."
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for the last 5 minutes."
+
+      - alert: SlowResponses
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Slow response times"
+          description: "P95 response time is above 2 seconds."
+
+      - alert: HighMemoryUsage
+        expr: process_resident_memory_bytes{job="astravox-backend"} > 500000000
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High memory usage"
+          description: "Backend memory usage exceeds 500MB."
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache is unavailable."
+
+      - alert: HighLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Very high latency detected"
+          description: "P99 response time is above 5 seconds."
+
+      - alert: LowCacheHitRatio
+        expr: sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m]))) < 0.3
+        for: 10m
+        labels:
+          severity: info
+          team: backend
+        annotations:
+          summary: "Low cache hit ratio"
+          description: "Cache hit ratio is below 30%."

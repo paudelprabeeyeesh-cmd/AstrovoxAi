@@ -125,10 +125,10 @@ class MultiAgentOrchestrator:
                 self.agent_states[agent_id] = "completed"
                 self.wait_for_graph[agent_id].clear()
             return result
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             with self.lock:
                 self.agent_states[agent_id] = "failed"
-            logger.error("Agent %s failed: %s", agent_id, e)
+            logger.error("Agent %s failed: %s", agent_id, _e)
             raise
 
     def run_pipeline(self, task: dict, pipeline: List[str]) -> dict:

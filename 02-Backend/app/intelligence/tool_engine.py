@@ -77,11 +77,11 @@ class Tool:
                 "executed_at": datetime.utcnow().isoformat(),
             }
         
-        except Exception as e:
+        except Exception as _e:  # noqa: BLE001
             return {
                 "success": False,
                 "tool": self.name,
-                "error": str(e),
+                "error": str(_e),
                 "executed_at": datetime.utcnow().isoformat(),
             }
     
@@ -411,8 +411,8 @@ class ToolEngine:
             result = eval(expression)
             return {"result": result, "expression": expression}
         
-        except Exception as e:
-            return {"error": f"Calculation error: {str(e)}"}
+        except Exception as _e:  # noqa: BLE001
+            return {"error": f"Calculation error: {str(_e)}"}
     
     async def _tool_web_search(self, query: str, num_results: int = 5) -> Dict[str, Any]:
         """Perform web search (placeholder - requires API integration)"""
@@ -452,10 +452,10 @@ class ToolEngine:
                     "output": str(result),
                     "success": True,
                 }
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 return {
                     "language": language,
-                    "error": str(e),
+                    "error": str(_e),
                     "success": False,
                 }
         
@@ -480,8 +480,8 @@ class ToolEngine:
                 "size": len(content),
             }
         
-        except Exception as e:
-            return {"error": f"Error reading file: {str(e)}"}
+        except Exception as _e:  # noqa: BLE001
+            return {"error": f"Error reading file: {str(_e)}"}
     
     def _tool_pdf_reader(self, file_path: str) -> Dict[str, Any]:
         """Extract text from PDF (placeholder - requires PDF library)"""

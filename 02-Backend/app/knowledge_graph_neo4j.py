@@ -43,7 +43,7 @@ class KnowledgeGraphNeo4j:
                 session.run("RETURN 1")
             self._connected = True
             return True
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             self._connected = False
             return False
 

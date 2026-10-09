@@ -1,6 +1,9 @@
+<<<<<<< HEAD
 import re
 import math
 import json
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from typing import Optional
 
 from app.repositories.database.client import get_db
@@ -94,7 +97,7 @@ class SearchEngine:
     def metadata_filter_search(self, user_id: str, filters: dict) -> list:
         date_range = filters.get("date_range")
         content_type = filters.get("content_type")
-        importance_score = filters.get("importance_score")
+        filters.get("importance_score")
 
         query = "SELECT id, value, key, created_at FROM memories WHERE user_id = ?"
         params = [user_id]

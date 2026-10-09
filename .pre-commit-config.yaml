@@ -1,4 +1,5 @@
 repos:
+<<<<<<< HEAD
   - repo: https://github.com/pycqa/isort
     rev: 5.13.2
     hooks:
@@ -28,6 +29,16 @@ repos:
     hooks:
       - id: bandit
         args: ["-r", "02-Backend/app", "-f", "json", "-o", "bandit-report.json", "-ll"]
+=======
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -35,5 +46,18 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+<<<<<<< HEAD
       - id: check-added-large-files
         args: ["--maxkb=1000"]
+=======
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.0
+    hooks:
+      - id: gitleaks
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -3,7 +3,11 @@ import uuid
 import secrets
 from datetime import datetime, timezone
 from typing import List, Optional
+<<<<<<< HEAD
 from app.repositories.database.client import get_db
+=======
+from .database import get_db
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from .audit import log_action
 
 
@@ -83,7 +87,7 @@ def get_workspace_resources(workspace_id: str) -> dict:
                 if table in ("conversations", "messages", "templates", "workflows", "tools", "feedback", "memories", "knowledge_docs"):
                     rows = conn.execute(f"SELECT COUNT(*) as cnt FROM {table} WHERE user_id IN (SELECT user_id FROM workspace_members WHERE workspace_id = ?)", (workspace_id,)).fetchall()
                     resources[table] = rows[0]["cnt"] if rows else 0
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 resources[table] = 0
         return {"workspace_id": workspace_id, "resources": resources}
 

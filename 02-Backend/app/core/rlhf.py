@@ -124,7 +124,7 @@ class ConstitutionalAI:
             ids = self.tokenizer.encode(prompt)
             input_tensor = torch.tensor([ids])
             with torch.no_grad():
-                logits = self.model(input_tensor)
+                self.model(input_tensor)
             return "[generated]"
         return "[generated]"
 

@@ -1,8 +1,11 @@
-import logging
-import os
-from logging.handlers import RotatingFileHandler
+"""Compatibility shim: delegates to app.core.logging_config."""
 
+from app.core.logging_config import (
+    configure_logging,
+    get_logger,
+)
 
+<<<<<<< HEAD
 def get_logger(name: str = "astravox") -> logging.Logger:
     """Return a configured logger instance.
 
@@ -50,4 +53,18 @@ def configure_logging():
     return logger
 
 
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 logger = configure_logging()
+_STRUCTLOG_AVAILABLE = False
+try:
+    import structlog as _sl
+    _STRUCTLOG_AVAILABLE = True
+except ImportError:
+    pass
+
+
+def get_observability_logger(name: str = "astravox"):
+    if _STRUCTLOG_AVAILABLE:
+        return _sl.get_logger(name)
+    return get_logger(name)

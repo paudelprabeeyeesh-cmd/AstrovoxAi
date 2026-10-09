@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 const config: Config = {
-  content: ["./app/**/*.{js,ts,jsx,tsx}"],
+  content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -16,8 +16,38 @@ const config: Config = {
         accent: { DEFAULT: "hsl(var(--accent))", foreground: "hsl(var(--accent-foreground))" },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
+        dracula: {
+          bg: '#282a36',
+          current: '#f8f8f2',
+          pink: '#ff79c6',
+          green: '#50fa7b',
+          orange: '#ffb86c',
+          purple: '#bd93f9',
+        },
+        monokai: {
+          bg: '#272822',
+          current: '#f8f8f2',
+          pink: '#f92672',
+          green: '#a6e22e',
+          orange: '#fd971f',
+          purple: '#ae81ff',
+        },
       },
       borderRadius: { lg: "var(--radius)", md: "calc(var(--radius) - 2px)", sm: "calc(var(--radius) - 4px)" },
+      keyframes: {
+        "accordion-down": {
+          from: { height: "0" },
+          to: { height: "var(--radix-accordion-content-height)" },
+        },
+        "accordion-up": {
+          from: { height: "var(--radix-accordion-content-height)" },
+          to: { height: "0" },
+        },
+      },
+      animation: {
+        "accordion-down": "accordion-down 0.2s ease-out",
+        "accordion-up": "accordion-up 0.2s ease-out",
+      },
     },
   },
   plugins: [],

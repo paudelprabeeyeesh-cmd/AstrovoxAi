@@ -456,8 +456,8 @@ func (m *Metal) Softmax(x []float64, dim int) ([]float64, error) {
 }
 
 // Stats returns Metal statistics.
-func (m *Metal) Stats() MetalStats {
-	return m.stats
+func (m *Metal) Stats() *MetalStats {
+	return &m.stats
 }
 
 // Capabilities returns Metal capabilities.
@@ -623,8 +623,8 @@ func (d *DirectML) Softmax(x []float64, dim int) ([]float64, error) {
 }
 
 // Stats returns DirectML statistics.
-func (d *DirectML) Stats() DirectMLStats {
-	return d.stats
+func (d *DirectML) Stats() *DirectMLStats {
+	return &d.stats
 }
 
 // Capabilities returns DirectML capabilities.

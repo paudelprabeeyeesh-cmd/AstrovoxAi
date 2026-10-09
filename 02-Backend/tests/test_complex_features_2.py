@@ -1,14 +1,13 @@
-import pytest
 import asyncio
-from app.core.streaming_core import streaming_manager, StreamEventType
+from app.core.streaming_core import streaming_manager
 from app.core.code_execution import code_sandbox
 from app.core.web_search import web_search
 from app.core.image_generation import ImageGenerationEngine, ImageUnderstandingEngine
 from app.core.artifacts_core import artifact_manager, ArtifactType
-from app.core.conversation_history import conversation_history, ConversationHistoryManager
+from app.core.conversation_history import conversation_history
 from app.core.slash_commands import slash_command_registry, SlashCommandRegistry
-from app.core.custom_instructions import instruction_manager, preferences_manager, CustomInstructionManager, UserPreferencesManager
-from app.core.feedback_system import feedback_collector, typing_indicator_manager, FeedbackCollector, TypingIndicatorManager, FeedbackType, FeedbackCategory
+from app.core.custom_instructions import instruction_manager, preferences_manager
+from app.core.feedback_system import feedback_collector, typing_indicator_manager, FeedbackType, FeedbackCategory
 
 
 class TestStreaming:

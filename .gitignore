@@ -1,11 +1,13 @@
 
-
 # Dependencies
 node_modules/
 
 # Build output
 dist/
 build/
+.next/
+out/
+.turbo
 
 # Environment / secrets
 .env
@@ -21,11 +23,16 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+*.db
+*.sqlite
+*.sqlite3
 
 # Databases / local data
 *.db
 *.sqlite
 *.sqlite3
+postgres-data/
+redis-data/
 
 # OS / editor junk
 .DS_Store
@@ -34,11 +41,13 @@ desktop.ini
 
 # Logs
 *.log
-logs/*.log
+logs/
+log/
 
 # Backup / temp files
 *~
 *.bak
+<<<<<<< HEAD
 
 # Code quality reports
 code-quality-reports/
@@ -48,3 +57,36 @@ code-quality-reports/
 # state, not repository content, and a worktree is itself a git repo.
 .kilo/
 .prabeesh/
+=======
+backups/
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.docker/
+
+# Kubernetes
+k8s/
+helm/
+*.yaml
+*.yml
+
+# Monitoring
+monitoring/
+prometheus.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Cache
+.ruff_cache/
+.mypy_cache/
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

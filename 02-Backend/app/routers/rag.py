@@ -130,7 +130,7 @@ async def rag_delete_document(doc_id: str, user_id: str = Depends(require_verifi
     try:
         get_document(doc_id, user_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Document not found")
+        raise HTTPException(status_code=404, detail="Document not found") from None
     delete_document_chunks(doc_id)
     if not delete_document(doc_id, user_id):
         raise HTTPException(status_code=404, detail="Document not found")

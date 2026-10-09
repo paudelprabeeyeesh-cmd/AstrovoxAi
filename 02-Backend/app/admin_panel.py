@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+<<<<<<< HEAD
 from app.repositories.database.client import get_db
 from app.services.auth.auth import require_admin
+=======
+from .database import get_db
+from .auth import require_admin
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -45,7 +50,7 @@ def delete_user(user_id: str, admin: str = Depends(require_admin)):
         ):
             try:
                 conn.execute(f"DELETE FROM {table} WHERE user_id = ?", (user_id,))
-            except Exception:
+            except Exception as _e:  # noqa: BLE001
                 pass  # table may not have user_id column
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()

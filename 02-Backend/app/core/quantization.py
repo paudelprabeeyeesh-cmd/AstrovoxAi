@@ -5,6 +5,10 @@ Quantization implementations: AWQ, GPTQ, and QAT.
 from __future__ import annotations
 
 import logging
+<<<<<<< HEAD
+=======
+from typing import List, Tuple
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 import torch
 import torch.nn as nn

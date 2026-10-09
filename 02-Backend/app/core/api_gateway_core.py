@@ -101,9 +101,9 @@ class APIGateway:
             latency = time.time() - start
             self.request_log.append({"path": path, "method": method, "user_id": user_id, "status": "success", "latency_ms": latency * 1000})
             return {"status": 200, "data": result, "latency_ms": round(latency * 1000, 2)}
-        except Exception as e:
-            logger.error(f"Route {route_key} failed: {e}")
-            return {"status": 500, "error": str(e)}
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"Route {route_key} failed: {_e}")
+            return {"status": 500, "error": str(_e)}
 
     def get_metrics(self) -> dict:
         total = len(self.request_log)

@@ -1,5 +1,10 @@
 import logging
+<<<<<<< HEAD
 from typing import Optional
+=======
+import uuid
+from datetime import datetime, timezone
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 
@@ -28,6 +33,7 @@ async def generate_image(
     user_id: str = Depends(require_verified_email),
 ):
     try:
+<<<<<<< HEAD
         service = _get_service()
         result = await service.text_to_image(
             user_id,
@@ -57,6 +63,19 @@ async def generate_image(
     except Exception as e:
         logger.error(f"Image generation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+=======
+        image_id = str(uuid.uuid4())
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO images (id, user_id, prompt, size, created_at) VALUES (?, ?, ?, ?, ?)",
+                (image_id, user_id, prompt[:1000], size, datetime.now(timezone.utc).isoformat()),
+            )
+            conn.commit()
+        return {"id": image_id, "prompt": prompt[:200], "size": size, "url": f"/images/{image_id}"}
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Image generation failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/images/transform/img2img")
@@ -71,6 +90,7 @@ async def image_to_image(
     user_id: str = Depends(require_verified_email),
 ):
     try:
+<<<<<<< HEAD
         service = _get_service()
         result = await service.image_to_image(
             user_id,
@@ -302,6 +322,20 @@ async def segment_image(
     except Exception as e:
         logger.error(f"Segmentation failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+=======
+        await file.read()
+        analysis_id = str(uuid.uuid4())
+        with get_db() as conn:
+            conn.execute(
+                "INSERT INTO image_analyses (id, user_id, filename, question, result, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (analysis_id, user_id, file.filename, question[:500], "[analysis placeholder]", datetime.now(timezone.utc).isoformat()),
+            )
+            conn.commit()
+        return {"id": analysis_id, "filename": file.filename, "question": question, "result": "[analysis placeholder]"}
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Image understanding failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.get("/images/{image_id}")

@@ -1,9 +1,8 @@
-import pytest
 import numpy as np
 
-from app.core.paged_attention import KVCache, KVCachePage, PageTableEntry, paged_attention_forward
+from app.core.paged_attention import KVCache, paged_attention_forward
 from app.core.continuous_batching import ContinuousBatchScheduler, ScheduledRequest
-from app.core.speculative_decoding import SpeculativeDecoder, DraftModel, TargetModel, rejection_sample
+from app.core.speculative_decoding import SpeculativeDecoder, rejection_sample
 
 
 def test_kv_cache_allocate_and_get_memory():

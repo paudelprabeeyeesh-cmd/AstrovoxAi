@@ -52,9 +52,9 @@ class BenchmarkSuite:
                 success=True,
                 metrics=response.get("metrics", {}),
             )
-        except Exception as exc:
+        except Exception as _e:  # noqa: BLE001
             latency_ms = (time.perf_counter() - start) * 1000
-            logger.error("Benchmark failed for %s: %s", provider, exc)
+            logger.error("Benchmark failed for %s: %s", provider, _e)
             return BenchmarkResult(
                 provider=provider,
                 model="unknown",
@@ -62,7 +62,7 @@ class BenchmarkSuite:
                 tokens_used=0,
                 cost_usd=0.0,
                 success=False,
-                error=str(exc),
+                error=str(_e),
             )
 
     def compare(self, results: list[BenchmarkResult]) -> dict[str, Any]:

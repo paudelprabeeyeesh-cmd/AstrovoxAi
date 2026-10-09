@@ -9,6 +9,7 @@ import sys
 import time
 from dotenv import load_dotenv
 
+<<<<<<< HEAD
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from app.services.auth.auth import router as auth_router
@@ -122,14 +123,168 @@ try:
 except Exception:
     llm_client = _LLMClientStub()
 context_builder = ContextBuilder(llm_client=llm_client)
+=======
+from .core.logging_config import configure_logging, RequestLoggingMiddleware
+from .core.tracing import init_tracing
+from .core.prometheus_middleware import PrometheusMiddleware
+from .security_headers import SecurityHeadersMiddleware
+
+from .auth import router as auth_router
+from .audit import router as audit_router
+from .chat import router as chat_router
+from .routers.conversations import router as conversations_router
+from .secrets import router as secrets_router
+from .routers.models_api import router as models_api_router
+from .routers.memory_controls import router as memory_controls_router
+from .routers.safety_api import router as safety_api_router
+from .routers.sandbox import router as sandbox_router
+from .routers.tools import router as tools_router
+from .routers.finetuning import router as finetuning_router
+from .routers.admin_api import router as admin_api_router
+from .routers.training import router as training_router
+from .routers.model_registry import router as model_registry_router
+from .routers.llm_governance import router as llm_governance_router
+from .routers.ai_orchestration import router as ai_orchestration_router
+from .core.llm import LLMClient
+from .rate_limit import rate_limit_middleware
+from .health import health_service
+from .dashboard import get_dashboard
+from .metrics import get_metrics, CONTENT_TYPE_LATEST
+
+try:
+    from .memory import router as memory_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    memory_router = APIRouter()
+
+try:
+    from .storage import router as storage_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    storage_router = APIRouter()
+
+try:
+    from .telemetry import router as telemetry_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    telemetry_router = APIRouter()
+
+try:
+    from .terminal import router as terminal_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    terminal_router = APIRouter()
+
+try:
+    from .embeddings_route import router as embeddings_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    embeddings_router = APIRouter()
+
+try:
+    from .rag.routes import router as rag_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_router = APIRouter()
+
+try:
+    from .routers.cloud import router as cloud_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    cloud_router = APIRouter()
+
+try:
+    from .rag.routes import router as rag_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_router = APIRouter()
+
+try:
+    from .routers.memory_extended import router as memory_extended_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    memory_extended_router = APIRouter()
+
+try:
+    from .routers.rag_extended import router as rag_extended_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    rag_extended_router = APIRouter()
+
+try:
+    from memory_persistence.routes import router as memory_consolidation_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    memory_consolidation_router = APIRouter()
+
+try:
+    from .routers.enterprise_api import router as enterprise_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    enterprise_api_router = APIRouter()
+
+try:
+    from .routers.support_api import router as support_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    support_api_router = APIRouter()
+
+try:
+    from .routers.white_label_api import router as white_label_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    white_label_api_router = APIRouter()
+
+try:
+    from .routers.custom_domains_api import router as custom_domains_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    custom_domains_api_router = APIRouter()
+
+try:
+    from .routers.compliance_api import router as compliance_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    compliance_api_router = APIRouter()
+
+try:
+    from .routers.security_api import router as security_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    security_api_router = APIRouter()
+
+try:
+    from .routers.quota_api import router as quota_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    quota_api_router = APIRouter()
+
+try:
+    from .routers.performance import router as performance_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    performance_router = APIRouter()
+
+try:
+    from .routers.scim_api import router as scim_api_router
+except Exception as _e:  # noqa: BLE001
+    from fastapi import APIRouter
+    scim_api_router = APIRouter()
+
+load_dotenv()
+
+configure_logging()
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(
     title="AstravoxAi Engine",
     version="1.0.0",
     description="Production-grade asynchronous stateless backend for AI chat",
 )
+llm_client = LLMClient()
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
@@ -139,7 +294,15 @@ register_error_handlers(app)
 
 app.middleware("http")(rate_limit_middleware)
 
+<<<<<<< HEAD
 # CORS Middleware
+=======
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(PrometheusMiddleware)
+
+init_tracing(service_name="astrovoxai", app=app)
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -165,6 +328,7 @@ app.add_middleware(InputValidationMiddleware)
 app.add_middleware(PIIRedactionMiddleware)
 
 # Add security headers middleware
+<<<<<<< HEAD
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(IPEnforcementMiddleware)
 app.add_middleware(UserAgentMiddleware)
@@ -183,14 +347,25 @@ app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
 app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
 app.add_middleware(ContentNegotiationMiddleware)
 register_lifecycle_handlers(app)
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 # Include routers
 app.include_router(auth_router)
+app.include_router(audit_router)
 app.include_router(chat_router)
+<<<<<<< HEAD
+=======
+app.include_router(conversations_router)
+app.include_router(memory_router)
+app.include_router(memory_extended_router)
+app.include_router(secrets_router)
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
 app.include_router(embeddings_router)
+<<<<<<< HEAD
 app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(enterprise_abac_router)
@@ -361,6 +536,136 @@ async def collaboration_ws_alt_endpoint(
 ):
     from app.realtime_collaboration import collaboration_websocket_endpoint
     await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+=======
+app.include_router(models_api_router)
+app.include_router(memory_controls_router)
+app.include_router(safety_api_router)
+app.include_router(sandbox_router)
+app.include_router(tools_router)
+app.include_router(rag_router)
+app.include_router(rag_extended_router)
+app.include_router(memory_consolidation_router)
+app.include_router(finetuning_router)
+app.include_router(admin_api_router)
+app.include_router(training_router)
+app.include_router(model_registry_router)
+app.include_router(llm_governance_router)
+app.include_router(ai_orchestration_router)
+app.include_router(cloud_router)
+app.include_router(performance_router)
+app.include_router(enterprise_api_router)
+app.include_router(support_api_router)
+app.include_router(white_label_api_router)
+app.include_router(custom_domains_api_router)
+app.include_router(compliance_api_router)
+app.include_router(security_api_router)
+app.include_router(quota_api_router)
+app.include_router(scim_api_router)
+
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
+    except Exception as _e:  # noqa: BLE001
+        return Response(
+            content=b"# Prometheus client not available\n",
+            media_type="text/plain"
+        )
+
+
+# Health check endpoints
+@app.get("/health")
+async def health_check():
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] == "healthy" else 503
+    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
+
+
+@app.get("/healthz")
+async def healthz():
+    return "ok"
+
+
+@app.get("/health/readiness")
+async def readiness_check():
+    """Kubernetes readiness probe - checks dependencies."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] in ("healthy", "degraded") else 503
+    payload = {
+        "status": result["status"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/liveness")
+async def liveness_check():
+    """Kubernetes liveness probe - process is alive."""
+    return {
+        "status": "alive",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/startup")
+async def startup_check():
+    """Kubernetes startup probe - application has finished initializing."""
+    health_service.app = app
+    is_healthy = health_service.is_healthy()
+    status_code = 200 if is_healthy else 503
+    payload = {
+        "status": "started" if is_healthy else "starting",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/components")
+async def components_health():
+    """Detailed per-component health breakdown."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    return result
+
+
+@app.get("/health/history")
+async def health_history():
+    """Recent health check history."""
+    return {
+        "history": health_service.history()[-20:],
+        "count": len(health_service.history()),
+    }
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Monitoring dashboard payload with panels, health, and metrics."""
+    import json as _json
+    payload = get_dashboard(app=app)
+    return Response(
+        content=_json.dumps(payload, default=str),
+        media_type="application/json",
+    )
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "🚀 ASTRAVOX PRIME Backend v2.0.0",
+        "status": "operational",
+        "endpoints": {
+            "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
+            "health": "/health, /health/readiness, /health/liveness, /health/startup, /health/components, /health/history",
+            "dashboard": "/dashboard",
+            "docs": "/docs",
+        },
+    }
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 if __name__ == "__main__":

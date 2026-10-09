@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Optional
 from .run import GoldenSetEvaluator
 
 logger = logging.getLogger(__name__)

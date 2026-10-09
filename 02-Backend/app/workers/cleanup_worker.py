@@ -29,8 +29,8 @@ class CleanupWorker:
                 await self._cleanup_old_data()
             except asyncio.CancelledError:
                 break
-            except Exception as e:
-                logger.error(f"Cleanup worker error: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Cleanup worker error: {_e}")
             await asyncio.sleep(self.interval)
 
     async def _cleanup_old_data(self):

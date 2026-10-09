@@ -30,7 +30,7 @@ class BrowserAutomation:
         try:
             await self._page.click(selector, timeout=5000)
             return True
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     async def type_text(self, selector: str, text: str) -> bool:
@@ -38,7 +38,7 @@ class BrowserAutomation:
         try:
             await self._page.fill(selector, text, timeout=5000)
             return True
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return False
 
     async def close(self):

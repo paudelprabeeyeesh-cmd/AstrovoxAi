@@ -68,9 +68,15 @@ class PlanningEngine:
             content = response.choices[0].message.content or "[]"
             raw = json.loads(content)
             return [SubTask(**item) for item in raw if isinstance(item, dict)]
+<<<<<<< HEAD
         except Exception as e:
             logger.error(f"LLM decomposition failed: {e}")
             return [SubTask(description=task, priority=1, dependencies=[], estimated_duration=1.0)]
+=======
+        except Exception as _e:  # noqa: BLE001
+            logger.error(f"LLM decomposition failed: {_e}")
+            return [SubTask(description=task, priority=1, dependencies=[])]
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
     def validate_plan(self, plan: Plan) -> bool:
         if not plan.subtasks:
@@ -99,10 +105,17 @@ class PlanningEngine:
                     temperature=0.3,
                 )
                 output = response.choices[0].message.content or ""
+<<<<<<< HEAD
                 results.append({"subtask": subtask.description, "output": output, "status": "completed"})
             except Exception as e:
                 logger.error(f"Subtask execution failed: {e}")
                 results.append({"subtask": subtask.description, "output": "", "error": str(e), "status": "failed"})
+=======
+                results.append({"subtask": subtask.description, "output": output})
+            except Exception as _e:  # noqa: BLE001
+                logger.error(f"Subtask execution failed: {_e}")
+                results.append({"subtask": subtask.description, "output": "", "error": str(_e)})
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return {"success": True, "results": results, "metadata": plan.metadata}
 
     def refine_plan(self, plan_id: str, feedback: str) -> dict[str, Any]:

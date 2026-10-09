@@ -1,5 +1,4 @@
-import pytest
-from app.rate_limiter import rate_limiter, RateLimiter
+from app.rate_limiter import RateLimiter
 
 
 def test_rate_limiter_initial_state():

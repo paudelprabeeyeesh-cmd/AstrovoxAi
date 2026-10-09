@@ -1,5 +1,8 @@
 import logging
+<<<<<<< HEAD
 import os
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -17,9 +20,15 @@ async def index_repo(repo_path: str, user_id: str = Depends(require_verified_ema
         agent = CodingAgent(repo_path=repo_path)
         result = agent.build_index()
         return result
+<<<<<<< HEAD
     except Exception as exc:
         logger.error("Coding agent indexing failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent indexing failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/coding/graph")
@@ -40,14 +49,21 @@ async def find_symbol(symbol: str, repo_path: str, user_id: str = Depends(requir
         agent.build_index()
         results = agent.index.search_symbols(symbol)
         return {"symbol": symbol, "references": results}
+<<<<<<< HEAD
     except Exception as exc:
         logger.error("Symbol search failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent reference search failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.get("/coding/file")
 async def read_file(file_path: str, repo_path: str, offset: int = 1, limit: int = 200, user_id: str = Depends(require_verified_email)):
     try:
+<<<<<<< HEAD
         agent = CodingAgent(repo_path=repo_path)
         full_path = agent.index.repo_path + os.sep + file_path
         with open(full_path, "r", encoding="utf-8") as f:
@@ -58,6 +74,14 @@ async def read_file(file_path: str, repo_path: str, offset: int = 1, limit: int 
     except Exception as exc:
         logger.error("File read failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+        agent = CodeAgent(repo_path=".")
+        content = agent.read_file(file_path, offset=offset, limit=limit)
+        return {"file": file_path, "content": content}
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent file read failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/coding/edit")
@@ -66,9 +90,15 @@ async def edit_file(file_path: str, old_string: str, new_string: str, repo_path:
         agent = CodingAgent(repo_path=repo_path)
         result = agent.multi_edit.apply_edit(file_path, old_string, new_string)
         return result
+<<<<<<< HEAD
     except Exception as exc:
         logger.error("File edit failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent file edit failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/coding/multi-edit")
@@ -77,14 +107,21 @@ async def multi_edit(edits: list[dict[str, str]], repo_path: str, user_id: str =
         agent = CodingAgent(repo_path=repo_path)
         result = agent.multi_edit.apply_edits(edits)
         return result
+<<<<<<< HEAD
     except Exception as exc:
         logger.error("Multi-edit failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent command execution failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/coding/run")
 async def run_command(command: str, repo_path: str, timeout: int = 30, user_id: str = Depends(require_verified_email)):
     try:
+<<<<<<< HEAD
         import subprocess
 
         result = subprocess.run(
@@ -100,11 +137,20 @@ async def run_command(command: str, repo_path: str, timeout: int = 30, user_id: 
         return {"success": False, "error": f"Command timed out after {timeout}s"}
     except Exception as exc:
         return {"success": False, "error": str(exc)}
+=======
+        agent = CodeAgent(repo_path=".")
+        result = agent.verify_syntax(file_path)
+        return result
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent syntax verification failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.post("/coding/analyze")
 async def analyze_dependencies(repo_path: str, user_id: str = Depends(require_verified_email)):
     try:
+<<<<<<< HEAD
         agent = CodingAgent(repo_path=repo_path)
         return agent.analyze_dependencies()
     except Exception as exc:
@@ -214,3 +260,11 @@ async def lsp_references(file_path: str, line: int, character: int, repo_path: s
     except Exception as exc:
         logger.error("LSP references failed: %s", exc)
         raise HTTPException(status_code=500, detail=str(exc))
+=======
+        agent = CodeAgent(repo_path=".")
+        result = agent.create_checkpoint(message)
+        return result
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Code agent checkpoint failed: {_e}")
+        raise HTTPException(status_code=500, detail=str(_e)) from None
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

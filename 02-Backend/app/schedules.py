@@ -21,7 +21,7 @@ def send_email(to_addr: str, subject: str, body: str):
     try:
         with smtplib.SMTP("localhost", 25) as server:
             server.send_message(msg)
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         pass
 
 
@@ -62,7 +62,7 @@ def create_schedule(user_id: str, data: ScheduleCreate) -> ScheduleOut:
             args=[schedule_id],
             **parse_cron(data.cron),
         )
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         pass
     return get_schedule(schedule_id, user_id)
 
@@ -120,7 +120,7 @@ def delete_schedule(schedule_id: str, user_id: str):
             raise ValueError("Schedule not found")
     try:
         scheduler.remove_job(schedule_id)
-    except Exception:
+    except Exception as _e:  # noqa: BLE001
         pass
 
 

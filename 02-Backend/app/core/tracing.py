@@ -78,7 +78,8 @@ def init_tracing(service_name: str = "astrovoxai", app=None):
     """Initialize OpenTelemetry distributed tracing.
 
     Sets up a TracerProvider with ConsoleSpanExporter by default,
-    or OTLPSpanExporter if OTEL_EXPORTER_OTLP_ENDPOINT is set.
+    OTLPSpanExporter if OTEL_EXPORTER_OTLP_ENDPOINT is set,
+    or maps JAEGER_URL to the OTLP gRPC endpoint automatically.
     Instruments FastAPI, httpx, and psycopg2 if available.
     """
     global OPENTELEMETRY_AVAILABLE, tracer
@@ -107,6 +108,10 @@ def init_tracing(service_name: str = "astrovoxai", app=None):
             os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
             or os.getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
         )
+        if not otlp_endpoint:
+            jaeger_url = os.getenv("JAEGER_URL")
+            if jaeger_url:
+                otlp_endpoint = jaeger_url.rsplit("/", 1)[0] + ":4317"
         if otlp_endpoint:
             provider.add_span_processor(
                 BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint))
@@ -120,26 +125,26 @@ def init_tracing(service_name: str = "astrovoxai", app=None):
             try:
                 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
                 FastAPIInstrumentor().instrument(app)
-            except Exception as e:
-                logger.warning(f"Failed to instrument FastAPI: {e}")
+            except Exception as _e:  # noqa: BLE001
+                logger.warning(f"Failed to instrument FastAPI: {_e}")
 
         try:
             from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
             HTTPXClientInstrumentor().instrument()
-        except Exception as e:
-            logger.warning(f"Failed to instrument httpx: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to instrument httpx: {_e}")
 
         try:
             from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
             Psycopg2Instrumentor().instrument()
-        except Exception as e:
-            logger.warning(f"Failed to instrument psycopg2: {e}")
+        except Exception as _e:  # noqa: BLE001
+            logger.warning(f"Failed to instrument psycopg2: {_e}")
 
         logger.info("OpenTelemetry tracing initialized")
         return tracer
 
-    except Exception as e:
-        logger.error(f"Failed to initialize OpenTelemetry: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to initialize OpenTelemetry: {_e}")
         OPENTELEMETRY_AVAILABLE = False
         tracer = None
         return None

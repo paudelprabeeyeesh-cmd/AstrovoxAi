@@ -1,6 +1,7 @@
 # ============================================================================
 # AstrovoxAI Backend — Production Dockerfile (Hardened Multi-Stage)
 # ============================================================================
+<<<<<<< HEAD
 
 FROM python:3.12-slim-bookworm@sha256:4a3ec766c3f93b3b6d0c6c6f9c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS base
 
@@ -16,16 +17,56 @@ ENV PYTHON_VERSION=${PYTHON_VERSION} \
     APP_GID=${APP_GID} \
     TZ=${TZ} \
     DEBIAN_FRONTEND=noninteractive \
+=======
+FROM python:3.12-slim-bookworm AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    g++ \
+    rustc \
+    cargo \
+    libssl-dev \
+    libffi-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY 02-Backend/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir --prefer-binary -r requirements.txt
+
+# ============================================================================
+# Production stage
+# ============================================================================
+FROM python:3.12-slim-bookworm
+
+WORKDIR /app
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-WORKDIR /app
+RUN groupadd -r astrovox && useradd -r -g astrovox -u 1000 astrovox && \
+    mkdir -p /app/logs /app/storage && \
+    chown -R astrovox:astrovox /app
 
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/lib/python3.12/dist-packages /usr/local/lib/python3.12/dist-packages
+
+COPY 02-Backend/app/ ./app/
+COPY 02-Backend/scripts/ ./scripts/
+
+<<<<<<< HEAD
 # Install only required system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
+=======
+RUN apt-get update && apt-get install -y --no-install-recommends \
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     curl \
     gcc \
     g++ \
@@ -33,6 +74,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
+<<<<<<< HEAD
 # Copy requirements and install deps in builder stage for better caching
 COPY 02-Backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
@@ -117,3 +159,14 @@ CMD ["uvicorn", "app.main:app", \
      "--limit-request-fields", "100", \
      "--limit-request-field-size", "8190", \
      "--log-level", "info"]
+=======
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+USER astrovox
+
+EXPOSE 8000
+
+ENTRYPOINT ["tini", "--"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--log-level", "info"]
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

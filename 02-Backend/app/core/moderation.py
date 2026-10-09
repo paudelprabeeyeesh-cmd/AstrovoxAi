@@ -27,8 +27,8 @@ def check_moderation(text: str) -> tuple[bool, str | None]:
                 logger.warning(f"Content moderated: {flagged}")
                 return True, flagged
         return False, None
-    except Exception as e:
-        logger.error(f"Moderation check failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Moderation check failed: {_e}")
         return False, None
 
 

@@ -1,684 +1,249 @@
-# Astravox AI - API Documentation
+# AstrovoxAI API
 
-## Base URL
-
-```
-http://localhost:8000
-```
+Base URL: `https://api.astrovox.ai` (production) or `http://localhost:8000` (local)
 
 ## Authentication
 
-All protected endpoints require an `Authorization` header with a Bearer token:
+Authenticated endpoints require an `Authorization: Bearer <supabase_token>` header.
+Admin-only endpoints additionally require the user to have the `admin` role in Supabase `app_metadata.roles`.
 
-```
-Authorization: Bearer <access_token>
-```
-
-## Request correlation
-
-Every response includes an `X-Request-ID` header. Clients may provide a short
-safe ID using the same header to correlate browser, API, and gateway logs;
-unsafe or oversized values are replaced with a server-generated UUID.
-
-## Health Endpoints
-
-### Check API Health
-
-```http
-GET /health
-```
-
-Response:
-```json
-{
-  "status": "healthy",
-  "service": "astravox-ai-backend",
-  "version": "2.0.0"
-}
-```
-
-### Readiness Probe
-
-```http
-GET /health/readiness
-```
-
-Response:
-```json
-{
-  "status": "ready",
-  "timestamp": "2024-01-01T12:00:00Z"
-}
-```
-
-## Authentication Endpoints
-
-### Sign Up
-
-```http
-POST /auth/signup
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "secure_password",
-  "full_name": "John Doe"
-}
-```
-
-Response:
+All API responses follow this standard format:
 ```json
 {
   "status": "OK",
-  "message": "User registered successfully. Please verify your email.",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com"
-  }
+  "message": "Operation completed successfully",
+  "data": {}
 }
 ```
 
-### Login
+---
 
-```http
-POST /auth/login
-Content-Type: application/json
+## Health
 
-{
-  "email": "user@example.com",
-  "password": "secure_password"
-}
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/health` | No | Service health check |
+| GET | `/health/readiness` | No | Kubernetes readiness probe |
+| GET | `/health/liveness` | No | Kubernetes liveness probe |
+| GET | `/health/detailed` | Admin | Detailed component health |
+| GET | `/metrics` | No | Prometheus metrics |
+| GET | `/metrics/prometheus` | No | Prometheus exposition format |
+
+### GET /health
+Response:
+```json
+{ "status": "healthy", "service": "astravox-ai-backend", "version": "2.0.0" }
+```
+
+### GET /health/readiness
+Response:
+```json
+{ "status": "ready", "checks": { "database": "ok", "redis": "ok", "neo4j": "ok" } }
+```
+
+### GET /health/liveness
+Response:
+```json
+{ "status": "alive", "uptime_seconds": 3600 }
+```
+
+---
+
+## Auth
+
+Prefix: `/auth`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/signup` | No | Register new user |
+| POST | `/auth/login` | No | Login with email/password |
+| POST | `/auth/logout` | No | Logout |
+| POST | `/auth/reset-password` | No | Request password reset |
+| GET | `/auth/me` | Bearer | Get current user profile |
+| GET | `/auth/me/roles` | Bearer | Get current user roles |
+| POST | `/auth/oauth` | No | Initiate OAuth flow |
+| POST | `/auth/refresh` | No | Refresh access token |
+
+### POST /auth/signup
+Request:
+```json
+{ "email": "user@example.com", "password": "secret", "full_name": "Jane Doe" }
 ```
 
 Response:
 ```json
-{
-  "status": "OK",
-  "message": "Login successful",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com"
-  },
-  "session": {
-    "access_token": "token",
-    "refresh_token": "refresh_token"
-  }
-}
+{ "status": "OK", "message": "User registered successfully", "user": { "id": "...", "email": "..." } }
 ```
 
-### Logout
+---
 
-```http
-POST /auth/logout
-Authorization: Bearer <access_token>
+## Chat
+
+Prefix: `/chat`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/chat/conversations` | Bearer | Create conversation |
+| GET | `/chat/conversations` | Bearer | List conversations |
+| GET | `/chat/conversations/{id}` | Bearer | Get conversation |
+| GET | `/chat/conversations/{id}/messages` | Bearer | List messages |
+| POST | `/chat/message` | Bearer | Send message (streaming or sync) |
+| GET | `/chat/models` | No | List supported models |
+| POST | `/chat/conversations/{id}/title` | Bearer | Update title |
+| DELETE | `/chat/conversations/{id}` | Bearer | Delete conversation |
+
+### POST /chat/message
+Request:
+```json
+{ "conversation_id": 1, "message": "Hello", "model": "gpt-4", "stream": false }
 ```
 
 Response:
 ```json
-{
-  "status": "OK",
-  "message": "Logout successful. Please clear your session tokens on the client."
-}
+{ "status": "OK", "user_message": { ... }, "ai_message": { ... }, "tokens_used": 42, "provider": "openai" }
 ```
 
-### Reset Password
+---
 
-```http
-POST /auth/reset-password
-Content-Type: application/json
+## Memory
 
-{
-  "email": "user@example.com"
-}
+Prefix: `/memory`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/memory/save` | Bearer | Save memory entry |
+| GET | `/memory/` | Bearer | List user memories |
+| POST | `/memory/extract-from-conversation` | Bearer | Extract memories from conversation |
+| POST | `/memory/context` | Bearer | Get formatted memory context |
+| POST | `/memory/auto-extract` | Bearer | LLM-based memory extraction |
+
+### POST /memory/save
+Request:
+```json
+{ "content": "User prefers dark mode", "importance": 2 }
 ```
 
-Response:
+---
+
+## Storage
+
+Prefix: `/storage`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/storage/{bucket}/upload` | Bearer | Upload file |
+| DELETE | `/storage/{bucket}/{path}` | Bearer | Delete file |
+| GET | `/storage/{bucket}/{path}/signed-url` | Bearer | Get signed URL |
+
+### POST /storage/{bucket}/upload
+Form data: `file` (UploadFile), query/body: `user_id`, `path`
+
+---
+
+## Safety
+
+Prefix: `/safety`
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/safety/moderate` | No | Moderate text |
+| POST | `/safety/feedback` | No | Submit feedback |
+| GET | `/safety/audit` | Admin | Get audit log |
+
+---
+
+## Error Codes
+
+| Code | Description |
+|------|-------------|
+| 400 | Bad Request - Invalid input |
+| 401 | Unauthorized - Missing or invalid token |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found - Resource not found |
+| 429 | Too Many Requests - Rate limit exceeded |
+| 500 | Internal Server Error - Something went wrong |
+| 503 | Service Unavailable - Maintenance or overload |
+
+### Error Response Format
 ```json
 {
-  "status": "OK",
-  "message": "Password reset email sent successfully"
+  "status": "error",
+  "message": "Detailed error message",
+  "code": "VALIDATION_ERROR",
+  "details": {}
 }
 ```
 
-### Get Current User
+---
 
-```http
-GET /auth/me
-Authorization: Bearer <access_token>
+## Rate Limits
+
+- Standard users: 120 requests/minute
+- Premium users: 300 requests/minute
+- AI endpoints: 50 requests/day
+- Burst limit: 20 requests/second
+
+Rate limit headers are included in all responses:
+- `X-RateLimit-Limit`: Requests per window
+- `X-RateLimit-Remaining`: Requests remaining
+- `X-RateLimit-Reset`: Unix timestamp when window resets
+- `Retry-After`: Seconds to wait (on 429)
+
+---
+
+## Webhooks
+
+### Stripe Webhooks
+
+Endpoint: `POST /webhooks/stripe`
+
+Supported events:
+- `checkout.session.completed`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
+
+---
+
+## SDKs
+
+### Python
+```python
+import httpx
+
+client = httpx.Client(
+    base_url="https://api.astrovox.ai",
+    headers={"Authorization": "Bearer YOUR_TOKEN"}
+)
 ```
 
-Response:
-```json
-{
-  "status": "OK",
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "profile": {
-      "id": "uuid",
-      "username": "johndoe",
-      "full_name": "John Doe",
-      "avatar_url": null,
-      "role": "user",
-      "tier": "free"
-    }
-  }
-}
+### JavaScript
+```javascript
+const client = axios.create({
+  baseURL: 'https://api.astrovox.ai',
+  headers: { 'Authorization': `Bearer ${token}` }
+});
 ```
 
-## Chat Endpoints
+---
 
-### Stream a Chat Response
+## Observability
 
-```http
-POST /chat/stream
-Authorization: Bearer <access_token>
-Content-Type: application/json
+### Metrics Endpoints
+- `GET /metrics` - Legacy metrics
+- `GET /metrics/prometheus` - Prometheus exposition format
+- `GET /health` - Health check
+- `GET /health/readiness` - Readiness probe
+- `GET /health/liveness` - Liveness probe
 
-{
-  "conversation_id": 42,
-  "message": "Summarize this project",
-  "model": "gpt-4"
-}
+### Tracing
+Distributed tracing is available via OpenTelemetry. Configure with:
+```bash
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:14268/api/v1/span
 ```
 
-Returns `text/event-stream`. Events are JSON payloads named `message`, `token`,
-`done`, and `error`. The assistant message is persisted only after a successful
-`done` event. Clients must treat `error` as a retryable incomplete response.
+### Logging
+Structured JSON logs are emitted by default. Configure log level via `LOG_LEVEL` environment variable.
 
-### Create Conversation
-
-```http
-POST /chat/conversations
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "title": "Casual Conversation",
-  "model": "optimus-3,5"
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "conversation": {
-    "id": 1,
-    "user_id": "uuid",
-    "title": "Casual Conversation",
-    "model": "optimus-3,5",
-    "created_at": "2024-01-01T12:00:00Z",
-    "updated_at": "2024-01-01T12:00:00Z"
-  }
-}
-```
-
-### List Conversations
-
-```http
-GET /chat/conversations?limit=50&offset=0
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "conversations": [
-    {
-      "id": 1,
-      "user_id": "uuid",
-      "title": "Casual conversation",
-      "model": "optimus-3,5",
-      "created_at": "2024-01-01T12:00:00Z",
-      "updated_at": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "count": 1
-}
-```
-
-### Get Conversation
-
-```http
-GET /chat/conversations/{conversation_id}
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "conversation": {
-    "id": 1,
-    "user_id": "uuid",
-    "title": "Casual conversation",
-    "model": "optimus-3,5",
-    "created_at": "2024-01-01T12:00:00Z",
-    "updated_at": "2024-01-01T12:00:00Z"
-  }
-}
-```
-
-### Get Messages
-
-```http
-GET /chat/conversations/{conversation_id}/messages?limit=100&offset=0
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "messages": [
-    {
-      "id": 1,
-      "conversation_id": 1,
-      "user_id": "uuid",
-      "role": "user",
-      "content": "Hello, how are you?",
-      "created_at": "2024-01-01T12:00:00Z"
-    },
-    {
-      "id": 2,
-      "conversation_id": 1,
-      "user_id": "uuid",
-      "role": "assistant",
-      "content": "I'm doing well, thank you for asking!",
-      "created_at": "2024-01-01T12:00:01Z"
-    }
-  ],
-  "count": 2
-}
-```
-
-### Send Message
-
-```http
-POST /chat/message
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "conversation_id": 1,
-  "message": "What is the capital of France?",
-  "model": "optimus-3,5"
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "user_message": {
-    "id": 3,
-    "conversation_id": 1,
-    "role": "user",
-    "content": "What is the capital of France?",
-    "created_at": "2024-01-01T12:00:02Z"
-  },
-  "ai_message": {
-    "id": 4,
-    "conversation_id": 1,
-    "role": "assistant",
-    "content": "The capital of France is Paris.",
-    "created_at": "2024-01-01T12:00:03Z"
-  },
-  "tokens_used": 45
-}
-```
-
-### Delete Conversation
-
-```http
-DELETE /chat/conversations/{conversation_id}
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "message": "Conversation deleted successfully"
-}
-```
-
-## Memory Endpoints
-
-### Save Memory
-
-```http
-POST /memory/save
-Authorization: Bearer <access_token>
-Content-Type: application/json
-
-{
-  "content": "User prefers concise responses",
-  "importance": 2
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "memory": {
-    "id": 1,
-    "user_id": "uuid",
-    "content": "User prefers concise responses",
-    "importance": 2,
-    "created_at": "2024-01-01T12:00:00Z"
-  }
-}
-```
-
-### Get Memory
-
-```http
-GET /memory?limit=50
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "memory": [
-    {
-      "id": 1,
-      "user_id": "uuid",
-      "content": "User prefers concise responses",
-      "importance": 2,
-      "created_at": "2024-01-01T12:00:00Z"
-    }
-  ],
-  "count": 1
-}
-```
-
-### Get Memory Context
-
-```http
-POST /memory/context?limit=5
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "context": "User Context/Memory:\n- User prefers concise responses\n- User is interested in AI",
-  "memory_count": 2
-}
-```
-
-## API Endpoints
-
-### API Status
-
-```http
-GET /api/status
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "service": "Astrovox-Ai-Api",
-  "version": "2.0.0",
-  "timestamp": "2024-01-01T12:00:00Z"
-}
-```
-
-### Get User Info
-
-```http
-GET /api/me
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "user": {
-    "id": "uuid",
-    "profile": {
-      "id": "uuid",
-      "username": "johndoe",
-      "full_name": "John Doe",
-      "role": "user",
-      "tier": "free"
-    }
-  }
-}
-```
-
-### Get User Stats
-
-```http
-GET /api/stats
-Authorization: Bearer <access_token>
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "stats": {
-    "total_conversations": 5,
-    "total_memory_entries": 10,
-    "user_tier": "free",
-    "created_at": "2024-01-01T12:00:00Z"
-  }
-}
-```
-
-## Telemetry Endpoints
-
-### Track Custom Event
-
-```http
-POST /telemetry/event
-Authorization: ******
-Content-Type: application/json
-
-{
-  "event_name": "feature_used",
-  "category": "feature",
-  "metadata": {
-    "feature": "memory_save",
-    "duration_ms": 250
-  }
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "event_id": 123,
-  "message": "Event tracked successfully"
-}
-```
-
-### Track Page View
-
-```http
-POST /telemetry/page-view
-Authorization: ******
-Content-Type: application/json
-
-{
-  "page": "/dashboard",
-  "referrer": "/chat"
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "event_id": 124,
-  "message": "Page view tracked"
-}
-```
-
-### Track Error
-
-```http
-POST /telemetry/error
-Authorization: ******
-Content-Type: application/json
-
-{
-  "error_name": "APIError",
-  "error_message": "Failed to fetch conversations",
-  "stack_trace": "Error: ...",
-  "context": {
-    "endpoint": "/chat/conversations",
-    "status_code": 500
-  }
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "event_id": 125,
-  "message": "Error tracked"
-}
-```
-
-### Track User Action
-
-```http
-POST /telemetry/user-action
-Authorization: ******
-Content-Type: application/json
-
-{
-  "action": "message_sent",
-  "category": "chat",
-  "metadata": {
-    "conversation_id": 1,
-    "message_length": 42
-  }
-}
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "event_id": 126,
-  "message": "User action tracked"
-}
-```
-
-### Get Telemetry Stats
-
-```http
-GET /telemetry/stats?limit=100&offset=0
-Authorization: ******
-```
-
-Response:
-```json
-{
-  "status": "OK",
-  "user_id": "uuid",
-  "total_events": 150,
-  "event_counts": {
-    "message_sent": 45,
-    "page_view": 60,
-    "feature_used": 30,
-    "error": 15
-  },
-  "category_counts": {
-    "chat": 45,
-    "navigation": 60,
-    "feature": 30,
-    "error": 15
-  },
-  "recent_events": [
-    {
-      "id": 150,
-      "event_name": "page_view",
-      "category": "navigation",
-      "timestamp": "2024-01-01T12:05:00Z"
-    }
-  ],
-  "offset": 0,
-  "limit": 100
-}
-```
-
-## Error Responses
-
-### 400 Bad Request
-
-```json
-{
-  "detail": "Invalid request parameters"
-}
-```
-
-### 401 Unauthorized
-
-```json
-{
-  "detail": "Authorization header required"
-}
-```
-
-### 404 Not Found
-
-```json
-{
-  "detail": "Conversation not found"
-}
-```
-
-### 500 Internal Server Error
-
-```json
-{
-  "detail": "Failed to process request: error message"
-}
-```
-
-## Rate Limiting
-
-The API applies a configurable per-client limit (default `120/minute`) at the
-FastAPI boundary. Set `RATE_LIMIT` to change it. Multi-replica deployments
-should configure shared Redis-backed storage before scaling horizontally.
-
-## Pagination
-
-List endpoints support pagination with the following query parameters:
-
-- `limit`: Number of items to return (default: 50, max: 1000)
-- `offset`: Number of items to skip (default: 0)
-
-Example:
-```http
-GET /chat/conversations?limit=20&offset=40
-```
-
-## Versioning
-
-The API version is included in the response headers:
-
-```
-X-API-Version: 2.0.0
-```
-
-Current version: **2.0.0**
-
-## Support
-
-For API support, please contact the development team. 

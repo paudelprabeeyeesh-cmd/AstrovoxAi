@@ -638,8 +638,8 @@ func (v *Vulkan) Softmax(x []float64, dim int) ([]float64, error) {
 }
 
 // Stats returns Vulkan statistics.
-func (v *Vulkan) Stats() VulkanStats {
-	return v.stats
+func (v *Vulkan) Stats() *VulkanStats {
+	return &v.stats
 }
 
 // Capabilities returns Vulkan capabilities.

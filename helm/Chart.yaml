@@ -2,4 +2,16 @@ apiVersion: v2
 name: astrovox
 description: A Helm chart for Astrovox AI Platform
 version: 0.1.0
+<<<<<<< HEAD
 appVersion: 2.0.0
+=======
+appVersion: "2.0.0"
+keywords:
+  - ai
+  - chatbot
+  - fastapi
+  - react
+maintainers:
+  - name: AstrovoxAI Team
+    email: team@astrovox.ai
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

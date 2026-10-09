@@ -1,7 +1,5 @@
 """Integration tests for chat, memory, and auth endpoints."""
 
-import pytest
-from unittest.mock import MagicMock, AsyncMock, patch
 from fastapi.testclient import TestClient
 
 from app.main import app

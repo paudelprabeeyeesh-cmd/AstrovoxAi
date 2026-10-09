@@ -1,0 +1,112 @@
+import sqlite3
+from database.connection import get_connection, init_db
+
+
+def test_get_connection_returns_sqlite3_connection(tmp_path):
+    db_path = str(tmp_path / "test.db")
+    conn = get_connection(db_path)
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+        assert conn.row_factory is not None
+    finally:
+        conn.close()
+
+
+def test_init_db_creates_tables(tmp_path):
+    db_path = str(tmp_path / "init.db")
+    init_db(db_path)
+    conn = get_connection(db_path)
+    try:
+        tables = [
+            r["name"]
+            for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        assert "users" in tables
+        assert "chats" in tables
+        assert "usage" in tables
+        assert "schema_migrations" in tables
+    finally:
+        conn.close()
+
+
+def test_row_factory_returns_dict(tmp_path):
+    db_path = str(tmp_path / "row.db")
+    init_db(db_path)
+    conn = get_connection(db_path)
+    try:
+        conn.execute("INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
+                     ("alice", "alice@example.com", "hash", "2024-01-01T00:00:00"))
+        conn.commit()
+        row = conn.execute("SELECT * FROM users WHERE username=?", ("alice",)).fetchone()
+        assert isinstance(row, dict)
+        assert row["username"] == "alice"
+    finally:
+        conn.close()
+
+
+def test_wal_mode_enabled(tmp_path):
+    db_path = str(tmp_path / "wal.db")
+    conn = get_connection(db_path)
+    try:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()["journal_mode"]
+        assert mode == "wal"
+    finally:
+        conn.close()
+
+
+def test_foreign_keys_enabled(tmp_path):
+    db_path = str(tmp_path / "fk.db")
+    conn = get_connection(db_path)
+    try:
+        fk = conn.execute("PRAGMA foreign_keys").fetchone()["foreign_keys"]
+        assert fk == 1
+    finally:
+        conn.close()
+
+
+def test_get_connection_default_path(monkeypatch, tmp_path):
+    db_path = str(tmp_path / "default.db")
+    monkeypatch.setenv("ASTROVOX_DB_PATH", db_path)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()
+
+
+def test_init_db_idempotent(tmp_path):
+    db_path = str(tmp_path / "idempotent.db")
+    init_db(db_path)
+    init_db(db_path)
+    conn = get_connection(db_path)
+    try:
+        tables = [
+            r["name"]
+            for r in conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            ).fetchall()
+        ]
+        assert "users" in tables
+    finally:
+        conn.close()
+
+
+def test_get_connection_uses_default_path_without_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("ASTROVOX_DB_PATH", raising=False)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()
+
+
+def test_get_connection_creates_directory(tmp_path, monkeypatch):
+    db_path = str(tmp_path / "nested" / "dir" / "test.db")
+    monkeypatch.setenv("ASTROVOX_DB_PATH", db_path)
+    conn = get_connection()
+    try:
+        assert isinstance(conn, sqlite3.Connection)
+    finally:
+        conn.close()

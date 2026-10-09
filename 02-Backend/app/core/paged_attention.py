@@ -7,7 +7,11 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
+<<<<<<< HEAD
 from typing import Any, Dict, List, Optional, Tuple
+=======
+from typing import Dict, List, Optional
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 import torch
 
@@ -177,3 +181,80 @@ def paged_attention_forward(q: Any, kv_cache: KVCache, page_table: Dict[int, Pag
     attn = attn.softmax(dim=-1)
     out = torch.matmul(attn, v)
     return out
+<<<<<<< HEAD
+=======
+
+
+@dataclass
+class ContinuousBatch:
+    batch_id: str
+    max_batch_size: int = 32
+    active_requests: List[dict] = field(default_factory=list)
+    queued_requests: List[dict] = field(default_factory=list)
+    preempted_requests: List[dict] = field(default_factory=list)
+
+    def add_request(self, request: dict) -> bool:
+        if len(self.active_requests) < self.max_batch_size:
+            self.active_requests.append(request)
+            return True
+        self.queued_requests.append(request)
+        return False
+
+    def on_token_complete(self, request_id: str) -> Optional[str]:
+        for req in self.active_requests:
+            if req.get("id") == request_id:
+                self.active_requests.remove(req)
+                if self.queued_requests:
+                    next_req = self.queued_requests.pop(0)
+                    self.active_requests.append(next_req)
+                    return next_req.get("id")
+                if self.preempted_requests:
+                    next_req = self.preempted_requests.pop(0)
+                    self.active_requests.append(next_req)
+                    return next_req.get("id")
+                return None
+        return None
+
+    def preempt_lowest_priority(self) -> Optional[str]:
+        if not self.active_requests:
+            return None
+        req = min(self.active_requests, key=lambda r: r.get("priority", 0))
+        self.active_requests.remove(req)
+        self.preempted_requests.append(req)
+        return req.get("id")
+
+    def get_utilization(self) -> float:
+        return round(len(self.active_requests) / self.max_batch_size * 100, 1)
+
+
+class Scheduler:
+    """Continuous batching scheduler with preemption."""
+
+    def __init__(self, max_batch_size: int = 32, max_preempted: int = 8):
+        self.batches: Dict[str, ContinuousBatch] = {}
+        self.max_batch_size = max_batch_size
+        self.max_preempted = max_preempted
+
+    def submit(self, request: dict) -> str:
+        batch_id = request.get("batch_id", "default")
+        if batch_id not in self.batches:
+            self.batches[batch_id] = ContinuousBatch(batch_id=batch_id, max_batch_size=self.max_batch_size)
+        batch = self.batches[batch_id]
+        if not batch.add_request(request):
+            if len(batch.preempted_requests) < self.max_preempted:
+                batch.preempt_lowest_priority()
+                batch.add_request(request)
+        return batch_id
+
+    def get_stats(self) -> dict:
+        total_active = sum(len(b.active_requests) for b in self.batches.values())
+        total_queued = sum(len(b.queued_requests) for b in self.batches.values())
+        total_preempted = sum(len(b.preempted_requests) for b in self.batches.values())
+        return {
+            "num_batches": len(self.batches),
+            "total_active": total_active,
+            "total_queued": total_queued,
+            "total_preempted": total_preempted,
+            "utilization": round(total_active / (self.max_batch_size * max(len(self.batches), 1)) * 100, 1),
+        }
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -1,15 +1,13 @@
-import pytest
 import numpy as np
 
 from app.core.mcts import MCTS, Node, ValueModel, tree_search_reasoning
-from app.core.react_loop import ToolRegistry, ReActLoop, normalize_observation
+from app.core.react_loop import ToolRegistry, normalize_observation
 from app.core.hybrid_rag import (
     HybridRAG,
     CrossEncoderReranker,
     Document,
     bm25_score,
     dense_retrieval,
-    cosine_similarity,
     reciprocal_rank_fusion,
 )
 
@@ -19,7 +17,7 @@ def dummy_action_fn(state: str) -> list:
 
 
 def test_mcts_search():
-    mcts = MCTS(num_simulations=10)
+    MCTS(num_simulations=10)
     result = tree_search_reasoning("What is 2+2?", depth=2, breadth=2)
     assert "best_action" in result
     assert "best_state" in result

@@ -1,12 +1,40 @@
+<<<<<<< HEAD
 # Production Docker Compose configuration
 # Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 # Or with override: docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml up -d
 
 services:
+=======
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # Redis — Caching, session store, rate limiting backend
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: astravox-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - astravox-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================================================
+  # FastAPI Backend
+  # ==========================================================================
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
+<<<<<<< HEAD
       target: production
       args:
         - PYTHON_VERSION=3.12
@@ -92,10 +120,55 @@ services:
     depends_on:
       - backend
 
+=======
+    container_name: astravox-backend
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - ENVIRONMENT=production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://astrovox.ai,https://www.astrovox.ai}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - RATE_LIMIT=${RATE_LIMIT:-120/minute}
+      - DAILY_AI_LIMIT=${DAILY_AI_LIMIT:-50}
+      - STORAGE_ROOT=/app/storage
+      - USAGE_DB_PATH=/app/storage/usage.db
+      - METRICS_ENABLED=true
+    restart: always
+    networks:
+      - astravox-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs
+      - storage-data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpu: "0.5"
+        reservations:
+          memory: 256M
+          cpu: "0.2"
+
+  # ==========================================================================
+  # React Frontend (served via nginx)
+  # ==========================================================================
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+<<<<<<< HEAD
       target: production
     restart: always
     ports:
@@ -111,12 +184,24 @@ services:
         limits:
           cpus: "1"
           memory: 512M
+=======
+    container_name: astrovox-frontend
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - astravox-network
+    depends_on:
+      backend:
+        condition: service_healthy
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
+<<<<<<< HEAD
     stop_grace_period: 30s
     pre_stop:
       command: ["/bin/sh", "-c", "kill -USR2 $(cat /run/nginx.pid 2>/dev/null || true) || true"]
@@ -133,10 +218,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
     deploy:
       resources:
         limits:
           memory: 256M
+<<<<<<< HEAD
 
   postgres:
     image: postgres:16-alpine@sha256:3c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
@@ -205,3 +293,29 @@ secrets:
     file: ./secrets/db_password.txt
   grafana_password:
     file: ./secrets/grafana_password.txt
+=======
+          cpu: "0.3"
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+      - target: 443
+        published: 443
+        protocol: tcp
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  astravox-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  redis-data:
+    driver: local
+  storage-data:
+    driver: local
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

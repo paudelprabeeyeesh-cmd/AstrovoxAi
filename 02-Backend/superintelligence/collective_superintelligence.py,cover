@@ -1,0 +1,129 @@
+> import numpy as np
+> from typing import List, Dict, Any, Optional
+> from dataclasses import dataclass
+  
+  
+> @dataclass
+> class CollectiveNode:
+>     id: str
+>     capability: float
+>     specialization: str
+>     embedding: np.ndarray
+  
+  
+> @dataclass
+> class CollectiveState:
+>     total_capability: float
+>     synergy_score: float
+>     consensus_quality: float
+>     diversity_index: float
+>     active_nodes: int
+  
+  
+> class CollectiveSuperintelligence:
+>     def __init__(self, node_embedding_dim: int = 32):
+>         self.node_embedding_dim = node_embedding_dim
+>         self.nodes: Dict[str, CollectiveNode] = {}
+>         self.interaction_matrix: Optional[np.ndarray] = None
+>         self.state_history: List[CollectiveState] = []
+  
+>     def add_node(self, node_id: str, capability: float, specialization: str) -> CollectiveNode:
+>         embedding = np.random.randn(self.node_embedding_dim)
+>         node = CollectiveNode(id=node_id, capability=float(capability), specialization=specialization, embedding=embedding)
+>         self.nodes[node_id] = node
+>         self._rebuild_interaction_matrix()
+>         return node
+  
+>     def amplify_collective(self, interaction_strength: float = 0.5) -> CollectiveState:
+>         if not self.nodes:
+>             return CollectiveState(total_capability=0.0, synergy_score=0.0, consensus_quality=0.0, diversity_index=0.0, active_nodes=0)
+>         ids = list(self.nodes.keys())
+>         n = len(ids)
+>         embeddings = np.stack([self.nodes[i].embedding for i in ids])
+>         capabilities = np.array([self.nodes[i].capability for i in ids], dtype=float)
+>         total_capability = float(np.sum(capabilities))
+>         diversity = self._compute_diversity(embeddings)
+>         synergy = self._compute_synergy(capabilities, interaction_strength)
+>         consensus = self._compute_consensus(embeddings)
+>         state = CollectiveState(
+>             total_capability=total_capability,
+>             synergy_score=synergy,
+>             consensus_quality=consensus,
+>             diversity_index=diversity,
+>             active_nodes=n,
+>         )
+>         self.state_history.append(state)
+>         return state
+  
+>     def _rebuild_interaction_matrix(self) -> None:
+>         ids = list(self.nodes.keys())
+>         n = len(ids)
+>         if n == 0:
+!             self.interaction_matrix = None
+!             return
+>         embeddings = np.stack([self.nodes[i].embedding for i in ids])
+>         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+>         normalized = embeddings / (norms + 1e-8)
+>         self.interaction_matrix = normalized @ normalized.T
+  
+>     def _compute_diversity(self, embeddings: np.ndarray) -> float:
+>         if embeddings.shape[0] < 2:
+>             return 0.0
+>         pairwise = embeddings @ embeddings.T
+>         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+>         normalized = pairwise / (norms @ norms.T + 1e-8)
+>         mask = ~np.eye(normalized.shape[0], dtype=bool)
+>         similarities = normalized[mask]
+>         diversity = 1.0 - float(np.mean(np.abs(similarities)))
+>         return float(np.clip(diversity, 0.0, 1.0))
+  
+>     def _compute_synergy(self, capabilities: np.ndarray, interaction_strength: float) -> float:
+>         if len(capabilities) < 2:
+>             return float(np.sum(capabilities))
+>         base = float(np.sum(capabilities))
+>         if self.interaction_matrix is None:
+!             return base
+>         n = len(capabilities)
+>         interaction = interaction_strength * np.sum(self.interaction_matrix) / (n * n)
+>         return base * (1.0 + interaction)
+  
+>     def _compute_consensus(self, embeddings: np.ndarray) -> float:
+>         if embeddings.shape[0] == 0:
+!             return 0.0
+>         centroid = np.mean(embeddings, axis=0)
+>         norms = np.linalg.norm(embeddings, axis=1)
+>         centroid_norm = np.linalg.norm(centroid)
+>         if centroid_norm == 0 or np.all(norms == 0):
+!             return 0.0
+>         sims = embeddings @ centroid / (norms * centroid_norm + 1e-8)
+>         return float(np.clip(np.mean(sims), -1.0, 1.0))
+  
+>     def emergent_consensus(self, topic_vector: np.ndarray, threshold: float = 0.7) -> Dict[str, Any]:
+>         topic_vector = np.asarray(topic_vector, dtype=float)
+>         if self.interaction_matrix is None or len(self.nodes) == 0:
+>             return {"consensus_reached": False, "aligned_nodes": []}
+>         ids = list(self.nodes.keys())
+>         embeddings = np.stack([self.nodes[i].embedding for i in ids])
+>         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+>         topic_norm = np.linalg.norm(topic_vector)
+>         sims = (embeddings @ topic_vector) / (norms.flatten() * topic_norm + 1e-8)
+>         aligned = [ids[i] for i in range(len(ids)) if sims[i] >= threshold]
+>         consensus_reached = len(aligned) > len(ids) / 2.0 if ids else False
+>         return {
+>             "consensus_reached": consensus_reached,
+>             "aligned_nodes": aligned,
+>             "alignment_scores": {ids[i]: float(sims[i]) for i in range(len(ids))},
+>         }
+  
+>     def get_collective_stats(self) -> Dict[str, Any]:
+>         if not self.state_history:
+!             return {"nodes": len(self.nodes), "states_recorded": 0}
+>         latest = self.state_history[-1]
+>         return {
+>             "nodes": latest.active_nodes,
+>             "total_capability": latest.total_capability,
+>             "synergy_score": latest.synergy_score,
+>             "consensus_quality": latest.consensus_quality,
+>             "diversity_index": latest.diversity_index,
+>             "states_recorded": len(self.state_history),
+>         }

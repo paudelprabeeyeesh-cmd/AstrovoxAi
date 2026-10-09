@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """RAG Engine — document ingestion, chunking, embedding, and retrieval.
 
 Provides:
@@ -21,6 +22,10 @@ from app.documents import create_document, delete_document_chunks, create_docume
 from app.services.knowledge.knowledge import search_docs
 
 logger = logging.getLogger(__name__)
+=======
+import os
+import requests
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 try:
     import openai
@@ -43,12 +48,22 @@ except ImportError:
     DocxDocument = None
     HAS_DOCX = False
 
+<<<<<<< HEAD
 try:
     from bs4 import BeautifulSoup
     HAS_BS4 = True
 except ImportError:
     BeautifulSoup = None
     HAS_BS4 = False
+=======
+from .documents import (
+    create_document,
+    delete_document_chunks,
+    create_document_chunk,
+    search_chunks,
+)
+from .config import settings
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 client = None
@@ -196,7 +211,7 @@ class RAGEngine:
         response = requests.get(api_url, timeout=30)
         response.raise_for_status()
         repo_data = response.json()
-        default_branch = repo_data.get("default_branch", "main")
+        repo_data.get("default_branch", "main")
         contents_url = repo_data.get("contents_url", "").replace("{/path}", "/README.md")
         response = requests.get(contents_url, timeout=30)
         if response.status_code != 200:

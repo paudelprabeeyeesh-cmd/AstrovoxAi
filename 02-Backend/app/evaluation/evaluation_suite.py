@@ -41,7 +41,7 @@ class EvaluationSuite:
                 else:
                     failed += 1
                 total_latency += latency
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 failed += 1
                 results.append({
                     "prompt": prompt,
@@ -50,7 +50,7 @@ class EvaluationSuite:
                     "score": 0.0,
                     "latency_ms": 0,
                     "passed": False,
-                    "error": str(e),
+                    "error": str(_e),
                 })
         return {
             "suite": name,
@@ -76,3 +76,18 @@ class EvaluationSuite:
             if words:
                 score += 0.2 * (overlap / len(words))
         return min(1.0, max(0.0, score))
+
+    def run_all(self, runner) -> dict[str, Any]:
+        all_results = {}
+        for suite_name in self.suites:
+            all_results[suite_name] = self.run_suite(suite_name, runner)
+        total_cases = sum(r["total"] for r in all_results.values())
+        total_passed = sum(r["passed"] for r in all_results.values())
+        return {
+            "suites": len(self.suites),
+            "total_cases": total_cases,
+            "total_passed": total_passed,
+            "total_failed": total_cases - total_passed,
+            "overall_pass_rate": total_passed / total_cases if total_cases else 0.0,
+            "suite_results": all_results,
+        }

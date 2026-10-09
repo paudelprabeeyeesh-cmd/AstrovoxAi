@@ -20,6 +20,7 @@ spec:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
         checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
     spec:
+<<<<<<< HEAD
       {{- if .Values.serviceAccount.create }}
       serviceAccountName: {{ include "astrovox.fullname" . }}
       {{- end }}
@@ -31,13 +32,29 @@ spec:
         fsGroup: 1001
         seccompProfile:
           type: RuntimeDefault
+=======
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: {{ include "astrovox.fullname" . }}
+      automountServiceAccountToken: true
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
       containers:
       - name: {{ .Chart.Name }}
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         ports:
+<<<<<<< HEAD
         - name: http
           containerPort: 8000
+=======
+        - containerPort: 8000
+          name: http
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
           protocol: TCP
         envFrom:
         - configMapRef:
@@ -50,12 +67,17 @@ spec:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+<<<<<<< HEAD
           runAsUser: 1001
+=======
+          runAsUser: 1000
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
           capabilities:
             drop:
             - ALL
         livenessProbe:
           httpGet:
+<<<<<<< HEAD
             path: /health/live
             port: http
           initialDelaySeconds: 60
@@ -106,3 +128,19 @@ spec:
       affinity:
         {{- toYaml .Values.affinity | nindent 8 }}
       {{- end }}
+=======
+            path: /health/liveness
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978

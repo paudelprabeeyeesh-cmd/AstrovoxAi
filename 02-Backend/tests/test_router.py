@@ -1,4 +1,3 @@
-import pytest
 from app.router import choose_model
 
 def test_choose_model():

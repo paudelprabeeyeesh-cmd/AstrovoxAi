@@ -42,10 +42,10 @@ class ToolRegistry:
                 result = self.tools[name](**arguments)
                 latency = (time.time() - start) * 1000
                 return ToolCall(tool_name=name, arguments=arguments, result=str(result), latency_ms=latency)
-            except Exception as e:
+            except Exception as _e:  # noqa: BLE001
                 if attempt == max_retries - 1:
                     latency = (time.time() - start) * 1000
-                    return ToolCall(tool_name=name, arguments=arguments, error=str(e), latency_ms=latency)
+                    return ToolCall(tool_name=name, arguments=arguments, error=str(_e), latency_ms=latency)
                 time.sleep(0.1 * (2 ** attempt))
         return ToolCall(tool_name=name, arguments=arguments, error="Max retries exceeded")
 

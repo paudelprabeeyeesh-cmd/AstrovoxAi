@@ -89,12 +89,12 @@ async def track_event(
             "event_id": response.data[0].get("id") if response.data else None,
             "message": "Event tracked successfully",
         }
-    except Exception as e:
-        logger.error(f"Failed to track telemetry event: {str(e)}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to track telemetry event: {str(_e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to track event: {str(e)}",
-        )
+            detail=f"Failed to track event: {str(_e)}",
+        ) from None
 
 
 @router.post("/page-view")
@@ -134,12 +134,12 @@ async def track_page_view(
             "event_id": response.data[0].get("id") if response.data else None,
             "message": "Page view tracked",
         }
-    except Exception as e:
-        logger.error(f"Failed to track page view: {str(e)}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to track page view: {str(_e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to track page view: {str(e)}",
-        )
+            detail=f"Failed to track page view: {str(_e)}",
+        ) from None
 
 
 @router.post("/error")
@@ -184,12 +184,12 @@ async def track_error(
             "event_id": response.data[0].get("id") if response.data else None,
             "message": "Error tracked",
         }
-    except Exception as e:
-        logger.error(f"Failed to track error: {str(e)}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to track error: {str(_e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to track error: {str(e)}",
-        )
+            detail=f"Failed to track error: {str(_e)}",
+        ) from None
 
 
 @router.post("/user-action")
@@ -232,12 +232,12 @@ async def track_user_action(
             "event_id": response.data[0].get("id") if response.data else None,
             "message": "User action tracked",
         }
-    except Exception as e:
-        logger.error(f"Failed to track user action: {str(e)}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to track user action: {str(_e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to track user action: {str(e)}",
-        )
+            detail=f"Failed to track user action: {str(_e)}",
+        ) from None
 
 
 @router.get("/stats")
@@ -280,9 +280,9 @@ async def get_telemetry_stats(
             "offset": offset,
             "limit": limit,
         }
-    except Exception as e:
-        logger.error(f"Failed to get telemetry stats: {str(e)}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"Failed to get telemetry stats: {str(_e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get stats: {str(e)}",
-        )
+            detail=f"Failed to get stats: {str(_e)}",
+        ) from None

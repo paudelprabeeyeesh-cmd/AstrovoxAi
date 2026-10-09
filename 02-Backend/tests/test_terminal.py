@@ -29,7 +29,6 @@ def test_inject_requires_auth():
     # The fixture patches the module-level helper, so bypass it for this test.
     import app.main  # noqa: F401
 
-    from fastapi.testclient import TestClient as _TC
 
     # A fresh client against an app whose dependency is not patched is hard to
     # construct because the patch is module-level; instead verify validation.

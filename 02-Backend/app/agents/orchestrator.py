@@ -1,9 +1,26 @@
 """Multi-agent orchestration engine."""
 
+<<<<<<< HEAD
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
+=======
+from .planner import PlannerAgent
+from .coder import CoderAgent
+from .researcher import ResearcherAgent
+from .writer import WriterAgent
+from .reviewer import ReviewerAgent
+from .debugger import DebuggerAgent
+from .base import AgentResult
+from ..planning import PlanningEngine
+from ..decomposition import TaskDecomposer
+from ..debate import DebateEngine
+from ..self_eval import SelfEvaluator
+from ..memory_conflict import MemoryConflictDetector, Conflict
+
+logger = logging.getLogger(__name__)
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class AgentStatus(Enum):

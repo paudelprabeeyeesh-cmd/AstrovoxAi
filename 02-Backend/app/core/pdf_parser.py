@@ -56,8 +56,8 @@ def extract_text_from_pdf(file_path: str) -> str:
         except ImportError:
             logger.error("No PDF library available")
             return ""
-    except Exception as e:
-        logger.error(f"PDF extraction failed: {e}")
+    except Exception as _e:  # noqa: BLE001
+        logger.error(f"PDF extraction failed: {_e}")
         return ""
 
 

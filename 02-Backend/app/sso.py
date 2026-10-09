@@ -1,15 +1,23 @@
 import uuid
 import json
+<<<<<<< HEAD
 import logging
+=======
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from urllib.parse import urlencode
 
 import httpx
+<<<<<<< HEAD
 from app.repositories.database.client import get_db
 from app.services.auth.auth import hash_password
 
 logger = logging.getLogger(__name__)
+=======
+from .database import get_db
+from .auth import hash_password
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class SSOProviderType:
@@ -137,7 +145,7 @@ class SSOService:
                         "INSERT INTO users (id, email, password_hash, email_verified, role, plan) VALUES (?, ?, ?, ?, ?, ?)",
                         (user_id, email, password_hash, 1, "user", "enterprise"),
                     )
-                except Exception:
+                except Exception as _e:  # noqa: BLE001
                     row2 = conn.execute("SELECT id FROM users WHERE email = ?", (email,)).fetchone()
                     if row2:
                         user_id = row2["id"]

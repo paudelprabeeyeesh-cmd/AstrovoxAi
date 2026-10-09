@@ -92,7 +92,6 @@ class ChunkingStrategy:
         # Split by headings
         sections = re.split(r'^(#{1,6}\s+.+)$', text, flags=re.MULTILINE)
         
-        current_chunk = ""
         current_heading = "Introduction"
         
         for i in range(0, len(sections), 2):

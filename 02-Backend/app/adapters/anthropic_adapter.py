@@ -32,7 +32,7 @@ class AnthropicAdapter(BaseLLMAdapter):
     def count_tokens(self, text: str) -> int:
         try:
             return self._client.count_tokens(text).input_tokens
-        except Exception:
+        except Exception as _e:  # noqa: BLE001
             return max(1, len(text) // 4)
 
     def generate(self, prompt: str, **kwargs) -> str:

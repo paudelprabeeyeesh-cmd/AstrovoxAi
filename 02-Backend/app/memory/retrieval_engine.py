@@ -164,9 +164,15 @@ class RetrievalEngine:
                 # Generic retrieval
                 matches = self._retrieve_generic(store, query, method)
         
+<<<<<<< HEAD
         except Exception as e:
             logger.error("Retrieval error: %s", e)
             matches = []
+=======
+        except Exception as _e:  # noqa: BLE001
+            # Log error but continue with other stores
+            print(f"Error retrieving from {memory_type}: {_e}")
+>>>>>>> 10617909505295e4a37b817bb54db2364934b978
         
         return matches
     
@@ -298,7 +304,7 @@ class RetrievalEngine:
             return matches
         
         search_results = store.search_workspace(workspace_id, query)
-        query_lower = query.lower()
+        query.lower()
         
         # Search in notes
         for note in search_results.get('notes', []):
