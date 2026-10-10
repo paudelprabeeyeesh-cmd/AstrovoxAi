@@ -23,10 +23,10 @@ type Tool interface {
 
 // ToolFunc adapts a function to the Tool interface.
 type ToolFunc struct {
-	name    string
-	desc    string
-	schema  string
-	fn      func(ctx context.Context, args map[string]interface{}) (interface{}, error)
+	name   string
+	desc   string
+	schema string
+	fn     func(ctx context.Context, args map[string]interface{}) (interface{}, error)
 }
 
 // NewToolFunc creates a tool from a function.
@@ -224,10 +224,10 @@ type Agent struct {
 
 // AgentStats tracks agent execution statistics.
 type AgentStats struct {
-	Steps        atomic.Int64
-	ToolCalls    atomic.Int64
-	Errors       atomic.Int64
-	TotalTimeNs  atomic.Int64
+	Steps       atomic.Int64
+	ToolCalls   atomic.Int64
+	Errors      atomic.Int64
+	TotalTimeNs atomic.Int64
 }
 
 // NewAgent creates an agent.
@@ -336,9 +336,9 @@ type Orchestrator struct {
 
 // OrchestratorStats tracks orchestration statistics.
 type OrchestratorStats struct {
-	Rounds      atomic.Int64
-	AgentCalls  atomic.Int64
-	Failures    atomic.Int64
+	Rounds     atomic.Int64
+	AgentCalls atomic.Int64
+	Failures   atomic.Int64
 }
 
 // WorkflowStep defines an ordered pipeline step.

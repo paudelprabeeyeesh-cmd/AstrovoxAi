@@ -14,9 +14,9 @@ import (
 
 // Errors returned by the checkpoint coordinator.
 var (
-	ErrNoSnapshot   = errors.New("no snapshot available")
+	ErrNoSnapshot    = errors.New("no snapshot available")
 	ErrVersionBehind = errors.New("local version is behind remote")
-	ErrShardMissing = errors.New("requested shard not found")
+	ErrShardMissing  = errors.New("requested shard not found")
 )
 
 // Shard is a slice of parameters with its own version.

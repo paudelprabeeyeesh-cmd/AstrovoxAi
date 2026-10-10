@@ -29,9 +29,9 @@ func TestVersionString(t *testing.T) {
 
 func TestDescriptor_Validate(t *testing.T) {
 	d := &Descriptor{
-		Name:     "matmul",
-		Inputs:   []TensorDesc{{Name: "a"}},
-		Outputs:  []TensorDesc{{Name: "c"}},
+		Name:    "matmul",
+		Inputs:  []TensorDesc{{Name: "a"}},
+		Outputs: []TensorDesc{{Name: "c"}},
 	}
 	if err := d.Validate(); err != nil {
 		t.Errorf("unexpected error: %v", err)

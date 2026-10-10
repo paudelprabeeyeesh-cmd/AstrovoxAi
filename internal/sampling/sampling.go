@@ -37,13 +37,13 @@ func (s Strategy) String() string {
 
 // Sampler selects the next token from logits.
 type Sampler struct {
-	Strategy  Strategy
-	Temp      float64
-	TopK      int
-	TopP      float64
-	MinP      float64
+	Strategy          Strategy
+	Temp              float64
+	TopK              int
+	TopP              float64
+	MinP              float64
 	RepetitionPenalty float64
-	Rand      *Rng
+	Rand              *Rng
 }
 
 // Rng is a small deterministic PRNG (xorshift64).
@@ -280,10 +280,10 @@ type Beam struct {
 
 // BeamSearchConfig holds beam search parameters.
 type BeamSearchConfig struct {
-	BeamWidth  int
-	MaxLength  int
+	BeamWidth     int
+	MaxLength     int
 	LengthPenalty float64
-	EarlyStop  bool
+	EarlyStop     bool
 }
 
 // DefaultBeamConfig returns defaults.
@@ -358,8 +358,8 @@ func normalized(b Beam, penalty float64) float64 {
 
 // StreamConfig configures token streaming.
 type StreamConfig struct {
-	BufferSize   int
-	EchoPrompt   bool
+	BufferSize  int
+	EchoPrompt  bool
 	StopStrings []string
 	StopTokens  []int
 }
@@ -443,16 +443,16 @@ func (ts *TokenStream) Emitted() int { return ts.emitted }
 
 // GenerationConfig bundles decode settings.
 type GenerationConfig struct {
-	MaxNewTokens  int
-	Strategy      Strategy
-	Temperature   float64
-	TopK          int
-	TopP          float64
-	BeamWidth     int
-	UseBeam       bool
-	StopStrings   []string
-	StopTokens    []int
-	Stream        bool
+	MaxNewTokens int
+	Strategy     Strategy
+	Temperature  float64
+	TopK         int
+	TopP         float64
+	BeamWidth    int
+	UseBeam      bool
+	StopStrings  []string
+	StopTokens   []int
+	Stream       bool
 }
 
 // DefaultGenerationConfig returns sensible defaults.

@@ -1,9 +1,6 @@
 package backend
 
-import (
-	"errors"
-	"math"
-)
+import "errors"
 
 // CPUBackend is a reference CPU implementation.
 type CPUBackend struct{}
@@ -67,29 +64,9 @@ func (c *CPUBackend) Relu(x []float64) []float64 {
 }
 
 // Softmax applies the softmax function along a dimension.
+//
 // The backend operates on flat slices, so dim=0 and dim=1 are equivalent
-// and both are accepted; only the logical "reduce over the vector" case
-// is supported.
+// and both are accepted.
 func (c *CPUBackend) Softmax(x []float64, dim int) ([]float64, error) {
-	if dim != 0 && dim != 1 {
-		return nil, errors.New("only dim=0 or dim=1 supported in CPU backend")
-	}
-	out := make([]float64, len(x))
-	var maxVal float64 = -math.MaxFloat64
-	for _, v := range x {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	var sum float64
-	for i, v := range x {
-		out[i] = math.Exp(v - maxVal)
-		sum += out[i]
-	}
-	if sum > 0 {
-		for i := range out {
-			out[i] /= sum
-		}
-	}
-	return out, nil
+	return softmaxValues(x, dim)
 }

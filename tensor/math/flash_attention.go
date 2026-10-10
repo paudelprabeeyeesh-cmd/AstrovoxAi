@@ -86,15 +86,15 @@ func flashAttentionBHLD(Q, K, V *tensor.Tensor, B, Lq, Lk, H, D int, causal bool
 					Vj := make([]float64, (jEnd-j)*D)
 
 					for jj := 0; jj < jEnd-j; jj++ {
-						kIdx := ((b*Lk+(j+jj))*H+h)*D
-						vIdx := ((b*Lk+(j+jj))*H+h)*D
+						kIdx := ((b*Lk+(j+jj))*H + h) * D
+						vIdx := ((b*Lk+(j+jj))*H + h) * D
 						copy(Kj[jj*D:], k[kIdx:kIdx+D])
 						copy(Vj[jj*D:], v[vIdx:vIdx+D])
 					}
 
 					// Compute S_ij = Q_i * K_j^T for this block
 					for ii := 0; ii < iEnd-i; ii++ {
-						qIdx := ((b*Lq+(i+ii))*H+h)*D
+						qIdx := ((b*Lq+(i+ii))*H + h) * D
 						Qi := q[qIdx : qIdx+D]
 
 						// m_ij = max over j in block of S_ij
@@ -161,9 +161,9 @@ func flashAttentionBHLD(Q, K, V *tensor.Tensor, B, Lq, Lk, H, D int, causal bool
 // FlashAttentionV2 adds support for variable sequence lengths,
 // dropout, and ALiBi slopes.
 type FlashAttentionV2 struct {
-	Dropout      float64
-	ALiBiSlopes  []float64
-	WindowSize   int // Local attention window
+	Dropout     float64
+	ALiBiSlopes []float64
+	WindowSize  int // Local attention window
 }
 
 func (fa *FlashAttentionV2) Forward(Q, K, V *tensor.Tensor, causal bool) (*tensor.Tensor, error) {

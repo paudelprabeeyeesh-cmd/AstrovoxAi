@@ -43,9 +43,9 @@ func (bt BackendType) String() string {
 
 // BackendSelector selects the best available backend.
 type BackendSelector struct {
-	mu       sync.RWMutex
-	preferred BackendType
-	fallback  Backend
+	mu         sync.RWMutex
+	preferred  BackendType
+	fallback   Backend
 	candidates []Backend
 }
 
@@ -69,7 +69,7 @@ func (bs *BackendSelector) Register(b Backend) {
 func (bs *BackendSelector) Select() Backend {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
-	
+
 	// Try preferred backend first
 	for _, b := range bs.candidates {
 		if b.Name() == bs.preferred.String() {
@@ -82,7 +82,7 @@ func (bs *BackendSelector) Select() Backend {
 			}
 		}
 	}
-	
+
 	// Try any GPU backend
 	for _, b := range bs.candidates {
 		if b.Name() != "cpu" {
@@ -93,12 +93,12 @@ func (bs *BackendSelector) Select() Backend {
 			}
 		}
 	}
-	
+
 	// Fallback to CPU
 	if bs.fallback != nil {
 		return bs.fallback
 	}
-	
+
 	return nil
 }
 
@@ -118,10 +118,10 @@ func InitDefaultBackends() (*BackendSelector, error) {
 	// Create CPU fallback
 	cpu := NewCPUBackend()
 	selector := NewBackendSelector(BackendTypeCUDA, cpu)
-	
+
 	// Register CPU
 	selector.Register(cpu)
-	
+
 	// Try to create GPU backends (will be simulated)
 	if cuda, err := NewCUDA(0, 4096); err == nil {
 		selector.Register(cuda)

@@ -59,13 +59,13 @@ func (s CapabilitySet) Has(c Capability) bool { return s[c] }
 
 // ResourceLimits bounds the resources a sandboxed task may use.
 type ResourceLimits struct {
-	MaxMemoryBytes  int64
-	MaxCPUTimeMs    int64
-	MaxWallTimeMs   int64
-	MaxOpenFiles    int
-	MaxThreads      int
-	MaxOutputBytes  int64
-	AllowNetwork    bool
+	MaxMemoryBytes int64
+	MaxCPUTimeMs   int64
+	MaxWallTimeMs  int64
+	MaxOpenFiles   int
+	MaxThreads     int
+	MaxOutputBytes int64
+	AllowNetwork   bool
 }
 
 // DefaultLimits returns conservative default limits.
@@ -211,9 +211,9 @@ func (e *Environment) AddCPUTime(ms int64) error {
 
 // Sandbox executes tasks under a policy.
 type Sandbox struct {
-	policy     Policy
-	stats      SandboxStats
-	mu         sync.RWMutex
+	policy Policy
+	stats  SandboxStats
+	mu     sync.RWMutex
 }
 
 // Policy defines what a sandbox permits.
@@ -233,11 +233,11 @@ func (s *Sandbox) Policy() Policy { return s.policy }
 
 // SandboxStats tracks sandbox statistics.
 type SandboxStats struct {
-	TasksRun     atomic.Int64
-	TasksPassed  atomic.Int64
-	TasksFailed  atomic.Int64
-	Violations   atomic.Int64
-	TotalTimeNs  atomic.Int64
+	TasksRun    atomic.Int64
+	TasksPassed atomic.Int64
+	TasksFailed atomic.Int64
+	Violations  atomic.Int64
+	TotalTimeNs atomic.Int64
 }
 
 // Execute runs a task under the sandbox policy.
@@ -324,7 +324,7 @@ func SanitizeName(name string) (string, error) {
 
 // SandboxManager manages multiple sandboxes.
 type SandboxManager struct {
-	mu       sync.RWMutex
+	mu        sync.RWMutex
 	sandboxes map[string]*Sandbox
 }
 

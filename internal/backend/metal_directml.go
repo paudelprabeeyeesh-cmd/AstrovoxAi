@@ -18,15 +18,15 @@ var (
 
 // MetalDevice represents a simulated Metal device.
 type MetalDevice struct {
-	name           string
-	registryID     uint64
-	isLowPower     bool
-	isHeadless     bool
-	hasUnifiedMemory bool
-	maxThreadsPerThreadgroup MetalSize
-	maxBufferLength uint64
+	name                         string
+	registryID                   uint64
+	isLowPower                   bool
+	isHeadless                   bool
+	hasUnifiedMemory             bool
+	maxThreadsPerThreadgroup     MetalSize
+	maxBufferLength              uint64
 	recommendedMaxWorkingSetSize uint64
-	streams        []*MetalCommandQueue
+	streams                      []*MetalCommandQueue
 }
 
 // MetalSize represents a 3D size.
@@ -38,11 +38,11 @@ type MetalSize struct {
 
 // MetalCommandQueue represents a Metal command queue.
 type MetalCommandQueue struct {
-	id       int
-	device   *MetalDevice
-	buffers  []*MetalCommandBuffer
-	busy     atomic.Bool
-	stats    StreamStats
+	id      int
+	device  *MetalDevice
+	buffers []*MetalCommandBuffer
+	busy    atomic.Bool
+	stats   StreamStats
 }
 
 // ID returns the queue ID.
@@ -63,11 +63,11 @@ func (q *MetalCommandQueue) Synchronize() error {
 
 // MetalCommandBuffer records Metal commands.
 type MetalCommandBuffer struct {
-	queue    *MetalCommandQueue
-	state    MetalCommandBufferState
-	encoders []MetalCommandEncoder
+	queue     *MetalCommandQueue
+	state     MetalCommandBufferState
+	encoders  []MetalCommandEncoder
 	committed atomic.Bool
-	mu       sync.Mutex
+	mu        sync.Mutex
 }
 
 // MetalCommandBufferState represents command buffer state.
@@ -153,42 +153,42 @@ type Metal struct {
 
 // MetalStats tracks Metal statistics.
 type MetalStats struct {
-	MatMulOps      atomic.Int64
-	AddOps         atomic.Int64
-	ReluOps        atomic.Int64
-	SoftmaxOps     atomic.Int64
-	BufferAllocs   atomic.Int64
-	BytesAllocated atomic.Int64
+	MatMulOps        atomic.Int64
+	AddOps           atomic.Int64
+	ReluOps          atomic.Int64
+	SoftmaxOps       atomic.Int64
+	BufferAllocs     atomic.Int64
+	BytesAllocated   atomic.Int64
 	PipelineCompiles atomic.Int64
-	CommandBuffers atomic.Int64
+	CommandBuffers   atomic.Int64
 }
 
 // NewMetal creates a new Metal backend.
 func NewMetal(memoryMB uint64) (*Metal, error) {
 	device := &MetalDevice{
-		name:                  "Apple M-series (Simulated)",
-		registryID:            1,
-		isLowPower:            false,
-		isHeadless:            true,
-		hasUnifiedMemory:      true,
-		maxThreadsPerThreadgroup: MetalSize{Width: 1024, Height: 1024, Depth: 64},
-		maxBufferLength:       memoryMB * 1024 * 1024,
+		name:                         "Apple M-series (Simulated)",
+		registryID:                   1,
+		isLowPower:                   false,
+		isHeadless:                   true,
+		hasUnifiedMemory:             true,
+		maxThreadsPerThreadgroup:     MetalSize{Width: 1024, Height: 1024, Depth: 64},
+		maxBufferLength:              memoryMB * 1024 * 1024,
 		recommendedMaxWorkingSetSize: memoryMB * 1024 * 1024,
 	}
-	
+
 	m := &Metal{
 		device:    device,
 		available: false, // Simulated
 		pipelines: make(map[string]*MetalComputePipeline),
 		buffers:   make(map[uint64]*MetalBuffer),
 	}
-	
+
 	// Create command queues
 	m.queues = make([]*MetalCommandQueue, 4)
 	for i := range m.queues {
 		m.queues[i] = &MetalCommandQueue{id: i, device: device}
 	}
-	
+
 	return m, nil
 }
 
@@ -227,22 +227,22 @@ func (m *Metal) CreateBuffer(length uint64) (*MetalBuffer, error) {
 	if length > m.device.maxBufferLength {
 		return nil, ErrMetalBuffer
 	}
-	
+
 	buf := &MetalBuffer{
-		device: m.device,
-		length: length,
-		data:   make([]byte, length),
+		device:   m.device,
+		length:   length,
+		data:     make([]byte, length),
 		deviceID: m.nextBufferID.Add(1),
-		shared: m.device.hasUnifiedMemory,
+		shared:   m.device.hasUnifiedMemory,
 	}
-	
+
 	m.mu.Lock()
 	m.buffers[buf.deviceID] = buf
 	m.mu.Unlock()
-	
+
 	m.stats.BufferAllocs.Add(1)
 	m.stats.BytesAllocated.Add(int64(length))
-	
+
 	return buf, nil
 }
 
@@ -253,8 +253,15 @@ func (m *Metal) ReleaseBuffer(buf *MetalBuffer) {
 	m.mu.Unlock()
 }
 
-// WriteBuffer writes data to a Metal buffer.
+// WriteBuffer writes data to a Metal buffer. Writing to a released buffer
+// returns ErrMetalBuffer rather than silently mutating stale memory.
 func (m *Metal) WriteBuffer(buf *MetalBuffer, data []byte) error {
+	m.mu.RLock()
+	live := m.buffers[buf.deviceID] == buf
+	m.mu.RUnlock()
+	if !live {
+		return ErrMetalBuffer
+	}
 	if uint64(len(data)) > buf.length {
 		return ErrMetalBuffer
 	}
@@ -273,11 +280,11 @@ func (m *Metal) ReadBuffer(buf *MetalBuffer) ([]byte, error) {
 func (m *Metal) CreatePipeline(name, functionName, source string) (*MetalComputePipeline, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	
+
 	if p, ok := m.pipelines[name]; ok {
 		return p, nil
 	}
-	
+
 	p := &MetalComputePipeline{
 		name:         name,
 		functionName: functionName,
@@ -312,17 +319,17 @@ func (m *Metal) CreateComputeEncoder(cb *MetalCommandBuffer, pipeline *MetalComp
 	if !pipeline.IsCompiled() {
 		return nil, ErrMetalLibrary
 	}
-	
+
 	enc := &MetalComputeCommandEncoder{
 		pipeline: pipeline,
 		buffers:  make(map[int]*MetalBuffer),
 	}
-	
+
 	cb.mu.Lock()
 	cb.state = MetalCommandBufferStateEncoding
 	cb.encoders = append(cb.encoders, enc)
 	cb.mu.Unlock()
-	
+
 	return enc, nil
 }
 
@@ -368,7 +375,7 @@ func (m *Metal) SynchronizeDevice() error {
 	queues := make([]*MetalCommandQueue, len(m.queues))
 	copy(queues, m.queues)
 	m.mu.RUnlock()
-	
+
 	for _, q := range queues {
 		if err := q.Synchronize(); err != nil {
 			return err
@@ -385,10 +392,10 @@ func (m *Metal) MatMul(a, b []float64, mm, n, k int) ([]float64, error) {
 	if len(b) != k*n {
 		return nil, errors.New("invalid b dimensions")
 	}
-	
+
 	m.stats.MatMulOps.Add(1)
 	out := make([]float64, mm*n)
-	
+
 	for i := 0; i < mm; i++ {
 		for j := 0; j < n; j++ {
 			sum := 0.0
@@ -398,7 +405,7 @@ func (m *Metal) MatMul(a, b []float64, mm, n, k int) ([]float64, error) {
 			out[i*n+j] = sum
 		}
 	}
-	
+
 	return out, nil
 }
 
@@ -407,7 +414,7 @@ func (m *Metal) Add(a, b []float64) ([]float64, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("shape mismatch")
 	}
-	
+
 	m.stats.AddOps.Add(1)
 	out := make([]float64, len(a))
 	for i := range a {
@@ -429,30 +436,8 @@ func (m *Metal) Relu(x []float64) []float64 {
 
 // Softmax applies the softmax function.
 func (m *Metal) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
-	
 	m.stats.SoftmaxOps.Add(1)
-	
-	maxVal := x[0]
-	for _, v := range x {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	
-	sum := 0.0
-	for _, v := range x {
-		sum += mathExp(v - maxVal)
-	}
-	
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v-maxVal) / sum
-	}
-	
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns Metal statistics.
@@ -490,19 +475,19 @@ type DirectMLDevice struct {
 
 // DirectML implements a DirectML backend with CPU fallback.
 type DirectML struct {
-	device       *DirectMLDevice
-	available    bool
-	stats        DirectMLStats
-	mu           sync.RWMutex
+	device    *DirectMLDevice
+	available bool
+	stats     DirectMLStats
+	mu        sync.RWMutex
 }
 
 // DirectMLStats tracks DirectML statistics.
 type DirectMLStats struct {
-	MatMulOps     atomic.Int64
-	AddOps        atomic.Int64
-	ReluOps       atomic.Int64
-	SoftmaxOps    atomic.Int64
-	ConvOps       atomic.Int64
+	MatMulOps        atomic.Int64
+	AddOps           atomic.Int64
+	ReluOps          atomic.Int64
+	SoftmaxOps       atomic.Int64
+	ConvOps          atomic.Int64
 	OperatorCompiles atomic.Int64
 }
 
@@ -515,12 +500,12 @@ func NewDirectML(adapterIndex int) (*DirectML, error) {
 		vendorID:     0x10DE, // NVIDIA (simulated)
 		deviceID:     0x2684,
 	}
-	
+
 	d := &DirectML{
 		device:    device,
 		available: false, // Simulated
 	}
-	
+
 	return d, nil
 }
 
@@ -552,10 +537,10 @@ func (d *DirectML) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 	if len(b) != k*n {
 		return nil, errors.New("invalid b dimensions")
 	}
-	
+
 	d.stats.MatMulOps.Add(1)
 	out := make([]float64, m*n)
-	
+
 	for i := 0; i < m; i++ {
 		for j := 0; j < n; j++ {
 			sum := 0.0
@@ -565,7 +550,7 @@ func (d *DirectML) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 			out[i*n+j] = sum
 		}
 	}
-	
+
 	return out, nil
 }
 
@@ -574,7 +559,7 @@ func (d *DirectML) Add(a, b []float64) ([]float64, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("shape mismatch")
 	}
-	
+
 	d.stats.AddOps.Add(1)
 	out := make([]float64, len(a))
 	for i := range a {
@@ -596,30 +581,8 @@ func (d *DirectML) Relu(x []float64) []float64 {
 
 // Softmax applies the softmax function.
 func (d *DirectML) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
-	
 	d.stats.SoftmaxOps.Add(1)
-	
-	maxVal := x[0]
-	for _, v := range x {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	
-	sum := 0.0
-	for _, v := range x {
-		sum += mathExp(v - maxVal)
-	}
-	
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v-maxVal) / sum
-	}
-	
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns DirectML statistics.

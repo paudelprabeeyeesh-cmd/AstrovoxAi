@@ -10,11 +10,11 @@ import (
 
 // SpeculativeConfig holds speculative decoding configuration.
 type SpeculativeConfig struct {
-	DraftLen      int     // tokens drafted per step
-	AcceptLen     int     // max accepted tokens per step
-	Temperature   float64
-	UseTreeDraft  bool    // tree-structured speculation
-	MaxTreeDepth  int
+	DraftLen     int // tokens drafted per step
+	AcceptLen    int // max accepted tokens per step
+	Temperature  float64
+	UseTreeDraft bool // tree-structured speculation
+	MaxTreeDepth int
 }
 
 // DefaultSpeculativeConfig returns defaults.
@@ -37,18 +37,18 @@ type TokenProb struct {
 // VerificationResult reports the outcome of verifying drafted tokens.
 type VerificationResult struct {
 	Accepted       int
-	Correction     int  // token that replaced the first rejected draft
+	Correction     int // token that replaced the first rejected draft
 	AcceptedTokens []int
 }
 
 // SpeculativeDecoder implements speculative decoding where a fast
 // draft model proposes tokens that a stronger target model verifies.
 type SpeculativeDecoder struct {
-	config     *SpeculativeConfig
-	draftFn    func(ctx interface{}, prefix []int, n int) []TokenProb
-	targetFn   func(ctx interface{}, prefix []int, n int) []TokenProb
-	stats      SpeculativeStats
-	mu         sync.Mutex
+	config   *SpeculativeConfig
+	draftFn  func(ctx interface{}, prefix []int, n int) []TokenProb
+	targetFn func(ctx interface{}, prefix []int, n int) []TokenProb
+	stats    SpeculativeStats
+	mu       sync.Mutex
 }
 
 // SpeculativeStats tracks speculation statistics.
@@ -168,15 +168,15 @@ func (sd *SpeculativeDecoder) Speedup() float64 {
 
 // KVCache is a simple key/value cache for incremental decoding.
 type KVCache struct {
-	mu         sync.RWMutex
-	numLayers  int
-	keys       [][]float64
-	values     [][]float64
-	positions  []int
-	maxLen     int
-	evictions  atomic.Int64
-	hits       atomic.Int64
-	misses     atomic.Int64
+	mu        sync.RWMutex
+	numLayers int
+	keys      [][]float64
+	values    [][]float64
+	positions []int
+	maxLen    int
+	evictions atomic.Int64
+	hits      atomic.Int64
+	misses    atomic.Int64
 }
 
 // NewKVCache creates a cache with capacity maxLen per layer.

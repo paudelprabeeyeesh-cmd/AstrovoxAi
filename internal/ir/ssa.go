@@ -25,7 +25,7 @@ type PhiNode struct {
 
 // PhiPair represents a value + predecessor pair for a PHI node.
 type PhiPair struct {
-	Value      *Value
+	Value       *Value
 	Predecessor int
 }
 
@@ -59,7 +59,7 @@ func (f *Function) AddValue(v *Value) {
 
 // Builder provides a fluent API for constructing SSA functions.
 type Builder struct {
-	fn   *Function
+	fn      *Function
 	counter int
 }
 

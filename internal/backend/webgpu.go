@@ -9,46 +9,46 @@ import (
 
 // WebGPU backend errors.
 var (
-	ErrWebGPUNoDevice    = errors.New("webgpu device not available")
-	ErrWebGPUBufferSize  = errors.New("webgpu buffer size mismatch")
-	ErrWebGPUPipeline    = errors.New("webgpu pipeline error")
+	ErrWebGPUNoDevice   = errors.New("webgpu device not available")
+	ErrWebGPUBufferSize = errors.New("webgpu buffer size mismatch")
+	ErrWebGPUPipeline   = errors.New("webgpu pipeline error")
 )
 
 // limits mirrors a subset of GPUSupportedLimits.
 type webGPULimits struct {
-	maxTextureDim1D       uint32
-	maxTextureDim2D       uint32
-	maxBindGroups         uint32
-	maxBufferSize         uint64
-	maxStorageBufferBindingSize uint64
-	maxComputeWorkgroupSizeX  uint32
-	maxComputeWorkgroupSizeY  uint32
-	maxComputeWorkgroupSizeZ  uint32
+	maxTextureDim1D                   uint32
+	maxTextureDim2D                   uint32
+	maxBindGroups                     uint32
+	maxBufferSize                     uint64
+	maxStorageBufferBindingSize       uint64
+	maxComputeWorkgroupSizeX          uint32
+	maxComputeWorkgroupSizeY          uint32
+	maxComputeWorkgroupSizeZ          uint32
 	maxComputeInvocationsPerWorkgroup uint32
 }
 
 func defaultWebGPULimits() webGPULimits {
 	return webGPULimits{
-		maxTextureDim1D:                 8192,
-		maxTextureDim2D:                 8192,
-		maxBindGroups:                   4,
-		maxBufferSize:                   268435456,
-		maxStorageBufferBindingSize:     134217728,
-		maxComputeWorkgroupSizeX:       256,
-		maxComputeWorkgroupSizeY:       256,
-		maxComputeWorkgroupSizeZ:        64,
+		maxTextureDim1D:                   8192,
+		maxTextureDim2D:                   8192,
+		maxBindGroups:                     4,
+		maxBufferSize:                     268435456,
+		maxStorageBufferBindingSize:       134217728,
+		maxComputeWorkgroupSizeX:          256,
+		maxComputeWorkgroupSizeY:          256,
+		maxComputeWorkgroupSizeZ:          64,
 		maxComputeInvocationsPerWorkgroup: 256,
 	}
 }
 
 // WebGPUAdapter describes a physical adapter.
 type WebGPUAdapter struct {
-	Name       string
-	Vendor     string
+	Name         string
+	Vendor       string
 	Architecture string
 	IsIntegrated bool
-	Limits     webGPULimits
-	Features   []string
+	Limits       webGPULimits
+	Features     []string
 }
 
 // String renders the adapter summary.
@@ -62,22 +62,22 @@ func (a WebGPUAdapter) String() string {
 
 // WebGPUBuffer is a device buffer.
 type WebGPUBuffer struct {
-	id     uint64
-	size   uint64
-	usage  uint32 // GPUBufferUsage flags
-	label  string
+	id    uint64
+	size  uint64
+	usage uint32 // GPUBufferUsage flags
+	label string
 }
 
 // Buffer usage flags (subset of the WebGPU spec).
 const (
-	WebGPUBufferUsageMapRead     uint32 = 1 << 0
-	WebGPUBufferUsageMapWrite    uint32 = 1 << 1
-	WebGPUBufferUsageCopySrc     uint32 = 1 << 2
-	WebGPUBufferUsageCopyDst     uint32 = 1 << 3
-	WebGPUBufferUsageIndex       uint32 = 1 << 4
-	WebGPUBufferUsageVertex      uint32 = 1 << 5
-	WebGPUBufferUsageUniform     uint32 = 1 << 6
-	WebGPUBufferUsageStorage     uint32 = 1 << 7
+	WebGPUBufferUsageMapRead  uint32 = 1 << 0
+	WebGPUBufferUsageMapWrite uint32 = 1 << 1
+	WebGPUBufferUsageCopySrc  uint32 = 1 << 2
+	WebGPUBufferUsageCopyDst  uint32 = 1 << 3
+	WebGPUBufferUsageIndex    uint32 = 1 << 4
+	WebGPUBufferUsageVertex   uint32 = 1 << 5
+	WebGPUBufferUsageUniform  uint32 = 1 << 6
+	WebGPUBufferUsageStorage  uint32 = 1 << 7
 )
 
 // UsageString renders the usage flags.
@@ -108,11 +108,11 @@ func (b WebGPUBuffer) UsageString() string {
 // WebGPUComputePipeline is a compute pipeline.
 type WebGPUComputePipeline struct {
 	entryPoint string
-	workgroupX  uint32
-	workgroupY  uint32
-	workgroupZ  uint32
-	compiled    atomic.Bool
-	execCount   atomic.Int64
+	workgroupX uint32
+	workgroupY uint32
+	workgroupZ uint32
+	compiled   atomic.Bool
+	execCount  atomic.Int64
 }
 
 // Compile marks the pipeline ready.
@@ -137,12 +137,12 @@ type WebGPU struct {
 
 // WebGPUStats tracks WebGPU statistics.
 type WebGPUStats struct {
-	MatMulOps  atomic.Int64
-	AddOps     atomic.Int64
-	ReluOps    atomic.Int64
-	SoftmaxOps atomic.Int64
+	MatMulOps   atomic.Int64
+	AddOps      atomic.Int64
+	ReluOps     atomic.Int64
+	SoftmaxOps  atomic.Int64
 	Allocations atomic.Int64
-	Dispatches atomic.Int64
+	Dispatches  atomic.Int64
 }
 
 // NewWebGPU creates a WebGPU backend bound to an adapter.
@@ -298,28 +298,10 @@ func (w *WebGPU) Relu(x []float64) []float64 {
 	return x
 }
 
-// Softmax applies softmax.
+// Softmax applies the softmax function.
 func (w *WebGPU) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
 	w.stats.SoftmaxOps.Add(1)
-	maxV := x[0]
-	for _, v := range x {
-		if v > maxV {
-			maxV = v
-		}
-	}
-	sum := 0.0
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v - maxV)
-		sum += out[i]
-	}
-	for i := range out {
-		out[i] /= sum
-	}
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns WebGPU statistics.

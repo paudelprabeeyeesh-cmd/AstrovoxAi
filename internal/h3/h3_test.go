@@ -143,8 +143,8 @@ func TestQPACKStaticIndexValues(t *testing.T) {
 func TestRequestEncode(t *testing.T) {
 	req := &Request{
 		Method: "POST", Scheme: "https", Authority: "api.example.com", Path: "/v1/predict",
-		Headers: []HeaderField{{"content-type", "application/json"}},
-		Body:    []byte(`{"x":1}`),
+		Headers:  []HeaderField{{"content-type", "application/json"}},
+		Body:     []byte(`{"x":1}`),
 		StreamID: 4,
 	}
 	frames := req.Encode()

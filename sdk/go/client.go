@@ -16,10 +16,10 @@ type RetryPolicy struct {
 }
 
 type Client struct {
-	APIKey       string
-	BaseURL      string
-	HTTP         *http.Client
-	RetryPolicy  RetryPolicy
+	APIKey      string
+	BaseURL     string
+	HTTP        *http.Client
+	RetryPolicy RetryPolicy
 }
 
 type Message struct {
@@ -42,8 +42,8 @@ func NewClient(apiKey, baseURL string) *Client {
 		BaseURL: baseURL,
 		HTTP:    &http.Client{Timeout: 30 * time.Second},
 		RetryPolicy: RetryPolicy{
-			MaxRetries:    3,
-			BackoffFactor: 1.0,
+			MaxRetries:      3,
+			BackoffFactor:   1.0,
 			RetryableStatus: []int{429, 500, 502, 503, 504},
 		},
 	}
@@ -120,4 +120,3 @@ func (c *Client) HealthCheck() (map[string]interface{}, error) {
 func (c *Client) String() string {
 	return fmt.Sprintf("AstrovoxClient(base_url=%s)", c.BaseURL)
 }
-

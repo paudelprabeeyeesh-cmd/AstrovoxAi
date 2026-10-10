@@ -4,10 +4,10 @@ import "github.com/astrovox/astrovox/internal/ir"
 
 // Pattern represents a graph pattern to match.
 type Pattern struct {
-	Name     string
-	Nodes    []*ir.Node
-	Edges    []Edge
-	Attrs    map[string]interface{}
+	Name  string
+	Nodes []*ir.Node
+	Edges []Edge
+	Attrs map[string]interface{}
 }
 
 // Edge represents a directed edge in a pattern.
@@ -89,8 +89,8 @@ func (e *RuleEngine) Apply(g *ir.Graph) []*RewriteResult {
 		for _, m := range matches {
 			replacement := r.Replace(g, m)
 			results = append(results, &RewriteResult{
-				Rule:       r,
-				Match:      m,
+				Rule:        r,
+				Match:       m,
 				Replacement: replacement,
 			})
 		}
@@ -100,8 +100,8 @@ func (e *RuleEngine) Apply(g *ir.Graph) []*RewriteResult {
 
 // RewriteResult records a rewrite application.
 type RewriteResult struct {
-	Rule       *RewriteRule
-	Match      MatchResult
+	Rule        *RewriteRule
+	Match       MatchResult
 	Replacement []*ir.Node
 }
 

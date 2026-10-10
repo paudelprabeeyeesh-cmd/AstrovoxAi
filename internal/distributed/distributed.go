@@ -29,13 +29,13 @@ const (
 
 // ProcessGroup represents a group of processes for collective communication.
 type ProcessGroup struct {
-	rank       int
-	worldSize  int
-	backend    BackendType
-	ranks      []int
-	groupName  string
-	store      Store
-	mu         sync.RWMutex
+	rank        int
+	worldSize   int
+	backend     BackendType
+	ranks       []int
+	groupName   string
+	store       Store
+	mu          sync.RWMutex
 	collectives map[string]*CollectiveOp
 }
 
@@ -122,7 +122,7 @@ func (pg *ProcessGroup) collective(ctx context.Context, opType CollectiveType, i
 	if pg.worldSize == 1 {
 		return input, nil
 	}
-	
+
 	// Would implement actual collective communication here
 	return input, errors.New("distributed collectives not fully implemented")
 }
@@ -151,12 +151,12 @@ func DestroyProcessGroup(pg *ProcessGroup) error {
 
 // TCPStore implements Store using TCP.
 type TCPStore struct {
-	addr       string
-	worldSize  int
-	timeout    time.Duration
-	data       map[string][]byte
-	mu         sync.RWMutex
-	notify     map[string][]chan struct{}
+	addr      string
+	worldSize int
+	timeout   time.Duration
+	data      map[string][]byte
+	mu        sync.RWMutex
+	notify    map[string][]chan struct{}
 }
 
 func NewTCPStore(addr string, worldSize int, timeout time.Duration) *TCPStore {
@@ -217,13 +217,13 @@ func (s *TCPStore) Wait(keys []string, timeout time.Duration) error {
 
 // DistributedContext holds distributed training state.
 type DistributedContext struct {
-	rank           int
-	worldSize      int
-	defaultGroup   *ProcessGroup
-	groups         map[string]*ProcessGroup
-	groupMu        sync.RWMutex
-	initialized    bool
-	initOnce       sync.Once
+	rank         int
+	worldSize    int
+	defaultGroup *ProcessGroup
+	groups       map[string]*ProcessGroup
+	groupMu      sync.RWMutex
+	initialized  bool
+	initOnce     sync.Once
 }
 
 var defaultContext = &DistributedContext{
@@ -261,17 +261,17 @@ func NewGroup(ranks []int, backend BackendType) (*ProcessGroup, error) {
 	if !defaultContext.initialized {
 		return nil, ErrNotInitialized
 	}
-	
+
 	// Validate ranks
 	for _, r := range ranks {
 		if r < 0 || r >= defaultContext.worldSize {
 			return nil, ErrRankOutOfRange
 		}
 	}
-	
+
 	groupName := fmt.Sprintf("group_%d", len(defaultContext.groups))
 	store := NewTCPStore("inproc://"+groupName, len(ranks), 30*time.Second)
-	
+
 	// Find this process's rank in the new group
 	newRank := -1
 	for i, r := range ranks {
@@ -283,12 +283,12 @@ func NewGroup(ranks []int, backend BackendType) (*ProcessGroup, error) {
 	if newRank == -1 {
 		return nil, ErrRankOutOfRange
 	}
-	
+
 	pg := NewProcessGroup(newRank, len(ranks), backend, store)
 	defaultContext.groupMu.Lock()
 	defaultContext.groups[groupName] = pg
 	defaultContext.groupMu.Unlock()
-	
+
 	return pg, nil
 }
 

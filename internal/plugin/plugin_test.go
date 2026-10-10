@@ -10,10 +10,10 @@ type fakePlugin struct {
 	name string
 }
 
-func (f *fakePlugin) Name() string        { return f.name }
-func (f *fakePlugin) Version() string     { return "0.1.0" }
+func (f *fakePlugin) Name() string                  { return f.name }
+func (f *fakePlugin) Version() string               { return "0.1.0" }
 func (f *fakePlugin) Initialize(ctx *Context) error { return nil }
-func (f *fakePlugin) Shutdown() error     { return nil }
+func (f *fakePlugin) Shutdown() error               { return nil }
 
 func TestRegistryRegister(t *testing.T) {
 	r := NewRegistry()

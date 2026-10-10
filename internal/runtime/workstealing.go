@@ -27,7 +27,7 @@ type WorkDeque struct {
 	// owner pushes, but the public Submit API pushes from arbitrary
 	// goroutines, so pushes take this spin lock to keep the ring
 	// consistent with concurrent pops.
-	pushLock   atomic.Bool
+	pushLock atomic.Bool
 }
 
 // GlobalQueue is a lock-free MPMC queue for overflow and
@@ -42,15 +42,15 @@ type GlobalQueue struct {
 // WorkStealingScheduler implements a lock-free work-stealing scheduler
 // based on the Chase-Lev deque algorithm.
 type WorkStealingScheduler struct {
-	workers    int
-	deques     []*WorkDeque
-	globalQ    *GlobalQueue
-	workersWg  sync.WaitGroup
-	ctx        context.Context
-	cancel     context.CancelFunc
-	workerIDs  []int
-	stats      SchedulerStats
-	running    atomic.Bool
+	workers   int
+	deques    []*WorkDeque
+	globalQ   *GlobalQueue
+	workersWg sync.WaitGroup
+	ctx       context.Context
+	cancel    context.CancelFunc
+	workerIDs []int
+	stats     SchedulerStats
+	running   atomic.Bool
 }
 
 // SchedulerStats holds scheduler statistics.
@@ -64,7 +64,7 @@ type SchedulerStats struct {
 
 // NewWorkStealingScheduler creates a new work-stealing scheduler.
 func NewWorkStealingScheduler(workers int) *WorkStealingScheduler {
-	ws := newWorkStealingScheduler(workers, true)
+	ws := newWorkStealingScheduler(workers)
 	// Start workers
 	for i := 0; i < ws.workers; i++ {
 		ws.workersWg.Add(1)
@@ -75,7 +75,7 @@ func NewWorkStealingScheduler(workers int) *WorkStealingScheduler {
 
 // newWorkStealingScheduler builds the scheduler without starting workers,
 // so subtypes (e.g. PriorityScheduler) can run their own worker loop.
-func newWorkStealingScheduler(workers int, startWorkers bool) *WorkStealingScheduler {
+func newWorkStealingScheduler(workers int) *WorkStealingScheduler {
 	if workers <= 0 {
 		workers = runtime.NumCPU()
 	}
@@ -99,7 +99,6 @@ func newWorkStealingScheduler(workers int, startWorkers bool) *WorkStealingSched
 	}
 
 	ws.running.Store(true)
-	_ = startWorkers
 
 	return ws
 }
@@ -300,11 +299,11 @@ func (ws *WorkStealingScheduler) Submit(task Task) Future {
 
 // SubmitToWorker submits a task from any goroutine.
 //
-// Like Submit, submissions go through the global queue: workers only
-// mutate their own deque from the owner goroutine, preserving the
-// Chase-Lev invariants.
+// workerID is accepted for API symmetry. Like Submit, submissions go
+// through the global queue: workers only mutate their own deque from the
+// owner goroutine, preserving the Chase-Lev invariants.
 func (ws *WorkStealingScheduler) SubmitToWorker(workerID int, task Task) Future {
-	_ = workerID // kept for API compatibility and routing hints
+	_ = workerID
 	return ws.Submit(task)
 }
 
@@ -379,7 +378,7 @@ type PriorityScheduler struct {
 func NewPriorityScheduler(workers int) *PriorityScheduler {
 	// Build without starting the base workers: the priority loop is a
 	// different worker function, so it must own the worker set.
-	ws := newWorkStealingScheduler(workers, false)
+	ws := newWorkStealingScheduler(workers)
 	ps := &PriorityScheduler{
 		WorkStealingScheduler: ws,
 		highPriority:          NewGlobalQueue(workers * 16),

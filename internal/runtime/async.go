@@ -12,30 +12,30 @@ import (
 // AsyncEngine provides high-level asynchronous execution with
 // dependency tracking, cancellation, and streaming results.
 type AsyncEngine struct {
-	scheduler   *WorkStealingScheduler
-	tasks       map[string]*AsyncTask
-	taskOrder   []string
-	deps        map[string][]string
-	results     map[string]interface{}
-	errors      map[string]error
-	mu          sync.RWMutex
-	ctx         context.Context
-	cancel      context.CancelFunc
-	running     atomic.Bool
-	eventCh     chan TaskEvent
-	streamCh    chan StreamResult
+	scheduler *WorkStealingScheduler
+	tasks     map[string]*AsyncTask
+	taskOrder []string
+	deps      map[string][]string
+	results   map[string]interface{}
+	errors    map[string]error
+	mu        sync.RWMutex
+	ctx       context.Context
+	cancel    context.CancelFunc
+	running   atomic.Bool
+	eventCh   chan TaskEvent
+	streamCh  chan StreamResult
 }
 
 // AsyncTask represents an asynchronous task with dependencies.
 type AsyncTask struct {
-	ID          string
-	Fn          func(ctx context.Context) (interface{}, error)
-	Deps        []string
-	Priority    int
-	Timeout     time.Duration
-	Retries     int
-	RetryDelay  time.Duration
-	Metadata    map[string]string
+	ID         string
+	Fn         func(ctx context.Context) (interface{}, error)
+	Deps       []string
+	Priority   int
+	Timeout    time.Duration
+	Retries    int
+	RetryDelay time.Duration
+	Metadata   map[string]string
 }
 
 // TaskEvent represents a task lifecycle event.
@@ -62,11 +62,11 @@ const (
 
 // StreamResult represents a streaming result from a task.
 type StreamResult struct {
-	TaskID  string
-	Data    interface{}
-	Index   int
-	IsLast  bool
-	Error   error
+	TaskID string
+	Data   interface{}
+	Index  int
+	IsLast bool
+	Error  error
 }
 
 // NewAsyncEngine creates a new async execution engine.
@@ -253,10 +253,11 @@ func (ae *AsyncEngine) scheduleReadyTasks(completed map[string]bool, executeTask
 
 		if ready {
 			completed[taskID] = true
-			future := ae.scheduler.Submit(func() error {
+			// The scheduler owns the returned future; the async engine
+			// tracks completion through its own event stream.
+			ae.scheduler.Submit(func() error {
 				return executeTask(taskID)
 			})
-			_ = future
 			ae.emitEvent(TaskEvent{
 				Type:      EventTaskQueued,
 				TaskID:    taskID,
@@ -382,10 +383,10 @@ type Pipeline struct {
 
 // PipelineStage represents a stage in the pipeline.
 type PipelineStage struct {
-	Name     string
-	Fn       func(ctx context.Context, in <-chan interface{}) (<-chan interface{}, error)
-	Workers  int
-	Buffer   int
+	Name    string
+	Fn      func(ctx context.Context, in <-chan interface{}) (<-chan interface{}, error)
+	Workers int
+	Buffer  int
 }
 
 // NewPipeline creates a new pipeline.

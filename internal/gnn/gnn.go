@@ -9,19 +9,19 @@ import (
 
 // GNN errors.
 var (
-	ErrEmptyGraph     = errors.New("graph has no nodes")
-	ErrInvalidDims    = errors.New("feature or weight dimensions mismatch")
-	ErrInvalidIndex   = errors.New("node index out of range")
-	ErrNilAdjacency   = errors.New("adjacency matrix is nil")
+	ErrEmptyGraph   = errors.New("graph has no nodes")
+	ErrInvalidDims  = errors.New("feature or weight dimensions mismatch")
+	ErrInvalidIndex = errors.New("node index out of range")
+	ErrNilAdjacency = errors.New("adjacency matrix is nil")
 )
 
 // Graph is a directed graph with node features and edge structure.
 type Graph struct {
-	NumNodes  int
-	NumEdges  int
-	Features  [][]float64 // [numNodes][featDim]
-	Edges     []Edge
-	Adj       [][]int     // adjacency lists (out edges)
+	NumNodes int
+	NumEdges int
+	Features [][]float64 // [numNodes][featDim]
+	Edges    []Edge
+	Adj      [][]int // adjacency lists (out edges)
 }
 
 // Edge is a directed edge with an optional weight.
@@ -49,7 +49,6 @@ func NewGraph(numNodes, featDim int) (*Graph, error) {
 	}
 	return g, nil
 }
-
 
 // AddEdge adds a directed edge.
 func (g *Graph) AddEdge(src, dst int, weight float64) error {
@@ -206,11 +205,11 @@ func MessagePass(g *Graph, W [][]float64, aggregate string) ([][]float64, error)
 
 // GCNLayer is a graph convolution layer: H' = activation(A_hat H W).
 type GCNLayer struct {
-	W         [][]float64
-	inDim     int
-	outDim    int
+	W          [][]float64
+	inDim      int
+	outDim     int
 	activation func(float64) float64
-	dropout   float64
+	dropout    float64
 }
 
 // NewGCNLayer creates a GCN layer.
@@ -264,10 +263,10 @@ func (l *GCNLayer) Forward(g *Graph) ([][]float64, error) {
 
 // GATHead is one attention head of a graph attention layer.
 type GATHead struct {
-	W        [][]float64 // [inDim][outDim]
-	a        []float64   // attention parameters [2*outDim]
-	inDim    int
-	outDim   int
+	W      [][]float64 // [inDim][outDim]
+	a      []float64   // attention parameters [2*outDim]
+	inDim  int
+	outDim int
 }
 
 // NewGATHead creates a GAT head.
@@ -319,7 +318,7 @@ func (h *GATHead) AttentionScores(g *Graph) ([][]float64, error) {
 		for j, jIdx := range nbs {
 			dot := 0.0
 			for a := 0; a < h.outDim; a++ {
-				dot += h.a[a] * transformed[i][a] + h.a[h.outDim+a]*transformed[jIdx][a]
+				dot += h.a[a]*transformed[i][a] + h.a[h.outDim+a]*transformed[jIdx][a]
 			}
 			logits[j] = leakyReLU(dot, 0.2)
 		}
@@ -367,8 +366,8 @@ func (h *GATHead) Forward(g *Graph) ([][]float64, error) {
 
 // GATLayer aggregates multiple attention heads.
 type GATLayer struct {
-	Heads    []*GATHead
-	Concat   bool
+	Heads  []*GATHead
+	Concat bool
 }
 
 // NewGATLayer creates a multi-head GAT layer.
@@ -397,8 +396,7 @@ func (l *GATLayer) Forward(g *Graph) ([][]float64, error) {
 		}
 		outs[i] = o
 	}
-	nodeCount := outs[0]
-	_ = nodeCount
+
 	n := len(outs[0])
 	d := len(outs[0][0])
 

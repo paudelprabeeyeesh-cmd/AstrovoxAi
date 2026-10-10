@@ -13,29 +13,29 @@ import (
 )
 
 var (
-	ErrPipelineStalled  = errors.New("pipeline stalled")
-	ErrInvalidStage     = errors.New("invalid pipeline stage")
-	ErrMicrobatchSize   = errors.New("invalid microbatch size")
+	ErrPipelineStalled = errors.New("pipeline stalled")
+	ErrInvalidStage    = errors.New("invalid pipeline stage")
+	ErrMicrobatchSize  = errors.New("invalid microbatch size")
 )
 
 // PipelineParallelConfig holds pipeline parallelism configuration.
 type PipelineParallelConfig struct {
-	NumStages        int     // Number of pipeline stages
-	NumMicrobatches  int     // Number of microbatches
-	VirtualStages    int     // Virtual pipeline stages per rank (for 1F1B)
-	Schedule         ScheduleType // Pipeline schedule
-	OverlapComm      bool    // Overlap communication with computation
-	ActivationCheckpoint bool // Checkpoint activations for memory
+	NumStages            int          // Number of pipeline stages
+	NumMicrobatches      int          // Number of microbatches
+	VirtualStages        int          // Virtual pipeline stages per rank (for 1F1B)
+	Schedule             ScheduleType // Pipeline schedule
+	OverlapComm          bool         // Overlap communication with computation
+	ActivationCheckpoint bool         // Checkpoint activations for memory
 }
 
 // ScheduleType defines the pipeline schedule.
 type ScheduleType int
 
 const (
-	ScheduleGPipe ScheduleType = iota // GPipe schedule
-	Schedule1F1B                      // 1F1B (One Forward One Backward)
-	ScheduleInterleaved               // Interleaved 1F1B
-	ScheduleZeroBubble                // Zero-bubble schedule
+	ScheduleGPipe       ScheduleType = iota // GPipe schedule
+	Schedule1F1B                            // 1F1B (One Forward One Backward)
+	ScheduleInterleaved                     // Interleaved 1F1B
+	ScheduleZeroBubble                      // Zero-bubble schedule
 )
 
 // PipelineStage represents a single pipeline stage.
@@ -60,57 +60,57 @@ type ModelChunk interface {
 
 // ActivationBuffer stores activations for backward pass.
 type ActivationBuffer struct {
-	data      *tensor.Tensor
+	data       *tensor.Tensor
 	microbatch int
-	refCount  atomic.Int32
+	refCount   atomic.Int32
 }
 
 // CommOp represents a communication operation.
 type CommOp struct {
-	opType    string // "send", "recv", "send_recv"
-	peerRank  int
-	tensor    *tensor.Tensor
-	done      chan error
-	async     bool
+	opType   string // "send", "recv", "send_recv"
+	peerRank int
+	tensor   *tensor.Tensor
+	done     chan error
+	async    bool
 }
 
 // PipelineParallel manages pipeline parallel execution.
 type PipelineParallel struct {
-	config     *PipelineParallelConfig
-	stages     []*PipelineStage
-	stageID    int
-	numStages  int
-	rank       int
-	worldSize  int
-	group      *ProcessGroup
-	scheduler  *PipelineScheduler
-	mu         sync.RWMutex
-	running    atomic.Bool
-	stats      PipelineStats
+	config    *PipelineParallelConfig
+	stages    []*PipelineStage
+	stageID   int
+	numStages int
+	rank      int
+	worldSize int
+	group     *ProcessGroup
+	scheduler *PipelineScheduler
+	mu        sync.RWMutex
+	running   atomic.Bool
+	stats     PipelineStats
 }
 
 // PipelineScheduler orchestrates pipeline execution.
 type PipelineScheduler struct {
-	config         *PipelineParallelConfig
-	numStages      int
+	config          *PipelineParallelConfig
+	numStages       int
 	numMicrobatches int
-	schedule       ScheduleType
-	
+	schedule        ScheduleType
+
 	// State tracking
 	forwardQueue   chan *PipelineTask
 	backwardQueue  chan *PipelineTask
 	activeForward  map[int]*PipelineTask
 	activeBackward map[int]*PipelineTask
-	
+
 	// Synchronization
 	stageBarriers  []chan struct{}
 	microbatchDone chan int
-	
+
 	// Stats
-	mu           sync.Mutex
-	completed    int
-	bubbles      int
-	stallTime    time.Duration
+	mu        sync.Mutex
+	completed int
+	bubbles   int
+	stallTime time.Duration
 }
 
 // PipelineTask represents a microbatch task.
@@ -150,7 +150,7 @@ func NewPipelineParallel(config *PipelineParallelConfig, group *ProcessGroup) (*
 	}
 
 	rank := group.Rank()
-	
+
 	pp := &PipelineParallel{
 		config:    config,
 		stageID:   rank,
@@ -227,21 +227,21 @@ func (pp *PipelineParallel) Execute(ctx context.Context, inputs []*tensor.Tensor
 func (pp *PipelineParallel) executeGPipe(ctx context.Context, inputs []*tensor.Tensor) ([]*tensor.Tensor, error) {
 	var outputs []*tensor.Tensor
 	activations := make([][]*ActivationBuffer, pp.config.NumMicrobatches)
-	
+
 	// Pipeline forward
 	for mb := 0; mb < pp.config.NumMicrobatches; mb++ {
 		input := inputs[mb]
 		stageActivations := make([]*ActivationBuffer, pp.numStages)
-		
+
 		for s := 0; s < pp.numStages; s++ {
 			stage := pp.stages[s]
-			
+
 			// Receive from previous stage (except first stage)
 			if s > 0 {
 				// input = recv from stage s-1
 				input = pp.recvFromPrev(ctx, s, mb)
 			}
-			
+
 			// Forward through model chunk
 			if stage.modelChunk != nil && s == pp.stageID {
 				var act *ActivationBuffer
@@ -249,7 +249,7 @@ func (pp *PipelineParallel) executeGPipe(ctx context.Context, inputs []*tensor.T
 				if err != nil {
 					return nil, err
 				}
-				
+
 				// Store activation for backward
 				if pp.config.ActivationCheckpoint {
 					cloned, err := output.Clone()
@@ -262,48 +262,43 @@ func (pp *PipelineParallel) executeGPipe(ctx context.Context, inputs []*tensor.T
 				}
 				act.microbatch = mb
 				stageActivations[s] = act
-				
+
 				input = output
 			}
-			
+
 			// Send to next stage (except last stage)
 			if s < pp.numStages-1 {
 				pp.sendToNext(ctx, s, mb, input)
 			}
 		}
-		
+
 		activations[mb] = stageActivations
-		
+
 		// Collect output from last stage
 		if pp.stageID == pp.numStages-1 {
 			outputs = append(outputs, input)
 		}
 	}
-	
+
 	// Backward pass
 	for mb := pp.config.NumMicrobatches - 1; mb >= 0; mb-- {
 		// Would compute gradients
 	}
-	
+
 	return outputs, nil
 }
 
-// execute1F1B runs the 1F1B schedule.
+// execute1F1B runs the 1F1B schedule. The 1F1B interleaving needs async
+// collectives, so this falls back to the GPipe ordering for now; the
+// warmup count is retained to document the intended schedule.
 func (pp *PipelineParallel) execute1F1B(ctx context.Context, inputs []*tensor.Tensor) ([]*tensor.Tensor, error) {
-	// Warmup: first stage runs forward for first N-1 microbatches
-	// Steady state: each stage alternates forward/backward
-	// Cooldown: last stage runs backward for last N-1 microbatches
-	
 	warmup := pp.numStages - 1 - pp.stageID
 	if warmup < 0 {
 		warmup = 0
 	}
 	_ = warmup
-	
-	// Simplified 1F1B implementation
-	// In practice, would use proper scheduling with async communication
-	
-	return pp.executeGPipe(ctx, inputs) // Fallback to GPipe for now
+
+	return pp.executeGPipe(ctx, inputs)
 }
 
 // executeInterleaved runs interleaved 1F1B (for virtual stages).
@@ -328,10 +323,10 @@ func (pp *PipelineParallel) sendToNext(ctx context.Context, stage, mb int, t *te
 // PipelineRuntime provides a higher-level pipeline execution interface.
 type PipelineRuntime struct {
 	*PipelineParallel
-	model          Model
-	optimizer      Optimizer
-	lossFn         LossFn
-	gradScaler     *GradScaler
+	model      Model
+	optimizer  Optimizer
+	lossFn     LossFn
+	gradScaler *GradScaler
 }
 
 // Model interface for pipeline execution.
@@ -353,11 +348,11 @@ type LossFn func(output, target *tensor.Tensor) (*tensor.Tensor, error)
 
 // GradScaler handles gradient scaling for mixed precision.
 type GradScaler struct {
-	scale     float64
-	growth    float64
-	backoff   float64
-	minScale  float64
-	enabled   bool
+	scale    float64
+	growth   float64
+	backoff  float64
+	minScale float64
+	enabled  bool
 }
 
 func NewGradScaler(initScale float64) *GradScaler {
@@ -393,38 +388,38 @@ func (pr *PipelineRuntime) TrainStep(ctx context.Context, inputs, targets []*ten
 	if err != nil {
 		return 0, err
 	}
-	
+
 	// Compute loss
 	totalLoss := 0.0
 	gradOutputs := make([]*tensor.Tensor, len(outputs))
-	
+
 	for i, out := range outputs {
 		loss, err := pr.lossFn(out, targets[i])
 		if err != nil {
 			return 0, err
 		}
 		totalLoss += loss.Float64()[0]
-		
+
 		// Compute gradient of loss w.r.t. output
 		// gradOutputs[i] = dLoss/dOutput
 		gradOutputs[i] = loss // Simplified
 	}
-	
+
 	// Backward pass (would need to be implemented)
 	// pr.Backward(ctx, gradOutputs)
-	
+
 	// Optimizer step
 	// pr.optimizer.Step()
-	
+
 	return totalLoss / float64(len(outputs)), nil
 }
 
 // PipelineProfiler profiles pipeline execution.
 type PipelineProfiler struct {
-	stageTimes    [][]time.Duration
-	commTimes     [][]time.Duration
-	bubbleTimes   []time.Duration
-	mu            sync.Mutex
+	stageTimes  [][]time.Duration
+	commTimes   [][]time.Duration
+	bubbleTimes []time.Duration
+	mu          sync.Mutex
 }
 
 func NewPipelineProfiler(numStages, numMicrobatches int) *PipelineProfiler {
@@ -447,7 +442,7 @@ func (pp *PipelineProfiler) RecordStageTime(stage, mb int, d time.Duration) {
 func (pp *PipelineProfiler) GetStats() map[string]interface{} {
 	pp.mu.Lock()
 	defer pp.mu.Unlock()
-	
+
 	stats := make(map[string]interface{})
 	for s := 0; s < len(pp.stageTimes); s++ {
 		var total time.Duration

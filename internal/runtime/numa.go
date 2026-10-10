@@ -12,14 +12,14 @@ import (
 // NUMAAllocator provides NUMA-aware memory allocation.
 // It maintains per-NUMA-node memory pools to minimize cross-node traffic.
 type NUMAAllocator struct {
-	nodes       int
-	pools       []*NumaPool
-	hugePages   bool
-	pageSize    int
-	stats       AllocatorStats
-	allocFunc   func(size int) (unsafe.Pointer, error)
-	freeFunc    func(ptr unsafe.Pointer, size int) error
-	mu          sync.Mutex
+	nodes     int
+	pools     []*NumaPool
+	hugePages bool
+	pageSize  int
+	stats     AllocatorStats
+	allocFunc func(size int) (unsafe.Pointer, error)
+	freeFunc  func(ptr unsafe.Pointer, size int) error
+	mu        sync.Mutex
 }
 
 // NumaPool is a memory pool for a specific NUMA node.
@@ -34,12 +34,12 @@ type NumaPool struct {
 
 // MemoryBlock represents a block of memory.
 type MemoryBlock struct {
-	ptr      unsafe.Pointer
-	size     int
-	nodeID   int
-	inUse    atomic.Bool
-	next     *MemoryBlock
-	prev     *MemoryBlock
+	ptr    unsafe.Pointer
+	size   int
+	nodeID int
+	inUse  atomic.Bool
+	next   *MemoryBlock
+	prev   *MemoryBlock
 }
 
 // FreeList is a lock-free free list for a size class.
@@ -50,12 +50,12 @@ type FreeList struct {
 
 // AllocatorStats holds allocator statistics.
 type AllocatorStats struct {
-	TotalAllocated  uint64
-	TotalFreed      uint64
+	TotalAllocated   uint64
+	TotalFreed       uint64
 	CurrentAllocated uint64
-	NumAllocations  uint64
-	NumFrees        uint64
-	CrossNodeAllocs uint64
+	NumAllocations   uint64
+	NumFrees         uint64
+	CrossNodeAllocs  uint64
 }
 
 // PoolStats holds per-pool statistics.
@@ -279,7 +279,7 @@ func roundUpSizeClass(size int) int {
 	size |= size >> 16
 	size++
 	if size > 1024*1024 {
-		size = ((size + 1024*1024 - 1) / (1024*1024)) * (1024*1024)
+		size = ((size + 1024*1024 - 1) / (1024 * 1024)) * (1024 * 1024)
 	}
 	return size
 }
@@ -328,12 +328,12 @@ type tensorPoolEntry struct {
 }
 
 type TensorWrapper struct {
-	ptr      unsafe.Pointer
-	data     []byte
-	shape    []int
-	dtype    string
-	inUse    atomic.Bool
-	pool     *tensorPoolEntry
+	ptr   unsafe.Pointer
+	data  []byte
+	shape []int
+	dtype string
+	inUse atomic.Bool
+	pool  *tensorPoolEntry
 }
 
 type TensorPoolStats struct {
@@ -356,9 +356,9 @@ func (tp *TensorPool) Get(shape []int, dtype string) (*TensorWrapper, error) {
 	entry, ok := tp.pools[key]
 	if !ok {
 		entry = &tensorPoolEntry{
-			shape:    shape,
-			dtype:    dtype,
-			freeList: make(chan *TensorWrapper, 32),
+			shape:     shape,
+			dtype:     dtype,
+			freeList:  make(chan *TensorWrapper, 32),
 			sizeClass: roundUpSizeClass(tensorSize(shape, dtype)),
 		}
 		tp.pools[key] = entry

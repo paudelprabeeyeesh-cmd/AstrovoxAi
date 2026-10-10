@@ -8,12 +8,12 @@ import (
 
 func testService() (ServiceDescriptor, ServiceImpl) {
 	return ServiceDescriptor{
-			Name: "Echo",
-			Methods: []MethodDescriptor{
-				{Name: "Ping"},
-				{Name: "Stream"},
-			},
-		}, &echoService{}
+		Name: "Echo",
+		Methods: []MethodDescriptor{
+			{Name: "Ping"},
+			{Name: "Stream"},
+		},
+	}, &echoService{}
 }
 
 type echoService struct{}
@@ -226,7 +226,7 @@ func TestParamServerPushPull(t *testing.T) {
 	s := NewServer()
 	ps := NewParamServerImplement()
 	s.RegisterService(ServiceDescriptor{
-		Name: "ParamServer",
+		Name:    "ParamServer",
 		Methods: []MethodDescriptor{{Name: "Push"}, {Name: "Pull"}},
 	}, ps)
 	s.Start()

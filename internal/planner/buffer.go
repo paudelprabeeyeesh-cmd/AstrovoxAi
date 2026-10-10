@@ -28,9 +28,9 @@ type heapItem struct {
 // minHeap is a min-heap ordered by End.
 type minHeap []heapItem
 
-func (h minHeap) Len() int            { return len(h) }
-func (h minHeap) Less(i, j int) bool  { return h[i].End < h[j].End }
-func (h minHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
+func (h minHeap) Len() int           { return len(h) }
+func (h minHeap) Less(i, j int) bool { return h[i].End < h[j].End }
+func (h minHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
 
 func (h *minHeap) Push(x interface{}) {
 	*h = append(*h, x.(heapItem))

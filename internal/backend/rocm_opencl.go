@@ -9,9 +9,9 @@ import (
 
 // ROCm and OpenCL backend errors.
 var (
-	ErrROCmNoDevice      = errors.New("rocm device not available")
-	ErrOpenCLNoPlatform  = errors.New("opencl platform not available")
-	ErrOpenCLContext     = errors.New("opencl context error")
+	ErrROCmNoDevice     = errors.New("rocm device not available")
+	ErrOpenCLNoPlatform = errors.New("opencl platform not available")
+	ErrOpenCLContext    = errors.New("opencl context error")
 )
 
 // ROCmBackend implements a simulated AMD ROCm/HIP backend.
@@ -26,10 +26,10 @@ type ROCmBackend struct {
 
 // ROCmStats tracks ROCm statistics.
 type ROCmStats struct {
-	MatMulOps atomic.Int64
-	AddOps    atomic.Int64
-	ReluOps   atomic.Int64
-	SoftmaxOps atomic.Int64
+	MatMulOps      atomic.Int64
+	AddOps         atomic.Int64
+	ReluOps        atomic.Int64
+	SoftmaxOps     atomic.Int64
 	KernelLaunches atomic.Int64
 }
 
@@ -104,28 +104,10 @@ func (r *ROCmBackend) Relu(x []float64) []float64 {
 	return x
 }
 
-// Softmax applies softmax.
+// Softmax applies the softmax function.
 func (r *ROCmBackend) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
 	r.stats.SoftmaxOps.Add(1)
-	maxV := x[0]
-	for _, v := range x {
-		if v > maxV {
-			maxV = v
-		}
-	}
-	sum := 0.0
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v - maxV)
-		sum += out[i]
-	}
-	for i := range out {
-		out[i] /= sum
-	}
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns ROCm statistics.
@@ -148,9 +130,9 @@ type OpenCLDeviceType uint32
 
 // OpenCL device types.
 const (
-	OpenCLDeviceTypeDefault OpenCLDeviceType = 1 << 0
-	OpenCLDeviceTypeCPU     OpenCLDeviceType = 1 << 1
-	OpenCLDeviceTypeGPU     OpenCLDeviceType = 1 << 2
+	OpenCLDeviceTypeDefault     OpenCLDeviceType = 1 << 0
+	OpenCLDeviceTypeCPU         OpenCLDeviceType = 1 << 1
+	OpenCLDeviceTypeGPU         OpenCLDeviceType = 1 << 2
 	OpenCLDeviceTypeAccelerator OpenCLDeviceType = 1 << 3
 )
 
@@ -174,7 +156,7 @@ type OpenCLDevice struct {
 	Type       OpenCLDeviceType
 	VendorID   uint32
 	MaxUnits   uint32
-	MaxFreqMHz  uint32
+	MaxFreqMHz uint32
 	// OpenCL 2.x+ SVM capabilities (subset).
 	SVMCoarseGrain bool
 	SVMFineGrain   bool
@@ -205,11 +187,11 @@ type OpenCLBackend struct {
 
 // OpenCLStats tracks OpenCL statistics.
 type OpenCLStats struct {
-	MatMulOps     atomic.Int64
-	AddOps        atomic.Int64
-	ReluOps       atomic.Int64
-	SoftmaxOps    atomic.Int64
-	KernelBuilds  atomic.Int64
+	MatMulOps    atomic.Int64
+	AddOps       atomic.Int64
+	ReluOps      atomic.Int64
+	SoftmaxOps   atomic.Int64
+	KernelBuilds atomic.Int64
 }
 
 // NewOpenCLBackend creates an OpenCL backend.
@@ -315,28 +297,10 @@ func (b *OpenCLBackend) Relu(x []float64) []float64 {
 	return x
 }
 
-// Softmax applies softmax.
+// Softmax applies the softmax function.
 func (b *OpenCLBackend) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
 	b.stats.SoftmaxOps.Add(1)
-	maxV := x[0]
-	for _, v := range x {
-		if v > maxV {
-			maxV = v
-		}
-	}
-	sum := 0.0
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v - maxV)
-		sum += out[i]
-	}
-	for i := range out {
-		out[i] /= sum
-	}
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns OpenCL statistics.

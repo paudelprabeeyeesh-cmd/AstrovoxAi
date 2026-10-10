@@ -68,17 +68,17 @@ func (e *StringLit) exprNode() {}
 func (e *BoolLit) exprNode()   {}
 func (e *NilLit) exprNode()    {}
 
-func (e *IntLit) String() string   { return strconv.FormatInt(e.Value, 10) }
-func (e *FloatLit) String() string { return strconv.FormatFloat(e.Value, 'g', -1, 64) }
+func (e *IntLit) String() string    { return strconv.FormatInt(e.Value, 10) }
+func (e *FloatLit) String() string  { return strconv.FormatFloat(e.Value, 'g', -1, 64) }
 func (e *StringLit) String() string { return fmt.Sprintf("%q", e.Value) }
 func (e *BoolLit) String() string   { return strconv.FormatBool(e.Value) }
 func (e *NilLit) String() string    { return "nil" }
 
-func (e *IntLit) Pos() (int, int)   { return e.Line, e.Col }
-func (e *FloatLit) Pos() (int, int) { return e.Line, e.Col }
+func (e *IntLit) Pos() (int, int)    { return e.Line, e.Col }
+func (e *FloatLit) Pos() (int, int)  { return e.Line, e.Col }
 func (e *StringLit) Pos() (int, int) { return e.Line, e.Col }
-func (e *BoolLit) Pos() (int, int)  { return e.Line, e.Col }
-func (e *NilLit) Pos() (int, int)   { return e.Line, e.Col }
+func (e *BoolLit) Pos() (int, int)   { return e.Line, e.Col }
+func (e *NilLit) Pos() (int, int)    { return e.Line, e.Col }
 
 // IdentExpr is an identifier reference.
 type IdentExpr struct {
@@ -87,9 +87,9 @@ type IdentExpr struct {
 	Col  int
 }
 
-func (e *IdentExpr) exprNode()          {}
-func (e *IdentExpr) String() string     { return e.Name }
-func (e *IdentExpr) Pos() (int, int)    { return e.Line, e.Col }
+func (e *IdentExpr) exprNode()       {}
+func (e *IdentExpr) String() string  { return e.Name }
+func (e *IdentExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // BinaryExpr is a binary operation.
 type BinaryExpr struct {
@@ -112,8 +112,8 @@ type UnaryExpr struct {
 	Col  int
 }
 
-func (e *UnaryExpr) exprNode()      {}
-func (e *UnaryExpr) String() string { return fmt.Sprintf("(%s%s)", e.Op, e.Expr) }
+func (e *UnaryExpr) exprNode()       {}
+func (e *UnaryExpr) String() string  { return fmt.Sprintf("(%s%s)", e.Op, e.Expr) }
 func (e *UnaryExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // CallExpr is a function call.
@@ -124,8 +124,8 @@ type CallExpr struct {
 	Col    int
 }
 
-func (e *CallExpr) exprNode()      {}
-func (e *CallExpr) String() string { return fmt.Sprintf("%s(...)", e.Callee) }
+func (e *CallExpr) exprNode()       {}
+func (e *CallExpr) String() string  { return fmt.Sprintf("%s(...)", e.Callee) }
 func (e *CallExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // IndexExpr is an index expression.
@@ -136,8 +136,8 @@ type IndexExpr struct {
 	Col    int
 }
 
-func (e *IndexExpr) exprNode()      {}
-func (e *IndexExpr) String() string { return fmt.Sprintf("%s[%s]", e.Object, e.Index) }
+func (e *IndexExpr) exprNode()       {}
+func (e *IndexExpr) String() string  { return fmt.Sprintf("%s[%s]", e.Object, e.Index) }
 func (e *IndexExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // FieldExpr is a struct field access.
@@ -148,8 +148,8 @@ type FieldExpr struct {
 	Col    int
 }
 
-func (e *FieldExpr) exprNode()      {}
-func (e *FieldExpr) String() string { return fmt.Sprintf("%s.%s", e.Object, e.Field) }
+func (e *FieldExpr) exprNode()       {}
+func (e *FieldExpr) String() string  { return fmt.Sprintf("%s.%s", e.Object, e.Field) }
 func (e *FieldExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // IfExpr is a conditional expression.
@@ -161,8 +161,10 @@ type IfExpr struct {
 	Col  int
 }
 
-func (e *IfExpr) exprNode()      {}
-func (e *IfExpr) String() string { return fmt.Sprintf("if %s { %s } else { %s }", e.Cond, e.Then, e.Else) }
+func (e *IfExpr) exprNode() {}
+func (e *IfExpr) String() string {
+	return fmt.Sprintf("if %s { %s } else { %s }", e.Cond, e.Then, e.Else)
+}
 func (e *IfExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // StructLitExpr is a struct literal.
@@ -179,8 +181,8 @@ type FieldAssign struct {
 	Value Expr
 }
 
-func (e *StructLitExpr) exprNode()      {}
-func (e *StructLitExpr) String() string { return fmt.Sprintf("%s{...}", e.Name) }
+func (e *StructLitExpr) exprNode()       {}
+func (e *StructLitExpr) String() string  { return fmt.Sprintf("%s{...}", e.Name) }
 func (e *StructLitExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // MethodExpr represents a method call.
@@ -192,8 +194,8 @@ type MethodExpr struct {
 	Col    int
 }
 
-func (e *MethodExpr) exprNode()      {}
-func (e *MethodExpr) String() string { return fmt.Sprintf("%s.%s(...)", e.Object, e.Method) }
+func (e *MethodExpr) exprNode()       {}
+func (e *MethodExpr) String() string  { return fmt.Sprintf("%s.%s(...)", e.Object, e.Method) }
 func (e *MethodExpr) Pos() (int, int) { return e.Line, e.Col }
 
 // Statements.
@@ -217,8 +219,8 @@ type LetStmt struct {
 	Col   int
 }
 
-func (s *LetStmt) stmtNode()      {}
-func (s *LetStmt) String() string { return fmt.Sprintf("let %s = %s", s.Name, s.Value) }
+func (s *LetStmt) stmtNode()       {}
+func (s *LetStmt) String() string  { return fmt.Sprintf("let %s = %s", s.Name, s.Value) }
 func (s *LetStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // AssignStmt is an assignment.
@@ -229,8 +231,8 @@ type AssignStmt struct {
 	Col   int
 }
 
-func (s *AssignStmt) stmtNode()      {}
-func (s *AssignStmt) String() string { return fmt.Sprintf("%s = %s", s.Name, s.Value) }
+func (s *AssignStmt) stmtNode()       {}
+func (s *AssignStmt) String() string  { return fmt.Sprintf("%s = %s", s.Name, s.Value) }
 func (s *AssignStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // ReturnStmt is a return statement.
@@ -240,8 +242,8 @@ type ReturnStmt struct {
 	Col   int
 }
 
-func (s *ReturnStmt) stmtNode()      {}
-func (s *ReturnStmt) String() string { return fmt.Sprintf("return %s", s.Value) }
+func (s *ReturnStmt) stmtNode()       {}
+func (s *ReturnStmt) String() string  { return fmt.Sprintf("return %s", s.Value) }
 func (s *ReturnStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // IfStmt is an if statement.
@@ -253,8 +255,8 @@ type IfStmt struct {
 	Col  int
 }
 
-func (s *IfStmt) stmtNode()      {}
-func (s *IfStmt) String() string { return "if ... else ..." }
+func (s *IfStmt) stmtNode()       {}
+func (s *IfStmt) String() string  { return "if ... else ..." }
 func (s *IfStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // WhileStmt is a while loop.
@@ -265,21 +267,21 @@ type WhileStmt struct {
 	Col  int
 }
 
-func (s *WhileStmt) stmtNode()      {}
-func (s *WhileStmt) String() string { return "while ..." }
+func (s *WhileStmt) stmtNode()       {}
+func (s *WhileStmt) String() string  { return "while ..." }
 func (s *WhileStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // ForStmt is a for-in loop.
 type ForStmt struct {
-	Var   string
-	Iter  Expr
-	Body  []Stmt
-	Line  int
-	Col   int
+	Var  string
+	Iter Expr
+	Body []Stmt
+	Line int
+	Col  int
 }
 
-func (s *ForStmt) stmtNode()      {}
-func (s *ForStmt) String() string { return fmt.Sprintf("for %s in ...", s.Var) }
+func (s *ForStmt) stmtNode()       {}
+func (s *ForStmt) String() string  { return fmt.Sprintf("for %s in ...", s.Var) }
 func (s *ForStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // BreakStmt breaks a loop.
@@ -303,8 +305,8 @@ type BlockStmt struct {
 	Col   int
 }
 
-func (s *BlockStmt) stmtNode()      {}
-func (s *BlockStmt) String() string { return "{ ... }" }
+func (s *BlockStmt) stmtNode()       {}
+func (s *BlockStmt) String() string  { return "{ ... }" }
 func (s *BlockStmt) Pos() (int, int) { return s.Line, s.Col }
 
 // TypeRef is a type reference.
@@ -348,8 +350,8 @@ type Param struct {
 	Type *TypeRef
 }
 
-func (d *FuncDecl) declNode()      {}
-func (d *FuncDecl) String() string { return fmt.Sprintf("fn %s(...)", d.Name) }
+func (d *FuncDecl) declNode()       {}
+func (d *FuncDecl) String() string  { return fmt.Sprintf("fn %s(...)", d.Name) }
 func (d *FuncDecl) Pos() (int, int) { return d.Line, d.Col }
 
 // StructDecl is a struct declaration.
@@ -368,8 +370,8 @@ type Field struct {
 	Type *TypeRef
 }
 
-func (d *StructDecl) declNode()      {}
-func (d *StructDecl) String() string { return fmt.Sprintf("struct %s", d.Name) }
+func (d *StructDecl) declNode()       {}
+func (d *StructDecl) String() string  { return fmt.Sprintf("struct %s", d.Name) }
 func (d *StructDecl) Pos() (int, int) { return d.Line, d.Col }
 
 // EnumDecl is an enum declaration.
@@ -380,8 +382,8 @@ type EnumDecl struct {
 	Col      int
 }
 
-func (d *EnumDecl) declNode()      {}
-func (d *EnumDecl) String() string { return fmt.Sprintf("enum %s", d.Name) }
+func (d *EnumDecl) declNode()       {}
+func (d *EnumDecl) String() string  { return fmt.Sprintf("enum %s", d.Name) }
 func (d *EnumDecl) Pos() (int, int) { return d.Line, d.Col }
 
 // ImportDecl is an import declaration.
@@ -392,8 +394,8 @@ type ImportDecl struct {
 	Col  int
 }
 
-func (d *ImportDecl) declNode()      {}
-func (d *ImportDecl) String() string { return fmt.Sprintf("import %q", d.Path) }
+func (d *ImportDecl) declNode()       {}
+func (d *ImportDecl) String() string  { return fmt.Sprintf("import %q", d.Path) }
 func (d *ImportDecl) Pos() (int, int) { return d.Line, d.Col }
 
 // File is a parsed source file.
@@ -1028,6 +1030,6 @@ type BlockExpr struct {
 	Col   int
 }
 
-func (e *BlockExpr) exprNode()      {}
-func (e *BlockExpr) String() string { return "{ ... }" }
+func (e *BlockExpr) exprNode()       {}
+func (e *BlockExpr) String() string  { return "{ ... }" }
 func (e *BlockExpr) Pos() (int, int) { return e.Line, e.Col }

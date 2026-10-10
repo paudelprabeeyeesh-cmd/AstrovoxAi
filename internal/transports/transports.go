@@ -192,13 +192,13 @@ func ReadWFrame(r io.Reader) (WSFrame, error) {
 
 // WSConn is a minimal WebSocket connection over a net.Conn.
 type WSConn struct {
-	conn net.Conn
-	br   *bufio.Reader
-	bw   *bufio.Writer
-	mu   sync.Mutex
+	conn     net.Conn
+	br       *bufio.Reader
+	bw       *bufio.Writer
+	mu       sync.Mutex
 	isServer bool
-	closed atomic.Bool
-	stats WSStats
+	closed   atomic.Bool
+	stats    WSStats
 }
 
 // WSStats tracks WebSocket statistics.
@@ -378,11 +378,11 @@ func (u *UDPEndpoint) Stats() *UDPStats { return &u.stats }
 // MuxStream multiplexes logical streams over one connection using a
 // 4-byte stream id + 4-byte length framing.
 type MuxStream struct {
-	conn    net.Conn
-	mu      sync.Mutex
-	nextID  atomic.Uint32
-	stats   MuxStats
-	closed  atomic.Bool
+	conn   net.Conn
+	mu     sync.Mutex
+	nextID atomic.Uint32
+	stats  MuxStats
+	closed atomic.Bool
 }
 
 // MuxStats tracks multiplexer statistics.

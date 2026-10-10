@@ -14,11 +14,11 @@ type GVNState struct {
 	// Maps value expressions to value numbers
 	exprToVN map[Expr]ValueNumber
 	// Maps value numbers to representative values
-	vnToVal  map[ValueNumber]*Value
+	vnToVal map[ValueNumber]*Value
 	// Maps SSA values to their value numbers
-	valToVN  map[int]ValueNumber
+	valToVN map[int]ValueNumber
 	// Next available value number
-	nextVN   ValueNumber
+	nextVN ValueNumber
 }
 
 // Expr represents a canonical expression for value numbering.

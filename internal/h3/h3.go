@@ -10,9 +10,9 @@ import (
 
 // HTTP/3 unidirectional stream types.
 const (
-	StreamTypeControl       uint64 = 0x00
-	StreamTypePush          uint64 = 0x01
-	StreamTypeQPACKEncoder  uint64 = 0x02
+	StreamTypeControl      uint64 = 0x00
+	StreamTypePush         uint64 = 0x01
+	StreamTypeQPACKEncoder uint64 = 0x02
 	// StreamTypeQPACKDecoder names the QPACK decoder stream.
 	StreamTypeQPACKDecoder uint64 = 0x03
 )

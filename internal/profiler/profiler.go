@@ -16,13 +16,13 @@ import (
 
 // Span is one timed scope.
 type Span struct {
-	Name       string        `json:"name"`
-	Parent     string        `json:"parent,omitempty"`
-	Count      int64         `json:"count"`
-	TotalNanos int64         `json:"total_nanos"`
-	SelfNanos  int64         `json:"self_nanos"`
-	MinNanos   int64         `json:"min_nanos"`
-	MaxNanos   int64         `json:"max_nanos"`
+	Name       string `json:"name"`
+	Parent     string `json:"parent,omitempty"`
+	Count      int64  `json:"count"`
+	TotalNanos int64  `json:"total_nanos"`
+	SelfNanos  int64  `json:"self_nanos"`
+	MinNanos   int64  `json:"min_nanos"`
+	MaxNanos   int64  `json:"max_nanos"`
 }
 
 // node accumulates span statistics keyed by span name.
@@ -42,9 +42,9 @@ const mathMaxInt64 = int64(^uint64(0) >> 1)
 
 // Profiler collects spans across goroutines.
 type Profiler struct {
-	mu    sync.Mutex
-	root  *node
-	depth int
+	mu       sync.Mutex
+	root     *node
+	depth    int
 	maxDepth int
 }
 
@@ -67,9 +67,9 @@ func (p *Profiler) Start(ctx context.Context, name string) (context.Context, *Sp
 	p.depth++
 	p.mu.Unlock()
 	return context.WithValue(ctx, spanKey{}, name), &SpanHandle{
-		p:       p,
-		name:    name,
-		start:   time.Now(),
+		p:     p,
+		name:  name,
+		start: time.Now(),
 	}
 }
 

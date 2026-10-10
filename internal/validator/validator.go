@@ -309,8 +309,8 @@ func ExportSchema(specs map[string]*Spec) (string, error) {
 		}
 	}
 	doc := map[string]any{
-		"$schema":  "http://json-schema.org/draft-07/schema#",
-		"type":     "object",
+		"$schema":    "http://json-schema.org/draft-07/schema#",
+		"type":       "object",
 		"properties": props,
 	}
 	if len(required) > 0 {

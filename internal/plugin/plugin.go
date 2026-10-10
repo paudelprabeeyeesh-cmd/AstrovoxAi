@@ -63,15 +63,15 @@ type PluginStore interface {
 
 // Registry manages installed plugins.
 type Registry struct {
-	plugins map[string]Plugin
+	plugins   map[string]Plugin
 	manifests map[string]*Manifest
-	mu      sync.RWMutex
+	mu        sync.RWMutex
 }
 
 // NewRegistry creates a new plugin registry.
 func NewRegistry() *Registry {
 	return &Registry{
-		plugins:  make(map[string]Plugin),
+		plugins:   make(map[string]Plugin),
 		manifests: make(map[string]*Manifest),
 	}
 }

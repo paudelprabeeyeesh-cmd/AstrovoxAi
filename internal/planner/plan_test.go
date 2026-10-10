@@ -21,3 +21,11 @@ func TestPlanGenerator_Generate(t *testing.T) {
 		t.Errorf("got %d buffers, want 2", len(plan.Buffers))
 	}
 }
+
+func TestPlanGenerator_Empty(t *testing.T) {
+	g := NewPlanGenerator()
+	plan := g.Generate(nil, nil)
+	if plan == nil {
+		t.Fatal("expected non-nil plan")
+	}
+}

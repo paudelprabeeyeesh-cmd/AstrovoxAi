@@ -15,12 +15,12 @@ type PolyhedralOptimizer struct {
 
 // SCoP (Static Control Part) represents a loop nest amenable to polyhedral optimization.
 type SCoP struct {
-	Context      *Context
-	Domain       *Domain
-	Schedule     *Schedule
-	Accesses     []*Access
-	Statements   []*Statement
-	Parameters   []string
+	Context    *Context
+	Domain     *Domain
+	Schedule   *Schedule
+	Accesses   []*Access
+	Statements []*Statement
+	Parameters []string
 }
 
 // Context represents the parameter constraints.
@@ -89,13 +89,14 @@ func (p *PolyhedralOptimizer) DetectSCoPs() error {
 		return fmt.Errorf("nil function")
 	}
 
-	// Find loop nests with affine bounds and accesses
+	// Find loop nests with affine bounds and accesses. The CFG's loop
+	// information is advisory here; the affine test drives the rewrite.
 	cfg := p.fn.toCFG()
 	if cfg == nil {
 		return nil
 	}
-
 	_ = ComputeDominators(cfg)
+
 	loops := FindLoops(cfg)
 
 	for _, loop := range loops {
@@ -225,9 +226,9 @@ func (p *PolyhedralOptimizer) findTransformation(scop *SCoP, deps []*Dependence)
 
 // Transform represents a loop transformation.
 type Transform struct {
-	Type       TransformType
-	TileSizes  []int
-	Permutation []int
+	Type         TransformType
+	TileSizes    []int
+	Permutation  []int
 	UnrollFactor int
 }
 

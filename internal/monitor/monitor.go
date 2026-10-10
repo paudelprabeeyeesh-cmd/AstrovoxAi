@@ -215,8 +215,8 @@ func (r *Registry) registerRuntimeMetrics() {
 type HealthStatus string
 
 const (
-	StatusUp      HealthStatus = "up"
-	StatusDown    HealthStatus = "down"
+	StatusUp       HealthStatus = "up"
+	StatusDown     HealthStatus = "down"
 	StatusDegraded HealthStatus = "degraded"
 )
 
@@ -230,12 +230,12 @@ type Component struct {
 
 // Monitor is the top-level monitoring system.
 type Monitor struct {
-	registry *Registry
-	mu       sync.RWMutex
+	registry   *Registry
+	mu         sync.RWMutex
 	components map[string]*Component
-	alerts    []Alert
-	rules     []AlertRule
-	started   time.Time
+	alerts     []Alert
+	rules      []AlertRule
+	started    time.Time
 }
 
 // NewMonitor creates a monitor.
@@ -297,21 +297,21 @@ func (m *Monitor) IsHealthy() bool {
 
 // Alert is a fired alert.
 type Alert struct {
-	Name      string
-	Message   string
-	Severity  string
-	FiredAt   time.Time
-	Resolved  bool
+	Name     string
+	Message  string
+	Severity string
+	FiredAt  time.Time
+	Resolved bool
 }
 
 // AlertRule defines a threshold-based alert.
 type AlertRule struct {
-	Name       string
-	Metric     string
-	Threshold  int64
-	Severity   string
-	Compare    string // "gt" or "lt"
-	firing     bool
+	Name      string
+	Metric    string
+	Threshold int64
+	Severity  string
+	Compare   string // "gt" or "lt"
+	firing    bool
 }
 
 // AddRule registers an alert rule.

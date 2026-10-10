@@ -23,12 +23,12 @@ const (
 
 // VectorizerConfig holds configuration for the auto-vectorizer.
 type VectorizerConfig struct {
-	Target          VectorizationTarget
-	Alignment       int // Preferred memory alignment (bytes)
-	EnableFMA       bool
-	EnableMasking   bool
-	UnrollFactor    int
-	CostModel       CostModel
+	Target        VectorizationTarget
+	Alignment     int // Preferred memory alignment (bytes)
+	EnableFMA     bool
+	EnableMasking bool
+	UnrollFactor  int
+	CostModel     CostModel
 }
 
 // CostModel defines the cost heuristic for vectorization decisions.
@@ -43,10 +43,10 @@ type DefaultCostModel struct{}
 
 func (d *DefaultCostModel) InstructionCost(op string, width int) int {
 	base := map[string]int{
-		"add":  1, "sub": 1, "mul": 3, "div": 10,
-		"fma":  2, "sqrt": 5, "exp": 10, "log": 10,
-		"sin":  15, "cos": 15, "tanh": 12,
-		"cmp":  1, "sel":  2, "load": 2, "store": 2,
+		"add": 1, "sub": 1, "mul": 3, "div": 10,
+		"fma": 2, "sqrt": 5, "exp": 10, "log": 10,
+		"sin": 15, "cos": 15, "tanh": 12,
+		"cmp": 1, "sel": 2, "load": 2, "store": 2,
 	}
 	if c, ok := base[op]; ok {
 		return c * (width / 64) // Scale by vector width
@@ -83,24 +83,24 @@ type LoopInfo struct {
 
 // Stmt represents a statement in the loop body.
 type Stmt struct {
-	Op       string // "load", "store", "add", "mul", "fma", etc.
-	Dst      string
-	Src      []string
-	Const    float64
+	Op           string // "load", "store", "add", "mul", "fma", etc.
+	Dst          string
+	Src          []string
+	Const        float64
 	Vectorizable bool
-	Width    int // Vector width in bits
+	Width        int // Vector width in bits
 }
 
 // NewAutoVectorizer creates a new auto-vectorizer.
 func NewAutoVectorizer(config *VectorizerConfig) *AutoVectorizer {
 	if config == nil {
 		config = &VectorizerConfig{
-			Target:       detectTarget(),
-			Alignment:    64,
-			EnableFMA:    true,
+			Target:        detectTarget(),
+			Alignment:     64,
+			EnableFMA:     true,
 			EnableMasking: true,
-			UnrollFactor: 4,
-			CostModel:    &DefaultCostModel{},
+			UnrollFactor:  4,
+			CostModel:     &DefaultCostModel{},
 		}
 	}
 	return &AutoVectorizer{config: config}
@@ -234,8 +234,8 @@ type RuntimeVectorizer struct {
 
 // CompiledKernel represents a JIT-compiled vectorized kernel.
 type CompiledKernel struct {
-	Name       string
-	Fn         func(args ...unsafe.Pointer)
+	Name        string
+	Fn          func(args ...unsafe.Pointer)
 	VectorWidth int
 	Target      VectorizationTarget
 }

@@ -167,8 +167,8 @@ func (v Version) Compatible(o Version) bool { return v.Major == o.Major }
 
 // Constraint is a parsed version constraint expression.
 type Constraint struct {
-	Raw     string
-	checks  []func(Version) bool
+	Raw    string
+	checks []func(Version) bool
 }
 
 // ParseConstraint parses constraint expressions: "1.2.3", "^1.2.0", "~1.2.0",
@@ -280,11 +280,11 @@ func (c Constraint) MaxSatisfying(versions []Version) (Version, bool) {
 
 // Environment describes the running system for compatibility reporting.
 type Environment struct {
-	GoVersion string `json:"go_version"`
-	GOOS      string `json:"goos"`
-	GOARCH    string `json:"goarch"`
-	NumCPU    int    `json:"num_cpu"`
-	GOMAXPROCS int   `json:"gomaxprocs"`
+	GoVersion  string `json:"go_version"`
+	GOOS       string `json:"goos"`
+	GOARCH     string `json:"goarch"`
+	NumCPU     int    `json:"num_cpu"`
+	GOMAXPROCS int    `json:"gomaxprocs"`
 }
 
 // CurrentEnvironment captures the runtime environment.

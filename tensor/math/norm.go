@@ -239,7 +239,7 @@ func GroupNorm(x, weight, bias *tensor.Tensor, numGroups int, eps float64) (*ten
 			var sum float64
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					sum += xv[base+s]
 				}
@@ -250,7 +250,7 @@ func GroupNorm(x, weight, bias *tensor.Tensor, numGroups int, eps float64) (*ten
 			var varSum float64
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					diff := xv[base+s] - mean
 					varSum += diff * diff
@@ -262,7 +262,7 @@ func GroupNorm(x, weight, bias *tensor.Tensor, numGroups int, eps float64) (*ten
 			// Normalize
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				w := float64(1)
 				b := float64(0)
 				if wv != nil {
@@ -338,7 +338,7 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 			var sum float64
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					sum += xv[base+s]
 				}
@@ -349,7 +349,7 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 			var varSum float64
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					diff := xv[base+s] - mean
 					varSum += diff * diff
@@ -363,7 +363,7 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 			var sumDyX float64
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					dy := goVal[base+s]
 					sumDy += dy
@@ -373,7 +373,7 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 
 			for c := 0; c < channelsPerGroup; c++ {
 				cIdx := g*channelsPerGroup + c
-				base := (n*C+cIdx)*spatial
+				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					dy := goVal[base+s]
 					xHat := (xv[base+s] - mean) * invStd

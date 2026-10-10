@@ -159,7 +159,7 @@ func TestMuxStreamClosed(t *testing.T) {
 
 func TestQUICPacketRoundTrip(t *testing.T) {
 	p := QUICPacket{
-		Version: 0x00000001,
+		Version:    0x00000001,
 		DestConnID: []byte{1, 2, 3, 4},
 		SrcConnID:  []byte{5, 6},
 		Token:      []byte{0xAA},

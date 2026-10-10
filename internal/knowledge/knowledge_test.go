@@ -196,9 +196,9 @@ func TestReasoner(t *testing.T) {
 	g := buildGraph(t)
 	r := NewReasoner(g)
 	r.AddRule(ReasoningRule{
-		Name: "friend_of_friend",
-		Rel1: "knows",
-		Rel2: "knows",
+		Name:       "friend_of_friend",
+		Rel1:       "knows",
+		Rel2:       "knows",
 		Conclusion: "knows_2",
 	})
 	inferred := r.Infer()

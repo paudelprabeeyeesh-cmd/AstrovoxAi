@@ -20,14 +20,14 @@ type Region struct {
 
 // Tracker records allocations by category.
 type Tracker struct {
-	mu       sync.RWMutex
-	regions  []Region
-	live     map[string]int64
-	total    int64
-	peak     int64
-	byCateg  map[string]int64
-	allocs   atomic.Int64
-	frees    atomic.Int64
+	mu      sync.RWMutex
+	regions []Region
+	live    map[string]int64
+	total   int64
+	peak    int64
+	byCateg map[string]int64
+	allocs  atomic.Int64
+	frees   atomic.Int64
 }
 
 // NewTracker creates a memory tracker.

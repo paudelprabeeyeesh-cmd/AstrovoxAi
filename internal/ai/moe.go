@@ -11,16 +11,16 @@ import (
 
 // MoEConfig holds configuration for Mixture of Experts.
 type MoEConfig struct {
-	NumExperts      int
-	TopK            int
-	HiddenDim       int
-	ExpertDim       int
-	CapacityFactor  float64 // Capacity multiplier for expert capacity
-	Dropout         float64
-	RouterType      RouterType
-	AuxLossCoeff    float64
-	ZLossCoeff      float64
-	UseGroupedGemm  bool
+	NumExperts     int
+	TopK           int
+	HiddenDim      int
+	ExpertDim      int
+	CapacityFactor float64 // Capacity multiplier for expert capacity
+	Dropout        float64
+	RouterType     RouterType
+	AuxLossCoeff   float64
+	ZLossCoeff     float64
+	UseGroupedGemm bool
 }
 
 // RouterType defines the routing strategy.
@@ -50,26 +50,26 @@ func DefaultMoEConfig() *MoEConfig {
 
 // MoELayer implements a Mixture of Experts layer.
 type MoELayer struct {
-	config      *MoEConfig
-	experts     []*Expert
-	router      *Router
-	dropout     float64
-	training    bool
+	config   *MoEConfig
+	experts  []*Expert
+	router   *Router
+	dropout  float64
+	training bool
 }
 
 // Expert is a single expert network (typically an MLP).
 type Expert struct {
-	fc1    *Linear
-	fc2    *Linear
-	act    ActivationType
+	fc1     *Linear
+	fc2     *Linear
+	act     ActivationType
 	dropout float64
 }
 
 func NewExpert(config *MoEConfig) *Expert {
 	return &Expert{
-		fc1:    NewLinear(config.HiddenDim, config.ExpertDim, true),
-		fc2:    NewLinear(config.ExpertDim, config.HiddenDim, true),
-		act:    ActGELU,
+		fc1:     NewLinear(config.HiddenDim, config.ExpertDim, true),
+		fc2:     NewLinear(config.ExpertDim, config.HiddenDim, true),
+		act:     ActGELU,
 		dropout: config.Dropout,
 	}
 }
@@ -91,20 +91,20 @@ func (e *Expert) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 
 // Router computes expert assignments for tokens.
 type Router struct {
-	config       *MoEConfig
-	weight       *tensor.Tensor // [num_experts, hidden_dim]
-	bias         *tensor.Tensor // [num_experts]
-	noiseScale   float64
-	training     bool
+	config     *MoEConfig
+	weight     *tensor.Tensor // [num_experts, hidden_dim]
+	bias       *tensor.Tensor // [num_experts]
+	noiseScale float64
+	training   bool
 }
 
 func NewRouter(config *MoEConfig) *Router {
 	w, _ := tensor.New(tensor.Float64, []int{config.NumExperts, config.HiddenDim})
 	b, _ := tensor.New(tensor.Float64, []int{config.NumExperts})
 	return &Router{
-		config:  config,
-		weight:  w,
-		bias:    b,
+		config:     config,
+		weight:     w,
+		bias:       b,
 		noiseScale: 1.0,
 	}
 }
@@ -401,10 +401,10 @@ func NewMoELayer(config *MoEConfig) *MoELayer {
 	}
 
 	return &MoELayer{
-		config:  config,
-		experts: experts,
-		router:  NewRouter(config),
-		dropout: config.Dropout,
+		config:   config,
+		experts:  experts,
+		router:   NewRouter(config),
+		dropout:  config.Dropout,
 		training: true,
 	}
 }
@@ -420,8 +420,8 @@ func (m *MoELayer) SetTraining(training bool) {
 
 // ExpertChoiceRouter implements expert-choice routing (each expert chooses tokens).
 type ExpertChoiceRouter struct {
-	config     *MoEConfig
-	expertCap  int // Tokens per expert
+	config    *MoEConfig
+	expertCap int // Tokens per expert
 }
 
 func NewExpertChoiceRouter(config *MoEConfig) *ExpertChoiceRouter {
@@ -456,17 +456,17 @@ type SparseMoE struct {
 
 func NewSparseMoE(config *MoEConfig, expertParallelism int) *SparseMoE {
 	return &SparseMoE{
-		MoELayer:        NewMoELayer(config),
+		MoELayer:          NewMoELayer(config),
 		expertParallelism: expertParallelism,
 	}
 }
 
 // MoEStats tracks MoE routing statistics.
 type MoEStats struct {
-	TokensPerExpert    []int
-	ExpertUtilization  []float64
-	LoadBalanceLoss    float64
-	RouterEntropy      float64
+	TokensPerExpert   []int
+	ExpertUtilization []float64
+	LoadBalanceLoss   float64
+	RouterEntropy     float64
 }
 
 func (m *MoELayer) GetStats() MoEStats {

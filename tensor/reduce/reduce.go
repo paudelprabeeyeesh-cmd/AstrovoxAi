@@ -289,9 +289,6 @@ func reduce(t *tensor.Tensor, dims []int, keepDims bool,
 	src := t.Float64()
 	dst := out.Float64()
 	strides := plan.InputStrides
-	reduceSet := plan.ReduceSet
-	rank := len(reduceSet)
-	total := t.Shape().NumElements()
 	// Initialize accumulators.
 	for i := range dst {
 		dst[i] = init
@@ -334,16 +331,12 @@ func reduce(t *tensor.Tensor, dims []int, keepDims bool,
 		}
 	}
 	wg.Wait()
-	_ = rank
-	_ = total
 	return out, nil
 }
 
 func reduceOver(t *tensor.Tensor, plan Plan, src, dst []float64, inBase, outIdx int,
 	combine func(acc, v float64) float64, init float64) {
 	strides := plan.InputStrides
-	reduceSet := plan.ReduceSet
-	rank := len(reduceSet)
 	// Iterate the reduction subspace with an odometer.
 	reduceDims := plan.ReduceDims
 	reduceShape := make([]int, len(reduceDims))
@@ -373,7 +366,6 @@ func reduceOver(t *tensor.Tensor, plan Plan, src, dst []float64, inBase, outIdx 
 			idx[i] = 0
 		}
 	}
-	_ = rank
 }
 
 func outerOffset(o int, outerDims, shape, strides []int) int {

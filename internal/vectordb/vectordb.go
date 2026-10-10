@@ -377,26 +377,17 @@ func (h *HNSWIndex) Search(query Vector, k int) []SearchResult {
 	return out
 }
 
+// searchLayerEf expands the candidate set breadth-first from entryID and
+// returns up to ef node ids ordered by descending similarity.
 func (h *HNSWIndex) searchLayerEf(query Vector, entryID int, ef, level int) []int {
 	visited := map[int]bool{entryID: true}
 	candidates := []int{entryID}
+
+	// Breadth-first expansion over the layer's adjacency lists.
 	for {
-		// expand best unvisited candidate
-		best := -1
-		for _, c := range candidates {
-			if !visited[c] {
-				continue
-			}
-			_ = c
-		}
-		changed := false
-		for _, c := range candidates {
-			d := h.dist(query, h.nodes[c].doc.Vector)
-			_ = d
-		}
-		// simple expansion
+		frontier := append([]int(nil), candidates...)
 		expanded := false
-		for _, c := range candidates {
+		for _, c := range frontier {
 			n := h.nodes[c]
 			n.mu.RLock()
 			friends := append([]int(nil), n.friends[level]...)
@@ -407,30 +398,31 @@ func (h *HNSWIndex) searchLayerEf(query Vector, entryID int, ef, level int) []in
 				}
 				visited[f] = true
 				candidates = append(candidates, f)
-				changed = true
 				expanded = true
 			}
 		}
 		if !expanded {
 			break
 		}
-		if changed && best == -1 {
-			// trim to ef
-			sort.Slice(candidates, func(i, j int) bool {
-				return h.dist(query, h.nodes[candidates[i]].doc.Vector) > h.dist(query, h.nodes[candidates[j]].doc.Vector)
-			})
-			if len(candidates) > ef {
-				candidates = candidates[:ef]
-			}
+		// Keep only the ef best candidates to bound the frontier.
+		h.sortBySimilarity(query, candidates)
+		if len(candidates) > ef {
+			candidates = candidates[:ef]
 		}
 	}
-	sort.Slice(candidates, func(i, j int) bool {
-		return h.dist(query, h.nodes[candidates[i]].doc.Vector) > h.dist(query, h.nodes[candidates[j]].doc.Vector)
-	})
+
+	h.sortBySimilarity(query, candidates)
 	if len(candidates) > ef {
 		candidates = candidates[:ef]
 	}
 	return candidates
+}
+
+// sortBySimilarity orders node ids by descending similarity to query.
+func (h *HNSWIndex) sortBySimilarity(query Vector, ids []int) {
+	sort.Slice(ids, func(i, j int) bool {
+		return h.dist(query, h.nodes[ids[i]].doc.Vector) > h.dist(query, h.nodes[ids[j]].doc.Vector)
+	})
 }
 
 // VectorDB is a simple vector database with optional HNSW index.

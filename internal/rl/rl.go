@@ -9,8 +9,8 @@ import (
 
 // RL errors.
 var (
-	ErrEmptyBuffer   = errors.New("experience buffer is empty")
-	ErrInvalidShape  = errors.New("invalid state or action dimension")
+	ErrEmptyBuffer  = errors.New("experience buffer is empty")
+	ErrInvalidShape = errors.New("invalid state or action dimension")
 )
 
 // Experience is one transition.
@@ -218,8 +218,8 @@ func TDError(exp Experience, qNext []float64, gamma float64, qValue float64) flo
 
 // LinearQNet is a small linear Q-network: Q(s) = W s + b.
 type LinearQNet struct {
-	W      [][]float64 // [stateDim][actionDim]
-	B      []float64
+	W         [][]float64 // [stateDim][actionDim]
+	B         []float64
 	stateDim  int
 	actionDim int
 }
@@ -271,10 +271,10 @@ func (n *LinearQNet) SGDStep(state []float64, gradQ []float64, lr float64) error
 
 // PolicyGradientAgent holds a softmax policy over discrete actions.
 type PolicyGradientAgent struct {
-	Weights    [][]float64 // [stateDim][actionDim]
-	stateDim   int
-	actionDim  int
-	lastProbs  []float64
+	Weights   [][]float64 // [stateDim][actionDim]
+	stateDim  int
+	actionDim int
+	lastProbs []float64
 }
 
 // NewPolicyGradientAgent creates a softmax policy agent.

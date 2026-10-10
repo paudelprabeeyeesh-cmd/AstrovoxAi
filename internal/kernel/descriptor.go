@@ -7,13 +7,13 @@ import (
 
 // Descriptor describes a kernel's signature.
 type Descriptor struct {
-	Name         string
-	Version      string
-	Inputs       []TensorDesc
-	Outputs      []TensorDesc
-	Attributes   map[string]interface{}
-	Backends     []string
-	Tags         []string
+	Name       string
+	Version    string
+	Inputs     []TensorDesc
+	Outputs    []TensorDesc
+	Attributes map[string]interface{}
+	Backends   []string
+	Tags       []string
 }
 
 // TensorDesc describes a tensor argument.

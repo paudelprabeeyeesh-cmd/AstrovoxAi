@@ -39,3 +39,28 @@ func TestArena_Reset(t *testing.T) {
 		t.Errorf("after reset remaining = %d, want 100", a.Remaining())
 	}
 }
+
+func TestArena_AllocBytes(t *testing.T) {
+	a := NewArena(100)
+	_, err := a.AllocBytes(10)
+	if err != nil {
+		t.Fatalf("AllocBytes: %v", err)
+	}
+}
+
+func TestArena_Used(t *testing.T) {
+	a := NewArena(100)
+	_, _ = a.Alloc(30)
+	if a.Used() != 30 {
+		t.Fatalf("used = %d, want 30", a.Used())
+	}
+}
+
+func TestArena_SequentialAllocs(t *testing.T) {
+	a := NewArena(100)
+	off0, _ := a.Alloc(10)
+	off1, _ := a.Alloc(20)
+	if off1 != off0+10 {
+		t.Fatalf("off1 = %d, want %d", off1, off0+10)
+	}
+}

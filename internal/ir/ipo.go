@@ -44,36 +44,36 @@ func (m *Module) AddGlobal(gv *GlobalVar) {
 
 // IPOState holds state for interprocedural optimization.
 type IPOState struct {
-	Modules       []*Module
-	CallGraph     *CallGraph
-	GlobalAA      *GlobalAliasAnalysis
+	Modules          []*Module
+	CallGraph        *CallGraph
+	GlobalAA         *GlobalAliasAnalysis
 	InlineCandidates map[string]bool
-	FuncAttrs     map[string]FuncAttribute
+	FuncAttrs        map[string]FuncAttribute
 }
 
 // FuncAttribute represents function attributes for optimization.
 type FuncAttribute struct {
-	Name          string
-	IsPure        bool
-	IsConst       bool
-	IsNoReturn    bool
-	IsNoInline    bool
-	AlwaysInline  bool
-	Hot           bool
-	Cold          bool
-	StackSize     int
-	ParamAttrs    []ParamAttribute
-	IsRecursive   bool
+	Name         string
+	IsPure       bool
+	IsConst      bool
+	IsNoReturn   bool
+	IsNoInline   bool
+	AlwaysInline bool
+	Hot          bool
+	Cold         bool
+	StackSize    int
+	ParamAttrs   []ParamAttribute
+	IsRecursive  bool
 }
 
 // ParamAttribute represents parameter attributes.
 type ParamAttribute struct {
-	Index       int
-	NoAlias     bool
-	NoCapture   bool
-	ReadOnly    bool
-	WriteOnly   bool
-	Returned    bool
+	Index     int
+	NoAlias   bool
+	NoCapture bool
+	ReadOnly  bool
+	WriteOnly bool
+	Returned  bool
 }
 
 // CallGraph represents the call graph of a program.
@@ -85,27 +85,27 @@ type CallGraph struct {
 
 // CallGraphNode represents a node in the call graph.
 type CallGraphNode struct {
-	Function   *Function
-	Callers    []*CallGraphNode
-	Callees    []*CallGraphNode
-	CallSites  []CallSite
+	Function    *Function
+	Callers     []*CallGraphNode
+	Callees     []*CallGraphNode
+	CallSites   []CallSite
 	IsRecursive bool
 }
 
 // CallSite represents a call instruction.
 type CallSite struct {
-	Caller  *Function
-	Callee  *Function
-	Block   int
-	Args    []*Value
+	Caller   *Function
+	Callee   *Function
+	Block    int
+	Args     []*Value
 	IsDirect bool
 }
 
 // GlobalAliasAnalysis provides interprocedural alias analysis.
 type GlobalAliasAnalysis struct {
-	Globals    map[string]*GlobalVar
-	PointsTo   map[string]PointsToSet
-	ModRef     map[string]ModRefInfo
+	Globals  map[string]*GlobalVar
+	PointsTo map[string]PointsToSet
+	ModRef   map[string]ModRefInfo
 }
 
 // ModRefInfo represents mod/ref information for a function.
@@ -507,18 +507,18 @@ func (s *IPOState) functionSpecialization() {
 
 // LTOState holds state for link-time optimization.
 type LTOState struct {
-	Modules       []*Module
-	Combined      *Module
-	GlobalOpts    LTOOptions
+	Modules    []*Module
+	Combined   *Module
+	GlobalOpts LTOOptions
 }
 
 // LTOOptions controls LTO behavior.
 type LTOOptions struct {
-	WholeProgram     bool
-	ThinLTO          bool
-	MaxInlineSize    int
-	ParallelJobs     int
-	EnableWPA        bool // Whole Program Analysis
+	WholeProgram  bool
+	ThinLTO       bool
+	MaxInlineSize int
+	ParallelJobs  int
+	EnableWPA     bool // Whole Program Analysis
 }
 
 // NewLTOState creates a new LTO state.
@@ -588,36 +588,33 @@ func (s *LTOState) codeGen() {
 }
 
 // ThinLTO performs distributed LTO using summary-based approach.
+//
+// The current IR does not thread module summaries through a shared store,
+// so this records the intended phased structure for the future
+// implementation: generate summaries, combine them, run global analysis,
+// distribute decisions, then apply per-module optimizations.
 func ThinLTO(modules []*Module, opts LTOOptions) error {
-	// Phase 1: Generate summaries for each module in parallel
-	summaries := make([]*ModuleSummary, len(modules))
-
-	// Phase 2: Combine summaries
-	_ = combineSummaries(summaries)
-
-	// Phase 3: Global analysis on combined summary
-	// Phase 4: Distribute optimization decisions
-	// Phase 5: Apply optimizations in each module
+	_ = combineSummaries(nil)
 	return nil
 }
 
 // ModuleSummary represents a summary for ThinLTO.
 type ModuleSummary struct {
-	ModuleName    string
-	FuncSummaries map[string]*FuncSummary
+	ModuleName      string
+	FuncSummaries   map[string]*FuncSummary
 	GlobalSummaries map[string]*GlobalSummary
 }
 
 // FuncSummary represents a function summary.
 type FuncSummary struct {
-	Name         string
-	Size         int
-	IsPure       bool
-	IsConst      bool
-	CallGraph    map[string]bool
-	ModRef       ModRefInfo
-	Hotness      float64
-	InlineHint   bool
+	Name       string
+	Size       int
+	IsPure     bool
+	IsConst    bool
+	CallGraph  map[string]bool
+	ModRef     ModRefInfo
+	Hotness    float64
+	InlineHint bool
 }
 
 // GlobalSummary represents a global variable summary.

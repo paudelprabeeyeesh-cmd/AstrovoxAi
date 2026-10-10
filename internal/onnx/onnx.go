@@ -198,29 +198,29 @@ func NewTensorProto(name string, t *tensor.Tensor) (*TensorProto, error) {
 
 // NodeProto is an ONNX operation node.
 type NodeProto struct {
-	Name        string
-	OpType      string
-	Inputs      []string
-	Outputs     []string
-	Attrs       map[string]interface{}
+	Name    string
+	OpType  string
+	Inputs  []string
+	Outputs []string
+	Attrs   map[string]interface{}
 }
 
 // GraphProto is a minimal ONNX graph.
 type GraphProto struct {
-	Name     string
-	Nodes    []NodeProto
-	Inputs   []string
-	Outputs  []string
+	Name         string
+	Nodes        []NodeProto
+	Inputs       []string
+	Outputs      []string
 	Initializers map[string]*TensorProto
 }
 
 // ModelProto is a minimal ONNX model.
 type ModelProto struct {
-	ProducerName string
+	ProducerName    string
 	ProducerVersion string
-	IRVersion   int64
-	Opset       int64
-	Graphs      []*GraphProto
+	IRVersion       int64
+	Opset           int64
+	Graphs          []*GraphProto
 }
 
 // NewModel creates an empty model.

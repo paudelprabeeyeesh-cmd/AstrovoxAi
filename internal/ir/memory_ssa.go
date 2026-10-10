@@ -25,12 +25,12 @@ type MemoryDef struct {
 
 // MemoryUse represents a memory use (load).
 type MemoryUse struct {
-	ID      int
-	Block   int
-	Addr    *Value
-	Def     int // Defining memory version
-	Users   []int
-	Value   *Value // Forwarded value
+	ID    int
+	Block int
+	Addr  *Value
+	Def   int // Defining memory version
+	Users []int
+	Value *Value // Forwarded value
 }
 
 // MemoryPhi represents a memory phi node.
@@ -142,10 +142,10 @@ func (ms *MemorySSA) renameMemoryVersions(cfg *CFG, dom *DominatorTree, memOps m
 				if ms.isLoad(def) {
 					// Load: create use
 					ms.Uses[def.ID] = append(ms.Uses[def.ID], &MemoryUse{
-						ID:   def.ID,
+						ID:    def.ID,
 						Block: blkID,
-						Addr: ms.getAddr(def),
-						Def:  curVer,
+						Addr:  ms.getAddr(def),
+						Def:   curVer,
 					})
 				} else {
 					// Store/Alloc/Free: create new def
@@ -201,10 +201,10 @@ func (ms *MemorySSA) getValue(val *Value) *Value {
 
 // AliasAnalysis provides alias analysis for memory operations.
 type AliasAnalysis struct {
-	fn    *Function
-	ms    *MemorySSA
-	pts   map[*Value]PointsToSet // Pointer to points-to set
-	aliases map[int]map[int]bool // Value pairs that may alias
+	fn      *Function
+	ms      *MemorySSA
+	pts     map[*Value]PointsToSet // Pointer to points-to set
+	aliases map[int]map[int]bool   // Value pairs that may alias
 }
 
 // PointsToSet represents a set of memory locations a pointer may point to.
@@ -214,11 +214,11 @@ type PointsToSet struct {
 
 // Location represents a memory location.
 type Location struct {
-	Base    *Value // Base pointer
-	Offset  int    // Constant offset
-	Size    int    // Size in bytes
-	IsHeap  bool
-	IsStack bool
+	Base     *Value // Base pointer
+	Offset   int    // Constant offset
+	Size     int    // Size in bytes
+	IsHeap   bool
+	IsStack  bool
 	IsGlobal bool
 }
 
@@ -344,19 +344,19 @@ func (a *AliasAnalysis) GetAliases(v *Value) []*Value {
 
 // EscapeAnalysis determines the escape state of allocations.
 type EscapeAnalysis struct {
-	fn       *Function
-	ms       *MemorySSA
-	aa       *AliasAnalysis
-	escape   map[*Value]EscapeState
+	fn     *Function
+	ms     *MemorySSA
+	aa     *AliasAnalysis
+	escape map[*Value]EscapeState
 }
 
 // EscapeState represents the escape state of an allocation.
 type EscapeState int
 
 const (
-	NoEscape EscapeState = iota // Does not escape (stack allocatable)
-	ArgEscape                  // Escapes as function argument
-	GlobalEscape               // Escapes to global/heap
+	NoEscape     EscapeState = iota // Does not escape (stack allocatable)
+	ArgEscape                       // Escapes as function argument
+	GlobalEscape                    // Escapes to global/heap
 )
 
 // NewEscapeAnalysis creates a new escape analysis.

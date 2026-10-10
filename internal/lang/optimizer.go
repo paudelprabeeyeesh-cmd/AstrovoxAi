@@ -13,7 +13,7 @@ type Optimizer struct {
 
 // OptStats tracks optimization statistics.
 type OptStats struct {
-	ConstantsFolded int
+	ConstantsFolded   int
 	IdentitiesRemoved int
 	DeadCodeRemoved   int
 	InlinedFunctions  int
@@ -358,7 +358,7 @@ func reduce(e Expr) Expr {
 // SSAOptimizer converts to SSA-like form for further optimization.
 type SSAOptimizer struct {
 	varCounter map[string]int
-	versions    map[string]int
+	versions   map[string]int
 }
 
 // NewSSAOptimizer creates an SSA optimizer.
@@ -371,15 +371,13 @@ func NewSSAOptimizer() *SSAOptimizer {
 
 // Rename renames variables to unique versions (SSA form).
 func (s *SSAOptimizer) Rename(stmts []Stmt) []Stmt {
-	for i, st := range stmts {
-		switch st := st.(type) {
-		case *LetStmt:
-			v := s.versions[st.Name]
-			s.varCounter[st.Name] = v + 1
-			s.versions[st.Name] = v + 1
-			_ = v
+	for _, st := range stmts {
+		if let, ok := st.(*LetStmt); ok {
+			if v, ok := s.versions[let.Name]; ok {
+				s.versions[let.Name] = v + 1
+			}
+			s.versions[let.Name] = s.versions[let.Name] + 1
 		}
-		_ = i
 	}
 	return stmts
 }

@@ -22,23 +22,23 @@ type Message struct {
 }
 
 type Conversation struct {
-	ID        string     `json:"id"`
-	Title     string     `json:"title"`
-	Messages  []Message  `json:"messages,omitempty"`
-	Model     string     `json:"model"`
-	CreatedAt string     `json:"created_at,omitempty"`
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Messages  []Message `json:"messages,omitempty"`
+	Model     string    `json:"model"`
+	CreatedAt string    `json:"created_at,omitempty"`
 }
 
 type WebhookConfig struct {
-	URL     string   `json:"url"`
-	Secret  string   `json:"secret,omitempty"`
-	Events  []string `json:"events"`
-	Active  bool     `json:"active"`
+	URL    string   `json:"url"`
+	Secret string   `json:"secret,omitempty"`
+	Events []string `json:"events"`
+	Active bool     `json:"active"`
 }
 
 type RetryPolicy struct {
-	MaxRetries       int
-	BackoffFactor    float64
+	MaxRetries        int
+	BackoffFactor     float64
 	RetryableStatuses []int
 }
 
@@ -47,8 +47,8 @@ func NewClient(apiKey string, baseURL string) *Client {
 		baseURL = "https://api.astrovox.ai/v1"
 	}
 	return &Client{
-		BaseURL: baseURL,
-		APIKey:  apiKey,
+		BaseURL:    baseURL,
+		APIKey:     apiKey,
 		HTTPClient: &http.Client{Timeout: 30 * time.Second},
 	}
 }

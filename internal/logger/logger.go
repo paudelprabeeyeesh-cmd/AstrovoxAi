@@ -61,11 +61,11 @@ func Fields(kv ...any) []Field {
 const ringSize = 1 << 16
 
 type record struct {
-	Level   Level    `json:"level"`
-	Time    string   `json:"time"`
-	Message string   `json:"msg"`
-	Module  string   `json:"module,omitempty"`
-	Fields  []Field  `json:"fields,omitempty"`
+	Level   Level   `json:"level"`
+	Time    string  `json:"time"`
+	Message string  `json:"msg"`
+	Module  string  `json:"module,omitempty"`
+	Fields  []Field `json:"fields,omitempty"`
 }
 
 type ringBuffer struct {

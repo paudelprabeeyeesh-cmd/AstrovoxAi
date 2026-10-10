@@ -68,54 +68,54 @@ func (vdt VulkanDeviceType) String() string {
 
 // VulkanMemoryHeap represents a memory heap.
 type VulkanMemoryHeap struct {
-	size     uint64
-	flags    uint32
+	size        uint64
+	flags       uint32
 	deviceLocal bool
 	hostVisible bool
-	used     atomic.Uint64
+	used        atomic.Uint64
 }
 
 // VulkanLimits represents device limits.
 type VulkanLimits struct {
-	MaxComputeWorkGroupCountX uint32
-	MaxComputeWorkGroupCountY uint32
-	MaxComputeWorkGroupCountZ uint32
-	MaxComputeWorkGroupSizeX  uint32
-	MaxComputeWorkGroupSizeY  uint32
-	MaxComputeWorkGroupSizeZ  uint32
+	MaxComputeWorkGroupCountX      uint32
+	MaxComputeWorkGroupCountY      uint32
+	MaxComputeWorkGroupCountZ      uint32
+	MaxComputeWorkGroupSizeX       uint32
+	MaxComputeWorkGroupSizeY       uint32
+	MaxComputeWorkGroupSizeZ       uint32
 	MaxComputeWorkGroupInvocations uint32
-	MaxComputeSharedMemorySize uint32
-	MaxPushConstantsSize       uint32
-	MaxBoundDescriptorSets     uint32
-	MaxMemoryAllocationCount   uint32
-	TimestampPeriod            float32
+	MaxComputeSharedMemorySize     uint32
+	MaxPushConstantsSize           uint32
+	MaxBoundDescriptorSets         uint32
+	MaxMemoryAllocationCount       uint32
+	TimestampPeriod                float32
 }
 
 // DefaultVulkanLimits returns typical device limits.
 func DefaultVulkanLimits() VulkanLimits {
 	return VulkanLimits{
-		MaxComputeWorkGroupCountX:   65535,
-		MaxComputeWorkGroupCountY:   65535,
-		MaxComputeWorkGroupCountZ:   65535,
-		MaxComputeWorkGroupSizeX:    1024,
-		MaxComputeWorkGroupSizeY:    1024,
-		MaxComputeWorkGroupSizeZ:    64,
+		MaxComputeWorkGroupCountX:      65535,
+		MaxComputeWorkGroupCountY:      65535,
+		MaxComputeWorkGroupCountZ:      65535,
+		MaxComputeWorkGroupSizeX:       1024,
+		MaxComputeWorkGroupSizeY:       1024,
+		MaxComputeWorkGroupSizeZ:       64,
 		MaxComputeWorkGroupInvocations: 1024,
-		MaxComputeSharedMemorySize:  32768,
-		MaxPushConstantsSize:        128,
-		MaxBoundDescriptorSets:      4,
-		MaxMemoryAllocationCount:    4096,
-		TimestampPeriod:             1.0,
+		MaxComputeSharedMemorySize:     32768,
+		MaxPushConstantsSize:           128,
+		MaxBoundDescriptorSets:         4,
+		MaxMemoryAllocationCount:       4096,
+		TimestampPeriod:                1.0,
 	}
 }
 
 // VulkanPipeline represents a compute pipeline.
 type VulkanPipeline struct {
-	name          string
-	shaderCode    []byte
-	layout        *VulkanPipelineLayout
-	compiled      atomic.Bool
-	mu            sync.Mutex
+	name           string
+	shaderCode     []byte
+	layout         *VulkanPipelineLayout
+	compiled       atomic.Bool
+	mu             sync.Mutex
 	executionCount atomic.Int64
 }
 
@@ -132,9 +132,9 @@ type VulkanDescriptorSetLayout struct {
 
 // VulkanDescriptorBinding describes a descriptor binding.
 type VulkanDescriptorBinding struct {
-	Binding    uint32
-	Type       VulkanDescriptorType
-	Count      uint32
+	Binding      uint32
+	Type         VulkanDescriptorType
+	Count        uint32
 	ShaderStages uint32
 }
 
@@ -159,7 +159,7 @@ func NewVulkanPipeline(name string, shaderCode []byte) *VulkanPipeline {
 	return &VulkanPipeline{
 		name:       name,
 		shaderCode: shaderCode,
-		layout: &VulkanPipelineLayout{},
+		layout:     &VulkanPipelineLayout{},
 	}
 }
 
@@ -189,10 +189,10 @@ func (p *VulkanPipeline) ExecutionCount() int64 {
 
 // VulkanCommandBuffer records commands for execution.
 type VulkanCommandBuffer struct {
-	level       VulkanCommandBufferLevel
-	state       VulkanCommandBufferState
-	commands    []VulkanCommand
-	mu          sync.Mutex
+	level    VulkanCommandBufferLevel
+	state    VulkanCommandBufferState
+	commands []VulkanCommand
+	mu       sync.Mutex
 }
 
 // VulkanCommandBufferLevel represents command buffer level.
@@ -220,10 +220,10 @@ type VulkanCommand interface {
 
 // VulkanDispatchCommand represents a compute dispatch command.
 type VulkanDispatchCommand struct {
-	Pipeline *VulkanPipeline
-	GroupsX  uint32
-	GroupsY  uint32
-	GroupsZ  uint32
+	Pipeline      *VulkanPipeline
+	GroupsX       uint32
+	GroupsY       uint32
+	GroupsZ       uint32
 	PushConstants []byte
 }
 
@@ -320,8 +320,8 @@ func (cb *VulkanCommandBuffer) CommandCount() int {
 
 // VulkanStream implements Stream interface for Vulkan.
 type VulkanStream struct {
-	id       int
-	deviceID int
+	id        int
+	deviceID  int
 	cmdBuffer *VulkanCommandBuffer
 	submitted atomic.Bool
 	completed atomic.Bool
@@ -359,13 +359,13 @@ type Vulkan struct {
 
 // VulkanStats tracks Vulkan statistics.
 type VulkanStats struct {
-	Dispatches     atomic.Int64
-	MatMulOps      atomic.Int64
-	AddOps         atomic.Int64
-	ReluOps        atomic.Int64
-	SoftmaxOps     atomic.Int64
-	BufferAllocs   atomic.Int64
-	BytesAllocated atomic.Int64
+	Dispatches       atomic.Int64
+	MatMulOps        atomic.Int64
+	AddOps           atomic.Int64
+	ReluOps          atomic.Int64
+	SoftmaxOps       atomic.Int64
+	BufferAllocs     atomic.Int64
+	BytesAllocated   atomic.Int64
 	PipelineCompiles atomic.Int64
 }
 
@@ -380,7 +380,7 @@ func NewVulkan(deviceType VulkanDeviceType, memoryMB uint64) (*Vulkan, error) {
 			{size: memoryMB * 1024 * 1024, flags: 0x3, deviceLocal: true, hostVisible: true},
 		},
 	}
-	
+
 	// Create queues
 	device.computeQueues = []*VulkanQueue{
 		{familyIndex: 0, queueIndex: 0, queueFlags: QueueComputeBit},
@@ -392,14 +392,14 @@ func NewVulkan(deviceType VulkanDeviceType, memoryMB uint64) (*Vulkan, error) {
 	device.transferQueues = []*VulkanQueue{
 		{familyIndex: 2, queueIndex: 0, queueFlags: QueueTransferBit},
 	}
-	
+
 	v := &Vulkan{
-		device:     device,
-		instance:   "astrovox-vulkan-1.0",
-		available:  false, // Simulated
-		pipelines:  make(map[string]*VulkanPipeline),
+		device:    device,
+		instance:  "astrovox-vulkan-1.0",
+		available: false, // Simulated
+		pipelines: make(map[string]*VulkanPipeline),
 	}
-	
+
 	// Create default streams
 	v.streams = make([]*VulkanStream, 4)
 	for i := range v.streams {
@@ -409,9 +409,9 @@ func NewVulkan(deviceType VulkanDeviceType, memoryMB uint64) (*Vulkan, error) {
 			cmdBuffer: &VulkanCommandBuffer{},
 		}
 	}
-	
+
 	v.currentQueue = device.computeQueues[0]
-	
+
 	return v, nil
 }
 
@@ -449,11 +449,11 @@ func (v *Vulkan) GetStream(idx int) *VulkanStream {
 func (v *Vulkan) CreatePipeline(name string, shaderCode []byte) (*VulkanPipeline, error) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
-	
+
 	if p, ok := v.pipelines[name]; ok {
 		return p, nil
 	}
-	
+
 	p := NewVulkanPipeline(name, shaderCode)
 	if err := p.Compile(); err != nil {
 		return nil, err
@@ -512,31 +512,34 @@ func (v *Vulkan) MemoryStats() []struct{ Used, Total uint64 } {
 
 // Dispatch submits a compute dispatch to a stream.
 func (v *Vulkan) Dispatch(stream *VulkanStream, pipeline *VulkanPipeline, x, y, z uint32, pushConstants []byte) error {
+	if pipeline == nil || stream == nil {
+		return ErrVulkanPipeline
+	}
 	if !pipeline.IsCompiled() {
 		return ErrVulkanPipeline
 	}
-	
+
 	cmd := stream.cmdBuffer
 	if err := cmd.Begin(); err != nil {
 		return err
 	}
-	
+
 	if err := cmd.BindPipeline(pipeline); err != nil {
 		return err
 	}
-	
+
 	if err := cmd.Dispatch(pipeline, x, y, z, pushConstants); err != nil {
 		return err
 	}
-	
+
 	if err := cmd.End(); err != nil {
 		return err
 	}
-	
+
 	stream.submitted.Store(true)
 	pipeline.executionCount.Add(1)
 	v.stats.Dispatches.Add(1)
-	
+
 	return nil
 }
 
@@ -546,7 +549,7 @@ func (v *Vulkan) SynchronizeDevice() error {
 	streams := make([]*VulkanStream, len(v.streams))
 	copy(streams, v.streams)
 	v.mu.RUnlock()
-	
+
 	for _, s := range streams {
 		if err := s.Synchronize(); err != nil {
 			return err
@@ -563,13 +566,13 @@ func (v *Vulkan) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 	if len(b) != k*n {
 		return nil, errors.New("invalid b dimensions")
 	}
-	
+
 	v.stats.MatMulOps.Add(1)
 	out := make([]float64, m*n)
-	
+
 	// Simulate workgroup-based execution
 	const workgroupSize = 64
-	
+
 	for i := 0; i < m; i++ {
 		for j := 0; j < n; j++ {
 			sum := 0.0
@@ -579,7 +582,7 @@ func (v *Vulkan) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 			out[i*n+j] = sum
 		}
 	}
-	
+
 	_ = workgroupSize
 	return out, nil
 }
@@ -589,7 +592,7 @@ func (v *Vulkan) Add(a, b []float64) ([]float64, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("shape mismatch")
 	}
-	
+
 	v.stats.AddOps.Add(1)
 	out := make([]float64, len(a))
 	for i := range a {
@@ -611,30 +614,8 @@ func (v *Vulkan) Relu(x []float64) []float64 {
 
 // Softmax applies the softmax function.
 func (v *Vulkan) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
-	
 	v.stats.SoftmaxOps.Add(1)
-	
-	maxVal := x[0]
-	for _, v := range x {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	
-	sum := 0.0
-	for _, v := range x {
-		sum += mathExp(v - maxVal)
-	}
-	
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v-maxVal) / sum
-	}
-	
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns Vulkan statistics.
@@ -675,7 +656,7 @@ func NewVulkanSPIRVCompiler() *VulkanSPIRVCompiler {
 func (c *VulkanSPIRVCompiler) CompileGLSL(source string) ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	
+
 	// In production, would use glslangValidator or shaderc
 	spirv := []byte(fmt.Sprintf("SPIRV(%s)", source[:minInt(32, len(source))]))
 	c.compiledModules[source] = spirv

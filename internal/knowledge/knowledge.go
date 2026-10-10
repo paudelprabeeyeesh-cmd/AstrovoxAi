@@ -54,20 +54,20 @@ type Edge struct {
 
 // Graph is an in-memory knowledge graph.
 type Graph struct {
-	mu     sync.RWMutex
-	nodes  map[NodeID]*Node
-	edges  map[EdgeID]*Edge
-	out    map[NodeID][]*Edge
+	mu      sync.RWMutex
+	nodes   map[NodeID]*Node
+	edges   map[EdgeID]*Edge
+	out     map[NodeID][]*Edge
 	inEdges map[NodeID][]*Edge
-	nextID int64
+	nextID  int64
 }
 
 // NewGraph creates an empty graph.
 func NewGraph() *Graph {
 	return &Graph{
-		nodes:  make(map[NodeID]*Node),
-		edges:  make(map[EdgeID]*Edge),
-		out:    make(map[NodeID][]*Edge),
+		nodes:   make(map[NodeID]*Node),
+		edges:   make(map[EdgeID]*Edge),
+		out:     make(map[NodeID][]*Edge),
 		inEdges: make(map[NodeID][]*Edge),
 	}
 }
@@ -370,10 +370,10 @@ func (g *Graph) AllPaths(src, dst NodeID, maxDepth int) []*Path {
 
 // Query is a graph query specification.
 type Query struct {
-	StartID NodeID
-	Labels  []string
+	StartID  NodeID
+	Labels   []string
 	MaxDepth int
-	Limit   int
+	Limit    int
 }
 
 // Execute runs a query, returning matching nodes.
@@ -480,9 +480,9 @@ func (g *Graph) TopNodes(rank map[NodeID]float64, k int) []NodeID {
 // ReasoningRule is a simple inference rule: if A -[rel]-> B
 // and B -[rel2]-> C then A -[conclusion]-> C.
 type ReasoningRule struct {
-	Name      string
-	Rel1      string
-	Rel2      string
+	Name       string
+	Rel1       string
+	Rel2       string
 	Conclusion string
 }
 
@@ -509,11 +509,7 @@ func (r *Reasoner) Infer() []*Edge {
 	seen := map[string]bool{}
 
 	for _, rule := range r.rules {
-		for _, from := range g.BFS("", 0) {
-			_ = from
-			break
-		}
-		// apply rule to every node
+		// Apply the rule to every node in the graph.
 		g.mu.RLock()
 		ids := make([]NodeID, 0, len(g.nodes))
 		for id := range g.nodes {

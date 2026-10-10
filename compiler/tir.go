@@ -40,19 +40,19 @@ func (BinaryExpr) exprNode() {}
 
 // CallExpr invokes a primitive.
 type CallExpr struct {
-	Op    string // "exp", "log", "sqrt", "tanh", "relu", "sigmoid"
-	Args  []Expr
+	Op   string // "exp", "log", "sqrt", "tanh", "relu", "sigmoid"
+	Args []Expr
 }
 
 func (CallExpr) exprNode() {}
 
 // ReduceExpr folds a buffer over axes.
 type ReduceExpr struct {
-	Op      string // "sum", "prod", "max", "min"
-	Src     string
-	SrcIdx  []Expr // index expressions with loop vars
-	Axes    []int  // loop-variable positions being reduced
-	Init    float64
+	Op     string // "sum", "prod", "max", "min"
+	Src    string
+	SrcIdx []Expr // index expressions with loop vars
+	Axes   []int  // loop-variable positions being reduced
+	Init   float64
 }
 
 func (ReduceExpr) exprNode() {}
@@ -119,11 +119,11 @@ func (b Buffer) Elements() int {
 
 // Func is a compiled TIR function.
 type Func struct {
-	Name     string
-	Params   []Buffer
-	Output   Buffer
-	Body     []Stmt
-	Source   string // originating op name
+	Name   string
+	Params []Buffer
+	Output Buffer
+	Body   []Stmt
+	Source string // originating op name
 }
 
 // Module is a collection of TIR functions.

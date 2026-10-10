@@ -3,6 +3,7 @@ package backend
 import (
 	"errors"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -18,12 +19,12 @@ var (
 
 // CUDAMemoryPool manages simulated CUDA memory allocation.
 type CUDAMemoryPool struct {
-	mu       sync.Mutex
-	total    int64
-	used     atomic.Int64
-	peak     atomic.Int64
-	allocs   map[uintptr]int64
-	nextID   atomic.Uintptr
+	mu     sync.Mutex
+	total  int64
+	used   atomic.Int64
+	peak   atomic.Int64
+	allocs map[uintptr]int64
+	nextID atomic.Uintptr
 }
 
 // NewCUDAMemoryPool creates a new CUDA memory pool.
@@ -38,16 +39,16 @@ func NewCUDAMemoryPool(total int64) *CUDAMemoryPool {
 func (p *CUDAMemoryPool) Allocate(size int64) (uintptr, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	used := p.used.Load()
 	if used+size > p.total {
 		return 0, ErrCUDAMemory
 	}
-	
+
 	id := p.nextID.Add(1)
 	p.allocs[id] = size
 	p.used.Add(size)
-	
+
 	// Track peak memory
 	for {
 		peak := p.peak.Load()
@@ -58,7 +59,7 @@ func (p *CUDAMemoryPool) Allocate(size int64) (uintptr, error) {
 			break
 		}
 	}
-	
+
 	return id, nil
 }
 
@@ -66,7 +67,7 @@ func (p *CUDAMemoryPool) Allocate(size int64) (uintptr, error) {
 func (p *CUDAMemoryPool) Free(id uintptr) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	
+
 	if size, ok := p.allocs[id]; ok {
 		p.used.Add(-size)
 		delete(p.allocs, id)
@@ -156,16 +157,16 @@ func (e *CUDAEvent) IsComplete() bool {
 
 // CUDAKernel represents a simulated CUDA kernel configuration.
 type CUDAKernel struct {
-	Name         string
-	GridDimX     int
-	GridDimY     int
-	GridDimZ     int
-	BlockDimX    int
-	BlockDimY    int
-	BlockDimZ    int
-	SharedMem    int64
+	Name          string
+	GridDimX      int
+	GridDimY      int
+	GridDimZ      int
+	BlockDimX     int
+	BlockDimY     int
+	BlockDimZ     int
+	SharedMem     int64
 	RegsPerThread int
-	Fn           func(args ...interface{}) error
+	Fn            func(args ...interface{}) error
 }
 
 // LaunchConfig returns a string describing the launch configuration.
@@ -178,25 +179,25 @@ func (k *CUDAKernel) LaunchConfig() string {
 
 // CUDA implements a CUDA backend with CPU fallback.
 type CUDA struct {
-	deviceID     int
-	deviceName   string
-	computeCap   string // e.g. "8.6" for SM 8.6
-	pool         *CUDAMemoryPool
-	streams      []*CUDAStream
+	deviceID      int
+	deviceName    string
+	computeCap    string // e.g. "8.6" for SM 8.6
+	pool          *CUDAMemoryPool
+	streams       []*CUDAStream
 	currentStream int
-	mu           sync.RWMutex
-	available    bool
-	stats        CUDAStats
-	tensorCores  bool
+	mu            sync.RWMutex
+	available     bool
+	stats         CUDAStats
+	tensorCores   bool
 }
 
 // CUDAStats tracks CUDA backend statistics.
 type CUDAStats struct {
-	MatMulOps    atomic.Int64
-	AddOps       atomic.Int64
-	ReluOps      atomic.Int64
-	SoftmaxOps   atomic.Int64
-	MemCopies    atomic.Int64
+	MatMulOps      atomic.Int64
+	AddOps         atomic.Int64
+	ReluOps        atomic.Int64
+	SoftmaxOps     atomic.Int64
+	MemCopies      atomic.Int64
 	KernelLaunches atomic.Int64
 }
 
@@ -212,13 +213,13 @@ func NewCUDA(deviceID int, memoryMB int64) (*CUDA, error) {
 		available:   false, // Simulated - no real GPU
 		tensorCores: true,
 	}
-	
+
 	// Create default streams
 	c.streams = make([]*CUDAStream, 4)
 	for i := range c.streams {
 		c.streams[i] = &CUDAStream{id: i, deviceID: deviceID}
 	}
-	
+
 	return c, nil
 }
 
@@ -286,7 +287,7 @@ func (c *CUDA) SynchronizeDevice() error {
 	streams := make([]*CUDAStream, len(c.streams))
 	copy(streams, c.streams)
 	c.mu.RUnlock()
-	
+
 	for _, s := range streams {
 		if err := s.Synchronize(); err != nil {
 			return err
@@ -324,17 +325,17 @@ func (c *CUDA) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 	if len(b) != k*n {
 		return nil, errors.New("invalid b dimensions")
 	}
-	
+
 	// Simulate tensor core usage for supported sizes
 	useTensorCores := c.tensorCores && m%8 == 0 && k%8 == 0 && n%8 == 0
-	
+
 	out := make([]float64, m*n)
 	c.stats.MatMulOps.Add(1)
 	c.stats.KernelLaunches.Add(1)
-	
+
 	// Tiled matmul (simulating GPU tiling)
 	const tileSize = 16
-	
+
 	if useTensorCores && m >= tileSize && n >= tileSize {
 		// Simulate tensor core path with 16x16 tiles
 		for i0 := 0; i0 < m; i0 += tileSize {
@@ -343,7 +344,7 @@ func (c *CUDA) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 					iEnd := minInt(i0+tileSize, m)
 					jEnd := minInt(j0+tileSize, n)
 					lEnd := minInt(l0+tileSize, k)
-					
+
 					for i := i0; i < iEnd; i++ {
 						for j := j0; j < jEnd; j++ {
 							sum := out[i*n+j]
@@ -368,7 +369,7 @@ func (c *CUDA) MatMul(a, b []float64, m, n, k int) ([]float64, error) {
 			}
 		}
 	}
-	
+
 	return out, nil
 }
 
@@ -377,15 +378,15 @@ func (c *CUDA) Add(a, b []float64) ([]float64, error) {
 	if len(a) != len(b) {
 		return nil, errors.New("shape mismatch")
 	}
-	
+
 	out := make([]float64, len(a))
 	c.stats.AddOps.Add(1)
 	c.stats.KernelLaunches.Add(1)
-	
+
 	for i := range a {
 		out[i] = a[i] + b[i]
 	}
-	
+
 	return out, nil
 }
 
@@ -393,7 +394,7 @@ func (c *CUDA) Add(a, b []float64) ([]float64, error) {
 func (c *CUDA) Relu(x []float64) []float64 {
 	c.stats.ReluOps.Add(1)
 	c.stats.KernelLaunches.Add(1)
-	
+
 	for i := range x {
 		if x[i] < 0 {
 			x[i] = 0
@@ -404,34 +405,9 @@ func (c *CUDA) Relu(x []float64) []float64 {
 
 // Softmax applies the softmax function.
 func (c *CUDA) Softmax(x []float64, dim int) ([]float64, error) {
-	if len(x) == 0 {
-		return nil, errors.New("empty input")
-	}
-	
 	c.stats.SoftmaxOps.Add(1)
 	c.stats.KernelLaunches.Add(1)
-	
-	// Find max for numerical stability
-	maxVal := x[0]
-	for _, v := range x {
-		if v > maxVal {
-			maxVal = v
-		}
-	}
-	
-	// Compute exp and sum
-	sum := 0.0
-	for _, v := range x {
-		sum += mathExp(v - maxVal)
-	}
-	
-	// Normalize
-	out := make([]float64, len(x))
-	for i, v := range x {
-		out[i] = mathExp(v-maxVal) / sum
-	}
-	
-	return out, nil
+	return softmaxValues(x, dim)
 }
 
 // Stats returns CUDA statistics.
@@ -467,20 +443,20 @@ func (kl *CUDAKernelLauncher) Launch(kernel *CUDAKernel, args ...interface{}) er
 	if kernel.Fn == nil {
 		return errors.New("kernel has no function")
 	}
-	
+
 	stream := kl.cuda.CurrentStream()
 	stream.mu.Lock()
 	stream.busy.Store(true)
 	stream.stats.OpsSubmitted.Add(1)
 	stream.mu.Unlock()
-	
+
 	err := kernel.Fn(args...)
-	
+
 	stream.mu.Lock()
 	stream.busy.Store(false)
 	stream.stats.OpsCompleted.Add(1)
 	stream.mu.Unlock()
-	
+
 	kl.cuda.stats.KernelLaunches.Add(1)
 	return err
 }
@@ -496,9 +472,9 @@ func (kl *CUDAKernelLauncher) LaunchAsync(kernel *CUDAKernel, args ...interface{
 
 // CUDAGraph captures a graph of operations for replay.
 type CUDAGraph struct {
-	ops       []*CUDAKernel
-	captured  atomic.Bool
-	mu        sync.Mutex
+	ops            []*CUDAKernel
+	captured       atomic.Bool
+	mu             sync.Mutex
 	instantiations atomic.Int64
 }
 
@@ -535,7 +511,7 @@ func (g *CUDAGraph) Replay(launcher *CUDAKernelLauncher) error {
 	ops := make([]*CUDAKernel, len(g.ops))
 	copy(ops, g.ops)
 	g.mu.Unlock()
-	
+
 	for _, op := range ops {
 		if err := launcher.Launch(op); err != nil {
 			return err
@@ -547,11 +523,11 @@ func (g *CUDAGraph) Replay(launcher *CUDAKernelLauncher) error {
 
 // CUDAMixedPrecisionConfig holds mixed precision configuration.
 type CUDAMixedPrecisionConfig struct {
-	Enabled       bool
-	LossScale     float64
-	DynamicScale  bool
-	GrowthFactor  float64
-	BackoffFactor float64
+	Enabled        bool
+	LossScale      float64
+	DynamicScale   bool
+	GrowthFactor   float64
+	BackoffFactor  float64
 	GrowthInterval int
 }
 
@@ -562,7 +538,7 @@ func NewCUDAMixedPrecisionConfig() *CUDAMixedPrecisionConfig {
 		LossScale:      65536.0,
 		DynamicScale:   true,
 		GrowthFactor:   2.0,
-		BackoffFactor: 0.5,
+		BackoffFactor:  0.5,
 		GrowthInterval: 2000,
 	}
 }
@@ -575,43 +551,14 @@ func minInt(a, b int) int {
 	return b
 }
 
-// mathExp computes e^x.
+// mathExp computes e^x, saturating to the representable range so callers
+// that subtract a maximum before exponentiating never see NaN or ±Inf.
 func mathExp(x float64) float64 {
-	// Handle overflow/underflow
 	if x > 88 {
-		return 1.7976931348623157e308
+		return math.MaxFloat64
 	}
-	if x < -88 {
+	if x < -745 {
 		return 0
 	}
-	
-	// Use Taylor series or built-in
-	return expImpl(x)
-}
-
-// expImpl implements exponential function.
-func expImpl(x float64) float64 {
-	// exp(x) = exp(x/2)^2 for better convergence
-	n := 0
-	for x > 1 {
-		x /= 2
-		n++
-	}
-	
-	sum := 1.0
-	term := 1.0
-	for i := 1; i <= 20; i++ {
-		term *= x / float64(i)
-		sum += term
-		if term < 1e-15 {
-			break
-		}
-	}
-	
-	result := sum
-	for i := 0; i < n; i++ {
-		result *= result
-	}
-	
-	return result
+	return math.Exp(x)
 }

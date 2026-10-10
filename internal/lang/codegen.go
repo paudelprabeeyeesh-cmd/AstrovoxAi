@@ -58,7 +58,7 @@ func NewCodeGenerator(target CodeGenTarget) *CodeGenerator {
 // Generate generates code for a file.
 func (cg *CodeGenerator) Generate(f *File) string {
 	cg.sb.Reset()
-	
+
 	// First pass: collect declarations
 	for _, d := range f.Decls {
 		switch d := d.(type) {
@@ -70,7 +70,7 @@ func (cg *CodeGenerator) Generate(f *File) string {
 			cg.enums[d.Name] = d
 		}
 	}
-	
+
 	switch cg.target {
 	case TargetLLVMIR:
 		cg.generateLLVM(f)
@@ -81,7 +81,7 @@ func (cg *CodeGenerator) Generate(f *File) string {
 	default:
 		cg.generateLLVM(f)
 	}
-	
+
 	return cg.sb.String()
 }
 
@@ -194,18 +194,18 @@ func (cg *CodeGenerator) generateLLVMFunc(d *FuncDecl) {
 	}
 	cg.sb.WriteString(") {\n")
 	cg.sb.WriteString("entry:\n")
-	
+
 	cg.pushScope()
 	for _, p := range d.Params {
 		cg.declareVar(p.Name, llvmTypeName(p.Type))
 	}
 	cg.currentFn = d
-	
+
 	cg.indent = 1
 	for _, s := range d.Body {
 		cg.generateLLVMStmt(s)
 	}
-	
+
 	if ret == "void" {
 		cg.writef("ret void")
 	} else if ret == "double" {
@@ -215,7 +215,7 @@ func (cg *CodeGenerator) generateLLVMFunc(d *FuncDecl) {
 	} else if ret == "i64" {
 		cg.writef("ret i64 0")
 	}
-	
+
 	cg.popScope()
 	cg.indent = 0
 	cg.sb.WriteString("}\n\n")
@@ -449,18 +449,18 @@ func (cg *CodeGenerator) generateCFunc(d *FuncDecl) {
 		cg.sb.WriteString(fmt.Sprintf("%s %s", cTypeName(p.Type), p.Name))
 	}
 	cg.sb.WriteString(") {\n")
-	
+
 	cg.pushScope()
 	for _, p := range d.Params {
 		cg.declareVar(p.Name, cTypeName(p.Type))
 	}
 	cg.currentFn = d
-	
+
 	cg.indent = 1
 	for _, s := range d.Body {
 		cg.generateCStmt(s)
 	}
-	
+
 	cg.popScope()
 	cg.indent = 0
 	cg.sb.WriteString("}\n\n")

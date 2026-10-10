@@ -34,10 +34,10 @@ const (
 
 // Chunker splits documents into chunks.
 type Chunker struct {
-	Strategy    ChunkingStrategy
-	ChunkSize   int // target chunk size in characters
-	Overlap     int // overlap between chunks
-	Separators  []string
+	Strategy   ChunkingStrategy
+	ChunkSize  int // target chunk size in characters
+	Overlap    int // overlap between chunks
+	Separators []string
 }
 
 // NewChunker creates a chunker.
@@ -450,11 +450,11 @@ func (r *RAGEngine) Stats() RAGStats {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return RAGStats{
-		Chunks:      len(r.chunks),
-		Documents:   r.db.Len(),
-		TopK:        r.topK,
-		RerankK:     r.rerankK,
-		Dimension:   r.embedder.Dimension(),
+		Chunks:    len(r.chunks),
+		Documents: r.db.Len(),
+		TopK:      r.topK,
+		RerankK:   r.rerankK,
+		Dimension: r.embedder.Dimension(),
 	}
 }
 

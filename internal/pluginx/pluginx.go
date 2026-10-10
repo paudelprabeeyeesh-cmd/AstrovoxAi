@@ -75,29 +75,29 @@ func (r CompatRange) String() string { return r.Min.String() + " - " + r.Max.Str
 
 // PluginAPI records the API functions a plugin expects.
 type PluginAPI struct {
-	Version string   `json:"version"`
+	Version   string   `json:"version"`
 	Functions []string `json:"functions"`
 }
 
 // Manifest is a plugin marketplace manifest.
 type Manifest struct {
-	Name         string   `json:"name"`
-	Description  string   `json:"description"`
-	Author       string   `json:"author"`
-	License      string   `json:"license"`
-	Homepage     string   `json:"homepage,omitempty"`
-	Version      string   `json:"version"`
-	APIVersion   string   `json:"api_version"`
-	HostRange    []string `json:"host_compatibility,omitempty"`
-	Capabilities []string `json:"capabilities,omitempty"`
+	Name         string       `json:"name"`
+	Description  string       `json:"description"`
+	Author       string       `json:"author"`
+	License      string       `json:"license"`
+	Homepage     string       `json:"homepage,omitempty"`
+	Version      string       `json:"version"`
+	APIVersion   string       `json:"api_version"`
+	HostRange    []string     `json:"host_compatibility,omitempty"`
+	Capabilities []string     `json:"capabilities,omitempty"`
 	Dependencies []Dependency `json:"dependencies,omitempty"`
-	Entrypoint   string   `json:"entrypoint"`
-	WASM         bool     `json:"wasm,omitempty"`
-	Checksum     string   `json:"checksum,omitempty"`
-	Screenshots  []string `json:"screenshots,omitempty"`
-	Tags         []string `json:"tags,omitempty"`
-	Downloads    int64    `json:"downloads,omitempty"`
-	Rating       float64  `json:"rating,omitempty"`
+	Entrypoint   string       `json:"entrypoint"`
+	WASM         bool         `json:"wasm,omitempty"`
+	Checksum     string       `json:"checksum,omitempty"`
+	Screenshots  []string     `json:"screenshots,omitempty"`
+	Tags         []string     `json:"tags,omitempty"`
+	Downloads    int64        `json:"downloads,omitempty"`
+	Rating       float64      `json:"rating,omitempty"`
 }
 
 // Dependency is a runtime dependency requirement.

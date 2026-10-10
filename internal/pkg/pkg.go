@@ -303,11 +303,11 @@ type InstalledPackage struct {
 
 // Manager installs packages from a registry.
 type Manager struct {
-	registry   *Registry
-	mu         sync.RWMutex
-	installed  map[string]InstalledPackage
-	lockfile   Lockfile
-	root       string
+	registry  *Registry
+	mu        sync.RWMutex
+	installed map[string]InstalledPackage
+	lockfile  Lockfile
+	root      string
 }
 
 // Lockfile records resolved versions.

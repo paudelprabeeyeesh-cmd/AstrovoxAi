@@ -37,8 +37,8 @@ func WinogradConv2d(x, k *tensor.Tensor, strideH, strideW, padH, padW int) (*ten
 		return nil, errors.New(errors.CodeInvalidArgument, "winograd output dims < 1")
 	}
 	// Adjust for non-multiple-of-2 output
-	oh = (h + 2*padH - kh) / strideH + 1
-	ow = (w + 2*padW - kw) / strideW + 1
+	oh = (h+2*padH-kh)/strideH + 1
+	ow = (w+2*padW-kw)/strideW + 1
 
 	out, err := tensor.New(tensor.Float64, []int{n, f, oh, ow})
 	if err != nil {
@@ -81,8 +81,8 @@ func WinogradConv2d(x, k *tensor.Tensor, strideH, strideW, padH, padW int) (*ten
 	for ni := 0; ni < n; ni++ {
 		// Tile the input into 4x4 patches
 		// Output tiles are 2x2
-		tileH := (h + 2*padH - 3) / 2 + 1
-		tileW := (w + 2*padW - 3) / 2 + 1
+		tileH := (h+2*padH-3)/2 + 1
+		tileW := (w+2*padW-3)/2 + 1
 
 		// Winograd transform matrices for input
 		// B^T * d * B where B is 4x4

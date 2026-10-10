@@ -87,11 +87,11 @@ func (g *Graph) ToJSON() ([]byte, error) {
 		To   int `json:"to"`
 	}
 	type jsonNode struct {
-		ID    int      `json:"id"`
-		Op    string   `json:"op"`
-		Input []int    `json:"input"`
-		Shape []int    `json:"shape"`
-		DType string   `json:"dtype"`
+		ID    int    `json:"id"`
+		Op    string `json:"op"`
+		Input []int  `json:"input"`
+		Shape []int  `json:"shape"`
+		DType string `json:"dtype"`
 	}
 	nodes := make([]jsonNode, 0, len(g.Nodes))
 	for _, node := range g.Nodes {

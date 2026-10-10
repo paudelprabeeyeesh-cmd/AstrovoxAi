@@ -11,20 +11,20 @@ import (
 
 // TransformerConfig holds configuration for a Transformer model.
 type TransformerConfig struct {
-	VocabSize       int
-	MaxSeqLen       int
-	NumLayers       int
-	NumHeads        int
-	HiddenDim       int
-	MLPDim          int
-	HeadDim         int
-	Dropout         float64
-	LayerNormEps    float64
-	UseFlashAttn    bool
-	UseRMSNorm      bool
-	UseRoPE         bool
-	RopeTheta       float64
-	PadTokenID      int
+	VocabSize    int
+	MaxSeqLen    int
+	NumLayers    int
+	NumHeads     int
+	HiddenDim    int
+	MLPDim       int
+	HeadDim      int
+	Dropout      float64
+	LayerNormEps float64
+	UseFlashAttn bool
+	UseRMSNorm   bool
+	UseRoPE      bool
+	RopeTheta    float64
+	PadTokenID   int
 }
 
 // DefaultTransformerConfig returns a default configuration.
@@ -49,11 +49,11 @@ func DefaultTransformerConfig() *TransformerConfig {
 
 // Transformer represents a Transformer model.
 type Transformer struct {
-	config *TransformerConfig
-	layers []*TransformerLayer
-	embed  *Embedding
-	norm   Normalization
-	lmHead *Linear
+	config   *TransformerConfig
+	layers   []*TransformerLayer
+	embed    *Embedding
+	norm     Normalization
+	lmHead   *Linear
 	training bool
 }
 
@@ -266,13 +266,13 @@ func (l *Linear) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 
 // TransformerLayer is a single Transformer layer.
 type TransformerLayer struct {
-	config       *TransformerConfig
-	attention    *MultiHeadAttention
-	mlp          *MLP
-	norm1        Normalization
-	norm2        Normalization
-	dropout1     float64
-	dropout2     float64
+	config    *TransformerConfig
+	attention *MultiHeadAttention
+	mlp       *MLP
+	norm1     Normalization
+	norm2     Normalization
+	dropout1  float64
+	dropout2  float64
 }
 
 func NewTransformerLayer(config *TransformerConfig) *TransformerLayer {
@@ -342,17 +342,17 @@ func addResidual(x, residual *tensor.Tensor, dropout float64) *tensor.Tensor {
 
 // MLP (Feed-forward network) with GELU activation.
 type MLP struct {
-	fc1    *Linear
-	fc2    *Linear
-	act    ActivationType
+	fc1     *Linear
+	fc2     *Linear
+	act     ActivationType
 	dropout float64
 }
 
 func NewMLP(config *TransformerConfig) *MLP {
 	return &MLP{
-		fc1:    NewLinear(config.HiddenDim, config.MLPDim, true),
-		fc2:    NewLinear(config.MLPDim, config.HiddenDim, true),
-		act:    ActGELU,
+		fc1:     NewLinear(config.HiddenDim, config.MLPDim, true),
+		fc2:     NewLinear(config.MLPDim, config.HiddenDim, true),
+		act:     ActGELU,
 		dropout: config.Dropout,
 	}
 }
@@ -374,12 +374,12 @@ func (m *MLP) Forward(x *tensor.Tensor) (*tensor.Tensor, error) {
 
 // MultiHeadAttention implements multi-head attention with optional Flash Attention.
 type MultiHeadAttention struct {
-	config   *TransformerConfig
-	qProj    *Linear
-	kProj    *Linear
-	vProj    *Linear
-	oProj    *Linear
-	rope     *RoPE
+	config *TransformerConfig
+	qProj  *Linear
+	kProj  *Linear
+	vProj  *Linear
+	oProj  *Linear
+	rope   *RoPE
 }
 
 func NewMultiHeadAttention(config *TransformerConfig) *MultiHeadAttention {
@@ -525,11 +525,11 @@ func catKV(past, curr *tensor.Tensor, dim int) *tensor.Tensor {
 	// This is a simplified implementation - in practice would be more efficient
 	pastShape := past.Shape().Dims()
 	currShape := curr.Shape().Dims()
-	
+
 	newShape := make([]int, len(pastShape))
 	copy(newShape, pastShape)
 	newShape[dim] += currShape[dim]
-	
+
 	_, _ = tensor.New(past.DType(), newShape)
 	// Copy past
 	// This is simplified - proper concat would need strided copy
@@ -539,9 +539,9 @@ func catKV(past, curr *tensor.Tensor, dim int) *tensor.Tensor {
 
 // RoPE (Rotary Positional Embedding).
 type RoPE struct {
-	dim     int
-	theta   float64
-	maxSeq  int
+	dim      int
+	theta    float64
+	maxSeq   int
 	cosCache *tensor.Tensor
 	sinCache *tensor.Tensor
 }
@@ -594,7 +594,7 @@ func (r *RoPE) Apply(x *tensor.Tensor, offset int) *tensor.Tensor {
 				pos = r.maxSeq - 1
 			}
 			for h := 0; h < numHeads; h++ {
-				base := ((b*seqLen+s)*numHeads+h)*headDim
+				base := ((b*seqLen+s)*numHeads + h) * headDim
 				for d := 0; d < headDim; d += 2 {
 					cos := r.cosCache.Float64()[pos*headDim+d]
 					sin := r.sinCache.Float64()[pos*headDim+d]
@@ -612,10 +612,11 @@ func (r *RoPE) Apply(x *tensor.Tensor, offset int) *tensor.Tensor {
 // scaledDotProductAttention computes standard attention.
 func scaledDotProductAttention(q, k, v *tensor.Tensor, causal bool) (*tensor.Tensor, error) {
 	// q, k, v: [batch, seq_len, num_heads, head_dim]
-	_ = q.Shape().Dim(0)
-	_ = q.Shape().Dim(1)
-	_ = q.Shape().Dim(2)
-	headDim := q.Shape().Dim(3)
+	shape := q.Shape().Dims()
+	if len(shape) != 4 {
+		return nil, errors.New(errors.CodeInvalidArgument, "attention expects a 4-D tensor")
+	}
+	headDim := shape[3]
 
 	scale := 1.0 / math.Sqrt(float64(headDim))
 

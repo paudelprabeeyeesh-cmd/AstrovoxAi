@@ -46,9 +46,9 @@ func (s Source) String() string {
 
 // Value is a configuration value tagged with its source layer.
 type Value struct {
-	Value  any     `json:"value"`
-	Source Source  `json:"source"`
-	Path   string  `json:"path"`
+	Value  any    `json:"value"`
+	Source Source `json:"source"`
+	Path   string `json:"path"`
 }
 
 // Config is an immutable, typed configuration snapshot.

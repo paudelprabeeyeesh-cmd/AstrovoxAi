@@ -53,10 +53,10 @@ func (t TokenType) String() string {
 
 // Token represents a lexical token.
 type Token struct {
-	Type   TokenType
-	Value  string
-	Line   int
-	Col int
+	Type  TokenType
+	Value string
+	Line  int
+	Col   int
 }
 
 func (t Token) String() string {
@@ -203,7 +203,6 @@ func (lx *Lexer) lexBlockComment() {
 }
 
 func (lx *Lexer) lexString() {
-	start := lx.pos
 	lx.advance() // opening quote
 	var sb strings.Builder
 	for lx.pos < len(lx.input) && lx.input[lx.pos] != '"' {
@@ -236,7 +235,7 @@ func (lx *Lexer) lexString() {
 		return
 	}
 	lx.advance() // closing quote
-	_ = start
+
 	lx.tokens = append(lx.tokens, Token{Type: TokenString, Value: sb.String(), Line: lx.line, Col: lx.col})
 }
 

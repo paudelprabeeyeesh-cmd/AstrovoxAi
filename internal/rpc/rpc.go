@@ -29,7 +29,7 @@ type ServiceDescriptor struct {
 
 // MethodDescriptor describes one RPC method.
 type MethodDescriptor struct {
-	Name           string
+	Name            string
 	ClientStreaming bool
 	ServerStreaming bool
 }
@@ -92,10 +92,10 @@ type Server struct {
 
 // ServerStats tracks server statistics.
 type ServerStats struct {
-	Requests    atomic.Int64
-	Responses   atomic.Int64
-	Errors      atomic.Int64
-	StreamMsgs  atomic.Int64
+	Requests   atomic.Int64
+	Responses  atomic.Int64
+	Errors     atomic.Int64
+	StreamMsgs atomic.Int64
 }
 
 // NewServer creates a gRPC-style server.

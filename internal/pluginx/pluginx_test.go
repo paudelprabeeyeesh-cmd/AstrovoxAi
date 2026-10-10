@@ -7,14 +7,14 @@ import (
 
 func validManifest() *Manifest {
 	return &Manifest{
-		Name: "hello-plugin",
-		Description: "A test plugin",
-		Author: "astrovox",
-		License: "Apache-2.0",
-		Version: "1.0.0",
-		APIVersion: "1.0.0",
-		Entrypoint: "main.wasm",
-		HostRange: []string{"1.0.0 - 2.0.0"},
+		Name:         "hello-plugin",
+		Description:  "A test plugin",
+		Author:       "astrovox",
+		License:      "Apache-2.0",
+		Version:      "1.0.0",
+		APIVersion:   "1.0.0",
+		Entrypoint:   "main.wasm",
+		HostRange:    []string{"1.0.0 - 2.0.0"},
 		Capabilities: []string{"tensor"},
 	}
 }

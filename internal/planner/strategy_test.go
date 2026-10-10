@@ -26,3 +26,12 @@ func TestSelectNone(t *testing.T) {
 		t.Errorf("no fit should return -1, got %d", got)
 	}
 }
+
+func TestStrategySelector_ExactSize(t *testing.T) {
+	s := NewStrategySelector(StrategyBestFit)
+	free := []int{64, 128, 256}
+	slot := s.Select(free, 64)
+	if slot != 64 {
+		t.Fatalf("exact fit = %d, want 64", slot)
+	}
+}

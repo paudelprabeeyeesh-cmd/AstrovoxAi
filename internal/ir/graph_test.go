@@ -283,4 +283,3 @@ func TestGraphCycleDetection(t *testing.T) {
 		t.Fatal("expected cycle detection error")
 	}
 }
-

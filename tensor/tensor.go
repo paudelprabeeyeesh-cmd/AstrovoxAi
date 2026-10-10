@@ -109,7 +109,6 @@ func Fill(t *Tensor, value float64) (*Tensor, error) {
 	if t == nil {
 		return nil, errors.New(errors.CodeInvalidArgument, "nil tensor")
 	}
-	n := t.shape.NumElements()
 	switch t.st.dtype {
 	case Float32:
 		v := float32(value)
@@ -195,7 +194,6 @@ func Fill(t *Tensor, value float64) (*Tensor, error) {
 		return nil, errors.New(errors.CodeUnimplemented, "Fill for dtype").
 			WithField("dtype", t.st.dtype.String())
 	}
-	_ = n
 	return t, nil
 }
 

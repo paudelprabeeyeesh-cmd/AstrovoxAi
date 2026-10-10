@@ -120,11 +120,45 @@ func ListBackends() []string {
 	return names
 }
 
+// softmaxValues applies a numerically stable softmax over a flat slice.
+// dim is accepted for interface compatibility; on a flat slice dim=0 and
+// dim=1 are the same reduction.
+func softmaxValues(x []float64, dim int) ([]float64, error) {
+	if dim != 0 && dim != 1 {
+		return nil, errors.New("only dim=0 or dim=1 supported")
+	}
+	if len(x) == 0 {
+		return nil, errors.New("softmax requires a non-empty input")
+	}
+	maxVal := x[0]
+	for _, v := range x {
+		if v > maxVal {
+			maxVal = v
+		}
+	}
+	out := make([]float64, len(x))
+	sum := 0.0
+	for i, v := range x {
+		out[i] = mathExp(v - maxVal)
+		sum += out[i]
+	}
+	if sum > 0 {
+		for i := range out {
+			out[i] /= sum
+		}
+	}
+	return out, nil
+}
+
 // CPUThreadPool manages a pool of CPU worker threads.
 type CPUThreadPool struct {
 	workers int
 	tasks   chan func()
+	// wg tracks worker goroutines so Shutdown can join them; pending
+	// tracks submitted-but-unfinished tasks so Wait can drain the pool
+	// without waiting for the workers themselves to exit.
 	wg      sync.WaitGroup
+	pending sync.WaitGroup
 	once    sync.Once
 }
 
@@ -146,12 +180,16 @@ func NewCPUThreadPool(workers int) *CPUThreadPool {
 
 // Submit submits a task to the pool.
 func (p *CPUThreadPool) Submit(task func()) {
-	p.tasks <- task
+	p.pending.Add(1)
+	p.tasks <- func() {
+		defer p.pending.Done()
+		task()
+	}
 }
 
 // Wait waits for all submitted tasks to complete.
 func (p *CPUThreadPool) Wait() {
-	p.wg.Wait()
+	p.pending.Wait()
 }
 
 func (p *CPUThreadPool) worker() {
@@ -174,76 +212,61 @@ func VecAdd(a, b []float64, pool *CPUThreadPool) ([]float64, error) {
 		return nil, errors.New("shape mismatch")
 	}
 	out := make([]float64, len(a))
-	workers := 1
-	if pool != nil {
-		workers = pool.workers
-	}
-	chunk := len(a) / workers
-	if chunk == 0 {
-		chunk = len(a)
-	}
-	var wg sync.WaitGroup
-	for w := 0; w < workers; w++ {
-		start := w * chunk
-		end := start + chunk
-		if w == workers-1 {
-			end = len(a)
+	forEachSlice(len(a), pool, func(lo, hi int) {
+		for i := lo; i < hi; i++ {
+			out[i] = a[i] + b[i]
 		}
-		if start >= end {
-			continue
-		}
-		wg.Add(1)
-		go func(s, e int) {
-			defer wg.Done()
-			for i := s; i < e; i++ {
-				out[i] = a[i] + b[i]
-			}
-		}(start, end)
-	}
-	wg.Wait()
+	})
 	return out, nil
 }
 
 // VecMatMul performs vectorized matrix multiplication using the thread pool.
+// a is [m][k] and b is [k][n], both row-major.
 func VecMatMul(a, b []float64, m, n, k int, pool *CPUThreadPool) ([]float64, error) {
-	if len(a) != m*k || len(b) != n*k {
+	if len(a) != m*k || len(b) != k*n {
 		return nil, errors.New("invalid matrix dimensions")
 	}
 	out := make([]float64, m*n)
+	forEachSlice(m, pool, func(lo, hi int) {
+		for i := lo; i < hi; i++ {
+			for j := 0; j < n; j++ {
+				sum := 0.0
+				for l := 0; l < k; l++ {
+					sum += a[i*k+l] * b[l*n+j]
+				}
+				out[i*n+j] = sum
+			}
+		}
+	})
+	return out, nil
+}
+
+// forEachSlice splits n items across the pool's workers and runs work on
+// each chunk. With no pool the work runs inline. Chunks are always clamped
+// to n, so a worker count larger than n cannot index out of range.
+func forEachSlice(n int, pool *CPUThreadPool, work func(lo, hi int)) {
 	workers := 1
 	if pool != nil {
 		workers = pool.workers
 	}
-	chunk := m / workers
-	if chunk == 0 {
-		chunk = m
+	if n <= 0 || workers <= 1 || n <= workers {
+		work(0, n)
+		return
 	}
+	chunk := (n + workers - 1) / workers
 	var wg sync.WaitGroup
-	for w := 0; w < workers; w++ {
-		start := w * chunk
+	for start := 0; start < n; start += chunk {
 		end := start + chunk
-		if w == workers-1 {
-			end = m
-		}
-		if start >= end {
-			continue
+		if end > n {
+			end = n
 		}
 		wg.Add(1)
-		go func(rowStart, rowEnd int) {
+		go func(lo, hi int) {
 			defer wg.Done()
-			for i := rowStart; i < rowEnd; i++ {
-				for j := 0; j < n; j++ {
-					sum := 0.0
-					for l := 0; l < k; l++ {
-						sum += a[i*k+l] * b[l*n+j]
-					}
-					out[i*n+j] = sum
-				}
-			}
+			work(lo, hi)
 		}(start, end)
 	}
 	wg.Wait()
-	return out, nil
 }
 
 // RowMajorLayout represents row-major memory layout.
@@ -254,7 +277,7 @@ const ColumnMajorLayout = "column_major"
 
 // MemoryLayout describes tensor memory layout.
 type MemoryLayout struct {
-	Layout string
+	Layout  string
 	Strides []int
 	Offset  int
 }

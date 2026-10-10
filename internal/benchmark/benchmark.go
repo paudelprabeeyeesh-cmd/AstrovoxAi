@@ -95,17 +95,17 @@ func (h Harness) Run(name string, fn func(int)) (*Result, error) {
 		cov = std / mean
 	}
 	return &Result{
-		Name:      name,
-		Env:       EnvOf(),
-		Runs:      len(samples),
-		Warmup:    h.WarmupRuns,
-		NanosMean: mean,
-		NanosP50:  percentile(samples, 0.50),
-		NanosP95:  percentile(samples, 0.95),
-		NanosP99:  percentile(samples, 0.99),
-		CoV:       cov,
-		OpsPerSec: 1e9 / mean,
-		RawNanos:  samples,
+		Name:       name,
+		Env:        EnvOf(),
+		Runs:       len(samples),
+		Warmup:     h.WarmupRuns,
+		NanosMean:  mean,
+		NanosP50:   percentile(samples, 0.50),
+		NanosP95:   percentile(samples, 0.95),
+		NanosP99:   percentile(samples, 0.99),
+		CoV:        cov,
+		OpsPerSec:  1e9 / mean,
+		RawNanos:   samples,
 		ClockFloor: clockFloor,
 	}, nil
 }

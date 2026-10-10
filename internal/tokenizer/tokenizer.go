@@ -11,11 +11,11 @@ import (
 
 // Special tokens used by the tokenizer vocabulary.
 const (
-	TokPad   = "<pad>"
-	TokUnk   = "<unk>"
-	TokBos   = "<s>"
-	TokEos   = "</s>"
-	TokMask  = "<mask>"
+	TokPad  = "<pad>"
+	TokUnk  = "<unk>"
+	TokBos  = "<s>"
+	TokEos  = "</s>"
+	TokMask = "<mask>"
 )
 
 // Tokenizer converts text to token ids and back.
@@ -86,20 +86,20 @@ func (v *Vocabulary) Tokens() []string {
 
 // Merge is a BPE merge rule.
 type Merge struct {
-	Pair  [2]string
-	Rank  int
+	Pair   [2]string
+	Rank   int
 	Merged string
 }
 
 // BPETokenizer implements byte-pair-encoding tokenization.
 type BPETokenizer struct {
-	vocab       *Vocabulary
-	merges      []Merge
-	mergeIndex  map[[2]string]int
-	unkID       int
-	bosID       int
-	eosID       int
-	padID       int
+	vocab        *Vocabulary
+	merges       []Merge
+	mergeIndex   map[[2]string]int
+	unkID        int
+	bosID        int
+	eosID        int
+	padID        int
 	byteFallback bool
 }
 

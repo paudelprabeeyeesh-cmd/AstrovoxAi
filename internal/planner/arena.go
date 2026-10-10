@@ -6,9 +6,9 @@ var ErrArenaExhausted = errors.New("arena exhausted")
 
 // Arena is a bump allocator for tensor memory.
 type Arena struct {
-	Size    int
-	Offset  int
-	Blocks  map[int][]byte
+	Size   int
+	Offset int
+	Blocks map[int][]byte
 }
 
 // NewArena creates a new arena of the given capacity.

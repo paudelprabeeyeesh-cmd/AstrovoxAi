@@ -66,12 +66,12 @@ func (q QuantizationType) MemorySavings() float64 {
 
 // ServingConfig holds serving configuration.
 type ServingConfig struct {
-	MaxBatchSize    int
-	BatchTimeout    time.Duration
-	MaxConcurrency  int
-	Quantization    QuantizationType
-	ServePerf       bool
-	WarmupRequests  int
+	MaxBatchSize   int
+	BatchTimeout   time.Duration
+	MaxConcurrency int
+	Quantization   QuantizationType
+	ServePerf      bool
+	WarmupRequests int
 }
 
 // DefaultServingConfig returns default config.
@@ -98,12 +98,12 @@ type BatchRequest struct {
 
 // RequestStats tracks serving metrics.
 type RequestStats struct {
-	TotalRequests   atomic.Int64
-	Completed       atomic.Int64
-	Failed          atomic.Int64
-	TotalLatencyNs  atomic.Int64
-	BatchesFormed   atomic.Int64
-	AvgBatchSize    atomic.Int64
+	TotalRequests  atomic.Int64
+	Completed      atomic.Int64
+	Failed         atomic.Int64
+	TotalLatencyNs atomic.Int64
+	BatchesFormed  atomic.Int64
+	AvgBatchSize   atomic.Int64
 }
 
 // Server serves a model with dynamic batching.
@@ -319,12 +319,12 @@ func (s *Server) Stats() ServingMetrics {
 		avgBatch = float64(s.stats.AvgBatchSize.Load()) / float64(batches)
 	}
 	return ServingMetrics{
-		TotalRequests:  total,
-		Completed:      completed,
-		Failed:         s.stats.Failed.Load(),
-		BatchesFormed:  batches,
-		AvgBatchSize:   avgBatch,
-		AvgLatencyMs:   float64(avgLatency) / 1e6,
+		TotalRequests: total,
+		Completed:     completed,
+		Failed:        s.stats.Failed.Load(),
+		BatchesFormed: batches,
+		AvgBatchSize:  avgBatch,
+		AvgLatencyMs:  float64(avgLatency) / 1e6,
 	}
 }
 

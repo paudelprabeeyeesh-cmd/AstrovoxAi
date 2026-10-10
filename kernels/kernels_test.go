@@ -12,9 +12,9 @@ type floatView struct {
 	data  []float64
 }
 
-func (f floatView) DType() string    { return "float64" }
-func (f floatView) Shape() []int     { return f.shape }
-func (f floatView) Data() any        { return f.data }
+func (f floatView) DType() string { return "float64" }
+func (f floatView) Shape() []int  { return f.shape }
+func (f floatView) Data() any     { return f.data }
 
 func view(shape []int, data ...float64) floatView {
 	return floatView{shape: shape, data: data}
@@ -192,8 +192,8 @@ func TestLookupAnyFallback(t *testing.T) {
 // verify LookupAny fallback.
 type cpuOnlyStub struct{}
 
-func (cpuOnlyStub) Name() string                 { return "cpu_only_test" }
-func (cpuOnlyStub) Device() backend.Device       { return backend.DeviceCPU }
+func (cpuOnlyStub) Name() string           { return "cpu_only_test" }
+func (cpuOnlyStub) Device() backend.Device { return backend.DeviceCPU }
 func (cpuOnlyStub) Execute([]TensorView, []TensorView, map[string]any) error {
 	return nil
 }

@@ -279,7 +279,7 @@ func FusedConvAct(x, W, b *tensor.Tensor, out *tensor.Tensor,
 		N, C, OH, OW := out.Shape().Dim(0), out.Shape().Dim(1), out.Shape().Dim(2), out.Shape().Dim(3)
 		for n := 0; n < N; n++ {
 			for c := 0; c < C; c++ {
-				base := ((n*C+c)*OH)*OW
+				base := ((n*C + c) * OH) * OW
 				for i := 0; i < OH*OW; i++ {
 					ov[base+i] += bv[c]
 				}

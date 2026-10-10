@@ -52,8 +52,8 @@ func elemFn(fn func(float64) float64) func([]*tensor.Tensor) ([]*tensor.Tensor, 
 // add node helper.
 func addNode(g *graph.Graph, name string, from1, from2 int) int {
 	id, err := g.AddNode(graph.OpFunc{
-		OpName:   name,
-		ShapeFn:  sameShape,
+		OpName:    name,
+		ShapeFn:   sameShape,
 		ForwardFn: elemFn(func(float64) float64 { return 0 }),
 	}, nil)
 	if err != nil {
@@ -63,10 +63,11 @@ func addNode(g *graph.Graph, name string, from1, from2 int) int {
 }
 
 // buildTwoSourceGraph builds:
-//   n0 = source [2,2]
-//   n1 = source [2,2]
-//   n2 = add(n0, n1)
-//   n3 = relu(n2)   (sink)
+//
+//	n0 = source [2,2]
+//	n1 = source [2,2]
+//	n2 = add(n0, n1)
+//	n3 = relu(n2)   (sink)
 func buildTwoSourceGraph(t *testing.T) (*graph.Graph, int, int, int) {
 	t.Helper()
 	g := graph.New("test")
@@ -225,7 +226,7 @@ func TestInterpreterMatMul(t *testing.T) {
 		ShapeFn: fixedShape(2, 2),
 	}, nil)
 	n2, _ := g.AddNode(graph.OpFunc{
-		OpName:  "matmul",
+		OpName: "matmul",
 		ShapeFn: func(inputs []tensor.Shape) ([]tensor.Shape, error) {
 			return []tensor.Shape{tensor.MustShape(2, 2)}, nil
 		},
@@ -272,7 +273,7 @@ func TestInterpreterSumReduction(t *testing.T) {
 		ShapeFn: fixedShape(2, 3),
 	}, nil)
 	n1, _ := g.AddNode(graph.OpFunc{
-		OpName:  "sum",
+		OpName: "sum",
 		ShapeFn: func(inputs []tensor.Shape) ([]tensor.Shape, error) {
 			return []tensor.Shape{tensor.MustShape(2)}, nil
 		},
@@ -404,7 +405,7 @@ func TestTIROptimizerDeadStore(t *testing.T) {
 		StoreStmt{
 			Name: "live",
 			Idx:  []Expr{ConstExpr{Value: 0}},
-			Val: VarExpr{Name: "live", Idx: []Expr{ConstExpr{Value: 0}}},
+			Val:  VarExpr{Name: "live", Idx: []Expr{ConstExpr{Value: 0}}},
 		},
 	}
 	m.Add(&Func{Name: "main", Output: live, Body: body})

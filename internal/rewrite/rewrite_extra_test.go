@@ -170,8 +170,8 @@ func TestPattern_Struct(t *testing.T) {
 
 func TestRewriteResult_Struct(t *testing.T) {
 	rr := &RewriteResult{
-		Rule:       &RewriteRule{Name: "r1"},
-		Match:      MatchResult{Root: 1},
+		Rule:        &RewriteRule{Name: "r1"},
+		Match:       MatchResult{Root: 1},
 		Replacement: []*ir.Node{{Op: "linear"}},
 	}
 	if rr.Rule.Name != "r1" {

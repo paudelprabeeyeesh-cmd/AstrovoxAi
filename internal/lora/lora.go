@@ -13,9 +13,9 @@ import (
 
 // LoRAConfig holds LoRA hyperparameters.
 type LoRAConfig struct {
-	Rank      int     // r: low-rank dimension
-	Alpha     float64 // scaling baseline
-	Dropout   float64
+	Rank          int     // r: low-rank dimension
+	Alpha         float64 // scaling baseline
+	Dropout       float64
 	TargetModules []string // module names to adapt (empty = all)
 }
 
@@ -34,14 +34,14 @@ func (c LoRAConfig) Scaling() float64 {
 
 // LoRALayer holds the low-rank factors A and B for one matrix.
 type LoRALayer struct {
-	Name     string
-	A        *tensor.Tensor // [r, in_dim]
-	B        *tensor.Tensor // [out_dim, r]
-	InDim    int
-	OutDim   int
-	Config   LoRAConfig
-	enabled  bool
-	mu       sync.RWMutex
+	Name    string
+	A       *tensor.Tensor // [r, in_dim]
+	B       *tensor.Tensor // [out_dim, r]
+	InDim   int
+	OutDim  int
+	Config  LoRAConfig
+	enabled bool
+	mu      sync.RWMutex
 }
 
 // NewLoRALayer creates a LoRA layer for an [out, in] weight matrix.

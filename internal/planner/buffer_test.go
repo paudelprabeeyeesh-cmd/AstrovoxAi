@@ -1,6 +1,7 @@
 package planner
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -41,5 +42,13 @@ func TestBufferString(t *testing.T) {
 	s := b.String()
 	if s == "" {
 		t.Error("String should not be empty")
+	}
+}
+
+func TestBuffer_String(t *testing.T) {
+	b := Buffer{ID: "buf1", Size: 1024}
+	s := b.String()
+	if !strings.Contains(s, "buf1") || !strings.Contains(s, "1024") {
+		t.Fatalf("String = %q, want to contain buf1 and 1024", s)
 	}
 }

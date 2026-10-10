@@ -14,13 +14,13 @@ import (
 )
 
 var (
-	ErrRPCNotInit      = errors.New("RPC not initialized")
-	ErrRPCNotFound     = errors.New("RPC target not found")
-	ErrRPCTimeout      = errors.New("RPC timeout")
-	ErrRPCCancelled    = errors.New("RPC cancelled")
-	ErrMethodNotFound  = errors.New("RPC method not found")
-	ErrInvalidArgs     = errors.New("invalid RPC arguments")
-	ErrServerFull      = errors.New("RPC server full")
+	ErrRPCNotInit     = errors.New("RPC not initialized")
+	ErrRPCNotFound    = errors.New("RPC target not found")
+	ErrRPCTimeout     = errors.New("RPC timeout")
+	ErrRPCCancelled   = errors.New("RPC cancelled")
+	ErrMethodNotFound = errors.New("RPC method not found")
+	ErrInvalidArgs    = errors.New("invalid RPC arguments")
+	ErrServerFull     = errors.New("RPC server full")
 )
 
 // RPCTensor wraps a tensor for RPC serialization.
@@ -77,53 +77,53 @@ type RPCEndpoint struct {
 
 // RPCConfig holds RPC configuration.
 type RPCConfig struct {
-	Backend        string // "tcp", "unix", "inproc"
-	Address        string
-	Timeout        time.Duration
-	MaxConcurrent  int
-	BufferSize     int
+	Backend         string // "tcp", "unix", "inproc"
+	Address         string
+	Timeout         time.Duration
+	MaxConcurrent   int
+	BufferSize      int
 	CompressTensors bool
 }
 
 // RPCManager manages RPC connections and method registry.
 type RPCManager struct {
-	config      *RPCConfig
-	rank        int
-	worldSize   int
-	selfName    string
-	
+	config    *RPCConfig
+	rank      int
+	worldSize int
+	selfName  string
+
 	mu          sync.RWMutex
 	methods     map[string]RPCFunction
 	endpoints   map[string]*RPCEndpoint
 	connections map[string]*RPCConnection
-	
-	server      *RPCServer
-	client      *RPCClient
-	
+
+	server *RPCServer
+	client *RPCClient
+
 	initialized atomic.Bool
 	running     atomic.Bool
-	
-	stats       RPCStats
+
+	stats RPCStats
 }
 
 // RPCStats tracks RPC statistics.
 type RPCStats struct {
-	TotalRequests   atomic.Int64
-	TotalResponses  atomic.Int64
-	TotalErrors     atomic.Int64
-	TotalTimeouts   atomic.Int64
-	AvgLatencyMs    atomic.Int64
-	BytesSent       atomic.Int64
-	BytesReceived   atomic.Int64
+	TotalRequests  atomic.Int64
+	TotalResponses atomic.Int64
+	TotalErrors    atomic.Int64
+	TotalTimeouts  atomic.Int64
+	AvgLatencyMs   atomic.Int64
+	BytesSent      atomic.Int64
+	BytesReceived  atomic.Int64
 }
 
 // RPCConnection represents a connection to a remote endpoint.
 type RPCConnection struct {
-	endpoint  *RPCEndpoint
-	address   string
-	conn      interface{} // Underlying connection
-	mu        sync.Mutex
-	pending   map[string]chan *RPCResponse
+	endpoint *RPCEndpoint
+	address  string
+	conn     interface{} // Underlying connection
+	mu       sync.Mutex
+	pending  map[string]chan *RPCResponse
 }
 
 // NewRPCManager creates a new RPC manager.
@@ -221,13 +221,13 @@ func (m *RPCManager) GetEndpoint(name string) (*RPCEndpoint, error) {
 
 // RPCServer handles incoming RPC requests.
 type RPCServer struct {
-	manager      *RPCManager
-	listener     interface{} // net.Listener or similar
-	mu           sync.Mutex
-	handlers     map[string]RPCFunction
-	activeConns  atomic.Int64
-	totalReqs    atomic.Int64
-	shutdown     chan struct{}
+	manager     *RPCManager
+	listener    interface{} // net.Listener or similar
+	mu          sync.Mutex
+	handlers    map[string]RPCFunction
+	activeConns atomic.Int64
+	totalReqs   atomic.Int64
+	shutdown    chan struct{}
 }
 
 // NewRPCServer creates a new RPC server.
@@ -255,7 +255,7 @@ func (s *RPCServer) Stop(ctx context.Context) error {
 // HandleRequest processes an incoming RPC request.
 func (s *RPCServer) HandleRequest(ctx context.Context, req *RPCRequest) *RPCResponse {
 	s.totalReqs.Add(1)
-	
+
 	method, ok := s.manager.GetMethod(req.Method)
 	if !ok {
 		return &RPCResponse{
@@ -264,14 +264,14 @@ func (s *RPCServer) HandleRequest(ctx context.Context, req *RPCRequest) *RPCResp
 			OK:        false,
 		}
 	}
-	
+
 	// Apply timeout
 	if req.Timeout > 0 {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, req.Timeout)
 		defer cancel()
 	}
-	
+
 	// Execute method
 	result, err := method(ctx, req.Args...)
 	if err != nil {
@@ -281,7 +281,7 @@ func (s *RPCServer) HandleRequest(ctx context.Context, req *RPCRequest) *RPCResp
 			OK:        false,
 		}
 	}
-	
+
 	return &RPCResponse{
 		RequestID: req.RequestID,
 		Result:    result,
@@ -320,7 +320,7 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Create request
 	reqID := fmt.Sprintf("req_%d_%d", time.Now().UnixNano(), c.manager.stats.TotalRequests.Add(1))
 	req := &RPCRequest{
@@ -330,7 +330,7 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 		Target:    target,
 		Timeout:   c.manager.config.Timeout,
 	}
-	
+
 	// Track pending request
 	pending := &PendingRequest{
 		RequestID: reqID,
@@ -342,17 +342,17 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 	c.mu.Lock()
 	c.pending[reqID] = pending
 	c.mu.Unlock()
-	
+
 	defer func() {
 		c.mu.Lock()
 		delete(c.pending, reqID)
 		c.mu.Unlock()
 	}()
-	
+
 	// Send request (in-process simulation)
 	// In production, would send over network
 	resp := c.simulateRequest(ctx, endpoint, req)
-	
+
 	select {
 	case <-ctx.Done():
 		c.manager.stats.TotalTimeouts.Add(1)
@@ -362,7 +362,7 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 			c.manager.stats.TotalErrors.Add(1)
 			return nil, errors.New(response.Error)
 		}
-		
+
 		// Update latency stats
 		latencyMs := time.Since(pending.StartTime).Milliseconds()
 		c.manager.stats.TotalResponses.Add(1)
@@ -370,7 +370,7 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 		oldAvg := c.manager.stats.AvgLatencyMs.Load()
 		newAvg := (oldAvg + latencyMs) / 2
 		c.manager.stats.AvgLatencyMs.Store(newAvg)
-		
+
 		return response.Result, nil
 	}
 }
@@ -378,7 +378,7 @@ func (c *RPCClient) Call(ctx context.Context, target, method string, args ...int
 // simulateRequest simulates an RPC request for in-process testing.
 func (c *RPCClient) simulateRequest(ctx context.Context, endpoint *RPCEndpoint, req *RPCRequest) chan *RPCResponse {
 	respChan := make(chan *RPCResponse, 1)
-	
+
 	go func() {
 		// Simulate network delay
 		select {
@@ -387,23 +387,23 @@ func (c *RPCClient) simulateRequest(ctx context.Context, endpoint *RPCEndpoint, 
 			respChan <- &RPCResponse{RequestID: req.RequestID, Error: "cancelled", OK: false}
 			return
 		}
-		
+
 		// Execute locally (simulation)
 		method, ok := c.manager.GetMethod(req.Method)
 		if !ok {
 			respChan <- &RPCResponse{RequestID: req.RequestID, Error: "method not found", OK: false}
 			return
 		}
-		
+
 		result, err := method(ctx, req.Args...)
 		if err != nil {
 			respChan <- &RPCResponse{RequestID: req.RequestID, Error: err.Error(), OK: false}
 			return
 		}
-		
+
 		respChan <- &RPCResponse{RequestID: req.RequestID, Result: result, OK: true}
 	}()
-	
+
 	return respChan
 }
 
@@ -413,7 +413,7 @@ func (c *RPCClient) AsyncCall(ctx context.Context, target, method string, args .
 		resultChan: make(chan interface{}, 1),
 		errChan:    make(chan error, 1),
 	}
-	
+
 	go func() {
 		result, err := c.Call(ctx, target, method, args...)
 		if err != nil {
@@ -422,7 +422,7 @@ func (c *RPCClient) AsyncCall(ctx context.Context, target, method string, args .
 		}
 		future.resultChan <- result
 	}()
-	
+
 	return future, nil
 }
 
@@ -476,10 +476,10 @@ func (re *RemoteExecutor) RemoteMatMul(ctx context.Context, target string, a, b 
 // RemoteAllReduce performs all-reduce using RPC.
 func (re *RemoteExecutor) RemoteAllReduce(ctx context.Context, targets []string, t *RPCTensor) (*RPCTensor, error) {
 	results := make([]*RPCTensor, len(targets))
-	
+
 	var wg sync.WaitGroup
 	errs := make([]error, len(targets))
-	
+
 	for i, target := range targets {
 		wg.Add(1)
 		go func(idx int, tgt string) {
@@ -492,15 +492,15 @@ func (re *RemoteExecutor) RemoteAllReduce(ctx context.Context, targets []string,
 			results[idx] = result.(*RPCTensor)
 		}(i, target)
 	}
-	
+
 	wg.Wait()
-	
+
 	for _, err := range errs {
 		if err != nil {
 			return nil, err
 		}
 	}
-	
+
 	// Sum all results (simplified all-reduce)
 	return results[0], nil
 }
@@ -524,7 +524,7 @@ type RPCService struct {
 // NewRPCService creates an RPC service with standard methods.
 func NewRPCService(rpc *RPCManager) *RPCService {
 	svc := &RPCService{rpc: rpc}
-	
+
 	// Register standard methods
 	rpc.RegisterMethod("matmul", svc.MatMul)
 	rpc.RegisterMethod("allreduce", svc.AllReduce)
@@ -532,7 +532,7 @@ func NewRPCService(rpc *RPCManager) *RPCService {
 	rpc.RegisterMethod("ping", svc.Ping)
 	rpc.RegisterMethod("get_rank", svc.GetRank)
 	rpc.RegisterMethod("get_world_size", svc.GetWorldSize)
-	
+
 	return svc
 }
 
@@ -541,7 +541,7 @@ func (svc *RPCService) MatMul(ctx context.Context, args ...interface{}) (interfa
 	if len(args) != 2 {
 		return nil, ErrInvalidArgs
 	}
-	
+
 	a, ok := args[0].(*RPCTensor)
 	if !ok {
 		return nil, ErrInvalidArgs
@@ -550,7 +550,7 @@ func (svc *RPCService) MatMul(ctx context.Context, args ...interface{}) (interfa
 	if !ok {
 		return nil, ErrInvalidArgs
 	}
-	
+
 	aT, err := a.ToTensor()
 	if err != nil {
 		return nil, err
@@ -559,12 +559,12 @@ func (svc *RPCService) MatMul(ctx context.Context, args ...interface{}) (interfa
 	if err != nil {
 		return nil, err
 	}
-	
+
 	result, err := MatMulTensors(aT, bT)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return NewRPCTensor(result), nil
 }
 
@@ -573,12 +573,12 @@ func (svc *RPCService) AllReduce(ctx context.Context, args ...interface{}) (inte
 	if len(args) != 1 {
 		return nil, ErrInvalidArgs
 	}
-	
+
 	t, ok := args[0].(*RPCTensor)
 	if !ok {
 		return nil, ErrInvalidArgs
 	}
-	
+
 	// Simplified: return as-is
 	return t, nil
 }
@@ -613,20 +613,20 @@ func MatMulTensors(a, b *tensor.Tensor) (*tensor.Tensor, error) {
 	m := a.Shape().Dim(0)
 	k := a.Shape().Dim(1)
 	n := b.Shape().Dim(1)
-	
+
 	if b.Shape().Dim(0) != k {
 		return nil, errors.New("shape mismatch for matmul")
 	}
-	
+
 	result, err := tensor.New(tensor.Float64, []int{m, n})
 	if err != nil {
 		return nil, err
 	}
-	
+
 	aV := a.Float64()
 	bV := b.Float64()
 	rV := result.Float64()
-	
+
 	for i := 0; i < m; i++ {
 		for j := 0; j < n; j++ {
 			sum := 0.0
@@ -636,7 +636,7 @@ func MatMulTensors(a, b *tensor.Tensor) (*tensor.Tensor, error) {
 			rV[i*n+j] = sum
 		}
 	}
-	
+
 	return result, nil
 }
 

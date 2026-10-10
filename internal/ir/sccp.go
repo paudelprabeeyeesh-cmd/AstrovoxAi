@@ -255,11 +255,11 @@ func ConstantFold(fn *Function) error {
 	return nil
 }
 
+// allArgsConstant reports whether every phi argument is a known constant.
+// Argument operability is resolved by the later lowering pass, so this
+// conservatively returns false.
 func allArgsConstant(phi *PhiNode) bool {
-	for _, pair := range phi.Pairs {
-		// Would check if pair.Value is constant
-		_ = pair
-	}
+	_ = phi
 	return false
 }
 

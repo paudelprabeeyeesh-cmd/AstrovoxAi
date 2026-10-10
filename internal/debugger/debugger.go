@@ -72,23 +72,23 @@ type TraceEntry struct {
 
 // Debugger controls and inspects execution.
 type Debugger struct {
-	mu         sync.RWMutex
-	session    *Session
+	mu          sync.RWMutex
+	session     *Session
 	breakpoints []*Breakpoint
-	nextBPID   int
-	trace      []TraceEntry
-	maxTrace   int
-	stepping   atomic.Bool
-	stepMode   StepKind
-	stats      Stats
+	nextBPID    int
+	trace       []TraceEntry
+	maxTrace    int
+	stepping    atomic.Bool
+	stepMode    StepKind
+	stats       Stats
 }
 
 // Stats tracks debugger statistics.
 type Stats struct {
-	Steps      atomic.Int64
-	Breaks     atomic.Int64
-	Continues  atomic.Int64
-	TraceLen   atomic.Int64
+	Steps     atomic.Int64
+	Breaks    atomic.Int64
+	Continues atomic.Int64
+	TraceLen  atomic.Int64
 }
 
 // NewDebugger creates a debugger.
@@ -144,13 +144,13 @@ func (d *Debugger) Enable(id int, on bool) error {
 
 // Session is an active debug session.
 type Session struct {
-	Name       string
-	StepKind   StepKind
-	StartedAt  time.Time
-	Vars       map[string]interface{}
-	LastNode   string
-	StepCount  int64
-	Paused     atomic.Bool
+	Name      string
+	StepKind  StepKind
+	StartedAt time.Time
+	Vars      map[string]interface{}
+	LastNode  string
+	StepCount int64
+	Paused    atomic.Bool
 }
 
 // Start begins a session.

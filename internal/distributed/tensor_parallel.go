@@ -18,21 +18,21 @@ var (
 
 // TensorParallelConfig holds tensor parallelism configuration.
 type TensorParallelConfig struct {
-	TPSize          int    // Tensor parallel size
-	SequenceParallel bool  // Enable sequence parallelism
-	AsyncComm       bool  // Overlap communication with computation
-	GatherOutput    bool  // Gather output to all ranks
+	TPSize           int  // Tensor parallel size
+	SequenceParallel bool // Enable sequence parallelism
+	AsyncComm        bool // Overlap communication with computation
+	GatherOutput     bool // Gather output to all ranks
 }
 
 // TensorParallel manages tensor parallelism for a model.
 type TensorParallel struct {
-	config     *TensorParallelConfig
-	rank       int
-	worldSize  int
-	group      *ProcessGroup
-	mu         sync.RWMutex
-	buffers    map[string]*CommBuffer
-	streams    []CommStream
+	config    *TensorParallelConfig
+	rank      int
+	worldSize int
+	group     *ProcessGroup
+	mu        sync.RWMutex
+	buffers   map[string]*CommBuffer
+	streams   []CommStream
 }
 
 // CommBuffer holds communication buffers.
@@ -44,9 +44,9 @@ type CommBuffer struct {
 
 // CommStream represents a communication stream.
 type CommStream struct {
-	id      int
-	events  []CommEvent
-	mu      sync.Mutex
+	id     int
+	events []CommEvent
+	mu     sync.Mutex
 }
 
 type CommEvent struct {
@@ -85,9 +85,9 @@ func NewTensorParallel(config *TensorParallelConfig, group *ProcessGroup) (*Tens
 // Y = X * W^T where W is split along output dimension (columns).
 type ColumnParallelLinear struct {
 	*TensorParallel
-	weight *tensor.Tensor // [out_dim/tp, in_dim]
-	bias   *tensor.Tensor // [out_dim/tp] or nil
-	inputDim int
+	weight    *tensor.Tensor // [out_dim/tp, in_dim]
+	bias      *tensor.Tensor // [out_dim/tp] or nil
+	inputDim  int
 	outputDim int // Full output dimension
 }
 
@@ -128,10 +128,10 @@ func (cpl *ColumnParallelLinear) Forward(ctx context.Context, x *tensor.Tensor) 
 // Y = X * W^T where W is split along input dimension (rows).
 type RowParallelLinear struct {
 	*TensorParallel
-	weight *tensor.Tensor // [out_dim, in_dim/tp]
-	bias   *tensor.Tensor // [out_dim] (only on last rank or replicated)
-	inputDim int  // Full input dimension
-	outputDim int
+	weight       *tensor.Tensor // [out_dim, in_dim/tp]
+	bias         *tensor.Tensor // [out_dim] (only on last rank or replicated)
+	inputDim     int            // Full input dimension
+	outputDim    int
 	reduceOutput bool // Whether to all-reduce output
 }
 
@@ -190,7 +190,7 @@ func (rpl *RowParallelLinear) Forward(ctx context.Context, x *tensor.Tensor) (*t
 // ParallelEmbedding implements vocabulary-parallel embedding.
 type ParallelEmbedding struct {
 	*TensorParallel
-	weight *tensor.Tensor // [vocab_size/tp, hidden_dim]
+	weight    *tensor.Tensor // [vocab_size/tp, hidden_dim]
 	vocabSize int
 	hiddenDim int
 }
@@ -217,7 +217,7 @@ func (pe *ParallelEmbedding) Forward(ctx context.Context, input *tensor.Tensor) 
 	// Each rank handles a subset of vocabulary
 	// input contains token IDs
 	// For tokens not in this rank's vocab range, output zeros
-	
+
 	batch := input.Shape().Dim(0)
 	seqLen := input.Shape().Dim(1)
 	ids := input.Int64()
@@ -278,21 +278,21 @@ func (pln *ParallelLayerNorm) Forward(ctx context.Context, x *tensor.Tensor) (*t
 // ParallelAttention implements tensor-parallel multi-head attention.
 type ParallelAttention struct {
 	*TensorParallel
-	config   *ParallelAttentionConfig
-	qProj    *ColumnParallelLinear
-	kProj    *ColumnParallelLinear
-	vProj    *ColumnParallelLinear
-	oProj    *RowParallelLinear
+	config *ParallelAttentionConfig
+	qProj  *ColumnParallelLinear
+	kProj  *ColumnParallelLinear
+	vProj  *ColumnParallelLinear
+	oProj  *RowParallelLinear
 }
 
 // ParallelAttentionConfig holds parallel attention config.
 type ParallelAttentionConfig struct {
-	HiddenDim  int
-	NumHeads   int
-	HeadDim    int
-	Dropout    float64
-	Causal     bool
-	UseFlash   bool
+	HiddenDim int
+	NumHeads  int
+	HeadDim   int
+	Dropout   float64
+	Causal    bool
+	UseFlash  bool
 }
 
 // NewParallelAttention creates tensor-parallel attention.
@@ -305,7 +305,6 @@ func NewParallelAttention(tp *TensorParallel, config *ParallelAttentionConfig) (
 	}
 
 	localHeads := config.NumHeads / tp.worldSize
-	_ = config.HiddenDim / tp.worldSize
 
 	qProj, _ := NewColumnParallelLinear(tp, config.HiddenDim, localHeads*config.HeadDim, false)
 	kProj, _ := NewColumnParallelLinear(tp, config.HiddenDim, localHeads*config.HeadDim, false)

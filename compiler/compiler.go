@@ -29,11 +29,11 @@ type Result struct {
 
 // Stats reports compilation metrics.
 type Stats struct {
-	Funcs      int
-	Stmts      int
-	Passes     int
-	Folds      int
-	ElapsedNs  int64
+	Funcs     int
+	Stmts     int
+	Passes    int
+	Folds     int
+	ElapsedNs int64
 }
 
 // Compiler orchestrates lowering, TIR

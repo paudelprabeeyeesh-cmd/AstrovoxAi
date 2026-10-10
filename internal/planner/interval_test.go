@@ -58,3 +58,50 @@ func TestIntervalIntersect(t *testing.T) {
 		t.Error("disjoint intersection should be empty")
 	}
 }
+
+func TestInterval_Overlaps(t *testing.T) {
+	i1 := Interval{Start: 0, End: 10}
+	i2 := Interval{Start: 5, End: 15}
+	if !i1.Overlaps(i2) {
+		t.Fatal("expected overlap")
+	}
+	i3 := Interval{Start: 20, End: 30}
+	if i1.Overlaps(i3) {
+		t.Fatal("expected no overlap")
+	}
+}
+
+func TestInterval_Length(t *testing.T) {
+	i := Interval{Start: 0, End: 10}
+	if i.Length() != 10 {
+		t.Fatalf("length = %d, want 10", i.Length())
+	}
+}
+
+func TestInterval_Contains(t *testing.T) {
+	i := Interval{Start: 0, End: 10}
+	if !i.Contains(5) {
+		t.Fatal("expected 5 in interval")
+	}
+	if i.Contains(10) {
+		t.Fatal("expected 10 not in [0,10)")
+	}
+}
+
+func TestInterval_Intersect(t *testing.T) {
+	i1 := Interval{Start: 0, End: 10}
+	i2 := Interval{Start: 5, End: 15}
+	r := i1.Intersect(i2)
+	if r.Start != 5 || r.End != 10 {
+		t.Fatalf("intersect = %+v, want {5 10}", r)
+	}
+}
+
+func TestInterval_EmptyIntersect(t *testing.T) {
+	i1 := Interval{Start: 0, End: 5}
+	i2 := Interval{Start: 5, End: 10}
+	r := i1.Intersect(i2)
+	if r.Start != 0 || r.End != 0 {
+		t.Fatalf("empty intersect = [%d, %d), want [0, 0)", r.Start, r.End)
+	}
+}

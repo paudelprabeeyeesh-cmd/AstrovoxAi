@@ -173,11 +173,11 @@ type Tracer struct {
 
 // TraceEvent is a single trace event.
 type TraceEvent struct {
-	Name   string
-	Start  time.Time
-	End    time.Time
-	Error  error
-	Meta   map[string]string
+	Name  string
+	Start time.Time
+	End   time.Time
+	Error error
+	Meta  map[string]string
 }
 
 // NewTracer creates a new tracer.

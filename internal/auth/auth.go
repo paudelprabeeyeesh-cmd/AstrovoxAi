@@ -16,12 +16,12 @@ import (
 
 // Auth errors.
 var (
-	ErrInvalidToken   = errors.New("invalid token")
-	ErrTokenExpired   = errors.New("token expired")
-	ErrBadSignature   = errors.New("bad signature")
-	ErrForbidden      = errors.New("forbidden")
-	ErrUnknownClient  = errors.New("unknown oauth client")
-	ErrInvalidGrant   = errors.New("invalid grant")
+	ErrInvalidToken  = errors.New("invalid token")
+	ErrTokenExpired  = errors.New("token expired")
+	ErrBadSignature  = errors.New("bad signature")
+	ErrForbidden     = errors.New("forbidden")
+	ErrUnknownClient = errors.New("unknown oauth client")
+	ErrInvalidGrant  = errors.New("invalid grant")
 )
 
 // Header is a JWT header.
@@ -210,8 +210,8 @@ type OAuthClient struct {
 
 // OAuthServer implements the client-credentials grant.
 type OAuthServer struct {
-	signer *JWTSigner
-	mu     sync.RWMutex
+	signer  *JWTSigner
+	mu      sync.RWMutex
 	clients map[string]*OAuthClient
 }
 
@@ -345,10 +345,10 @@ func (r *RoleStore) HasRole(subject, role string) bool {
 
 // RBACAuthorizer answers "may subject do action on resource?".
 type RBACAuthorizer struct {
-	mu     sync.RWMutex
-	roles  map[string]*Role
-	store  *RoleStore
-	stats  RBACStats
+	mu    sync.RWMutex
+	roles map[string]*Role
+	store *RoleStore
+	stats RBACStats
 }
 
 // RBACStats tracks authorization statistics.

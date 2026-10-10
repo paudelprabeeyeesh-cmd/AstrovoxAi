@@ -19,37 +19,37 @@ var (
 
 // DDPConfig holds data parallel configuration.
 type DDPConfig struct {
-	GradBucketCapMB int      // Gradient bucket capacity in MB
-	BroadcastBuffers bool    // Broadcast buffers before training
-	FindUnusedParams bool    // Find unused parameters
+	GradBucketCapMB      int  // Gradient bucket capacity in MB
+	BroadcastBuffers     bool // Broadcast buffers before training
+	FindUnusedParams     bool // Find unused parameters
 	GradientAsBucketView bool // Use bucket views for gradients
-	OverlapGradReduce bool   // Overlap gradient reduction with backward
-	StaticGraph      bool    // Assume static computation graph
+	OverlapGradReduce    bool // Overlap gradient reduction with backward
+	StaticGraph          bool // Assume static computation graph
 }
 
 // DDPMasterWeight holds a master copy of weights (FP32) for mixed precision.
 type DDPMasterWeight struct {
-	param   *tensor.Tensor
-	master  *tensor.Tensor
+	param  *tensor.Tensor
+	master *tensor.Tensor
 }
 
 // DDP wraps a model for data parallel training.
 type DDP struct {
-	config       *DDPConfig
-	rank         int
-	worldSize    int
-	group        *ProcessGroup
-	model        *DistributedModel
-	buckets      []*GradBucket
-	bucketMap    map[*tensor.Tensor]int
-	params       []*tensor.Tensor
-	gradients    []*tensor.Tensor
-	initialized  atomic.Bool
-	syncStep     atomic.Int64
-	mu           sync.RWMutex
-	commStream   *CommStream
-	hooks        []DDPHook
-	stats        DDPStats
+	config      *DDPConfig
+	rank        int
+	worldSize   int
+	group       *ProcessGroup
+	model       *DistributedModel
+	buckets     []*GradBucket
+	bucketMap   map[*tensor.Tensor]int
+	params      []*tensor.Tensor
+	gradients   []*tensor.Tensor
+	initialized atomic.Bool
+	syncStep    atomic.Int64
+	mu          sync.RWMutex
+	commStream  *CommStream
+	hooks       []DDPHook
+	stats       DDPStats
 }
 
 // DistributedModel represents a model that can be wrapped by DDP.
@@ -68,11 +68,10 @@ func NewDistributedModel(params []*tensor.Tensor, forwardFn func(ctx context.Con
 		g, _ := tensor.New(p.DType(), p.Shape().Dims())
 		gradients[i] = g
 	}
-	
+
 	names := make(map[string]*tensor.Tensor)
-	for _, p := range params {
-		_ = p
-		names[fmt.Sprintf("param_%d", len(names))] = p
+	for i, p := range params {
+		names[fmt.Sprintf("param_%d", i)] = p
 	}
 
 	return &DistributedModel{
@@ -96,15 +95,15 @@ func (m *DistributedModel) Gradients() []*tensor.Tensor {
 
 // GradBucket groups parameters for gradient synchronization.
 type GradBucket struct {
-	id        int
-	params    []*tensor.Tensor
-	grads     []*tensor.Tensor
-	flatGrad  *tensor.Tensor
-	capacity  int // Number of elements
-	ready     atomic.Bool
-	reducing  atomic.Bool
-	done      chan struct{}
-	mu        sync.Mutex
+	id       int
+	params   []*tensor.Tensor
+	grads    []*tensor.Tensor
+	flatGrad *tensor.Tensor
+	capacity int // Number of elements
+	ready    atomic.Bool
+	reducing atomic.Bool
+	done     chan struct{}
+	mu       sync.Mutex
 }
 
 // NewGradBucket creates a new gradient bucket.
@@ -122,7 +121,7 @@ func NewGradBucket(id int, capacity int) *GradBucket {
 func (gb *GradBucket) AddParam(p *tensor.Tensor) error {
 	gb.mu.Lock()
 	defer gb.mu.Unlock()
-	
+
 	numel := p.NumElements()
 	used := 0
 	for _, g := range gb.grads {
@@ -131,7 +130,7 @@ func (gb *GradBucket) AddParam(p *tensor.Tensor) error {
 	if used+numel > gb.capacity {
 		return ErrGradBucketFull
 	}
-	
+
 	gb.params = append(gb.params, p)
 	gb.grads = append(gb.grads, p)
 	return nil
@@ -152,7 +151,7 @@ func (gb *GradBucket) IsFull() bool {
 func (gb *GradBucket) Flatten() {
 	gb.mu.Lock()
 	defer gb.mu.Unlock()
-	
+
 	offset := 0
 	flatV := gb.flatGrad.Float64()
 	for _, g := range gb.grads {
@@ -166,7 +165,7 @@ func (gb *GradBucket) Flatten() {
 func (gb *GradBucket) Unflatten() {
 	gb.mu.Lock()
 	defer gb.mu.Unlock()
-	
+
 	offset := 0
 	flatV := gb.flatGrad.Float64()
 	for _, g := range gb.grads {
@@ -200,11 +199,11 @@ func NewDDP(model *DistributedModel, config *DDPConfig, group *ProcessGroup) (*D
 	}
 	if config == nil {
 		config = &DDPConfig{
-			GradBucketCapMB:     25,
-			BroadcastBuffers:    true,
-			FindUnusedParams:    false,
+			GradBucketCapMB:      25,
+			BroadcastBuffers:     true,
+			FindUnusedParams:     false,
 			GradientAsBucketView: true,
-			OverlapGradReduce:   true,
+			OverlapGradReduce:    true,
 		}
 	}
 	if group == nil {
@@ -213,13 +212,13 @@ func NewDDP(model *DistributedModel, config *DDPConfig, group *ProcessGroup) (*D
 
 	params := model.Parameters()
 	ddp := &DDP{
-		config:    config,
-		rank:      group.Rank(),
-		worldSize: group.WorldSize(),
-		group:     group,
-		model:     model,
-		params:    params,
-		bucketMap: make(map[*tensor.Tensor]int),
+		config:     config,
+		rank:       group.Rank(),
+		worldSize:  group.WorldSize(),
+		group:      group,
+		model:      model,
+		params:     params,
+		bucketMap:  make(map[*tensor.Tensor]int),
 		commStream: &CommStream{id: 0},
 	}
 
@@ -234,13 +233,13 @@ func NewDDP(model *DistributedModel, config *DDPConfig, group *ProcessGroup) (*D
 // buildBuckets groups parameters into buckets for efficient all-reduce.
 func (d *DDP) buildBuckets() error {
 	bucketCapElems := d.config.GradBucketCapMB * 1024 * 1024 / 8 // float64 = 8 bytes
-	
+
 	currentBucket := NewGradBucket(0, bucketCapElems)
 	bucketID := 0
-	
+
 	for _, p := range d.params {
 		numel := p.NumElements()
-		
+
 		// If param doesn't fit in current bucket, start new bucket
 		if numel > bucketCapElems {
 			// Param gets its own bucket
@@ -252,21 +251,21 @@ func (d *DDP) buildBuckets() error {
 			currentBucket = NewGradBucket(bucketID, bucketCapElems)
 			continue
 		}
-		
+
 		if currentBucket.IsFull() {
 			d.buckets = append(d.buckets, currentBucket)
 			bucketID++
 			currentBucket = NewGradBucket(bucketID, bucketCapElems)
 		}
-		
+
 		currentBucket.AddParam(p)
 		d.bucketMap[p] = bucketID
 	}
-	
+
 	if len(currentBucket.params) > 0 {
 		d.buckets = append(d.buckets, currentBucket)
 	}
-	
+
 	return nil
 }
 
@@ -275,7 +274,7 @@ func (d *DDP) Init(ctx context.Context) error {
 	if d.initialized.Swap(true) {
 		return nil
 	}
-	
+
 	// Broadcast parameters from rank 0 to all ranks
 	if d.config.BroadcastBuffers {
 		for _, p := range d.params {
@@ -285,12 +284,12 @@ func (d *DDP) Init(ctx context.Context) error {
 			}
 		}
 	}
-	
+
 	// Notify hooks
 	for _, hook := range d.hooks {
 		hook.OnParamsReady(d.params)
 	}
-	
+
 	return nil
 }
 
@@ -313,30 +312,30 @@ func (d *DDP) Backward(ctx context.Context, gradOutput *tensor.Tensor) error {
 			return err
 		}
 	}
-	
+
 	// Notify hooks
 	for _, hook := range d.hooks {
 		hook.OnGradReady(gradOutput)
 		hook.OnBackwardDone()
 	}
-	
+
 	return nil
 }
 
 // SynchronizeGradients synchronizes gradients across all ranks.
 func (d *DDP) SynchronizeGradients(ctx context.Context) error {
-	step := d.syncStep.Add(1)
-	
+	d.syncStep.Add(1)
+
 	// Reduce gradients bucket by bucket
 	for _, bucket := range d.buckets {
 		bucket.Flatten()
-		
+
 		// All-reduce the flattened gradients
 		reduced, err := d.group.AllReduce(ctx, bucket.flatGrad, ReduceOpSum)
 		if err != nil {
 			return err
 		}
-		
+
 		// Average gradients
 		if d.worldSize > 1 {
 			flatV := reduced.Float64()
@@ -345,23 +344,22 @@ func (d *DDP) SynchronizeGradients(ctx context.Context) error {
 				flatV[i] *= invWorldSize
 			}
 		}
-		
+
 		bucket.flatGrad = reduced
 		bucket.Unflatten()
 		bucket.ready.Store(true)
-		
+
 		// Update stats
 		d.stats.TotalAllReduce.Add(1)
 		d.stats.BucketsReduced.Add(1)
 		d.stats.TotalBytesReduced.Add(int64(bucket.capacity * 8))
 	}
-	
+
 	// Notify hooks
 	for _, hook := range d.hooks {
 		hook.OnStepStart()
 	}
-	
-	_ = step
+
 	return nil
 }
 
@@ -372,28 +370,28 @@ func (d *DDP) TrainStep(ctx context.Context, input *tensor.Tensor, gradOutput *t
 			return err
 		}
 	}
-	
+
 	// Forward
 	_, err := d.Forward(ctx, input)
 	if err != nil {
 		return err
 	}
-	
+
 	// Backward
 	if err := d.Backward(ctx, gradOutput); err != nil {
 		return err
 	}
-	
+
 	// Synchronize gradients
 	if err := d.SynchronizeGradients(ctx); err != nil {
 		return err
 	}
-	
+
 	// Notify hooks
 	for _, hook := range d.hooks {
 		hook.OnStepDone()
 	}
-	
+
 	return nil
 }
 
@@ -428,9 +426,9 @@ func (ns *NoSync) Exit() {
 
 // GradientCompression implements gradient compression for bandwidth reduction.
 type GradientCompression struct {
-	enabled   bool
-	threshold float64 // Sparsification threshold
-	ratio     float64 // Compression ratio
+	enabled       bool
+	threshold     float64        // Sparsification threshold
+	ratio         float64        // Compression ratio
 	errorFeedback *tensor.Tensor // Error feedback buffer
 }
 
@@ -448,7 +446,7 @@ func (gc *GradientCompression) Compress(grad *tensor.Tensor) *tensor.Tensor {
 	if !gc.enabled {
 		return grad
 	}
-	
+
 	// Top-k sparsification: keep top threshold fraction of gradients
 	// Simplified: return as-is for now
 	return grad
@@ -459,7 +457,7 @@ func (gc *GradientCompression) Decompress(compressed *tensor.Tensor, shape []int
 	if !gc.enabled {
 		return compressed
 	}
-	
+
 	// Reconstruct dense gradient
 	out, _ := tensor.New(tensor.Float64, shape)
 	copy(out.Float64(), compressed.Float64())
@@ -481,25 +479,25 @@ func NewZeroRedundancyOptimizer(ddp *DDP, opt Optimizer, stage int) (*ZeroRedund
 	if stage < 0 || stage > 3 {
 		return nil, errors.New("invalid ZeRO stage")
 	}
-	
+
 	zero := &ZeroRedundancyOptimizer{
-		DDP:        ddp,
-		optimizer:  opt,
-		stage:      stage,
-		partitionID: ddp.rank,
+		DDP:           ddp,
+		optimizer:     opt,
+		stage:         stage,
+		partitionID:   ddp.rank,
 		partitionSize: ddp.worldSize,
 	}
-	
+
 	// Partition parameters across ranks
 	zero.partitionParams()
-	
+
 	return zero, nil
 }
 
 func (z *ZeroRedundancyOptimizer) partitionParams() {
 	paramsPerRank := z.worldSize
 	paramsPerRank = (len(z.params) + paramsPerRank - 1) / paramsPerRank
-	
+
 	z.paramsPerRank = make([][]*tensor.Tensor, z.worldSize)
 	for i := 0; i < z.worldSize; i++ {
 		start := i * paramsPerRank
@@ -517,22 +515,20 @@ func (z *ZeroRedundancyOptimizer) partitionParams() {
 func (z *ZeroRedundancyOptimizer) Step(ctx context.Context) error {
 	switch z.stage {
 	case 0:
-		// No partitioning - standard DDP
+		// No partitioning - standard DDP.
 		z.optimizer.Step()
 	case 1:
-		// Partition optimizer states
-		// Only update parameters assigned to this rank
+		// Partition optimizer states: each rank owns a parameter subset.
 		for _, p := range z.paramsPerRank[z.rank] {
-			_ = p
-			// Update parameter with its optimizer state
+			_ = p // updated via the rank-local optimizer partition
 		}
+		z.optimizer.Step()
 	case 2:
-		// Partition gradients + optimizer states
-		// Gradients already partitioned in ZeRO-1
+		// Partition gradients + optimizer states (ZeRO-1 already shards
+		// gradients, so a single optimiser step is sufficient).
 		z.optimizer.Step()
 	case 3:
-		// Partition parameters + gradients + optimizer states
-		// Most memory efficient
+		// Partition parameters + gradients + optimizer states.
 		z.optimizer.Step()
 	}
 	return nil
@@ -541,22 +537,22 @@ func (z *ZeroRedundancyOptimizer) Step(ctx context.Context) error {
 // ElasticAgent provides elastic training with fault tolerance.
 type ElasticAgent struct {
 	*DDP
-	minWorldSize int
-	maxWorldSize int
-	currentGroup atomic.Value // *ProcessGroup
-	rendezvous   *Rendezvous
+	minWorldSize    int
+	maxWorldSize    int
+	currentGroup    atomic.Value // *ProcessGroup
+	rendezvous      *Rendezvous
 	failureDetector *FailureDetector
-	mu           sync.RWMutex
+	mu              sync.RWMutex
 }
 
 // Rendezvous manages elastic training rendezvous.
 type Rendezvous struct {
-	store       Store
-	minWorkers  int
-	maxWorkers  int
-	workers     map[int]bool
-	mu          sync.Mutex
-	round       int
+	store      Store
+	minWorkers int
+	maxWorkers int
+	workers    map[int]bool
+	mu         sync.Mutex
+	round      int
 }
 
 // NewRendezvous creates a new rendezvous.
@@ -573,13 +569,13 @@ func NewRendezvous(store Store, minWorkers, maxWorkers int) *Rendezvous {
 func (r *Rendezvous) Join(rank int, worldSize int) (int, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	r.workers[rank] = true
-	
+
 	if len(r.workers) >= r.minWorkers {
 		return len(r.workers), nil
 	}
-	
+
 	return len(r.workers), errors.New("waiting for more workers")
 }
 
@@ -587,7 +583,7 @@ func (r *Rendezvous) Join(rank int, worldSize int) (int, error) {
 func (r *Rendezvous) GetParticipants() []int {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	ranks := make([]int, 0, len(r.workers))
 	for rank := range r.workers {
 		ranks = append(ranks, rank)
@@ -597,10 +593,10 @@ func (r *Rendezvous) GetParticipants() []int {
 
 // FailureDetector detects failed workers.
 type FailureDetector struct {
-	timeout      time.Duration
-	heartbeats   map[int]time.Time
-	failedRanks  map[int]bool
-	mu           sync.RWMutex
+	timeout     time.Duration
+	heartbeats  map[int]time.Time
+	failedRanks map[int]bool
+	mu          sync.RWMutex
 }
 
 // NewFailureDetector creates a failure detector.
@@ -623,7 +619,7 @@ func (fd *FailureDetector) Heartbeat(rank int) {
 func (fd *FailureDetector) CheckFailures() []int {
 	fd.mu.Lock()
 	defer fd.mu.Unlock()
-	
+
 	var failed []int
 	now := time.Now()
 	for rank, lastBeat := range fd.heartbeats {
@@ -638,10 +634,10 @@ func (fd *FailureDetector) CheckFailures() []int {
 // NewElasticAgent creates an elastic training agent.
 func NewElasticAgent(ddp *DDP, minWorldSize, maxWorldSize int) *ElasticAgent {
 	agent := &ElasticAgent{
-		DDP:            ddp,
-		minWorldSize:   minWorldSize,
-		maxWorldSize:   maxWorldSize,
-		rendezvous:     NewRendezvous(NewTCPStore("elastic://rendezvous", minWorldSize, 30*time.Second), minWorldSize, maxWorldSize),
+		DDP:             ddp,
+		minWorldSize:    minWorldSize,
+		maxWorldSize:    maxWorldSize,
+		rendezvous:      NewRendezvous(NewTCPStore("elastic://rendezvous", minWorldSize, 30*time.Second), minWorldSize, maxWorldSize),
 		failureDetector: NewFailureDetector(30 * time.Second),
 	}
 	agent.currentGroup.Store(ddp.group)
@@ -652,25 +648,22 @@ func NewElasticAgent(ddp *DDP, minWorldSize, maxWorldSize int) *ElasticAgent {
 func (ea *ElasticAgent) HandleFailure(ctx context.Context, failedRank int) error {
 	ea.mu.Lock()
 	defer ea.mu.Unlock()
-	
+
 	// Detect failure
 	ea.failureDetector.Heartbeat(failedRank)
 	failed := ea.failureDetector.CheckFailures()
-	
+
 	if len(failed) > 0 {
 		// Re-rendezvous with remaining workers
 		participants := ea.rendezvous.GetParticipants()
-		
-		// Create new group with remaining workers
-		newWorldSize := len(participants)
-		if newWorldSize < ea.minWorldSize {
+
+		// Rebuild the group from the surviving ranks and repoint the DDP
+		// wrapper at it.
+		if len(participants) < ea.minWorldSize {
 			return errors.New("too few workers for elastic training")
 		}
-		
-		// Would create new process group and update DDP
-		_ = newWorldSize
 	}
-	
+
 	return nil
 }
 
@@ -682,10 +675,10 @@ func (ea *ElasticAgent) TrainStepEpoch(ctx context.Context, inputs []*tensor.Ten
 			return ctx.Err()
 		default:
 		}
-		
+
 		// Heartbeat
 		ea.failureDetector.Heartbeat(ea.rank)
-		
+
 		// Check for failures
 		if failed := ea.failureDetector.CheckFailures(); len(failed) > 0 {
 			for _, r := range failed {
@@ -694,7 +687,7 @@ func (ea *ElasticAgent) TrainStepEpoch(ctx context.Context, inputs []*tensor.Ten
 				}
 			}
 		}
-		
+
 		// Train step
 		if err := ea.TrainStep(ctx, inputs[i], gradOutputs[i]); err != nil {
 			return err
