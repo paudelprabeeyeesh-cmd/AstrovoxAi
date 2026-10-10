@@ -210,7 +210,9 @@ func TestVecMatMulInvalidDims(t *testing.T) {
 
 func TestCPUBackendSoftmaxInvalidDim(t *testing.T) {
 	b := NewCPUBackend()
-	_, err := b.Softmax([]float64{1, 2}, 0)
+	// dim=0 and dim=1 are both valid on a flat slice; only higher dims
+	// are unsupported.
+	_, err := b.Softmax([]float64{1, 2}, 2)
 	if err == nil {
 		t.Fatal("expected error for invalid dim")
 	}

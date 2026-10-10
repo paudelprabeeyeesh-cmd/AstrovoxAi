@@ -14,6 +14,8 @@ const (
 	BackendTypeMetal
 	BackendTypeDirectML
 	BackendTypeROCm
+	BackendTypeWebGPU
+	BackendTypeOpenCL
 )
 
 func (bt BackendType) String() string {
@@ -30,6 +32,10 @@ func (bt BackendType) String() string {
 		return "directml"
 	case BackendTypeROCm:
 		return "rocm"
+	case BackendTypeWebGPU:
+		return "webgpu"
+	case BackendTypeOpenCL:
+		return "opencl"
 	default:
 		return "unknown"
 	}
@@ -129,6 +135,33 @@ func InitDefaultBackends() (*BackendSelector, error) {
 	if dml, err := NewDirectML(0); err == nil {
 		selector.Register(dml)
 	}
-	
+	if rocm, err := NewROCmBackend(0); err == nil {
+		selector.Register(rocm)
+	}
+	if webgpu, err := NewWebGPU(DefaultWebGPUAdapter()); err == nil {
+		selector.Register(webgpu)
+	}
+	if opencl, err := NewOpenCLBackend(DefaultOpenCLPlatform(), 0); err == nil {
+		selector.Register(opencl)
+	}
+
+	// Publish every discovered backend to the global registry so
+	// GetBackend(name) resolves them as well.
+	for _, b := range selector.candidates {
+		RegisterBackend(b.Name(), b)
+	}
+
 	return selector, nil
+}
+
+// Get returns a registered backend by name from the selector.
+func (bs *BackendSelector) Get(name string) (Backend, bool) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+	for _, b := range bs.candidates {
+		if b.Name() == name {
+			return b, true
+		}
+	}
+	return nil, false
 }

@@ -28,7 +28,7 @@ func TestCPUBackendAddShapeMismatch(t *testing.T) {
 func TestCPUBackendSoftmaxUnsupportedDim(t *testing.T) {
 	b := NewCPUBackend()
 	x := []float64{1, 2, 3}
-	_, err := b.Softmax(x, 0)
+	_, err := b.Softmax(x, 2)
 	if err == nil {
 		t.Fatal("expected error for unsupported dim")
 	}

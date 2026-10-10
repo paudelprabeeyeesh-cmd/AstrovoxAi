@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Astrovox Web IDE</title>
+<style>
+  :root {
+    --bg: #0d1117; --panel: #161b22; --border: #30363d;
+    --fg: #c9d1d9; --muted: #8b949e; --accent: #58a6ff; --ok: #3fb950; --err: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+         background: var(--bg); color: var(--fg); }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 15px; margin: 0; color: var(--accent); }
+  header .spacer { flex: 1; }
+  button { font: inherit; padding: 5px 12px; border: 1px solid var(--border);
+           border-radius: 6px; background: #21262d; color: var(--fg); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+  main { display: grid; grid-template-columns: 200px 1fr 1fr; height: calc(100vh - 45px); }
+  nav { border-right: 1px solid var(--border); overflow: auto; background: var(--panel); }
+  nav .item { padding: 7px 14px; cursor: pointer; border-bottom: 1px solid var(--border); color: var(--muted); }
+  nav .item:hover, nav .item.active { background: #21262d; color: var(--fg); }
+  .pane { display: flex; flex-direction: column; border-right: 1px solid var(--border); min-width: 0; }
+  .pane h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+             margin: 0; padding: 6px 12px; color: var(--muted);
+             background: var(--panel); border-bottom: 1px solid var(--border); }
+  textarea, pre { flex: 1; margin: 0; padding: 12px; overflow: auto; background: var(--bg);
+                  color: var(--fg); border: 0; font: inherit; tab-size: 4; }
+  textarea:focus { outline: none; }
+  pre { white-space: pre-wrap; }
+  #status { padding: 4px 12px; font-size: 12px; background: var(--panel);
+            border-top: 1px solid var(--border); color: var(--muted); }
+  #status.ok { color: var(--ok); }
+  #status.err { color: var(--err); }
+  .badge { font-size: 11px; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Astrovox Web IDE</h1>
+  <span class="badge" id="serverInfo">not connected</span>
+  <div class="spacer"></div>
+  <button id="formatBtn">Format</button>
+  <button id="lintBtn">Lint</button>
+  <button class="primary" id="runBtn">Run &#9654;</button>
+</header>
+<main>
+  <nav id="files">
+    <div class="item active" data-example="hello">hello.ax</div>
+    <div class="item" data-example="structs">structs.ax</div>
+    <div class="item" data-example="loops">loops.ax</div>
+    <div class="item" data-example="generics">generics.ax</div>
+  </nav>
+  <section class="pane">
+    <h2>editor</h2>
+    <textarea id="editor" spellcheck="false"></textarea>
+  </section>
+  <section class="pane">
+    <h2>output</h2>
+    <pre id="output">// Press Run to compile and execute.</pre>
+    <div id="status">ready</div>
+  </section>
+</main>
+
+<script>
+const EXAMPLES = {
+hello: `// Greet from the Astrovox language.
+fn greet(name: string) -> string {
+    return "Hello, " + name
+}
+
+fn main() -> int {
+    let msg = greet("world")
+    print(msg)
+    return 0
+}
+`,
+structs: `struct Point {
+    x: int
+    y: int
+}
+
+fn origin() -> Point {
+    return Point { x: 0, y: 0 }
+}
+
+fn main() -> int {
+    let p = origin()
+    return p.x + p.y
+}
+`,
+loops: `fn fib(n: int) -> int {
+    let a = 0
+    let b = 1
+    let i = 0
+    while i < n {
+        let t = a + b
+        a = b
+        b = t
+        i = i + 1
+    }
+    return a
+}
+
+fn main() -> int {
+    let mut i = 0
+    while i < 10 {
+        i = i + 1
+    }
+    return fib(i)
+}
+`,
+generics: `fn identity<T>(value: T) -> T {
+    return value
+}
+
+struct Wrapper<T> {
+    inner: T
+}
+
+fn main() -> int {
+    let x = identity<int>(41)
+    let w = Wrapper<int> { inner: x }
+    return w.inner + 1
+}
+`
+};
+
+const editor = document.getElementById('editor');
+const output = document.getElementById('output');
+const status = document.getElementById('status');
+
+function setStatus(msg, cls) {
+  status.textContent = msg;
+  status.className = cls || '';
+}
+
+function load(name) {
+  editor.value = EXAMPLES[name] || '';
+  document.querySelectorAll('#files .item').forEach(el =>
+    el.classList.toggle('active', el.dataset.example === name));
+}
+
+document.getElementById('files').addEventListener('click', e => {
+  const ex = e.target && e.target.dataset ? e.target.dataset.example : null;
+  if (ex) load(ex);
+});
+
+/** Compile + run against the local engine, falling back to a browser-side stub. */
+async function callEngine(verb, code) {
+  const base = (document.getElementById('serverInfo').dataset.base) || '/api';
+  try {
+    const res = await fetch(`${base}/${verb}`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: code
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
+    document.getElementById('serverInfo').textContent = 'connected';
+    return text;
+  } catch (err) {
+    return `// offline mode: ${err.message}
+// (start 'astrovox serve' to compile on the engine)`;
+  }
+}
+
+document.getElementById('runBtn').addEventListener('click', async () => {
+  setStatus('compiling...');
+  const out = await callEngine('run', editor.value);
+  output.textContent = out;
+  setStatus('done', 'ok');
+});
+
+document.getElementById('formatBtn').addEventListener('click', async () => {
+  setStatus('formatting...');
+  const out = await callEngine('fmt', editor.value);
+  if (out && !out.startsWith('//')) editor.value = out;
+  setStatus('formatted', 'ok');
+});
+
+document.getElementById('lintBtn').addEventListener('click', async () => {
+  setStatus('linting...');
+  const out = await callEngine('lint', editor.value);
+  output.textContent = out || 'no diagnostics';
+  setStatus(out ? 'diagnostics found' : 'clean', out ? 'err' : 'ok');
+});
+
+editor.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = editor.selectionStart;
+    editor.setRangeText('    ', s, editor.selectionEnd, 'end');
+  }
+});
+
+load('hello');
+</script>
+</body>
+</html>

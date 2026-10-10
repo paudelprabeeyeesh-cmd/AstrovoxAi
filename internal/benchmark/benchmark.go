@@ -34,6 +34,9 @@ type Result struct {
 	CoV       float64   `json:"cov"`
 	OpsPerSec float64   `json:"ops_per_sec"`
 	RawNanos  []float64 `json:"raw_nanos,omitempty"`
+	// ClockFloor is true when at least one sample was faster than the
+	// platform clock could resolve, so the numbers are a lower bound.
+	ClockFloor bool `json:"clock_floor,omitempty"`
 }
 
 // Harness executes timed workloads with fixed warmup and run counts.
@@ -66,11 +69,19 @@ func (h Harness) Run(name string, fn func(int)) (*Result, error) {
 		fn(i)
 	}
 	samples := make([]float64, 0, h.Runs)
+	clockFloor := false
 	for i := 0; i < h.Runs; i++ {
 		runtime.GC()
 		start := time.Now()
 		fn(i)
 		elapsed := float64(time.Since(start).Nanoseconds())
+		// A zero reading means the platform clock is coarser than the
+		// measured work, not that the work was instantaneous. Record the
+		// floor and keep the sample so statistics stay meaningful.
+		if elapsed <= 0 {
+			elapsed = 1
+			clockFloor = true
+		}
 		samples = append(samples, elapsed)
 	}
 	if h.DropOutlier && len(samples) >= 4 {
@@ -95,6 +106,7 @@ func (h Harness) Run(name string, fn func(int)) (*Result, error) {
 		CoV:       cov,
 		OpsPerSec: 1e9 / mean,
 		RawNanos:  samples,
+		ClockFloor: clockFloor,
 	}, nil
 }
 

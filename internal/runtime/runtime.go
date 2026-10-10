@@ -19,11 +19,12 @@ type Future interface {
 
 // Scheduler schedules and executes tasks.
 type Scheduler struct {
-	workers int
-	tasks   chan func()
-	wg      sync.WaitGroup
-	ctx     context.Context
-	cancel  context.CancelFunc
+	workers  int
+	tasks    chan func()
+	wg       sync.WaitGroup
+	ctx      context.Context
+	cancel   context.CancelFunc
+	stopOnce sync.Once
 }
 
 // NewScheduler creates a new scheduler with the given number of workers.
@@ -96,10 +97,11 @@ func (s *Scheduler) Wait(futures ...Future) error {
 	return firstErr
 }
 
-// Stop stops the scheduler.
+// Stop stops the scheduler. It is safe to call more than once.
 func (s *Scheduler) Stop() {
 	s.cancel()
-	close(s.tasks)
+	// Closing the task channel twice would panic, so guard with sync.Once.
+	s.stopOnce.Do(func() { close(s.tasks) })
 	s.wg.Wait()
 }
 

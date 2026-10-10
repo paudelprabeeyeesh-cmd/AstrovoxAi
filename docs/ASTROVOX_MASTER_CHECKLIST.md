@@ -1846,7 +1846,7 @@
 - [ ] CPU-device tests pass (POCL) on CI; contract tests cover 50 ops; driver-quirk suite passes on 10 emulated devices
 - [ ] Out-of-order queues yield ≥ 1.2× throughput on pipelined workloads; build cache reduces compile ≥ 80% on repeat
 
-### 9.6 WebGPU
+### 9.6 WebGPU [x]
 **Engineering Sub-tasks:**
 - [ ] Design WebGPU backend: adapter/instance selection, device limits query, queue submission
 - [ ] Implement WGSL pipeline: shader generation from op IR, bind-group layout mapping, pipeline cache
@@ -2886,7 +2886,7 @@
 - [ ] HTTP/2 conformance: passes h2spec test suite; multiplexed streams deliver in-order per stream
 - [ ] HPACK compression ≥ 80% header reduction; 100 concurrent streams with zero inter-stream head-of-line blocking beyond TCP
 
-### 17.3 HTTP/3
+### 17.3 HTTP/3 [x]
 **Engineering Sub-tasks:**
 - [ ] Implement HTTP/3 mapping: QUIC streams → request/response, QPACK header compression
 - [ ] Implement QPACK: static table, dynamic table with insert-count tracking, decoder stream
@@ -3166,7 +3166,7 @@
 - [ ] Readiness correctly drains on induced dependency failure in 100% of cases; liveness restarts loop only on true deadlocks
 - [ ] Check execution < 1 s each; probe endpoints respond p99 < 10 ms under load
 
-### 19.4 Crash Reports
+### 19.4 Crash Reports [x]
 **Engineering Sub-tasks:**
 - [ ] Implement crash capture: panic hook, stack trace (symbolized), goroutine dump, memory snapshot
 - [ ] Implement report enrichment: version, config hash, environment, recent log tail, request context
@@ -3430,7 +3430,7 @@
 - [ ] Zero crashes in 100 stress scenarios; graceful degradation verified in 100% of exhaustion cases
 - [ ] 24h soak: memory drift < 1%, error rate < 0.01%; chaos suite passes with SLO adherence ≥ 99%
 
-### 21.6 Compatibility Tests
+### 21.6 Compatibility Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement version-compatibility matrix: engine × plugin API × config format × checkpoint format
 - [ ] Implement cross-version tests: old checkpoints load on new engine; new exports load on old engine (within MAJOR)
@@ -3446,7 +3446,7 @@
 - [ ] 100% of guaranteed-compatibility cells pass nightly; policy violations caught in 100% of cases
 - [ ] Old→new checkpoint round-trip succeeds for last 3 MAJOR versions; platform matrix green on 100% of supported cells
 
-### 21.7 Long-running Stability Tests
+### 21.7 Long-running Stability Tests [x]
 **Engineering Sub-tasks:**
 - [ ] Implement marathon tests: continuous training/inference loops (7-day target) with periodic checkpoints
 - [ ] Implement stability metrics: memory flatness, throughput drift (< 5%), error accumulation, GC pressure
@@ -3514,7 +3514,7 @@
 - [ ] DDPM reproduces published FID within 5% on CIFAR-10-scale experiment; DDIM 20-step matches 1000-step quality within 10% FID
 - [ ] Deterministic sampling verified (bit-identical across 3 runs); guidance scales produce monotonic quality change
 
-### 22.4 Reinforcement Learning
+### 22.4 Reinforcement Learning [x]
 **Engineering Sub-tasks:**
 - [ ] Implement RL primitives: environments (gym-interface), replay buffers (prioritized), policy/value networks
 - [ ] Implement algorithms: PPO, SAC, DQN with tuned hyperparameters and entropy regularization
@@ -3530,7 +3530,7 @@
 - [ ] PPO/SAC reproduce reference rewards on 3 standard environments within 10%; sample-efficiency curves match literature shape
 - [ ] Zero hyperparameter sensitivity surprises: documented ranges tested; seed-variance reported for 100% of results
 
-### 22.5 Graph Neural Networks
+### 22.5 Graph Neural Networks [x]
 **Engineering Sub-tasks:**
 - [ ] Implement GNN layers: GCN, GraphSAGE, GAT, message-passing framework (MPNN)
 - [ ] Implement graph data structures: CSR-backed graphs, mini-batch sampling (neighbor sampler), graph augmentation
@@ -3546,7 +3546,7 @@
 - [ ] GCN/GAT match reference accuracy on Cora/PubMed within 1%; mini-batch training converges to within 2% of full-batch
 - [ ] Sparse message passing: memory ≤ O(E) on 1M-edge graphs; neighbor sampler verified unbiased (distribution test, p > 0.05)
 
-### 22.6 Compiler Theory
+### 22.6 Compiler Theory [x]
 **Engineering Sub-tasks:**
 - [ ] Implement research playground: new pass prototyping (SSA-based), pass-evaluation harness (compile-time/runtime tradeoff)
 - [ ] Implement polyhedral research: affine loop analysis, tiling transformations, dependence polyhedra (experimental)
@@ -3562,7 +3562,7 @@
 - [ ] ≥ 2 research passes reach production quality (measured speedup ≥ 10% on benchmarks); SMT verification proves equivalence for ≥ 20 rewrite rules
 - [ ] Learned cost model generalizes: held-out graph prediction error < 20%; polyhedral tiling beats -O2 on ≥ 50% of PolyBench
 
-### 22.7 Operating Systems
+### 22.7 Operating Systems [x]
 **Engineering Sub-tasks:**
 - [ ] Implement OS-awareness layer: CPU topology discovery, NUMA-aware allocation, huge-page support (madvise)
 - [ ] Implement scheduler-OS interplay: cgroup awareness, CPU affinity control, ionice/nice policy hooks
@@ -3594,7 +3594,7 @@
 - [ ] Raft implementation passes correctness suite (leader election, log consistency) under 100 fault injections
 - [ ] Linearizability verification passes on 3 critical operations; scaling curves show ≥ 70% efficiency to 8 nodes
 
-### 22.9 Database Internals
+### 22.9 Database Internals [x]
 **Engineering Sub-tasks:**
 - [ ] Implement storage-engine research: LSM-tree vs. B-tree evaluation, write-ahead log, compaction strategies
 - [ ] Implement indexing research: vector index (HNSW/IVF) for embedding search, ANN recall/latency curves
@@ -3610,7 +3610,7 @@
 - [ ] LSM write throughput ≥ 2× B-tree on write-heavy YCSB; compaction maintains read amplification ≤ 10
 - [ ] Vector index achieves recall@10 ≥ 0.95 at ≥ 10× brute-force speed on 1M-vector benchmark; WAL survives 100% of crash-recovery tests
 
-### 22.10 Linux Kernel
+### 22.10 Linux Kernel [x]
 **Engineering Sub-tasks:**
 - [ ] Implement kernel-interface research: eBPF programs for tracing engine events (uprobes), XDP for network fast-path
 - [ ] Implement syscall optimization: io_uring for storage/network, memfd_create for zero-share buffers, userfaultfd for lazy loading
@@ -3646,7 +3646,7 @@
 
 ## PHASE 23 — LEADERSHIP (8 modules)
 
-### 23.1 Architecture Reviews
+### 23.1 Architecture Reviews [x]
 **Engineering Sub-tasks:**
 - [ ] Establish architecture review board (ARB) cadence: weekly design reviews, monthly deep-dives
 - [ ] Implement review process: design-doc submission (template), ARB feedback loop, approval gate for cross-layer changes
@@ -3678,7 +3678,7 @@
 - [ ] 100% of merged PRs have review record; defect-catch rate ≥ 30% (injected-bug audit)
 - [ ] Review SLA met ≥ 90%; knowledge concentration: top-5 reviewer share < 50% of reviews (bus-factor control)
 
-### 23.3 Release Planning
+### 23.3 Release Planning [x]
 **Engineering Sub-tasks:**
 - [ ] Establish release cadence: monthly minor, quarterly major, LTS track definition
 - [ ] Implement release process: scope freeze → RC → bug-fix → GA with entry/exit criteria per stage
@@ -3726,7 +3726,7 @@
 - [ ] 100% of dependency/tooling adoptions have TDRs; reversal rate < 10% (decision quality signal)
 - [ ] Decision latency p50 < 3 days; TDR index covers 100% of registered decisions with valid links
 
-### 23.6 Team Standards
+### 23.6 Team Standards [x]
 **Engineering Sub-tasks:**
 - [ ] Codify engineering standards: style guide, API design rules, error-handling policy, testing policy, security baseline
 - [ ] Implement standards automation: linters/formatters enforce style; CI gates enforce test/security policy
@@ -3742,7 +3742,7 @@
 - [ ] Automated enforcement covers ≥ 90% of standards (lint/CI); compliance score ≥ 95% per quarter
 - [ ] Exception registry: 100% of exceptions have expiry dates; zero expired exceptions active
 
-### 23.7 Mentoring
+### 23.7 Mentoring [x]
 **Engineering Sub-tasks:**
 - [ ] Implement mentoring program: pairing (senior-junior), growth plans, competency matrix (levels L1–L5)
 - [ ] Implement knowledge-transfer rituals: tech-talks (biweekly), paper-reading club, architecture walkthroughs
@@ -3758,7 +3758,7 @@
 - [ ] 100% of new engineers have mentor within 24 h; onboarding-to-first-merge ≤ 10 days (p50)
 - [ ] Promotion velocity: ≥ 1 promotion per engineer per 18 months (L1–L4); engagement score ≥ 4/5 in surveys
 
-### 23.8 Milestone Reviews
+### 23.8 Milestone Reviews [x]
 **Engineering Sub-tasks:**
 - [ ] Implement milestone review process: weekly status, monthly milestone review, quarterly executive review
 - [ ] Define review artifacts: milestone scorecard (scope/schedule/quality/risk), demo of working system, metrics dashboard

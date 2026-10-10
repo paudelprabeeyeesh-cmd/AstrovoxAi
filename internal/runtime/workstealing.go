@@ -23,6 +23,11 @@ type WorkDeque struct {
 	localPush  uint64
 	stealCount uint64
 	stealFail  uint64
+	// pushLock serialises pushes. The Chase-Lev design assumes only the
+	// owner pushes, but the public Submit API pushes from arbitrary
+	// goroutines, so pushes take this spin lock to keep the ring
+	// consistent with concurrent pops.
+	pushLock   atomic.Bool
 }
 
 // GlobalQueue is a lock-free MPMC queue for overflow and
@@ -59,6 +64,18 @@ type SchedulerStats struct {
 
 // NewWorkStealingScheduler creates a new work-stealing scheduler.
 func NewWorkStealingScheduler(workers int) *WorkStealingScheduler {
+	ws := newWorkStealingScheduler(workers, true)
+	// Start workers
+	for i := 0; i < ws.workers; i++ {
+		ws.workersWg.Add(1)
+		go ws.worker(i)
+	}
+	return ws
+}
+
+// newWorkStealingScheduler builds the scheduler without starting workers,
+// so subtypes (e.g. PriorityScheduler) can run their own worker loop.
+func newWorkStealingScheduler(workers int, startWorkers bool) *WorkStealingScheduler {
 	if workers <= 0 {
 		workers = runtime.NumCPU()
 	}
@@ -68,7 +85,7 @@ func NewWorkStealingScheduler(workers int) *WorkStealingScheduler {
 	ws := &WorkStealingScheduler{
 		workers:   workers,
 		deques:    make([]*WorkDeque, workers),
-		globalQ:   NewGlobalQueue(workers * 4),
+		globalQ:   NewGlobalQueue(workers * 16),
 		ctx:       ctx,
 		cancel:    cancel,
 		workerIDs: make([]int, workers),
@@ -82,12 +99,7 @@ func NewWorkStealingScheduler(workers int) *WorkStealingScheduler {
 	}
 
 	ws.running.Store(true)
-
-	// Start workers
-	for i := 0; i < workers; i++ {
-		ws.workersWg.Add(1)
-		go ws.worker(i)
-	}
+	_ = startWorkers
 
 	return ws
 }
@@ -113,8 +125,16 @@ func NewGlobalQueue(size int) *GlobalQueue {
 }
 
 // PushBottom pushes a task to the bottom of the deque (LIFO).
-// Only the owner thread calls this.
+// Safe to call from any goroutine.
 func (d *WorkDeque) PushBottom(task Task) bool {
+	if task == nil {
+		return false
+	}
+	// Acquire the push spin lock.
+	for !d.pushLock.CompareAndSwap(false, true) {
+	}
+	defer d.pushLock.Store(false)
+
 	b := atomic.LoadUint64(&d.bottom)
 	t := atomic.LoadUint64(&d.top)
 	size := b - t
@@ -186,6 +206,20 @@ func (g *GlobalQueue) Push(task Task) bool {
 	}
 }
 
+// PushBlocking pushes a task, waiting for room so tasks are never
+// silently dropped. It gives up when stopped returns true.
+func (g *GlobalQueue) PushBlocking(task Task, stopped func() bool) bool {
+	for {
+		if g.Push(task) {
+			return true
+		}
+		if stopped != nil && stopped() {
+			return false
+		}
+		runtime.Gosched()
+	}
+}
+
 // Pop removes a task from the global queue.
 func (g *GlobalQueue) Pop() (Task, bool) {
 	for {
@@ -221,7 +255,10 @@ func (ws *WorkStealingScheduler) worker(id int) {
 
 		stolen := false
 		for i := 0; i < ws.workers; i++ {
-			victim := int(rng.Next()) % ws.workers
+			// Derive the victim in unsigned space: converting a uint64
+			// above MaxInt64 to int produces a negative value, and Go's
+			// modulo preserves the dividend's sign.
+			victim := int(rng.Next() % uint64(ws.workers))
 			if victim == id {
 				continue
 			}
@@ -238,8 +275,15 @@ func (ws *WorkStealingScheduler) worker(id int) {
 	}
 }
 
-	// Submit submits a task to the scheduler.
-	func (ws *WorkStealingScheduler) Submit(task Task) Future {
+// Submit submits a task from any goroutine.
+//
+// External submissions go through the global queue: the work deques keep
+// the Chase-Lev owner-only invariant, and mutating them from a non-owner
+// races with the owner's pops.
+func (ws *WorkStealingScheduler) Submit(task Task) Future {
+	if task == nil {
+		return nil
+	}
 	f := &future{done: make(chan error, 1)}
 	wrapped := func() error {
 		err := task()
@@ -249,32 +293,19 @@ func (ws *WorkStealingScheduler) worker(id int) {
 		}
 		return err
 	}
-
-	idx := int(fastRand()) % ws.workers
-	if !ws.deques[idx].PushBottom(wrapped) {
-		ws.globalQ.Push(wrapped)
-	}
+	// Wait for room so a burst of submissions cannot drop tasks.
+	ws.globalQ.PushBlocking(wrapped, func() bool { return !ws.running.Load() })
 	return f
 }
 
-// SubmitToWorker submits a task to a specific worker's deque.
+// SubmitToWorker submits a task from any goroutine.
+//
+// Like Submit, submissions go through the global queue: workers only
+// mutate their own deque from the owner goroutine, preserving the
+// Chase-Lev invariants.
 func (ws *WorkStealingScheduler) SubmitToWorker(workerID int, task Task) Future {
-	f := &future{done: make(chan error, 1)}
-	wrapped := func() error {
-		err := task()
-		select {
-		case f.done <- err:
-		default:
-		}
-		return err
-	}
-
-	if workerID >= 0 && workerID < ws.workers {
-		ws.deques[workerID].PushBottom(wrapped)
-	} else {
-		ws.globalQ.Push(wrapped)
-	}
-	return f
+	_ = workerID // kept for API compatibility and routing hints
+	return ws.Submit(task)
 }
 
 // Wait waits for all futures to complete.
@@ -346,14 +377,24 @@ type PriorityScheduler struct {
 }
 
 func NewPriorityScheduler(workers int) *PriorityScheduler {
-	ws := NewWorkStealingScheduler(workers)
-	return &PriorityScheduler{
+	// Build without starting the base workers: the priority loop is a
+	// different worker function, so it must own the worker set.
+	ws := newWorkStealingScheduler(workers, false)
+	ps := &PriorityScheduler{
 		WorkStealingScheduler: ws,
-		highPriority:          NewGlobalQueue(workers * 2),
+		highPriority:          NewGlobalQueue(workers * 16),
 	}
+	for i := 0; i < ps.workers; i++ {
+		ps.workersWg.Add(1)
+		go ps.worker(i)
+	}
+	return ps
 }
 
 func (ps *PriorityScheduler) SubmitHighPriority(task Task) Future {
+	if task == nil {
+		return nil
+	}
 	f := &future{done: make(chan error, 1)}
 	wrapped := func() error {
 		err := task()
@@ -363,7 +404,7 @@ func (ps *PriorityScheduler) SubmitHighPriority(task Task) Future {
 		}
 		return err
 	}
-	ps.highPriority.Push(wrapped)
+	ps.highPriority.PushBlocking(wrapped, func() bool { return !ps.running.Load() })
 	return f
 }
 
@@ -390,7 +431,8 @@ func (ps *PriorityScheduler) worker(id int) {
 
 		stolen := false
 		for i := 0; i < ps.workers; i++ {
-			victim := int(rng.Next()) % ps.workers
+			// Derive the victim in unsigned space (see worker above).
+			victim := int(rng.Next() % uint64(ps.workers))
 			if victim == id {
 				continue
 			}

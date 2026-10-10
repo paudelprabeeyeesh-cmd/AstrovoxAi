@@ -67,9 +67,12 @@ func (c *CPUBackend) Relu(x []float64) []float64 {
 }
 
 // Softmax applies the softmax function along a dimension.
+// The backend operates on flat slices, so dim=0 and dim=1 are equivalent
+// and both are accepted; only the logical "reduce over the vector" case
+// is supported.
 func (c *CPUBackend) Softmax(x []float64, dim int) ([]float64, error) {
-	if dim != 1 {
-		return nil, errors.New("only dim=1 supported in CPU backend")
+	if dim != 0 && dim != 1 {
+		return nil, errors.New("only dim=0 or dim=1 supported in CPU backend")
 	}
 	out := make([]float64, len(x))
 	var maxVal float64 = -math.MaxFloat64
