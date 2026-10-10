@@ -53,7 +53,30 @@ A complete mini-language compiler pipeline written from scratch.
 
 ## 6. Test Coverage
 
-**1,131 test functions** across 30 packages: unit, boundary, property-based, fuzz, integration, and benchmark suites for every subsystem above.
+**1,292 test functions** across 40 packages: unit, boundary, property-based, fuzz, integration, and benchmark suites for every subsystem above.
+
+## 7. Engine Completeness Round
+
+Additional subsystems delivered after the first pass:
+
+| Component | Highlights |
+|---|---|
+| **Tokenizer** (`internal/tokenizer`) | BPE training over a corpus, merge ranks, byte fallback, byte-level and whitespace tokenizers, special tokens |
+| **Sampling** (`internal/sampling`) | Greedy / temperature / top-k / top-p, deterministic RNG, beam search with length normalization, streaming with stop tokens |
+| **LoRA** (`internal/lora`) | Rank/alpha adapters, zero-initialised delta, merge into base weights, target-module filtering, freeze efficiency metrics |
+| **ONNX** (`internal/onnx`) | Tensor/graph/model protos, binary serialise/deserialise round-trip, bulk import/export |
+| **gRPC** (`internal/rpc`) | Service registry, unary + server-streaming invoke, length-prefixed frames, parameter server (Push/Pull) |
+| **Checkpointing** (`internal/checkpoint`) | Snapshot store with retention, async save, sync with apply callback, version diff, FNV-1a hashes and verification |
+| **Auth** (`internal/auth`) | HMAC-SHA256 JWT issue/verify with `exp`/`nbf`, OAuth 2.0 client-credentials grant, RBAC with resource/action wildcards |
+| **Plugin compat** (`internal/pluginx`) | Semver comparison, host compatibility ranges, manifest validation, marketplace publish/search, dependency resolution |
+| **Transports** (`internal/transports`) | WebSocket framing + RFC 6455 handshake (verified against the RFC's test vector), UDP endpoints, stream multiplexer, QUIC long-header codec |
+| **Debugger** (`internal/debugger`) | Conditional breakpoints, sessions, step API with variable capture, bounded trace with slowest-N |
+| **Memory visualizer** (`internal/memviz`) | Allocation tracker, fragmentation analysis, ASCII treemap and flame renderers |
+| **DevOps** | Multi-stage distroless `Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml` (build/vet/race/test-count gate/docker/deploy), CD pipeline doc, observability doc |
+
+Three bugs were found and fixed by the new tests: the sampler mutated the caller's
+logits, beam search dropped beams on empty step output, and `Step` did not expose
+captured variables.
 
 ---
 
@@ -61,4 +84,8 @@ A complete mini-language compiler pipeline written from scratch.
 
 The following are designated *documentation/platform* artifacts rather than engine subsystems and are covered by the existing `docs/` corpus rather than code:
 - Browser engine, Vulkan game engine, OS kernel, distributed SQL database — separate product lines outside this engine's remit.
-- Web IDE, desktop/mobile apps, cloud CI/CD deployment — platform/Ops deliverables.
+- Web IDE, desktop/mobile apps — frontend deliverables.
+
+Remaining checklist modules that need **platform/GPU hardware** rather than engine
+code: ROCm and OpenCL backends (no hardware available), WebGPU, HTTP/3, diffusion
+models, RL, GNNs, and organisational leadership processes.
