@@ -1,327 +1,63 @@
-version: "3.8"
-
 services:
-<<<<<<< HEAD
-=======
-  # ==========================================================================
-  # Redis — Caching, session store, rate limiting backend
-  # ==========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: astravox-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+  astrovox:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        TARGETARCH: amd64
+    image: astrovox/astrovox:1.0.0
+    container_name: astrovox-engine
     restart: unless-stopped
-    networks:
-      - astravox-network
+    ports:
+      - "8080:8080"   # HTTP inference API
+      - "9090:9090"   # metrics / dashboard
+    environment:
+      ASTROVOX_LOG_LEVEL: info
+      ASTROVOX_WORKERS: "4"
+      ASTROVOX_MAX_BATCH: "32"
+      ASTROVOX_QUANT: none
+      ASTROVOX_MODEL_DIR: /var/lib/astrovox/models
+    volumes:
+      - astrovox-models:/var/lib/astrovox/models
+      - astrovox-checkpoints:/var/lib/astrovox/checkpoints
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "/usr/local/bin/astrovox", "doctor"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  # ==========================================================================
-  # FastAPI Backend
-  # ==========================================================================
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-      target: production
-    container_name: astrovox-backend
-    restart: always
-    environment:
-      - APP_ENV=production
-      - LOG_LEVEL=info
-      - PYTHONUNBUFFERED=1
-    env_file:
-      - .env
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
+      start_period: 10s
     deploy:
       resources:
         limits:
-          cpus: "2"
-          memory: 2G
+          cpus: "4.0"
+          memory: 8G
         reservations:
-          cpus: "1"
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+          cpus: "1.0"
+          memory: 1G
     logging:
       driver: json-file
       options:
         max-size: "10m"
         max-file: "3"
-    stop_grace_period: 60s
 
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      target: production
-    container_name: astrovox-frontend
-    restart: always
+  # Optional: monitoring stack for the observability package.
+  monitor:
+    image: astrovox/astrovox:1.0.0
+    container_name: astrovox-monitor
+    command: ["monitor", "--port", "9090"]
+    restart: unless-stopped
     ports:
-      - "80:80"
-      - "443:443"
+      - "9091:9090"
     depends_on:
-      backend:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    stop_grace_period: 30s
-
-  redis:
-    image: redis:7-alpine@sha256:2c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    container_name: astrovox-redis
-    restart: always
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-  postgres:
-    image: postgres:16-alpine@sha256:3c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    container_name: astrovox-postgres
-    restart: always
-    environment:
-      POSTGRES_DB: astrovox
-      POSTGRES_USER: astrovox
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-astrovox_pass}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U astrovox"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  prometheus:
-    image: prom/prometheus:v2.51.0@sha256:4c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    container_name: astrovox-prometheus
-    restart: always
-    volumes:
-<<<<<<< HEAD
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-=======
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./monitoring/recording_rules.yml:/etc/prometheus/recording_rules.yml:ro
-      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus-data:/prometheus
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention.time=30d"
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  grafana:
-    image: grafana/grafana:10.4.0@sha256:5c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    container_name: astrovox-grafana
-    restart: always
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_ROOT_URL=http://localhost:3000
-    volumes:
-<<<<<<< HEAD
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-=======
-      - grafana-data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./monitoring/grafana-dashboard.json:/etc/grafana/provisioning/dashboards/astrovox.json:ro
-    restart: unless-stopped
-    networks:
-      - astravox-network
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-<<<<<<< HEAD
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.102.0
-    container_name: astrovox-otel-collector
-    restart: always
-    command: ["--config=/etc/otel-collector-config.yaml"]
-    volumes:
-      - ./monitoring/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - "4317:4317"
-      - "4318:4318"
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 256M
-=======
-  # ==========================================================================
-  # Loki — Log aggregation
-  # ==========================================================================
-  loki:
-    image: grafana/loki:2.9.3
-    container_name: astravox-loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - loki-data:/loki
-      - ./monitoring/loki-config.yaml:/etc/loki/local-config.yaml:ro
-    command: -config.file=/etc/loki/local-config.yaml
-    restart: unless-stopped
-    networks:
-      - astravox-network
-    profiles:
-      - monitoring
-
-  # ==========================================================================
-  # Promtail — Log collection
-  # ==========================================================================
-  promtail:
-    image: grafana/promtail:2.9.3
-    container_name: astravox-promtail
-    volumes:
-      - ./logs:/var/log/astrovox
-      - ./02-Backend/app/logs:/var/log/astrovox/backend:ro
-      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
-    command: -config.file=/etc/promtail/config.yml
-    restart: unless-stopped
-    networks:
-      - astravox-network
-    depends_on:
-      - loki
-    profiles:
-      - monitoring
-
-  # ==========================================================================
-  # Jaeger — Distributed tracing
-  # ==========================================================================
-  jaeger:
-    image: jaegertracing/all-in-one:1.50
-    container_name: astravox-jaeger
-    ports:
-      - "16686:16686"
-      - "14268:14268"
-      - "14250:14250"
-      - "4317:4317"
-      - "4318:4318"
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-      - METRICS_OTLP_ENABLED=true
-      - SPAN_STORAGE_TYPE=memory
-    restart: unless-stopped
-    networks:
-      - astravox-network
-    profiles:
-      - monitoring
-
-  # ==========================================================================
-  # Alertmanager — Alert routing and notifications
-  # ==========================================================================
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: astravox-alertmanager
-    ports:
-      - "9093:9093"
-    environment:
-      - PAGERDUTY_ROUTING_KEY=${PAGERDUTY_ROUTING_KEY:-}
-      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
-      - PAGERDUTY_API_KEY=${PAGERDUTY_API_KEY:-}
-    volumes:
-      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - ./monitoring/alertmanager-entrypoint.sh:/etc/alertmanager/entrypoint.sh:ro
-      - alertmanager-data:/alertmanager
-    entrypoint:
-      - /bin/sh
-      - -c
-      - chmod +x /etc/alertmanager/entrypoint.sh && /etc/alertmanager/entrypoint.sh
-    restart: unless-stopped
-    networks:
-      - astravox-network
-    profiles:
-      - monitoring
-
-# ==============================================================================
-# Networks
-# ==============================================================================
-networks:
-  astravox-network:
-    driver: bridge
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
+      - astrovox
 
 volumes:
-<<<<<<< HEAD
-  redis_data:
-  postgres_data:
-  prometheus_data:
-  grafana_data:
+  astrovox-models:
+    driver: local
+  astrovox-checkpoints:
+    driver: local
 
 networks:
   default:
-    name: astrovox-prod-network
-=======
-  redis-data:
-    driver: local
-  prometheus-data:
-    driver: local
-  grafana-data:
-    driver: local
-  loki-data:
-    driver: local
-  alertmanager-data:
-    driver: local
-  storage-data:
-    driver: local
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
+    name: astrovox-net

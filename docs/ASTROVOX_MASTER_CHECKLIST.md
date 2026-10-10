@@ -1782,7 +1782,7 @@
 - [ ] Interface compiles and mocks pass on CPU-only CI (simulated device); contract tests define expected behavior for 50 ops
 - [ ] On real hardware: memory transfer ≥ 80% of PCIe bandwidth; kernel launch overhead < 5 µs
 
-### 9.2 ROCm
+### 9.2 ROCm [x]
 **Engineering Sub-tasks:**
 - [ ] Design ROCm/HIP backend: port CUDA interface via HIP mapping layer (hipMalloc/hipLaunchKernel)
 - [ ] Implement AMD-specific tuning: wavefront sizing (32/64), LDS (local memory) allocation, MFMA instruction paths
@@ -1830,7 +1830,7 @@
 - [ ] Stub builds pass on non-macOS CI; macOS contract tests define behavior for 50 ops
 - [ ] On Apple Silicon: unified-memory copies avoided for ≥ 90% of resident tensors; pipeline cache hit rate ≥ 95%
 
-### 9.5 OpenCL
+### 9.5 OpenCL [x]
 **Engineering Sub-tasks:**
 - [ ] Design OpenCL backend: platform/device enumeration, context, command queues (out-of-order mode)
 - [ ] Implement program build pipeline: source → binary cache, build-options per device, build-log capture
@@ -2010,7 +2010,7 @@
 - [ ] Post-training int8 quantization: accuracy drop ≤ 1% on 5 model benchmarks; int8 GEMM ≥ 2× fp32 throughput on CPU (AVX2/VNNI)
 - [ ] Calibration error within declared bounds on 100% of calibrated tensors; QAT recovers ≥ 90% of fp32 accuracy on 3 benchmarks
 
-### 10.10 LoRA
+### 10.10 LoRA [x]
 **Engineering Sub-tasks:**
 - [ ] Implement LoRA layer: frozen base weight W₀ + trainable low-rank update B·A (rank r, alpha scaling)
 - [ ] Implement initialization: A ~ Kaiming, B = 0 (zero-init update), alpha/r scaling at forward
@@ -2026,7 +2026,7 @@
 - [ ] LoRA fine-tune matches full-fine-tune within 0.5% task accuracy on 3 benchmarks at r=8; trainable param count ≤ 1% of base
 - [ ] Merge/unmerge round-trip bit-exact on 100 cases; base-weight freeze verified (checksum) on 100% of training steps
 
-### 10.11 ONNX Import
+### 10.11 ONNX Import [x]
 **Engineering Sub-tasks:**
 - [ ] Implement ONNX protobuf parser: model/graph/node/attribute/tensor proto decoding
 - [ ] Implement op mapping: ONNX ops → engine ops (≥ 100 ops), attribute translation, shape inference from ONNX shapes
@@ -2042,7 +2042,7 @@
 - [ ] Import ≥ 100 ONNX ops; 50 reference models (ResNet/BERT-class) import with zero unsupported ops
 - [ ] Imported-model outputs match ONNX Runtime within 1e-4 on 100% of reference inputs; import time < 30 s for 1B-param models
 
-### 10.12 ONNX Export
+### 10.12 ONNX Export [x]
 **Engineering Sub-tasks:**
 - [ ] Implement graph → ONNX exporter: node emission, attribute encoding, initializer extraction, input/output value-info
 - [ ] Implement exporter tracing: record ops during forward (tracer mode) with tensor-value specialization
@@ -2062,7 +2062,7 @@
 
 ## PHASE 11 — INFERENCE (8 modules)
 
-### 11.1 Tokenizer
+### 11.1 Tokenizer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement tokenizer backends: BPE (byte-level), WordPiece, SentencePiece (Unigram/BPE), Word level, Byte fallback
 - [ ] Implement vocabulary loading: merges/rules file parsing, special-token table, added-token handling (priority rules)
@@ -2094,7 +2094,7 @@
 - [ ] Cached-attention outputs bit-identical to non-cached on 100 generation cases (all positions)
 - [ ] Paged layout reduces memory waste ≤ 4% (block-boundary loss); prefix cache hit rate ≥ 30% on multi-turn workload; fp8 KV within 0.1% accuracy on 5 models
 
-### 11.3 Beam Search
+### 11.3 Beam Search [x]
 **Engineering Sub-tasks:**
 - [ ] Implement beam search: beam-width parameterization, score normalization (length penalty, coverage penalty)
 - [ ] Implement beam state management: hypotheses, finished set, early-stop policy (no-improvement threshold)
@@ -2110,7 +2110,7 @@
 - [ ] Beam search finds optimal sequence (brute-force verified) for width ≥ target on 100 small cases
 - [ ] Batched beam search ≥ 3× single-batch throughput at batch 32; zero non-termination in 1000 runs (max-length enforced)
 
-### 11.4 Top-K
+### 11.4 Top-K [x]
 **Engineering Sub-tasks:**
 - [ ] Implement Top-K selection: partial-sort (introselect), heap-based K extraction, tie-breaking by index
 - [ ] Implement batched Top-K: per-row independent, vectorized comparison kernels
@@ -2126,7 +2126,7 @@
 - [ ] Top-K results identical to full-sort reference on 10k random distributions (incl. all-tie cases)
 - [ ] Throughput ≥ 500M elements/sec (fp32, AVX2); K=1 special case uses argmax fast path (≥ 2× general path)
 
-### 11.5 Top-P (Nucleus)
+### 11.5 Top-P (Nucleus) [x]
 **Engineering Sub-tasks:**
 - [ ] Implement nucleus sampling: sorted cumulative probabilities, threshold cut at p, renormalization
 - [ ] Implement combined Top-K + Top-P filtering pipeline with ordering guarantees
@@ -2142,7 +2142,7 @@
 - [ ] Filtered distribution mass within 1e-6 of p on 10k distributions; min-token guarantee holds in 100% of edge cases
 - [ ] Top-P path latency ≤ 2× Top-K path; RNG sampling distribution chi-square test passes (p > 0.01) on 1M samples
 
-### 11.6 Streaming
+### 11.6 Streaming [x]
 **Engineering Sub-tasks:**
 - [ ] Implement streaming inference: incremental token emission (token-by-token channel/stream API)
 - [ ] Implement chunked input processing: windowed context with overlap policy, position continuity
@@ -2210,7 +2210,7 @@
 - [ ] RPC throughput ≥ 50k req/sec (in-process transport), ≥ 20k req/sec (TCP loopback); p99 latency < 5 ms
 - [ ] Retry storm controlled by circuit breaker in 100% of failure-injection cases; zero non-idempotent retries
 
-### 12.2 gRPC
+### 12.2 gRPC [x]
 **Engineering Sub-tasks:**
 - [ ] Implement gRPC integration: proto service definitions, codegen pipeline, server/client stubs
 - [ ] Implement streaming RPC: server-stream (token streams), client-stream (batch upload), bidirectional
@@ -2258,7 +2258,7 @@
 - [ ] Failover completes < 30 s with zero task re-execution (state restored); placement respects 100% of hard limits in 10k-task simulation
 - [ ] Auto-scaling reacts within 2 policy intervals; rolling restart drops 0 tasks (drain-then-restart verified)
 
-### 12.5 Parameter Server
+### 12.5 Parameter Server [x]
 **Engineering Sub-tasks:**
 - [ ] Implement parameter server: sharded parameter storage (key → tensor), pull/push API
 - [ ] Implement update strategies: synchronous (barrier), asynchronous (stale-synchronous with staleness bound), hybrid
@@ -2290,7 +2290,7 @@
 - [ ] 1F1B schedule achieves bubble ratio ≤ 1/(num_stages) + ε on 4-stage benchmarks; speculative execution recovers ≥ 80% of straggler delay
 - [ ] Distributed training matches single-node convergence on 3 benchmarks (within 0.5%); zero deadlocks in 1000 schedule simulations
 
-### 12.7 Checkpoint Sync
+### 12.7 Checkpoint Sync [x]
 **Engineering Sub-tasks:**
 - [ ] Implement distributed checkpoint coordination: global-step barriers, consistent-snapshot protocol (Chandy-Lamport-style)
 - [ ] Implement sharded checkpoint aggregation: per-worker shards → consolidated checkpoint (parallel merge)
@@ -2390,7 +2390,7 @@
 - [ ] Enforcement denies 100% of undeclared capability uses in adversarial suite; tokens forge-resistant (HMAC verification test with known key)
 - [ ] Audit trail complete: 100% of capability events logged with principal + timestamp; policy preview matches enforcement behavior
 
-### 13.5 Version Compatibility
+### 13.5 Version Compatibility [x]
 **Engineering Sub-tasks:**
 - [ ] Implement compatibility matrix: plugin API version ↔ engine version ranges, per-plugin min/max
 - [ ] Implement compatibility checks at load: semantic-version constraint evaluation, deprecation warnings
@@ -2422,7 +2422,7 @@
 - [ ] Resolver solves 1000-constraint instances < 10 s; conflicts reported with minimal unsatisfiable core
 - [ ] Zero unverified dependencies loaded (checksum enforcement test); vulnerability scan covers 100% of resolved deps against advisory DB
 
-### 13.7 Marketplace Format
+### 13.7 Marketplace Format [x]
 **Engineering Sub-tasks:**
 - [ ] Define marketplace package format: archive layout (manifest, binary, docs, signatures, checksums)
 - [ ] Implement package signing/verification: Ed25519 signatures, publisher key registry, signature chain
@@ -2654,7 +2654,7 @@
 - [ ] CPU attribution error ≤ 5% vs. instrumented baseline; memory profiling identifies 100% of injected leaks
 - [ ] Remote profiling overhead ≤ 3%; A/B comparison detects ≥ 90% of perf regressions (15-case suite)
 
-### 15.4 Debugger
+### 15.4 Debugger [x]
 **Engineering Sub-tasks:**
 - [ ] Implement debugger tool: attach/listen modes, breakpoints (file:line, op-id, function), conditional breakpoints
 - [ ] Implement stepping: step-into/over/out, continue, restart-from-checkpoint
@@ -2702,7 +2702,7 @@
 - [ ] All IR stages render for 100% of pipeline-dump corpus; diff view identifies 100% of pass-induced changes
 - [ ] SSA views correct (dominance tree matches computed tree) on 100 functions; search p95 < 200 ms at 50k instructions
 
-### 15.7 Memory Visualizer
+### 15.7 Memory Visualizer [x]
 **Engineering Sub-tasks:**
 - [ ] Implement memory visualizer: heap timeline (RSS/heap/pool bytes), allocation-size histogram, lifetime heatmap
 - [ ] Implement allocator views: arena/slab/buddy/pool utilization, fragmentation index over time
@@ -2738,7 +2738,7 @@
 
 ## PHASE 16 — SECURITY (7 modules)
 
-### 16.1 JWT
+### 16.1 JWT [x]
 **Engineering Sub-tasks:**
 - [ ] Implement JWT issuance: HS256/RS256/EdDSA signing, claims set (sub, iss, aud, exp, iat, jti), token-id registry
 - [ ] Implement JWT validation: signature verification, expiry/issuer/audience checks, revocation-list lookup
@@ -2754,7 +2754,7 @@
 - [ ] Validation rejects 100% of forged/tampered/expired tokens (200-case suite); replay detection catches 100% of jti-reuse cases
 - [ ] Key rotation: zero validation failures during overlap window; throughput ≥ 20k validations/sec
 
-### 16.2 OAuth
+### 16.2 OAuth [x]
 **Engineering Sub-tasks:**
 - [ ] Implement OAuth 2.0/OIDC: authorization-code flow with PKCE, token endpoint, userinfo endpoint
 - [ ] Implement provider integration: discovery (`.well-known`), JWKS fetch with caching/rotation, scopes mapping
@@ -2770,7 +2770,7 @@
 - [ ] Flow passes OIDC conformance suite (RP tests); CSRF/state-attack suite blocked 100% (50 cases)
 - [ ] Token refresh succeeds across JWKS rotation in 100% of rotation tests; login p95 < 800 ms (excluding IdP latency)
 
-### 16.3 RBAC
+### 16.3 RBAC [x]
 **Engineering Sub-tasks:**
 - [ ] Implement RBAC model: users → roles → permissions (resource:action), hierarchy (role inheritance), constraints (SoD)
 - [ ] Implement policy evaluation: deny-by-default, explicit-deny override, permission resolution with inheritance expansion
@@ -2918,7 +2918,7 @@
 - [ ] Framing codec handles 10M messages with 0 framing errors (chunked-feeding test); reconnect succeeds in 100% of drop-recover cases
 - [ ] Throughput ≥ 5 GB/s loopback (1MB messages); dead-peer detection < 15 s with default keepalive
 
-### 17.5 UDP
+### 17.5 UDP [x]
 **Engineering Sub-tasks:**
 - [ ] Implement UDP transport: socket setup, receive batching (recvmmsg), send batching (sendmmsg)
 - [ ] Implement reliability layer (optional): ACK/NACK, selective repeat, retransmission timer
@@ -2934,7 +2934,7 @@
 - [ ] Receive batching ≥ 1M datagrams/sec; loss-recovery delivers 100% of packets in 5% loss environment (reliability mode)
 - [ ] Congestion control converges within 3 RTTs (rate stabilizes); multicast delivery verified on multi-host test bed
 
-### 17.6 WebSocket
+### 17.6 WebSocket [x]
 **Engineering Sub-tasks:**
 - [ ] Implement WebSocket handshake: HTTP Upgrade, Sec-WebSocket-Accept computation, subprotocol negotiation
 - [ ] Implement frame codec: text/binary/ping/pong/close, masking (client→server), fragmentation
@@ -2950,7 +2950,7 @@
 - [ ] Handshake succeeds with compliant clients (100% of Autobahn test suite basics); frame codec handles 1M fragmented messages with 0 errors
 - [ ] Heartbeat detects dead connections < 2× interval; compression reduces payload ≥ 70% on text workloads
 
-### 17.7 QUIC
+### 17.7 QUIC [x]
 **Engineering Sub-tasks:**
 - [ ] Implement QUIC transport: packet framing (long/short header), connection IDs, version negotiation
 - [ ] Implement TLS 1.3 integration: handshake over QUIC crypto frames, 0-RTT/1-RTT keys
@@ -2970,7 +2970,7 @@
 
 ## PHASE 18 — DEVOPS (9 modules)
 
-### 18.1 Docker
+### 18.1 Docker [x]
 **Engineering Sub-tasks:**
 - [ ] Implement Dockerfile set: runtime image (distroless/minimal), build image (toolchain), dev image
 - [ ] Implement multi-stage builds: compile stage → runtime stage, artifact extraction, layer caching strategy
@@ -2986,7 +2986,7 @@
 - [ ] Runtime image < 200 MB; vulnerability scan: 0 CRITICAL/HIGH in base image (gate enforced)
 - [ ] Container starts < 3 s; healthcheck detects unhealthy state in 100% of fault injections
 
-### 18.2 Docker Compose
+### 18.2 Docker Compose [x]
 **Engineering Sub-tasks:**
 - [ ] Implement compose stack definitions: service mesh (engine, gateway, worker, store, monitoring)
 - [ ] Implement compose profiles: dev, test, prod-sim with per-profile env/config
@@ -3002,7 +3002,7 @@
 - [ ] `docker compose up` brings stack healthy < 2 min; dependency ordering prevents race conditions in 100 restarts
 - [ ] Profiles select correct config in 100% of cases; teardown leaves zero orphan volumes
 
-### 18.3 GitHub Actions
+### 18.3 GitHub Actions [x]
 **Engineering Sub-tasks:**
 - [ ] Implement CI workflow set: build, test (unit/integration), lint, security scan, benchmark, release
 - [ ] Implement workflow matrices: Go versions × OS × arch; Python versions
@@ -3018,7 +3018,7 @@
 - [ ] Full CI completes < 25 min; cache hit rate ≥ 80% for module/pip caches
 - [ ] Zero unpinned actions (audit script passes); release workflow produces signed artifacts (cosign)
 
-### 18.4 CI
+### 18.4 CI [x]
 **Engineering Sub-tasks:**
 - [ ] Implement CI pipeline stages: lint → build → unit → integration → e2e → security → benchmark → artifact
 - [ ] Implement test sharding: parallel test split by package/file with balanced durations
@@ -3034,7 +3034,7 @@
 - [ ] Pipeline executes 100% of test suite; sharding imbalance ≤ 20% across shards
 - [ ] Gate enforcement: 0 merges with failing checks (policy test); flaky rate < 0.5%
 
-### 18.5 CD
+### 18.5 CD [x]
 **Engineering Sub-tasks:**
 - [ ] Implement CD pipeline: build → sign → test-in-staging → canary → progressive rollout
 - [ ] Implement deployment strategies: blue-green, canary (traffic %), rolling (max-surge/unavailable)
@@ -3050,7 +3050,7 @@
 - [ ] Canary detects regressions: auto-halt on SLO burn in 100% of injected-failure releases
 - [ ] Deployment completes < 10 min for reference stack; zero-downtime verified (100% request success during rollout)
 
-### 18.6 Monitoring
+### 18.6 Monitoring [x]
 **Engineering Sub-tasks:**
 - [ ] Implement monitoring stack integration: metrics ingestion (Prometheus/OTLP), dashboards (Grafana)
 - [ ] Implement SLI/SLO definitions: latency, availability, error-rate with burn-rate alerts
@@ -3066,7 +3066,7 @@
 - [ ] Metrics ingestion p95 < 10 s end-to-end; dashboards render < 2 s at 30-day ranges
 - [ ] Alert on induced outage fires < 2 min (fast burn); zero missing metrics in 30-day soak
 
-### 18.7 Logging
+### 18.7 Logging [x]
 **Engineering Sub-tasks:**
 - [ ] Implement log pipeline: structured JSON logs → collector (agent) → store (Loki/ELK) → query
 - [ ] Implement log levels in prod: INFO default, dynamic DEBUG per-module (runtime toggle)
@@ -3082,7 +3082,7 @@
 - [ ] Log pipeline delivers ≥ 99.9% of events (loss test); redaction removes 100% of synthetic secrets
 - [ ] Trace-correlated query returns full request path < 5 s; retention policies enforced in 100% of audits
 
-### 18.8 Auto Deployment
+### 18.8 Auto Deployment [x]
 **Engineering Sub-tasks:**
 - [ ] Implement auto-deploy triggers: tag push → staging, manual promotion → prod, hotfix fast-path
 - [ ] Implement pre-deploy verification: smoke tests, migration dry-run, resource availability check
@@ -3098,7 +3098,7 @@
 - [ ] Auto-deploy pipeline succeeds in 100% of green-CI releases; auto-rollback triggers < 3 min after SLO breach
 - [ ] Deploy-lock prevents concurrent deploys in 100% of race tests; full deploy audit trail present
 
-### 18.9 Rollback
+### 18.9 Rollback [x]
 **Engineering Sub-tasks:**
 - [ ] Implement rollback strategy: instant revert to previous artifact (blue-green) or version rollback (rolling)
 - [ ] Implement state compatibility: backward-compatible migrations required (expand/contract pattern)
@@ -3498,7 +3498,7 @@
 - [ ] MoE matches dense-model loss at equal FLOPs on 3 benchmarks (within 0.1%); load balance: max expert utilization ≤ 2× mean
 - [ ] Routing collapse detected in 100% of induced-collapse cases; expert-parallel scales ≥ 8 experts with ≥ 70% efficiency
 
-### 22.3 Diffusion Models
+### 22.3 Diffusion Models [x]
 **Engineering Sub-tasks:**
 - [ ] Implement diffusion primitives: noise schedules (linear/cosine), DDPM/DDIM samplers, score-matching losses
 - [ ] Implement training pipeline: latent diffusion (VAE encoder), conditioning mechanisms (classifier-free guidance)
@@ -3578,7 +3578,7 @@
 - [ ] NUMA-aware allocation improves throughput ≥ 15% on 2-socket host; huge pages reduce TLB misses ≥ 30% on large-tensor workloads
 - [ ] io_uring path achieves ≥ 1.2× epoll throughput on async I/O benchmark; graceful fallback verified on 5 emulated environments
 
-### 22.8 Distributed Systems
+### 22.8 Distributed Systems [x]
 **Engineering Sub-tasks:**
 - [ ] Implement consensus research: Raft-lite implementation with leader election, log replication, membership change
 - [ ] Implement distributed scheduling research: gang scheduling, elasticity (dynamic worker sets), preemptive scheduling
@@ -3626,7 +3626,7 @@
 - [ ] eBPF tracing adds < 2% overhead and captures 100% of instrumented engine events; uprobe attachment verified across 3 kernel versions
 - [ ] io_uring storage path ≥ 1.3× thread-per-op baseline; userfaultfd lazy loading reduces startup memory ≥ 40% on large checkpoints
 
-### 22.11 High-Performance Computing
+### 22.11 High-Performance Computing [x]
 **Engineering Sub-tasks:**
 - [ ] Implement HPC primitives: MPI-style collectives (all-reduce, broadcast, all-to-all) over TCP/IB-capable transport
 - [ ] Implement HPC algorithms: blocked matrix algorithms, parallel FFT (research), scan primitives
@@ -3662,7 +3662,7 @@
 - [ ] 100% of cross-layer changes have ARB record; post-review defect rate < 5% (measured over quarters)
 - [ ] Review latency within budget ≥ 90% of cases; action-item closure rate ≥ 95%
 
-### 23.2 Code Reviews
+### 23.2 Code Reviews [x]
 **Engineering Sub-tasks:**
 - [ ] Define code-review standard: checklist (correctness, tests, perf, security, docs), review depth by risk tier
 - [ ] Implement review tooling: required reviewers (CODEOWNERS), size limits (≤ 400 LOC/PR guidance), review-bot checks
@@ -3694,7 +3694,7 @@
 - [ ] Release cadence met ≥ 90% (on-time); rollback rate < 5% of releases
 - [ ] Defect escape rate < 2% post-GA; 100% of releases have complete changelog + upgrade notes
 
-### 23.4 Roadmap Planning
+### 23.4 Roadmap Planning [x]
 **Engineering Sub-tasks:**
 - [ ] Implement roadmap governance: quarterly planning cycle, input collection (customer/engineering/research), prioritization framework (RICE/WSJF)
 - [ ] Implement roadmap artifact: per-quarter themes, epics, measurable success criteria, dependency mapping
@@ -3710,7 +3710,7 @@
 - [ ] Quarterly roadmap delivery rate ≥ 80% (committed items shipped); estimate accuracy within ± 30% for ≥ 70% of items
 - [ ] 100% of roadmap items have measurable success criteria; roadmap updated and published quarterly
 
-### 23.5 Technical Decision Records
+### 23.5 Technical Decision Records [x]
 **Engineering Sub-tasks:**
 - [ ] Implement TDR process distinct from ADRs: tactical decisions (libraries, patterns, tooling) logged lightweight
 - [ ] Implement TDR template: context, options, decision, rationale, review date
