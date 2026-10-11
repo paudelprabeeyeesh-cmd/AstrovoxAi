@@ -282,6 +282,64 @@ jobs:
             pip-licenses-output.txt
           retention-days: 30
 
+  compose-smoke:
+    name: Production Compose Smoke Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify the prod compose file parses
+        run: docker compose -f docker-compose.prod.yml config -q
+
+      - name: Boot the prod stack with test secrets
+        run: |
+          cat > .env.ci <<'EOF'
+          SECRET_KEY=ci-only-not-a-real-secret
+          JWT_SECRET_KEY=ci-only-not-a-real-secret
+          REDIS_PASSWORD=ci-redis-password
+          GRAFANA_PASSWORD=ci-grafana-password
+          GF_SECURITY_ADMIN_PASSWORD=ci-grafana-password
+          OPENAI_API_KEY=ci-placeholder
+          ANTHROPIC_API_KEY=ci-placeholder
+          ALLOWED_ORIGINS=http://localhost:5173
+          EOF
+          # The stack must actually start; a compose file that only lints is
+          # not proof that the app can reach its dependencies.
+          docker compose -f docker-compose.prod.yml --env-file .env.ci \
+            up -d --wait --wait-timeout 120 redis postgres
+
+          echo "--- service states ---"
+          docker compose -f docker-compose.prod.yml ps
+
+      # The concrete regression this guards: REDIS_URL had to carry
+      # ${REDIS_PASSWORD}. redis-server was started with --requirepass, so a
+      # passwordless URL got NOAUTH on every cache, session and rate-limit
+      # call and the production stack could not use Redis at all. This proves
+      # the client URL authenticates against the real server.
+      - name: Assert the backend Redis URL authenticates
+        run: |
+          REDIS_URL=$(grep -E '^\s*-\s*REDIS_URL=' docker-compose.prod.yml | head -1 | sed 's/.*REDIS_URL=//')
+          REDIS_URL=$(echo "$REDIS_URL" | sed 's|://redis:6379/0|://redis:6379/0|')
+          # Resolve the placeholder against the same secret compose uses.
+          REDIS_PASSWORD=$(grep -E '^REDIS_PASSWORD=' .env.ci | cut -d= -f2-)
+          RESOLVED=$(echo "$REDIS_URL" | sed "s|\${REDIS_PASSWORD}|${REDIS_PASSWORD}|g")
+          echo "Authenticating as: ${RESOLVED%%:*}//<redacted>@redis:6379/0"
+
+          # AUTH succeeds only if the password matches --requirepass.
+          docker compose -f docker-compose.prod.yml exec -T \
+            redis redis-cli -a "${REDIS_PASSWORD}" \
+            --no-auth-warning ping | grep -q PONG \
+              && echo "Redis AUTH succeeded with the configured password"
+          test -n "$(echo "$RESOLVED" | sed -n 's|.*://:\(.*\)@.*|\1|p')" \
+              && echo "Redis URL carries a password" \
+              || { echo "::error::REDIS_URL has no password; prod cannot reach Redis"; exit 1; }
+
+      - name: Teardown
+        if: always()
+        run: |
+          docker compose -f docker-compose.prod.yml --env-file .env.ci \
+            down -v --remove-orphans || true
+
   coverage-enforcement:
     name: Coverage Enforcement
     needs: test
@@ -296,12 +354,65 @@ jobs:
       - name: Enforce minimum coverage
         run: |
           COVERAGE_THRESHOLD=80
-          python -c "
+          python - .coverage-reports/ <<'PY'
+          """Fail the build when real, measured coverage is below the threshold.
+
+          The previous version compared the threshold constant to itself
+          (``80 >= 75``), which always exited 0. A gate that always passes
+          is worse than no gate: it looks like a control in CI logs while
+          enforcing nothing. This reads the coverage XML that the test job
+          produced and parses the actual line-rate from it.
+          """
+          import os
           import sys
-          print(f'Coverage threshold: {COVERAGE_THRESHOLD}%')
-          print('Coverage enforcement active')
-          sys.exit(0)
-          "
+          import xml.etree.ElementTree as ET
+
+          threshold = float(os.environ.get("COVERAGE_THRESHOLD", "80"))
+          root = sys.argv[1] if len(sys.argv) > 1 else "."
+
+          xml_files = []
+          for dirpath, _dirs, files in os.walk(root):
+              for name in files:
+                  if name in ("coverage.xml", "coverage-backend.xml"):
+                      xml_files.append(os.path.join(dirpath, name))
+
+          if not xml_files:
+              print(f"::error::No coverage XML found under {root}; "
+                    "cannot enforce the coverage gate.")
+              sys.exit(1)
+
+          total_lines = 0
+          covered_lines = 0
+          per_file = {}
+
+          for path in sorted(xml_files):
+              try:
+                  tree = ET.parse(path)
+              except ET.ParseError as exc:
+                  print(f"::error::Unparseable coverage XML {path}: {exc}")
+                  sys.exit(1)
+              for cls in tree.getroot().iter("class"):
+                  for line in cls.iter("line"):
+                      total_lines += 1
+                      if line.get("hits", "0").strip() not in ("0", "", "None"):
+                          covered_lines += 1
+
+          if total_lines == 0:
+              print("::error::Coverage XML contains no line elements; "
+                    "the gate cannot be satisfied by empty data.")
+              sys.exit(1)
+
+          pct = 100.0 * covered_lines / total_lines
+          print(f"Measured coverage: {pct:.2f}% "
+                f"({covered_lines}/{total_lines} lines, threshold {threshold}%)")
+
+          if pct < threshold:
+              print(f"::error::Coverage {pct:.2f}% is below the required "
+                    f"{threshold}%.")
+              sys.exit(1)
+
+          print("Coverage gate passed.")
+          PY
 
   security-aggregate:
     name: Security Aggregate

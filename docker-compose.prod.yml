@@ -35,9 +35,10 @@ services:
     environment:
       - ENVIRONMENT=production
       - LOG_LEVEL=WARNING
-      - GUNICORN_WORKERS=4
-      - REDIS_URL=redis://redis:6379/0
-      - PYTHONUNBUFFERED=1
+       - GUNICORN_WORKERS=4
+       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+       - REDIS_PASSWORD=${REDIS_PASSWORD}
+       - PYTHONUNBUFFERED=1
     env_file:
       - .env
     depends_on:
@@ -119,7 +120,12 @@ services:
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - SECRET_KEY=${SECRET_KEY}
-      - REDIS_URL=redis://redis:6379/0
+      # Must carry the same password redis-server was started with
+      # (--requirepass ${REDIS_PASSWORD}). Without it the client gets
+      # NOAUTH and every cache, session and rate-limit operation fails,
+      # so the production stack cannot use Redis at all.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       - ENVIRONMENT=production
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://astrovox.ai,https://www.astrovox.ai}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}

@@ -1,0 +1,145 @@
+# ============================================================================
+# AstrovoxAI nginx configuration
+# ============================================================================
+# Rendering note: this file is a template. docker/frontend-entrypoint.sh runs
+# `envsubst` on exactly these variables:
+#
+#   ASTROVOX_DOMAIN       frontend origin
+#   ASTROVOX_API_DOMAIN   API origin
+#   ASTROVOX_BACKEND      upstream host:port
+#   ASTROVOX_HTTP_PORT    listen port inside the container
+#
+# nginx's own $variables ($host, $uri, $remote_addr, ...) are NOT substituted;
+# the entrypoint passes an explicit allowlist to envsubst for that reason.
+#
+# TLS is terminated by the load balancer in front of this container. The
+# compose stack mounted no certificates, so a 443 server block here could
+# never start; HSTS is emitted by the edge, and the security-headers snippet
+# below is what the browser actually receives over the tunnel.
+# ============================================================================
+
+upstream astrovox_backend {
+    server ${ASTROVOX_BACKEND} max_fails=3 fail_timeout=10s;
+    keepalive 32;
+}
+
+limit_req_zone $binary_remote_addr zone=api:10m rate=30r/m;
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+limit_req_zone $binary_remote_addr zone=write:10m rate=10r/m;
+limit_conn_zone $binary_remote_addr zone=conn:10m;
+
+# Upgrade headers: websockets need "upgrade", everything else "close".
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen ${ASTROVOX_HTTP_PORT} default_server;
+    server_name ${ASTROVOX_DOMAIN} ${ASTROVOX_API_DOMAIN} _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    server_tokens off;
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_types
+        text/plain
+        text/css
+        text/xml
+        text/javascript
+        application/javascript
+        application/xml+rss
+        application/json
+        image/svg+xml;
+
+    limit_conn conn 20;
+
+    # The security headers come from the include in every location block
+    # below. nginx's add_header is inherited ONLY by locations that declare
+    # no add_header of their own, so a location that sets Cache-Control -
+    # the static-assets block - silently drops CSP and everything else for
+    # every JS/CSS/image response. Including the snippet makes that rule
+    # irrelevant, which is the fix for the header-inheritance bug.
+    #
+    # There is no CSP nonce. nginx cannot inject a nonce into an already
+    # bundled JS file, and $request_id is a request identifier rather than a
+    # nonce, so a fake 'nonce-$request_id' never matched any script and either
+    # blocked every script or was ignored entirely.
+
+    # SPA fallback
+    location / {
+        try_files $uri $uri/ /index.html;
+        limit_req zone=api burst=20 nodelay;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Cache static assets. The include re-adds the security headers this
+    # location's own add_header would otherwise suppress.
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Health check (no rate limit)
+    location /health {
+        proxy_pass http://astravox_backend/health;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        access_log off;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # API proxy to backend
+    location /api/ {
+        limit_req zone=api burst=10 nodelay;
+        proxy_pass http://astravox_backend/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 120s;
+        proxy_connect_timeout 10s;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Auth endpoints (stricter rate limit)
+    location ~ ^/(auth|webhooks)/ {
+        limit_req zone=auth burst=5 nodelay;
+        proxy_pass http://astravox_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # Error pages
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+}

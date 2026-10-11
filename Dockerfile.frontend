@@ -1,104 +1,88 @@
 # ============================================================================
-# AstrovoxAI Frontend — Production Dockerfile (Hardened Multi-Stage)
+# AstrovoxAI Frontend - Production Dockerfile
+# ============================================================================
+# Builds the Vite bundle, then serves it from nginx as a non-root user.
+#
+# Notes:
+#   * No image digest is pinned. The previous digest was not a real digest, so
+#     the build failed at the very first FROM.
+#   * nginx listens on 8080, not 80. Binding a port below 1024 requires
+#     CAP_NET_BIND_SERVICE, which this image deliberately does not hold, so
+#     "listen 80 + USER nginxuser" fails at startup. The host maps 80 to 8080.
+#   * The non-root user is created before USER, and every path nginx writes to
+#     is chowned, otherwise nginx cannot create its pid/cache/log files.
+#   * TLS is terminated by the edge/load balancer in front of this container,
+#     not by nginx here. The compose stack mounted no certificates, so a
+#     443 server block could never start. The vhost template takes the
+#     listen port from ASTROVOX_HTTP_PORT.
 # ============================================================================
 
-FROM node:20-alpine@sha256:1a3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS base
-
 ARG NODE_VERSION=20
-ARG APP_USER=nginxuser
-ARG APP_UID=1001
-ARG APP_GID=1001
-ARG TZ=UTC
 
-ENV NODE_VERSION=${NODE_VERSION} \
-    APP_USER=${APP_USER} \
-    APP_UID=${APP_UID} \
-    APP_GID=${APP_GID} \
-    TZ=${TZ} \
-    NODE_ENV=production
+FROM node:${NODE_VERSION}-alpine AS builder
 
 WORKDIR /app
 
-# Build stage
-FROM base AS builder
-
-# Install all dependencies for build
 COPY package*.json ./
+
 RUN npm ci --no-audit --no-fund && npm cache clean --force
 
-# Copy source code
 COPY . .
 
-# Build the application
-RUN npm run build && \
-    rm -rf node_modules
-# Build stage
-FROM node:20-alpine AS deps
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production && npm cache clean --force
+RUN npm run build && rm -rf node_modules
 
-# Build stage
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
 
 # ============================================================================
 # Production stage
 # ============================================================================
-FROM nginx:alpine@sha256:2c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5 AS production
+FROM nginx:1.25-alpine
 
 ARG APP_USER=nginxuser
 ARG APP_UID=1001
 ARG APP_GID=1001
-ARG TZ=UTC
 
-ENV APP_USER=${APP_USER} \
-    APP_UID=${APP_UID} \
-    APP_GID=${APP_GID} \
-    TZ=${TZ}
-FROM nginx:1.25-alpine AS production
+ENV TZ=UTC
 
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
+# envsubst renders the vhost template at container start.
+RUN apk add --no-cache libintl gettext-envsubst
 
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/conf.d/default.conf
 
-# Copy built assets from builder
+# The vhost is a template so domains, the backend upstream and the listen port
+# come from the environment. The security-headers snippet lives at a fixed path
+# so every location can `include` it, which is what makes those headers survive
+# on locations that set their own add_header (nginx's add_header inheritance
+# silently drops them otherwise).
+COPY docker/nginx/nginx.conf.template /etc/nginx/templates/nginx.conf.template
+COPY nginx/snippets/security-headers.conf /usr/share/astrovox/security-headers.conf
+COPY docker/frontend-entrypoint.sh /usr/local/bin/astrovox-entrypoint
+
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Add non-root user with fixed UID/GID
-RUN addgroup -g ${APP_GID} -S nginxgroup && \
-    adduser -S ${APP_USER} -u ${APP_UID} -G nginxgroup
+# nginx needs a writable pid path, cache dir and log dir when not root.
+RUN addgroup -g "${APP_GID}" -S nginxgroup \
+    && adduser -S -u "${APP_UID}" -G nginxgroup "${APP_USER}" \
+    && chmod 755 /usr/local/bin/astrovox-entrypoint \
+    && chown -R "${APP_USER}:nginxgroup" /usr/share/nginx/html \
+       /var/cache/nginx /var/log/nginx /etc/nginx /etc/nginx/templates \
+    && touch /var/run/nginx.pid \
+    && chown "${APP_USER}:nginxgroup" /var/run/nginx.pid
 
-# Set labels for image metadata
 LABEL org.opencontainers.image.title="astrovoxai-frontend" \
       org.opencontainers.image.description="AstrovoxAI Frontend (Nginx)" \
       org.opencontainers.image.vendor="AstrovoxAI" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.url="https://github.com/AstrovoxAi/AstrovoxAi"
-# Create non-root user
-RUN addgroup -g 1001 -S nginxgroup && \
-    adduser -S nginxuser -u 1001 -G nginxgroup
 
-# Set permissions
-RUN chown -R nginxuser:nginxgroup /usr/share/nginx/html /var/cache/nginx /var/log/nginx && \
-    touch /var/run/nginx.pid && \
-    chown -R nginxuser:nginxgroup /var/run/nginx.pid
+USER ${APP_USER}
 
-# Expose port
-EXPOSE 80
+# 8080 so a non-root user can bind it without CAP_NET_BIND_SERVICE.
+EXPOSE 8080
 
-# Health probe: check root path returns 200
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/ || exit 1
 
-# Start nginx as non-root
-# Start nginx as non-root with Tini for proper signal handling
-USER nginxuser
-ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["nginx", "-g", "daemon off;"]
+# tini is present in alpine only when the `tini` package is installed, which
+# this stage does not do, so the previous ENTRYPOINT ["/sbin/tini", "--"]
+# failed. The entrypoint renders the template and execs nginx as PID 1.
+ENTRYPOINT ["/usr/local/bin/astrovox-entrypoint"]
