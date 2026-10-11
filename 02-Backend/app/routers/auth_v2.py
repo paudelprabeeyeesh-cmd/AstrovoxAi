@@ -1,6 +1,8 @@
 """Comprehensive authentication router."""
 import os
 import uuid
+import logging
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -59,12 +61,15 @@ from app.services.device_service import (
     trust_device,
 )
 from app.services.magic_link_service import create_magic_link, verify_magic_link
+from app.services.token_mailer import deliver_token
 from app.services.oauth_service import get_or_create_oauth_user, get_oauth_url
 from app.rbac import get_user_role, has_permission, require_permission, role_required
 from app.api_keys import create_api_key, list_api_keys, revoke_api_key
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 security = HTTPBearer(auto_error=False)
+
+logger = logging.getLogger(__name__)
 
 
 def _now() -> datetime:
@@ -329,12 +334,21 @@ async def delete_device_endpoint(device_id: str, authorization: Optional[str] = 
 
 @router.post("/forgot-password", response_model=AuthResponse)
 async def forgot_password(body: PasswordResetRequest):
+    """Issue a single-use reset token and email it.
+
+    The token is generated with ``secrets`` (256 bits, CSPRNG) rather than
+    concatenated uuid4s, and it is delivered by email only. The reply is
+    identical whether or not the account exists so the endpoint cannot be
+    used to enumerate users.
+    """
     user = get_user_by_email(body.email)
     if user:
-        token = str(uuid.uuid4()) + str(uuid.uuid4())
+        token = secrets.token_urlsafe(32)
         expires_at = (_now() + timedelta(hours=1)).isoformat()
-        from app.services.auth_service import create_password_reset_token
+        from app.database.database import create_password_reset_token
+
         create_password_reset_token(user["id"], token, expires_at)
+        deliver_token(user["email"], token, "reset_password")
     return AuthResponse(status="OK", message="Password reset email sent if account exists")
 
 
@@ -375,15 +389,25 @@ async def verify_email(body: EmailVerificationRequest):
 
 @router.post("/magic-link", response_model=AuthResponse)
 async def request_magic_link(body: MagicLinkRequest):
+    """Issue a magic link and deliver it by email.
+
+    The token is single-use and account-owning, so it is emailed (G1.1).
+    It is never returned in the response, never logged, and any caller
+    that asks for it back gets only the "if the account exists" reply.
+    """
     user = get_user_by_email(body.email)
     if not user:
         return AuthResponse(status="OK", message="Magic link sent if account exists")
     magic_link = create_magic_link(user["id"], user["email"])
-    return AuthResponse(
-        status="OK",
-        message="Magic link created",
-        user={"id": user["id"], "email": user["email"], "magic_link_token": magic_link["token"]},
-    )
+    delivered = deliver_token(user["email"], magic_link["token"], "magic_link")
+    if not delivered:
+        logger.warning(
+            "magic_link.delivery_failed user_id=%s", user["id"],
+        )
+        return AuthResponse(
+            status="OK", message="Magic link sent if account exists"
+        )
+    return AuthResponse(status="OK", message="Magic link sent if account exists")
 
 
 @router.post("/magic-link/verify", response_model=AuthResponse)
