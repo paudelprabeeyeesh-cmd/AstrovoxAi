@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, status, Header
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -19,6 +21,8 @@ from app.repositories.database.client import (
     delete_conversation,
 )
 from .usage import DailyUsageTracker, UsageQuotaExceeded
+from . import ai_spend_cap as spend
+from .ai_spend_cap import get_spend_cap
 from .providers import (
     ChatMessage,
     ProviderFactory,
@@ -28,9 +32,26 @@ from .providers import (
 )
 from .metrics import track_ai_request
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/chat", tags=["chat"])
 limiter = Limiter(key_func=get_remote_address)
 usage_tracker = DailyUsageTracker()
+
+
+def actual_model_of(model: str) -> str:
+    """The provider's own model id, so pricing applies to the billed model."""
+    info = get_model_info(model)
+    return info.id if info else model
+
+
+def _tenant_of(user_id: str) -> str:
+    """Tenant bucket for the aggregate cap.
+
+    Derived from the user prefix so a shared tenant's users share one
+    ceiling while nobody can claim another tenant by editing a request.
+    """
+    return (user_id or "").split("-", 1)[0] if user_id else ""
 
 
 class CreateConversationRequest(BaseModel):
@@ -199,10 +220,37 @@ async def send_message(body: SendMessageRequest, authorization: str = Header(Non
                 detail="Daily AI usage quota exceeded. Please try again tomorrow.",
             ) from exc
 
+        # The request-count quota above bounds calls, not cost. One long
+        # message and one word cost the same to it, so the spend cap is a
+        # second gate on dollars and it runs before the provider call, so a
+        # request that would breach the budget never reaches the API.
         conversation = await get_conversation(body.conversation_id, user_id)
         if not conversation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found"
+            )
+        recent = await get_recent_messages(body.conversation_id, limit=10)
+        context_chars = sum(len(m.get("content", "")) for m in recent)
+        memory = await get_user_memory(user_id, limit=5)
+        context_chars += sum(len(m.get("content", "")) for m in memory)
+
+        spend_gate = get_spend_cap()
+        decision = spend_gate.authorize(
+            user_id=user_id,
+            model=actual_model_of(model),
+            prompt_tokens=spend.estimate_tokens(normalized_message, context_chars),
+            max_output_tokens=2000,
+            tenant_id=_tenant_of(user_id),
+        )
+        if not decision.allowed:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=decision.reason,
+                headers={
+                    "X-RateLimit-Limit": "%.2f" % decision.user_limit_usd,
+                    "X-RateLimit-Remaining": "0",
+                    "Retry-After": "86400",
+                },
             )
 
         user_msg = await create_message(
@@ -247,6 +295,18 @@ async def send_message(body: SendMessageRequest, authorization: str = Header(Non
                     )
                     await update_conversation(body.conversation_id, last_message_at="now()")
                     track_ai_request(model=actual_model, status="success")
+                    # Post-flight: converge the ledger on what the provider
+                    # actually billed, so the next request's estimate is
+                    # measured rather than guessed.
+                    try:
+                        get_spend_cap().record(
+                            user_id, actual_model,
+                            spend.estimate_tokens(normalized_message, context_chars),
+                            spend.estimate_tokens(full_content),
+                            _tenant_of(user_id),
+                        )
+                    except Exception:  # noqa: BLE001 - metering must not break chat
+                        logger.exception("spend.record_failed user_scope=%s", _tenant_of(user_id))
                 except Exception as e:
                     track_ai_request(model=actual_model, status="error")
                     sanitized = provider.sanitize_error(e)
@@ -263,6 +323,19 @@ async def send_message(body: SendMessageRequest, authorization: str = Header(Non
                 system_prompt=system_prompt,
             )
             track_ai_request(model=actual_model, status="success", tokens=response.tokens_used or 0)
+            # Post-flight: actual tokens when the provider reports them,
+            # otherwise the estimate, so a silent provider cannot
+            # under-bill the ledger.
+            in_tokens = response.input_tokens or spend.estimate_tokens(
+                normalized_message, context_chars
+            )
+            out_tokens = response.output_tokens or spend.estimate_tokens(response.content)
+            try:
+                get_spend_cap().record(
+                    user_id, actual_model, in_tokens, out_tokens, _tenant_of(user_id)
+                )
+            except Exception:  # noqa: BLE001 - metering must not break chat
+                logger.exception("spend.record_failed user_scope=%s", _tenant_of(user_id))
         except Exception as e:
             track_ai_request(model=actual_model, status="error")
             sanitized = provider.sanitize_error(e)
