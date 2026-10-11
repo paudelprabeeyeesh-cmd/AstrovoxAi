@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.12.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -38,7 +38,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: ['3.12', '3.14']
+        python-version: "3.12.11"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.12.11"
       - name: Install security tools
         run: |
           pip install bandit safety pip-audit
@@ -94,7 +94,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.12.11"
       - name: Build Docker images
         run: |
           docker build -f Dockerfile.prod -t astrovoxai-inference:${{ github.sha }} .
@@ -123,7 +123,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.14'
+          python-version: "3.12.11"
       - name: Validate model cards
         run: |
           python -c "

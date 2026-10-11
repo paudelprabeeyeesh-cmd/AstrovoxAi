@@ -1,18 +1,3 @@
-<<<<<<< HEAD
-"""Platform benchmark runner."""
-
-import logging
-import time
-import uuid
-from dataclasses import dataclass
-from typing import Any
-
-=======
-"""Performance benchmarking for AstrovoxAI backend.
-
-Provides comprehensive benchmarking for API endpoints, database queries, and AI operations.
-"""
-
 from __future__ import annotations
 
 import asyncio
@@ -21,13 +6,11 @@ import statistics
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Coroutine, Dict, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-<<<<<<< HEAD
 class BenchmarkCase:
     id: str
     name: str
@@ -90,7 +73,6 @@ class BenchmarkPlatform:
 
 
 benchmark_platform = BenchmarkPlatform()
-=======
 class BenchmarkSuiteResult:
     name: str
     iterations: int
@@ -187,4 +169,3 @@ class PerformanceBenchmark:
 
 
 benchmark = PerformanceBenchmark()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

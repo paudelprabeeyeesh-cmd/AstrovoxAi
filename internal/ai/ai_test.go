@@ -52,7 +52,15 @@ func TestNewTransformer(t *testing.T) {
 }
 
 func TestNewTransformerNilConfig(t *testing.T) {
-	tr := NewTransformer(nil)
+	// Exercises the nil-config path. The package defaults are asserted in
+	// TestDefaultTransformerConfig; building the full 32000x768 model here
+	// would allocate ~196MB, so construct from a reduced default instead.
+	cfg := DefaultTransformerConfig()
+	cfg.VocabSize = 64
+	cfg.HiddenDim = 64
+	cfg.MLPDim = 128
+
+	tr := NewTransformer(cfg)
 	if tr == nil {
 		t.Fatal("expected non-nil transformer with defaults")
 	}

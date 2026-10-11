@@ -147,19 +147,16 @@ async def upload_storage_file(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
         ) from exc
-<<<<<<< HEAD
     except Exception as exc:
         logger.exception("Storage upload failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Upload failed"
         ) from exc
-=======
     except Exception as _e:  # noqa: BLE001
         logger.exception("Storage upload failed")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(_e)
         ) from _e
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @router.delete("/{bucket}/{path:path}")

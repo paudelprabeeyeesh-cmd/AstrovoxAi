@@ -1,4 +1,4 @@
-"""Phase 372 — AI Memory Evolution
+"""Phase 372 - AI Memory Evolution
 Hierarchical memory, cross-session persistence, semantic forgetting, importance scoring, memory encryption
 """
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Phase372Config:
-    """Configuration for Phase 372 — AI Memory Evolution."""
+    """Configuration for Phase 372 - AI Memory Evolution."""
     enabled: bool = True
     settings: dict = field(default_factory=dict)
     created_at: float = 0.0
@@ -23,7 +23,7 @@ class Phase372Config:
 
 
 class Phase372Manager:
-    """Manager for Phase 372 — AI Memory Evolution."""
+    """Manager for Phase 372 - AI Memory Evolution."""
 
     def __init__(self):
         self._config = Phase372Config()
@@ -32,7 +32,7 @@ class Phase372Manager:
 
     def initialize(self):
         """Initialize the module."""
-        logger.info("Phase 372 — AI Memory Evolution initialized")
+        logger.info("Phase 372 - AI Memory Evolution initialized")
 
     def get_status(self) -> dict:
         """Get module status."""

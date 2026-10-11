@@ -1,4 +1,4 @@
-﻿"""Migrate knowledge graph to Neo4j
+"""Migrate knowledge graph to Neo4j
 
 Revision ID: 007
 Revises: 006

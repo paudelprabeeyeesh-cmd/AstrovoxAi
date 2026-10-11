@@ -34,11 +34,11 @@ async def save_memory_entry(entry: MemoryEntry, authorization: str = Header(None
     try:
         memory = await save_memory(user_id, entry.content, entry.importance)
         return {"status": "OK", "memory": memory}
-    except Exception as _e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save memory: {str(_e)}",
-        ) from None
+            detail=f"Failed to save memory: {str(e)}",
+        )
 
 
 @router.get("/")
@@ -49,11 +49,11 @@ async def get_memory(authorization: str = Header(None), limit: int = 50):
     try:
         memory = await get_user_memory(user_id, limit)
         return {"status": "OK", "memory": memory, "count": len(memory)}
-    except Exception as _e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch memory: {str(_e)}",
-        ) from None
+            detail=f"Failed to fetch memory: {str(e)}",
+        )
 
 
 @router.post("/extract-from-conversation")
@@ -101,11 +101,11 @@ async def extract_memory_from_conversation(
                     extracted.append(memory)
 
         return {"status": "OK", "extracted": extracted, "count": len(extracted)}
-    except Exception as _e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to extract memory: {str(_e)}",
-        ) from None
+            detail=f"Failed to extract memory: {str(e)}",
+        )
 
 
 @router.post("/context")
@@ -127,11 +127,11 @@ async def get_memory_context(authorization: str = Header(None), limit: int = 5):
         context = "\n".join(context_lines)
 
         return {"status": "OK", "context": context, "memory_count": len(memory)}
-    except Exception as _e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get memory context: {str(_e)}",
-        ) from None
+            detail=f"Failed to get memory context: {str(e)}",
+        )
 
 
 @router.post("/auto-extract")
@@ -197,14 +197,9 @@ async def auto_extract_memory(conversation_id: int, authorization: str = Header(
         return {"status": "OK", "extracted": extracted_text, "memory": memory}
     except HTTPException:
         raise
-    except Exception as _e:  # noqa: BLE001
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-<<<<<<< HEAD
             detail=f"Failed to auto-extract memory: {str(e)}",
         )
 
-=======
-            detail=f"Failed to auto-extract memory: {str(_e)}",
-        ) from None
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

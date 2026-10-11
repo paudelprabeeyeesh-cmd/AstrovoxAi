@@ -1,4 +1,4 @@
-﻿import time
+import time
 import uuid
 import importlib
 from unittest.mock import patch, MagicMock

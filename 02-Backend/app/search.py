@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 import re
 import math
 import json
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from typing import Optional
 
 from app.repositories.database.client import get_db

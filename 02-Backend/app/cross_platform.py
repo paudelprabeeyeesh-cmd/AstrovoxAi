@@ -1,4 +1,4 @@
-"""Phase 361 — Cross-Platform Client Ecosystem.
+"""Phase 361 - Cross-Platform Client Ecosystem.
 
 Provides platform detection, offline mode support, device synchronization,
 and secure local storage for desktop and mobile clients.

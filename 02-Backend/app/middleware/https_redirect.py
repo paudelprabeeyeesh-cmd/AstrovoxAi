@@ -31,6 +31,11 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
         if request.url.scheme != "https":
             url = request.url.replace(scheme="https")
             logger.info("Redirecting %s %s -> %s", request.method, request.url.path, url)
-            return RedirectResponse(url=str(url), status_code=301 if self.permanent else 302)
+            # 307/308 preserve the original method and body. A 301/302 lets
+            # clients rewrite POST to GET, which turns every API write into a
+            # 405 on the HTTPS side, so only ever use the method-preserving
+            # codes here.
+            status_code = 308 if self.permanent else 307
+            return RedirectResponse(url=str(url), status_code=status_code)
 
         return await call_next(request)

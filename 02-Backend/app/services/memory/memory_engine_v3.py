@@ -1,4 +1,4 @@
-"""Memory Engine 3 — Advanced memory — hierarchical, cross-session, encrypted."""
+"""Memory Engine 3 - Advanced memory - hierarchical, cross-session, encrypted."""
 
 import time
 import logging

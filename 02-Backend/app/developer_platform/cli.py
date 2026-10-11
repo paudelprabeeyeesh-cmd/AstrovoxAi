@@ -5,11 +5,8 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-<<<<<<< HEAD
-=======
 import sys
 from typing import Any, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 

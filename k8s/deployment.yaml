@@ -68,7 +68,6 @@ spec:
         app: astrovox-backend
         version: v1
     spec:
-<<<<<<< HEAD
       terminationGracePeriodSeconds: 60
       securityContext:
         runAsNonRoot: true
@@ -80,7 +79,6 @@ spec:
       containers:
       - name: backend
         image: ghcr.io/astrovoxai/backend:latest
-=======
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -94,7 +92,6 @@ spec:
       containers:
       - name: backend
         image: astrovox-backend:latest
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8000
@@ -109,17 +106,13 @@ spec:
           requests:
             cpu: 200m
             memory: 512Mi
-<<<<<<< HEAD
-=======
           limits:
             cpu: 1000m
             memory: 2Gi
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-<<<<<<< HEAD
           runAsUser: 1001
           capabilities:
             drop:
@@ -154,7 +147,6 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
-=======
           runAsUser: 1000
           capabilities:
             drop:
@@ -176,23 +168,17 @@ spec:
           timeoutSeconds: 3
           failureThreshold: 3
         volumeMounts:
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         - name: logs
           mountPath: /app/logs
         - name: storage
           mountPath: /app/storage
       volumes:
-<<<<<<< HEAD
       - name: tmp
         emptyDir: {}
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
       - name: logs
         emptyDir: {}
       - name: storage
         emptyDir: {}
-<<<<<<< HEAD
-=======
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -207,4 +193,3 @@ spec:
         labelSelector:
           matchLabels:
             app: astrovox-backend
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

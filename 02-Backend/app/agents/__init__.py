@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-=======
 from .base import BaseAgent, AgentResult, Plan, Review  # noqa: F401
 from .planner import PlannerAgent  # noqa: F401
 from .coder import CoderAgent  # noqa: F401
@@ -22,4 +20,3 @@ __all__ = [
     "DebuggerAgent",
     "AgentOrchestrator",
 ]
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-﻿"""Knowledge graph integration with graph RAG."""
-=======
-﻿import os
-from typing import List, Dict, Any, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
+"""Knowledge graph integration with graph RAG."""
 
 from __future__ import annotations
 

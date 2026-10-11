@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.repositories.database.client import get_db
-from ...schemas import WorkflowCreate, WorkflowOut
+from app.schemas import WorkflowCreate, WorkflowOut
 
 
 def create_workflow(user_id: str, data: WorkflowCreate) -> WorkflowOut:

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Enterprise Compliance — GDPR, data export, right-to-delete, retention, reporting."""
 
 import time
@@ -9,11 +8,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 logger = logging.getLogger(__name__)
-=======
 import uuid
 from datetime import datetime
 from .database import get_db
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @dataclass
@@ -37,7 +34,6 @@ class RetentionPolicy:
     created_at: float = field(default_factory=datetime.now(timezone.utc).timestamp)
 
 
-<<<<<<< HEAD
 @dataclass
 class ConsentRecord:
     id: str
@@ -46,7 +42,6 @@ class ConsentRecord:
     granted: bool
     timestamp: float
     ip_address: str = ""
-=======
 def export_user_data(user_id: str) -> dict:
     ensure_consent_table()
     data = {"user_id": user_id}
@@ -86,7 +81,6 @@ def export_user_data(user_id: str) -> dict:
         return obj
 
     return _serialize(data)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class ComplianceManager:

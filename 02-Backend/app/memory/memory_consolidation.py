@@ -1,7 +1,5 @@
-<<<<<<< HEAD
-"""Memory consolidation and promotion between tiers."""
-=======
-"""
+"""Memory consolidation and promotion between tiers.
+
 Memory Consolidation Service.
 
 Bridges DB-stored memories with the in-memory consolidator.
@@ -12,16 +10,13 @@ Runs consolidation strategies:
 - Stale memory pruning
 - Conversation summary generation
 """
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 from __future__ import annotations
 
 import logging
-<<<<<<< HEAD
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List
-=======
 import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -33,13 +28,11 @@ from memory_persistence.memory_consolidation import (
     MemoryConsolidator,
     MemoryFragment,
 )
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-<<<<<<< HEAD
 class ConsolidatedMemory:
     memory_id: str
     content: str
@@ -51,8 +44,15 @@ class ConsolidatedMemory:
 class MemoryConsolidator:
     """Consolidate and promote memories across tiers."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        similarity_threshold: float = 0.85,
+        stale_days: int = 90,
+    ):
         self._consolidated: Dict[str, ConsolidatedMemory] = {}
+        # Tunables used by the consolidation strategies below.
+        self.similarity_threshold = similarity_threshold
+        self.stale_days = stale_days
 
     def consolidate(self, memory_ids: List[str], contents: Dict[str, str]) -> ConsolidatedMemory:
         memory_id = f"consolidated_{datetime.now(timezone.utc).timestamp()}"
@@ -67,7 +67,8 @@ class MemoryConsolidator:
 
     def promote(self, memory_id: str, target_tier: str) -> bool:
         return memory_id in self._consolidated
-=======
+
+
 class ConsolidationRecord:
     memory_id: str
     action: str
@@ -205,4 +206,3 @@ class MemoryConsolidationService:
 
 
 consolidation_service = MemoryConsolidationService()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

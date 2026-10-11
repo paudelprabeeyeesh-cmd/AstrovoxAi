@@ -1,92 +1,105 @@
-
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build output
 dist/
 build/
 .next/
 out/
-.turbo
+.turbo/
+target/
+*.egg-info/
+.eggs/
 
 # Environment / secrets
+# .env must never be committed. Keep .env.example as the only tracked
+# env file.
 .env
 .env.*
+.envrc
 !.env.example
-*.env
-.env
-*.env*
 
-# Python
+# Python artefacts
 __pycache__/
 *.py[cod]
 *.egg-info/
 .venv/
 venv/
-*.db
-*.sqlite
-*.sqlite3
+.Python
 
-# Databases / local data
-*.db
-*.sqlite
-*.sqlite3
-postgres-data/
-redis-data/
+# Test / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.hypothesis/
+.tox/
 
-# OS / editor junk
-.DS_Store
-Thumbs.db
-desktop.ini
+# Coverage
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
 # Logs
 *.log
 logs/
 log/
 
-# Backup / temp files
-*~
-*.bak
-<<<<<<< HEAD
+# Databases and local state
+*.db
+*.sqlite
+*.sqlite3
+*.duckdb
+postgres-data/
+redis-data/
+celerybeat-schedule*
 
-# Code quality reports
-code-quality-reports/
-# Scratch files used while composing commit messages.
-.msg.txt
-# Embedded worktrees and agent scratch directories. These are local
-# state, not repository content, and a worktree is itself a git repo.
+# Local agent / tooling state
+# Kilo plans, agent-manager state and nested worktrees are local only.
 .kilo/
 .prabeesh/
-=======
-backups/
+.opencode/
 
-# Docker
-docker-compose*.yml
-Dockerfile*
-.docker/
+# Generated local data (chat transcripts and scan reports). These are
+# produced by running the app or tooling, not source code.
+conversation_history.json
+bandit-report.json
+eval_results.json
+validation_report.json
+quick_eval.json
+retraining_metrics.jsonl
 
-# Kubernetes
-k8s/
-helm/
-*.yaml
-*.yml
+# Machine-learning artefacts and datasets
+# Checkpoints, weights and numpy arrays are large binaries that do not
+# belong in version control. Model code and tokenizers stay tracked.
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.npy
+*.npz
+*.parquet
+*.arrow
+wandb/
+checkpoints/
+runs/
 
-# Monitoring
-monitoring/
-prometheus.yml
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups / temp files
+*~
+*.bak
+*.tmp
+*.swp
+*.swo
+.msg.txt
 
 # IDE
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# Test coverage
-.coverage
-htmlcov/
-.pytest_cache/
-
-# Cache
-.ruff_cache/
-.mypy_cache/
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

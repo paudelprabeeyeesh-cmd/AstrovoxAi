@@ -492,7 +492,6 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         """)
     conn.commit()
     _ensure_column(conn, "users", "last_login", "TEXT")
-<<<<<<< HEAD
     _ensure_index(conn, "chats", "idx_chats_user_created", "user_id, created_at")
     _ensure_index(conn, "chats", "idx_chats_conversation", "conversation_id, created_at")
     _ensure_index(conn, "usage", "idx_usage_user_kind", "user_id, kind")
@@ -547,7 +546,6 @@ def init_db() -> None:
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA synchronous=NORMAL")
-=======
     _ensure_column(conn, "conversations", "is_deleted", "INTEGER DEFAULT 0")
     _ensure_column(conn, "conversations", "last_message_at", "TEXT")
     _ensure_column(conn, "messages", "model_used", "TEXT")
@@ -718,12 +716,10 @@ def _ensure_tables_rag(conn: sqlite3.Connection) -> None:
 
 def init_db() -> None:
     conn = get_connection(DB_PATH)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     _ensure_tables(conn)
     conn.close()
 
 
-<<<<<<< HEAD
 def get_db() -> sqlite3.Connection:
     _ensure_db_dir()
     conn = sqlite3.connect(DB_PATH)
@@ -732,11 +728,9 @@ def get_db() -> sqlite3.Connection:
     conn.execute("PRAGMA synchronous=NORMAL")
     _ensure_tables(conn)
     return conn
-=======
 def get_db() -> Generator[sqlite3.Connection, None, None]:
     with transaction(DB_PATH) as conn:
         yield conn
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 def create_user(username: str, email: str, password: str) -> int:

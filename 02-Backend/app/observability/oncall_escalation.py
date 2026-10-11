@@ -25,13 +25,6 @@ class EscalationAction(str, Enum):
     SLACK = "slack"
 
 
-class IncidentSeverity(str, Enum):
-    P1_CRITICAL = "p1_critical"
-    P2_HIGH = "p2_high"
-    P3_MEDIUM = "p3_medium"
-    P4_LOW = "p4_low"
-
-
 @dataclass
 class OnCallPerson:
     person_id: str

@@ -18,13 +18,13 @@ try:
 except ImportError:
     DocxDocument = None
 
-from ...documents import (
+from app.documents import (
     create_document,
     delete_document_chunks,
     create_document_chunk,
     search_chunks,
 )
-from ...config import settings
+from app.config import settings
 
 
 class _LazyOpenAIClient:

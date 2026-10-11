@@ -39,9 +39,17 @@ class PIIRedactionMiddleware(BaseHTTPMiddleware):
         self.max_body_bytes = max_body_bytes
         self.exclude_paths = set(exclude_paths or ["/health", "/metrics", "/favicon.ico"])
 
+    def _is_excluded(self, path: str) -> bool:
+        """True when `path` matches an excluded path exactly or by prefix.
+
+        Callers list families of endpoints (`/auth`) rather than every route,
+        so `/auth/signup` must match the `/auth` prefix.
+        """
+        return any(path == ex or path.startswith(ex.rstrip("/") + "/") for ex in self.exclude_paths)
+
     async def dispatch(self, request: Request, call_next):
         if self.redact_requests and request.method in {"POST", "PUT", "PATCH"}:
-            if request.url.path not in self.exclude_paths:
+            if not self._is_excluded(request.url.path):
                 await self._redact_request(request)
 
         response = await call_next(request)
@@ -49,7 +57,12 @@ class PIIRedactionMiddleware(BaseHTTPMiddleware):
         if self.redact_responses and response.status_code < 500:
             content_type = response.headers.get("content-type", "")
             if "application/json" in content_type:
-                if response.url.path not in self.exclude_paths:
+                # Streaming responses have no `url` attribute (only
+                # Response does), and rewriting a stream would require
+                # buffering the whole body, so leave them untouched.
+                if not hasattr(response, "url"):
+                    return response
+                if not self._is_excluded(response.url.path):
                     response = await self._redact_response(response)
 
         return response

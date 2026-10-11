@@ -1,10 +1,7 @@
 """Prometheus metrics for AstrovoxAI backend."""
 
-<<<<<<< HEAD
-=======
 import time
 from functools import wraps
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 try:
     from prometheus_client.registry import DuplicateTimeseries, REGISTRY
@@ -146,7 +143,6 @@ if PROMETHEUS_AVAILABLE:
         ["policy", "identity", "allowed"]
     )
 
-<<<<<<< HEAD
     rate_limit_remaining = Gauge(
         "rate_limit_remaining",
         "Remaining requests in current window",
@@ -159,7 +155,6 @@ def track_rate_limit(policy, identity, allowed, remaining):
         return
     rate_limit_total.labels(policy=policy, identity=identity, allowed=str(allowed)).inc()
     rate_limit_remaining.labels(policy=policy, identity=identity).set(remaining)
-=======
 def track_request(method: str, endpoint: str, status: int, duration: float):
     if not PROMETHEUS_AVAILABLE:
         return
@@ -231,7 +226,6 @@ def track_error(method: str, endpoint: str, status: int):
     if not PROMETHEUS_AVAILABLE:
         return
     http_errors_total.labels(method=method, endpoint=endpoint, status=status).inc()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 def get_metrics():
@@ -240,7 +234,6 @@ def get_metrics():
     return b"# Prometheus client not available\n"
 
 
-<<<<<<< HEAD
 def track_request(method: str, path: str, status: int, duration: float):
     """Track HTTP request metrics."""
     if not PROMETHEUS_AVAILABLE:
@@ -257,7 +250,6 @@ def track_ai_request(model: str, status: str, tokens: int = 0):
     if tokens > 0:
         ai_tokens_total.labels(model=model).inc(tokens)
 
-=======
 try:
     from prometheus_client import CONTENT_TYPE_LATEST
 except ImportError:
@@ -283,4 +275,3 @@ def track_request_decorator(endpoint: str):
                 raise
         return wrapper
     return decorator
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

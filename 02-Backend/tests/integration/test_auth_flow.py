@@ -174,7 +174,18 @@ class FakeSupabase:
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    """TestClient that satisfies the security middleware.
+
+    Two controls gate every request:
+    * `X-CSRF-Token` must match the `csrftoken` cookie on state-changing
+      requests, so both are sent.
+    * the IP allowlist rejects non-IP client hosts, so the transport is told
+      to present as loopback instead of Starlette's default "testclient".
+    """
+    c = TestClient(app, client=("127.0.0.1", 50000))
+    c.headers.update({"X-CSRF-Token": "test-csrf-token"})
+    c.cookies.set("csrftoken", "test-csrf-token")
+    return c
 
 
 @pytest.fixture

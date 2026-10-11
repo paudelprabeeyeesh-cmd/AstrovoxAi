@@ -7,14 +7,11 @@ Functions are wrapped so tests can patch ``app.database.supabase``.
 from __future__ import annotations
 
 import logging
-<<<<<<< HEAD
 import sys
 from typing import Any
-=======
 
 from database.connection import get_connection as get_db, init_db
 from .supabase_client import get_supabase
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
@@ -56,13 +53,10 @@ def get_user_profile(user_id: str):
     try:
         response = sb.table("profiles").select("*").eq("id", user_id).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching user profile: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching user profile: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -73,13 +67,10 @@ def create_user_profile(user_id: str, username: str, **kwargs):
     try:
         response = sb.table("profiles").insert({"id": user_id, "username": username, **kwargs}).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error creating user profile: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error creating user profile: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -93,13 +84,10 @@ def update_user_profile(user_id: str, **kwargs):
     try:
         response = sb.table("profiles").update(safe_kwargs).eq("id", user_id).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error updating user profile: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error updating user profile: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -110,13 +98,10 @@ def create_conversation(user_id: str, title: str = None, model: str = "gpt-4"):
     try:
         response = sb.table("conversations").insert({"user_id": user_id, "title": title or "New Conversation", "model": model}).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error creating conversation: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error creating conversation: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -127,13 +112,10 @@ def get_conversations(user_id: str):
     try:
         response = sb.table("conversations").select("*").eq("user_id", user_id).eq("is_deleted", False).order("updated_at", desc=True).execute()
         return response.data
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching conversations: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching conversations: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return []
 
 
@@ -147,13 +129,10 @@ def get_conversation(conversation_id: int, user_id: str = None):
             query = query.eq("user_id", user_id)
         response = query.execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching conversation: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching conversation: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -167,13 +146,10 @@ def update_conversation(conversation_id: int, **kwargs):
     try:
         response = sb.table("conversations").update(safe_kwargs).eq("id", conversation_id).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error updating conversation: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error updating conversation: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -184,13 +160,10 @@ def delete_conversation(conversation_id: int):
     try:
         sb.table("conversations").update({"is_deleted": True}).eq("id", conversation_id).execute()
         return True
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error deleting conversation: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error deleting conversation: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return False
 
 
@@ -201,13 +174,10 @@ def create_message(conversation_id: int, user_id: str, role: str, content: str, 
     try:
         response = sb.table("messages").insert({"conversation_id": conversation_id, "user_id": user_id, "role": role, "content": content, **kwargs}).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error creating message: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error creating message: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -218,13 +188,10 @@ def get_messages(conversation_id: int, limit: int = 100, offset: int = 0):
     try:
         response = sb.table("messages").select("*").eq("conversation_id", conversation_id).order("created_at", desc=False).range(offset, offset + limit - 1).execute()
         return response.data
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching messages: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching messages: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return []
 
 
@@ -235,13 +202,10 @@ def get_recent_messages(conversation_id: int, limit: int = 10):
     try:
         response = sb.table("messages").select("*").eq("conversation_id", conversation_id).order("created_at", desc=False).limit(limit).execute()
         return response.data
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching recent messages: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching recent messages: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return []
 
 
@@ -252,13 +216,10 @@ def save_memory(user_id: str, content: str, importance: int = 1):
     try:
         response = sb.table("ai_memory").insert({"user_id": user_id, "content": content, "importance": importance}).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error saving memory: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error saving memory: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -269,13 +230,10 @@ def get_user_memory(user_id: str, limit: int = 50):
     try:
         response = sb.table("ai_memory").select("*").eq("user_id", user_id).order("importance", desc=True).order("created_at", desc=True).limit(limit).execute()
         return response.data
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching memory: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching memory: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return []
 
 
@@ -286,13 +244,10 @@ def get_user_settings(user_id: str):
     try:
         response = sb.table("user_settings").select("*").eq("user_id", user_id).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error fetching settings: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error fetching settings: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None
 
 
@@ -306,11 +261,8 @@ def update_user_settings(user_id: str, **kwargs):
     try:
         response = sb.table("user_settings").update(safe_kwargs).eq("user_id", user_id).execute()
         return response.data[0] if response.data else None
-<<<<<<< HEAD
     except Exception as e:
         logger.error("Error updating settings: %s", e)
-=======
     except Exception as _e:  # noqa: BLE001
         logger.error(f"Error updating settings: {_e}")
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return None

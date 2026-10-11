@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Contributing to AstrovoxAI
 
 Thank you for your interest in contributing to AstrovoxAI. This document explains how to set up the project, submit changes, and work with the maintainers.
@@ -50,7 +49,6 @@ Be respectful. Constructive feedback only. No harassment or discrimination. By p
 
 ## Development Setup
 
-=======
 # Contributing
 
 Thank you for your interest in contributing to AstrovoxAI!
@@ -141,12 +139,10 @@ Follow Conventional Commits:
 
 ## Testing
 
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 ### Backend
 
 ```bash
 cd 02-Backend
-<<<<<<< HEAD
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
@@ -352,7 +348,6 @@ Please report security vulnerabilities privately via [SECURITY.md](SECURITY.md).
 - Follow us on [Twitter](https://twitter.com/astrovoxai)
 
 Thank you for contributing to AstrovoxAI!
-=======
 pytest tests/ -v --cov=app
 ```
 
@@ -386,4 +381,3 @@ npm run typecheck
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -421,7 +421,6 @@ class MemoryManager:
         """Clear the retrieval cache"""
         self.retrieval_engine.clear_cache()
 
-<<<<<<< HEAD
 
 _memory_manager: Optional[MemoryManager] = None
 
@@ -431,7 +430,6 @@ def get_memory_manager() -> MemoryManager:
     if _memory_manager is None:
         _memory_manager = MemoryManager()
     return _memory_manager
-=======
     def consolidate_memories(self, user_id: int) -> Dict[str, Any]:
         """Run memory consolidation for a user."""
         return self.consolidation_service.consolidate_user(user_id=str(user_id))
@@ -483,4 +481,3 @@ def get_memory_manager() -> MemoryManager:
     def get_memory_timeline(self, user_id: str, start: Optional[str] = None, end: Optional[str] = None) -> List[Dict[str, Any]]:
         return self.visualization.timeline(user_id=user_id, start=start, end=end)
 
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

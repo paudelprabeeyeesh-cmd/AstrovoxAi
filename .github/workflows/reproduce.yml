@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: "3.12"
+  PYTHON_VERSION: "3.12.11"
   REPRO_CONFIG: configs/versioned/config_phase1_v1.yaml
 
 concurrency:

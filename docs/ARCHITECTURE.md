@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Architecture Overview
 
 AstrovoxAI is a production-ready AI chat platform with multi-provider LLM support, persistent memory, agent systems, RAG, enterprise features, and a complete model training and inference toolkit.
@@ -440,7 +439,6 @@ graph TD
 - **SDK generation** — OpenAPI specs auto-generate clients
 - **Extensions** — IDE and browser extensions via extension SDK
 - **Middleware** — Custom middleware injection points
-=======
 # Architecture
 
 ## System Overview
@@ -675,4 +673,3 @@ Key principles:
 - Service mesh (Istio) for mTLS
 - GraphQL gateway for flexible APIs
 - Edge functions for low-latency inference
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

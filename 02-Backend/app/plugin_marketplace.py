@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-"""Phase 378 — Plugin Marketplace
-Plugin SDK, sandboxed execution, revenue sharing, plugin analytics, verified plugins
-"""
-
-import time
-import logging
-from typing import Optional
-from dataclasses import dataclass, field
-=======
-"""Enhanced plugin marketplace with ratings, versions, and discovery."""
-
 from __future__ import annotations
 
 import logging
@@ -18,15 +6,13 @@ import uuid
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
 
-<<<<<<< HEAD
 @dataclass
 class Phase378Config:
-    """Configuration for Phase 378 — Plugin Marketplace."""
+    """Configuration for Phase 378 ï¿½ Plugin Marketplace."""
     enabled: bool = True
     settings: dict = field(default_factory=dict)
     created_at: float = 0.0
@@ -37,7 +23,7 @@ class Phase378Config:
 
 
 class Phase378Manager:
-    """Manager for Phase 378 — Plugin Marketplace."""
+    """Manager for Phase 378 ï¿½ Plugin Marketplace."""
 
     def __init__(self):
         self._config = Phase378Config()
@@ -46,7 +32,7 @@ class Phase378Manager:
 
     def initialize(self):
         """Initialize the module."""
-        logger.info("Phase 378 — Plugin Marketplace initialized")
+        logger.info("Phase 378 ï¿½ Plugin Marketplace initialized")
 
     def get_status(self) -> dict:
         """Get module status."""
@@ -75,7 +61,6 @@ class Phase378Manager:
 
 phase_378 = Phase378Manager()
 
-=======
 class PluginListingStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
@@ -217,4 +202,3 @@ class PluginMarketplace:
 
 
 plugin_marketplace = PluginMarketplace()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

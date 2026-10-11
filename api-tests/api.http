@@ -1,0 +1,56 @@
+-- API smoke tests. Run from VS Code with the REST Client extension.
+-- Base URL and token are variables: set them in .vscode/settings.json
+// (@rest-client settings) or override per request.
+//
+// These examples call the documented status codes for each route so the
+// responses can be compared against openapi.yaml.
+
+@baseUrl = http://127.0.0.1:8000
+@csrfToken = test-csrf-token
+@contentType = application/json
+
+###
+# @name health
+GET {{baseUrl}}/health
+
+###
+# @name metrics
+GET {{baseUrl}}/metrics
+
+###
+# @name authSignup
+POST {{baseUrl}}/auth/signup
+Content-Type: {{contentType}}
+X-CSRF-Token: {{csrfToken}}
+
+{
+  "email": "newuser@test.com",
+  "password": "SecurePass1!",
+  "full_name": "New User"
+}
+
+###
+# @name authLogin
+POST {{baseUrl}}/auth/login
+Content-Type: {{contentType}}
+X-CSRF-Token: {{csrfToken}}
+
+{
+  "email": "user@test.com",
+  "password": "password123"
+}
+
+###
+# @name authMe
+# Requires a bearer token; expect 401 without one.
+GET {{baseUrl}}/auth/me
+
+###
+# @name authResetPassword
+POST {{baseUrl}}/auth/reset-password
+Content-Type: {{contentType}}
+X-CSRF-Token: {{csrfToken}}
+
+{
+  "email": "user@test.com"
+}

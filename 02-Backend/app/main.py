@@ -9,7 +9,6 @@ import sys
 import time
 from dotenv import load_dotenv
 
-<<<<<<< HEAD
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from app.services.auth.auth import router as auth_router
@@ -123,7 +122,6 @@ try:
 except Exception:
     llm_client = _LLMClientStub()
 context_builder = ContextBuilder(llm_client=llm_client)
-=======
 from .core.logging_config import configure_logging, RequestLoggingMiddleware
 from .core.tracing import init_tracing
 from .core.prometheus_middleware import PrometheusMiddleware
@@ -146,7 +144,8 @@ from .routers.model_registry import router as model_registry_router
 from .routers.llm_governance import router as llm_governance_router
 from .routers.ai_orchestration import router as ai_orchestration_router
 from .core.llm import LLMClient
-from .rate_limit import rate_limit_middleware
+# rate_limit_middleware comes from app.middleware.security.rate_limit_hardened
+# (imported above); the historical app/rate_limit module no longer exists.
 from .health import health_service
 from .dashboard import get_dashboard
 from .metrics import get_metrics, CONTENT_TYPE_LATEST
@@ -274,7 +273,6 @@ except Exception as _e:  # noqa: BLE001
 load_dotenv()
 
 configure_logging()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
@@ -294,15 +292,7 @@ register_error_handlers(app)
 
 app.middleware("http")(rate_limit_middleware)
 
-<<<<<<< HEAD
 # CORS Middleware
-=======
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(PrometheusMiddleware)
-
-init_tracing(service_name="astrovoxai", app=app)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 allowed_origins = [
     origin.strip()
     for origin in os.getenv(
@@ -325,19 +315,42 @@ app.add_middleware(HTTPSRedirectMiddleware)
 app.add_middleware(InputValidationMiddleware)
 
 # PII redaction
-app.add_middleware(PIIRedactionMiddleware)
+# PII redaction. Auth responses echo the caller's own identity (email,
+# display name) back to that same caller, so redacting them only breaks the
+# contract; everything else still gets masked.
+app.add_middleware(PIIRedactionMiddleware, exclude_paths=[
+    "/auth",
+    "/auth/me",
+    "/auth/login",
+    "/auth/logout",
+    "/auth/refresh",
+    "/auth/register",
+    "/auth/oauth",
+    "/auth/reset-password",
+    "/auth/password-reset",
+    "/auth/password-reset/confirm",
+    "/users/me",
+    "/account/profile",
+    "/health",
+    "/metrics",
+    "/favicon.ico",
+])
 
 # Add security headers middleware
-<<<<<<< HEAD
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(IPEnforcementMiddleware)
 app.add_middleware(UserAgentMiddleware)
 
-# Request logging with correlation id propagation
+# Request logging with correlation id propagation and Prometheus metrics.
+# Each of these registers a collector, so they must be added exactly once.
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(PrometheusMiddleware)
 
 # Idempotency key enforcement for state-changing requests
 app.add_middleware(IdempotencyMiddleware)
+
+# Distributed tracing
+init_tracing(service_name="astrovoxai", app=app)
 
 # Request timeout and payload size limits
 app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=30.0)
@@ -347,25 +360,19 @@ app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
 app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
 app.add_middleware(ContentNegotiationMiddleware)
 register_lifecycle_handlers(app)
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 # Include routers
 app.include_router(auth_router)
 app.include_router(audit_router)
 app.include_router(chat_router)
-<<<<<<< HEAD
-=======
 app.include_router(conversations_router)
 app.include_router(memory_router)
 app.include_router(memory_extended_router)
 app.include_router(secrets_router)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 app.include_router(storage_router)
 app.include_router(telemetry_router)
 app.include_router(terminal_router)
 app.include_router(embeddings_router)
-<<<<<<< HEAD
 app.include_router(memory_engine_router)
 app.include_router(enterprise_router)
 app.include_router(enterprise_abac_router)
@@ -536,7 +543,6 @@ async def collaboration_ws_alt_endpoint(
 ):
     from app.realtime_collaboration import collaboration_websocket_endpoint
     await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
-=======
 app.include_router(models_api_router)
 app.include_router(memory_controls_router)
 app.include_router(safety_api_router)
@@ -583,11 +589,6 @@ async def health_check():
     result = health_service.get_overall_health()
     status_code = 200 if result["status"] == "healthy" else 503
     return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
-
-
-@app.get("/healthz")
-async def healthz():
-    return "ok"
 
 
 @app.get("/health/readiness")
@@ -665,7 +666,6 @@ async def root():
             "docs": "/docs",
         },
     }
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 if __name__ == "__main__":

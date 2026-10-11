@@ -9,10 +9,7 @@ import re
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
-<<<<<<< HEAD
-=======
 import re
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from typing import Optional, AsyncIterator
 
 

@@ -181,15 +181,12 @@ class HybridRAG:
         sparse_score = best_sparse[0][1] if best_sparse else 0.0
         return max(dense_score, sparse_score) < self.self_rag_threshold
 
-<<<<<<< HEAD
     def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> List[Document]:
         if not self._needs_retrieval(query_text, query_embedding) and query_embedding is None:
             return []
-=======
     def query(self, query_text: str, query_embedding: Optional[np.ndarray] = None, top_k: int = 5) -> Tuple[List[Document], List[Citation]]:
         if not self._needs_retrieval(query_text, query_embedding) and query_embedding is None:
             return [], []
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         dense_results = dense_retrieval(query_embedding, self.documents, top_k=top_k * 2) if query_embedding is not None else []
         sparse_results = bm25_score(query_text, [doc.text for doc in self.documents])
         fused = reciprocal_rank_fusion([dense_results, sparse_results])

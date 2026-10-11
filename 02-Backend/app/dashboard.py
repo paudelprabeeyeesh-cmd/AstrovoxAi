@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """User Interface API Layer.
 
 Provides backend APIs for:
@@ -190,7 +189,6 @@ class DashboardService:
 
 
 dashboard_service = DashboardService()
-=======
 """Monitoring dashboard configuration and helpers for AstrovoxAI backend.
 
 Provides:
@@ -368,4 +366,3 @@ def metrics_summary() -> Dict[str, Any]:
         return {"prometheus_available": True, "samples": samples}
     except Exception as _e:  # noqa: BLE001
         return {"prometheus_available": True, "error": str(_e)}
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

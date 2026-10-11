@@ -163,26 +163,26 @@ jobs:
           script: |
             const title = `[ROLLBACK] ${github.event.inputs.environment} rolled back to ${{ needs.get-previous-version.outputs.target_tag }}`;
             const body = `## Rollback Details
-
-**Environment**: ${github.event.inputs.environment}
-**Target Version**: ${{ needs.get-previous-version.outputs.target_tag }}
-**Previous Version**: ${{ needs.get-previous-version.outputs.previous_tag }}
-**Reason**: ${github.event.inputs.reason}
-**Triggered by**: @${github.actor}
-**Triggered at**: ${new Date().toISOString()}
-
-## Next Steps
-
-1. Investigate the root cause of the failed deployment
-2. Review logs from the failed deployment
-3. Fix the issue in the code
-4. Re-deploy the fixed version
-
-## Related Links
-
-- [Deployment Logs](${github.server_url}/${github.repository}/actions)
-- [Workflow Run](${github.server_url}/${github.repository}/actions/runs/${github.run_id})
-`;
+            
+            **Environment**: ${github.event.inputs.environment}
+            **Target Version**: ${{ needs.get-previous-version.outputs.target_tag }}
+            **Previous Version**: ${{ needs.get-previous-version.outputs.previous_tag }}
+            **Reason**: ${github.event.inputs.reason}
+            **Triggered by**: @${github.actor}
+            **Triggered at**: ${new Date().toISOString()}
+            
+            ## Next Steps
+            
+            1. Investigate the root cause of the failed deployment
+            2. Review logs from the failed deployment
+            3. Fix the issue in the code
+            4. Re-deploy the fixed version
+            
+            ## Related Links
+            
+            - [Deployment Logs](${github.server_url}/${github.repository}/actions)
+            - [Workflow Run](${github.server_url}/${github.repository}/actions/runs/${github.run_id})
+            `;
 
             github.rest.issues.create({
               owner: context.repo.owner,

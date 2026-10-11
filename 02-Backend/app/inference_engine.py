@@ -4,10 +4,7 @@ This module implements the adapter that talks to the GPU for text generation.
 """
 
 import logging
-<<<<<<< HEAD
-=======
 import uuid
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)

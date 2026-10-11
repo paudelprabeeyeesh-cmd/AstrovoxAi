@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import Optional
 
-from ...providers.base import EmbeddingVector
+from app.providers.base import EmbeddingVector
 
 logger = logging.getLogger(__name__)
 

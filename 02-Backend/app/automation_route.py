@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from ...workflow_engine import (
+from app.workflow_engine import (
     workflow_engine,
     Workflow,
     WorkflowTemplate,

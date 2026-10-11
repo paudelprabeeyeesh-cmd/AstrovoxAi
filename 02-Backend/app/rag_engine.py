@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """RAG Engine — document ingestion, chunking, embedding, and retrieval.
 
 Provides:
@@ -22,10 +21,8 @@ from app.documents import create_document, delete_document_chunks, create_docume
 from app.services.knowledge.knowledge import search_docs
 
 logger = logging.getLogger(__name__)
-=======
 import os
 import requests
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 try:
     import openai
@@ -48,14 +45,12 @@ except ImportError:
     DocxDocument = None
     HAS_DOCX = False
 
-<<<<<<< HEAD
 try:
     from bs4 import BeautifulSoup
     HAS_BS4 = True
 except ImportError:
     BeautifulSoup = None
     HAS_BS4 = False
-=======
 from .documents import (
     create_document,
     delete_document_chunks,
@@ -63,7 +58,6 @@ from .documents import (
     search_chunks,
 )
 from .config import settings
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 client = None

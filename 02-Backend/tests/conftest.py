@@ -1,6 +1,6 @@
+import importlib
 import os
 import sys
-<<<<<<< HEAD
 import types
 import asyncio
 from contextlib import ExitStack
@@ -16,26 +16,45 @@ def _run(func, *args, **kwargs):
 
 pytest.run = _run
 
-# Ensure the backend root is on sys.path so 'app' package can be imported
-_backend_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if _backend_root not in sys.path:
-    sys.path.insert(0, _backend_root)
-
+# Ensure the backend root is on sys.path so 'app' package can be imported.
+# The backend root MUST take precedence over both the project root and the
+# current working directory: the project root also contains an `app` package
+# (a different one), and Python resolves `import app` to whichever comes
+# first on sys.path.
+_backend_root = os.path.abspath(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
 _project_root = os.path.dirname(_backend_root)
-if _project_root not in sys.path:
-    sys.path.insert(0, _project_root)
-=======
-from unittest.mock import patch, MagicMock
 
-backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if backend_dir in sys.path:
-    sys.path.remove(backend_dir)
-sys.path.insert(0, backend_dir)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
+# Remove any earlier project-root / CWD entries, and any entry that would let
+# `app` resolve to the wrong package.
+_preferred = [_backend_root]
+for _entry in list(sys.path):
+    _abs = os.path.abspath(_entry)
+    if _abs == _backend_root:
+        continue
+    if _abs in (_project_root, os.getcwd()) or _abs.startswith(_project_root + os.sep + "app"):
+        continue
+    _preferred.append(_entry)
+sys.path[:] = _preferred
+
+# Drop `app` (and submodules) already imported from the wrong location so the
+# next import re-resolves against the backend root.
+_app = sys.modules.get("app")
+_app_path = list(getattr(_app, "__path__", []) or [])
+if _app_path and not any(
+    os.path.abspath(os.path.dirname(p)) == _backend_root for p in _app_path
+):
+    for _name in [n for n in list(sys.modules) if n == "app" or n.startswith("app.")]:
+        del sys.modules[_name]
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///test.db")
 os.environ.setdefault("ASTROVOX_DB", "test.db")
 os.environ.setdefault("ASTROVOX_TEST_MODE", "1")
+# HTTPS enforcement is a deployment concern: the test transport speaks plain
+# HTTP, so following the redirect is impossible. Disable it for the suite
+# rather than changing the production control.
+os.environ.setdefault("HTTPS_REDIRECT_ENABLED", "0")
 if not os.getenv("ASTROVOX_ENCRYPTION_KEY"):
     os.environ["ASTROVOX_ENCRYPTION_KEY"] = "HSMTYGgSppCPt3g3VAorkpAX4GR0W8T3ILpsKLfblns="
 
@@ -68,7 +87,16 @@ def _set_attr_chain(mod_name, attr_name, value):
         setattr(mod, attr_name, value)
 
 
-# Create top-level aliases for app subpackages that are imported without 'app.' prefix
+# Create top-level aliases for app subpackages that are imported without the
+# 'app.' prefix. Names that also exist as a real top-level package/module under
+# 02-Backend (for example `database`) must NOT be aliased: doing so shadows the
+# real package and breaks `from database.database import ...`.
+_SHADOWED_TOP_LEVEL = {
+    os.path.splitext(fn)[0]
+    for fn in os.listdir(_backend_root)
+    if not fn.startswith(".")
+} if os.path.isdir(_backend_root) else set()
+
 _alias_map = {
     "utils": "app.utils",
     "utils.auth": "app.utils.auth",
@@ -110,6 +138,9 @@ _alias_map = {
 }
 
 for alias, target in _alias_map.items():
+    # Never shadow a real top-level package/module under the backend root.
+    if alias.split(".")[0] in _SHADOWED_TOP_LEVEL:
+        continue
     if alias not in sys.modules:
         try:
             target_mod = __import__(target, fromlist=[""])
@@ -178,7 +209,6 @@ for mod_name in _router_modules:
         sys.modules[mod_name].events_router = _mock_router
 
 import pytest
-<<<<<<< HEAD
 from app.database import init_db
 try:
     from app.main import app
@@ -186,7 +216,6 @@ except Exception:
     from fastapi import FastAPI
     app = FastAPI(title="test")
 from fastapi.testclient import TestClient
-=======
 try:
     from app.database import init_db
 except Exception:
@@ -201,14 +230,36 @@ try:
     import app.billing as billing_module
 except Exception:
     billing_module = None
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 DB_PATH = os.environ.get("ASTROVOX_DB", "test.db")
 
 if app is not None and TestClient is not None:
-    client = TestClient(app)
+    # The app installs an IP allowlist that rejects non-IP client hosts, so
+    # the transport presents as loopback instead of Starlette's default
+    # "testclient" host. The CSRF middleware is satisfied by the api_client
+    # fixture below; plain `client` keeps the raw app behaviour.
+    client = TestClient(app, client=("127.0.0.1", 50000))
 else:
     client = None
+
+
+@pytest.fixture
+def api_client():
+    """TestClient that satisfies the CSRF middleware.
+
+    The middleware requires an `X-CSRF-Token` header matching the `csrftoken`
+    cookie on every state-changing request. Sending both keeps the security
+    control intact while letting the suite exercise POST endpoints.
+    """
+    from fastapi.testclient import TestClient as _TestClient
+
+    if app is None:
+        pytest.skip("app.main could not be imported")
+
+    with _TestClient(app) as c:
+        c.headers.update({"X-CSRF-Token": "test-csrf-token"})
+        c.cookies.set("csrftoken", "test-csrf-token")
+        yield c
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -256,7 +307,6 @@ def mock_external_services():
     mock_moderation_result.categories.violence_graphic = False
     mock_moderation_response.results = [mock_moderation_result]
     mock_openai_client.moderations.create.return_value = mock_moderation_response
-<<<<<<< HEAD
     
     _main_patches = []
     if 'app.main' in sys.modules:
@@ -279,49 +329,52 @@ def mock_external_services():
         patch.object(billing_module, '_STRIPE_CONFIGURED', True),
         patch('openai.OpenAI', return_value=mock_openai_client),
     ]
-    if 'app.core.moderation' in sys.modules:
-        _patches.append(patch('app.core.moderation.check_moderation', return_value=(False, None)))
-    if 'app.routers.solve' in sys.modules:
-        _patches.append(patch('app.routers.solve.check_moderation', return_value=(False, None)))
-    if 'app.core.providers' in sys.modules:
-        _patches.append(patch('app.core.providers.get_active_providers', return_value=[]))
-    if 'app.main' in sys.modules:
-        _patches.append(patch('app.main.llm_client.call_llm', return_value={
+    # Patches are only applied when their target actually exists. The solve
+    # route (`app.routers.solve`) is not present in this tree, so guarding on
+    # `sys.modules` alone is not enough: patch() resolves the attribute
+    # immediately and raises. Importing the module first and checking for the
+    # attribute keeps the fixture from erroring every test in the suite.
+    def _safe_patch(target, **kwargs):
+        """Return a patch for `target`, or None when it is unavailable."""
+        module_name, _, attr = target.rpartition('.')
+        module = sys.modules.get(module_name)
+        if module is None:
+            try:
+                module = importlib.import_module(module_name)
+            except ImportError:
+                return None
+        if not hasattr(module, attr):
+            return None
+        try:
+            return patch(target, **kwargs)
+        except (AttributeError, ModuleNotFoundError):
+            return None
+
+    for _target, _kwargs in (
+        ('app.core.moderation.check_moderation', {'return_value': (False, None)}),
+        ('app.routers.solve.check_moderation', {'return_value': (False, None)}),
+        ('app.routers.solve.ground_answer', {'return_value': ("Mocked answer", False, 0.9)}),
+        ('app.core.providers.get_active_providers', {'return_value': []}),
+        ('app.main.llm_client.call_llm', {'return_value': {
             "text": "Mocked answer",
             "provider": "test",
             "model": "test-model",
             "tokens": 10,
             "confidence": 0.9,
-        }))
-        _patches.append(patch('app.main.llm_client.stream_llm', return_value=iter([
+        }}),
+        ('app.main.llm_client.stream_llm', {'return_value': iter([
             {"token": "Mocked", "provider": "test", "model": "test-model"},
             {"token": " answer", "provider": "test", "model": "test-model"},
-        ])))
+        ])}),
+    ):
+        _candidate = _safe_patch(_target, **_kwargs)
+        if _candidate is not None:
+            _patches.append(_candidate)
 
     with ExitStack() as stack:
         for p in _patches:
             stack.enter_context(p)
-=======
 
-    with patch('app.billing.stripe', mock_stripe), \
-         patch.object(billing_module, '_STRIPE_CONFIGURED', True), \
-         patch('openai.OpenAI', return_value=mock_openai_client), \
-         patch('app.main.llm_client.call_llm', return_value={
-             "text": "Mocked answer",
-             "provider": "test",
-             "model": "test-model",
-             "tokens": 10,
-             "confidence": 0.9,
-         }), \
-         patch('app.main.llm_client.stream_llm', return_value=iter([
-             {"token": "Mocked", "provider": "test", "model": "test-model"},
-             {"token": " answer", "provider": "test", "model": "test-model"},
-         ])), \
-         patch('app.core.moderation.check_moderation', return_value=(False, None)), \
-         patch('app.routers.solve.check_moderation', return_value=(False, None)), \
-         patch('app.core.providers.get_active_providers', return_value=[]):
-
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         yield {
             'stripe': mock_stripe,
             'openai': mock_openai_client,

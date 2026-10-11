@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { useChatStore } from '@/lib/store/chat-store'
 import { useUIStore } from '@/lib/store/ui-store'
@@ -18,7 +18,6 @@ import {
   FolderOpen,
   PanelLeftClose,
   PanelLeftOpen,
-<<<<<<< HEAD
   MessageSquarePlus,
   Search,
   Trash2,
@@ -34,7 +33,6 @@ import {
   BarChart3,
   Activity,
 } from 'lucide-react';
-=======
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -50,7 +48,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { Conversation } from '@/types'
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 interface SidebarConversation extends Conversation {
   active?: boolean
@@ -247,7 +244,6 @@ export function Sidebar({
           </Button>
         </div>
 
-<<<<<<< HEAD
         {/* Navigation */}
         {!collapsed && (
           <div className="px-2 py-2 space-y-1">
@@ -267,8 +263,6 @@ export function Sidebar({
         )}
 
         {/* Search */}
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         {!collapsed && (
           <div className="px-2 pb-2">
             <div className="relative">

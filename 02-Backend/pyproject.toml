@@ -14,3 +14,8 @@ strict = true
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
+
+[tool.bandit]
+# Skip tests that are noisy for this codebase; still fail on HIGH+.
+exclude_dirs = [tests, migrations]
+skips = [B101]

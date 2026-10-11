@@ -7,9 +7,7 @@ import asyncio
 from typing import Optional
 from dataclasses import dataclass
 
-<<<<<<< HEAD
 logger = logging.getLogger(__name__)
-=======
 from .core.encryption import decrypt, encrypt
 from .database import get_db
 from .schemas import ToolCreate, ToolOut
@@ -310,7 +308,6 @@ def list_tools(user_id: str) -> list[ToolOut]:
                 )
             )
         return result
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 @dataclass

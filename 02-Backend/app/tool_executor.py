@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 class ToolExecutor:
     def __init__(self, circuit_breaker=None, sandbox=None, audit_logger=None):
-        self._tools = {t.name: t.function for t in get_builtin_tools()}
+        # BuiltinTool stores its callable as `handler`; `function` is the
+        # historical attribute name, so accept either.
+        self._tools = {t.name: getattr(t, "function", None) or t.handler for t in get_builtin_tools()}
         self._circuit_breaker = circuit_breaker
         self._sandbox = sandbox
         self._audit_logger = audit_logger

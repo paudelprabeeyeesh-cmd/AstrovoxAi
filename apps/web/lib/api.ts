@@ -133,7 +133,6 @@ export const api = {
       body: JSON.stringify({ name, args }),
     }),
 
-<<<<<<< HEAD
   // Help Center
   getHelpArticles: (category?: string) =>
     request<{ articles: HelpArticle[] }>(`/support/articles${category ? `?category=${category}` : ''}`),
@@ -472,7 +471,6 @@ export interface Ticket {
   created_at: number
   updated_at: number
   resolved_at?: number
-=======
   createConversation: (title?: string, model?: string) =>
     request<{ status: string; conversation: Conversation }>('/conversations', {
       method: 'POST',
@@ -530,7 +528,6 @@ export interface Ticket {
 
   getConversationMessages: (id: string) =>
     request<{ status: string; messages: Message[] }>(`/conversations/${id}/messages`),
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 }
 
 export interface SearchResult {

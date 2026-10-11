@@ -1,11 +1,8 @@
 
 from typing import List, Dict
 from datetime import datetime
-<<<<<<< HEAD
 from app.repositories.database.client import get_db
-=======
 from ..database import get_db
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class EvidenceCollector:

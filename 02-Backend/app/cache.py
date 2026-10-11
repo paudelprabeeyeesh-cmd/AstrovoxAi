@@ -10,46 +10,8 @@ from typing import Optional, Any
 logger = logging.getLogger(__name__)
 
 
-<<<<<<< HEAD
 class CacheBackend:
     """Abstract cache backend interface."""
-=======
-class CacheManager:
-    """File-backed or Redis-backed cache depending on availability."""
-
-    def __init__(self):
-        self._redis = None
-        self._file_cache: dict[str, tuple[Any, float]] = {}
-        self._try_redis()
-
-    def _try_redis(self):
-        """Attempt to connect to Redis."""
-        try:
-            import redis
-            self._redis = redis.from_url(REDIS_URL, decode_responses=True)
-            self._redis.ping()
-        except Exception as _e:  # noqa: BLE001
-            self._redis = None
-
-    @property
-    def backend(self) -> str:
-        return "redis" if self._redis else "memory"
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
-
-    async def get(self, key: str) -> Optional[Any]:
-        raise NotImplementedError
-
-    async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
-        raise NotImplementedError
-
-    async def delete(self, key: str) -> bool:
-        raise NotImplementedError
-
-    async def exists(self, key: str) -> bool:
-        raise NotImplementedError
-
-    async def clear(self) -> bool:
-        raise NotImplementedError
 
 
 class InMemoryCache(CacheBackend):
@@ -108,7 +70,6 @@ class RedisCache(CacheBackend):
         client = self.client
         if not client:
             return None
-<<<<<<< HEAD
         try:
             value = await client.get(key)
             if value:
@@ -116,24 +77,19 @@ class RedisCache(CacheBackend):
             return None
         except Exception as e:
             logger.error(f"Redis get error: {e}")
-=======
         except Exception as _e:  # noqa: BLE001
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             return None
 
     async def set(self, key: str, value: Any, ttl: int = 300) -> bool:
         client = self.client
         if not client:
             return False
-<<<<<<< HEAD
         try:
             await client.set(key, json.dumps(value), ex=ttl)
             return True
         except Exception as e:
             logger.error(f"Redis set error: {e}")
-=======
         except Exception as _e:  # noqa: BLE001
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             return False
 
     async def delete(self, key: str) -> bool:
@@ -141,18 +97,15 @@ class RedisCache(CacheBackend):
         if not client:
             return False
         try:
-<<<<<<< HEAD
             await client.delete(key)
             return True
         except Exception as e:
             logger.error(f"Redis delete error: {e}")
-=======
             if self._redis:
                 self._redis.delete(key)
                 return True
             return False
         except Exception as _e:  # noqa: BLE001
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             return False
 
     async def exists(self, key: str) -> bool:
@@ -160,35 +113,29 @@ class RedisCache(CacheBackend):
         if not client:
             return False
         try:
-<<<<<<< HEAD
             return bool(await client.exists(key))
         except Exception as e:
             logger.error(f"Redis exists error: {e}")
             return False
-=======
             if self._redis:
                 return self._redis.incrby(key, amount)
             return 0
         except Exception as _e:  # noqa: BLE001
             return 0
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
     async def clear(self) -> bool:
         client = self.client
         if not client:
             return False
         try:
-<<<<<<< HEAD
             await client.flushdb()
             return True
         except Exception as e:
             logger.error(f"Redis clear error: {e}")
-=======
             if self._redis:
                 return self._redis.expire(key, ttl)
             return False
         except Exception as _e:  # noqa: BLE001
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             return False
 
 
@@ -260,6 +207,10 @@ class CacheManager:
 
 
 cache_manager = CacheManager()
+
+# Historical alias: callers import `from app.cache import cache`. Both names
+# refer to the same singleton.
+cache = cache_manager
 
 
 async def _async_cached(key: str, factory, ttl: int = 300):

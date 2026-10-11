@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from .enhanced import (
     get_organization_analytics,
     get_workspace_analytics,
@@ -172,7 +171,6 @@ class _AnalyticsClient:
 
 
 analytics = _AnalyticsClient()
-=======
 from .core import record_event, track_event, get_aggregate_metrics, get_top_models, get_cost_trend
 from .enhanced import get_organization_analytics, get_workspace_analytics, get_user_analytics, export_analytics_csv, export_analytics_json, get_realtime_dashboard
 from .usage_tracker import UsageTracker
@@ -183,7 +181,6 @@ from .feedback_analytics import FeedbackAnalyticsService
 from .feature_analytics import FeatureAnalyticsService
 from .performance_reporter import PerformanceReporter
 from .synthetic_monitor import SyntheticMonitor, SyntheticCheck, SyntheticResult
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 __all__ = [
     "record_event",
@@ -197,7 +194,6 @@ __all__ = [
     "export_analytics_csv",
     "export_analytics_json",
     "get_realtime_dashboard",
-<<<<<<< HEAD
     "record_event",
     "track_event",
     "get_aggregate_metrics",
@@ -206,7 +202,6 @@ __all__ = [
     "AdvancedAnalyticsEngine",
     "advanced_analytics",
     "analytics",
-=======
     "UsageTracker",
     "CostTracker",
     "TokenTracker",
@@ -217,5 +212,4 @@ __all__ = [
     "SyntheticMonitor",
     "SyntheticCheck",
     "SyntheticResult",
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 ]

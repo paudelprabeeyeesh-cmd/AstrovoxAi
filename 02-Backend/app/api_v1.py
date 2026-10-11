@@ -15,9 +15,9 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from ...multi_agent import agent_orchestrator
-from ...workflow_engine import workflow_engine, StepAction
-from ...tool_execution import tool_executor
+from app.multi_agent import agent_orchestrator
+from app.workflow_engine import workflow_engine, StepAction
+from app.tool_execution import tool_executor
 
 logger = logging.getLogger(__name__)
 
@@ -419,4 +419,4 @@ async def run_collaboration(session_id: str, authorization: str = Header(None)):
 
 
 # Import collaboration manager at module level
-from ...multi_agent import collaboration_manager
+from app.multi_agent import collaboration_manager

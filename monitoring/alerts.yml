@@ -1,10 +1,7 @@
 groups:
-<<<<<<< HEAD
   - name: astrovox_alerts
-=======
   - name: astravox_alerts
     interval: 30s
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     rules:
       # ==========================================================================
       # Availability Alerts
@@ -40,7 +37,6 @@ groups:
           description: "Redis cache is unavailable."
 
       - alert: DatabaseDown
-<<<<<<< HEAD
         expr: up{job="postgres"} == 0
         for: 1m
         labels:
@@ -59,7 +55,6 @@ groups:
           description: "Backend CPU usage is above 80%."
 
       - alert: DiskSpaceLow
-=======
         expr: pg_up == 0
         for: 1m
         labels:
@@ -166,16 +161,13 @@ groups:
           description: "Container CPU usage is above 80%."
 
       - alert: LowDiskSpace
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
         for: 5m
         labels:
           severity: warning
-<<<<<<< HEAD
         annotations:
           summary: "Low disk space"
           description: "Node disk space is below 10%."
-=======
           component: infrastructure
         annotations:
           summary: "Low disk space"
@@ -259,4 +251,3 @@ groups:
         annotations:
           summary: "High trace error rate"
           description: "Trace error rate is above 10%."
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

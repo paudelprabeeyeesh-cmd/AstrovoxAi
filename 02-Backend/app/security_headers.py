@@ -26,15 +26,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Content Security Policy (strict - no unsafe-inline)
         response.headers["Content-Security-Policy"] = (
-<<<<<<< HEAD
             "default-src 'self'; "
             "script-src 'self'; "
             "style-src 'self'; "
-=======
             f"default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}'; "
             f"style-src 'self' 'nonce-{nonce}'; "
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             "img-src 'self' data: https:; "
             "font-src 'self'; "
             "connect-src 'self' https://api.openai.com https://*.supabase.co; "

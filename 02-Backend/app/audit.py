@@ -3,10 +3,8 @@ import logging
 import os
 from collections import OrderedDict
 from datetime import datetime, timezone
-<<<<<<< HEAD
 from typing import Optional
 from app.repositories.database.client import get_db
-=======
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -16,7 +14,6 @@ from pydantic import BaseModel
 from .auth import role_required
 
 logger = logging.getLogger(__name__)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class AuditLogger:

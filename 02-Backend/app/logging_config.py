@@ -1,61 +1,22 @@
-"""Compatibility shim: delegates to app.core.logging_config."""
+"""Compatibility shim: delegates to app.core.logging_config.
+
+This module keeps the historical ``app.logging_config`` import path working.
+Callers expect three names here: ``configure_logging``, ``get_logger`` and a
+module-level ``logger`` created from them.
+"""
 
 from app.core.logging_config import (
     configure_logging,
     get_logger,
 )
 
-<<<<<<< HEAD
-def get_logger(name: str = "astravox") -> logging.Logger:
-    """Return a configured logger instance.
+# Historical module-level logger. Kept as an attribute so existing imports
+# (`from app.logging_config import logger`) continue to work.
+logger = get_logger("astravox")
 
-    A thin wrapper so callers can opt into a child logger without
-    having to know how the root logger is configured.
-    """
-
-    root = logging.getLogger("astravox")
-    if not root.handlers:
-        configure_logging()
-    return root.getChild(name)
+__all__ = ["configure_logging", "get_logger", "logger"]
 
 
-def configure_logging():
-    """Configure centralized logging for the application."""
-    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
-    log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
-    os.makedirs(log_dir, exist_ok=True)
-
-    logger = logging.getLogger("astravox")
-    logger.setLevel(getattr(logging, log_level))
-
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(getattr(logging, log_level))
-
-    file_handler = RotatingFileHandler(
-        os.path.join(log_dir, "astravox.log"),
-        maxBytes=10 * 1024 * 1024,
-        backupCount=5,
-    )
-    file_handler.setLevel(getattr(logging, log_level))
-
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    console_handler.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
-
-    if not logger.handlers:
-        logger.addHandler(console_handler)
-        logger.addHandler(file_handler)
-
-    return logger
-
-
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
-logger = configure_logging()
 _STRUCTLOG_AVAILABLE = False
 try:
     import structlog as _sl
@@ -65,6 +26,7 @@ except ImportError:
 
 
 def get_observability_logger(name: str = "astravox"):
+    """Return an observability logger, preferring structlog when installed."""
     if _STRUCTLOG_AVAILABLE:
         return _sl.get_logger(name)
     return get_logger(name)

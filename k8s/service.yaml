@@ -8,12 +8,10 @@ metadata:
 spec:
   selector:
     app: astrovox-backend
-<<<<<<< HEAD
   ports:
   - port: 8000
     targetPort: 8000
     name: http
-=======
   ports:
   - port: 8000
     targetPort: 8000
@@ -36,5 +34,4 @@ spec:
     targetPort: 80
     name: http
     protocol: TCP
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
   type: ClusterIP

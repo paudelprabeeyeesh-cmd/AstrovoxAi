@@ -84,14 +84,11 @@ def get_supabase():
     url = os.getenv("VITE_SUPABASE_URL")
     key = os.getenv("VITE_SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
     if not url or not key:
-<<<<<<< HEAD
         raise RuntimeError(
             "Supabase credentials not configured. "
             "Please copy .env.example to .env and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)."
         )
-=======
         return _FallbackSupabaseClient()
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     if create_client is None:
         raise RuntimeError("Supabase package not installed")
     return create_client(url, key)

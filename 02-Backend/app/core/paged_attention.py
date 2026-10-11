@@ -7,11 +7,8 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass, field
-<<<<<<< HEAD
 from typing import Any, Dict, List, Optional, Tuple
-=======
 from typing import Dict, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 import torch
 
@@ -181,8 +178,6 @@ def paged_attention_forward(q: Any, kv_cache: KVCache, page_table: Dict[int, Pag
     attn = attn.softmax(dim=-1)
     out = torch.matmul(attn, v)
     return out
-<<<<<<< HEAD
-=======
 
 
 @dataclass
@@ -257,4 +252,3 @@ class Scheduler:
             "total_preempted": total_preempted,
             "utilization": round(total_active / (self.max_batch_size * max(len(self.batches), 1)) * 100, 1),
         }
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

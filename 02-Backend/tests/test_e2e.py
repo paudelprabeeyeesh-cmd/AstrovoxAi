@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """End-to-End (E2E) user journey tests.
 
 Tests complete user flows from login to logout, covering:
@@ -223,7 +222,6 @@ class TestUserJourneyErrorRecovery:
     def test_not_found_returns_404(self, client):
         resp = client.get("/nonexistent-endpoint")
         assert resp.status_code == 404
-=======
 
 import os
 import hashlib
@@ -252,4 +250,3 @@ class TestEndToEndUserFlows:
         with TestClient(app) as client:
             response = client.get("/analytics/dashboard")
             assert response.status_code in (401, 403, 302)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

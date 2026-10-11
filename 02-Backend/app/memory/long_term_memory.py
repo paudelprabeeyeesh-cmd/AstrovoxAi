@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Long-term memory with persistence."""
 
 from typing import Dict, Any, Optional, List
@@ -13,19 +12,6 @@ class MemoryImportance(Enum):
     MEDIUM = 3
     LOW = 2
     ARCHIVAL = 1
-
-
-@dataclass
-class LongTermMemory:
-    memory_id: str
-    user_id: str
-    content: str
-    importance: MemoryImportance = MemoryImportance.MEDIUM
-    tags: List[str] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    accessed_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    access_count: int = 0
 
 
 class LongTermMemoryStore:
@@ -62,7 +48,6 @@ class LongTermMemoryStore:
                 results.append(memory)
         results.sort(key=lambda m: (m.importance.value, m.accessed_at), reverse=True)
         return results[:limit]
-=======
 """
 Long-term Memory - Persistent storage layer for memories that persist across sessions.
 
@@ -196,4 +181,3 @@ class LongTermMemory:
             "categories": categories,
             "avg_importance": total_importance / len(ids) if ids else 0.0,
         }
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

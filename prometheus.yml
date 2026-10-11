@@ -40,11 +40,8 @@ scrape_configs:
     metrics_path: '/health'
     scrape_interval: 30s
 
-<<<<<<< HEAD
   - job_name: 'astrovox-inference-health'
     static_configs:
       - targets: ['localhost:8001']
     metrics_path: '/health/ready'
     scrape_interval: 30s
-=======
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

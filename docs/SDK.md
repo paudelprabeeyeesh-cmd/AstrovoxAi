@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # SDK / CLI / API / GraphQL
 
 AstrovoxAI provides comprehensive SDKs and APIs for integrating AI capabilities into any application. This includes REST API, GraphQL, gRPC, SDKs for multiple languages, and a CLI.
@@ -149,7 +148,6 @@ response = stub.Complete(chat_pb2.CompleteRequest(
     temperature=0.7,
     max_tokens=100
 ))
-=======
 # AstrovoxAI SDK
 
 Python and TypeScript snippets for integrating with the AstrovoxAI API.
@@ -158,12 +156,10 @@ Python and TypeScript snippets for integrating with the AstrovoxAI API.
 
 ```
 http://localhost:8000
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 ```
 
 ## Python SDK
 
-<<<<<<< HEAD
 ### Installation
 
 ```bash
@@ -528,7 +524,6 @@ Supported generators:
 - TypeScript/Axios
 - Go
 - Rust
-=======
 Install dependencies:
 ```bash
 pip install httpx pydantic
@@ -831,4 +826,3 @@ try {
     console.error(`Request failed: ${(e as Error).message}`);
 }
 ```
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

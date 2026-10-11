@@ -1,4 +1,4 @@
-﻿import os
+import os
 import tempfile
 from app.core.tokenizer import BPETokenizer
 

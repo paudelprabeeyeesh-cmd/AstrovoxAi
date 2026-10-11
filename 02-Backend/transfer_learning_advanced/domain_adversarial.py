@@ -48,7 +48,7 @@ class DomainClassifier:
 
     def compute_loss(self, x: np.ndarray, domain_labels: np.ndarray) -> Tuple[float, np.ndarray]:
         logits = self.forward(x)
-        loss = float(np.mean(np.log(1 + np.exp(-logits * domain_labels.reshape(-1, 1) * 2 - 1)))
+        loss = float(np.mean(np.log(1 + np.exp(-logits * domain_labels.reshape(-1, 1) * 2 - 1))))
         return loss, logits
 
 

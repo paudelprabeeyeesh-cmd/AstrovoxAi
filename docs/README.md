@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # AstrovoxAI Documentation
 
 Welcome to the AstrovoxAI documentation. This directory contains comprehensive guides for developers, operators, and contributors.
@@ -112,7 +111,6 @@ Welcome to the AstrovoxAI documentation. This directory contains comprehensive g
 ## Contributing to Docs
 
 Found a gap or error? Please open an issue or submit a PR following [CONTRIBUTING.md](CONTRIBUTING.md).
-=======
 # AstrovoxAI API Documentation
 
 Quick-reference endpoint table for the AstrovoxAI backend.
@@ -149,4 +147,3 @@ Quick-reference endpoint table for the AstrovoxAI backend.
 Base URL: `http://localhost:8000`
 
 All protected endpoints require an `Authorization: Bearer <access_token>` header.
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -18,7 +18,7 @@ class TestProgressiveNetwork:
         config = ColumnConfig(input_dim=8, hidden_dim=16, output_dim=4, lr=0.01)
         net = ProgressiveNetwork(config)
         x = np.random.randn(8, 8).astype(np.float64)
-        y = np.random.randn(8, 4).astype(np.float64
+        y = np.random.randn(8, 4).astype(np.float64)
 
     def test_add_task_column(self):
         config = ColumnConfig(input_dim=8, hidden_dim=16, output_dim=4)

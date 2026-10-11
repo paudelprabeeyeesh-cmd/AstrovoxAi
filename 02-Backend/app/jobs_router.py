@@ -5,8 +5,8 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from ...jobs import job_queue, JobPriority, JobStatus
-from ...events import event_bus
+from app.jobs import job_queue, JobPriority, JobStatus
+from app.events import event_bus
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 

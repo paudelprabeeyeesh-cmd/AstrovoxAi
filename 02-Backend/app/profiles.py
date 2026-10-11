@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from app.repositories.database.client import get_db
-from ...schemas import UserProfileOut
+from app.schemas import UserProfileOut
 
 
 def get_profile(user_id: str) -> UserProfileOut:

@@ -1,4 +1,4 @@
-"""Phase 393 — Customer Success Platform
+"""Phase 393 - Customer Success Platform
 Health scoring, onboarding automation, support tickets, NPS tracking, churn prediction
 """
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Phase393Config:
-    """Configuration for Phase 393 — Customer Success Platform."""
+    """Configuration for Phase 393 - Customer Success Platform."""
     enabled: bool = True
     settings: dict = field(default_factory=dict)
     created_at: float = 0.0
@@ -23,7 +23,7 @@ class Phase393Config:
 
 
 class Phase393Manager:
-    """Manager for Phase 393 — Customer Success Platform."""
+    """Manager for Phase 393 - Customer Success Platform."""
 
     def __init__(self):
         self._config = Phase393Config()
@@ -32,7 +32,7 @@ class Phase393Manager:
 
     def initialize(self):
         """Initialize the module."""
-        logger.info("Phase 393 — Customer Success Platform initialized")
+        logger.info("Phase 393 - Customer Success Platform initialized")
 
     def get_status(self) -> dict:
         """Get module status."""

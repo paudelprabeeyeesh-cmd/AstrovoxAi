@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Weekly fine-tune script for AstrovoxAI.
 Pulls high-rated interactions, formats as JSONL, validates, and triggers fine-tuning API.

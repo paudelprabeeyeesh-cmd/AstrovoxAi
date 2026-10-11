@@ -1,0 +1,22 @@
+# Dev image for the AstrovoxAI platform (backend + tooling).
+# Referenced by .devcontainer/devcontainer.json as the `dev` target.
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONPATH=/workspace/02-Backend
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl build-essential ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+COPY 02-Backend/pyproject.toml /workspace/02-Backend/ || true
+RUN python -m pip install -U pip
+
+WORKDIR /workspace/02-Backend
+RUN python -m pip install -e . || true
+
+WORKDIR /workspace
+
+CMD ["sleep", "infinity"]

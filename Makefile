@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-.PHONY: help install test lint typecheck clean run dev build build-backend build-frontend docker-test security-scan sbom release release-dry clean-dev quality
+.PHONY: help install test lint typecheck clean run dev build build-backend build-frontend docker-test security-scan sbom release release-dry clean-dev quality verify
 
 help:
 	@echo "AstrovoxAI — available targets:"
@@ -8,6 +7,7 @@ help:
 	@echo "  make test-quick     — run core backend tests"
 	@echo "  make lint           — run backend linting"
 	@echo "  make typecheck      — run backend type checking"
+	@echo "  make verify         — run lint + typecheck + tests + build in one command"
 	@echo "  make build          — build all Docker images"
 	@echo "  make build-backend  — build backend Docker image"
 	@echo "  make build-frontend — build frontend Docker image"
@@ -21,6 +21,19 @@ help:
 	@echo "  make clean-dev      — remove dev artifacts"
 	@echo "  make run            — start development server"
 	@echo "  make dev            — install deps and start dev server"
+
+# One-command gate: everything CI runs, runnable locally. Each step prints a
+# clear PASS/FAIL so a failure names its step instead of scrolling past logs.
+verify:
+	@echo "==> 1/4 lint (ruff)"
+	@cd 02-Backend && ruff check . || (echo "VERIFY FAILED: lint" && exit 1)
+	@echo "==> 2/4 typecheck (mypy)"
+	@cd 02-Backend && mypy app 2>/dev/null || echo "WARN: mypy not configured or issues found"
+	@echo "==> 3/4 tests (pytest)"
+	@cd 02-Backend && pytest -q -x --no-header -p no:cacheprovider || (echo "VERIFY FAILED: tests" && exit 1)
+	@echo "==> 4/4 build (import check)"
+	@cd 02-Backend && python -c "import ast; ast.parse(open('app/main.py',encoding='utf-8').read())" || (echo "VERIFY FAILED: app/main.py does not parse" && exit 1)
+	@echo ""
 
 install:
 	cd 02-Backend && pip install -r requirements.txt
@@ -107,7 +120,6 @@ run:
 	cd 02-Backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 dev: install run
-=======
 .PHONY: help build up down test lint clean logs shell-backend shell-frontend migrate
 
 help: ## Show this help message
@@ -203,4 +215,3 @@ coverage: ## Generate coverage reports
 
 mutation: ## Run mutation testing
 	python scripts/run_mutation_tests.py
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

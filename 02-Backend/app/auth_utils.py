@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Shared authentication helpers for FastAPI routers."""
 
 from typing import Any, Dict, Optional
@@ -71,7 +70,6 @@ async def get_current_user(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Invalid or expired token",
     )
-=======
 """Auth utilities for JWT token validation."""
 
 from fastapi import Header, HTTPException, status
@@ -114,4 +112,3 @@ def get_user_id_from_token(authorization: Optional[str] = Header(default=None)) 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

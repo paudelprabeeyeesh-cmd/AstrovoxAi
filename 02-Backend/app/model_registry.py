@@ -1,4 +1,4 @@
-"""Phase 382 — AI Model Registry
+"""Phase 382 - AI Model Registry
 Model versioning, capability detection, health checks, benchmark results, routing rules
 """
 
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Phase382Config:
-    """Configuration for Phase 382 — AI Model Registry."""
+    """Configuration for Phase 382 - AI Model Registry."""
     enabled: bool = True
     settings: dict = field(default_factory=dict)
     created_at: float = 0.0
@@ -23,7 +23,7 @@ class Phase382Config:
 
 
 class Phase382Manager:
-    """Manager for Phase 382 — AI Model Registry."""
+    """Manager for Phase 382 - AI Model Registry."""
 
     def __init__(self):
         self._config = Phase382Config()
@@ -32,7 +32,7 @@ class Phase382Manager:
 
     def initialize(self):
         """Initialize the module."""
-        logger.info("Phase 382 — AI Model Registry initialized")
+        logger.info("Phase 382 - AI Model Registry initialized")
 
     def get_status(self) -> dict:
         """Get module status."""

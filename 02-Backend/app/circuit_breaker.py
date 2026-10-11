@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Layer 9 — Circuit breakers, token quotas, cost monitoring.
 
 Phase 350 — AI Reliability Foundation:
@@ -17,45 +16,15 @@ from enum import Enum
 
 from app.exceptions import AstrovoxError
 from app.utils import CircuitState
-=======
-import asyncio
-import logging
-import random
-import threading
-import time
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Awaitable, Callable, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 
 
-<<<<<<< HEAD
 class ProviderError(AstrovoxError):
     """AI provider error."""
     def __init__(self, message: str, provider: str = "", **kwargs):
         super().__init__(message, code="PROVIDER_ERROR", **kwargs)
         self.provider = provider
-=======
-class CircuitState(Enum):
-    CLOSED = "closed"
-    OPEN = "open"
-    HALF_OPEN = "half_open"
-
-
-@dataclass
-class CircuitMetrics:
-    name: str
-    state: str = "closed"
-    failure_count: int = 0
-    success_count: int = 0
-    last_failure_time: Optional[float] = None
-    last_success_time: Optional[float] = None
-    opened_at: Optional[float] = None
-    total_calls: int = 0
-    rejected_calls: int = 0
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class ValidationError(AstrovoxError):
@@ -146,7 +115,6 @@ class RetryPolicy:
 
     def __init__(
         self,
-<<<<<<< HEAD
         max_retries: int = 3,
         base_delay: float = 1.0,
         max_delay: float = 30.0,
@@ -391,12 +359,19 @@ class CircuitBreaker:
     failure_threshold: int = 5
     recovery_timeout: float = 60.0
     half_open_max_calls: int = 3
+    # Historical alias for half_open_max_calls. Callers that pass
+    # `success_threshold=` get the half-open threshold; -1 means unset.
+    success_threshold: int = -1
     state: CircuitState = CircuitState.CLOSED
     failure_count: int = 0
     success_count: int = 0
     last_failure_time: float = 0.0
     last_success_time: float = 0.0
     half_open_calls: int = 0
+
+    def __post_init__(self):
+        if self.success_threshold is not None and self.success_threshold >= 0:
+            self.half_open_max_calls = self.success_threshold
 
     def can_execute(self) -> bool:
         """Check if a call can be made."""
@@ -600,143 +575,3 @@ circuit_breaker_manager = CircuitBreakerManager()
 quota_manager = QuotaManager()
 cost_monitor = CostMonitor()
 
-=======
-        name: str,
-        failure_threshold: int = 5,
-        recovery_timeout: float = 60.0,
-        success_threshold: int = 1,
-        half_open_max_calls: int = 3,
-    ) -> None:
-        self.name = name
-        self.failure_threshold = failure_threshold
-        self.recovery_timeout = recovery_timeout
-        self.success_threshold = success_threshold
-        self.half_open_max_calls = half_open_max_calls
-        self._lock = threading.Lock()
-        self._state = CircuitState.CLOSED
-        self._failure_count = 0
-        self._success_count = 0
-        self._last_failure_time: Optional[float] = None
-        self._last_success_time: Optional[float] = None
-        self._opened_at: Optional[float] = None
-        self._total_calls = 0
-        self._rejected_calls = 0
-        self._half_open_calls = 0
-
-    def _maybe_recover(self) -> None:
-        if self._state == CircuitState.OPEN and self._opened_at is not None:
-            if time.time() - self._opened_at >= self.recovery_timeout:
-                self._state = CircuitState.HALF_OPEN
-                self._half_open_calls = 0
-                logger.info("Circuit breaker %s transitioned to half-open", self.name)
-
-    def get_state(self) -> str:
-        with self._lock:
-            self._maybe_recover()
-            return self._state.value
-
-    def metrics(self) -> CircuitMetrics:
-        with self._lock:
-            self._maybe_recover()
-            return CircuitMetrics(
-                name=self.name,
-                state=self._state.value,
-                failure_count=self._failure_count,
-                success_count=self._success_count,
-                last_failure_time=self._last_failure_time,
-                last_success_time=self._last_success_time,
-                opened_at=self._opened_at,
-                total_calls=self._total_calls,
-                rejected_calls=self._rejected_calls,
-            )
-
-    def call(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
-        with self._lock:
-            self._maybe_recover()
-            if self._state == CircuitState.OPEN:
-                self._rejected_calls += 1
-                raise RuntimeError(f"Circuit breaker {self.name} is open")
-            if self._state == CircuitState.HALF_OPEN:
-                if self._half_open_calls >= self.half_open_max_calls:
-                    self._rejected_calls += 1
-                    raise RuntimeError(f"Circuit breaker {self.name} is half-open (throttled)")
-                self._half_open_calls += 1
-            self._total_calls += 1
-        try:
-            result = func(*args, **kwargs)
-            self._on_success()
-            return result
-        except Exception as exc:
-            self._on_failure()
-            raise exc
-
-    async def call_async(self, func: Callable[..., Awaitable[Any]], *args: Any, **kwargs: Any) -> Any:
-        with self._lock:
-            self._maybe_recover()
-            if self._state == CircuitState.OPEN:
-                self._rejected_calls += 1
-                raise RuntimeError(f"Circuit breaker {self.name} is open")
-            if self._state == CircuitState.HALF_OPEN:
-                if self._half_open_calls >= self.half_open_max_calls:
-                    self._rejected_calls += 1
-                    raise RuntimeError(f"Circuit breaker {self.name} is half-open (throttled)")
-                self._half_open_calls += 1
-            self._total_calls += 1
-        try:
-            result = await func(*args, **kwargs)
-            self._on_success()
-            return result
-        except Exception as exc:
-            self._on_failure()
-            raise exc
-
-    def _on_success(self) -> None:
-        with self._lock:
-            self._failure_count = 0
-            self._last_success_time = time.time()
-            if self._state == CircuitState.HALF_OPEN:
-                self._success_count += 1
-                if self._success_count >= self.success_threshold:
-                    self._state = CircuitState.CLOSED
-                    self._success_count = 0
-                    self._half_open_calls = 0
-                    logger.info("Circuit breaker %s closed after recovery", self.name)
-            else:
-                self._state = CircuitState.CLOSED
-
-    def _on_failure(self) -> None:
-        with self._lock:
-            self._failure_count += 1
-            self._last_failure_time = time.time()
-            if self._failure_count >= self.failure_threshold:
-                self._state = CircuitState.OPEN
-                self._opened_at = time.time()
-                self._half_open_calls = 0
-                logger.error("Circuit breaker %s opened due to failures", self.name)
-
-    def reset(self) -> None:
-        with self._lock:
-            self._failure_count = 0
-            self._success_count = 0
-            self._state = CircuitState.CLOSED
-            self._last_failure_time = None
-            self._last_success_time = None
-            self._opened_at = None
-            self._total_calls = 0
-            self._rejected_calls = 0
-            self._half_open_calls = 0
-
-
-llm_circuit_breaker = CircuitBreaker(
-    name="llm", failure_threshold=5, recovery_timeout=60, success_threshold=1
-)
-db_circuit_breaker = CircuitBreaker(
-    name="database", failure_threshold=3, recovery_timeout=30, success_threshold=1
-)
-redis_circuit_breaker = CircuitBreaker(
-    name="redis", failure_threshold=3, recovery_timeout=30, success_threshold=1
-)
-external_api_circuit_breaker = CircuitBreaker(
-    name="external_api", failure_threshold=10, recovery_timeout=120, success_threshold=1
-)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

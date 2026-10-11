@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from app.repositories.database.client import get_db
-from ...schemas import KnowledgeDocCreate, KnowledgeDocOut
+from app.schemas import KnowledgeDocCreate, KnowledgeDocOut
 
 
 def create_doc(user_id: str, data: KnowledgeDocCreate) -> KnowledgeDocOut:

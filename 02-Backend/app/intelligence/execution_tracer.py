@@ -15,10 +15,7 @@ Provides explainability by tracking and exposing:
 from typing import Any, Dict, List, Optional
 from enum import Enum
 from datetime import datetime
-<<<<<<< HEAD
-=======
 from dataclasses import dataclass
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 class TraceEventType(str, Enum):

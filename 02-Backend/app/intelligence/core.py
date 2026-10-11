@@ -14,11 +14,8 @@ The central orchestration layer that coordinates all intelligence components:
 - Self-Correction Loop
 """
 
-<<<<<<< HEAD
 from typing import Dict, List, Any, Optional
-=======
 from typing import Any, Dict, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 import uuid
 
 from .model_orchestrator import ModelOrchestrator
@@ -28,16 +25,15 @@ from .tool_engine import ToolEngine
 from .planning_engine import PlanningEngine
 from .response_generator import ResponseGenerator, ResponseFormat
 from .cost_optimizer import CostOptimizer
-<<<<<<< HEAD
 from .execution_tracer import ExecutionTracer
-=======
 from .execution_tracer import ExecutionTracer, TraceEventType
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from .reliability import ReliabilitySafeguards
 from app.model_router_v2 import MultiModelRouter, RoutingRequest, RoutingPolicy, FallbackStrategy
 from app.context_compression import ContextCompressor, CompressionStrategy
 from app.self_correction import SelfCorrectionLoop
-from app.thinking import get_thinking_config
+# app.thinking imports app.intelligence.execution_tracer, so importing it at
+# module scope creates a cycle (thinking -> intelligence.execution_tracer )
+# . Import lazily at the call site instead.
 
 
 class IntelligenceCore:
@@ -179,6 +175,9 @@ class IntelligenceCore:
                 memory_retriever=self.memory_retriever,
                 knowledge_searcher=self.knowledge_searcher,
             )
+
+            # Deferred import to break the app.thinking <-> app.intelligence cycle.
+            from app.thinking import get_thinking_config
 
             thinking = get_thinking_config(
                 effort="medium",

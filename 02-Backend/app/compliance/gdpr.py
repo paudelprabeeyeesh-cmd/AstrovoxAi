@@ -1,9 +1,6 @@
 
 from datetime import datetime, timezone
-<<<<<<< HEAD
-=======
 from ..database import get_db
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from .reporter import ComplianceReporter
 from .collector import EvidenceCollector
 
@@ -44,13 +41,10 @@ class GDPRCompliance:
         }
 
     def verify_data_portability(self, org_id: str, user_id: str, format: str = "json") -> dict:
-<<<<<<< HEAD
         from ...compliance import export_user_data
         data = export_user_data(user_id)
-=======
         from ..compliance import export_user_data
         export_user_data(user_id)
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
         return {
             "right": "right_to_data_portability",
             "user_id": user_id,

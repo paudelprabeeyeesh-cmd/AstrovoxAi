@@ -2,18 +2,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 
-@dataclass
-class PersistentSelfModel:
-    identity: str
-    personality_traits: dict[str, float]
-    memory_anchors: list[str]
-    relationship_graph: dict[str, list[str]]
-    continuity_token: str
-    version: int = 1
-    created_at: datetime = field(default_factory=datetime.now)
-    updated_at: datetime = field(default_factory=datetime.now)
-
-
 class PersistentSelfModel:
     def __init__(self, identity: str = "digital_self"):
         self.model = PersistentSelfModel(

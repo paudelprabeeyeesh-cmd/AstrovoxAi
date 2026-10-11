@@ -20,7 +20,6 @@ class KnowledgeDistiller:
         self.temperature = temperature
         self.alpha = alpha
 
-<<<<<<< HEAD
     def distillation_loss(self, student_logits: torch.Tensor, teacher_logits: torch.Tensor, labels: torch.Tensor) -> Tuple[torch.Tensor, Dict[str, float]]:
         soft_targets = F.softmax(teacher_logits / self.temperature, dim=-1)
         soft_prob = F.log_softmax(student_logits / self.temperature, dim=-1)
@@ -40,7 +39,6 @@ class KnowledgeDistiller:
         loss.backward()
         optimizer.step()
         return metrics
-=======
     def generate_training_data(self, teacher_model: str, prompts: List[str], num_samples: int = 100) -> List[Dict[str, Any]]:
         if not self._client:
             raise RuntimeError("OpenAI API key is required for teacher model. Set OPENAI_API_KEY.")
@@ -103,4 +101,3 @@ class KnowledgeDistiller:
         exact_matches = sum(1 for r in results if r["predicted"].strip() == r["reference"].strip())
         accuracy = exact_matches / total
         return {"accuracy": accuracy, "samples": total, "results": results}
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

@@ -2,12 +2,9 @@
 from __future__ import annotations
 
 import logging
-<<<<<<< HEAD
 from dataclasses import dataclass
-=======
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 from app.config import settings
 from app.intelligence.execution_tracer import ExecutionTracer

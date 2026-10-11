@@ -14,7 +14,6 @@ This module provides a structured, persistent memory system with:
 - Visualization
 """
 
-<<<<<<< HEAD
 from .context_memory import ContextMemory
 from .conversation_memory import ConversationMemory
 from .semantic_memory import SemanticMemory
@@ -28,7 +27,6 @@ from .advanced_memory import AdvancedMemoryManager, MemoryFragment, ImportanceSc
 from .memory_consolidation import MemoryConsolidator, ConsolidatedMemory
 from .memory_ranking import MemoryRanker, RankedMemory
 from .memory_manager import MemoryManager, get_memory_manager
-=======
 from .context_memory import ContextMemory  # noqa: F401
 from .conversation_memory import ConversationMemory  # noqa: F401
 from .semantic_memory import SemanticMemory  # noqa: F401
@@ -46,7 +44,6 @@ from .importance_scorer import ImportanceScorer  # noqa: F401
 from .retrieval_engine import RetrievalEngine, RetrievalMethod  # noqa: F401
 from .vector_store import VectorStore  # noqa: F401
 from ..memory_service import memory_service
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 __all__ = [
     "ContextMemory",
@@ -55,8 +52,6 @@ __all__ = [
     "EpisodicMemory",
     "ProceduralMemory",
     "WorkspaceMemory",
-<<<<<<< HEAD
-=======
     "LongTermMemory",
     "UserMemory",
     "MemoryManager",
@@ -64,7 +59,6 @@ __all__ = [
     "MemoryCompression",
     "MemorySync",
     "MemoryVisualization",
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     "ImportanceScorer",
     "RetrievalEngine",
     "RetrievalMethod",

@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 import time
 from dataclasses import dataclass
-from typing: Dict, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 

@@ -7,7 +7,7 @@ from fastapi import APIRouter, Header, HTTPException, UploadFile, File, status
 from pydantic import BaseModel, Field
 
 from app.utils.auth.auth_utils import get_user_id_from_token
-from ...document_intelligence import (
+from app.document_intelligence import (
     SUPPORTED_FORMATS,
     CitationGenerator,
     DocumentParser,

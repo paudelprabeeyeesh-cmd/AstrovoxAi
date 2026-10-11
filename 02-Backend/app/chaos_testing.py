@@ -74,13 +74,10 @@ class PostgresKillScenario(ChaosScenario):
         connection = self.db_factory()
         try:
             connection.close()
-<<<<<<< HEAD
         except Exception:
             logger.warning("database close failed during chaos inject", exc_info=True)
-=======
         except Exception:  # noqa: BLE001
             pass
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
     async def recover(self) -> None:
         if self.db_factory is None:

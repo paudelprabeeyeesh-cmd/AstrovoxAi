@@ -1,6 +1,4 @@
 import logging
-<<<<<<< HEAD
-=======
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
@@ -9,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 from app.tool_cache import tool_cache
 from sandboxing.tool_metrics import tool_metrics
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 

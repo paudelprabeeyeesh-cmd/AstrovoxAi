@@ -7,10 +7,10 @@ from fastapi import APIRouter, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from typing import Optional
 
-from ...utils.auth.auth_utils import get_user_id_from_token
-from ...enterprise.service import org_service
-from ...enterprise import rbac
-from ...workspace import workspace_manager
+from app.utils.auth.auth_utils import get_user_id_from_token
+from app.enterprise.service import org_service
+from app.enterprise import rbac
+from app.workspace import workspace_manager
 
 
 router = APIRouter(prefix="/api/workspaces", tags=["workspace"])

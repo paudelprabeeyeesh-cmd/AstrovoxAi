@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 
 from app.enterprise_audit import export_audit_logs
-from ...retention import retention_engine
+from app.retention import retention_engine
 from app.billing_meter import billing_meter
 from app.usage_quota import usage_quota_manager
 from app.iam import require_admin, Principal

@@ -1,80 +1,3 @@
-<<<<<<< HEAD
-"""Resource monitor endpoint helper."""
-
-import logging
-import os
-import threading
-import time
-
-logger = logging.getLogger("astrovox.resource_monitor")
-
-
-class ResourceMonitor:
-    """Monitor system resources and expose endpoint-ready summaries."""
-
-    def __init__(self) -> None:
-        self._snapshots: list[dict] = []
-        self._max_snapshots = 500
-
-    def take_snapshot(self) -> dict:
-        snapshot = {
-            "timestamp": time.time(),
-            "cpu_percent": self._get_cpu_percent(),
-            "memory_percent": self._get_memory_percent(),
-            "memory_used_mb": self._get_memory_used_mb(),
-            "open_files": self._get_open_files(),
-            "thread_count": threading.active_count(),
-            "process_id": os.getpid(),
-        }
-        self._snapshots.append(snapshot)
-        if len(self._snapshots) > self._max_snapshots:
-            self._snapshots = self._snapshots[-self._max_snapshots:]
-        return snapshot
-
-    def get_current(self) -> dict:
-        return self.take_snapshot()
-
-    def get_history(self, limit: int = 100) -> list[dict]:
-        return self._snapshots[-limit:]
-
-    def get_summary(self) -> dict:
-        if not self._snapshots:
-            return {"status": "no_data"}
-        latest = self._snapshots[-1]
-        return {
-            "status": "ok",
-            "latest": latest,
-            "sample_count": len(self._snapshots),
-        }
-
-    def _get_cpu_percent(self) -> float:
-        try:
-            import psutil
-            return psutil.cpu_percent(interval=0.1)
-        except ImportError:
-            return 0.0
-
-    def _get_memory_percent(self) -> float:
-        try:
-            import psutil
-            return psutil.virtual_memory().percent
-        except ImportError:
-            return 0.0
-
-    def _get_memory_used_mb(self) -> float:
-        try:
-            import psutil
-            return psutil.virtual_memory().used / (1024 * 1024)
-        except ImportError:
-            return 0.0
-
-    def _get_open_files(self) -> int:
-        try:
-            import psutil
-            return len(psutil.Process().open_files())
-        except ImportError:
-            return 0
-=======
 """Resource monitoring for AstrovoxAI backend.
 
 Provides CPU, memory, disk, and network metrics collection.
@@ -84,11 +7,18 @@ from __future__ import annotations
 
 import logging
 import os
-import psutil
 import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
+
+# psutil is a declared requirement for collection, but a guarded import
+# keeps the module importable in minimal environments; collection then
+# degrades to zeros instead of failing the whole app startup.
+try:
+    import psutil
+except ImportError:  # pragma: no cover - only hit in minimal environments
+    psutil = None
 
 logger = logging.getLogger(__name__)
 
@@ -116,10 +46,23 @@ class ResourceMonitor:
         self._lock = threading.Lock()
         self._running = False
         self._thread: Optional[threading.Thread] = None
-        self._process = psutil.Process(os.getpid())
-        self._last_net = psutil.net_io_counters()
+        self._process = psutil.Process(os.getpid()) if psutil is not None else None
+        self._last_net = psutil.net_io_counters() if psutil is not None else None
 
     def _collect(self) -> ResourceSnapshot:
+        if psutil is None or self._process is None:
+            # Metrics unavailable without psutil: report a zeroed snapshot
+            # rather than raising, so monitoring stays inert instead of fatal.
+            return ResourceSnapshot(
+                cpu_percent=0.0,
+                memory_percent=0.0,
+                memory_rss_mb=0.0,
+                disk_usage_percent=0.0,
+                network_sent_mb=0.0,
+                network_recv_mb=0.0,
+                open_file_descriptors=0,
+                thread_count=0,
+            )
         net = psutil.net_io_counters()
         disk = psutil.disk_usage("/")
         mem = self._process.memory_info()
@@ -178,7 +121,6 @@ class ResourceMonitor:
                 "threads": self._snapshots[-1].thread_count,
                 "sample_count": len(self._snapshots),
             }
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 resource_monitor = ResourceMonitor()

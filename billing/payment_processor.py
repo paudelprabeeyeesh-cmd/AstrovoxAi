@@ -76,8 +76,8 @@ class PaymentProcessor:
     def create_payment_intent(
         self,
         amount: float,
-        currency: str = "usd",
         developer_id: str,
+        currency: str = "usd",
         invoice_id: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> PaymentResult:
@@ -125,7 +125,7 @@ class PaymentProcessor:
             last_four=payment_method_data.get("last_four", "0000"),
             brand=payment_method_data.get("brand", "unknown"),
             expiry_month=payment_method_data.get("expiry_month", 1),
-            expiry_year=payment_method_data.get("expiry_year", 2025"),
+            expiry_year=payment_method_data.get("expiry_year", 2025),
         )
         self._payment_methods[developer_id] = method
         logger.info("Added payment method for developer %s", developer_id)

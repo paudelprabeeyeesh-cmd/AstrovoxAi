@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from ...repositories.database.supabase_client import get_supabase
+from app.repositories.database.supabase_client import get_supabase
 
 
 security_scheme = HTTPBearer(auto_error=False)

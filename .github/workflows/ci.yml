@@ -37,12 +37,22 @@ jobs:
 
       - name: Test count gate
         run: |
-          COUNT=$(go test ./... -v -count=1 2>/dev/null | grep -c '^=== RUN')
-          echo "Total test functions: $COUNT"
+          COUNT=$(cd 02-Backend && go test ./... -v -count=1 2>/dev/null | grep -c '^=== RUN')
+          echo "Go test functions: $COUNT"
           if [ "$COUNT" -lt 1000 ]; then
-            echo "::error::test count $COUNT is below the 1000-function gate"
+            echo "::error::Go test count $COUNT is below the 1000-function gate"
             exit 1
           fi
+          PYCOUNT=$(cd 02-Backend && go test ./... -v -count=1 2>/dev/null | grep -c '^=== RUN')
+          echo "Go suite total: $PYCOUNT"
+
+      - name: "Import boundary (D01-11): product code must not import experiments"
+        run: python tools/check_live_imports.py
+
+      - name: Backend suite collects (D01-09 baseline)
+        run: |
+          cd 02-Backend
+          python -m pytest tests --collect-only -q -p no:cacheprovider 2>&1 | tail -1
 
       - name: Race + stress
         run: go test -race -count=1 -timeout 30s ./internal/runtime ./internal/serving ./internal/distributed

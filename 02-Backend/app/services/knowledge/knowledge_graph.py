@@ -1,4 +1,4 @@
-﻿"""Knowledge graph integration with graph RAG."""
+"""Knowledge graph integration with graph RAG."""
 
 from __future__ import annotations
 

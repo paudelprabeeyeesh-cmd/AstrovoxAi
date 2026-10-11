@@ -1,10 +1,8 @@
 import uuid
 from datetime import datetime, timezone
 
-<<<<<<< HEAD
 from app.repositories.database.client import get_db
-from ...schemas import ConversationOut, ConversationSearchOut, MessageOut
-=======
+from app.schemas import ConversationOut, ConversationSearchOut, MessageOut
 from .database import get_db
 from .schemas import (
     ConversationOut,
@@ -12,7 +10,6 @@ from .schemas import (
     MessageOut,
     ConversationUpdate,
 )
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 
 def create_conversation(user_id: str, title: str = None, model: str = "gpt-4") -> ConversationOut:

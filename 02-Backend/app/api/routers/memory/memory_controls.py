@@ -10,8 +10,8 @@ from typing import Any, Dict
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
-from ...services.memory.memory_manager import MemoryManager
-from ...core.context_manager import ContextChunk, LongContextManager
+from app.services.memory.memory_manager import MemoryManager
+from app.core.context_manager import ContextChunk, LongContextManager
 
 logger = logging.getLogger(__name__)
 

@@ -6,11 +6,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..auth import require_verified_email
-<<<<<<< HEAD
 from app.repositories.database.client import get_db
-=======
 from ..database import get_db
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 from ..schemas import BatchJobCreate
 
 logger = logging.getLogger(__name__)

@@ -5,12 +5,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-<<<<<<< HEAD
-from ...config import settings
-=======
 from app.config import settings
 from app.intelligence.execution_tracer import ExecutionTracer
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
 
 logger = logging.getLogger(__name__)
 

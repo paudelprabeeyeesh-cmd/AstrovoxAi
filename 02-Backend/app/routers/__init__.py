@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 __all__ = [
     "audio_router",
     "voice_router",
@@ -80,6 +79,4 @@ from .inference_engine_api import router as inference_engine_api_router
 from .agi_router import router as agi_router
 from .integrations import router as integrations_router
 from .mcp import router as mcp_router
-=======
 """Routers package."""
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

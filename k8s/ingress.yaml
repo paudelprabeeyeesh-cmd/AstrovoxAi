@@ -8,7 +8,6 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
-<<<<<<< HEAD
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/rate-limit: "120"
     nginx.ingress.kubernetes.io/rate-limit-window: "1m"
@@ -19,7 +18,6 @@ spec:
   - hosts:
     - astrovox.ai
     - api.astrovox.ai
-=======
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
@@ -31,7 +29,6 @@ spec:
   - hosts:
     - astrovox.example.com
     - api.astrovox.example.com
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     secretName: astrovox-tls
   rules:
   - host: astrovox.ai
@@ -43,23 +40,17 @@ spec:
           service:
             name: astrovox-frontend
             port:
-<<<<<<< HEAD
               number: 8000
   - host: api.astrovox.ai
-=======
               number: 80
   - host: api.astrovox.example.com
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-<<<<<<< HEAD
             name: astrovox-service
-=======
             name: astrovox-backend
->>>>>>> 10617909505295e4a37b817bb54db2364934b978
             port:
               number: 8000

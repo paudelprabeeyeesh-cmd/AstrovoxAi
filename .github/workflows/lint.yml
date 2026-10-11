@@ -1,7 +1,6 @@
 name: Lint
 
 on:
-<<<<<<< HEAD
   pull_request:
     branches: [main, develop]
   push:
@@ -30,7 +29,6 @@ jobs:
       - name: Run mypy
         run: |
           mypy models examples --ignore-missing-imports --follow-imports=silent || true
-=======
   push:
     branches: [main, develop]
   pull_request:
@@ -60,4 +58,3 @@ jobs:
           cache: 'pip'
       - run: pip install ruff
       - run: ruff check 02-Backend/app 02-Backend/tests
->>>>>>> 10617909505295e4a37b817bb54db2364934b978

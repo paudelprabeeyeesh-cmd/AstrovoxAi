@@ -3,10 +3,10 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ...schemas import MemoryCreate, MemoryUpdate, MemoryOut, MemoryClassifyRequest, MemoryClassifyResponse
+from app.schemas import MemoryCreate, MemoryUpdate, MemoryOut, MemoryClassifyRequest, MemoryClassifyResponse
 from ..services import memory as memory_service
 from ..auth import require_verified_email, get_current_user
-from ...repositories.database.client import get_db
+from app.repositories.database.client import get_db
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
-from typing: List, Optional
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 

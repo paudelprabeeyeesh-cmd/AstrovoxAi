@@ -18,7 +18,7 @@ from ..secure_executor import (
     SandboxConfig,
     execute_user_code,
 )
-from ...iam import require_admin
+from app.iam import require_admin
 
 
 router = APIRouter(prefix="/sandbox", tags=["sandbox"])
