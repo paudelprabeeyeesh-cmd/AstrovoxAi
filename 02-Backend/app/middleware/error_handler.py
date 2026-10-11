@@ -10,6 +10,7 @@ import logging
 from typing import Optional
 
 from fastapi import Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -58,6 +59,47 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return JSONResponse(status_code=500, content=payload)
 
 
+def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Return validation errors in the same envelope as every other error."""
+    fields = {}
+    for err in exc.errors():
+        location = ".".join(str(part) for part in err.get("loc", []))
+        fields[location] = err.get("msg", "")
+    payload = build_error_response(
+        code="UNPROCESSABLE",
+        message="Request validation failed",
+        status_code=422,
+        request_id=_correlation_id(request),
+        details=fields,
+    )
+    return JSONResponse(status_code=422, content=payload)
+
+
+async def not_found_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Route-not-found also uses the envelope.
+
+    Starlette emits a plain 404 body; without this handler the shape of an
+    error depends on which code path produced it, so a client cannot branch
+    the same way in both cases.
+    """
+    if exc.status_code == 404 and exc.detail is not None and exc.detail == "Not Found":
+        payload = build_error_response(
+            code="NOT_FOUND",
+            message=f"No route for {request.method} {request.url.path}",
+            status_code=404,
+            request_id=_correlation_id(request),
+        )
+        return JSONResponse(status_code=404, content=payload)
+    return await http_exception_handler(request, exc)
+
+
 def register_error_handlers(app) -> None:
+    """Register every handler that produces the standard error envelope.
+
+    Order matters: FastAPI matches the most specific exception first, so the
+    validation handler must be registered before the generic HTTP handler.
+    """
+    app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    app.add_exception_handler(StarletteHTTPException, not_found_handler)
     app.add_exception_handler(Exception, unhandled_exception_handler)
