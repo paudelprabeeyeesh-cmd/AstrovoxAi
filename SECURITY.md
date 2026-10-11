@@ -2,112 +2,87 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.x     | Yes                |
-| 1.x     | Security patches only |
-| < 1.0   | No                 |
+Only the latest commit on `main` receives security fixes. There is no
+long-term support branch yet; if you need one, open an issue.
+
+This project is pre-release and under active development. Treat every
+deployment as untested production infrastructure until it has passed its
+own load and restore tests.
 
 ## Reporting a Vulnerability
 
-If you find a security vulnerability, please report it privately:
+Report privately through GitHub Security Advisories:
+`https://github.com/AstrovoxAi/AstrovoxAi/security/advisories/new`
 
-1. Email the security team at security@astrovox.ai with:
-   - A description of the vulnerability
-   - Steps to reproduce
-   - Potential impact
-   - Suggested fix if available
-   - Your contact information
+Include the affected endpoint or file, the impact, and reproduction steps.
+Do not open a public issue for an unreported vulnerability.
 
-2. Do not open a public issue for security vulnerabilities.
+Expected response:
 
-3. Do not disclose the vulnerability publicly until it has been fixed and announced.
+| Stage | Target |
+|---|---|
+| Acknowledgement | 3 business days |
+| Triage and severity | 7 business days |
+| Fix or mitigation plan | 30 days for high severity |
+| Public disclosure | After a fix ships, or 90 days, whichever is first |
 
-4. We will acknowledge receipt within 5 business days and provide a timeline for a fix.
+## Severity We Care About Most
 
-## Security Hardening
+1. Cross-tenant data exposure (one account reading another's data).
+2. Credential or key exposure, especially anything that would appear in a
+   browser bundle.
+3. Account takeover: session forgery, token leak, missing verification.
+4. Prompt injection that reaches a tool with side effects.
+5. Sandbox escape.
+6. Denial of service through an unbounded or unpriced path, including AI
+   spend.
 
-The platform includes the following security controls:
+Items 1 through 3 are the ones that cannot be fixed after the fact without
+forcing users to rotate.
 
-### Authentication & Authorization
-- JWT authentication with RS256 (restricted algorithms)
-- Row-level security (RLS) policies in Supabase
-- Role-based access control (RBAC)
-- Session management with secure cookies
-- Password hashing with bcrypt/argon2
+## Current Controls
 
-### Network Security
-- Rate limiting per IP and per endpoint
-- CORS configuration with whitelisted origins
-- HTTPS enforcement with HSTS
-- WebSocket secure connections (wss://)
-- Private IP and SSRF protection
+| Control | Location | Test |
+|---|---|---|
+| Provider token verification with allowlist | `02-Backend/app/auth/__init__.py` | `tests/security/test_token_leaks.py` |
+| Single-use tokens delivered by email only | `02-Backend/app/services/token_mailer.py` | same |
+| Explicit-memory policy (deny list + instruction override) | `internal/memory/policy.py` | `internal/memory/policy_test.py` |
+| Prompt injection corpus | `app/security/`, `app/safety/` | `02-Backend/tests/security/test_prompt_injection.py` |
+| Brute-force lockout, rotation, revocation | `02-Backend/app/security/` | `02-Backend/tests/security/` |
+| Router load failure is loud, not silent | `02-Backend/app/router_loader.py` | `tests/security/test_token_leaks.py` |
+| Stripe webhook customer mapping verification | `02-Backend/app/billing.py` | `tests/security/test_security_regression.py` |
+| Non-root containers, tini as PID 1, wheels-only runtime | `Dockerfile.backend`, `Dockerfile.frontend` | `compose-smoke` CI job |
+| CSP without `unsafe-inline`, no fake nonce, headers on every location | `nginx/snippets/security-headers.conf` | `frontend-secret-audit` CI job |
+| Real coverage gate | `.github/workflows/security.yml` | `coverage-enforcement` CI job |
 
-### Input Validation
-- Request payload validation
-- SQL injection prevention via ORM
-- XSS protection with sanitized output
-- CSRF token validation
-- Content Security Policy headers
+## Known Gaps
 
-### Data Protection
-- Secret scanning and scrubbing in logs
-- Encryption at rest for sensitive data
-- TLS 1.3 for data in transit
-- PII detection and redaction
-- Audit logging for sensitive operations
+Stated plainly, because a security document that only lists wins is not
+trustworthy.
 
-### Safe Execution
-- Container sandbox for dynamic code execution
-- Resource limits (CPU, memory, timeout)
-- Network isolation for untrusted code
-- Filesystem access restrictions
+- **No rate limiter backing store.** The limiter is in-process and
+  unbounded; it is keyed on a client IP that a reverse proxy can collapse
+  to a single bucket. Not yet fixed.
+- **No server-side AI spend cap.** A single account can burn provider
+  spend within its rate limit. Not yet fixed.
+- **Regex-based injection detection.** Lexical, not semantic. A phrasing
+  that matches no known pattern passes.
+- **No SAST on application code.** Trivy and gitleaks run; CodeQL does not.
+- **Plugin code runs in-process.** A malicious plugin can read the
+  provider credentials from the environment. Plugin execution needs to be
+  a separate process before third-party plugins are enabled.
+- **`.env` was tracked in git.** It has been removed from the index and is
+  now covered by `.gitignore`; see the rotation checklist in
+  `docs/SECRET_ROTATION.md`.
 
-### Monitoring & Detection
-- Security event logging
-- Anomaly detection on auth patterns
-- Brute force protection with exponential backoff
-- Dependency vulnerability scanning
+## Secret Handling
 
-## Dependency Management
-
-- Review `requirements.txt` and `package.json` before adding new dependencies.
-- Prefer well-maintained libraries with recent security patches.
-- Run `pip audit` and `npm audit` regularly in CI.
-- Use Dependabot for automated dependency updates.
-- Pin critical dependencies to known-good versions.
-
-## Secrets Management
-
-- Never commit secrets, API keys, or credentials to version control.
-- Use environment variables or secret management services for all sensitive configuration.
-- Rotate exposed keys immediately.
-- Use `.env.example` to document required variables without values.
-- Enable pre-commit hooks to scan for secrets (e.g., gitleaks).
-
-## Incident Response
-
-1. Identify and contain the incident
-2. Assess impact and severity
-3. Notify security team: security@astrovox.ai
-4. Document findings and timeline
-5. Implement remediation
-6. Conduct post-incident review
-7. Update security controls if needed
-
-## Disclosure Policy
-
-- We follow coordinated disclosure.
-- We will publish a security advisory after the fix is available.
-- Credit will be given to reporters who follow responsible disclosure.
-
-## Security Checklist for Releases
-
-- [ ] All dependencies audited: `npm audit` and `pip audit`
-- [ ] No secrets in code or logs
-- [ ] Security tests pass: `npm run test:security`
-- [ ] Penetration testing completed for major releases
-- [ ] Rate limiting configured appropriately
-- [ ] CORS origins restricted to known domains
-- [ ] Security headers validated
-- [ ] Backup and restore procedures tested
+- Never commit a secret. `.env` is ignored and untracked.
+- Never place a privileged key in a `VITE_` variable. Vite inlines every
+  `VITE_` variable into the browser bundle, so it is published to every
+  visitor. Frontend code may use only the anonymous key, project id,
+  publishable key, API URL, and the VAPID public key.
+- CI runs gitleaks and trufflehog over the full history and rejects
+  privileged patterns in `src/`.
+- A secret that has reached git history is compromised, even if the commit
+  is later removed. Rotate it; deleting the commit is not remediation.

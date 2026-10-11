@@ -26,6 +26,42 @@ from app.metrics import track_rate_limit
 
 
 # ---------------------------------------------------------------------------
+# Client identity behind a reverse proxy
+# ---------------------------------------------------------------------------
+
+def _trust_proxy_headers() -> bool:
+    """True only when an operator has said a trusted proxy sets X-Forwarded-For.
+
+    Reading the header unconditionally means any client can claim any IP
+    and hop buckets at will, so the trust is opt-in.
+    """
+    return os.getenv("TRUST_PROXY_HEADERS", "false").strip().lower() in (
+        "1", "true", "yes", "on",
+    )
+
+
+def client_identity(request: Any) -> str:
+    """Resolve the caller identity used as the rate-limit key.
+
+    Behind nginx, ``request.client.host`` is the proxy's address, which
+    collapses every user into a single bucket: one heavy caller then
+    rate-limits everyone. The forwarded value is used instead, but only
+    when the deployment has declared the proxy trustworthy, so the
+    per-user limit is real rather than all-or-nothing.
+    """
+    if request is None:
+        return "unknown"
+    if _trust_proxy_headers():
+        forwarded = request.headers.get("x-forwarded-for", "")
+        if forwarded:
+            first = forwarded.split(",")[0].strip()
+            if first:
+                return first
+    client = getattr(request, "client", None)
+    return client.host if client else "unknown"
+
+
+# ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
 
@@ -120,23 +156,39 @@ class TokenBucket:
 
 
 class InProcessLimiter:
+    """In-process sliding-window limiter used when Redis is absent.
+
+    The bucket map is bounded. The previous version keyed on
+    (policy, identity) and never evicted, so a caller presenting
+    unbounded distinct identities grew the dict forever: memory-exhaustion
+    DoS of the limiter itself, from the component meant to prevent DoS.
+    """
+
+    # Evict when the map exceeds this, keeping at most MAX_BUCKETS entries.
+    MAX_BUCKETS = 20_000
+    EVICT_BATCH = 2_000
+
     def __init__(self) -> None:
-        self._buckets: Dict[str, SlidingWindowCounter] = {}
+        self._buckets: DequeTuple = {}
         self._lock = threading.Lock()
         self._configs: Dict[str, RateLimitConfig] = dict(DEFAULT_LIMITS)
+        self._evictions = 0
 
     def configure(self, key: str, config: RateLimitConfig) -> None:
         with self._lock:
             self._configs[key] = config
 
-    def _get(self, key: str) -> SlidingWindowCounter:
-        with self._lock:
-            if key not in self._buckets:
-                cfg = self._configs.get(key) or RateLimitConfig(key, 60, 60)
-                self._buckets[key] = SlidingWindowCounter(
-                    cfg.requests, cfg.window_seconds
-                )
-            return self._buckets[key]
+    def _evict_if_needed(self) -> None:
+        """Drop the oldest buckets. Must be called with _lock held."""
+        if len(self._buckets) <= self.MAX_BUCKETS:
+            return
+        # dicts preserve insertion order, so the first entries are the
+        # stalest. A window's worth of entries at a time is cheap and
+        # amortises the cost of the scan.
+        victims = list(self._buckets.items())[: self.EVICT_BATCH]
+        for key, _bucket in victims:
+            del self._buckets[key]
+        self._evictions += len(victims)
 
     def check(
         self,
@@ -149,13 +201,13 @@ class InProcessLimiter:
         if config is None:
             return {"allowed": True, "limit": None, "remaining": None}
         bucket_key = f"{policy}:{identity}"
-        # Ensure bucket uses current config
         with self._lock:
             existing = self._buckets.get(bucket_key)
             if existing is None or existing.limit != config.requests:
                 self._buckets[bucket_key] = SlidingWindowCounter(
                     config.requests, config.window_seconds
                 )
+            self._evict_if_needed()
         bucket = self._buckets[bucket_key]
         allowed, remaining, reset = bucket.hit(amount)
         return {
@@ -167,6 +219,10 @@ class InProcessLimiter:
             "policy": policy,
             "identity": identity,
         }
+
+    def bucket_count(self) -> int:
+        with self._lock:
+            return len(self._buckets)
 
 
 # ---------------------------------------------------------------------------
@@ -284,16 +340,26 @@ class RateLimiter:
             self._redis = None
         self._audit: AuditLog = get_audit_log()
         self._burst_buckets: Dict[str, TokenBucket] = {}
+        # Bound the burst-bucket map too, for the same reason as
+        # InProcessLimiter: an unbounded identity set grew it forever.
+        self._MAX_BURST_BUCKETS = 20_000
 
     def _get_burst_bucket(self, policy: str, identity: str) -> Optional[TokenBucket]:
         config = DEFAULT_LIMITS.get(policy)
         if config is None or config.burst is None:
             return None
         key = f"{policy}:{identity}"
-        if key not in self._burst_buckets:
+        bucket = self._burst_buckets.get(key)
+        if bucket is None:
+            if len(self._burst_buckets) >= self._MAX_BURST_BUCKETS:
+                # Insertion-ordered; drop the oldest batch rather than a
+                # random one, so hot identities survive.
+                for old in list(self._burst_buckets)[:2000]:
+                    self._burst_buckets.pop(old, None)
             refill_rate = config.requests / config.window_seconds
-            self._burst_buckets[key] = TokenBucket(config.burst, refill_rate)
-        return self._burst_buckets[key]
+            bucket = TokenBucket(config.burst, refill_rate)
+            self._burst_buckets[key] = bucket
+        return bucket
 
     def configure(self, key: str, config: RateLimitConfig) -> None:
         self._inprocess.configure(key, config)
@@ -363,7 +429,9 @@ from fastapi.responses import JSONResponse
 
 async def rate_limit_middleware(request: Request, call_next):
     limiter = get_rate_limiter()
-    client_ip = request.client.host if request.client else "unknown"
+    # Keyed on the real caller, not the proxy's address, so one heavy
+    # caller cannot consume everyone's budget.
+    client_ip = client_identity(request)
     result = limiter.check("api_anonymous", client_ip)
     if not result.get("allowed", True):
         return JSONResponse(
@@ -401,7 +469,7 @@ def rate_limit(policy: str, *, amount: int = 1):
         if principal is None:
             principal = await get_current_principal(request=request)
         if getattr(principal, "role", "") == "anonymous":
-            identity = request.client.host if request.client else "unknown"
+            identity = client_identity(request)
         else:
             identity = principal.id
         result = get_rate_limiter().check(policy, identity, amount=amount)

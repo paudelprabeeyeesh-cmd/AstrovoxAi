@@ -282,6 +282,41 @@ jobs:
             pip-licenses-output.txt
           retention-days: 30
 
+  frontend-secret-audit:
+    name: Frontend Build Secret Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on privileged keys in frontend source
+        run: |
+          set -u
+          echo "Auditing src/ and vite.config.ts for privileged credentials."
+          # A VITE_ variable is inlined into the browser bundle at build
+          # time, so a privileged key placed in one is published to every
+          # visitor. These patterns are the high-confidence shapes.
+          BAD='service_role|SUPABASE_SERVICE|sk_live_[A-Za-z0-9]{16,}|sk-ant-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16}|-----BEGIN .*PRIVATE KEY-----|VITE_[A-Z0-9_]*(SERVICE_ROLE|SECRET|PRIVATE)[A-Z0-9_]*\s*=\s*\S{8,}'
+
+          hits=$(grep -rInE "$BAD" src vite.config.ts index.html 2>/dev/null | grep -v '^\s*//' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Privileged credential pattern found in frontend source:"
+            echo "$hits" | sed 's/[A-Za-z0-9_-]\{40,\}/<redacted>/g'
+            exit 1
+          fi
+          echo "No privileged credential patterns in frontend source."
+
+      - name: Confirm only public VITE_ variables are referenced
+        run: |
+          echo "VITE_ variables referenced by the frontend (all must be public):"
+          grep -rhoE 'import\.meta\.env\.VITE_[A-Z0-9_]+' src 2>/dev/null | sort -u || true
+          offenders=$(grep -rInE 'import\.meta\.env\.VITE_[A-Z0-9_]*(SECRET|SERVICE_ROLE|PRIVATE)[A-Z0-9_]*' src 2>/dev/null || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::A privileged VITE_ variable is read by frontend code:"
+            echo "$offenders"
+            exit 1
+          fi
+          echo "OK: no privileged VITE_ variable is read by frontend code."
+
   compose-smoke:
     name: Production Compose Smoke Test
     runs-on: ubuntu-latest
