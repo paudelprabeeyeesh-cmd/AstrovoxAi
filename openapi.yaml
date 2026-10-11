@@ -1,0 +1,236 @@
+openapi: "3.0.3"
+info:
+  title: AstrovoxAI API
+  description: |
+    Chat completions, memory, files, and usage endpoints.
+
+    Error responses use a standard envelope so clients can branch on a
+    machine-readable code rather than parsing message text:
+
+        { "error": { "code": "UNAUTHORIZED", "message", "target", "details" },
+          "timestamp": "..." }
+
+    Smoke-testable requests live in `api-tests/api.http`.
+  version: "1.0.0"
+
+servers:
+  - url: http://127.0.0.1:8000
+    description: Local development
+
+tags:
+  - name: chat
+  - name: auth
+  - name: memory
+  - name: health
+
+paths:
+  /health:
+    get:
+      tags: [health]
+      summary: Liveness probe
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+        "default": { $ref: "#/components/responses/Error" }
+
+  /auth/signup:
+    post:
+      tags: [auth]
+      summary: Create an account
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpRequest"
+      responses:
+        "200":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "422":
+          description: Validation failed (standard envelope)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "default": { $ref: "#/components/responses/Error" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      summary: Exchange credentials for a session
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LoginRequest" }
+      responses:
+        "200":
+          description: Session issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "default": { $ref: "#/components/responses/Error" }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      summary: Current user
+      operationId: me
+      parameters:
+        - in: query
+          name: authorization
+          schema: { type: string }
+          description: Query fallback for the Authorization header
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UserResponse" }
+        "401":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "default": { $ref: "#/components/responses/Error" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the current session
+      operationId: logout
+      responses:
+        "200":
+          description: Session revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StatusResponse" }
+        "default": { $ref: "#/components/responses/Error" }
+
+  /auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate a refresh token
+      operationId: refreshToken
+      parameters:
+        - in: query
+          name: refresh_token
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: New session issued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthResponse" }
+        "401":
+          description: Refresh token reuse detected
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+        "default": { $ref: "#/components/responses/Error" }
+
+components:
+  responses:
+    Error:
+      description: Standard error envelope
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+
+  schemas:
+    SignUpRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        full_name: { type: string }
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+
+    AuthResponse:
+      type: object
+      properties:
+        status: { type: string, example: ok }
+        message: { type: string }
+        user: { $ref: "#/components/schemas/User" }
+        session: { $ref: "#/components/schemas/Session" }
+
+    UserResponse:
+      type: object
+      properties:
+        status: { type: string }
+        user: { $ref: "#/components/schemas/User" }
+
+    StatusResponse:
+      type: object
+      properties:
+        status: { type: string }
+        message: { type: string }
+
+    User:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        full_name: { type: string }
+
+    Session:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+
+    ErrorEnvelope:
+      type: object
+      required: [error, timestamp]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              description: Machine-readable code, SCREAMING_SNAKE
+              enum:
+                - BAD_REQUEST
+                - UNAUTHORIZED
+                - FORBIDDEN
+                - NOT_FOUND
+                - UNPROCESSABLE
+                - TOO_MANY_REQUESTS
+                - INTERNAL_ERROR
+            message: { type: string }
+            target:
+              type: [string, "null"]
+            details:
+              type: [object, "null"]
+        timestamp: { type: string, format: date-time }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
