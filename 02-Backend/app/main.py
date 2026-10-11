@@ -122,7 +122,7 @@ try:
 except Exception:
     llm_client = _LLMClientStub()
 context_builder = ContextBuilder(llm_client=llm_client)
-from .core.logging_config import configure_logging, RequestLoggingMiddleware
+from .core.logging_config import configure_logging
 from .core.tracing import init_tracing
 from .core.prometheus_middleware import PrometheusMiddleware
 from .security_headers import SecurityHeadersMiddleware

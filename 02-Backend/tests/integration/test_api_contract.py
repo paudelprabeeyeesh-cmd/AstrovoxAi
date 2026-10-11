@@ -117,11 +117,38 @@ def test_correlation_ids_differ_between_requests(client):
     assert first != second, "two requests must not share a generated correlation id"
 
 
-def test_correlation_id_appears_in_structured_logs(client, capsys):
-    """The correlation id is emitted in the structured JSON log line."""
+def test_correlation_id_reaches_error_responses(client):
+    """The id survives an exception path, which is when a caller reports it.
+
+    The logging middleware can only set the header on responses it returns;
+    responses produced by exception handlers get it from the handler itself
+    (see `_emit_correlation_id` in app/middleware/error_handler.py).
+    """
     supplied = str(uuid.uuid4())
     client.headers.update({"X-Correlation-ID": supplied})
-    client.get("/auth/me")
-    captured = capsys.readouterr()
-    combined = captured.out + captured.err
-    assert supplied in combined, "correlation id not present in logs"
+    resp = client.get("/auth/me")
+    assert resp.status_code == 401
+    got = resp.headers.get("X-Correlation-ID")
+    assert got == supplied, f"error response lost the correlation id: {got!r}"
+
+def test_correlation_id_is_in_the_structured_log_output(client, caplog):
+    """The correlation id is attached to the log record for the request.
+
+    Uses caplog rather than capsys: the app's logging handlers bind
+    sys.stderr at import time, before pytest installs its capture, so capsys
+    never sees the app's own lines. The correlation id is emitted as a
+    structured field (extra) rather than in the message text, so this asserts
+    on the record attribute instead of caplog.text.
+    """
+    supplied = str(uuid.uuid4())
+    client.headers.update({"X-Correlation-ID": supplied})
+    with caplog.at_level("INFO"):
+        client.get("/auth/me")
+
+    seen = ""
+    for record in caplog.records:
+        cid = getattr(record, "correlation_id", None)
+        if cid is not None and cid != "":
+            seen = cid
+            break
+    assert seen == supplied, "correlation id not attached to any log record"

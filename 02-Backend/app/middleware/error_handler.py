@@ -23,6 +23,20 @@ def _correlation_id(request: Request) -> Optional[str]:
     return getattr(request.state, "correlation_id", None)
 
 
+def _emit_correlation_id(request: Request, response: JSONResponse) -> JSONResponse:
+    """Put the correlation id on the response body and headers.
+
+    The logging middleware sets `request.state.correlation_id` and adds the
+    header to successful responses, but it cannot touch the response that an
+    exception handler produces. Setting it here keeps the id available on
+    error responses too, which is exactly when a caller needs to report it.
+    """
+    cid = _correlation_id(request)
+    if cid:
+        response.headers["X-Correlation-ID"] = cid
+    return response
+
+
 async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
     code = ERROR_CODES.get(
         {
@@ -45,7 +59,7 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         status_code=exc.status_code,
         request_id=_correlation_id(request),
     )
-    return JSONResponse(status_code=exc.status_code, content=payload)
+    return _emit_correlation_id(request, JSONResponse(status_code=exc.status_code, content=payload))
 
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
@@ -56,7 +70,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
         status_code=500,
         request_id=_correlation_id(request),
     )
-    return JSONResponse(status_code=500, content=payload)
+    return _emit_correlation_id(request, JSONResponse(status_code=500, content=payload))
 
 
 def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
@@ -72,7 +86,7 @@ def validation_exception_handler(request: Request, exc: RequestValidationError) 
         request_id=_correlation_id(request),
         details=fields,
     )
-    return JSONResponse(status_code=422, content=payload)
+    return _emit_correlation_id(request, JSONResponse(status_code=422, content=payload))
 
 
 async def not_found_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
@@ -89,7 +103,7 @@ async def not_found_handler(request: Request, exc: StarletteHTTPException) -> JS
             status_code=404,
             request_id=_correlation_id(request),
         )
-        return JSONResponse(status_code=404, content=payload)
+        return _emit_correlation_id(request, JSONResponse(status_code=404, content=payload))
     return await http_exception_handler(request, exc)
 
 
