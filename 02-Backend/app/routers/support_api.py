@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional, List
 
-from .auth import get_current_user
+from app.auth import get_current_user
 from ..support_tickets import (
     create_support_ticket,
     get_support_ticket,

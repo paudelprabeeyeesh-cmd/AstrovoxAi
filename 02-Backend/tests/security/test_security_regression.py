@@ -23,6 +23,7 @@ from app.middleware.request_limits import (
 from app.middleware.security.security_headers import SecurityHeadersMiddleware
 from app.utils.auth.auth_utils import get_current_user
 from app.iam import get_jwt_secret
+from app.billing import handle_stripe_webhook as _handle_stripe_webhook  # noqa: F401
 
 
 class TestAnonymousAuthRemoved(unittest.TestCase):
@@ -87,17 +88,56 @@ class TestStripeWebhookCustomerMapping(unittest.TestCase):
     """Ensure Stripe webhook verifies customer mapping."""
 
     def test_checkout_session_verifies_customer_mapping(self):
+        import hashlib
+        import hmac as hmac_mod
+        import time
+
         from app.billing import handle_stripe_webhook
 
         payload = b'{"type": "checkout.session.completed", "data": {"object": {"customer": "cus_123", "metadata": {"user_id": "user-1"}}}}'
-        with patch.dict(os.environ, {"STRIPE_WEBHOOK_SECRET": "whsec_test"}):
+        secret = b"whsec_test"
+
+        # A valid signature is required to reach the customer-mapping check;
+        # an invalid one is rejected earlier by signature verification, which
+        # would make this test pass for the wrong reason.
+        ts = str(int(time.time()))
+        signed = f"{ts}.{payload.decode()}".encode()
+        expected = hmac_mod.new(secret, signed, hashlib.sha256).hexdigest()
+        sig = f"t={ts},v1={expected}"
+
+        # A valid signature is required to reach the customer-mapping check;
+        # an invalid one is rejected earlier by signature verification, which
+        # would make this test pass for the wrong reason. STRIPE_SECRET_KEY
+        # must also be present or _require_stripe() short-circuits first.
+        with patch.dict(
+            os.environ,
+            {
+                "STRIPE_WEBHOOK_SECRET": "whsec_test",
+                "STRIPE_SECRET_KEY": "sk_test_dummy",
+            },
+        ):
             with patch("app.billing.get_db") as mock_get_db:
                 mock_conn = MagicMock()
+                # No user row matches this customer id, so the mapping check
+                # must refuse the upgrade rather than updating the DB.
                 mock_conn.execute.return_value.fetchone.return_value = None
                 mock_get_db.return_value.__enter__.return_value = mock_conn
 
-                with self.assertRaises(ValueError) as ctx:
-                    handle_stripe_webhook(payload, "sig")
+                # The stripe library is not the unit under test; stub
+                # construct_event to return the parsed event so the mapping
+                # check itself is exercised. Otherwise a mocked stripe module
+                # makes every value a MagicMock and the check never runs.
+                fake_event = {
+                    "type": "checkout.session.completed",
+                    "data": {"object": {
+                        "customer": "cus_123",
+                        "metadata": {"user_id": "user-1"},
+                    }},
+                }
+                with patch("app.billing.stripe") as mock_stripe:
+                    mock_stripe.Webhook.construct_event.return_value = fake_event
+                    with self.assertRaises(ValueError) as ctx:
+                        handle_stripe_webhook(payload, sig)
                 self.assertIn("Customer mapping verification failed", str(ctx.exception))
 
 

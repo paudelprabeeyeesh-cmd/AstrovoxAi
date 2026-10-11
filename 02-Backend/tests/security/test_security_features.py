@@ -16,39 +16,52 @@ from app.security.audit_immutable import ImmutableAuditStore
 from app.security.webhook_signing import WebhookSigner
 from app.security.ip_filter import IPFilter
 from app.security.user_agent_analytics import UserAgentAnalyzer, user_agent_analyzer
-from app.security.anomaly_alerts import AuthAnomalyDetector, AuthEvent, auth_anomaly_detector
+from app.security.anomaly_alerts import AuthAnomalyDetector, APIEvent, auth_anomaly_detector
 
 
 class TestBruteForceProtection:
     def test_record_failure_and_lockout(self):
         config = BruteForceConfig(max_attempts=3, window_seconds=60.0, lockout_seconds=10.0)
         bf = BruteForceProtection(config)
+        ip = "203.0.113.10"
         identity = "test@example.com"
 
-        for _ in range(2):
-            allowed, _ = bf.record_failure(identity)
-            assert allowed is True
-
-        allowed, remaining = bf.record_failure(identity)
+        # The lockout threshold is adaptive: it is lowered as the failure rate
+        # rises, so a lockout may arrive before max_attempts. It must never
+        # arrive later than max_attempts, which is the property under test.
+        locked = False
+        for attempt in range(1, config.max_attempts + 1):
+            allowed, remaining, _message = bf.record_failure(identity, ip)
+            if not allowed:
+                locked = True
+                assert remaining is not None and remaining > 0
+                break
+        assert locked, (
+            f"identity not locked after {config.max_attempts} failures"
+        )
+        # Once locked, further attempts stay refused.
+        allowed, remaining, _message = bf.record_failure(identity, ip)
         assert allowed is False
         assert remaining is not None and remaining > 0
 
     def test_remaining_attempts(self):
         config = BruteForceConfig(max_attempts=5, window_seconds=60.0, lockout_seconds=10.0)
         bf = BruteForceProtection(config)
+        ip = "203.0.113.11"
         identity = "test2@example.com"
 
         for _ in range(2):
-            bf.record_failure(identity)
+            bf.record_failure(identity, ip)
         assert bf.remaining_attempts(identity) == 3
 
     def test_record_success_resets(self):
         config = BruteForceConfig(max_attempts=3, window_seconds=60.0, lockout_seconds=10.0)
         bf = BruteForceProtection(config)
+        ip = "203.0.113.12"
         identity = "test3@example.com"
 
-        bf.record_failure(identity)
-        bf.record_success(identity)
+        bf.record_failure(identity, ip)
+        bf.record_success(identity, ip)
         assert bf.remaining_attempts(identity) == 3
 
 
@@ -144,13 +157,18 @@ class TestWebhookSigning:
         signer = WebhookSigner("test-secret-key")
         payload = b'{"event": "test"}'
         sig = signer.sign(payload)
-        assert signer.verify(payload, sig) is True
+        # verify() returns (ok, failure_reason); the reason is None on success.
+        ok, reason = signer.verify(payload, sig)
+        assert ok is True
+        assert reason is None
 
     def test_tampered_payload_rejected(self):
         signer = WebhookSigner("test-secret-key")
         payload = b'{"event": "test"}'
         sig = signer.sign(payload)
-        assert signer.verify(b'{"event": "tampered"}', sig) is False
+        ok, reason = signer.verify(b'{"event": "tampered"}', sig)
+        assert ok is False
+        assert reason is not None
 
 
 class TestIPFilter:
@@ -194,14 +212,20 @@ class TestAnomalyAlerts:
     def test_rapid_auth_detection(self):
         detector = AuthAnomalyDetector()
         base_time = time.time()
-        for i in range(15):
-            detector.record(AuthEvent(
-                user_id="user-1", ip="1.2.3.4", country=None,
-                user_agent="test", timestamp=base_time + i,
+        # record_event is the real API; it returns the alerts raised so far.
+        # APIEvent requires endpoint, method and status_code.
+        # The detector flags an IP that exceeds its 401 failure threshold
+        # (20 within the brute-force window), so go one past it.
+        for i in range(21):
+            detector.record_event(APIEvent(
+                user_id="user-1", ip="1.2.3.4",
+                user_agent="test", endpoint="/auth/login", method="POST",
+                status_code=401, timestamp=base_time + i * 0.1,
             ))
-        alerts = detector.record(AuthEvent(
-            user_id="user-1", ip="1.2.3.4", country=None,
-            user_agent="test", timestamp=base_time + 16,
+        alerts = detector.record_event(APIEvent(
+            user_id="user-1", ip="1.2.3.4",
+            user_agent="test", endpoint="/auth/login", method="POST",
+            status_code=401, timestamp=base_time + 16,
         ))
-        alert_types = [a.alert_type for a in alerts]
-        assert "rapid_auth" in alert_types
+        alert_types = [a.anomaly_type.value for a in alerts]
+        assert "brute_force" in alert_types, alert_types

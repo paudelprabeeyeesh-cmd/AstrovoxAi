@@ -8,6 +8,7 @@ except ImportError:
     stripe = None
 
 from app.repositories.database.client import get_db
+from sqlalchemy import text
 
 logger = logging.getLogger(__name__)
 
@@ -28,27 +29,35 @@ MAX_CONSECUTIVE_FAILURES = 3
 
 
 def _require_stripe():
-    if not _STRIPE_CONFIGURED:
+    """Refuse to run when Stripe is not configured.
+
+    Reads the environment at call time rather than the import-time
+    ``_STRIPE_CONFIGURED`` flag: a key set after import (config reload,
+    a test patching os.environ, a container started before the secret
+    mount lands) would otherwise leave billing permanently broken with
+    no way to enable it without a restart.
+    """
+    if not _STRIPE_CONFIGURED and not os.getenv("STRIPE_SECRET_KEY", ""):
         raise RuntimeError("Stripe is not configured. Set STRIPE_SECRET_KEY to enable billing.")
 
 
 def _get_user_by_customer_id(customer_id: str):
     with get_db() as conn:
         return conn.execute(
-            "SELECT id, email, plan FROM users WHERE stripe_customer_id = ?",
-            (customer_id,),
+            text("SELECT id, email, plan FROM users WHERE stripe_customer_id = :stripe_customer_id"),
+            {"stripe_customer_id": customer_id},
         ).fetchone()
 
 
 def _increment_failed_payment_count(user_id: str) -> int:
     with get_db() as conn:
         conn.execute(
-            "UPDATE users SET failed_payment_count = COALESCE(failed_payment_count, 0) + 1 WHERE id = ?",
-            (user_id,),
+            text("UPDATE users SET failed_payment_count = COALESCE(failed_payment_count, 0) + 1 WHERE id = :id"),
+            {"id": user_id},
         )
         row = conn.execute(
-            "SELECT failed_payment_count FROM users WHERE id = ?",
-            (user_id,),
+            text("SELECT failed_payment_count FROM users WHERE id = :id"),
+            {"id": user_id},
         ).fetchone()
         conn.commit()
         return row["failed_payment_count"] if row else 0
@@ -57,8 +66,8 @@ def _increment_failed_payment_count(user_id: str) -> int:
 def _reset_failed_payment_count(user_id: str):
     with get_db() as conn:
         conn.execute(
-            "UPDATE users SET failed_payment_count = 0 WHERE id = ?",
-            (user_id,),
+            text("UPDATE users SET failed_payment_count = 0 WHERE id = :id"),
+            {"id": user_id},
         )
         conn.commit()
 
@@ -66,13 +75,13 @@ def _reset_failed_payment_count(user_id: str):
 def _downgrade_to_free(user_id: str, customer_id: str):
     _require_stripe()
     with get_db() as conn:
-        conn.execute("UPDATE users SET plan = 'free' WHERE id = ?", (user_id,))
+        conn.execute(text("UPDATE users SET plan = 'free' WHERE id = :id"), {"id": user_id})
         subs = stripe.Subscription.list(customer=customer_id, status="active")
         for sub in subs:
             stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
         conn.execute(
-            "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
-            (user_id,),
+            text("UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = :user_id"),
+            {"user_id": user_id},
         )
         conn.commit()
 
@@ -97,8 +106,8 @@ def create_checkout_session(user_id: str, email: str, price_id: str = None) -> s
     )
     with get_db() as conn:
         conn.execute(
-            "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
-            (session.customer, user_id),
+            text("UPDATE users SET stripe_customer_id = :stripe_customer_id WHERE id = :id"),
+            {"stripe_customer_id": session.customer, "id": user_id},
         )
         conn.commit()
     return session.url
@@ -119,8 +128,8 @@ def create_premium_checkout_session(user_id: str, email: str) -> str:
     )
     with get_db() as conn:
         conn.execute(
-            "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
-            (session.customer, user_id),
+            text("UPDATE users SET stripe_customer_id = :stripe_customer_id WHERE id = :id"),
+            {"stripe_customer_id": session.customer, "id": user_id},
         )
         conn.commit()
     return session.url
@@ -130,7 +139,7 @@ def cancel_subscription(user_id: str):
     _require_stripe()
     with get_db() as conn:
         row = conn.execute(
-            "SELECT stripe_customer_id FROM users WHERE id = ?", (user_id,)
+            text("SELECT stripe_customer_id FROM users WHERE id = :id"), {"id": user_id}
         ).fetchone()
         if not row or not row["stripe_customer_id"]:
             return
@@ -139,7 +148,7 @@ def cancel_subscription(user_id: str):
         )
         for sub in subs:
             stripe.Subscription.modify(sub.id, cancel_at_period_end=True)
-        conn.execute("UPDATE users SET plan = 'free' WHERE id = ?", (user_id,))
+        conn.execute(text("UPDATE users SET plan = 'free' WHERE id = :id"), {"id": user_id})
         conn.commit()
 
 
@@ -152,24 +161,44 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
         raise ValueError(f"Invalid webhook signature: {e}") from None
 
     event_type = event["type"]
-    data = event["data"]["object"]
+    # ``event["data"]["object"]`` is a StripeObject, whose attribute access
+    # is deliberately blocked (``AttributeError: 'get' is a dict method``).
+    # Converting once to a plain dict makes the rest of the handler readable
+    # and works for nested values like ``metadata`` too.
+    raw_object = event["data"]["object"]
+    data = raw_object.to_dict() if hasattr(raw_object, "to_dict") else dict(raw_object)
 
     if event_type == "checkout.session.completed":
         customer_id = data.get("customer")
-        user_id = data.get("metadata", {}).get("user_id")
+        metadata = data.get("metadata") or {}
+        if hasattr(metadata, "to_dict"):
+            metadata = metadata.to_dict()
+        user_id = metadata.get("user_id")
         if user_id:
+            # Verify the mapping before upgrading anything. The webhook
+            # payload is attacker-influenced metadata: without this check a
+            # forged-but-signed event naming any user_id would upgrade that
+            # account to paid. Mapping failure must abort, not silently
+            # apply an update against a row that does not correspond.
+            mapped_user = _get_user_by_customer_id(customer_id or "")
+            if mapped_user is None or str(mapped_user["id"]) != str(user_id):
+                logger.error(
+                    "stripe_webhook.customer_mapping_failed customer=%s user_id=%s",
+                    customer_id, user_id,
+                )
+                raise ValueError("Customer mapping verification failed")
             with get_db() as conn:
                 conn.execute(
-                    "UPDATE users SET stripe_customer_id = ? WHERE id = ?",
-                    (customer_id, user_id),
+                    text("UPDATE users SET stripe_customer_id = :stripe_customer_id WHERE id = :id"),
+                    {"stripe_customer_id": customer_id, "id": user_id},
                 )
                 conn.execute(
-                    "UPDATE subscriptions SET plan = 'pro', status = 'active' WHERE user_id = ?",
-                    (user_id,),
+                    text("UPDATE subscriptions SET plan = 'pro', status = 'active' WHERE user_id = :user_id"),
+                    {"user_id": user_id},
                 )
                 conn.execute(
-                    "UPDATE users SET plan = 'pro' WHERE id = ?",
-                    (user_id,),
+                    text("UPDATE users SET plan = 'pro' WHERE id = :id"),
+                    {"id": user_id},
                 )
                 conn.commit()
 
@@ -177,16 +206,16 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
         customer_id = data.get("customer")
         with get_db() as conn:
             user = conn.execute(
-                "SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)
+                text("SELECT id FROM users WHERE stripe_customer_id = :stripe_customer_id"), {"stripe_customer_id": customer_id}
             ).fetchone()
             if user:
                 conn.execute(
-                    "UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = ?",
-                    (user["id"],),
+                    text("UPDATE subscriptions SET plan = 'free', status = 'canceled' WHERE user_id = :user_id"),
+                    {"user_id": user["id"]},
                 )
                 conn.execute(
-                    "UPDATE users SET plan = 'free' WHERE id = ?",
-                    (user["id"],),
+                    text("UPDATE users SET plan = 'free' WHERE id = :id"),
+                    {"id": user["id"]},
                 )
                 conn.commit()
 
@@ -194,13 +223,13 @@ def handle_stripe_webhook(payload: bytes, sig_header: str) -> dict:
         customer_id = data.get("customer")
         with get_db() as conn:
             user = conn.execute(
-                "SELECT id FROM users WHERE stripe_customer_id = ?", (customer_id,)
+                text("SELECT id FROM users WHERE stripe_customer_id = :stripe_customer_id"), {"stripe_customer_id": customer_id}
             ).fetchone()
             if user:
                 _reset_failed_payment_count(user["id"])
                 amount = data.get("amount_paid", 0) / 100
                 conn.execute(
-                    "INSERT INTO usage (id, user_id, tokens, cost, model, cached, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    text("INSERT INTO usage (id, user_id, tokens, cost, model, cached, error, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"),
                     (
                         str(__import__('uuid').uuid4()),
                         user["id"],

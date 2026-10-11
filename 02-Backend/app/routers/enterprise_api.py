@@ -5,9 +5,9 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from pydantic import BaseModel
 
-from .auth import get_current_user
-from .database import get_db
-from .audit import log_action
+from app.auth import get_current_user
+from app.database import get_db
+from app.audit import log_action
 
 router = APIRouter(prefix="/enterprise", tags=["enterprise"])
 
@@ -161,7 +161,7 @@ class SecurityCertificationCreate(BaseModel):
 
 
 def _get_user_id(authorization: Optional[str] = None):
-    from .auth import get_user_id_from_token_with_roles
+    from app.auth import get_user_id_from_token_with_roles
     if not authorization:
         raise HTTPException(status_code=401, detail="Authorization header required")
     return get_user_id_from_token_with_roles(authorization)

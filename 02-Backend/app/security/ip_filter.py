@@ -38,8 +38,21 @@ class IPFilter:
             return None
 
     def check(self, ip_str: str) -> Tuple[bool, Optional[str]]:
+        """Check a client address.
+
+        An address that is not a parseable IP is only refused when a
+        denylist or allowlist is actually configured. Without that, the
+        check cannot match anything and rejecting the request makes every
+        non-IP client host (health probes, unix-socket forwarders, the
+        Starlette test client, which reports "testclient") fail closed
+        against a control the operator never turned on. With an allowlist
+        configured, an unparseable address is refused: it cannot appear on
+        the allowlist.
+        """
         addr = self._parse(ip_str)
         if addr is None:
+            if not self._denylist and self._allowlist is None:
+                return True, None
             return False, "invalid_ip"
 
         for network in self._denylist:

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status, Header, Request
 from pydantic import BaseModel, EmailStr
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy import text
 from typing import Optional
 
 from app.repositories.database.client import get_db
@@ -29,17 +30,61 @@ MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
 
+def _ensure_lockout_table(conn) -> None:
+    """Create the login_attempts table if it is missing.
+
+    The engine creates no schema, and the app's other init path
+    (``database/connection.py::init_db``) does not describe this table, so
+    on a fresh install the lockout check fails with OperationalError and
+    the control never applies. Creating it on first use keeps the security
+    behaviour present instead of erroring out.
+    """
+    conn.execute(
+        text(
+            """
+            CREATE TABLE IF NOT EXISTS login_attempts (
+                id TEXT PRIMARY KEY,
+                ip TEXT NOT NULL,
+                email TEXT NOT NULL,
+                success INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+    )
+    conn.execute(
+        text(
+            "CREATE INDEX IF NOT EXISTS idx_login_attempts_window "
+            "ON login_attempts (ip, email, success, created_at)"
+        )
+    )
+
+
 def _check_brute_force(ip: str, email: str) -> None:
+    """Raise 429 when the lockout threshold is reached.
+
+    SQLAlchemy 2.x refuses a plain string in ``Session.execute``; raw SQL
+    must be wrapped in ``text()``. Without it this raises
+    ``ArgumentError: Textual SQL expression ... should be explicitly
+    declared as text(...)`` and the lockout silently never applies, which
+    is a missing security control rather than a visible failure.
+    """
     with get_db() as conn:
+        _ensure_lockout_table(conn)
+        conn.commit()
         cutoff = (datetime.utcnow() - timedelta(minutes=LOCKOUT_MINUTES)).isoformat()
         row = conn.execute(
-            """
+            text(
+                """
             SELECT COUNT(*) AS failed_count, MAX(created_at) AS last_attempt
             FROM login_attempts
-            WHERE ip = ? AND email = ? AND success = 0 AND created_at > ?
-            """,
-            (ip, email, cutoff),
-        ).fetchone()
+            WHERE ip = :ip AND email = :email AND success = 0 AND created_at > :cutoff
+            """
+            ),
+            {"ip": ip, "email": email, "cutoff": cutoff},
+        ).mappings().fetchone()
+        # .mappings() gives key access; a bare Row does not support
+        # row["failed_count"] for an aggregate SELECT.
         if row and row["failed_count"] >= MAX_FAILED_ATTEMPTS:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -48,10 +93,21 @@ def _check_brute_force(ip: str, email: str) -> None:
 
 
 def _record_login_attempt(ip: str, email: str, success: bool) -> None:
+    """Record one login attempt for the lockout window."""
     with get_db() as conn:
+        _ensure_lockout_table(conn)
         conn.execute(
-            "INSERT INTO login_attempts (id, ip, email, success, created_at) VALUES (?, ?, ?, ?, ?)",
-            (str(uuid.uuid4()), ip, email, 1 if success else 0, datetime.utcnow().isoformat()),
+            text(
+                "INSERT INTO login_attempts (id, ip, email, success, created_at) "
+                "VALUES (:id, :ip, :email, :success, :created_at)"
+            ),
+            {
+                "id": str(uuid.uuid4()),
+                "ip": ip,
+                "email": email,
+                "success": 1 if success else 0,
+                "created_at": datetime.utcnow().isoformat(),
+            },
         )
         conn.commit()
 

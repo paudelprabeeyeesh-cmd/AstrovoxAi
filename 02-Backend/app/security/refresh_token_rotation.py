@@ -55,10 +55,22 @@ class RotationConfig:
 class RefreshTokenRotation:
     """Manages refresh token rotation chain per user with advanced security features."""
 
-    def __init__(self, config: Optional[RotationConfig] = None) -> None:
+    def __init__(
+        self,
+        config: Optional[RotationConfig] = None,
+        rotation_lifetime_seconds: Optional[float] = None,
+    ) -> None:
         self._config = config or RotationConfig()
+        # ``RefreshTokenRotation(rotation_lifetime_seconds=...)`` is a
+        # documented convenience; forwarding it to the config keeps that
+        # spelling working instead of raising an unexpected-kwarg TypeError.
+        if rotation_lifetime_seconds is not None:
+            self._config.rotation_lifetime_seconds = rotation_lifetime_seconds
         self._records: Dict[str, RefreshTokenRecord] = {}
-        self._lock = threading.Lock()
+        # RLock, not Lock: rotate() holds the lock and then calls generate(),
+        # which acquires it too. A plain Lock self-deadlocks the caller forever
+        # on the first rotation of an unknown token (see rotate at line 168).
+        self._lock = threading.RLock()
         self._user_rotation_counts: Dict[str, List[float]] = {}
         self._rotation_audit: List[Dict[str, Any]] = []
         self._token_families = TokenFamily()

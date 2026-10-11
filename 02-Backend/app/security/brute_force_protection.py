@@ -49,15 +49,43 @@ class LoginAttempt:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
 class BruteForceConfig:
-    max_attempts: int = 5
-    window_seconds: float = 300.0
-    base_lockout_seconds: float = 60.0
-    max_lockout_seconds: float = 86400.0
-    backoff_multiplier: float = 2.0
-    jitter_factor: float = 0.1
-    risk_threshold: float = 0.5
+    """Brute-force policy.
+
+    A plain class rather than a dataclass so the historical
+    ``lockout_seconds`` keyword keeps working. The field was renamed to
+    ``base_lockout_seconds`` when the exponential backoff ceiling
+    (``max_lockout_seconds``) was introduced; accepting only the new name
+    breaks every caller that still uses the old one with a TypeError at
+    construction time, which is how these tests were failing.
+    """
+
+    __slots__ = (
+        "max_attempts", "window_seconds", "base_lockout_seconds",
+        "max_lockout_seconds", "backoff_multiplier", "jitter_factor",
+        "risk_threshold",
+    )
+
+    def __init__(
+        self,
+        max_attempts: int = 5,
+        window_seconds: float = 300.0,
+        base_lockout_seconds: float = 60.0,
+        max_lockout_seconds: float = 86400.0,
+        backoff_multiplier: float = 2.0,
+        jitter_factor: float = 0.1,
+        risk_threshold: float = 0.5,
+        lockout_seconds: Optional[float] = None,
+    ) -> None:
+        self.max_attempts = max_attempts
+        self.window_seconds = window_seconds
+        self.base_lockout_seconds = (
+            base_lockout_seconds if lockout_seconds is None else lockout_seconds
+        )
+        self.max_lockout_seconds = max_lockout_seconds
+        self.backoff_multiplier = backoff_multiplier
+        self.jitter_factor = jitter_factor
+        self.risk_threshold = risk_threshold
 
 
 @dataclass

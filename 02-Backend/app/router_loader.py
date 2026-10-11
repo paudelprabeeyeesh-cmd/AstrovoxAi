@@ -105,7 +105,9 @@ def load_router(name: str, module: str) -> APIRouter:
 
 
 ROUTER_MODULES = {
-    "memory": ".memory",
+    # /memory is served by phase14_memory_router and memory_v2_router; there is
+    # no app.memory.router, so mounting the name here only produced a broken
+    # router (and, before the loader existed, a silent empty one).
     "storage": ".storage",
     "telemetry": ".telemetry",
     "terminal": ".terminal",

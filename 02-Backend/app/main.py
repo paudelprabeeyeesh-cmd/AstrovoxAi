@@ -1,620 +1,615 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from slowapi.middleware import SlowAPIMiddleware
-import os
-import sys
-import time
-from dotenv import load_dotenv
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-
-from app.services.auth.auth import router as auth_router
-from app.chat import router as chat_router
-from app.storage import router as storage_router
-from app.telemetry import router as telemetry_router
-from app.terminal import router as terminal_router
-from app.services.vector.embeddings_route import router as embeddings_router
-from app.api.routers.memory.router import router as memory_engine_router
-from app.api.routers.router import router as enterprise_router
-from app.enterprise.ws_router import router as ws_router
-from app.api.routers.workspace_route import router as workspace_router
-from app.api.routers.jobs_router import router as jobs_router, events_router
-from app.api.routers.analytics_route import router as analytics_router
-from app.api.routers.knowledge_route import router as knowledge_router
-from app.api.routers.agent_route import router as agent_router
-from app.api.routers.monitoring_route import router as monitoring_router
-from app.api.routers.auth.security_route import router as security_router
-from app.api.routers.security_management import security_router as security_management_router
-from app.safety_routes import router as safety_router
-from app.middleware.security.ip_ua_enforcement import IPEnforcementMiddleware, UserAgentMiddleware
-from app.api.routers.admin_route import router as admin_router
-from app.api.routers.realtime_route import router as realtime_router
-from app.api.routers.dashboard_route import router as dashboard_router
-from app.api.v1 import router as api_v1_router
-from app.api.routers.platform_route import router as platform_router
-from app.api.routers.knowledge_route_v2 import router as knowledge_v2_router
-from app.api.routers.realtime_route import tools_router
-from app.api.routers.realtime_route import security_router as scan_router
-from app.api.routers.agents_route import router as agents_router
-from app.api.routers.agents_route import memory_router as memory_v2_router
-from app.api.routers.memory_system import router as memory_system_router
-from app.api.routers.automation_route import router as automation_router
-from app.kernel.api import router as kernel_router
-from app.aios.api import router as aios_router
-from app.api.routers.document_route import router as document_router
-from app.api.routers.temporal_route import router as temporal_router
-from app.performance_route import router as performance_router
-from app.middleware.security.security_headers import SecurityHeadersMiddleware
-from app.middleware.security.rate_limit_hardened import rate_limit_middleware
-from app.middleware import InputValidationMiddleware
-from app.middleware.request_logging import RequestLoggingMiddleware
-from app.middleware.https_redirect import HTTPSRedirectMiddleware
-from app.middleware.pii_redaction import PIIRedactionMiddleware
-from app.middleware.idempotency import IdempotencyMiddleware
-from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
-from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
-from app.middleware.error_handler import register_error_handlers
-from app.context_builder import ContextBuilder
-from app.middleware.content_negotiation import ContentNegotiationMiddleware
-from app.api.routers.bulk_router import router as bulk_router
-from app.api.routers.tasks_router import router as tasks_router
-from app.api.routers.webhook_router import router as webhook_router
-from app.api.routers.feature_flags_router import router as feature_flags_router
-from app.api.routers.admin_metrics_router import router as admin_metrics_router
-from app.api.routers.support_router import router as support_router
-from app.enterprise.abac_router import router as enterprise_abac_router
-from app.enterprise.team_router import router as enterprise_team_router
-from app.enterprise.ticket_routing_router import router as enterprise_ticket_routing_router
-from app.enterprise.billing_router import router as enterprise_billing_router
-from app.enterprise.admin_router import router as enterprise_admin_router
-from app.enterprise.sso_router import router as enterprise_sso_router
-from app.api.routers.cx_router import router as cx_router
-from app.api.routers.search_knowledge_route import router as search_knowledge_router
-from app.observability.endpoints import router as observability_router
-from app.omniscient_ai.router import router as omniscient_router
-from app.quantum.routes.router import router as quantum_router
-from app.routers.audio import router as audio_router
-from app.routers.audio_outputs import router as audio_outputs_router
-from app.routers.neural_bci import router as neural_bci_router
-from app.routers.images import router as images_router
-from app.multiverse import multiverse_router
-from app.omnipresent_routes import router as omnipresent_router
-from app.routers.agi_router import router as agi_router
-from app.search_route import router as search_router
-from app.training.router import router as training_router
-from app.fine_tune.router import router as fine_tune_router
-from app.api.routers.team_chat_route import router as team_chat_router
-from app.api.routers.collaboration_route import router as collaboration_router
-from app.core_assistant import router as core_assistant_router
-from app.video_router import router as video_router
-from app.routers.images import router as images_router
-from app.routers.code_agent import router as code_agent_router
-from app.routers.rag import router as rag_router
-from backend.app.auth.router import router as phase14_auth_router
-from backend.app.workspaces.router import router as phase14_workspaces_router
-from backend.app.memory.router import router as phase14_memory_router
-from backend.app.uploads.router import router as phase14_uploads_router
-from backend.app.plugins.router import router as phase14_plugins_router
-from backend.app.api_keys.router import router as phase14_api_keys_router
-
-load_dotenv()
-
-
-from app.llm.service import LocalLLMService
-from app.llm.router import router as llm_router
-
-class _LLMClientStub:
-    def call_llm(self, *args, **kwargs):
-        raise RuntimeError("No LLM client configured")
-
-    async def stream_llm(self, *args, **kwargs):
-        raise RuntimeError("No LLM client configured")
-        if False:
-            yield
-
-
-try:
-    llm_service = LocalLLMService()
-    llm_client = llm_service
-except Exception:
-    llm_client = _LLMClientStub()
-context_builder = ContextBuilder(llm_client=llm_client)
-from .core.logging_config import configure_logging
-from .core.tracing import init_tracing
-from .core.prometheus_middleware import PrometheusMiddleware
-from .security_headers import SecurityHeadersMiddleware
-
-from .auth import router as auth_router
-from .audit import router as audit_router
-from .chat import router as chat_router
-from .routers.conversations import router as conversations_router
-from .secrets import router as secrets_router
-from .routers.models_api import router as models_api_router
-from .routers.memory_controls import router as memory_controls_router
-from .routers.safety_api import router as safety_api_router
-from .routers.sandbox import router as sandbox_router
-from .routers.tools import router as tools_router
-from .routers.finetuning import router as finetuning_router
-from .routers.admin_api import router as admin_api_router
-from .routers.training import router as training_router
-from .routers.model_registry import router as model_registry_router
-from .routers.llm_governance import router as llm_governance_router
-from .routers.ai_orchestration import router as ai_orchestration_router
-from .core.llm import LLMClient
-# rate_limit_middleware comes from app.middleware.security.rate_limit_hardened
-# (imported above); the historical app/rate_limit module no longer exists.
-from .health import health_service
-from .dashboard import get_dashboard
-from .metrics import get_metrics, CONTENT_TYPE_LATEST
-
-from app.router_loader import (  # noqa: E402  (import after module-level setup)
-    ROUTER_IMPORT_FAILURES,
-    bind as _bind_routers,
-    load_all_routers as _load_all_routers,
-    router_health,
-)
-
-# Load every optional router once. A failed import is logged with its
-# reason and reported as 503 by that subsystem's routes, not silently
-# replaced with an empty router (D05-03).
-_load_all_routers()
-_bind_routers(globals())
-
-
-load_dotenv()
-
-configure_logging()
-
-# Rate limiting setup
-limiter = Limiter(key_func=get_remote_address)
-
-app = FastAPI(
-    title="AstravoxAi Engine",
-    version="1.0.0",
-    description="Production-grade asynchronous stateless backend for AI chat",
-)
-llm_client = LLMClient()
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-app.add_middleware(SlowAPIMiddleware)
-
-# Standardized error responses
-register_error_handlers(app)
-
-app.middleware("http")(rate_limit_middleware)
-
-# CORS Middleware
-allowed_origins = [
-    origin.strip()
-    for origin in os.getenv(
-        "ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
-    ).split(",")
-    if origin.strip()
-]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type"],
-)
-
-# Enforce HTTPS
-app.add_middleware(HTTPSRedirectMiddleware)
-
-# Input validation
-app.add_middleware(InputValidationMiddleware)
-
-# PII redaction
-# PII redaction. Auth responses echo the caller's own identity (email,
-# display name) back to that same caller, so redacting them only breaks the
-# contract; everything else still gets masked.
-app.add_middleware(PIIRedactionMiddleware, exclude_paths=[
-    "/auth",
-    "/auth/me",
-    "/auth/login",
-    "/auth/logout",
-    "/auth/refresh",
-    "/auth/register",
-    "/auth/oauth",
-    "/auth/reset-password",
-    "/auth/password-reset",
-    "/auth/password-reset/confirm",
-    "/users/me",
-    "/account/profile",
-    "/health",
-    "/metrics",
-    "/favicon.ico",
-])
-
-# Add security headers middleware
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(IPEnforcementMiddleware)
-app.add_middleware(UserAgentMiddleware)
-
-# Request logging with correlation id propagation and Prometheus metrics.
-# Each of these registers a collector, so they must be added exactly once.
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(PrometheusMiddleware)
-
-# Idempotency key enforcement for state-changing requests
-app.add_middleware(IdempotencyMiddleware)
-
-# Distributed tracing
-init_tracing(service_name="astrovoxai", app=app)
-
-# Request timeout and payload size limits
-app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=30.0)
-app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
-
-# Graceful shutdown
-app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
-app.add_middleware(ContentNegotiationMiddleware)
-register_lifecycle_handlers(app)
-
-# Include routers
-app.include_router(auth_router)
-app.include_router(audit_router)
-app.include_router(chat_router)
-app.include_router(conversations_router)
-app.include_router(memory_router)
-app.include_router(memory_extended_router)
-app.include_router(secrets_router)
-app.include_router(storage_router)
-app.include_router(telemetry_router)
-app.include_router(terminal_router)
-app.include_router(embeddings_router)
-app.include_router(memory_engine_router)
-app.include_router(enterprise_router)
-app.include_router(enterprise_abac_router)
-app.include_router(enterprise_team_router)
-app.include_router(enterprise_sso_router)
-app.include_router(enterprise_billing_router)
-app.include_router(enterprise_ticket_routing_router)
-app.include_router(enterprise_admin_router)
-app.include_router(ws_router)
-app.include_router(workspace_router)
-app.include_router(jobs_router)
-app.include_router(events_router)
-app.include_router(analytics_router)
-app.include_router(knowledge_router)
-app.include_router(agent_router)
-app.include_router(monitoring_router)
-app.include_router(security_router)
-app.include_router(security_management_router)
-app.include_router(safety_router)
-app.include_router(admin_router)
-app.include_router(realtime_router)
-app.include_router(dashboard_router)
-app.include_router(api_v1_router)
-app.include_router(platform_router)
-app.include_router(knowledge_v2_router)
-app.include_router(tools_router)
-app.include_router(scan_router)
-app.include_router(agents_router)
-app.include_router(memory_v2_router)
-app.include_router(memory_system_router)
-app.include_router(automation_router)
-app.include_router(document_router)
-app.include_router(rag_router)
-app.include_router(performance_router)
-app.include_router(temporal_router)
-app.include_router(kernel_router)
-app.include_router(aios_router)
-app.include_router(bulk_router)
-app.include_router(tasks_router)
-app.include_router(webhook_router)
-app.include_router(feature_flags_router)
-app.include_router(admin_metrics_router)
-app.include_router(support_router)
-app.include_router(cx_router)
-app.include_router(observability_router)
-app.include_router(search_knowledge_router)
-app.include_router(omniscient_router)
-app.include_router(images_router)
-app.include_router(quantum_router)
-app.include_router(audio_router)
-app.include_router(audio_outputs_router)
-app.include_router(neural_bci_router)
-app.include_router(team_chat_router)
-app.include_router(collaboration_router)
-app.include_router(multiverse_router)
-app.include_router(omnipresent_router)
-app.include_router(agi_router)
-app.include_router(code_agent_router)
-app.include_router(search_router)
-app.include_router(core_assistant_router)
-app.include_router(video_router)
-app.include_router(training_router)
-app.include_router(fine_tune_router)
-app.include_router(llm_router)
-app.include_router(phase14_auth_router)
-app.include_router(phase14_workspaces_router)
-app.include_router(phase14_memory_router)
-app.include_router(phase14_uploads_router)
-app.include_router(phase14_plugins_router)
-app.include_router(phase14_api_keys_router)
-
-
-# Prometheus metrics middleware
-@app.middleware("http")
-async def metrics_middleware(request: Request, call_next):
-    """Track request metrics for Prometheus, analytics, and monitoring."""
-    start_time = time.time()
-    response = await call_next(request)
-    duration = time.time() - start_time
-
-    try:
-        from app.metrics import track_request
-        track_request(
-            method=request.method,
-            path=request.url.path,
-            status=response.status_code,
-            duration=duration,
-        )
-    except Exception:
-        pass
-
-    try:
-        from app.monitoring import performance_monitor, error_tracker, RequestMetric
-        performance_monitor.record_request(
-            RequestMetric(
-                endpoint=request.url.path,
-                method=request.method,
-                status_code=response.status_code,
-                latency_ms=duration * 1000,
-            )
-        )
-        if response.status_code >= 500:
-            error_tracker.record_error(
-                error_type="http_error",
-                message=f"{request.method} {request.url.path} returned {response.status_code}",
-                endpoint=request.url.path,
-                severity="critical" if response.status_code >= 500 else "warning",
-            )
-    except Exception:
-        pass
-
-    try:
-        from app.analytics import advanced_analytics
-        advanced_analytics.track_api_metric(
-            endpoint=request.url.path,
-            method=request.method,
-            status_code=response.status_code,
-            latency_ms=duration * 1000,
-        )
-    except Exception:
-        pass
-
-    return response
-
-
-@app.get("/healthz")
-async def healthz():
-    return {"status": "ok"}
-
-
-@app.get("/health/liveness")
-async def liveness():
-    return {"status": "alive"}
-
-
-@app.get("/health/readiness")
-async def readiness():
-    checks = {}
-    try:
-        from app.database.database import get_db
-        with get_db() as conn:
-            conn.execute("SELECT 1")
-        checks["database"] = "healthy"
-    except Exception as exc:
-        checks["database"] = f"unhealthy: {exc}"
-
-    overall = "ready" if all(v == "healthy" for v in checks.values()) else "not_ready"
-    return {"status": overall, "checks": checks}
-
-
-@app.websocket("/realtime/collaboration/{resource_type}/{resource_id}")
-async def collaboration_ws_endpoint(
-    websocket: WebSocket,
-    resource_type: str,
-    resource_id: str,
-    token: str = "",
-):
-    from app.realtime_collaboration import collaboration_websocket_endpoint
-    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
-
-
-@app.websocket("/realtime/collaboration/ws/{resource_type}/{resource_id}")
-async def collaboration_ws_alt_endpoint(
-    websocket: WebSocket,
-    resource_type: str,
-    resource_id: str,
-    token: str = "",
-):
-    from app.realtime_collaboration import collaboration_websocket_endpoint
-    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
-app.include_router(models_api_router)
-app.include_router(memory_controls_router)
-app.include_router(safety_api_router)
-app.include_router(sandbox_router)
-app.include_router(tools_router)
-app.include_router(rag_router)
-app.include_router(rag_extended_router)
-app.include_router(memory_consolidation_router)
-app.include_router(finetuning_router)
-app.include_router(admin_api_router)
-app.include_router(training_router)
-app.include_router(model_registry_router)
-app.include_router(llm_governance_router)
-app.include_router(ai_orchestration_router)
-app.include_router(cloud_router)
-app.include_router(performance_router)
-app.include_router(enterprise_api_router)
-app.include_router(support_api_router)
-app.include_router(white_label_api_router)
-app.include_router(custom_domains_api_router)
-app.include_router(compliance_api_router)
-app.include_router(security_api_router)
-app.include_router(quota_api_router)
-app.include_router(scim_api_router)
-
-
-# Prometheus metrics endpoint
-@app.get("/metrics")
-async def metrics():
-    """Prometheus metrics endpoint."""
-    try:
-        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
-    except Exception as _e:  # noqa: BLE001
-        return Response(
-            content=b"# Prometheus client not available\n",
-            media_type="text/plain"
-        )
-
-
-# Health check endpoints
-@app.get("/health")
-async def health_check():
-    health_service.app = app
-    result = health_service.get_overall_health()
-    status_code = 200 if result["status"] == "healthy" else 503
-    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
-
-
-@app.get("/health/readiness")
-async def readiness_check():
-    """Kubernetes readiness probe - checks dependencies."""
-    health_service.app = app
-    result = health_service.get_overall_health()
-    status_code = 200 if result["status"] in ("healthy", "degraded") else 503
-    payload = {
-        "status": result["status"],
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
-
-
-@app.get("/health/liveness")
-async def liveness_check():
-    """Kubernetes liveness probe - process is alive."""
-    return {
-        "status": "alive",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-
-
-@app.get("/health/startup")
-async def startup_check():
-    """Kubernetes startup probe - application has finished initializing."""
-    health_service.app = app
-    is_healthy = health_service.is_healthy()
-    status_code = 200 if is_healthy else 503
-    payload = {
-        "status": "started" if is_healthy else "starting",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-    }
-    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
-
-
-@app.get("/health/components")
-async def components_health():
-    """Detailed per-component health breakdown."""
-    health_service.app = app
-    result = health_service.get_overall_health()
-    return result
-
-
-@app.get("/health/history")
-async def health_history():
-    """Recent health check history."""
-    return {
-        "history": health_service.history()[-20:],
-        "count": len(health_service.history()),
-    }
-
-
-@app.get("/dashboard")
-async def dashboard():
-    """Monitoring dashboard payload with panels, health, and metrics."""
-    import json as _json
-    payload = get_dashboard(app=app)
-    return Response(
-        content=_json.dumps(payload, default=str),
-        media_type="application/json",
-    )
-
-
-@app.get("/")
-async def root():
-    return {
-        "message": "🚀 ASTRAVOX PRIME Backend v2.0.0",
-        "status": "operational",
-        "endpoints": {
-            "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
-            "health": "/health, /health/readiness, /health/liveness, /health/startup, /health/components, /health/history",
-            "dashboard": "/dashboard",
-            "docs": "/docs",
-        },
-    }
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info",
-    )
-
-
-@app.on_event("startup")
-async def _startup():
-    try:
-        from app.background_workers import BackgroundWorker
-        await BackgroundWorker.start(num_workers=4)
-    except Exception:
-        pass
-    try:
-        from app.observability import start_observability
-        await start_observability()
-    except Exception:
-        pass
-
-    async def _collect_system_metrics():
-        try:
-            from app.analytics import advanced_analytics
-            from app.monitoring import performance_monitor
-            while True:
-                try:
-                    stats = performance_monitor.get_system_stats()
-                    gpu = stats.get("gpu", {})
-                    if gpu.get("available") and gpu.get("devices"):
-                        for dev in gpu["devices"]:
-                            advanced_analytics.track_gpu_utilization(
-                                device_id=dev.get("device_id", 0),
-                                utilization_percent=dev.get("utilization_percent", 0.0),
-                                memory_used_mb=dev.get("memory_used_mb", 0.0),
-                                memory_total_mb=dev.get("memory_total_mb", 0.0),
-                                temperature_c=dev.get("temperature_c", 0.0),
-                            )
-                    memory_info = performance_monitor._get_memory_info()
-                    if memory_info:
-                        advanced_analytics.track_memory_usage(
-                            total_mb=memory_info.get("total_mb", 0.0),
-                            used_mb=memory_info.get("used_mb", 0.0),
-                            available_mb=memory_info.get("available_mb", 0.0),
-                            percent=memory_info.get("percent", 0.0),
-                        )
-                except Exception:
-                    pass
-                import asyncio
-                await asyncio.sleep(30)
-        except Exception:
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
+import os
+import sys
+import time
+from app.env_loader import load_environment
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+from app.services.auth.auth import router as auth_router
+from app.chat import router as chat_router
+from app.storage import router as storage_router
+from app.telemetry import router as telemetry_router
+from app.terminal import router as terminal_router
+from app.services.vector.embeddings_route import router as embeddings_router
+from app.api.routers.memory.router import router as memory_engine_router
+from app.api.routers.router import router as enterprise_router
+from app.enterprise.ws_router import router as ws_router
+from app.api.routers.workspace_route import router as workspace_router
+from app.api.routers.jobs_router import router as jobs_router, events_router
+from app.api.routers.analytics_route import router as analytics_router
+from app.api.routers.knowledge_route import router as knowledge_router
+from app.api.routers.agent_route import router as agent_router
+from app.api.routers.monitoring_route import router as monitoring_router
+from app.api.routers.auth.security_route import router as security_router
+from app.api.routers.security_management import security_router as security_management_router
+from app.safety_routes import router as safety_router
+from app.middleware.security.ip_ua_enforcement import IPEnforcementMiddleware, UserAgentMiddleware
+from app.api.routers.admin_route import router as admin_router
+from app.api.routers.realtime_route import router as realtime_router
+from app.api.routers.dashboard_route import router as dashboard_router
+from app.api.v1 import router as api_v1_router
+from app.api.routers.platform_route import router as platform_router
+from app.api.routers.knowledge_route_v2 import router as knowledge_v2_router
+from app.api.routers.realtime_route import tools_router
+from app.api.routers.realtime_route import security_router as scan_router
+from app.api.routers.agents_route import router as agents_router
+from app.api.routers.agents_route import memory_router as memory_v2_router
+from app.api.routers.memory_system import router as memory_system_router
+from app.api.routers.automation_route import router as automation_router
+from app.kernel.api import router as kernel_router
+from app.aios.api import router as aios_router
+from app.api.routers.document_route import router as document_router
+from app.api.routers.temporal_route import router as temporal_router
+from app.performance_route import router as performance_router
+from app.middleware.security.security_headers import SecurityHeadersMiddleware
+from app.middleware.security.rate_limit_hardened import rate_limit_middleware
+from app.middleware import InputValidationMiddleware
+from app.middleware.request_logging import RequestLoggingMiddleware
+from app.middleware.https_redirect import HTTPSRedirectMiddleware
+from app.middleware.pii_redaction import PIIRedactionMiddleware
+from app.middleware.idempotency import IdempotencyMiddleware
+from app.middleware.shutdown import register_lifecycle_handlers, GracefulShutdownMiddleware
+from app.middleware.request_limits import RequestTimeoutMiddleware, PayloadSizeLimitMiddleware
+from app.middleware.error_handler import register_error_handlers
+from app.context_builder import ContextBuilder
+from app.middleware.content_negotiation import ContentNegotiationMiddleware
+from app.api.routers.bulk_router import router as bulk_router
+from app.api.routers.tasks_router import router as tasks_router
+from app.api.routers.webhook_router import router as webhook_router
+from app.api.routers.feature_flags_router import router as feature_flags_router
+from app.api.routers.admin_metrics_router import router as admin_metrics_router
+from app.api.routers.support_router import router as support_router
+from app.enterprise.abac_router import router as enterprise_abac_router
+from app.enterprise.team_router import router as enterprise_team_router
+from app.enterprise.ticket_routing_router import router as enterprise_ticket_routing_router
+from app.enterprise.billing_router import router as enterprise_billing_router
+from app.enterprise.admin_router import router as enterprise_admin_router
+from app.enterprise.sso_router import router as enterprise_sso_router
+from app.api.routers.cx_router import router as cx_router
+from app.api.routers.search_knowledge_route import router as search_knowledge_router
+from app.observability.endpoints import router as observability_router
+from app.omniscient_ai.router import router as omniscient_router
+from app.quantum.routes.router import router as quantum_router
+from app.routers.audio import router as audio_router
+from app.routers.audio_outputs import router as audio_outputs_router
+from app.routers.neural_bci import router as neural_bci_router
+from app.routers.images import router as images_router
+from app.multiverse import multiverse_router
+from app.omnipresent_routes import router as omnipresent_router
+from app.routers.agi_router import router as agi_router
+from app.search_route import router as search_router
+from app.training.router import router as training_router
+from app.fine_tune.router import router as fine_tune_router
+from app.api.routers.team_chat_route import router as team_chat_router
+from app.api.routers.collaboration_route import router as collaboration_router
+from app.core_assistant import router as core_assistant_router
+from app.video_router import router as video_router
+from app.routers.images import router as images_router
+from app.routers.code_agent import router as code_agent_router
+from app.routers.rag import router as rag_router
+from backend.app.auth.router import router as phase14_auth_router
+from backend.app.workspaces.router import router as phase14_workspaces_router
+from backend.app.memory.router import router as phase14_memory_router
+from backend.app.uploads.router import router as phase14_uploads_router
+from backend.app.plugins.router import router as phase14_plugins_router
+from backend.app.api_keys.router import router as phase14_api_keys_router
+
+load_environment()
+
+
+from app.llm.service import LocalLLMService
+from app.llm.router import router as llm_router
+
+class _LLMClientStub:
+    def call_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+
+    async def stream_llm(self, *args, **kwargs):
+        raise RuntimeError("No LLM client configured")
+        if False:
+            yield
+
+
+try:
+    llm_service = LocalLLMService()
+    llm_client = llm_service
+except Exception:
+    llm_client = _LLMClientStub()
+context_builder = ContextBuilder(llm_client=llm_client)
+from .core.logging_config import configure_logging
+from .core.tracing import init_tracing
+from .core.prometheus_middleware import PrometheusMiddleware
+from .security_headers import SecurityHeadersMiddleware
+
+from .auth import router as auth_router
+from .audit import router as audit_router
+from .chat import router as chat_router
+from .routers.conversations import router as conversations_router
+from .secrets import router as secrets_router
+from .routers.models_api import router as models_api_router
+from .routers.memory_controls import router as memory_controls_router
+from .routers.safety_api import router as safety_api_router
+from .routers.sandbox import router as sandbox_router
+from .routers.tools import router as tools_router
+from .routers.finetuning import router as finetuning_router
+from .routers.admin_api import router as admin_api_router
+from .routers.training import router as training_router
+from .routers.model_registry import router as model_registry_router
+from .routers.llm_governance import router as llm_governance_router
+from .routers.ai_orchestration import router as ai_orchestration_router
+from .core.llm import LLMClient
+# rate_limit_middleware comes from app.middleware.security.rate_limit_hardened
+# (imported above); the historical app/rate_limit module no longer exists.
+from .health import health_service
+from .dashboard import get_dashboard
+from .metrics import get_metrics, CONTENT_TYPE_LATEST
+
+from app.router_loader import (  # noqa: E402  (import after module-level setup)
+    ROUTER_IMPORT_FAILURES,
+    bind as _bind_routers,
+    load_all_routers as _load_all_routers,
+    router_health,
+)
+
+# Load every optional router once. A failed import is logged with its
+# reason and reported as 503 by that subsystem's routes, not silently
+# replaced with an empty router (D05-03).
+_load_all_routers()
+_bind_routers(globals())
+
+
+load_environment()
+
+configure_logging()
+
+# Rate limiting setup
+limiter = Limiter(key_func=get_remote_address)
+
+app = FastAPI(
+    title="AstravoxAi Engine",
+    version="1.0.0",
+    description="Production-grade asynchronous stateless backend for AI chat",
+)
+llm_client = LLMClient()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
+
+# Standardized error responses
+register_error_handlers(app)
+
+app.middleware("http")(rate_limit_middleware)
+
+# CORS Middleware
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+    ).split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+
+# Enforce HTTPS
+app.add_middleware(HTTPSRedirectMiddleware)
+
+# Input validation
+app.add_middleware(InputValidationMiddleware)
+
+# PII redaction
+# PII redaction. Auth responses echo the caller's own identity (email,
+# display name) back to that same caller, so redacting them only breaks the
+# contract; everything else still gets masked.
+app.add_middleware(PIIRedactionMiddleware, exclude_paths=[
+    "/auth",
+    "/auth/me",
+    "/auth/login",
+    "/auth/logout",
+    "/auth/refresh",
+    "/auth/register",
+    "/auth/oauth",
+    "/auth/reset-password",
+    "/auth/password-reset",
+    "/auth/password-reset/confirm",
+    "/users/me",
+    "/account/profile",
+    "/health",
+    "/metrics",
+    "/favicon.ico",
+])
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(IPEnforcementMiddleware)
+app.add_middleware(UserAgentMiddleware)
+
+# Request logging with correlation id propagation and Prometheus metrics.
+# Each of these registers a collector, so they must be added exactly once.
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(PrometheusMiddleware)
+
+# Idempotency key enforcement for state-changing requests
+app.add_middleware(IdempotencyMiddleware)
+
+# Distributed tracing
+init_tracing(service_name="astrovoxai", app=app)
+
+# Request timeout and payload size limits
+app.add_middleware(RequestTimeoutMiddleware, timeout_seconds=30.0)
+app.add_middleware(PayloadSizeLimitMiddleware, max_bytes=10 * 1024 * 1024)
+
+# Graceful shutdown
+app.add_middleware(GracefulShutdownMiddleware, drain_timeout=30.0)
+app.add_middleware(ContentNegotiationMiddleware)
+register_lifecycle_handlers(app)
+
+# Include routers
+app.include_router(auth_router)
+app.include_router(audit_router)
+app.include_router(chat_router)
+app.include_router(conversations_router)
+app.include_router(memory_extended_router)
+app.include_router(secrets_router)
+app.include_router(storage_router)
+app.include_router(telemetry_router)
+app.include_router(terminal_router)
+app.include_router(embeddings_router)
+app.include_router(memory_engine_router)
+app.include_router(enterprise_router)
+app.include_router(enterprise_abac_router)
+app.include_router(enterprise_team_router)
+app.include_router(enterprise_sso_router)
+app.include_router(enterprise_billing_router)
+app.include_router(enterprise_ticket_routing_router)
+app.include_router(enterprise_admin_router)
+app.include_router(ws_router)
+app.include_router(workspace_router)
+app.include_router(jobs_router)
+app.include_router(events_router)
+app.include_router(analytics_router)
+app.include_router(knowledge_router)
+app.include_router(agent_router)
+app.include_router(monitoring_router)
+app.include_router(security_router)
+app.include_router(security_management_router)
+app.include_router(safety_router)
+app.include_router(admin_router)
+app.include_router(realtime_router)
+app.include_router(dashboard_router)
+app.include_router(api_v1_router)
+app.include_router(platform_router)
+app.include_router(knowledge_v2_router)
+app.include_router(tools_router)
+app.include_router(scan_router)
+app.include_router(agents_router)
+app.include_router(memory_v2_router)
+app.include_router(memory_system_router)
+app.include_router(automation_router)
+app.include_router(document_router)
+app.include_router(rag_router)
+app.include_router(performance_router)
+app.include_router(temporal_router)
+app.include_router(kernel_router)
+app.include_router(aios_router)
+app.include_router(bulk_router)
+app.include_router(tasks_router)
+app.include_router(webhook_router)
+app.include_router(feature_flags_router)
+app.include_router(admin_metrics_router)
+app.include_router(support_router)
+app.include_router(cx_router)
+app.include_router(observability_router)
+app.include_router(search_knowledge_router)
+app.include_router(omniscient_router)
+app.include_router(images_router)
+app.include_router(quantum_router)
+app.include_router(audio_router)
+app.include_router(audio_outputs_router)
+app.include_router(neural_bci_router)
+app.include_router(team_chat_router)
+app.include_router(collaboration_router)
+app.include_router(multiverse_router)
+app.include_router(omnipresent_router)
+app.include_router(agi_router)
+app.include_router(code_agent_router)
+app.include_router(search_router)
+app.include_router(core_assistant_router)
+app.include_router(video_router)
+app.include_router(training_router)
+app.include_router(fine_tune_router)
+app.include_router(llm_router)
+app.include_router(phase14_auth_router)
+app.include_router(phase14_workspaces_router)
+app.include_router(phase14_memory_router)
+app.include_router(phase14_uploads_router)
+app.include_router(phase14_plugins_router)
+app.include_router(phase14_api_keys_router)
+
+
+# Prometheus metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    """Track request metrics for Prometheus, analytics, and monitoring."""
+    start_time = time.time()
+    response = await call_next(request)
+    duration = time.time() - start_time
+
+    try:
+        from app.metrics import track_request
+        track_request(
+            method=request.method,
+            path=request.url.path,
+            status=response.status_code,
+            duration=duration,
+        )
+    except Exception:
+        pass
+
+    try:
+        from app.monitoring import performance_monitor, error_tracker, RequestMetric
+        performance_monitor.record_request(
+            RequestMetric(
+                endpoint=request.url.path,
+                method=request.method,
+                status_code=response.status_code,
+                latency_ms=duration * 1000,
+            )
+        )
+        if response.status_code >= 500:
+            error_tracker.record_error(
+                error_type="http_error",
+                message=f"{request.method} {request.url.path} returned {response.status_code}",
+                endpoint=request.url.path,
+                severity="critical" if response.status_code >= 500 else "warning",
+            )
+    except Exception:
+        pass
+
+    try:
+        from app.analytics import advanced_analytics
+        advanced_analytics.track_api_metric(
+            endpoint=request.url.path,
+            method=request.method,
+            status_code=response.status_code,
+            latency_ms=duration * 1000,
+        )
+    except Exception:
+        pass
+
+    return response
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/health/liveness")
+async def liveness():
+    return {"status": "alive"}
+
+
+@app.get("/health/readiness")
+async def readiness():
+    checks = {}
+    try:
+        from app.database.database import get_db
+        with get_db() as conn:
+            conn.execute("SELECT 1")
+        checks["database"] = "healthy"
+    except Exception as exc:
+        checks["database"] = f"unhealthy: {exc}"
+
+    overall = "ready" if all(v == "healthy" for v in checks.values()) else "not_ready"
+    return {"status": overall, "checks": checks}
+
+
+@app.websocket("/realtime/collaboration/{resource_type}/{resource_id}")
+async def collaboration_ws_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+
+
+@app.websocket("/realtime/collaboration/ws/{resource_type}/{resource_id}")
+async def collaboration_ws_alt_endpoint(
+    websocket: WebSocket,
+    resource_type: str,
+    resource_id: str,
+    token: str = "",
+):
+    from app.realtime_collaboration import collaboration_websocket_endpoint
+    await collaboration_websocket_endpoint(websocket, resource_type, resource_id, token)
+app.include_router(models_api_router)
+app.include_router(memory_controls_router)
+app.include_router(safety_api_router)
+app.include_router(sandbox_router)
+app.include_router(rag_extended_router)
+app.include_router(memory_consolidation_router)
+app.include_router(finetuning_router)
+app.include_router(admin_api_router)
+app.include_router(model_registry_router)
+app.include_router(llm_governance_router)
+app.include_router(ai_orchestration_router)
+app.include_router(cloud_router)
+app.include_router(enterprise_api_router)
+app.include_router(support_api_router)
+app.include_router(white_label_api_router)
+app.include_router(custom_domains_api_router)
+app.include_router(compliance_api_router)
+app.include_router(security_api_router)
+app.include_router(quota_api_router)
+app.include_router(scim_api_router)
+
+
+# Prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    """Prometheus metrics endpoint."""
+    try:
+        return Response(content=get_metrics(), media_type=CONTENT_TYPE_LATEST)
+    except Exception as _e:  # noqa: BLE001
+        return Response(
+            content=b"# Prometheus client not available\n",
+            media_type="text/plain"
+        )
+
+
+# Health check endpoints
+@app.get("/health")
+async def health_check():
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] == "healthy" else 503
+    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/readiness")
+async def readiness_check():
+    """Kubernetes readiness probe - checks dependencies."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    status_code = 200 if result["status"] in ("healthy", "degraded") else 503
+    payload = {
+        "status": result["status"],
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/liveness")
+async def liveness_check():
+    """Kubernetes liveness probe - process is alive."""
+    return {
+        "status": "alive",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.get("/health/startup")
+async def startup_check():
+    """Kubernetes startup probe - application has finished initializing."""
+    health_service.app = app
+    is_healthy = health_service.is_healthy()
+    status_code = 200 if is_healthy else 503
+    payload = {
+        "status": "started" if is_healthy else "starting",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+    return Response(content=__import__("json").dumps(payload), status_code=status_code, media_type="application/json")
+
+
+@app.get("/health/components")
+async def components_health():
+    """Detailed per-component health breakdown."""
+    health_service.app = app
+    result = health_service.get_overall_health()
+    return result
+
+
+@app.get("/health/history")
+async def health_history():
+    """Recent health check history."""
+    return {
+        "history": health_service.history()[-20:],
+        "count": len(health_service.history()),
+    }
+
+
+@app.get("/dashboard")
+async def dashboard():
+    """Monitoring dashboard payload with panels, health, and metrics."""
+    import json as _json
+    payload = get_dashboard(app=app)
+    return Response(
+        content=_json.dumps(payload, default=str),
+        media_type="application/json",
+    )
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "🚀 ASTRAVOX PRIME Backend v2.0.0",
+        "status": "operational",
+        "endpoints": {
+            "auth": "/auth/signup, /auth/login, /auth/logout, /auth/reset-password",
+            "health": "/health, /health/readiness, /health/liveness, /health/startup, /health/components, /health/history",
+            "dashboard": "/dashboard",
+            "docs": "/docs",
+        },
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info",
+    )
+
+
+@app.on_event("startup")
+async def _startup():
+    try:
+        from app.background_workers import BackgroundWorker
+        await BackgroundWorker.start(num_workers=4)
+    except Exception:
+        pass
+    try:
+        from app.observability import start_observability
+        await start_observability()
+    except Exception:
+        pass
+
+    async def _collect_system_metrics():
+        try:
+            from app.analytics import advanced_analytics
+            from app.monitoring import performance_monitor
+            while True:
+                try:
+                    stats = performance_monitor.get_system_stats()
+                    gpu = stats.get("gpu", {})
+                    if gpu.get("available") and gpu.get("devices"):
+                        for dev in gpu["devices"]:
+                            advanced_analytics.track_gpu_utilization(
+                                device_id=dev.get("device_id", 0),
+                                utilization_percent=dev.get("utilization_percent", 0.0),
+                                memory_used_mb=dev.get("memory_used_mb", 0.0),
+                                memory_total_mb=dev.get("memory_total_mb", 0.0),
+                                temperature_c=dev.get("temperature_c", 0.0),
+                            )
+                    memory_info = performance_monitor._get_memory_info()
+                    if memory_info:
+                        advanced_analytics.track_memory_usage(
+                            total_mb=memory_info.get("total_mb", 0.0),
+                            used_mb=memory_info.get("used_mb", 0.0),
+                            available_mb=memory_info.get("available_mb", 0.0),
+                            percent=memory_info.get("percent", 0.0),
+                        )
+                except Exception:
+                    pass
+                import asyncio
+                await asyncio.sleep(30)
+        except Exception:
             pass    import asyncio    asyncio.create_task(_collect_system_metrics())

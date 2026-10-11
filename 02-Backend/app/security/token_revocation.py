@@ -38,6 +38,25 @@ class RevocationReason(str, Enum):
     EXPIRED = "expired"
 
 
+def _coerce_reason(reason: object) -> "RevocationReason":
+    """Accept a RevocationReason or a plain string.
+
+    Call sites and tests pass the reason as a string, e.g.
+    ``reason="logout"``. Without coercion the audit path then calls
+    ``.value`` on a str, which raises AttributeError and the revocation
+    record is lost. An unknown string falls back to ADMIN_REVOKE so a
+    typo fails safe rather than dropping the record.
+    """
+    if isinstance(reason, RevocationReason):
+        return reason
+    if isinstance(reason, str):
+        try:
+            return RevocationReason(reason.strip().lower())
+        except ValueError:
+            return RevocationReason.ADMIN_REVOKE
+    return RevocationReason.ADMIN_REVOKE
+
+
 @dataclass
 class RevokedToken:
     jti: str
@@ -96,6 +115,7 @@ class TokenRevocationList:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> RevokedToken:
         """Revoke a token by its JTI."""
+        reason = _coerce_reason(reason)
         now = time.time()
         with self._lock:
             entry = RevokedToken(
@@ -139,6 +159,7 @@ class TokenRevocationList:
         ip_address: Optional[str] = None,
     ) -> List[str]:
         """Revoke all tokens for a user."""
+        reason = _coerce_reason(reason)
         revoked = []
         for jti in token_jtis:
             self.revoke(jti, user_id, time.time() + 86400, reason, ip_address)
@@ -204,6 +225,7 @@ class TokenRevocationList:
         metadata: Optional[Dict[str, Any]] = None,
     ) -> int:
         """Bulk revoke tokens."""
+        reason = _coerce_reason(reason)
         count = 0
         for jti in jtis:
             self.revoke(jti, user_id, time.time() + 86400, reason, metadata=metadata)

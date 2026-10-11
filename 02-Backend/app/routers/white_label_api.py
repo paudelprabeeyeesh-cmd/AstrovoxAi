@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 
-from .auth import get_current_user
+from app.auth import get_current_user
 from ..white_label import (
     create_white_label_config,
     get_white_label_config,

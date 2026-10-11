@@ -2,6 +2,8 @@
 
 from .chunking import Chunk, ChunkingStrategies
 from .embeddings import EmbeddingGenerator, EmbeddingResult
+from .pipeline import RAGPipeline
+from .retriever import RAGRetriever
 from .retrieval import HybridRetriever, MultiQueryRetriever, RetrievalResult, BM25SparseIndex, DenseVectorIndex
 from .parent_child import ChildChunk, ParentChildRetriever, ParentChildStore, ParentDocument
 from .compression import ContextCompressor
@@ -13,6 +15,8 @@ __all__ = [
     "ChunkingStrategies",
     "EmbeddingGenerator",
     "EmbeddingResult",
+    "RAGPipeline",
+    "RAGRetriever",
     "HybridRetriever",
     "MultiQueryRetriever",
     "RetrievalResult",
