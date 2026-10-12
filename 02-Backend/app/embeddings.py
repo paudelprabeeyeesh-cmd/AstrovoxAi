@@ -9,8 +9,38 @@ import logging
 from typing import Optional
 
 from app.providers.base import EmbeddingVector
+from app import embedding_spend
 
 logger = logging.getLogger(__name__)
+
+# A batch above this is refused before any spend; Gemini's own limit is 100,
+# so a larger request would fail anyway, and the cap makes that failure a
+# deliberate one rather than a provider rejection after billing.
+MAX_BATCH = 100
+
+
+def authorize(
+    user_id: Optional[str],
+    tenant_id: Optional[str],
+    model: str,
+    texts: list[str],
+) -> None:
+    """Refuse a batch that would breach the user's daily spend."""
+    embedding_spend.authorize(
+        embedding_spend.get_spend_cap(), user_id, tenant_id, model, texts
+    )
+
+
+def record(
+    user_id: Optional[str],
+    tenant_id: Optional[str],
+    model: str,
+    texts: list[str],
+) -> None:
+    """Record the tokens consumed. Never raises."""
+    embedding_spend.record(
+        embedding_spend.get_spend_cap(), user_id, tenant_id, model, texts
+    )
 
 
 class EmbeddingService:
@@ -23,7 +53,7 @@ class EmbeddingService:
 
     def _initialize_provider(self):
         """Initialize the embedding provider from environment variables."""
-        from ...providers.factory import ProviderFactory
+        from app.providers.factory import ProviderFactory
 
         gemini = ProviderFactory.get("gemini")
         if gemini and gemini.is_configured:
@@ -49,6 +79,9 @@ class EmbeddingService:
         self,
         texts: list[str],
         model: Optional[str] = None,
+        *,
+        user_id: Optional[str] = None,
+        tenant_id: Optional[str] = None,
     ) -> list[EmbeddingVector]:
         """Generate embeddings for a list of texts.
 
@@ -70,8 +103,21 @@ class EmbeddingService:
         if not texts:
             return []
 
+        # The spend cap in app/ai_spend_cap.py covers chat only. This path is
+        # billed per input token, so an account that stops using chat and
+        # starts using search is otherwise unbounded.
+        if len(texts) > MAX_BATCH:
+            raise ValueError(
+                f"A batch of {len(texts)} texts exceeds the limit of "
+                f"{MAX_BATCH}; split the request."
+            )
+        authorize(user_id, tenant_id, model or self._model, texts)
         model = model or self._model
-        return await self._provider.embed(texts, model=model)
+        result = await self._provider.embed(texts, model=model)
+        # Meter after the call. A metering failure must not break the
+        # request, so record() swallows its own errors.
+        record(user_id, tenant_id, model, texts)
+        return result
 
     async def embed_one(
         self,
