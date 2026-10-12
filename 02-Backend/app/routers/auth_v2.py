@@ -345,7 +345,7 @@ async def forgot_password(body: PasswordResetRequest):
     if user:
         token = secrets.token_urlsafe(32)
         expires_at = (_now() + timedelta(hours=1)).isoformat()
-        from app.database.database import create_password_reset_token
+        from database.database import create_password_reset_token
 
         create_password_reset_token(user["id"], token, expires_at)
         deliver_token(user["email"], token, "reset_password")

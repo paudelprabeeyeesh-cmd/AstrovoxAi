@@ -226,19 +226,41 @@ class TestHealthAndStatus:
         response = client.get("/health")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
+        # "degraded" is a valid answer when an optional dependency is absent:
+        # this environment has no Redis, which is DEGRADED, not UNHEALTHY.
+        # Only "unhealthy" would make /health a failing probe.
+        assert data["status"] in ("healthy", "degraded"), data["status"]
+        assert "components" in data, "the payload must break down per component"
+
+    def test_health_components_are_all_reported(self, client):
+        """Every component the health service inspects must appear."""
+        response = client.get("/health")
+        assert response.status_code == 200
+        components = response.json()["components"]
+        for name in ("database", "redis", "storage", "llm_providers"):
+            assert name in components, f"{name} missing from the health payload"
+        # The database check must actually run, not be stubbed out with a
+        # placeholder status. A raw string SQL was previously reported as
+        # "unhealthy: Textual SQL expression..." which looked like a real
+        # outage.
+        assert components["database"]["status"]=="healthy", components["database"]
 
     def test_readiness_check(self, client):
         response = client.get("/health/readiness")
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "healthy"
+        assert data["status"] in ("healthy", "degraded"), data["status"]
 
     def test_liveness_check(self, client):
         response = client.get("/health/liveness")
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "alive"
+
+    def test_startup_check(self, client):
+        response = client.get("/health/startup")
+        assert response.status_code == 200
+        assert response.json()["status"] == "started"
 
     def test_root_endpoint(self, client):
         response = client.get("/")

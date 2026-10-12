@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from sqlalchemy import text
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
@@ -166,9 +167,9 @@ async def get_enterprise_metrics():
 
 def _check_database() -> tuple[bool, Optional[str]]:
     try:
-        from app.database.database import get_db
+        from app.database import get_db
         with get_db() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True, None
     except Exception as exc:
         return False, str(exc)

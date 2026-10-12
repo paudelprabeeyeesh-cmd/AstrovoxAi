@@ -1,9 +1,12 @@
-from fastapi import FastAPI, Request
+from sqlalchemy import text
+from fastapi import FastAPI, Request
+from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from datetime import datetime, timezone
 import os
 import sys
 import time
@@ -391,31 +394,6 @@ async def metrics_middleware(request: Request, call_next):
     return response
 
 
-@app.get("/healthz")
-async def healthz():
-    return {"status": "ok"}
-
-
-@app.get("/health/liveness")
-async def liveness():
-    return {"status": "alive"}
-
-
-@app.get("/health/readiness")
-async def readiness():
-    checks = {}
-    try:
-        from app.database.database import get_db
-        with get_db() as conn:
-            conn.execute("SELECT 1")
-        checks["database"] = "healthy"
-    except Exception as exc:
-        checks["database"] = f"unhealthy: {exc}"
-
-    overall = "ready" if all(v == "healthy" for v in checks.values()) else "not_ready"
-    return {"status": overall, "checks": checks}
-
-
 @app.websocket("/realtime/collaboration/{resource_type}/{resource_id}")
 async def collaboration_ws_endpoint(
     websocket: WebSocket,
@@ -476,9 +454,14 @@ async def metrics():
 async def health_check():
     health_service.app = app
     result = health_service.get_overall_health()
-    status_code = 200 if result["status"] == "healthy" else 503
-    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
+    # A missing optional dependency is DEGRADED, not UNHEALTHY. Returning
+    # 503 for it made a load balancer treat a running process as dead, so
+    # an instance with no Redis configured was pulled out of rotation.
+    # UNHEALTHY is the only state that should fail this probe; the
+    # readiness endpoint below stays strict.
+    status_code = 503 if result["status"] == "unhealthy" else 200
 
+    return Response(content=__import__("json").dumps(result), status_code=status_code, media_type="application/json")
 
 @app.get("/health/readiness")
 async def readiness_check():
@@ -612,4 +595,6 @@ async def _startup():
                 import asyncio
                 await asyncio.sleep(30)
         except Exception:
-            pass    import asyncio    asyncio.create_task(_collect_system_metrics())
+            pass    import asyncio    asyncio.create_task(_collect_system_metrics())
+
+

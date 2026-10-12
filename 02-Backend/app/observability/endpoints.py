@@ -5,7 +5,18 @@ import asyncio
 
 from app.observability import get_observability, HealthStatus
 
-router = APIRouter(tags=["health"])
+# Namespaced deliberately. These routes previously claimed the bare
+# /health, /health/ready, /health/live and /health/detailed paths and were
+# mounted before the app's own health handlers in main.py, so they won:
+# GET /health returned this module's {status, timestamp, service} payload
+# instead of the documented per-component breakdown, and /health/readiness
+# and /health/liveness had two competing handlers each.
+#
+# FastAPI matches the first registered route for a path, so an unnamespaced
+# mount is a silent override of whatever the app itself defined. The
+# observability views now live under /observability/, and the canonical
+# /health family is owned solely by main.py.
+router = APIRouter(prefix="/observability", tags=["observability"])
 
 
 @router.get("/health")
@@ -13,7 +24,7 @@ async def health_check():
     """Basic health check endpoint."""
     obs = get_observability()
     overall_status = obs.health.get_overall_status()
-    
+
     return {
         "status": overall_status.value,
         "timestamp": asyncio.get_event_loop().time(),
@@ -26,7 +37,7 @@ async def detailed_health_check():
     """Detailed health check with all subsystem status."""
     obs = get_observability()
     status = obs.get_status()
-    
+
     # Determine HTTP status code based on health
     health_status = HealthStatus(status["health"]["status"])
     if health_status == HealthStatus.HEALTHY:

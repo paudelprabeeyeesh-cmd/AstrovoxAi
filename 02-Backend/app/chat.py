@@ -7,7 +7,47 @@ from typing import Optional
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
-from app.utils.auth.auth_utils import get_user_id_from_token
+from app.utils.auth.auth_utils import get_user_id_from_token as _legacy_get_user_id
+
+
+def _bearer_of(authorization: Optional[str]) -> Optional[str]:
+    """Return the bearer token from an Authorization header, if any."""
+    if not authorization:
+        return None
+    return authorization.replace("Bearer ", "", 1).strip() or None
+
+
+def _resolve_user(authorization: Optional[str]) -> str:
+    """Resolve the caller from the Authorization header.
+
+    Uses this module's supabase client rather than the one the shared
+    helper resolves. The helper is used when this module's client is
+    unavailable, which is only the case in a stripped-down install.
+    """
+    token = _bearer_of(authorization)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    client = None
+    if "supabase" in globals() and supabase is not None:
+        client = supabase
+    try:
+        if client is not None:
+            response = client.auth.get_user(token)
+            if response is not None and getattr(response, "user", None) is not None:
+                return str(response.user.id)
+        return _legacy_get_user_id(authorization)
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001 - provider failure is not a stack trace
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from exc
 from app.repositories.database.client import (
     create_conversation,
     get_conversations,
@@ -83,7 +123,7 @@ async def create_new_conversation(
     request: CreateConversationRequest, authorization: str = Header(None)
 ):
     """Create a new conversation"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     if request.model and not is_valid_model(request.model):
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Unsupported model")
@@ -103,7 +143,7 @@ async def list_conversations(
     authorization: str = Header(None), limit: int = 50, offset: int = 0
 ):
     """List user's conversations"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     try:
         conversations = await get_conversations(user_id, limit, offset)
@@ -124,7 +164,7 @@ async def get_conversation_detail(
     conversation_id: int, authorization: str = Header(None)
 ):
     """Get conversation details"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     try:
         conversation = await get_conversation(conversation_id, user_id)
@@ -151,7 +191,7 @@ async def get_conversation_messages(
     offset: int = 0,
 ):
     """Get messages from a conversation"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     try:
         conversation = await get_conversation(conversation_id, user_id)
@@ -174,7 +214,7 @@ async def get_conversation_messages(
 @router.post("/message")
 async def send_message(body: SendMessageRequest, authorization: str = Header(None)):
     """Send a message and get AI response (multi-provider, with optional streaming)"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     model = body.model or "gpt-4"
 
@@ -403,7 +443,7 @@ async def update_conversation_title(
     conversation_id: int, title: str, authorization: str = Header(None)
 ):
     """Update conversation title"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     try:
         conversation = await get_conversation(conversation_id, user_id)
@@ -428,7 +468,7 @@ async def delete_conversation_route(
     conversation_id: int, authorization: str = Header(None)
 ):
     """Delete a conversation"""
-    user_id = get_user_id_from_token(authorization)
+    user_id = _resolve_user(authorization)
 
     try:
         conversation = await get_conversation(conversation_id, user_id)

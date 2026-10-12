@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -24,14 +25,25 @@ class ComponentHealth:
 class HealthCheckService:
     def __init__(self, app: Optional[Any] = None) -> None:
         self.app = app
+        # Bounded history so /health/history cannot grow without limit on a
+        # long-running process. The lock keeps concurrent probes coherent.
+        self._history: list = []
+        self._history_lock = threading.Lock()
+        self._history_max = 200
 
     def check_database(self) -> ComponentHealth:
         start = time.time()
         try:
+            from sqlalchemy import text
+
             from app.database import get_db
 
             with get_db() as conn:
-                conn.execute("SELECT 1")
+                # text() is required: the session is SQLAlchemy, which
+                # refuses a bare string SQL argument. Without it this check
+                # always reported the database as unhealthy with a
+                # driver-internal message, which looked like a real outage.
+                conn.execute(text("SELECT 1"))
             latency = (time.time() - start) * 1000
             return ComponentHealth(
                 status=HealthStatus.HEALTHY,
@@ -49,8 +61,18 @@ class HealthCheckService:
     def check_redis(self) -> ComponentHealth:
         start = time.time()
         try:
-            if hasattr(self.app.state, "redis") and self.app.state.redis:
-                self.app.state.redis.ping()
+            # `self.app` is None when the health service is constructed
+            # before the app exists, so `self.app.state` raised
+            # "'NoneType' object has no attribute 'state'". Redis being
+            # absent is DEGRADED, not UNHEALTHY, and a missing app is the
+            # same state for this check's purpose.
+            redis = None
+            app = self.app
+            if app is not None:
+                state = getattr(app, "state", None)
+                redis = getattr(state, "redis", None) if state is not None else None
+            if redis is not None:
+                redis.ping()
                 latency = (time.time() - start) * 1000
                 return ComponentHealth(
                     status=HealthStatus.HEALTHY,
@@ -103,12 +125,22 @@ class HealthCheckService:
     def check_storage(self) -> ComponentHealth:
         start = time.time()
         try:
-            from app.storage import get_storage_backend
-            backend = get_storage_backend()
-            backend.health_check()
+            # The module exposes StorageService, not get_storage_backend, so
+            # the previous import always raised ImportError and the check
+            # reported DEGRADED with an import message. A storage backend
+            # that is not wired up is DEGRADED; the check is meaningful only
+            # if it can actually construct the service.
+            from app.storage import StorageService
+
+            service = StorageService()
+            configured = True
+            if hasattr(service, "health_check"):
+                result = service.health_check()
+                if isinstance(result, dict) and not result.get("healthy", True):
+                    configured = False
             latency = (time.time() - start) * 1000
             return ComponentHealth(
-                status=HealthStatus.HEALTHY,
+                status=HealthStatus.HEALTHY if configured else HealthStatus.DEGRADED,
                 message="Storage backend connected",
                 latency_ms=latency,
             )
@@ -167,6 +199,34 @@ class HealthCheckService:
             "components": components,
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
+
+    def is_healthy(self) -> bool:
+        """True when the service can serve traffic.
+
+        Used by the startup probe. A DEGRADED result still means "healthy
+        enough to start": a missing optional dependency is not a reason to
+        keep restarting a container. Only UNHEALTHY blocks startup.
+        """
+        return self.get_overall_health()["status"] != HealthStatus.UNHEALTHY.value
+
+    def history(self) -> list:
+        """Recent check results, newest last.
+
+        Kept in memory and bounded so a long-running process cannot grow
+        this without limit. The /health/history endpoint reads the tail.
+        """
+        with self._history_lock:
+            return list(self._history)
+
+    def _record_history(self, entry: dict) -> None:
+        with self._history_lock:
+            self._history.append(entry)
+            # Keep the most recent window, dropping from the front.
+            overflow = len(self._history) - self._history_max
+            if overflow > 0:
+                del self._history[:overflow]
+
+
 # Module-level singleton used across the app (`from app.health import
 # health_service`). Kept here so callers share one instance.
 health_service = HealthCheckService()
