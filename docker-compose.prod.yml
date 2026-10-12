@@ -1,301 +1,357 @@
-# Production Docker Compose configuration
-# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-# Or with override: docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml up -d
-
-services:
-  # ==========================================================================
-  # Redis — Caching, session store, rate limiting backend
-  # ==========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: astravox-redis
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
-    volumes:
-      - redis-data:/data
-    restart: always
-    networks:
-      - astravox-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
-  # ==========================================================================
-  # FastAPI Backend
-  # ==========================================================================
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile.backend
-      target: production
-      args:
-        - PYTHON_VERSION=3.12
-    restart: always
-    environment:
-      - ENVIRONMENT=production
-      - LOG_LEVEL=WARNING
-       - GUNICORN_WORKERS=4
-       - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-       - REDIS_PASSWORD=${REDIS_PASSWORD}
-       - PYTHONUNBUFFERED=1
-    env_file:
-      - .env
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: 2G
-        reservations:
-          cpus: "1"
-          memory: 512M
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    stop_grace_period: 60s
-    pre_stop:
-      command: ["/bin/sh", "-c", "kill -USR1 $(cat /app/pid 2>/dev/null || true) || true"]
-
-  inference:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
-    restart: always
-    ports:
-      - "8001:8000"
-    environment:
-      - ENVIRONMENT=production
-      - LOG_LEVEL=INFO
-      - API_KEY=${INFERENCE_API_KEY:-}
-      - RATE_LIMIT_ENABLED=${INFERENCE_RATE_LIMIT_ENABLED:-true}
-      - RATE_LIMIT_REQUESTS=${INFERENCE_RATE_LIMIT_REQUESTS:-100}
-      - RATE_LIMIT_WINDOW=${INFERENCE_RATE_LIMIT_WINDOW:-60}
-      - REQUEST_TIMEOUT=${INFERENCE_REQUEST_TIMEOUT:-30.0}
-      - CORS_ORIGINS=${INFERENCE_CORS_ORIGINS:-*}
-      - DEVICE=${INFERENCE_DEVICE:-auto}
-    env_file:
-      - .env
-    volumes:
-      - inference_model_cache:/app/models
-      - inference_logs:/app/logs
-    deploy:
-      resources:
-        limits:
-          cpus: "4"
-          memory: 8G
-        reservations:
-          cpus: "2"
-          memory: 4G
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-    stop_grace_period: 30s
-    depends_on:
-      - backend
-
-    container_name: astravox-backend
-    env_file:
-      - .env
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      # Must carry the same password redis-server was started with
-      # (--requirepass ${REDIS_PASSWORD}). Without it the client gets
-      # NOAUTH and every cache, session and rate-limit operation fails,
-      # so the production stack cannot use Redis at all.
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - ENVIRONMENT=production
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://astrovox.ai,https://www.astrovox.ai}
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - RATE_LIMIT=${RATE_LIMIT:-120/minute}
-      - DAILY_AI_LIMIT=${DAILY_AI_LIMIT:-50}
-      - STORAGE_ROOT=/app/storage
-      - USAGE_DB_PATH=/app/storage/usage.db
-      - METRICS_ENABLED=true
-    restart: always
-    networks:
-      - astravox-network
-    depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    volumes:
-      - ./logs:/app/logs
-      - storage-data:/app/storage
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-          cpu: "0.5"
-        reservations:
-          memory: 256M
-          cpu: "0.2"
-
-  # ==========================================================================
-  # React Frontend (served via nginx)
-  # ==========================================================================
-  frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-      target: production
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    depends_on:
-      backend:
-        condition: service_healthy
-      inference:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: "1"
-          memory: 512M
-    container_name: astrovox-frontend
-    env_file:
-      - .env
-    restart: always
-    networks:
-      - astravox-network
-    depends_on:
-      backend:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 5s
-    stop_grace_period: 30s
-    pre_stop:
-      command: ["/bin/sh", "-c", "kill -USR2 $(cat /run/nginx.pid 2>/dev/null || true) || true"]
-
-  redis:
-    image: redis:7-alpine@sha256:2c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    restart: always
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-  postgres:
-    image: postgres:16-alpine@sha256:3c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    restart: always
-    environment:
-      POSTGRES_DB: astravox
-      POSTGRES_USER: astravox
-      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    secrets:
-      - db_password
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U astravox"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  prometheus:
-    image: prom/prometheus:v2.51.0@sha256:4c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    restart: always
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention.time=30d"
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-
-  grafana:
-    image: grafana/grafana:10.4.0@sha256:5c3ec6c6f3c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5c5
-    restart: always
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_password
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
-    secrets:
-      - grafana_password
-    depends_on:
-      - prometheus
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-
-volumes:
-  redis_data:
-  postgres_data:
-  prometheus_data:
-  grafana_data:
-  inference_model_cache:
-  inference_logs:
-
-secrets:
-  db_password:
-    file: ./secrets/db_password.txt
-  grafana_password:
-    file: ./secrets/grafana_password.txt
-
-# ==============================================================================
-# Networks
-# ==============================================================================
-networks:
-  astravox-network:
-    driver: bridge
-
-# ==============================================================================
-# Volumes
-# ==============================================================================
-volumes:
-  redis-data:
-    driver: local
-  storage-data:
-    driver: local
+# Production Docker Compose configuration
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Or with override: docker-compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.override.yml up -d
+
+services:
+  # ==========================================================================
+  # Redis — Caching, session store, rate limiting backend
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: astravox-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    restart: always
+    networks:
+      - astravox-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ==========================================================================
+  # FastAPI Backend
+  # ==========================================================================
+    # No shell, no package manager, no capabilities. Redis needs none
+    # of them to serve its protocol.
+    user: "999:999"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /data:size=256m,mode=0770
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+      target: production
+      args:
+        - PYTHON_VERSION=3.12
+    restart: always
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=WARNING
+      - GUNICORN_WORKERS=4
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+        reservations:
+          cpus: "1"
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 60s
+    pre_stop:
+      command: ["/bin/sh", "-c", "kill -USR1 $(cat /app/pid 2>/dev/null || true) || true"]
+
+    # Runs as the non-root user the Dockerfile creates; ALL caps are
+    # dropped, and the only writable paths are logs and storage.
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+      - /app/logs:size=128m,mode=0750
+      - /app/storage:size=512m,mode=0750
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    restart: always
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - API_KEY=${INFERENCE_API_KEY:-}
+      - RATE_LIMIT_ENABLED=${INFERENCE_RATE_LIMIT_ENABLED:-true}
+      - RATE_LIMIT_REQUESTS=${INFERENCE_RATE_LIMIT_REQUESTS:-100}
+      - RATE_LIMIT_WINDOW=${INFERENCE_RATE_LIMIT_WINDOW:-60}
+      - REQUEST_TIMEOUT=${INFERENCE_REQUEST_TIMEOUT:-30.0}
+      - CORS_ORIGINS=${INFERENCE_CORS_ORIGINS:-*}
+      - DEVICE=${INFERENCE_DEVICE:-auto}
+    env_file:
+      - .env
+    volumes:
+      - inference_model_cache:/app/models
+      - inference_logs:/app/logs
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+          memory: 8G
+        reservations:
+          cpus: "2"
+          memory: 4G
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    stop_grace_period: 30s
+    depends_on:
+      - backend
+
+    container_name: astravox-backend
+    env_file:
+      - .env
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      # Must carry the same password redis-server was started with
+      # (--requirepass ${REDIS_PASSWORD}). Without it the client gets
+      # NOAUTH and every cache, session and rate-limit operation fails,
+      # so the production stack cannot use Redis at all.
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - ENVIRONMENT=production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://astrovox.ai,https://www.astrovox.ai}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - RATE_LIMIT=${RATE_LIMIT:-120/minute}
+      - DAILY_AI_LIMIT=${DAILY_AI_LIMIT:-50}
+      - STORAGE_ROOT=/app/storage
+      - USAGE_DB_PATH=/app/storage/usage.db
+      - METRICS_ENABLED=true
+    restart: always
+    networks:
+      - astravox-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs
+      - storage-data:/app/storage
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpu: "0.5"
+        reservations:
+          memory: 256M
+          cpu: "0.2"
+
+  # ==========================================================================
+  # React Frontend (served via nginx)
+  # ==========================================================================
+
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      target: production
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      backend:
+        condition: service_healthy
+      inference:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 512M
+    container_name: astrovox-frontend
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - astravox-network
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    stop_grace_period: 30s
+    pre_stop:
+      command: ["/bin/sh", "-c", "kill -USR2 $(cat /run/nginx.pid 2>/dev/null || true) || true"]
+
+    # The image's nginx runs as 1001; the pid path is the only writable
+    # file nginx needs.
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+      - /var/run:size=16m,mode=0755
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_DB: astravox
+      POSTGRES_USER: astravox
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U astravox"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+
+    user: "999:999"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+      - /run/postgresql:size=64m,mode=0775
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    restart: always
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+
+    user: "65534:65534"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+  grafana:
+    image: grafana/grafana:10.4.0
+    restart: always
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_password
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    secrets:
+      - grafana_password
+    depends_on:
+      - prometheus
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+
+    user: "472:472"
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+volumes:
+  redis_data:
+  postgres_data:
+  prometheus_data:
+  grafana_data:
+  inference_model_cache:
+  inference_logs:
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  grafana_password:
+    file: ./secrets/grafana_password.txt
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  astravox-network:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  redis-data:
+    driver: local
+  storage-data:
+    driver: local
+
+
+
