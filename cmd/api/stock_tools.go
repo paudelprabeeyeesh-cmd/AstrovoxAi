@@ -3,13 +3,14 @@ package main
 import (
 	"time"
 
+	"github.com/astrovox/astrovox/internal/api/webfetch"
 	"github.com/astrovox/astrovox/internal/tools"
 )
 
-// stockRegistry returns the registry with the two demonstrably safe tools
-// this reference server ships.
+// stockRegistry returns the registry with the tools this reference server
+// ships.
 //
-// Both are reads or reversible writes. An external or irreversible tool is
+// Reads and reversible writes only. An external or irreversible tool is
 // deliberately absent, because without an approval UI it would be an
 // unattended side effect.
 func stockRegistry() *tools.Registry {
@@ -34,6 +35,19 @@ func stockRegistry() *tools.Registry {
 			"text": {Kind: tools.KindString, Required: true, MinLength: 1, MaxLength: 512},
 		},
 	}, noteTool{})
+	// web.fetch is a guard composition rather than a plain HTTP client: the
+	// SSRF guard runs before the transport, so an agent cannot be pointed
+	// at an internal address by a URL in its prompt.
+	_ = r.Register(tools.Schema{
+		Name:        "web.fetch",
+		Description: "Fetch a public web page and return its text.",
+		Risk:        tools.RiskRead,
+		Timeout:     15 * time.Second,
+		Params: map[string]tools.Param{
+			"url": {Kind: tools.KindString, Required: true, MinLength: 8, MaxLength: 2048},
+		},
+	}, webfetch.NewTool(webfetch.NewSafeFetcher()))
+
 	return r
 }
 
@@ -86,16 +100,3 @@ func asInt(v interface{}) int {
 	}
 	return 0
 }
-
-	// web.fetch is a guard composition rather than a plain HTTP client: the
-	// SSRF guard runs before the transport, so an agent cannot be pointed
-	// at an internal address by a URL in its prompt.
-	_ = r.Register(tools.Schema{
-		Name:        "web.fetch",
-		Description: "Fetch a public web page and return its text.",
-		Risk:        tools.RiskRead,
-		Timeout:     15 * time.Second,
-		Params: map[string]tools.Param{
-			"url": {Kind: tools.KindString, Required: true, MinLength: 8, MaxLength: 2048},
-		},
-	}, webfetch.NewTool(webfetch.NewSafeFetcher()))
