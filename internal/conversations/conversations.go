@@ -50,6 +50,9 @@ type Conversation struct {
 	Title     string    `json:"title"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	// Seq is a mutation counter, bumped on every change. It orders the list
+	// deterministically where a wall-clock timestamp would tie.
+	Seq int `json:"-"`
 }
 
 // Store holds conversations and their messages in process, scoped by owner.
@@ -59,6 +62,12 @@ type Store struct {
 	// messages is keyed by conversation id and ordered by creation.
 	messages map[string][]*Message
 	nextID   int
+	// seq is the mutation counter. It is the list ordering, because
+	// time.Now() has finite resolution and two operations inside the same
+	// microsecond would tie and fall back to map iteration order, which is
+	// randomised.
+	seq int
+
 	// limit bounds messages per conversation, so an unbounded chat cannot
 	// grow memory without limit.
 	limit int
@@ -83,12 +92,14 @@ func (s *Store) Create(owner, title string) *Conversation {
 	defer s.mu.Unlock()
 	s.nextID++
 	now := time.Now().UTC()
+	s.seq++
 	c := &Conversation{
 		ID:        s.id(),
 		Owner:     owner,
 		Title:     title,
 		CreatedAt: now,
 		UpdatedAt: now,
+		Seq:       s.seq,
 	}
 	s.conversations[c.ID] = c
 	s.messages[c.ID] = nil
@@ -110,6 +121,11 @@ func (s *Store) Get(owner, id string) *Conversation {
 }
 
 // List returns the caller's conversations, most recently updated first.
+//
+// Ordering is by sequence, not by wall-clock: two operations inside the same
+// microsecond would otherwise tie, and the tie would break on map iteration
+// order, which is randomised. A sequence is unique per mutation, so the
+// order is deterministic between two identical calls.
 func (s *Store) List(owner string) []*Conversation {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -119,10 +135,9 @@ func (s *Store) List(owner string) []*Conversation {
 			out = append(out, c)
 		}
 	}
-	// Insertion-ordered sort by UpdatedAt, newest first. Stable so a list
-	// is reproducible between two identical calls.
+	// Highest sequence first: the most recently mutated conversation.
 	for i := 1; i < len(out); i++ {
-		for j := i; j > 0 && out[j].UpdatedAt.After(out[j-1].UpdatedAt); j-- {
+		for j := i; j > 0 && out[j].Seq > out[j-1].Seq; j-- {
 			out[j], out[j-1] = out[j-1], out[j]
 		}
 	}
@@ -139,6 +154,8 @@ func (s *Store) Rename(owner, id, title string) bool {
 	}
 	c.Title = title
 	c.UpdatedAt = time.Now().UTC()
+	s.seq++
+	c.Seq = s.seq
 	return true
 }
 
@@ -190,6 +207,10 @@ func (s *Store) AddMessage(owner, conversationID string, parentID string, role R
 	}
 	s.messages[conversationID] = items
 	c.UpdatedAt = now
+	// A message is a mutation, so it bumps the sequence too, or a chat that
+	// only receives messages would sink below one that was only renamed.
+	s.seq++
+	c.Seq = s.seq
 	return m
 }
 

@@ -52,14 +52,23 @@ func TestListIsOwnerScoped(t *testing.T) {
 }
 
 func TestListIsNewestFirst(t *testing.T) {
+	// The ordering property is about UpdatedAt, not wall-clock precision:
+	// two Create calls can land in the same microsecond, so the test asserts
+	// that a rename promotes rather than that creation order alone decides.
 	s := New(0)
-	s.Create("u1", "older")
+	first := s.Create("u1", "older")
 	s.Create("u1", "newer")
-	// Touch the first, so it becomes the most recently updated.
-	s.Rename("u1", s.List("u1")[0].ID, "older")
+
+	s.Rename("u1", first.ID, "touched")
 	list := s.List("u1")
-	if list[0].Title != "older" {
-		t.Fatalf("newest-first order broken: %q is first", list[0].Title)
+
+	// The touched conversation must outrank the untouched one even though it
+	// was created first.
+	if list[0].ID != first.ID {
+		t.Fatalf("renamed conversation is not first: %v", list)
+	}
+	if list[0].Title != "touched" {
+		t.Fatalf("first item = %q, want the renamed conversation", list[0].Title)
 	}
 }
 
