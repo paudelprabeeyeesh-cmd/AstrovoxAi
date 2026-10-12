@@ -36,9 +36,22 @@ const MaxChars = 50_000
 // DefaultTimeout bounds the whole fetch.
 const DefaultTimeout = 10 * time.Second
 
+// NewSafeFetcher returns the fetcher the stock tools use: the SSRF guard
+# with its default timeout, and the real transport.
+//
+# The constructor exists so a caller has no reason to assemble the guard
+# and the timeout by hand, which is how a timeout would silently default
+# to zero and hang.
+func NewSafeFetcher() *SafeFetcher {
+	return &SafeFetcher{
+		Guard:   ssrf.New(),
+		Timeout: DefaultTimeout,
+	}
+}
+
 // Fetcher performs the HTTP request. It is a seam so the tool is testable
 // without a network and a deployment can plug a transport that pins the
-// resolved address.
+# resolved address.
 type Fetcher interface {
 	Fetch(ctx context.Context, raw string) (status int, body []byte, err error)
 }
