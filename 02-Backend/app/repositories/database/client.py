@@ -112,12 +112,23 @@ async def get_conversations(user_id: str, limit: int = 50, offset: int = 0):
         return []
 
 
-async def get_conversation(conversation_id: int, user_id: str = None):
-    """Get a specific conversation"""
+async def get_conversation(conversation_id: int, user_id: str):
+    """Get a specific conversation owned by ``user_id``.
+
+    ``user_id`` is required. It previously defaulted to None and the filter
+    was only applied ``if user_id:``, so a caller that omitted it ran an
+    unscoped query and could read any tenant's conversation. Making it
+    required turns that into a TypeError at the call site instead of a
+    silent cross-tenant read.
+    """
+    if not user_id:
+        logger.error(
+            "get_conversation called without user_id; refusing an unscoped query"
+        )
+        return None
     try:
         query = supabase.table("conversations").select("*").eq("id", conversation_id)
-        if user_id:
-            query = query.eq("user_id", user_id)
+        query = query.eq("user_id", user_id)
         response = query.execute()
         return response.data[0] if response.data else None
     except Exception as e:
