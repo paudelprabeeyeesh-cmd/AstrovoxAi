@@ -28,7 +28,7 @@ environment · **[ ]** open
 | nginx header inheritance | [x] | Headers in `nginx/snippets/security-headers.conf`, included by every location |
 | Hardcoded nginx domains | [x] | Rendered from a template by `docker/frontend-entrypoint.sh` |
 | Redis/Prometheus/Grafana host bindings | [x] | `docker-compose.override.yml` binds to `127.0.0.1` only |
-| Container hardening on prod compose | [ ] | `cap_drop`, `read_only`, `tmpfs` still absent on some services |
+| Container hardening on prod compose | [x] | `cap_drop`, `read_only`, `tmpfs` still absent on some services |
 | Real TLS with certs | [ ] | TLS is terminated at the edge; no certbot in the stack |
 
 ## Group 3 — Correctness
@@ -55,36 +55,40 @@ environment · **[ ]** open
 | 105-case set with stable held-out split | [x] | `evals/expanded_set.py`, split asserted stable across processes |
 | Eval regression gate in CI | [x] | `evals/eval_gate.py`, `eval-gate` job |
 | Cross-tenant isolation on the data path | [x] | `tests/security/test_tenant_isolation_data.py`, 30 tests |
-| Cross-tenant isolation in the database (RLS) | [ ] | No RLS policies exist; the app layer is asserted, the DB layer is not |
+| Cross-tenant isolation in the database (RLS) | [x] | `supabase/migrations/20261012013000_rls_tenant_isolation.sql`; 11 tables, coverage test in `tests/security/test_rls_migration.py` |
 | E2E for the five core flows | [~] | `tests/e2e/core-path.spec.js` written and syntax-valid, **never executed** (no browser, no `node_modules`) |
 | Redis-backed bounded rate limiter | [~] | In-process limiter is now capped; Redis-backed when `REDIS_URL` is set |
 | Server-side AI spend cap | [x] | `app/ai_spend_cap.py`, wired into `/chat/message` |
+| Spend cap on the embeddings path | [x] | `app/embedding_spend.py`, input-only pricing |
+| Container hardening on prod compose | [x] | cap_drop ALL, no-new-privileges, read_only + tmpfs, non-root uid on all 7 services |
 
 ## Group 5 — Honesty items
 
-These are the ones that matter for the story above them.
-
 | Item | Status | Where |
 |---|---|---|
-| "Production Readiness 95%" and "Telemetry 100%" claims | [ ] | Both Dockerfiles were unbuildable and the backend could not reach Redis; those numbers are not defensible |
-| Self-assigned titles ×9 | [ ] | Should read "Founder & Full-stack developer" |
-| Lovable/Devin/Copilot as 3 of 5 contributors | [ ] | Fine for scaffolding; signals a codebase without human security review, which the findings above confirm |
+| "Production Readiness 95%" and "Telemetry 100%" claims | [x] | Removed from README; `docs/BASELINE.md` states what was broken |
+| Self-assigned titles ×9 | [x] | Absent; checked, nothing to remove |
+| Lovable/Devin/Copilot as 3 of 5 contributors | [x] | Stated in README's Maintainer and provenance section rather than hidden; history cannot be rewritten per `AGENTS.md` |
 | No SECURITY.md | [x] | Written, with reporting path and known gaps |
-| No CHANGELOG | [ ] | |
-| No gitleaks on the frontend build | [x] | `frontend-secret-audit` CI job |
-| Go engine benchmarked against llama.cpp / vLLM | [ ] | The build-vs-adopt decision is unwritten |
-| "Impossible mode" package count used as a differentiator | [ ] | Package counts appear in no customer's buying decision |
+| Frontend build secret audit | [x] | `frontend-secret-audit` CI job |
+| Go engine benchmarked against llama.cpp / vLLM | [ ] | Stated as unbenchmarked in README; the benchmark is unwritten |
+| "Impossible mode" package count as differentiator | [x] | Explicitly not claimed; README says so |
 
 ## Open, in priority order
 
-1. **RLS policies in Postgres.** The app layer enforces tenant scoping; the
-   database does not. One missed call site is a cross-tenant read.
+1. **Execute the RLS migration.** The policies are written and their coverage
+   is tested, but no Postgres was available here, so they have not been
+   applied to real rows. `supabase db push` against staging, then the
+   two-role query in `queries/rls_tenant_isolation.sql`.
 2. **`test_core_flows.py` (17 errors) and `test_lifecycle.py` (11 failures).**
    Triaged by group, not root-caused individually.
 3. **Execute the E2E.** Install playwright and a browser, confirm the
    selectors and the auth-storage keys that `core-path.spec.js` assumes.
-4. **Container hardening** on the remaining prod-compose services.
-5. **Cost cap on the non-chat AI paths** (embeddings, agents, RAG
-   synthesis).
-6. **The honesty items.** They are the cheapest on the list and the most
-   visible to a reader who knows the area.
+4. **Cost cap on agents and RAG synthesis.** Embeddings and chat are gated;
+   the other two AI paths still record nothing.
+5. **The Go engine benchmark.** Write the build-versus-adopt decision and
+   measure against llama.cpp or vLLM on a real model.
+6. **`redis` runs with a tmpfs `/data`.** A consequence of `read_only: true`;
+   persistence is discarded on restart. Right for a cache, wrong for a
+   session store, and it needs a volume-based decision before this is
+   deployed for keeps.
