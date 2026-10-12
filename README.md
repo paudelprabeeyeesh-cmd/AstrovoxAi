@@ -29,12 +29,20 @@ Claims are limited to what a test or a run demonstrates.
 Verified state (`docs/BASELINE.md`):
 
 ```
-python -m pytest tests --collect-only -q     # 6495 collected, 0 errors
-python -m pytest tests/integration -q        # auth flow: 11 passed, 1 failed*
+python -m pytest tests/security -q        # 142 passed, 0 failed
+python -m pytest evals -q                 # 40 passed (golden set + grader)
+python -m pytest tests/integration/test_auth_flow.py -q  # 14 passed
 ```
 
-\* the remaining failure needs a reachable Supabase; importing `app.main`
-attempts a connection and retries (~27s). Environment-bound, not a code defect.
+The security chunk is the one that carries the controls: token delivery by
+email only, refresh tokens never in a query string, provider-verified OAuth,
+brute-force lockout, tenant isolation, the cost gate, and the RLS
+migration's coverage. It was 59 passed / 20 failed before the fixes in
+`SECURITY_BACKLOG.md`; the failures were real, not cosmetic.
+
+`tests/integration` and the rest of the suite do not complete as a single
+run — modules in it make real network calls or block on a condition that
+never fires. The baseline is per-chunk and says so.
 
 Working and covered by tests:
 
@@ -42,11 +50,13 @@ Working and covered by tests:
 - Multi-provider adapter layer (see the table below)
 - API gateway: rate limiting, CSRF, IP allowlist, HTTPS enforcement,
   idempotency, request limits, error envelope
+- Tenant isolation: RBAC, data path, and RLS policies
+- AI spend cap: cost-aware, enforced before the provider call
 - Observability: structured JSON logs, Prometheus metrics
 
 Provider adapters exist behind one interface. Runtime connectivity is **not**
 verified — no provider API key is configured in this environment, so the
-adapters are exercised through recorded fakes.
+adapters are exercised through fakes.
 
 | Provider | Adapter path | Runtime verified |
 |---|---|---|
@@ -70,6 +80,34 @@ go build ./... && go vet ./... && go test -p 2 ./...
 
 Design records: `docs/IMPOSSIBLE_MODE_DELIVERY.md`.
 
+## Maintainer and provenance
+
+One maintainer. The commit history is majority machine-authored: `Lovable`,
+`Devin AI` and `gpt-engineer-app[bot]` account for most of it, which is why a
+code audit found the failure modes it did — a stack whose Dockerfiles had
+never been started, an auth path returning verification tokens to
+unauthenticated callers, and a CI gate that compared the threshold to itself
+and always passed. None of that is unusual for generated scaffolding; it is
+only a problem if the repository does not say so.
+
+What has since been verified is in `SECURITY.md` and `SECURITY_BACKLOG.md`,
+with the measurement method in `docs/BASELINE.md`. What is still open is
+listed there rather than implied away.
+
+The Go engine is not benchmarked against llama.cpp or vLLM, so no claim is
+made that it beats them. Its package count is not a differentiator and is
+not presented as one.
+
+## Security
+
+`SECURITY.md` covers reporting, severity priorities, and the known gaps.
+`SECURITY_BACKLOG.md` is the live state: what is fixed and tested, what is
+done but unverified here, and what is still open.
+`docs/SECRET_ROTATION.md` is the rotation order for anything that has been
+in a real environment.
+`docs/E2E_STATUS.md` records which end-to-end tests are written but have
+never run.
+
 ## Layout
 
 ```
@@ -77,13 +115,20 @@ Design records: `docs/IMPOSSIBLE_MODE_DELIVERY.md`.
 frontend/  web/  src  frontend sources
 cmd/astrovox         Go CLI
 internal/  tensor/   Go engine
+evals/               golden task set, grader, and regression gate
+supabase/migrations/ RLS tenant-isolation policies
 docs/
   BASELINE.md        measured test results, and what was broken before
+  SECURITY.md        reporting, severity priorities, known gaps
+  SECURITY_BACKLOG.md  live security state: fixed / unverified / open
+  SECRET_ROTATION.md   rotation order for live secrets
+  E2E_STATUS.md      which E2E tests are written but never executed
   MODULE_INVENTORY.md  which modules the product actually uses (D01-10)
   IMPOSSIBLE_MODE_DELIVERY.md  engine design notes
   adr/               architecture decision records (D29-02)
   research/          OS, database, kernel and compiler theory notes
 tools/               check_live_imports.py — enforces D01-11
+nginx.conf           nginx vhost (HTTP only; TLS is terminated upstream)
 ```
 
 ## Getting started
@@ -93,7 +138,7 @@ Backend:
 ```bash
 cd 02-Backend
 python -m pip install -e .
-python -m pytest tests --collect-only -q      # 6495 tests, 0 errors
+python -m pytest tests/security -q           # 142 passed, 0 failed
 ```
 
 Engine:
