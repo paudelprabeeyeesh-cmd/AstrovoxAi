@@ -32,9 +32,15 @@ venv/
 # point, so they are excluded explicitly rather than left to chance.
 test.txt
 test_output.txt
-_env.py
-_*.py
 *.tmp
+
+# Go build artefacts
+*.exe
+*.out
+*.test
+api.exe
+/astrovox
+bin/
 
 # Test / type-check caches
 .pytest_cache/
