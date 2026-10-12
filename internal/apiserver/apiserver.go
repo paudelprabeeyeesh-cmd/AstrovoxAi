@@ -21,6 +21,7 @@ import (
 	apperrors "github.com/astrovox/astrovox/internal/errors"
 
 	"github.com/astrovox/astrovox/internal/auth"
+	"github.com/astrovox/astrovox/internal/chat"
 	"github.com/astrovox/astrovox/internal/httpapi"
 	"github.com/astrovox/astrovox/internal/knowledge"
 	"github.com/astrovox/astrovox/internal/memstore"
@@ -61,12 +62,16 @@ func DefaultConfig() Config {
 
 // Server is the assembled API.
 type Server struct {
-	cfg      Config
-	router   *httpapi.Router
-	signer   *auth.JWTSigner
-	oauth    *auth.OAuthServer
-	memories *memstore.Store
-	facts    *knowledge.Graph
+	cfg    Config
+	router *httpapi.Router
+	signer *auth.JWTSigner
+	oauth  *auth.OAuthServer
+	// orchestrator is nil until a provider is attached. /chat/message refuses
+	// with 503 while it is nil, which is distinguishable from an empty answer.
+	orchestrator *chat.Orchestrator
+	spend        *SpendGate
+	memories     *memstore.Store
+	facts        *knowledge.Graph
 
 	// users is the in-process account store. It is deliberately small: this
 	// server is a reference implementation for the API boundary, and the
@@ -105,7 +110,18 @@ func New(cfg Config) (*Server, error) {
 		return nil, apperrors.New(apperrors.CodeInvalidArgument, "a JWT signer is required")
 	}
 	s.oauth = auth.NewOAuthServer(s.signer)
+	// Order matters: routes() installs the middleware chain via Router.Use,
+	// and a middleware registered after a route is not applied to it. So the
+	// static routes are registered first, then the provider is attached,
+	// which registers the chat routes - and the chain must already be in
+	// place for both. Building the chain explicitly before any route is
+	// registered is the only order that satisfies that.
 	s.routes()
+	// The chat routes are registered by attachChat into the same router, so
+	// they inherit the chain built above.
+	if err := s.attachChat(&Vendor{}, NewSpendGate(1.0)); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 

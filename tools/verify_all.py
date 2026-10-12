@@ -15,6 +15,9 @@ def run(label, cmd, cwd=None):
 run("compose hardening", [sys.executable, "tools/verify_compose.py"])
 run("secret scan", [sys.executable, "tools/secret_scan.py"])
 run("eval split stable", [sys.executable, "tools/check_split.py"])
+run("go: build + vet + test", [
+    "go", "test", "./...", "-count=1",
+], cwd=None)
 run("security tests", [sys.executable, "-m", "pytest", "tests/security",
                        "-q", "--no-header", "--timeout=90", "-p", "no:randomly"],
     cwd="02-Backend")

@@ -310,10 +310,10 @@ func TestRouteTableIsInspectable(t *testing.T) {
 	}
 	// The canonical routes must all be present.
 	want := map[string]bool{
-		"GET /health":     false,
+		"GET /health":         false,
 		"POST /auth/register": false,
-		"POST /auth/login":   false,
-		"GET /memory":        false,
+		"POST /auth/login":    false,
+		"GET /memory":         false,
 	}
 	for _, r := range routes {
 		if _, ok := want[r]; ok {
