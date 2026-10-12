@@ -22,6 +22,7 @@ import (
 
 	"github.com/astrovox/astrovox/internal/auth"
 	"github.com/astrovox/astrovox/internal/chat"
+	"github.com/astrovox/astrovox/internal/conversations"
 	"github.com/astrovox/astrovox/internal/httpapi"
 	"github.com/astrovox/astrovox/internal/knowledge"
 	"github.com/astrovox/astrovox/internal/memstore"
@@ -70,6 +71,7 @@ type Server struct {
 	// with 503 while it is nil, which is distinguishable from an empty answer.
 	orchestrator *chat.Orchestrator
 	spend        *SpendGate
+	chats        *conversations.Store
 	memories     *memstore.Store
 	facts        *knowledge.Graph
 
@@ -117,8 +119,11 @@ func New(cfg Config) (*Server, error) {
 	// place for both. Building the chain explicitly before any route is
 	// registered is the only order that satisfies that.
 	s.routes()
-	// The chat routes are registered by attachChat into the same router, so
-	// they inherit the chain built above.
+	// The chat and conversation routes are registered into the same router
+	// after routes() built the middleware chain, so they inherit it.
+	if err := s.attachConversations(conversations.New(10_000)); err != nil {
+		return nil, err
+	}
 	if err := s.attachChat(&Vendor{}, NewSpendGate(1.0)); err != nil {
 		return nil, err
 	}
