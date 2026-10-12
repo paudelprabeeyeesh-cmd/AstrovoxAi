@@ -268,26 +268,62 @@ class TestAuthFlow:
         assert response.status_code == 401
 
     def test_me_with_token_returns_user(self, client, mock_supabase):
-        response = client.get("/auth/me?authorization=Bearer access-1")
+        # The bearer token must arrive in the Authorization header, not a
+        # query parameter. A query token lands in access logs, browser
+        # history, and proxy logs, so it is not an acceptable transport.
+        response = client.get(
+            "/auth/me", headers={"Authorization": "Bearer access-1"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "OK"
         assert "user" in data
 
     def test_refresh_token(self, client, mock_supabase):
-        response = client.post("/auth/refresh?refresh_token=valid-refresh-token")
+        # The refresh token is a JSON body field. A query parameter would
+        # be written to access logs, which is the leak this test guards.
+        response = client.post(
+            "/auth/refresh", json={"refresh_token": "valid-refresh-token"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "OK"
         assert "access_token" in data.get("session", {})
 
+    def test_refresh_token_rejected_as_query_parameter(self, client):
+        """A refresh token in a query string must not be accepted."""
+        response = client.post("/auth/refresh?refresh_token=valid-refresh-token")
+        assert response.status_code == 422, (
+            "a refresh token supplied as a query parameter should be "
+            "rejected, not accepted"
+        )
+
+    def test_oauth_requires_a_known_provider(self, client, mock_supabase):
+        response = client.post("/auth/oauth", json={
+            "provider": "not-a-real-provider",
+            "access_token": "fake-oauth-token",
+            "email": "oauth@test.com",
+        })
+        assert response.status_code == 400
+        # The body is the standard error envelope, not a bare detail field.
+        body = response.json()
+        message = body.get("error", {}).get("message", body.get("detail", ""))
+        assert "Unsupported provider" in message, message
+
     def test_oauth_initiates_flow(self, client, mock_supabase):
+        # The provider must be allowlisted AND the token verified against
+        # the provider's userinfo endpoint before a session is issued.
+        # This fake provider has no reachable userinfo endpoint, so
+        # verification fails and the honest answer is 401 rather than a
+        # minted session.
         response = client.post("/auth/oauth", json={
             "provider": "google",
             "access_token": "fake-oauth-token",
             "email": "oauth@test.com",
         })
-        assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "OK"
-        assert data["provider"] == "google"
+        assert response.status_code == 401, (
+            "an unverified OAuth token must not produce a session"
+        )
+        body = response.json()
+        message = body.get("error", {}).get("message", body.get("detail", ""))
+        assert "Invalid provider token" in message, message

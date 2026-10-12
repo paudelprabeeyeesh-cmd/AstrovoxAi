@@ -2,15 +2,23 @@
 
 Provides init_db and related symbols expected by tests and legacy imports.
 Functions are wrapped so tests can patch ``app.database.supabase``.
-"""
 
+``get_db`` is the critical export, and it was the reason the auth-flow and
+database-roundtrip tests failed: line 13 imports a working
+``get_connection``, then the try/except below redefines ``get_db`` to a
+stub that unconditionally raises ``RuntimeError("Database not available")``.
+The import on line 13 is therefore dead, and every caller of
+``app.database.get_db`` raises at call time. It now delegates to the
+repository-layer session factory, with the sqlite connection as a
+documented fallback.
+"""
 from __future__ import annotations
 
 import logging
 import sys
 from typing import Any
 
-from database.connection import get_connection as get_db, init_db
+from database.connection import get_connection as _sqlite_get_connection, init_db
 from .supabase_client import get_supabase
 
 logger = logging.getLogger(__name__)
@@ -27,10 +35,7 @@ try:
     def init_db() -> None:  # type: ignore[misc]
         pass
 
-    def get_db() -> Any:  # type: ignore[misc]
-        raise RuntimeError("Database not available")
-
-except Exception:  # pragma: no cover
+except Exception:  # pragma: no cover - only when the repository layer is absent
     ALLOWED_PROFILE_FIELDS = {"full_name", "avatar_url", "bio", "website"}
     ALLOWED_CONVERSATION_FIELDS = {"title", "model", "folder_id", "is_pinned", "is_shared", "shared_at", "shared_with"}
     ALLOWED_SETTINGS_FIELDS = {"theme", "language", "notifications_enabled", "default_model", "voice_enabled"}
@@ -38,8 +43,24 @@ except Exception:  # pragma: no cover
     def init_db() -> None:  # type: ignore[misc]
         logger.debug("init_db called with fallback shim")
 
-    def get_db() -> Any:  # type: ignore[misc]
-        raise RuntimeError("Database not available")
+
+def get_db() -> Any:
+    """Return a database session.
+
+    Prefers the repository-layer SQLAlchemy session. Falls back to the
+    sqlite connection only when the repository layer cannot be imported,
+    which is a deployment problem rather than a normal state.
+    """
+    try:
+        from app.repositories.database.client import get_db as _impl
+
+        return _impl()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "repository get_db unavailable (%s); falling back to sqlite connection",
+            type(exc).__name__,
+        )
+        return _sqlite_get_connection()
 
 
 def _get_supabase():

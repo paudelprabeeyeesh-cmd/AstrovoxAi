@@ -31,33 +31,15 @@ LOCKOUT_MINUTES = 15
 
 
 def _ensure_lockout_table(conn) -> None:
-    """Create the login_attempts table if it is missing.
+    """Ensure the login_attempts table matches the shared schema.
 
-    The engine creates no schema, and the app's other init path
-    (``database/connection.py::init_db``) does not describe this table, so
-    on a fresh install the lockout check fails with OperationalError and
-    the control never applies. Creating it on first use keeps the security
-    behaviour present instead of erroring out.
+    The table has no init path and two modules used to create it with
+    different column sets, so whichever ran first won and the other failed
+    at query time. The schema now lives in one place.
     """
-    conn.execute(
-        text(
-            """
-            CREATE TABLE IF NOT EXISTS login_attempts (
-                id TEXT PRIMARY KEY,
-                ip TEXT NOT NULL,
-                email TEXT NOT NULL,
-                success INTEGER NOT NULL DEFAULT 0,
-                created_at TEXT NOT NULL
-            )
-            """
-        )
-    )
-    conn.execute(
-        text(
-            "CREATE INDEX IF NOT EXISTS idx_login_attempts_window "
-            "ON login_attempts (ip, email, success, created_at)"
-        )
-    )
+    from app.services.login_attempt_schema import ensure_login_attempts_table
+
+    ensure_login_attempts_table(conn)
 
 
 def _check_brute_force(ip: str, email: str) -> None:

@@ -523,14 +523,38 @@ async def reset_password(request: Request, body: ResetPasswordRequest):
 @router.get("/me")
 async def whoami(authorization: str = Header(None)):
     """Current user profile."""
-    user_id = _require_token(authorization)
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = _bearer(authorization)
+    # Validate through this module's supabase client rather than a helper
+    # that resolves its own. The two would otherwise be different objects,
+    # and only the module-level one is what callers patch in tests.
     try:
-        response = supabase.auth.get_user(_bearer(authorization))
+        response = supabase.auth.get_user(token)
         if not response or not response.user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token",
             )
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        _audit.record(
+            actor="anonymous",
+            action="auth_get_me",
+            target="user",
+            outcome="failed",
+            metadata={"error": str(exc)[:100]},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from exc
+
+    try:
         profile_response = (
             supabase.table("profiles").select("*").eq("id", response.user.id).execute()
         )
@@ -553,7 +577,7 @@ async def whoami(authorization: str = Header(None)):
         raise
     except Exception as exc:  # noqa: BLE001
         _audit.record(
-            actor=user_id,
+            actor=str(response.user.id),
             action="auth_get_me",
             target="user",
             outcome="failed",
