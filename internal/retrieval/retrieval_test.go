@@ -11,40 +11,9 @@ import (
 // hashEmbedder is a deterministic embedder: the same text always produces
 // the same vector, and similar text produces a nearer vector. It is not a
 // model, it is a stand-in whose behaviour is predictable.
-type hashEmbedder struct {
-	dim int
-}
-
-func (h hashEmbedder) Model() string { return "hash-v1" }
-
-func (h hashEmbedder) Embed(text string) []float32 {
-	out := make([]float32, h.dim)
-	if text == "" {
-		return out
-	}
-	// Each byte contributes to a bucket, so word order and repetition matter
-	// and the vector is stable.
-	for i := 0; i < len(text); i++ {
-		out[int(text[i])%h.dim] += 1
-	}
-	// Normalise, so length does not dominate the cosine.
-	var norm float32
-	for _, v := range out {
-		norm += v * v
-	}
-	if norm == 0 {
-		return out
-	}
-	den := sqrt32(norm)
-	for i := range out {
-		out[i] /= den
-	}
-	return out
-}
-
 func testIndex(owner string) (*Corpus, *Index) {
 	corpus := NewCorpus()
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	res := Ingest(corpus, ix, owner, "t1", "Sky facts",
 		"The sky is blue on a clear day because of Rayleigh scattering. "+
 			"At sunset the sky appears red or orange as light travels further.",
@@ -181,7 +150,7 @@ func TestSearchSkipsAnUnembeddedChunk(t *testing.T) {
 	// An un-embedded chunk must not occupy a result slot, and must not
 	// outrank a real one.
 	corpus := NewCorpus()
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	corpus.AddDocument(&Document{ID: "doc-1", Owner: "o1", Tenant: "t"})
 	corpus.AddChunk(&Chunk{ID: "chk-1", DocumentID: "doc-1", Text: "embedded"})
 	corpus.AddChunk(&Chunk{ID: "chk-2", DocumentID: "doc-1", Text: "unembedded"})
@@ -207,12 +176,12 @@ func TestMixedModelVectorsAreRefused(t *testing.T) {
 	// Cosine distance between incompatible embedding spaces is meaningless,
 	// so a vector from another model is dropped rather than scored.
 	corpus := NewCorpus()
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	corpus.AddDocument(&Document{ID: "d", Owner: "o", Tenant: "t"})
 	corpus.AddChunk(&Chunk{ID: "c1", DocumentID: "d", Text: "text"})
 	_ = ix.EmbedChunk("c1", "text")
 	// Overwrite with a vector from a different model.
-	ix.vectors["c1"] = &Vector{ChunkID: "c1", Model: "other-model", Embedding: hashEmbedder{dim: 64}.Embed("text")}
+	ix.vectors["c1"] = &Vector{ChunkID: "c1", Model: "other-model", Embedding: NewHashEmbeddable(64).Embed("text")}
 	hits, _ := ix.Search("o", "text", 5)
 	if len(hits) != 0 {
 		t.Fatal("a vector from a different embedding model was scored")
@@ -247,7 +216,7 @@ func TestDeleteIsOwnerScoped(t *testing.T) {
 		t.Fatal("the owner could not delete their own document")
 	}
 	// The chunks must go with it, or a deleted document stays retrievable.
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	hits, _ := ix.Search("owner-a", "sky", 5)
 	for _, h := range hits {
 		if h.DocumentID == d.ID {
@@ -283,7 +252,7 @@ func TestIngestRejectsAnEmptyDocument(t *testing.T) {
 func TestIngestIsIdempotent(t *testing.T) {
 	// Re-ingesting the same document must update it, not create a second
 	// copy that competes in the search ranking.
-	corpus, ix := NewCorpus(), NewIndex(NewCorpus(), hashEmbedder{dim: 64})
+	corpus, ix := NewCorpus(), NewIndex(NewCorpus(), NewHashEmbeddable(64))
 	Ingest(corpus, ix, "o", "t", "same", "text one", DefaultChunkParams())
 	first := len(corpus.Documents("o"))
 	Ingest(corpus, ix, "o", "t", "same", "text two", DefaultChunkParams())
@@ -310,7 +279,7 @@ func TestUngroundedClaimIsReported(t *testing.T) {
 func TestAChunkOutsideTheScopeCannotGroundAClaim(t *testing.T) {
 	// This is the citation-level equivalent of cross-tenant retrieval: a
 	// chunk the caller may not read must not vouch for an answer.
-	corpus, ix := NewCorpus(), NewIndex(NewCorpus(), hashEmbedder{dim: 64})
+	corpus, ix := NewCorpus(), NewIndex(NewCorpus(), NewHashEmbeddable(64))
 	Ingest(corpus, ix, "owner-a", "t", "A's doc", "blue sky", DefaultChunkParams())
 	aChunk := corpus.Scoped("owner-a")[0]
 
@@ -330,7 +299,7 @@ func TestAGroundedClaimIsRetained(t *testing.T) {
 	// Assemble's scope check sees an empty partition and refuses every
 	// citation.
 	corpus := NewCorpus()
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	Ingest(corpus, ix, "owner-a", "t", "A's doc", "blue sky", DefaultChunkParams())
 	aChunk := corpus.Scoped("owner-a")[0]
 
@@ -364,7 +333,7 @@ func TestConcurrentSearchIsSafe(t *testing.T) {
 
 func TestConcurrentIngestIsSafe(t *testing.T) {
 	corpus := NewCorpus()
-	ix := NewIndex(corpus, hashEmbedder{dim: 64})
+	ix := NewIndex(corpus, NewHashEmbeddable(64))
 	var wg sync.WaitGroup
 	for i := 0; i < 20; i++ {
 		wg.Add(1)
