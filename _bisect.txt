@@ -1,0 +1,5 @@
+full set rc=3221225477 (10 files)
+shrunk to 5 files: ['test_ai_spend_cap.py', 'test_embedding_spend.py', 'test_prompt_injection.py', 'test_rls_migration.py', 'test_security_features.py']
+shrunk to 2 files: ['test_ai_spend_cap.py', 'test_embedding_spend.py']
+shrunk to 1 files: ['test_ai_spend_cap.py']
+MINIMAL CRASHING SET: ['test_ai_spend_cap.py']
