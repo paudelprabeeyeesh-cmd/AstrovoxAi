@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -208,7 +209,7 @@ func TestPurgeRemovesExpired(t *testing.T) {
 	// The token map must not grow without limit.
 	store := newTokenStore(&mail.RecordingMailer{})
 	for i := 0; i < 5; i++ {
-		_, _ = store.issue("u%d@example.com"%i, mail.PurposeResetPassword)
+		_, _ = store.issue(fmt.Sprintf("u%d@example.com", i), mail.PurposeResetPassword)
 	}
 	// Expire them all.
 	store.mu.Lock()
