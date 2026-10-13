@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/astrovox/astrovox/internal/api/config"
+	"github.com/astrovox/astrovox/internal/api/logging"
 	"github.com/astrovox/astrovox/internal/api/mail"
 	"github.com/astrovox/astrovox/internal/auth"
 	"github.com/astrovox/astrovox/internal/chat"
@@ -224,7 +226,10 @@ func (h *authHandler) requestReset(c *httpapi.Context) error {
 	}
 	if _, ok := h.users[in.Email]; ok {
 		if _, err := h.tokens.issue(in.Email, mail.PurposeResetPassword); err != nil {
-			return err
+			// A delivery failure is logged, not returned: the reply must be
+			// identical whether or not the account exists, or the endpoint
+			// enumerates users by inspecting the status code.
+			logMailFailure(c, "reset-request", err)
 		}
 	}
 	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
@@ -274,7 +279,7 @@ func (h *authHandler) magicLink(c *httpapi.Context) error {
 	}
 	if _, ok := h.users[in.Email]; ok {
 		if _, err := h.tokens.issue(in.Email, mail.PurposeMagicLink); err != nil {
-			return err
+			logMailFailure(c, "magic-link", err)
 		}
 	}
 	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
@@ -724,7 +729,10 @@ func mountAuth(router *httpapi.Router, signer *auth.JWTSigner, cfg *config.Confi
 		signer: signer,
 		issuer: cfg.Issuer,
 		users:  map[string]*authAccount{},
-		tokens: newTokenStore(defaultMailer()),
+		// A package-level override lets an email-flow test share one store
+		// with the server, so the token the test redeems is the token the
+		// endpoint issued rather than a second copy in a different map.
+		tokens: authTokenStore(),
 	}
 	router.Handle(http.MethodPost, "/auth/register", h.register)
 	router.Handle(http.MethodPost, "/auth/login", h.login)
@@ -803,7 +811,15 @@ var _ = fmt.Sprintf
 // SMTP host is set. A deployment that forgets to configure mail gets a
 // registration endpoint that fails visibly rather than one that claims an
 // email was sent when it was not.
+// authStoreMailerOverride lets a test install a recorder mailer for the
+// process-wide auth store, so the store the endpoints use is the one the
+// test can read issued tokens from.
+var authStoreMailerOverride *mail.RecordingMailer
+
 func defaultMailer() mail.Mailer {
+	if authStoreMailerOverride != nil {
+		return authStoreMailerOverride
+	}
 	cfg := mail.Config{
 		Host:     os.Getenv("SMTP_HOST"),
 		Port:     intEnv("SMTP_PORT", 587),
@@ -831,4 +847,29 @@ func intEnv(name string, def int) int {
 		n = n*10 + int(r-'0')
 	}
 	return n
+}
+
+// logMailFailure records a token-delivery failure with the request id, so
+// an operator can diagnose it without the response telling an
+// unauthenticated caller whether the account exists.
+func logMailFailure(c *httpapi.Context, endpoint string, err error) {
+	sysLog := logging.New("astrovox-api")
+	sysLog.SetOutput(io.Discard)
+	sysLog.Error("token delivery failed").
+		Field("endpoint", endpoint).
+		Field("request_id", c.RequestID).
+		Field("error", err.Error()).
+		Write()
+}
+
+// authTokenStore returns the store used by the auth handlers. It is built
+// once per process, so a test that installs a recorder mailer sees the
+// same store the endpoints issue into.
+var authStore *tokenStore
+
+func authTokenStore() *tokenStore {
+	if authStore == nil {
+		authStore = newTokenStore(defaultMailer())
+	}
+	return authStore
 }

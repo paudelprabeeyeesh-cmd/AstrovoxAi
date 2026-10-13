@@ -26,19 +26,24 @@ type mailFixture struct {
 func newMailFixture(t *testing.T) *mailFixture {
 	t.Helper()
 	recorder := &mail.RecordingMailer{}
-	store := newTokenStore(recorder)
 
 	router := httpapi.NewRouter()
 	log := logging.New("test")
 	log.SetOutput(io.Discard)
 
 	cfg := testConfig()
+	// mount() builds a tokenStore around defaultMailer(), which in a test
+	// environment is the null mailer. Install the recorder first so the
+	// store the endpoints use wraps the recorder; the fixture reads its own
+	// store, which is the one that issued the tokens the test redeems.
+	setTestMailer(recorder)
+	// The auth handlers share one process-wide store, so the fixture reads
+	// that store rather than building a second one.
+	resetAuthStoreForTest()
 	if err := mount(router, cfg, log); err != nil {
 		t.Fatalf("mount failed: %v", err)
 	}
-	// The mounted server has its own handler; the fixture store is the one
-	// the tests read issued tokens from.
-	return &mailFixture{router: router, store: store}
+	return &mailFixture{router: router, store: authTokenStore()}
 }
 
 func doJSON(t *testing.T, fixture *mailFixture, method, path, body string) *httptest.ResponseRecorder {
@@ -96,10 +101,16 @@ func TestResetRequestDoesNotRevealRegistration(t *testing.T) {
 	fixture := newMailFixture(t)
 	registerAccount(t, fixture, "known@example.com")
 
-	known := postJSON(t, fixture, "/auth/reset-request", `{"email":"known@example.com"}`)
-	unknown := postJSON(t, fixture, "/auth/reset-request", `{"email":"unknown@example.com"}`)
-	if known != unknown {
-		t.Fatalf("reset-request leaked registration: known=%s unknown=%s", known, unknown)
+	known := doJSON(t, fixture, "POST", "/auth/reset-request", `{"email":"known@example.com"}`)
+	unknown := doJSON(t, fixture, "POST", "/auth/reset-request", `{"email":"unknown@example.com"}`)
+	if known.Code != unknown.Code {
+		t.Fatalf("reset-request leaked registration by status: known=%d unknown=%d", known.Code, unknown.Code)
+	}
+	// Compare the message, not the request id, which is per-call and random.
+	knownMsg := jsonField(t, known.Body.Bytes(), "data", "message")
+	unknownMsg := jsonField(t, unknown.Body.Bytes(), "data", "message")
+	if knownMsg != unknownMsg {
+		t.Fatalf("reset-request leaked registration by message: known=%q unknown=%q", knownMsg, unknownMsg)
 	}
 }
 
@@ -138,10 +149,15 @@ func TestResetPasswordUpdatesAndConsumes(t *testing.T) {
 
 func TestMagicLinkDoesNotConfirmRegistration(t *testing.T) {
 	fixture := newMailFixture(t)
-	known := postJSON(t, fixture, "/auth/magic-link", `{"email":"known@example.com"}`)
-	unknown := postJSON(t, fixture, "/auth/magic-link", `{"email":"nobody@example.com"}`)
-	if known != unknown {
-		t.Fatal("magic-link leaked registration")
+	known := doJSON(t, fixture, "POST", "/auth/magic-link", `{"email":"known@example.com"}`)
+	unknown := doJSON(t, fixture, "POST", "/auth/magic-link", `{"email":"nobody@example.com"}`)
+	if known.Code != unknown.Code {
+		t.Fatalf("magic-link leaked registration by status: known=%d unknown=%d", known.Code, unknown.Code)
+	}
+	knownMsg := jsonField(t, known.Body.Bytes(), "data", "message")
+	unknownMsg := jsonField(t, unknown.Body.Bytes(), "data", "message")
+	if knownMsg != unknownMsg {
+		t.Fatalf("magic-link leaked registration by message: known=%q unknown=%q", knownMsg, unknownMsg)
 	}
 }
 
@@ -225,4 +241,49 @@ func TestPurgeRemovesExpired(t *testing.T) {
 	if len(store.tokens) != 0 {
 		t.Fatal("expired records remain after purge")
 	}
+}
+
+// jsonField reads a nested string field, so a test compares what a caller
+// can observe rather than a per-call request id.
+func jsonField(t *testing.T, body []byte, keys ...string) string {
+	t.Helper()
+	var decoded map[string]interface{}
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		t.Fatalf("response is not JSON: %v", err)
+	}
+	var cur interface{} = decoded
+	for _, k := range keys {
+		m, ok := cur.(map[string]interface{})
+		if !ok {
+			t.Fatalf("field path %v not present in %s", keys, body)
+		}
+		cur = m[k]
+	}
+	if s, ok := cur.(string); ok {
+		return s
+	}
+	return ""
+}
+
+// Test mailer hooks. The default mailer reads the environment, which in a
+// test is empty; these let a fixture install a recorder for the duration
+// of one test without touching the environment.
+var testMailerOverride *mail.RecordingMailer
+
+func setTestMailer(m *mail.RecordingMailer) {
+	testMailerOverride = m
+	authStoreMailerOverride = m
+}
+
+func clearTestMailer() {
+	testMailerOverride = nil
+	authStoreMailerOverride = nil
+}
+
+// resetAuthStoreForTest drops the process-wide auth store so a fresh
+// fixture builds one around the recorder it just installed. Without this,
+// the first test's store (wrapping the null mailer) is reused and every
+// later issuance fails the same way.
+func resetAuthStoreForTest() {
+	authStore = nil
 }
