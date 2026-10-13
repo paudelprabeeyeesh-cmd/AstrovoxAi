@@ -1,0 +1,147 @@
+import io
+
+P = "cmd/api/mount.go"
+s = io.open(P, encoding="utf-8", newline="").read()
+
+addition = (
+    "\n"
+    "// verifyEmail confirms an address using a single-use emailed token.\n"
+    "//\n"
+    "// The token is consumed before the result is returned, so a replayed\n"
+    "// link cannot confirm twice. The response does not echo the token, so a\n"
+    "// caller cannot store it and reuse it later.\n"
+    "func (h *authHandler) verifyEmail(c *httpapi.Context) error {\n"
+    "\tvar in struct {\n"
+    "\t\tToken string `json:\"token\"`\n"
+    "\t}\n"
+    "\tif err := c.Bind(&in); err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\tif strings.TrimSpace(in.Token) == \"\" {\n"
+    "\t\treturn apperrors.New(apperrors.CodeInvalidArgument, \"token is required\")\n"
+    "\t}\n"
+    "\t_, ok := h.tokens.redeem(in.Token, mail.PurposeVerifyEmail)\n"
+    "\tif !ok {\n"
+    "\t\treturn apperrors.New(apperrors.CodePermissionDenied, \"invalid or expired token\")\n"
+    "\t}\n"
+    "\treturn httpapi.Respond(c, http.StatusOK, map[string]interface{}{\n"
+    '\t\t"message": "email verified",\n'
+    "\t})\n"
+    "}\n"
+    "\n"
+    "// requestReset issues a reset token by email.\n"
+    "//\n"
+    "// The reply is identical whether or not the address is registered, so\n"
+    "// the endpoint cannot be used to enumerate accounts. The token is\n"
+    "// emailed and never returned.\n"
+    "func (h *authHandler) requestReset(c *httpapi.Context) error {\n"
+    "\tvar in struct {\n"
+    '\t\tEmail string `json:\"email\"`\n'
+    "\t}\n"
+    "\tif err := c.Bind(&in); err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\tif in.Email == \"\" {\n"
+    "\t\treturn apperrors.New(apperrors.CodeInvalidArgument, \"email is required\")\n"
+    "\t}\n"
+    "\tif _, ok := h.users[in.Email]; ok {\n"
+    "\t\tif _, err := h.tokens.issue(in.Email, mail.PurposeResetPassword); err != nil {\n"
+    "\t\t\treturn err\n"
+    "\t\t}\n"
+    "\t}\n"
+    "\treturn httpapi.Respond(c, http.StatusOK, map[string]interface{}{\n"
+    '\t\t"message": "password reset email sent",\n'
+    "\t})\n"
+    "}\n"
+    "\n"
+    "// resetPassword consumes a token and sets a new password.\n"
+    "func (h *authHandler) resetPassword(c *httpapi.Context) error {\n"
+    "\tvar in struct {\n"
+    '\t\tToken    string `json:\"token\"`\n'
+    '\t\tPassword string `json:\"password\"`\n'
+    "\t}\n"
+    "\tif err := c.Bind(&in); err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\tif in.Token == \"\" || in.Password == \"\" {\n"
+    "\t\treturn apperrors.New(apperrors.CodeInvalidArgument, \"token and password are required\")\n"
+    "\t}\n"
+    "\temail, ok := h.tokens.redeem(in.Token, mail.PurposeResetPassword)\n"
+    "\tif !ok {\n"
+    "\t\treturn apperrors.New(apperrors.CodePermissionDenied, \"invalid or expired token\")\n"
+    "\t}\n"
+    "\tacct, ok := h.users[email]\n"
+    "\tif !ok {\n"
+    "\t\treturn apperrors.New(apperrors.CodePermissionDenied, \"invalid or expired token\")\n"
+    "\t}\n"
+    "\tacct.secret = \"x\" + in.Password\n"
+    "\treturn httpapi.Respond(c, http.StatusOK, map[string]interface{}{\n"
+    '\t\t"message": "password updated",\n'
+    "\t})\n"
+    "}\n"
+    "\n"
+    "// magicLink issues a sign-in link for a known address.\n"
+    "//\n"
+    "// The reply does not confirm whether the address exists, for the same\n"
+    "// enumeration reason as requestReset.\n"
+    "func (h *authHandler) magicLink(c *httpapi.Context) error {\n"
+    "\tvar in struct {\n"
+    '\t\tEmail string `json:\"email\"`\n'
+    "\t}\n"
+    "\tif err := c.Bind(&in); err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\tif in.Email == \"\" {\n"
+    "\t\treturn apperrors.New(apperrors.CodeInvalidArgument, \"email is required\")\n"
+    "\t}\n"
+    "\tif _, ok := h.users[in.Email]; ok {\n"
+    "\t\tif _, err := h.tokens.issue(in.Email, mail.PurposeMagicLink); err != nil {\n"
+    "\t\t\treturn err\n"
+    "\t\t}\n"
+    "\t}\n"
+    "\treturn httpapi.Respond(c, http.StatusOK, map[string]interface{}{\n"
+    '\t\t"message": "sign-in link sent",\n'
+    "\t})\n"
+    "}\n"
+    "\n"
+    "// magicLogin consumes a magic-link token and returns a session.\n"
+    "func (h *authHandler) magicLogin(c *httpapi.Context) error {\n"
+    "\tvar in struct {\n"
+    '\t\tToken string `json:\"token\"`\n'
+    "\t}\n"
+    "\tif err := c.Bind(&in); err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\tif in.Token == \"\" {\n"
+    "\t\treturn apperrors.New(apperrors.CodeInvalidArgument, \"token is required\")\n"
+    "\t}\n"
+    "\temail, ok := h.tokens.redeem(in.Token, mail.PurposeMagicLink)\n"
+    "\tif !ok {\n"
+    "\t\treturn apperrors.New(apperrors.CodePermissionDenied, \"invalid or expired token\")\n"
+    "\t}\n"
+    "\tacct, ok := h.users[email]\n"
+    "\tif !ok {\n"
+    "\t\treturn apperrors.New(apperrors.CodePermissionDenied, \"invalid or expired token\")\n"
+    "\t}\n"
+    "\ttoken, err := h.issue(acct)\n"
+    "\tif err != nil {\n"
+    "\t\treturn err\n"
+    "\t}\n"
+    "\treturn httpapi.Respond(c, http.StatusOK, map[string]interface{}{\n"
+    '\t\t"account": publicAccount(acct),\n'
+    '\t\t"token":   token,\n'
+    "\t})\n"
+    "}\n"
+)
+
+if "func (h *authHandler) verifyEmail" in s:
+    print("already present")
+    raise SystemExit(0)
+
+anchor = "// publicAccount is the response shape"
+if anchor not in s:
+    print("anchor not found")
+    raise SystemExit(1)
+s = s.replace(anchor, addition + "\n" + anchor, 1)
+io.open(P, "w", encoding="utf-8", newline="").write(s)
+print("email endpoints added")

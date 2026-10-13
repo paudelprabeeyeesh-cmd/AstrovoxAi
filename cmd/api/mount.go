@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/astrovox/astrovox/internal/api/config"
+	"github.com/astrovox/astrovox/internal/api/mail"
 	"github.com/astrovox/astrovox/internal/auth"
 	"github.com/astrovox/astrovox/internal/chat"
 	"github.com/astrovox/astrovox/internal/conversations"
@@ -88,6 +91,7 @@ type authHandler struct {
 	signer *auth.JWTSigner
 	issuer string
 	users  map[string]*authAccount
+	tokens *tokenStore
 }
 
 func (h *authHandler) register(c *httpapi.Context) error {
@@ -177,6 +181,134 @@ func (h *authHandler) issue(acct *authAccount) (string, error) {
 		ExpiresAt: now().Add(24 * time.Hour).Unix(),
 	}
 	return h.signer.Issue(claims)
+}
+
+// verifyEmail confirms an address using a single-use emailed token.
+//
+// The token is consumed before the result is returned, so a replayed
+// link cannot confirm twice. The response does not echo the token, so a
+// caller cannot store it and reuse it later.
+func (h *authHandler) verifyEmail(c *httpapi.Context) error {
+	var in struct {
+		Token string `json:"token"`
+	}
+	if err := c.Bind(&in); err != nil {
+		return err
+	}
+	if strings.TrimSpace(in.Token) == "" {
+		return apperrors.New(apperrors.CodeInvalidArgument, "token is required")
+	}
+	_, ok := h.tokens.redeem(in.Token, mail.PurposeVerifyEmail)
+	if !ok {
+		return apperrors.New(apperrors.CodePermissionDenied, "invalid or expired token")
+	}
+	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
+		"message": "email verified",
+	})
+}
+
+// requestReset issues a reset token by email.
+//
+// The reply is identical whether or not the address is registered, so
+// the endpoint cannot be used to enumerate accounts. The token is
+// emailed and never returned.
+func (h *authHandler) requestReset(c *httpapi.Context) error {
+	var in struct {
+		Email string `json:"email"`
+	}
+	if err := c.Bind(&in); err != nil {
+		return err
+	}
+	if in.Email == "" {
+		return apperrors.New(apperrors.CodeInvalidArgument, "email is required")
+	}
+	if _, ok := h.users[in.Email]; ok {
+		if _, err := h.tokens.issue(in.Email, mail.PurposeResetPassword); err != nil {
+			return err
+		}
+	}
+	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
+		"message": "password reset email sent",
+	})
+}
+
+// resetPassword consumes a token and sets a new password.
+func (h *authHandler) resetPassword(c *httpapi.Context) error {
+	var in struct {
+		Token    string `json:"token"`
+		Password string `json:"password"`
+	}
+	if err := c.Bind(&in); err != nil {
+		return err
+	}
+	if in.Token == "" || in.Password == "" {
+		return apperrors.New(apperrors.CodeInvalidArgument, "token and password are required")
+	}
+	email, ok := h.tokens.redeem(in.Token, mail.PurposeResetPassword)
+	if !ok {
+		return apperrors.New(apperrors.CodePermissionDenied, "invalid or expired token")
+	}
+	acct, ok := h.users[email]
+	if !ok {
+		return apperrors.New(apperrors.CodePermissionDenied, "invalid or expired token")
+	}
+	acct.secret = "x" + in.Password
+	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
+		"message": "password updated",
+	})
+}
+
+// magicLink issues a sign-in link for a known address.
+//
+// The reply does not confirm whether the address exists, for the same
+// enumeration reason as requestReset.
+func (h *authHandler) magicLink(c *httpapi.Context) error {
+	var in struct {
+		Email string `json:"email"`
+	}
+	if err := c.Bind(&in); err != nil {
+		return err
+	}
+	if in.Email == "" {
+		return apperrors.New(apperrors.CodeInvalidArgument, "email is required")
+	}
+	if _, ok := h.users[in.Email]; ok {
+		if _, err := h.tokens.issue(in.Email, mail.PurposeMagicLink); err != nil {
+			return err
+		}
+	}
+	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
+		"message": "sign-in link sent",
+	})
+}
+
+// magicLogin consumes a magic-link token and returns a session.
+func (h *authHandler) magicLogin(c *httpapi.Context) error {
+	var in struct {
+		Token string `json:"token"`
+	}
+	if err := c.Bind(&in); err != nil {
+		return err
+	}
+	if in.Token == "" {
+		return apperrors.New(apperrors.CodeInvalidArgument, "token is required")
+	}
+	email, ok := h.tokens.redeem(in.Token, mail.PurposeMagicLink)
+	if !ok {
+		return apperrors.New(apperrors.CodePermissionDenied, "invalid or expired token")
+	}
+	acct, ok := h.users[email]
+	if !ok {
+		return apperrors.New(apperrors.CodePermissionDenied, "invalid or expired token")
+	}
+	token, err := h.issue(acct)
+	if err != nil {
+		return err
+	}
+	return httpapi.Respond(c, http.StatusOK, map[string]interface{}{
+		"account": publicAccount(acct),
+		"token":   token,
+	})
 }
 
 // publicAccount is the response shape: a credential-free projection, so a
@@ -588,10 +720,23 @@ func errText(err error) string {
 
 // mountAuth registers the session endpoints.
 func mountAuth(router *httpapi.Router, signer *auth.JWTSigner, cfg *config.Config) {
-	h := &authHandler{signer: signer, issuer: cfg.Issuer, users: map[string]*authAccount{}}
+	h := &authHandler{
+		signer: signer,
+		issuer: cfg.Issuer,
+		users:  map[string]*authAccount{},
+		tokens: newTokenStore(defaultMailer()),
+	}
 	router.Handle(http.MethodPost, "/auth/register", h.register)
 	router.Handle(http.MethodPost, "/auth/login", h.login)
 	router.Handle(http.MethodPost, "/auth/logout", h.logout)
+	// Email-token flows. None of them return a token: the token is only
+	// ever in the email, and a response that carried one would be an
+	// account-takeover primitive.
+	router.Handle(http.MethodPost, "/auth/verify", h.verifyEmail)
+	router.Handle(http.MethodPost, "/auth/reset-request", h.requestReset)
+	router.Handle(http.MethodPost, "/auth/reset", h.resetPassword)
+	router.Handle(http.MethodPost, "/auth/magic-link", h.magicLink)
+	router.Handle(http.MethodPost, "/auth/magic-login", h.magicLogin)
 	router.Handle(http.MethodGet, "/auth/me", requireAuth(h.me))
 }
 
@@ -653,3 +798,37 @@ func mountTools(router *httpapi.Router, _ *auth.JWTSigner, registry *tools.Regis
 // shortID derives a compact unique id. It is not a security token: it
 // identifies a row, it does not authenticate one.
 var _ = fmt.Sprintf
+
+// defaultMailer returns the configured mailer, or the null one when no
+// SMTP host is set. A deployment that forgets to configure mail gets a
+// registration endpoint that fails visibly rather than one that claims an
+// email was sent when it was not.
+func defaultMailer() mail.Mailer {
+	cfg := mail.Config{
+		Host:     os.Getenv("SMTP_HOST"),
+		Port:     intEnv("SMTP_PORT", 587),
+		Username: os.Getenv("SMTP_USER"),
+		Password: os.Getenv("SMTP_PASSWORD"),
+		From:     os.Getenv("SMTP_FROM"),
+	}
+	m, err := mail.NewSMTP(cfg)
+	if err != nil {
+		return mail.NullMailer{}
+	}
+	return m
+}
+
+func intEnv(name string, def int) int {
+	v := os.Getenv(name)
+	if v == "" {
+		return def
+	}
+	n := 0
+	for _, r := range v {
+		if r < '0' || r > '9' {
+			return def
+		}
+		n = n*10 + int(r-'0')
+	}
+	return n
+}
