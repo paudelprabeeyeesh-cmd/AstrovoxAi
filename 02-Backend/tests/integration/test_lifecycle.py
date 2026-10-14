@@ -193,8 +193,22 @@ def fake_supabase():
 
 @pytest.fixture(autouse=True)
 def mock_supabase(fake_supabase):
+    # Three call paths resolve a Supabase client, and they must all see the
+    # same double or only some requests are authenticated:
+    #   app.auth.supabase                    - bound once at import time
+    #   app.database.supabase                - bound once at import time
+    #   app.utils.auth.auth_utils.get_supabase - resolved per call by the
+    #       shared bearer-token helper, which is what the chat routes use
+    # app.repositories.database.client.supabase owns the row reads, so it is
+    # bound too: without it, writes land in the double and reads hit the real
+    # client, which makes "create then list" look like a missing row.
+    import app.repositories.database.client as repo_client
+    import app.utils.auth.auth_utils as auth_utils
+
     with patch.object(auth_module, "supabase", fake_supabase), \
-         patch.object(db_module, "supabase", fake_supabase):
+         patch.object(db_module, "supabase", fake_supabase), \
+         patch.object(repo_client, "supabase", fake_supabase), \
+         patch.object(auth_utils, "get_supabase", return_value=fake_supabase):
         yield fake_supabase
 
 

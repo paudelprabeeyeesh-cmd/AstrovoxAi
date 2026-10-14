@@ -194,8 +194,23 @@ def fake_supabase():
 
 @pytest.fixture(autouse=True)
 def mock_supabase(fake_supabase):
+    # Four call paths resolve a Supabase client and they must all see the same
+    # double, or only some requests are authenticated:
+    #   app.auth.supabase and app.database.supabase  - bound once at import
+    #   app.repositories.database.client.supabase    - bound once at import,
+    #       and owns the row reads
+    #   app.utils.auth.auth_utils.get_supabase       - resolved per call by the
+    #       shared bearer-token helper the chat routes use
+    # app.telemetry.supabase writes usage rows, so it is bound too.
+    import app.repositories.database.client as repo_client
+    import app.utils.auth.auth_utils as auth_utils
+    import app.telemetry as telemetry
+
     with patch.object(auth_module, "supabase", fake_supabase), \
-         patch.object(db_module, "supabase", fake_supabase):
+         patch.object(db_module, "supabase", fake_supabase), \
+         patch.object(repo_client, "supabase", fake_supabase), \
+         patch.object(telemetry, "supabase", fake_supabase), \
+         patch.object(auth_utils, "get_supabase", return_value=fake_supabase):
         yield fake_supabase
 
 

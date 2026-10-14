@@ -24,7 +24,13 @@ def test_database_hardening_audit_passes():
 
 
 def test_alembic_migrations_directory_exists():
-    alembic_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "alembic")
+    # tests/integration/test_database_hardening.py -> tests/integration ->
+    # tests -> backend root. The path was previously one level short, so this
+    # looked for `tests/alembic` and never found the real configuration.
+    backend_root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+    alembic_dir = os.path.join(backend_root, "alembic")
     assert os.path.exists(alembic_dir), "Alembic migrations directory not found"
     assert os.path.exists(os.path.join(alembic_dir, "versions")), "Alembic versions directory not found"
     assert os.path.exists(os.path.join(alembic_dir, "env.py")), "Alembic env.py not found"

@@ -28,13 +28,16 @@ def test_initializes_with_requested_size():
 
 
 def test_acquire_returns_distinct_items():
+    # Identity, not inequality: the factory here is `list`, and three empty
+    # lists compare equal to each other, so `a != b` is false even though the
+    # pool really did hand out three separate resources.
     pool = ResourcePool(list, size=3)
     a = pool.acquire()
     b = pool.acquire()
     c = pool.acquire()
-    assert a != b
-    assert b != c
-    assert a != c
+    assert a is not b
+    assert b is not c
+    assert a is not c
     pool.release(a)
     pool.release(b)
     pool.release(c)
@@ -64,10 +67,15 @@ def test_factory_called_for_each_resource():
 def test_available_reflects_partial_usage():
     pool = ResourcePool(list, size=2)
     assert pool.available() == 2
-    pool.acquire()
+    first = pool.acquire()
     assert pool.available() == 1
-    pool.acquire()
+    second = pool.acquire()
     assert pool.available() == 0
-    pool.release(pool.acquire())
+    # `pool.release(pool.acquire())` was here before: the inner acquire runs
+    # with no timeout against an empty pool, so `Condition.wait(None)` blocks
+    # forever and the whole suite hangs. Releasing a resource that is already
+    # held expresses the same count.
+    pool.release(first)
     assert pool.available() == 1
+    pool.release(second)
 

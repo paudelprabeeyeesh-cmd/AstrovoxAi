@@ -7,10 +7,15 @@ _backend = os.path.join(os.path.dirname(os.path.dirname(__file__)))
 if _backend not in sys.path:
     sys.path.insert(0, _backend)
 
-os.environ.setdefault("VITE_SUPABASE_URL", "http://localhost:54321")
-os.environ.setdefault("VITE_SUPABASE_ANON_KEY", "dummy-anon-key")
 os.environ.setdefault("ASTROVOX_DB", "test.db")
 os.environ.setdefault("ASTROVOX_TEST_MODE", "1")
+
+# Set here rather than in the root conftest, which would leak into every
+# suite. The integration suites exercise the configured-client path; other
+# suites deliberately run unconfigured to check the fallback.
+os.environ.setdefault("VITE_SUPABASE_URL", "http://localhost:54321")
+os.environ.setdefault("VITE_SUPABASE_ANON_KEY", "dummy-anon-key")
+os.environ.setdefault("VITE_SUPABASE_SERVICE_ROLE_KEY", "dummy-service-role-key")
 os.environ.setdefault("GROQ_API_KEY", "gsk_dummy")
 os.environ.setdefault("GEMINI_API_KEY", "AIzaSyDummy")
 os.environ.setdefault("MISTRAL_API_KEY", "MISTRAL_DUMMY")
@@ -24,14 +29,9 @@ os.environ.setdefault("STRIPE_TEAM_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_EMBED_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_dummy")
 
-_original_limit = slowapi.Limiter.limit
-
-def _noop_limit(self, *args, **kwargs):
-    def decorator(func):
-        return func
-    return decorator
-
-slowapi.Limiter.limit = _noop_limit
+# slowapi's `@limiter.limit` decorators are disabled in the root conftest,
+# which has to happen before `app.main` is imported there. Repeating it here
+# would be too late for that import and would only mask the ordering problem.
 
 _fake_supabase = MagicMock()
 _fake_supabase.auth.sign_up.return_value = MagicMock(

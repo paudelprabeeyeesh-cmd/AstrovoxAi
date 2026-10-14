@@ -3,13 +3,15 @@ import types
 from enum import Enum
 from unittest.mock import MagicMock
 
-# Stub heavy app dependencies before importing sandbox modules
-app_stub = types.ModuleType("app")
-audit_stub = types.ModuleType("app.audit")
-rbac_stub = types.ModuleType("app.rbac")
-circuit_breaker_stub = types.ModuleType("app.circuit_breaker")
-retry_stub = types.ModuleType("app.retry")
-tool_executor_stub = types.ModuleType("app.tool_executor")
+import pytest
+
+# `app` itself is never replaced. It used to be stubbed here at import time,
+# which is collection time: the stub has no `__path__`, so every module
+# imported afterwards failed `from app import <name>` with "'app' is not a
+# package", and running the whole suite together stopped being possible. The
+# stubs that remain are the two modules this file asserts on
+# (`app.rbac`, `app.audit`); `app.circuit_breaker` and `app.retry` are the real
+# ones, which behave correctly now that the sandbox uses them properly.
 
 
 class FakePermission(Enum):
@@ -19,33 +21,35 @@ class FakePermission(Enum):
     ADMIN = "admin"
 
 
+audit_stub = types.ModuleType("app.audit")
+rbac_stub = types.ModuleType("app.rbac")
 audit_stub.audit_logger = MagicMock()
 rbac_stub.has_permission = lambda user_id, permission, resource: True
 rbac_stub.Permission = FakePermission
 
 
-class FakeCircuitBreaker:
-    def __init__(self, *args, **kwargs):
-        self.state = "closed"
+@pytest.fixture(autouse=True)
+def stubbed_app_rbac_and_audit():
+    """Install the app.rbac/app.audit doubles for this module only.
 
-    def call(self, func, *args, **kwargs):
-        return func(*args, **kwargs)
+    The originals are restored afterwards: leaving them in `sys.modules` would
+    make the rest of the suite talk to these fakes. `sandboxing.tool_sandbox`
+    imports both lazily inside its methods, so installing them per-test is
+    enough and does not depend on import order.
+    """
+    originals = {name: sys.modules.get(name) for name in ("app.audit", "app.rbac")}
+    sys.modules["app.audit"] = audit_stub
+    sys.modules["app.rbac"] = rbac_stub
+    try:
+        yield
+    finally:
+        for name, previous in originals.items():
+            if previous is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
 
 
-circuit_breaker_stub.CircuitBreaker = FakeCircuitBreaker
-cb_state = type("FakeState", (), {"OPEN": "open"})()
-circuit_breaker_stub.CircuitState = cb_state
-retry_stub.retry_with_backoff = lambda **kwargs: lambda f: f
-tool_executor_stub.ToolExecutor = MagicMock
-
-sys.modules["app"] = app_stub
-sys.modules["app.audit"] = audit_stub
-sys.modules["app.rbac"] = rbac_stub
-sys.modules["app.circuit_breaker"] = circuit_breaker_stub
-sys.modules["app.retry"] = retry_stub
-sys.modules["app.tool_executor"] = tool_executor_stub
-
-import pytest
 
 from sandboxing.tool_sandbox import ToolSandbox, ToolSandboxStatus, TOOL_TIER_MAP
 from sandboxing.approval_store import approval_store

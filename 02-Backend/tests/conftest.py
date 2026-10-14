@@ -8,6 +8,26 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+# slowapi's `@limiter.limit` decorators are disabled BEFORE `app.main` is
+# imported further down. Doing it here rather than in the integration conftest
+# is what makes it effective: `app.main` registers its limits at import time,
+# and that import already happened by the time the integration conftest loads,
+# so the decorators there were neutering nothing. Left enabled, SlowAPIMiddleware
+# enforces its own 30/minute window and every chat request returns 429.
+
+try:
+    import slowapi
+
+    def _noop_limit(self, *args, **kwargs):
+        def decorator(func):
+            return func
+
+        return decorator
+
+    slowapi.Limiter.limit = _noop_limit
+except Exception:  # noqa: BLE001 - slowapi is optional
+    pass
+
 def _run(func, *args, **kwargs):
     result = func(*args, **kwargs)
     if asyncio.iscoroutine(result):
@@ -70,15 +90,69 @@ os.environ.setdefault("STRIPE_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_TEAM_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_EMBED_PRICE_ID", "price_dummy")
 os.environ.setdefault("STRIPE_PREMIUM_ACTION_PRICE_ID", "price_dummy")
-os.environ.setdefault("VITE_SUPABASE_URL", "http://localhost:54321")
-os.environ.setdefault("VITE_SUPABASE_ANON_KEY", "dummy-anon-key")
-os.environ.setdefault("VITE_SUPABASE_SERVICE_ROLE_KEY", "dummy-service-role-key")
+
+# Supabase credentials are deliberately NOT set here. This is the root
+# conftest, so anything set at collection time leaks into every suite in the
+# run, including the ones that assert an unconfigured deployment falls back
+# to a denying client. Those tests set and clear their own environment
+# instead, which keeps them order-independent.
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """Give the rate limiter fresh state before each test.
+
+    The limiter is a process-global with in-memory sliding windows keyed by
+    client identity. Anonymous callers share one bucket (30 requests/60s by
+    default), so a suite that makes many requests fills it and a later test
+    gets a 429 for a reason unrelated to the behaviour under test. The result
+    then depends on collection order instead of on the code.
+
+    The global is replaced rather than cleared because several internal maps
+    hold window state, and clearing one leaves the rest pointing at the same
+    exhausted windows.
+    """
+    import app.middleware.security.rate_limit_hardened as rl
+
+    previous = rl._GLOBAL_LIMITER
+    rl._GLOBAL_LIMITER = rl.RateLimiter()
+    try:
+        yield
+    finally:
+        rl._GLOBAL_LIMITER = previous
 
 
 def _ensure_module(name):
+    """Return a module for `name`, synthesising a stub only if absent.
+
+    The `__import__` is wrapped in `except Exception`, not just `ImportError`.
+    Importing a router module transitively imports `app`, and when that raises
+    a non-ImportError (for example `RuntimeError: JWT_SECRET_KEY must be set`
+    from `app/config.py`) Python discards the half-initialised top-level
+    package, so `app` lost its `__path__` and every later
+    `from app import <module>` failed with "'app' is not a package".
+    """
     if name not in sys.modules:
-        sys.modules[name] = types.ModuleType(name)
+        try:
+            __import__(name)
+        except Exception as exc:  # noqa: BLE001 - a failed import must not
+            # discard the partially-imported parent package from sys.modules.
+            print(f"[conftest] import of {name} failed, stubbing: {exc}")
+        if name not in sys.modules:
+            mod = types.ModuleType(name)
+            mod.__path__ = []
+            sys.modules[name] = mod
     return sys.modules[name]
+
+
+# Importing any router module transitively imports `app`, which reads its
+# configuration at import time. The configuration is established first so the
+# first import of `app` cannot fail mid-way.
+os.environ.setdefault("JWT_SECRET_KEY", "test-jwt-secret")
+try:
+    importlib.import_module("app")
+except Exception as exc:  # noqa: BLE001 - reported, suite continues
+    print(f"[conftest] could not pre-import app: {exc}")
 
 
 def _set_attr_chain(mod_name, attr_name, value):
@@ -204,12 +278,34 @@ _router_modules = [
 for mod_name in _router_modules:
     if mod_name not in sys.modules:
         sys.modules[mod_name] = _ensure_module(mod_name)
-    sys.modules[mod_name].router = _mock_router
-    if mod_name == "api.routers.jobs_router":
-        sys.modules[mod_name].events_router = _mock_router
+    module = sys.modules[mod_name]
+    # Only a module that has no router of its own - i.e. one synthesised
+    # above because the real module does not exist in this tree - gets the
+    # mock. Replacing a real module's router unregisters every route the
+    # product serves under that prefix, which turns a live endpoint into a
+    # 404 that looks like "the feature was never built".
+    if getattr(module, "router", None) is None:
+        module.router = _mock_router
+    if mod_name == "api.routers.jobs_router" and getattr(module, "events_router", None) is None:
+        module.events_router = _mock_router
 
 import pytest
 from app.database import init_db
+
+# Apply the fixture schema before the app is imported. Several endpoints
+# fail with "no such table" otherwise, which reports as a product error
+# rather than the environment gap it actually is.
+try:
+    from tests.schema_fixture import create_schema as _create_schema
+
+    _create_schema()
+except Exception as _schema_exc:  # noqa: BLE001 - logged, suite continues
+    import logging as _logging
+
+    _logging.getLogger(__name__).warning(
+        "fixture.schema unavailable: %s", _schema_exc
+    )
+
 try:
     from app.main import app
 except Exception:

@@ -62,7 +62,13 @@ class TestCSRFMiddleware(unittest.TestCase):
     """Ensure CSRF middleware blocks unsafe requests without token."""
 
     def test_post_without_csrf_rejected(self):
-        app_with_csrf = app
+        # A fresh FastAPI instance, not the shared global. `add_middleware`
+        # raises "Cannot add middleware after an application has started",
+        # so reusing the app object that another test already served makes
+        # this test fail for a reason unrelated to CSRF.
+        from fastapi import FastAPI
+
+        app_with_csrf = FastAPI()
         app_with_csrf.add_middleware(CSRFMiddleware)
         client = TestClient(app_with_csrf)
 

@@ -109,14 +109,32 @@ class ApprovalStore:
             }
 
     def cleanup_expired(self) -> None:
+        """Expire outstanding approvals and move them to history.
+
+        `_archive` takes the same non-reentrant lock, so the expired entries
+        are collected under the lock and archived after it is released.
+        Holding it across `_archive` deadlocked: `cleanup_expired` is what the
+        TTL sweeper calls, so the whole approval subsystem stopped on the
+        first expiry.
+        """
         now = time.time()
         with self._lock:
-            expired = [aid for aid, a in self._store.items() if a.status == "pending" and now - a.created_at > a.ttl_seconds]
-            for aid in expired:
-                self._store[aid].status = "expired"
-                self._archive(self._store[aid])
+            expired = [
+                self._store[aid]
+                for aid, approval in self._store.items()
+                if approval.status == "pending"
+                and now - approval.created_at > approval.ttl_seconds
+            ]
+            for approval in expired:
+                approval.status = "expired"
+        for approval in expired:
+            self._archive(approval)
 
     def _archive(self, approval: PendingApproval) -> None:
+        """Append a resolved approval to history.
+
+        Takes the lock itself; callers must not already hold it.
+        """
         with self._lock:
             self._history.append(approval)
             if len(self._history) > self._max_history:

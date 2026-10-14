@@ -140,9 +140,16 @@ def test_update_user_last_login(tmp_path):
         init_db()
         user_id = create_user("alice", "alice@example.com", "secret")
         update_user_last_login(user_id)
-    conn = get_db()
-    row = conn.execute("SELECT last_login FROM users WHERE id=?", (user_id,)).fetchone()
-    conn.close()
+        # The connection is opened inside the patch context: outside it,
+        # DB_PATH falls back to the real database file and this read would
+        # silently query a different database than the one written to.
+        conn = get_db()
+        try:
+            row = conn.execute(
+                "SELECT last_login FROM users WHERE id=?", (user_id,)
+            ).fetchone()
+        finally:
+            conn.close()
     assert row is not None
     assert row["last_login"] is not None
 
