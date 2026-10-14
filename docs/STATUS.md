@@ -55,6 +55,46 @@ nobody runs in CI. They are collected now and green.
 
 ---
 
+## Go engine — measured, built, and now doing the work
+
+The audit document claimed the repository had "one .go file and a Go module only
+under sdk/go/, rather than a root-level Go module". Both halves were wrong.
+`go.mod` sits at the repository root, and the measured inventory is in
+[GO_BASELINE.md](GO_BASELINE.md):
+
+```
+go build ./...   clean
+go vet ./...     clean
+80 packages passing, 0 failing
+gofmt clean for the main tree
+1794 func Test functions across 134 files
+```
+
+Work completed on the Go side this cycle, all verified:
+
+| Area | What |
+|---|---|
+| `internal/retrieval` | BM25 keyword search + reciprocal-rank-fusion hybrid search, owner-scoped |
+| `tests/isolation` | adversarial cross-tenant suite: 12 cases, CI-required |
+| `internal/evals` | recall@k / MRR / nDCG over a labelled corpus + a regression gate, CI-required |
+| `internal/grounding` | citation accuracy: supported / uncited / missing / not-permitted |
+| `internal/chat` | capability registry, model router, fallback chains, circuit breakers |
+| `internal/chat` | resumable streaming: sequence numbers, cancel, replay on reconnect |
+| `internal/sandbox` | adversarial escape suite; fixed a memory-budget leak it found |
+
+Measured retrieval numbers, 10 documents, cutoff 5:
+
+```
+vector  recall 0.900  mrr 0.690  ndcg 0.736  misses 1 [cdc]
+keyword recall 0.900  mrr 0.800  ndcg 0.821  misses 1 [rotation]
+hybrid  recall 1.000  mrr 0.820  ndcg 0.859  misses 0
+```
+
+The hybrid recovers the miss each path had on its own, which is the entire
+reason to fuse.
+
+---
+
 ## Privileged endpoint audit — the largest open risk
 
 `python scripts/audit_privileged_endpoints.py --json docs/PRIVILEGED_ENDPOINT_AUDIT.json`
