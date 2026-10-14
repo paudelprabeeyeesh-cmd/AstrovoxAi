@@ -316,11 +316,15 @@ type Budget struct {
 	MaxIdenticalCalls int
 	// MaxCalls caps the total across every tool.
 	MaxCalls int
+	// MaxOutputBytes caps a single tool's serialized output. A tool that can
+	// read a whole file must not be able to flood the caller's context, or a
+	// read tool becomes a denial-of-service on the next request.
+	MaxOutputBytes int
 }
 
 // DefaultBudget returns a workable cap.
 func DefaultBudget() Budget {
-	return Budget{MaxIdenticalCalls: 3, MaxCalls: 50}
+	return Budget{MaxIdenticalCalls: 3, MaxCalls: 50, MaxOutputBytes: 65536}
 }
 
 // Result is one execution's outcome.
@@ -333,16 +337,73 @@ type Result struct {
 	Duration int64 `json:"duration_ms"`
 }
 
+// Approver decides whether a call that requires approval may proceed.
+//
+// An interface so the policy is replaceable: the default denies everything, a
+// deployment plugs in a real approver, and a test grants specific calls. What a
+// Tool must never be able to do is approve itself, which is why the approver is
+// owned by the Executor and not passed into Execute.
+type Approver interface {
+	// Approve returns nil when the call may proceed.
+	Approve(call Call, schema Schema) error
+}
+
+// ManualApprover grants exactly what it has been told to, keyed by call
+// fingerprint.
+//
+// It models a human decision: a request is refused unless the caller has
+// explicitly approved that exact call. Approving "send to alice" does not
+// approve sending elsewhere, which is the property that makes an approval worth
+// anything.
+type ManualApprover struct {
+	mu      sync.Mutex
+	granted map[string]bool
+}
+
+// NewManualApprover returns an approver that grants nothing yet.
+func NewManualApprover() *ManualApprover {
+	return &ManualApprover{granted: map[string]bool{}}
+}
+
+// Grant approves an exact call.
+func (m *ManualApprover) Grant(call Call) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.granted[Fingerprint(call)] = true
+}
+
+// Revoke withdraws a grant.
+func (m *ManualApprover) Revoke(call Call) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.granted, Fingerprint(call))
+}
+
+// Approve implements Approver.
+func (m *ManualApprover) Approve(call Call, schema Schema) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.granted[Fingerprint(call)] {
+		return fmt.Errorf("%w: %q", ErrApprovalRequired, call.Name)
+	}
+	return nil
+}
+
 // Executor runs validated calls under a budget.
 type Executor struct {
 	registry  *Registry
 	budget    Budget
+	Approver  Approver
 	mu        sync.Mutex
 	total     int
 	identical map[string]int
 }
 
 // NewExecutor returns an executor bound to a registry.
+//
+// The approver defaults to ManualApprover granting nothing: the fail-closed
+// default. An executor that runs irreversible tools when nobody has configured
+// an approver is how a purchase happens without a purchase.
 func NewExecutor(r *Registry, b Budget) *Executor {
 	if b.MaxCalls <= 0 {
 		b = DefaultBudget()
@@ -350,10 +411,33 @@ func NewExecutor(r *Registry, b Budget) *Executor {
 	if b.MaxIdenticalCalls <= 0 {
 		b.MaxIdenticalCalls = DefaultBudget().MaxIdenticalCalls
 	}
+	if b.MaxOutputBytes <= 0 {
+		b.MaxOutputBytes = DefaultBudget().MaxOutputBytes
+	}
 	return &Executor{
 		registry:  r,
 		budget:    b,
+		Approver:  NewManualApprover(),
 		identical: map[string]int{},
+	}
+}
+
+// SetApprover replaces the approver, so a deployment installs a real one.
+func (e *Executor) SetApprover(a Approver) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.Approver = a
+}
+
+// GrantApproval approves an exact call on the current approver, when it is a
+// ManualApprover. It is a convenience for tests and for an in-process human
+// confirmation; a deployment should install its own approver.
+func (e *Executor) GrantApproval(call Call) {
+	e.mu.Lock()
+	a := e.Approver
+	e.mu.Unlock()
+	if manual, ok := a.(*ManualApprover); ok {
+		manual.Grant(call)
 	}
 }
 
@@ -395,6 +479,21 @@ func (e *Executor) Run(call Call) *Result {
 		return &Result{Name: call.Name, Error: fmt.Sprintf("%v: %q", ErrToolUnknown, call.Name)}
 	}
 
+	// Approval is checked before the tool runs, not after. A refusal must be a
+	// refusal, and a tool that may send, spend or delete has no way to approve
+	// itself: the approver is owned by the Executor.
+	if schema.Risk.RequiresApproval() {
+		e.mu.Lock()
+		approver := e.Approver
+		e.mu.Unlock()
+		if approver == nil {
+			approver = NewManualApprover()
+		}
+		if err := approver.Approve(call, schema); err != nil {
+			return &Result{Name: call.Name, Skipped: true, Error: err.Error()}
+		}
+	}
+
 	done := make(chan *Result, 1)
 	start := time.Now()
 	go func() {
@@ -403,7 +502,7 @@ func (e *Executor) Run(call Call) *Result {
 		if err != nil {
 			res.Error = err.Error()
 		} else {
-			res.Output = out
+			res.Output = capOutput(out, e.budget.MaxOutputBytes)
 		}
 		done <- res
 	}()
@@ -421,6 +520,52 @@ func (e *Executor) Run(call Call) *Result {
 			Duration: time.Since(start).Milliseconds(),
 		}
 	}
+}
+
+// capOutput shrinks a tool's output so a single call cannot flood the caller's
+// context. Strings and byte slices are truncated; a map is capped field by
+// field, so the fields a caller actually reads still survive. The marker says
+// how much was dropped, because silently truncated output is indistinguishable
+// from a short answer.
+//
+// The marker is charged against the cap: truncating to the cap and then
+// appending the marker produced output larger than the cap, which is a cap that
+// caps nothing.
+func capOutput(out map[string]interface{}, maxBytes int) map[string]interface{} {
+	const markerTemplate = "\n[truncated %d chars]"
+	if maxBytes <= 0 || out == nil {
+		return out
+	}
+	for k, v := range out {
+		switch typed := v.(type) {
+		case string:
+			if truncated, changed := truncateWithMarker(typed, maxBytes, markerTemplate); changed {
+				out[k] = truncated
+			}
+		case []byte:
+			if truncated, changed := truncateWithMarker(string(typed), maxBytes, "\n[truncated %d bytes]"); changed {
+				out[k] = truncated
+			}
+		}
+	}
+	return out
+}
+
+// truncateWithMarker shortens text to at most maxBytes including its marker.
+func truncateWithMarker(text string, maxBytes int, template string) (string, bool) {
+	if len(text) <= maxBytes {
+		return text, false
+	}
+	// Reserve room for the marker by formatting it against the current length
+	// first: the digit count is known at that point, so the final size is exact.
+	// Without this the result is longer than the cap it is meant to enforce.
+	dropped := len(text)
+	probe := fmt.Sprintf(template, dropped)
+	room := maxBytes - len(probe)
+	if room < 0 {
+		room = 0
+	}
+	return text[:room] + fmt.Sprintf(template, len(text)-room), true
 }
 
 // Calls returns the number of executions this executor has attempted.
