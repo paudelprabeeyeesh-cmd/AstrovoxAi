@@ -68,6 +68,12 @@ type Schema struct {
 	Description string
 	// Risk decides whether the call needs approval.
 	Risk Risk
+	// Actions is what the tool actually does, finer-grained than Risk. A
+	// terminal command and a purchase are both irreversible, but an audit that
+	// records only "irreversible" cannot tell an operator which happened. Any
+	// gated action makes the call gated, so declaring a benign risk alongside a
+	// gated action does not bypass the gate.
+	Actions []Action
 	// Params maps argument name to a validator. A missing validator means
 	// the argument is not accepted.
 	Params map[string]Param
@@ -482,7 +488,11 @@ func (e *Executor) Run(call Call) *Result {
 	// Approval is checked before the tool runs, not after. A refusal must be a
 	// refusal, and a tool that may send, spend or delete has no way to approve
 	// itself: the approver is owned by the Executor.
-	if schema.Risk.RequiresApproval() {
+	//
+	// The gate is the schema's, not the risk's alone: declaring a benign Risk
+	// next to a gated Action does not bypass it, so the check asks the schema
+	// rather than the caller.
+	if schema.RequiresGate() {
 		e.mu.Lock()
 		approver := e.Approver
 		e.mu.Unlock()
