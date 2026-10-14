@@ -144,6 +144,12 @@ func (e *Environment) Allocate(n int64) error {
 	}
 	used := e.memoryUsed.Add(n)
 	if used > e.limits.MaxMemoryBytes {
+		// Roll the reservation back. Adding before checking leaves the refused
+		// amount charged forever, so a task that retries is denied for memory
+		// it does not hold, and every later allocation in the same environment
+		// is measured against a budget that includes bytes it never received.
+		// OpenFile already undoes its own increment the same way.
+		e.memoryUsed.Add(-n)
 		return &ViolationError{SandboxViolation{
 			Kind:     "resource_limit",
 			Resource: "memory",
