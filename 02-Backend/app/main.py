@@ -234,7 +234,18 @@ app.add_middleware(PIIRedactionMiddleware, exclude_paths=[
 ])
 
 # Add security headers middleware
-app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Mutating routes that authenticate nobody are rejected here rather than by
+# editing 329 handler signatures. One place to change, and a new route is
+# protected by default instead of public by default. Opt out with
+# ROUTE_AUTH_ENFORCEMENT=0.
+from app.middleware.security.route_auth_enforcement import (
+    install as _install_route_auth,
+)
+
+_route_auth_installed = _install_route_auth(app)
+
 app.add_middleware(IPEnforcementMiddleware)
 app.add_middleware(UserAgentMiddleware)
 

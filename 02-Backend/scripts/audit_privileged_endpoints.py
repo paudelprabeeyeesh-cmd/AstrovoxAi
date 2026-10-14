@@ -132,12 +132,29 @@ def _handler_source(route) -> str:
         return ""
 
 
+def route_auth_enforcement_installed(app) -> bool:
+    """Whether the central mutating-route guard is active on this app.
+
+    Without this the audit reports a route with no declared auth dependency as
+    "unauthenticated" even after the guard rejects it, which is misleading: it
+    separates routes that *declare* no dependency from routes that *accept*
+    nobody.
+    """
+    for item in getattr(app, "user_middleware", []):
+        name = getattr(item.cls, "__name__", "") if item.cls else ""
+        if "RouteAuthEnforcement" in name:
+            return True
+    return False
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--json", default=None, help="write the report as JSON")
     args = parser.parse_args()
 
     from app.main import app
+
+    enforced = route_auth_enforcement_installed(app)
 
     findings = []
     total = 0
@@ -205,7 +222,10 @@ def main() -> int:
             "mutating_routes": stats["mutating"],
             "scoped_routes": stats["scoped"],
             "routes_with_auth": stats["auth_enforced"],
+            "routes_without_declared_auth": stats["total"] - stats["auth_enforced"],
             "findings": len(findings),
+            "central_enforcement_installed": enforced,
+            "effective_unauthenticated": 0 if enforced else len(findings),
         },
         "findings": findings,
     }

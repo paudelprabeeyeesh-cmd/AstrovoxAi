@@ -510,27 +510,37 @@ async def login(request: Request, body: LoginRequest):
 @router.post("/logout")
 @limiter.limit("20/minute")
 async def logout(request: Request, authorization: str = Header(None)):
-    """Revoke the session server-side, not just ask the client to forget it."""
+    """Revoke the session server-side, not just ask the client to forget it.
+
+    An absent Authorization header is rejected. It used to be optional, so
+    `POST /auth/logout` answered 200 for an anonymous caller and revoked
+    nothing: clearing a browser's tokens never invalidated a copy held
+    elsewhere, which is exactly what finding 5 describes.
+    """
+    if not authorization or not authorization.strip():
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header is required to log out.",
+        )
     user_id = "anonymous"
     revoked = False
-    if authorization:
-        token = authorization.replace("Bearer ", "", 1).strip()
-        try:
-            user_resp = supabase.auth.get_user(token)
-            if user_resp and user_resp.user:
-                user_id = str(user_resp.user.id)
-        except Exception:  # noqa: BLE001 - revocation must not be blocked by provider outage
-            pass
-        jti = token[:32]
-        token_revocation_list.revoke(
-            jti, user_id, time.time() + 3600, reason="logout"
-        )
-        refresh_token_rotation.revoke_all(user_id)
-        revoked = True
-        try:
-            supabase.auth.sign_out()
-        except Exception:  # noqa: BLE001
-            logger.debug("Supabase sign_out failed for user=%s", user_id)
+    token = authorization.replace("Bearer ", "", 1).strip()
+    try:
+        user_resp = supabase.auth.get_user(token)
+        if user_resp and user_resp.user:
+            user_id = str(user_resp.user.id)
+    except Exception:  # noqa: BLE001 - revocation must not be blocked by provider outage
+        pass
+    jti = token[:32]
+    token_revocation_list.revoke(
+        jti, user_id, time.time() + 3600, reason="logout"
+    )
+    refresh_token_rotation.revoke_all(user_id)
+    revoked = True
+    try:
+        supabase.auth.sign_out()
+    except Exception:  # noqa: BLE001
+        logger.debug("Supabase sign_out failed for user=%s", user_id)
     _audit.record(actor=user_id, action="auth_logout", target="user", outcome="success")
     _dispatch_security_event("auth_logout", user_id, "User logged out", severity="low")
     return {

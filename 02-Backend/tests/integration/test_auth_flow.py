@@ -249,11 +249,22 @@ class TestAuthFlow:
         })
         assert response.status_code == 422
 
-    def test_logout_always_succeeds(self, client):
-        response = client.post("/auth/logout")
+    def test_logout_requires_credentials(self, client):
+        """Logout must authenticate, and a valid token logs out successfully.
+
+        This was named `test_logout_always_succeeds` and asserted a 200 with no
+        Authorization header. That encoded the defect it was meant to guard:
+        finding 5 is that logout accepted no session token and never revoked
+        anything, so a copied token stayed valid. The corrected behaviour is
+        that an unauthenticated logout is rejected and an authenticated one
+        succeeds.
+        """
+        anonymous = client.post("/auth/logout")
+        assert anonymous.status_code == 401
+
+        response = client.post("/auth/logout", headers={"Authorization": "Bearer test-token"})
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "OK"
+        assert response.json()["status"] == "OK"
 
     def test_reset_password(self, client, mock_supabase):
         response = client.post("/auth/reset-password", json={

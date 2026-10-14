@@ -4,7 +4,10 @@
     "mutating_routes": 624,
     "scoped_routes": 67,
     "routes_with_auth": 500,
-    "findings": 628
+    "routes_without_declared_auth": 640,
+    "findings": 628,
+    "central_enforcement_installed": true,
+    "effective_unauthenticated": 0
   },
   "findings": [
     {
@@ -6633,7 +6636,7 @@
       "mutating": true,
       "scoped_parameter": false,
       "dependencies": [
-        "<fastapi.security.http.HTTPBearer object at 0x0000018FC0056E90>"
+        "<fastapi.security.http.HTTPBearer object at 0x0000013CD77BAE90>"
       ],
       "expected_public_reason": null
     },
