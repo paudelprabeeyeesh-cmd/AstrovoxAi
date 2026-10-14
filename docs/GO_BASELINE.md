@@ -55,6 +55,19 @@ hybrid  recall 1.000  mrr 0.820  ndcg 0.859  misses 0
 The hybrid recovers the miss the vector path had and the miss the keyword path
 had, which is the entire reason to fuse.
 
+At a 200-document corpus, where the cutoff actually matters:
+
+```
+k=1   recall@k 0.800  mrr 0.800  ndcg 0.800  misses 4
+k=5   recall@k 1.000  mrr 0.868  ndcg 0.899  misses 0
+k=20  recall@k 1.000  mrr 0.868  ndcg 0.899  misses 0
+k=50  recall@k 1.000  mrr 0.868  ndcg 0.899  misses 0
+```
+
+Recall saturates at k=5 while MRR stays at 0.868: the relevant chunk is reached
+quickly but 16 of 20 queries rank it below first place. That is a real, measured
+weakness, and it is the number a reranker would have to beat.
+
 ## The 1,393-test claim
 
 The audit document stated: *"The earlier claim of 1,393 Go test functions
