@@ -18,6 +18,64 @@ from app.utils.error_schema import build_error_response, ERROR_CODES
 
 logger = logging.getLogger("astravox.errors")
 
+GENERIC_SERVER_ERROR = "An internal error occurred. Please retry; if it persists, contact support with the request id."
+
+# Shapes that mean a detail string is an exception's repr rather than a
+# message a human wrote for the client. A `str(exc)` interpolates the
+# exception class name, a traceback's file path, or a SQLAlchemy/sqlite phrase,
+# any of which discloses internals about the deployment.
+_RAW_EXCEPTION_MARKERS = (
+    "Traceback (most recent call last)",
+    "File \"",
+    "sqlalchemy.",
+    "sqlite3.",
+    "psycopg",
+    "OperationalError",
+    "IntegrityError",
+    "ProgrammingError",
+    "NameError",
+    "AttributeError",
+    "KeyError",
+    "TypeError",
+    "ValueError",
+    "RuntimeError",
+    # Driver messages that a `str(exc)` interpolation passes through verbatim.
+    "no such table",
+    "no such column",
+    "UNIQUE constraint failed",
+    "database is locked",
+    "syntax error at or near",
+)
+
+
+def _looks_like_raw_exception(detail: object) -> bool:
+    if not isinstance(detail, str) or not detail:
+        return False
+    return any(marker in detail for marker in _RAW_EXCEPTION_MARKERS) or (
+        "(" in detail and ")" in detail and detail.split("(")[0].replace(".", "").isidentifier()
+    )
+
+
+def _sanitize_server_error(request: Request, detail: object):
+    """Return a safe client message for a 5xx, logging the real one.
+
+    Route handlers interpolate `str(exc)` into `detail=` for 5xx responses,
+    which puts database paths, SQL fragments and exception class names in the
+    response body. The client gets a generic message and the correlation id;
+    the real cause goes to the log with the same id so it can be correlated.
+    """
+    if _looks_like_raw_exception(detail):
+        logger.error(
+            "Suppressed internal error detail for %s %s (correlation_id=%s): %s",
+            request.method,
+            request.url.path,
+            _correlation_id(request),
+            detail,
+            exc_info=True,
+        )
+        return GENERIC_SERVER_ERROR
+    return detail
+
 
 def _correlation_id(request: Request) -> Optional[str]:
     return getattr(request.state, "correlation_id", None)
@@ -53,9 +111,15 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         }.get(exc.status_code, "internal"),
         "INTERNAL_ERROR",
     )
+    # A 5xx detail that came from `str(exc)` discloses internals, so it is
+    # replaced. Every route that interpolates an exception is covered at once
+    # rather than needing 344 separate edits.
+    detail = exc.detail
+    if exc.status_code >= 500:
+        detail = _sanitize_server_error(request, exc.detail)
     payload = build_error_response(
         code=code,
-        message=str(exc.detail),
+        message=str(detail),
         status_code=exc.status_code,
         request_id=_correlation_id(request),
     )
@@ -66,7 +130,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     logger.error("Unhandled exception: %s", exc, exc_info=True)
     payload = build_error_response(
         code="INTERNAL_ERROR",
-        message="Internal server error",
+        message=GENERIC_SERVER_ERROR,
         status_code=500,
         request_id=_correlation_id(request),
     )
