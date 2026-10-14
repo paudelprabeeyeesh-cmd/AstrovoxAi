@@ -59,6 +59,11 @@ func (u Usage) Cost(inputPerK, outputPerK float64) float64 {
 
 // Chunk is one streaming piece.
 type Chunk struct {
+	// Seq is the position in the stream, assigned by the session in emission
+	// order. It is what lets a client that reconnected ask for exactly what it
+	// missed rather than restarting the completion, so it is set by the
+	// session and not by the provider.
+	Seq int `json:"seq"`
 	// Delta is the text increment.
 	Delta string `json:"delta,omitempty"`
 	// Done marks the final chunk.
