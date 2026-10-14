@@ -1,0 +1,17 @@
+# What goes into the VSIX. Everything not listed here or in .gitignore is
+# packed, which is how 415 files ended up in a package whose entry point is one
+# file: node_modules, sources, and build config all shipped.
+**/.git/**
+**/.github/**
+**/*.map
+**/*.ts
+**/tsconfig.json
+**/.eslintrc*
+**/eslint.config.js
+**/scripts_*.js
+**/*.vsix
+**/.DS_Store
+**/Thumbs.db
+src/**
+tests/**
+docs/**

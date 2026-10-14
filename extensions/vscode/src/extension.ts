@@ -1,13 +1,25 @@
-const vscode = require('vscode')
-const axios = require('axios')
+// `import` rather than `require`: TypeScript compiles both to require() under
+// module: commonjs, and the ESLint rule forbids the require form.
+import * as vscode from 'vscode'
+import axios from 'axios'
 
 const API_BASE = 'https://api.astrovox.ai/v1'
 const CONFIG_SECTION = 'astrovox'
-const STATE_KEY = 'astrovox_state'
 const EXTENSION_VERSION = '1.0.0'
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000
 
+// TypeScript needs the fields declared: this file was a plain CommonJS module
+// where they were created by assignment in the constructor, which the compiler
+// rejects. tsconfig keeps strict off so the rest of the file needs no
+// annotations, but a field with no declared type is an error at any strictness.
 class ExtensionUpdateNotifier {
+  context: any
+  latestVersion: string = EXTENSION_VERSION
+  lastCheck: number | null = null
+  updateAvailable: boolean = false
+  changelog: any = null
+  checkInterval: any = null
+
   constructor(context) {
     this.context = context
     this.latestVersion = EXTENSION_VERSION
@@ -31,6 +43,10 @@ class ExtensionUpdateNotifier {
   }
 
   async checkForUpdates(force = false) {
+    // `force` names the caller's intent: a manual check bypasses the interval.
+    // It is not acted on yet, so it is named for what it means rather than
+    // silently dropped.
+    void force
     try {
       const response = await axios.get(`${API_BASE}/extensions/vscode/latest`, {
         timeout: 10000,
@@ -38,7 +54,9 @@ class ExtensionUpdateNotifier {
       }).catch(() => null)
 
       if (response?.data) {
-        const { version, changelog, min_vscode_version, download_url, published_at } = response.data
+        // `published_at` arrives but is unused; `download_url` is, both for the
+        // changelog link and for performUpdate.
+        const { version, changelog, min_vscode_version, download_url } = response.data
 
         if (this.isNewerVersion(version, EXTENSION_VERSION)) {
           this.latestVersion = version
@@ -161,6 +179,14 @@ class ExtensionUpdateNotifier {
 }
 
 class AstrovoxClient {
+  apiKey: string = ''
+  model: string = 'gpt-4'
+  maxTokens: number = 2048
+  temperature: number = 0.7
+  chatHistory: any[] = []
+  conversationId: string | null = null
+  requestId: number = 0
+
   constructor() {
     this.apiKey = ''
     this.model = 'gpt-4'

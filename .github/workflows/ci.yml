@@ -10,6 +10,60 @@ env:
   GO_VERSION: "1.23"
 
 jobs:
+  vscode-extension:
+    name: VS Code extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        working-directory: extensions/vscode
+        run: npm ci --no-audit --no-fund
+
+      - name: Compile
+        # The manifest declares main: ./out/extension.js, so this step is what
+        # makes that true. It used to fail: there was no tsconfig and no src/,
+        # so `tsc -p ./` had nothing to compile and the published package
+        # pointed at a file that did not exist.
+        working-directory: extensions/vscode
+        run: npm run compile
+
+      - name: Lint
+        working-directory: extensions/vscode
+        run: npm run lint
+
+      - name: Package a VSIX
+        working-directory: extensions/vscode
+        run: npx @vscode/vsce package --out astrovox-vscode.vsix --allow-missing-repository
+
+      - name: The packaged extension contains its entry point
+        # Verifies the packaged artifact rather than trusting the manifest:
+        # an extension whose main is missing installs and does nothing, which
+        # is invisible until it fails to activate.
+        working-directory: extensions/vscode
+        run: |
+          python - <<'PY'
+          import json, sys, zipfile
+          with zipfile.ZipFile("astrovox-vscode.vsix") as z:
+              manifest = json.loads(z.read("extension/package.json").decode("utf-8"))
+              entry = "extension/" + manifest["main"].lstrip("./")
+              missing = [n for n in (entry, "extension/package.json") if n not in z.namelist()]
+          if missing:
+              print("packaged extension is missing: %s" % missing)
+              sys.exit(1)
+          print("entry point present:", entry)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astrovox-vscode
+          path: extensions/vscode/astrovox-vscode.vsix
+          if-no-files-found: error
+
   build-and-test:
     name: Build, vet and test
     runs-on: ubuntu-latest
