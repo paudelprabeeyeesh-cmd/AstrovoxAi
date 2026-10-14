@@ -27,6 +27,63 @@ func (a RetrievalAdapter) Search(owner, query string, k int) ([]string, error) {
 	return out, nil
 }
 
+// RerankingAdapter wraps a RetrievalAdapter and re-scores its top-k.
+//
+// The reranker sees only what retrieval already returned, because that is what
+// a reranker is: a second pass over a shortlist. Widening it here would be
+// testing the retrieval, not the reranker.
+type RerankingAdapter struct {
+	Inner    RetrievalAdapter
+	Reranker retrieval.Reranker
+	// Overfetch widens the first-pass shortlist before re-scoring. A reranker
+	// given only the final k cannot promote anything it was not shown, so the
+	// over-fetch is the point rather than a tuning knob.
+	Overfetch int
+}
+
+// Search implements Searcher.
+func (a RerankingAdapter) Search(owner, query string, k int) ([]string, error) {
+	fetch := k
+	if a.Overfetch > 1 {
+		fetch = k * a.Overfetch
+	}
+
+	hits, err := retrieval.HybridQuery(a.Inner.Index, a.Inner.Keyword, owner, query, fetch, a.Inner.Params)
+	if err != nil {
+		return nil, err
+	}
+	if a.Reranker == nil {
+		out := make([]string, 0, len(hits))
+		for _, h := range hits {
+			out = append(out, h.ChunkID)
+		}
+		return out, nil
+	}
+
+	// HybridHit and Hit carry the same citation fields, but a reranker is
+	// written against Hit because that is what the retrieval package's public
+	// rerank API takes. The conversion is explicit rather than a type alias so
+	// a future field added to one and not the other is a compile error.
+	asHits := make([]retrieval.Hit, 0, len(hits))
+	for _, h := range hits {
+		asHits = append(asHits, retrieval.Hit{
+			ChunkID:    h.ChunkID,
+			Owner:      h.Owner,
+			Score:      h.VectorScore,
+			Text:       h.Text,
+			DocumentID: h.DocumentID,
+			Position:   h.Position,
+		})
+	}
+
+	reranked := retrieval.Rerank(query, asHits, a.Reranker, k)
+	out := make([]string, 0, len(reranked))
+	for _, h := range reranked {
+		out = append(out, h.ChunkID)
+	}
+	return out, nil
+}
+
 // labelledDoc is one document with the query that should find it.
 type labelledDoc struct {
 	title string
