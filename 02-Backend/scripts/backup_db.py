@@ -108,7 +108,16 @@ def backup_database(dry_run: bool = False) -> str:
     if database_url.startswith("postgresql://") or database_url.startswith("postgres://"):
         return backup_postgres(dry_run=dry_run)
 
-    db_path = os.environ.get("ASTROVOX_DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "app.db"))
+    # The SQLite database lives in the `database/` package directory, not at
+    # the backend root. `app.db` used to be the default here, so an operator
+    # who never set ASTROVOX_DB_PATH got "SQLite database not found" from a
+    # script whose whole job is to guarantee restorability.
+    default_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "database",
+        "app.db",
+    )
+    db_path = os.environ.get("ASTROVOX_DB_PATH", default_path)
     return backup_sqlite(db_path, dry_run=dry_run)
 
 

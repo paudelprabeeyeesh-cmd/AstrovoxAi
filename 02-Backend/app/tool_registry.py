@@ -187,6 +187,11 @@ class ToolRegistry:
             names = self._tags.get(tag, [])
             if tool_name in names:
                 names.remove(tool_name)
+            # Removing the last name used to leave an empty list behind, so
+            # `_tags` kept reporting tags that no longer had any tool under
+            # them and grew without bound over repeated registrations.
+            if not names:
+                self._tags.pop(tag, None)
         logger.info("Deregistered tool: %s", tool_name)
         return True
 

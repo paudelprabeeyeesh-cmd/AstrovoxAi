@@ -346,7 +346,9 @@ class EnterpriseAuditLog(Base):
     id = Column(String, primary_key=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     action = Column(String, nullable=False)
-    metadata = Column(String)
+    # `metadata` is reserved by the declarative API, so the attribute is
+    # `meta_data` and the column name is kept as `metadata` for the database.
+    meta_data = Column("metadata", String)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -355,7 +357,7 @@ class AuditLog(Base):
     id = Column(String, primary_key=True)
     user_id = Column(String, ForeignKey("users.id"), nullable=False)
     action = Column(String, nullable=False)
-    metadata = Column(String)
+    meta_data = Column("metadata", String)
     created_at = Column(DateTime, server_default=func.now())
 
 
@@ -474,7 +476,7 @@ class RAGEvaluation(Base):
     golden_ids = Column(String, nullable=False)
     recall_at_5 = Column(Float, nullable=False)
     faithfulness_score = Column(Float, nullable=False)
-    metadata = Column(String)
+    meta_data = Column("metadata", String)
     created_at = Column(DateTime, server_default=func.now())
 
 

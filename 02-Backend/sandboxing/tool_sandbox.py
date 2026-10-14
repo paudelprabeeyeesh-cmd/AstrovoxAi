@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
@@ -157,35 +158,71 @@ class ToolSandbox:
 
         return ToolSandboxResult(status=ToolSandboxStatus.APPROVED)
 
+    @staticmethod
+    def _is_open(breaker: Any) -> bool:
+        """Whether a circuit breaker is open.
+
+        Compares against the enum's string value because `CircuitState` is a
+        `str`-mixin enum: `CircuitState.OPEN == "open"`, so the check works for
+        the real breaker and for test doubles that expose a plain string state.
+        """
+        from app.circuit_breaker import CircuitState
+
+        state = getattr(breaker, "state", None)
+        if state is None:
+            return False
+        return state == CircuitState.OPEN or state == "open"
+
     def _execute_with_resilience(self, tool_name: str, arguments: dict, user_id: str) -> ToolSandboxResult:
         per_tool_breaker = self._get_per_tool_breaker(tool_name)
 
         @retry_with_backoff(max_retries=self.max_retries, base_delay=1.0, max_delay=10.0, jitter=True)
         def _run() -> str:
-            if per_tool_breaker.state == CircuitState.OPEN:
+            if self._is_open(per_tool_breaker):
                 tool_metrics.record_circuit_breaker_rejection(tool_name)
                 raise Exception(f"Circuit breaker open for tool '{tool_name}'")
-            if self.circuit_breaker.state == CircuitState.OPEN:
+            if self._is_open(self.circuit_breaker):
                 tool_metrics.record_circuit_breaker_rejection(tool_name)
                 raise Exception(f"Global circuit breaker open for tool '{tool_name}'")
             if not self.tool_executor:
                 raise RuntimeError("Tool executor not configured")
             return self.tool_executor.execute_tool(tool_name, arguments, user_id)
 
+        if self._is_open(per_tool_breaker):
+            tool_metrics.record_circuit_breaker_rejection(tool_name)
+            logger.error("Tool execution rejected for %s: circuit breaker open", tool_name)
+            return ToolSandboxResult(
+                status=ToolSandboxStatus.ERROR,
+                error=f"Circuit breaker open for tool '{tool_name}'",
+            )
+
         try:
-            output = per_tool_breaker.call(_run)
+            # The outcome is fed back to the breakers explicitly. Calling the
+            # non-existent `CircuitBreaker.call` raised AttributeError, so every
+            # sandboxed tool failed and no breaker ever opened.
+            output = _run()
+            if hasattr(per_tool_breaker, "record_success"):
+                per_tool_breaker.record_success()
+            if hasattr(self.circuit_breaker, "record_success"):
+                self.circuit_breaker.record_success()
             return ToolSandboxResult(status=ToolSandboxStatus.APPROVED, output=output)
         except Exception as exc:
+            if hasattr(per_tool_breaker, "record_failure"):
+                per_tool_breaker.record_failure()
+            if hasattr(self.circuit_breaker, "record_failure"):
+                self.circuit_breaker.record_failure()
             logger.error("Tool execution failed for %s: %s", tool_name, exc)
             return ToolSandboxResult(status=ToolSandboxStatus.ERROR, error=str(exc))
 
     def execute(self, tool_name: str, arguments: dict, user_id: str) -> ToolSandboxResult:
+        started = time.time()
         scrubber = CommandScrubber()
         command_value = arguments.get("command") or arguments.get("code") or ""
         if command_value:
             scrub_result = scrubber.scan(str(command_value))
             if scrub_result.blocked:
                 self._log_safety_block(user_id, tool_name, arguments, "command_scrubber", matched_rules=scrub_result.matched_rules)
+                self._record_call_metrics(tool_name, started, ToolSandboxStatus.BLOCKED)
                 return ToolSandboxResult(
                     status=ToolSandboxStatus.BLOCKED,
                     error=f"Command blocked by scrubber: {scrub_result.matched_rules}",
@@ -193,11 +230,26 @@ class ToolSandbox:
 
         permission_result = self.check_permission(tool_name, user_id, arguments)
         if permission_result.status != ToolSandboxStatus.APPROVED:
+            self._record_call_metrics(tool_name, started, permission_result.status)
             return permission_result
 
         execution_result = self._execute_with_resilience(tool_name, arguments, user_id)
+        self._record_call_metrics(tool_name, started, execution_result.status)
         self._log_tool_call(user_id, tool_name, arguments, execution_result)
         return execution_result
+
+    def _record_call_metrics(self, tool_name: str, started: float, status: ToolSandboxStatus) -> None:
+        """Record one tool execution in the metrics collector.
+
+        The sandbox recorded approvals and circuit-breaker rejections only, so
+        `tool_metrics.get()` returned None for every tool that merely ran,
+        leaving its call counts, durations and error rates permanently zero.
+        """
+        tool_metrics.record_call(
+            tool_name,
+            duration_ms=(time.time() - started) * 1000.0,
+            status=getattr(status, "value", str(status)),
+        )
 
     def approve(self, approval_id: str, approver_user_id: str) -> Optional[ToolSandboxResult]:
         approval = approval_store.approve(approval_id, resolved_by=approver_user_id)
@@ -223,7 +275,9 @@ class ToolSandbox:
             {"approval_id": approval_id, "tier": approval.tier, "operation": approval.operation},
             "approved",
         )
-        return self._execute_approved(approval.tool_name, approval.arguments, approval.user_id)
+        result = self._execute_approved(approval.tool_name, approval.arguments, approval.user_id)
+        self._record_call_metrics(approval.tool_name, time.time(), result.status)
+        return result
 
     def reject(self, approval_id: str, approver_user_id: str) -> Optional[ToolSandboxResult]:
         approval = approval_store.reject(approval_id, resolved_by=approver_user_id)

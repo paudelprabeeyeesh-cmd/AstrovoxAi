@@ -16,6 +16,23 @@ def _timestamp() -> str:
     return time.strftime("%Y%m%d_%H%M%S")
 
 
+def _unique_path(target: Path) -> Path:
+    """Return a path that does not collide with an existing backup.
+
+    `_timestamp()` has one-second resolution, so two backups taken in the
+    same second produced the same filename and the second overwrote the
+    first: a backup could be silently lost, and rotation could never count
+    the backups it had actually made. A numeric suffix keeps each one.
+    """
+    if not target.exists():
+        return target
+    for suffix in range(1, 10000):
+        candidate = target.with_name(f"{target.name}_{suffix}")
+        if not candidate.exists():
+            return candidate
+    raise FileExistsError(f"Cannot find a free backup path for {target}")
+
+
 def _iter_backup_entries(backup_dir: Path):
     yield from backup_dir.iterdir()
 
@@ -43,7 +60,7 @@ def backup_file(source: str | Path, backup_dir: str | Path, max_backups: int = 5
     if not source.is_file():
         raise ValueError(f"Source is not a file: {source}")
     backup_dir = _ensure_dir(backup_dir)
-    backup_path = backup_dir / f"{source.name}_{_timestamp()}"
+    backup_path = _unique_path(backup_dir / f"{source.name}_{_timestamp()}")
     shutil.copy2(source, backup_path)
     os.utime(backup_path, None)
     rotate_backups(backup_dir, max_backups)
@@ -55,11 +72,16 @@ def backup_directory(source_dir: str | Path, backup_dir: str | Path, max_backups
     if not source_dir.is_dir():
         raise NotADirectoryError(f"Source directory not found: {source_dir}")
     backup_dir = _ensure_dir(backup_dir)
-    archive_name = f"{source_dir.name}_{_timestamp()}"
-    archive_path = shutil.make_archive(str(backup_dir / archive_name), "gztar", str(source_dir))
+    # `make_archive` appends its own extension, so the unique path is
+    # computed without it and the returned archive path keeps the suffix.
+    archive_stem = _unique_path(backup_dir / f"{source_dir.name}_{_timestamp()}")
+    archive_path_str = shutil.make_archive(
+        str(archive_stem), "gztar", str(source_dir)
+    )
+    archive_path = Path(archive_path_str)
     os.utime(archive_path, None)
     rotate_backups(backup_dir, max_backups)
-    return Path(archive_path)
+    return archive_path
 
 
 def restore_file(backup_path: str | Path, target_path: str | Path) -> None:
