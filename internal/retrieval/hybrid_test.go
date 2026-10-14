@@ -41,7 +41,7 @@ func hybridFixture(t *testing.T, owner string) (*Corpus, *Index, *KeywordIndex) 
 			ID:         cid,
 			DocumentID: id,
 			Owner:      owner,
-			Tenant:    "t1",
+			Tenant:     "t1",
 			Position:   i,
 			Text:       span,
 		})

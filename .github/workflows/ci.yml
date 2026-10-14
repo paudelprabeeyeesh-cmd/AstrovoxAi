@@ -36,6 +36,13 @@ jobs:
         working-directory: extensions/vscode
         run: npm run lint
 
+      - name: Attack tests
+        # Prompt injection from repository files, secret exfiltration,
+        # workspace confinement. These run the compiled output, so they
+        # exercise what ships rather than the TypeScript source.
+        working-directory: extensions/vscode
+        run: npm test
+
       - name: Package a VSIX
         working-directory: extensions/vscode
         run: npx @vscode/vsce package --out astrovox-vscode.vsix --allow-missing-repository

@@ -14,7 +14,7 @@ import "sort"
 // Neither dominates, so the default is even and the weights are configurable
 // because the right balance is a property of the corpus, not of the algorithm.
 const (
-	defaultVectorWeight = 1.0
+	defaultVectorWeight  = 1.0
 	defaultKeywordWeight = 1.0
 
 	// rrfK is the Reciprocal Rank Fusion constant. It is what makes fusing
@@ -38,8 +38,8 @@ type HybridHit struct {
 	KeywordScore float32 `json:"keyword_score,omitempty"`
 	// FromVector and FromKeyword say which paths produced this hit. A hit from
 	// only one path is the interesting case: it is what the other path missed.
-	FromVector  bool `json:"from_vector"`
-	FromKeyword bool `json:"from_keyword"`
+	FromVector  bool   `json:"from_vector"`
+	FromKeyword bool   `json:"from_keyword"`
 	Text        string `json:"text"`
 	// DocumentID and Position are the citation.
 	DocumentID string `json:"document_id"`
@@ -129,13 +129,13 @@ func HybridQuery(ix *Index, ki *KeywordIndex, owner, query string, k int, params
 		}
 		for rank, hit := range vectorHits {
 			record(HybridHit{
-				ChunkID:    hit.ChunkID,
-				Owner:      hit.Owner,
+				ChunkID:     hit.ChunkID,
+				Owner:       hit.Owner,
 				VectorScore: hit.Score,
-				FromVector: true,
-				Text:       hit.Text,
-				DocumentID: hit.DocumentID,
-				Position:   hit.Position,
+				FromVector:  true,
+				Text:        hit.Text,
+				DocumentID:  hit.DocumentID,
+				Position:    hit.Position,
 			}, params.VectorWeight/rrfRankScore(rank))
 		}
 	}
@@ -143,13 +143,13 @@ func HybridQuery(ix *Index, ki *KeywordIndex, owner, query string, k int, params
 	if ki != nil && params.KeywordWeight > 0 {
 		for rank, hit := range ki.Search(owner, query, fetch) {
 			record(HybridHit{
-				ChunkID:     hit.ChunkID,
-				Owner:       hit.Owner,
+				ChunkID:      hit.ChunkID,
+				Owner:        hit.Owner,
 				KeywordScore: hit.Score,
-				FromKeyword: true,
-				Text:        hit.Text,
-				DocumentID:  hit.DocumentID,
-				Position:    hit.Position,
+				FromKeyword:  true,
+				Text:         hit.Text,
+				DocumentID:   hit.DocumentID,
+				Position:     hit.Position,
 			}, params.KeywordWeight/rrfRankScore(rank))
 		}
 	}

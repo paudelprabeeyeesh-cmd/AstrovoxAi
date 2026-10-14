@@ -108,14 +108,22 @@ def find_route_files():
 
 
 def _decorator_line_for(source: Path, function_line: int):
-    """Locate the @router.* decorator that precedes a function definition.
+    """Locate the @router.* decorator for a handler.
 
-    `function_line` is the `def` (or `async def`) line, so the search starts
-    there and walks upward. An earlier version started at `function_line - 1`,
-    which is the same line and therefore never matched the decorator itself.
+    `function_line` is `endpoint.__code__.co_firstlineno`, which in Python 3.14
+    is the first *decorator* line, not the `def` line. Both positions are
+    checked, then the walk backwards covers the remaining shapes.
     """
     lines = source.read_text(encoding="utf-8").splitlines()
+
+    for candidate in (function_line, function_line - 1):
+        if 1 <= candidate <= len(lines):
+            if lines[candidate - 1].lstrip().startswith("@router."):
+                return candidate
+
     for index in range(function_line - 2, max(-1, function_line - 20), -1):
+        if index >= len(lines):
+            continue
         stripped = lines[index].lstrip()
         if stripped.startswith("def ") or stripped.startswith("async def "):
             return None
@@ -145,11 +153,15 @@ def classify(function_node) -> str:
 
 
 def handler_function(source: Path, function_line: int):
-    """Return the AST node for the function defined on `function_line`."""
+    """Return the AST node for the handler at `function_line`.
+
+    `co_firstlineno` is the decorator line on this Python, and the `def` line
+    is one later, so both are accepted.
+    """
     tree = ast.parse(source.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            if node.lineno == function_line:
+            if node.lineno in (function_line, function_line + 1):
                 return node
     return None
 
@@ -171,8 +183,6 @@ def rewrite_file(path: Path, function_line: int, dry_run: bool) -> str:
     decorator = lines[decorator_at - 1]
     if DEPENDENCY_NAME in decorator:
         return "already-patched"
-    if "Depends" not in raw:
-        return "no-fastapi-depends-import"
 
     if decorator.rstrip().endswith(")"):
         # Append to an existing argument list.
@@ -191,26 +201,87 @@ def rewrite_file(path: Path, function_line: int, dry_run: bool) -> str:
     if not dry_run:
         lines[decorator_at - 1] = new_decorator
         text = "".join(lines)
-        if DEPENDENCY_NAME not in text:
-            anchor = "from fastapi import "
-            if anchor in text:
-                text = text.replace(anchor, DEPENDENCY_IMPORT + anchor, 1)
-            else:
-                # No fastapi import line to anchor to: prepend after any
-                # module docstring so the import stays valid.
-                stripped = text.lstrip()
-                if stripped.startswith(('"""', "'''")):
-                    quote = stripped[:3]
-                    close = stripped.find(quote, 3)
-                    if close != -1:
-                        end = close + 3
-                        head = text[: len(text) - len(stripped) + end]
-                        text = head + "\n" + DEPENDENCY_IMPORT + text[len(head):]
-                else:
-                    text = DEPENDENCY_IMPORT + text
+        text = _ensure_depends_import(text, path)
         ast.parse(text)  # refuse to write anything unparseable
         path.write_text(text, encoding="utf-8")
     return "patched"
+
+
+def _ensure_depends_import(text: str, path: Path) -> str:
+    """Guarantee the module imports both `Depends` and the auth dependency.
+
+    The modules being patched do not all import `Depends` yet, so the import is
+    added rather than requiring it. An existing `from fastapi import APIRouter`
+    is extended in place to keep one import statement per module.
+    """
+    result = text
+
+    if not re.search(r"^from fastapi import .*\bDepends\b", result, re.M):
+        match = re.search(r"^from fastapi import (.+)$", result, re.M)
+        if match:
+            names = [n.strip() for n in match.group(1).split(",") if n.strip()]
+            if "Depends" not in names:
+                names.append("Depends")
+            result = (
+                result[: match.start()]
+                + "from fastapi import " + ", ".join(names)
+                + result[match.end():]
+            )
+        else:
+            result = _insert_import(result, "from fastapi import Depends")
+
+    if not re.search(r"^from app\.auth import get_current_user as %s" % DEPENDENCY_NAME, result, re.M):
+        result = _insert_import(result, DEPENDENCY_IMPORT)
+
+    return result
+
+
+def _insert_import(text: str, import_line: str) -> str:
+    """Add an import after any module docstring and __future__ block.
+
+    `from __future__ import annotations` must be the first statement in a
+    module, so inserting above it is a SyntaxError. Several patched modules
+    begin with it, and an earlier version inserted before it, which broke
+    app.main entirely.
+    """
+    lines = text.splitlines(keepends=True)
+    insert_at = 0
+
+    # Skip a leading module docstring.
+    index = 0
+    while index < len(lines) and not lines[index].strip():
+        index += 1
+    if index < len(lines):
+        stripped = lines[index].lstrip()
+        for quote in ('"""', "'''"):
+            if stripped.startswith(quote):
+                # Single-line docstring, or a multi-line one: find its end.
+                remainder = stripped[len(quote):]
+                if remainder.rstrip().endswith(quote) and len(
+                    remainder.rstrip()
+                ) >= 2 * len(quote) - 1:
+                    insert_at = index + 1
+                else:
+                    for scan in range(index + 1, len(lines)):
+                        if quote in lines[scan]:
+                            insert_at = scan + 1
+                            break
+                break
+            if stripped.startswith("#"):
+                insert_at = index + 1
+                index += 1
+                continue
+            break
+
+    # Then skip every __future__ import, which must stay first.
+    for scan in range(insert_at, len(lines)):
+        if lines[scan].startswith("from __future__ import "):
+            insert_at = scan + 1
+        else:
+            break
+
+    lines.insert(insert_at, import_line)
+    return "".join(lines)
 
 
 def main() -> int:
@@ -234,6 +305,12 @@ def main() -> int:
     route_files = find_route_files()
 
     outcomes = {"patched": [], "skipped": [], "unresolved": []}
+
+    # Group by source file and work each file's routes in DESCENDING line
+    # order. Each rewrite inserts lines, which shifts every later line number
+    # in that file, so patching in ascending order corrupted the targets that
+    # followed it in the same file.
+    by_file = {}
     for finding in findings:
         path_value = finding["path"]
         if any(marker in path_value for marker in SKIP_PATH_MARKERS):
@@ -244,21 +321,24 @@ def main() -> int:
             outcomes["unresolved"].append(path_value)
             continue
         source, function_line = locations[0]
-        node = handler_function(source, function_line)
-        if node is None:
-            outcomes["skipped"].append((path_value, "ast-node-not-found"))
+        if _decorator_line_for(source, function_line) is None:
+            outcomes["skipped"].append((path_value, "no-decorator"))
             continue
-        decision = classify(node)
-        if decision != "rewritable":
-            outcomes["skipped"].append((path_value, decision))
-            continue
-        outcome = rewrite_file(source, function_line, dry_run)
-        if outcome == "patched":
-            outcomes["patched"].append((path_value, str(source)))
-        else:
-            outcomes["skipped"].append((path_value, outcome))
-        if args.limit and len(outcomes["patched"]) >= args.limit:
-            break
+        by_file.setdefault(source, []).append((function_line, path_value))
+
+    print("files to patch:", len(by_file))
+    for source in sorted(by_file):
+        # Descending, so a rewrite never moves a target not yet patched.
+        for function_line, path_value in sorted(
+            by_file[source], key=lambda item: -item[0]
+        ):
+            if args.limit and len(outcomes["patched"]) >= args.limit:
+                break
+            outcome = rewrite_file(source, function_line, dry_run)
+            if outcome == "patched":
+                outcomes["patched"].append((path_value, str(source)))
+            else:
+                outcomes["skipped"].append((path_value, outcome))
 
     print("mutating findings:", len(findings))
     print("patched:", len(outcomes["patched"]))
