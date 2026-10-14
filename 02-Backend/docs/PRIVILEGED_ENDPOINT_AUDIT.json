@@ -1,0 +1,8582 @@
+{
+  "summary": {
+    "routes_inspected": 1140,
+    "mutating_routes": 624,
+    "scoped_routes": 67,
+    "routes_with_auth": 500,
+    "findings": 628
+  },
+  "findings": [
+    {
+      "path": "/docs/oauth2-redirect",
+      "methods": [
+        "GET",
+        "HEAD"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/logout",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/reset-password",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/me",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/me/roles",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/oauth",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/audit/log",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "_dependency"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/audit/log/{event_type}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "_dependency"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/chat/models",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/profile/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/admin/secrets/rotation-check",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "_dependency"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/embeddings/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/embeddings/one",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/embeddings/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/detailed",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/ready",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/live",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/metrics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/alerts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/alerts/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/dashboards/templates",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/dashboards/templates/{template_id}/grafana",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/dashboards/templates/{template_id}/panels",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents/{incident_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents/{incident_id}/timeline",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents/mttr",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/incidents/{incident_id}/resolve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/oncall/policy",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/oncall/escalations",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/cost/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/cost/budgets",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/analytics/usage",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/analytics/features",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/analytics/top-features",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/error-budget/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/error-budget/{slo_name}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/error-budget/{slo_name}/trend",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/sampling/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/sampling/strategy",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/retention/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/retention/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/audit",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/audit/verify",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/audit/record",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/brute-force/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/brute-force/unlock",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/anomalies",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/dependencies/vulnerabilities",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/check/injection",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/check/jailbreak",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/check/pii",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/moderate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/redteam/cases",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/redteam/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/eval/datasets",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/eval/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/feedback",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/feedback/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/risk/assess",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/score",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/adversarial/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/audit/log",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/audit/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/monitoring/health/{model_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/monitoring/alerts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/incidents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/incidents",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/platform/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/{tool_name}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/execute-parallel",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/{tool_name}/metrics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/{tool_name}/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/health/overview",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/analytics/report",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/analytics/leaderboard",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/analytics/health-distribution",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/analytics/slowest",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/cache/clear",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/cache/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/dynamic/load",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/dynamic/loaded",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/dynamic/{tool_name}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/discover",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/plugins/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/plugins/categories",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/webhooks/endpoints",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/webhooks/endpoints",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/webhooks/deliveries",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/webhooks/dead-letters",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/tools/webhooks/deliveries/{delivery_id}/retry",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/remember",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/recall",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/memory/{memory_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/memory/{memory_id}",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/memory/{memory_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/preferences",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/preferences",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/knowledge/nodes",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/knowledge/edges",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/knowledge/related/{node_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/conflicts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/conflicts/resolve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/prioritize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/compress",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/decay",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/prune",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory-system/summarize/{memory_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/steps",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/schedule",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/executions",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/schedules",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/workflows/{workflow_id}/triggers",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/templates",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/templates",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/templates/{template_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/templates/{template_id}/instantiate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/templates/{template_id}/share",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/triggers",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/triggers",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/triggers/{trigger_id}/disable",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/triggers/{trigger_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/{execution_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/{execution_id}/logs",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/{execution_id}/cancel",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/{execution_id}/replay",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/compare",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/executions/{execution_id}/approve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/approvals",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/notifications",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/notifications",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/analytics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/scheduler/start",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/automation/scheduler/stop",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/formats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/ocr",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/chunk",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/metadata",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/summarize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/citations",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/duplicates",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/list",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/documents/{doc_id}/intelligence",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/rag/ingest/text",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/rag/ingest/file",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/rag/ingest/website",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/rag/ingest/github",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/rag/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/query/slow",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/query/suggestions",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/query/profile",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/memory/trend",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/memory/gc",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/memory/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/cpu/profile",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/cache/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/cache/invalidate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/benchmark/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/benchmark/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/load-test/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/performance/streaming/metrics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/capture-snapshot",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/restore-snapshot",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/snapshots",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/branch",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/switch-branch",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/branches",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/breakpoint",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/breakpoints",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/breakpoint/{breakpoint_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/step-forward",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/step-backward",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/compare",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/visualize-branch",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/debug/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/apply",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/query",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/audit",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/lineage",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/constraint",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/verify-audit",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/db/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/create",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/add-message",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/branch",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/merge",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/visualize",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/divergence",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/export",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/import",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/timeline/causal-chain",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/decision-tree/create",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/decision-tree/add-decision",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/decision-tree/add-outcome",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/decision-tree/visualize",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/scenario/simulate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/scenario/list",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/commit",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/get",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/rollback",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/diff",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/optimize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/predict",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/crdt/gset/add",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/crdt/pn-counter/increment",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/crdt/lww/set",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/crdt/or-set/add",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/context/add",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/context",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/attention",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/patterns/detect",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/forecast",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/ai/forecast/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/state/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/batch/apply",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/batch/query",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/temporal/engine/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/events",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/models",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/models/select",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/artifacts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/artifacts/{artifact_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/workflows/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/workflows/approve/{job_id}",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/workflows/cancel/{job_id}",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/agents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/agents/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/quotas/{workspace_id}",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/quotas/{workspace_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/costs",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/evaluations",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/evaluations/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/slo",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/slo",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/metrics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/traces",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/kernel/context/build",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services/pick",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services/heartbeat/{instance_id}",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services/health-check",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/services/seed",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/memory",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/memory/{key}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/memory/{key}/promote",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/memory",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/scheduler/jobs",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/scheduler/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/scheduler/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/agents",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/agents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/agents/run",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/messages",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/runtime/messages/{agent}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/search/index",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/search/query",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/search/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/resources/record",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/resources/snapshot",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/resources/scale",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/nodes",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/lock",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/lock/release",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/config",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/consensus/config/{key}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/healing/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/healing/circuit",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/healing/recover",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/slo",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/slo",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/logs",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/traces",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/observability/dependencies",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/policies",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/policies",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/authorize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/audit",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/secrets",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/secrets/{name}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/secrets/{name}/rotate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/aios/security/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/bulk/create",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/bulk/update",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/bulk/delete",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/tasks/submit",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/tasks/{task_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/tasks/{task_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/tasks/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/webhooks/dispatch",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/webhooks/{event_id}/deliver",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/webhooks/events",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/webhooks/retry-failed",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/evaluate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/flags",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/flags/{key}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/flags",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/flags/{key}",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/feature-flags/flags/{key}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/admin/metrics/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/admin/metrics/query",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/admin/metrics/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/admin/metrics/enterprise",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/support/articles",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/support/categories",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/support/agents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/support/contextual-help/{page}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/support/contextual-help",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/chat/sessions/{session_id}/messages",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/chat/sessions/{session_id}/end",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/feedback",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/bugs",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/bugs/{bug_id}",
+      "methods": [
+        "PATCH"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/features",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/features/{request_id}/vote",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/nps/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/tutorials",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/tutorials/{tutorial_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/analytics",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/analytics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/incidents",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/incidents",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/cx/incidents/{incident_id}",
+      "methods": [
+        "PATCH"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/detailed",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/ready",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/health/live",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/metrics",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/observability/alerts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/hybrid-search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/rerank",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/multi-vector-search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/incremental/sync",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/incremental/delete",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/graph/build",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/graph/subgraph/{entity}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/graph/shortest-path",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/citations/generate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/citations/from-chunks",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/ocr/process",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/pdf/parse",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/audio/transcribe",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/video/captions",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/chunk",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/metadata/extract",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/semantic/index",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/semantic/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/query/understand",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/query/expand",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/analytics/record",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/analytics/insights",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/pipeline/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search-knowledge/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/knowledge/entities",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/knowledge/entities/{entity_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/knowledge/relationships",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/knowledge/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/search/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/completion",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/completion/record",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/ui/adjustments",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/bug-fixer/scan",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/bug-fixer/fix/{prediction_id}",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/thought/predict",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/forecast",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/forecast/trends/{metric}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translate/languages",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/monitors",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/monitors/events",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/monitors/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/monitors/alerts",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/infinite-scroll/streams",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/infinite-scroll/streams/{stream_id}/chunk",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/reality-warp",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/sandbox/universes",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/sandbox/universes",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/sandbox/universes/{universe_id}/simulate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/sandbox/universes/{universe_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/assistant/modes/activate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/assistant/modes/deactivate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/assistant/modes/active/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/assistant/capabilities/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/assistant/capabilities",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/notifications/send",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/notifications/broadcast",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/notifications/inbox/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/notifications/{notification_id}/read",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/notifications/channels",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translation-matrix/translate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translation-matrix/bridges",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translation-matrix/bridges",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translation-matrix/anchors",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/translation-matrix/anchors",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omniscient/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/circuit/simulate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/circuit/gates",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qml/train",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qml/predict",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qnlp/similarity",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qnlp/sentiment",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qkd/generate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qkd/secret",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qrandom/generate",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qrandom/int",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qrandom/password",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/optimize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/qaoa/solve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/benchmark/grover",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/benchmark/all",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/quantum/benchmark/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/audio/outputs/{filename}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/context",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/context/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/devices/register",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/devices",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/handoff",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/handoff/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/social/presence",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/social/presence",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/collective/mind",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/collective/mind/{group_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/sensing",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/sensing/{device_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/assistance/predict",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/assistance/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/environment/control",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/environment/controls/{device_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/omnipresent/time/context",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/goals/achieve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/planning/recursive",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/planning/refine",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/planning/plans",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/planning/plans/{plan_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/planning/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/reflection/improve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/reasoning/query",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/reasoning/engines",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/self-evolution/act",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/agi/self-evolution/modules",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/web",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/images",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/videos",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/news",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/academic",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/verify",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/citations/generate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/search/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/core/i18n",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/core/i18n/languages",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api/core/themes",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/summarize",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/scene-detect",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/subtitles",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/lip-sync",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/motion-track",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/interpolate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/video/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/jobs",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/lora/inject",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/qlora/prepare",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/dpo/train",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/rlhf/train",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/merge",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/fine-tune/health",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm/generate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/logout",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<fastapi.security.http.HTTPBearer object at 0x0000018FC0056E90>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/password-reset",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/auth/password-reset/confirm",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}",
+      "methods": [
+        "PATCH"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}/invitations",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/invitations/accept",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}/members",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/workspaces/{workspace_id}/members/{member_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/search",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/{memory_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/uploads/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/uploads/{upload_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/uploads/{upload_id}/parse",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/uploads/{upload_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/discover",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/load",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/install",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/plugins/{plugin_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api-keys/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api-keys/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api-keys/{key_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "<lambda>"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/api-keys/{key_id}/usage",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/models/register",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/models/orchestrate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/models/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/models/fallback-chain",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/add",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/search",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/memory/summary/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/moderate",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/feedback",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/safety/audit",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/execute",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/approve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/reject",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/approvals/pending",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [
+        "_extract_user_id"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/approvals/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/approvals/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/metrics/tools",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/metrics/tools/{tool_name}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/sandbox/cleanup/expired",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [
+        "_extract_user_id"
+      ],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/route",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/compress",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/correct",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/process",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/trace/{request_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/traces",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/llm-governance/policies",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/ai/routing/models",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/ai/traces/user/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/ai/compression/estimate-tokens",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/regions",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/regions/primary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/regions/resolve",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/storage/upload",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/storage/{bucket}/{path:path}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/storage/{bucket}/objects",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/storage/{bucket}/{path:path}/url",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/cdn/purge",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/load-balancer/nodes",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/load-balancer/nodes/{host}:{port}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/load-balancer/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/cloud/auto-scaling/status",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations/{org_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations/{org_id}/members",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations/{org_id}/members",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/organizations/{org_id}/members/{user_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/workspaces",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/workspaces",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/workspaces/{workspace_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/teams",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/teams",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/invitations",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/invitations",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/invitations/{token}/accept",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/audit-logs",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/enterprise/audit-logs",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets/{ticket_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets/{ticket_id}",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets/{ticket_id}/messages",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets/{ticket_id}/messages",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/tickets/{ticket_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/support/stats",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/white-label/config",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/white-label/config",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/white-label/config",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/white-label/config",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/{domain_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/{domain_id}/verify",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/{domain_id}/ssl",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/custom-domains/{domain_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/retention-policies",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/retention-policies",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/retention-policies/{policy_id}/apply",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/deletion-requests",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/deletion-requests",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/deletion-requests/{request_id}/process",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/reports",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/reports",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/reports/{report_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/gdpr/export",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/compliance/organizations/{org_id}/gdpr/delete",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications/{cert_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications/{cert_id}",
+      "methods": [
+        "PUT"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications/{cert_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/security/organizations/{org_id}/certifications/expiring",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/quotas",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/quotas",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/quotas/{resource_type}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth"
+      ],
+      "mutating": false,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/usage",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "scoped_parameter_without_auth",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": true,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/usage/summary",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/usage/organizations/{org_id}/quotas/reset",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/scim/organizations/{org_id}/Users",
+      "methods": [
+        "POST"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/scim/organizations/{org_id}/Users",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/scim/organizations/{org_id}/Users/{user_id}",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/scim/organizations/{org_id}/Users/{user_id}",
+      "methods": [
+        "DELETE"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/scim/organizations/{org_id}/Users/{user_id}",
+      "methods": [
+        "PATCH"
+      ],
+      "problems": [
+        "no_auth_dependency",
+        "mutating_without_auth"
+      ],
+      "mutating": true,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/health/readiness",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/health/liveness",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/health/components",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/health/history",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/dashboard",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    },
+    {
+      "path": "/",
+      "methods": [
+        "GET"
+      ],
+      "problems": [
+        "no_auth_dependency"
+      ],
+      "mutating": false,
+      "scoped_parameter": false,
+      "dependencies": [],
+      "expected_public_reason": null
+    }
+  ]
+}
