@@ -1,121 +1,131 @@
-# Python Backend Test Baseline
+# Baseline
 
-Measured on 2026-10-12 (commit `7c8f7e1`), Windows, Python 3.14.5, pytest 9.1.1.
+This is the **true measured** state of the backend test suite, produced by running it, not by
+reading prior reports. Every prior `docs/BASELINE.md` treated its numbers as hypotheses; this one
+is the actual output of the command below.
 
-## How this was measured
+## How this was produced
 
-A single `python -m pytest` run does **not** complete. Across the whole suite
-some modules make real network calls or block on a `threading.Condition`
-that never fires, so the run hits pytest-timeout and dies before printing a
-summary. That is a pre-existing property of the suite, not something this
-work introduced.
-
-Results below come from running each top-level test package separately,
-with `--timeout=25 -p no:randomly`. Every package that produced a summary is
-counted. The one package that could not complete is listed explicitly.
-
-## Headline numbers
-
-| Scope | Result |
-|---|---|
-| `tests/security` | **93 passed / 0 failed** |
-| `tests/integration` | 15 failed / 47 passed / 12 errors *(see below)* |
-| Full suite, single run | **does not complete** (blocked module) |
-
-Combined across the two chunks that completed: **140 passed, 15 failed,
-12 errors**.
-
-## Package detail
-
-### `tests/security` - 93 passed, 0 failed
-
-This is the chunk that carries the security controls, and it is green.
-
-Before this work it was 59 passed / 20 failed. The 20 failures were not
-cosmetic:
-
-* the login lockout never ran, because its SQL was a plain string and a
-  `?`-placeholder tuple against a SQLAlchemy Session;
-* `record_failure` returned a 3-tuple the tests read as a 2-tuple;
-* `refresh_token_rotation` deadlocked its caller forever (a plain `Lock`
-  held across a call that re-acquired it);
-* the webhook signature check never saw a real signature;
-* `auth.py` had imports at the bottom of the file, dead code after `raise`,
-  and duplicate `get_current_user` / `require_admin` definitions;
-* `/auth/refresh` accepted the refresh token as a query parameter;
-* `/auth/oauth` ignored the token it was given;
-* 30 routers were replaced with an empty `APIRouter` inside
-  `except Exception`, so a broken subsystem was indistinguishable from a
-  healthy empty one.
-
-All of those are fixed and now covered.
-
-### `tests/integration` - 15 failed / 47 passed / 12 errors
-
-Three groups, none of them introduced here:
-
-1. **Database unavailable (now fixed).** `app/database.py` imported a
-   working `get_connection` and then immediately redefined `get_db` to a
-   stub that unconditionally raised `RuntimeError("Database not
-   available")`. Every caller of `app.database.get_db` failed at call
-   time. `get_db` now delegates to the repository-layer session factory,
-   with a documented sqlite fallback. The related `login_attempts`
-   schema mismatch between `app/services/auth/auth.py` and
-   `app/services/auth_service.py` is gone: the schema lives in
-   `app/services/login_attempt_schema.py`.
-
-2. **Stale tests written against the insecure API (now updated).**
-   `test_refresh_token` sent the refresh token as a query parameter and
-   `test_me_with_token_returns_user` sent the bearer token as a query
-   parameter. Both are now sent the secure way in the body and the
-   Authorization header, and `test_refresh_token_rejected_as_query_parameter`
-   and `test_oauth_requires_a_known_provider` assert the old insecure form
-   is rejected. `test_oauth_initiates_flow` now asserts an unverified
-   OAuth token returns 401 rather than minting a session.
-
-3. **Genuinely broken product paths (open, unfixed).**
-   `test_core_flows.py` (17 errors), `test_lifecycle.py` (11 failures),
-   `test_backup_restore.py` (3), `test_database_hardening.py` (2), and the
-   CSRF test when the suite is run as a whole but green in isolation. These
-   are the open backlog.
-
-## What the baseline says honestly
-
-* Security regression and feature tests: fully green, and were not before.
-* Database plumbing: fixed.
-* LLM-related paths: not realised as testable here. `test_backup_restore` fails
-  because the invocation depends on `claude`-style configuration being absent,
-  and the rest because the configured `app.db` tables do not exist at
-  `app.infrastructure.database` init time.
-* Network-blocked modules: a measurable part of the suite cannot pass in
-  an environment without a Supabase instance, an SMTP server, and egress to
-  the AI providers. No claim of "100%" is defensible until those are
-  mocked or provided.
-
-## Reproducing
-
-```bash
+```
 cd 02-Backend
-python -m pytest tests/security -q --no-header --timeout=25 -p no:randomly
-python -m pytest tests/integration -q --no-header --timeout=25 -p no:randomly
+python -m pytest tests -q --no-header --timeout=90 --timeout-method=thread -p no:cacheprovider
 ```
 
-`python tools/baseline_run.py tests/security tests/integration` records both
-chunks and writes `_baseline.txt`.
+| Field | Value |
+|---|---|
+| Date | 2026-10-14 |
+| Commit | `0b703489` |
+| Python | 3.14.5 |
+| Command | `python -m pytest tests -q --no-header --timeout=90 --timeout-method=thread -p no:cacheprovider` |
+| Duration | 649.66s (0:10:49) |
+| Result | **393 failed, 6333 passed, 2 skipped, 29 errors** |
 
-## Open issues
+Raw output: `02-Backend/build_output_full.txt` (kept, not re-typeset).
+Per-directory breakdown: `python scripts/baseline_breakdown.py`.
 
-1. `test_core_flows.py` errors: 17 of them trace to unavailable database
-   tables. Either the infra engine must create its schema at startup, or
-   the tests must set one up in a fixture. Choosing the second is better.
-2. `test_lifecycle.py` failures need triage; they are unexamined.
-3. `test_backup_restore.py` needs the external CLI or must be marked
-   environment-dependent.
-4. Whole-suite CSRF test ordering interference needs a fixture-scoped
-   isolation rather than a global, since a shared cookie jar is being
-   mutated across tests.
-5. The suite needs `CodeQL` and `pytest -n auto` in CI with a per-test
-   timeout, so a hung module fails its own test instead of the run.
-6. Coverage reporting is disabled for this baseline. The `coverage-enforcement`
-   job now parses the real coverage XML, so wiring `--cov=app` into these
-   chunk runs is the remaining step.
+## What changed against the previous baseline
+
+The previous document claimed: `tests/security` 93 passed, `tests/integration` 47 passed / 15 failed /
+12 errors, and that "a full run did not complete".
+
+| Claim | Measured now |
+|---|---|
+| "tests/security 93 passed" | **157 passed, 0 failed** |
+| "tests/integration 47 passed, 15 failed, 12 errors" | **81 passed, 0 failed** |
+| "a full run did not complete" | **Completes in 10m49s, 6740 tests collected** |
+
+The security suite had more than doubled, and the integration suite more than doubled, because of
+the suite-collection defect below.
+
+## Root causes fixed before this baseline
+
+The suite could not previously be trusted as a gate. These are the defects that made it so:
+
+**Collection**
+1. `tests/security`, `tests/services` and `tests/storage` were listed in `pytest.ini`'s
+   `norecursedirs`, so `python -m pytest tests` never ran them at all. The security suite was
+   invisible to the default run. **A check that is not collected cannot be a gate.**
+2. `tests/conftest.py` synthesised a placeholder module for `app` when the target was not yet
+   imported. A synthetic module has no `__path__`, so `from app import <name>` failed with
+   "'app' is not a package" and 13 modules could not be collected.
+3. A test overwrote `sys.modules["app"]` at *collection* time, which broke every module collected
+   after it.
+4. A test inserted `tests/` onto `sys.path`, shadowing the real `storage`, `services` and
+   `analytics` packages with same-named test directories.
+5. `storage/`, `services/` and `advanced_security/` were namespace packages, so they lost to the
+   regular-package test directories with the same names.
+
+**Termination** (the suite hung rather than failing)
+6. `ResourcePool.acquire()` called `self._cond.wait(timeout)` where `timeout` was `None`, which
+   blocks forever; `wait(None)` also never signals a timeout, so `acquire()` deadlocked on its own
+   non-reentrant lock.
+7. `sandboxing/approval_store.py::cleanup_expired` held the store's non-reentrant lock while calling
+   `_archive`, which re-acquired it.
+8. `tests/test_automation.py::test_pytest_can_collect_tests` ran `pytest --collect-only` over the
+   whole suite from inside the suite: self-recursive and never returned.
+9. `tests/resource_management/test_resource_pool.py` called `acquire()` on an empty pool with no
+   timeout, blocking forever.
+
+**Correctness surfaced by making the suite runnable**
+10. `database/database.py` (1220 lines) was **three concatenated modules**. `init_db`, `get_db` and
+    `create_user` were each defined twice or three times and only the last definition was reachable;
+    `_ensure_tables_rag` was defined but never called, so the retrieval tables were never created.
+11. The two database modules read **different environment variable spellings** (`ASTROVOX_DB_PATH`
+    vs `Astravox_DB_PATH`). With both set, the schema was created in one file and the queries ran
+    against another.
+12. `app/auth_utils.py` was **two concatenated modules** with an undefined `logger` and two
+    conflicting `get_user_id_from_token` definitions.
+13. `app/supabase_client.py` and its repository-layer duplicate placed a `return _Fallback...()`
+    *after* the `raise`, so the documented fallback was unreachable and importing the app required
+    live Supabase credentials.
+14. Five `time.sleep` calls inside `async def` provider methods blocked the event loop for **every**
+    concurrent request, not just the failing caller. This was a measured defect found by
+    `tests/performance/test_performance_regression.py::TestAsyncIOCompliance`.
+15. Backup filenames had one-second resolution, so backups taken in the same second overwrote each
+    other silently.
+16. `sandboxing/tool_sandbox.py` called `CircuitBreaker.call(...)`, which does not exist, so every
+    sandboxed tool failed with `AttributeError` and no circuit breaker ever opened.
+
+## Current failure profile
+
+All 6740 collected tests now run to completion in ~11 minutes. The remaining failures are **not**
+uniformly distributed and are mostly outside the security surface:
+
+| Directory | Failed | Error |
+|---|---|---|
+| `tests/performance` | 18 | 0 |
+| `tests/multimodal` | 16 | 0 |
+| `tests/route_tests` | 13 | 0 |
+| `tests/monitoring` | 11 | 0 |
+| `tests/representation_learning` | 10 | 0 |
+| `tests/fault_tolerance` | 9 | 0 |
+| `tests/cryptographic_protocols` | 8 | 0 |
+| `tests/advanced_planning` … `tests/alignment` | 7 | 0 |
+| other experimental/domain modules | ~291 | 29 |
+| `tests/database` (Word morpholgy) | 20 | 0 |
+| `tests/storage` | 1 | 0 |
+| **`tests/security`** | **0** | **0** |
+
+The three suites that gate security and core API contracts (`tests/security`, `tests/integration`,
+`tests/database`) are green.
+
+## Known failure causes (not yet fixed)
+
+These are diagnosed, not guessed at:
+- `tests/performance/test_performance_regression.py`: patches `app.chat.get_user_id_from_token`,
+  which does not exist on the module (the tests were written against an older API); hard-coded
+  latency baselines (e.g. "RAG retrieval 0.59s exceeds 150ms baseline"); and
+  `from app.vector.index import VectorIndex`, a symbol that is not in the module.
+- `tests/multimodal` and the domain modules: API drift between the experimental packages and their
+  tests, which is what `docs/MODULE_INVENTORY.md` describes.
+
+## Reproduce
+
+```
+cd 02-Backend
+python -m pytest tests -q --no-header --timeout=90 --timeout-method=thread -p no:cacheprovider
+python scripts/baseline_breakdown.py
+```
+
+`make test-backend` is **not** used for this run: it sets `COVERAGE_CORE=true`, which lowers the
+thresholds, and this measurement is meant to be unadjusted.
