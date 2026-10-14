@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app.config import settings
-from app.database import get_db
+from app.database import get_raw_db as get_db
 
 
 def _hash(token: str) -> str:
@@ -38,18 +38,20 @@ def create_session(user_id: str, ip_address: Optional[str] = None, user_agent: O
 
 
 def get_session(session_token: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM user_sessions WHERE session_token=? AND expires_at > ?",
-        (session_token, _now().isoformat()),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM user_sessions WHERE session_token=? AND expires_at > ?",
+            (session_token, _now().isoformat()),
+        ).fetchone()
     return dict(row) if row else None
 
 
 def get_session_by_refresh_token(refresh_token: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM user_sessions WHERE refresh_token=? AND expires_at > ?",
-        (refresh_token, _now().isoformat()),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM user_sessions WHERE refresh_token=? AND expires_at > ?",
+            (refresh_token, _now().isoformat()),
+        ).fetchone()
     return dict(row) if row else None
 
 
@@ -99,8 +101,9 @@ def update_session_activity(session_token: str) -> None:
 
 
 def get_user_sessions(user_id: str) -> list:
-    rows = get_db().__enter__().execute(
-        "SELECT * FROM user_sessions WHERE user_id=? ORDER BY last_activity_at DESC",
-        (user_id,),
-    ).fetchall()
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM user_sessions WHERE user_id=? ORDER BY last_activity_at DESC",
+            (user_id,),
+        ).fetchall()
     return [dict(row) for row in rows]

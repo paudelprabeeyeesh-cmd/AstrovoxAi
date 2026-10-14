@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from app.database import get_db
+from app.database import get_raw_db as get_db
 
 
 def _hash(token: str) -> str:
@@ -28,26 +28,29 @@ def create_device(user_id: str, name: str, fingerprint: str, device_type: str = 
 
 
 def get_devices(user_id: str) -> List[dict]:
-    rows = get_db().__enter__().execute(
-        "SELECT * FROM devices WHERE user_id=? ORDER BY last_seen_at DESC",
-        (user_id,),
-    ).fetchall()
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT * FROM devices WHERE user_id=? ORDER BY last_seen_at DESC",
+            (user_id,),
+        ).fetchall()
     return [dict(row) for row in rows]
 
 
 def get_device_by_fingerprint(fingerprint: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM devices WHERE fingerprint=?",
-        (fingerprint,),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM devices WHERE fingerprint=?",
+            (fingerprint,),
+        ).fetchone()
     return dict(row) if row else None
 
 
 def get_device(device_id: str, user_id: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM devices WHERE id=? AND user_id=?",
-        (device_id, user_id),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM devices WHERE id=? AND user_id=?",
+            (device_id, user_id),
+        ).fetchone()
     return dict(row) if row else None
 
 

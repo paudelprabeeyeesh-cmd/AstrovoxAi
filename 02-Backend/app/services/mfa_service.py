@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
-from app.database import get_db
+from app.database import get_raw_db as get_db
 
 
 def _hash(token: str) -> str:
@@ -28,10 +28,11 @@ def setup_mfa(user_id: str) -> dict:
 
 
 def get_mfa_secret(user_id: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM mfa_secrets WHERE user_id=?",
-        (user_id,),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM mfa_secrets WHERE user_id=?",
+            (user_id,),
+        ).fetchone()
     return dict(row) if row else None
 
 
@@ -93,15 +94,15 @@ def verify_mfa_code(user_id: str, code: str) -> bool:
 
 def verify_backup_code(user_id: str, code: str) -> bool:
     code_hash = _hash(code)
-    row = get_db().__enter__().execute(
-        "SELECT * FROM mfa_backup_codes WHERE user_id=? AND code_hash=? AND used=0",
-        (user_id, code_hash),
-    ).fetchone()
-    if row:
-        with get_db() as conn:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM mfa_backup_codes WHERE user_id=? AND code_hash=? AND used=0",
+            (user_id, code_hash),
+        ).fetchone()
+        if row:
             conn.execute("UPDATE mfa_backup_codes SET used=1 WHERE id=?", (row["id"],))
             conn.commit()
-        return True
+            return True
     return False
 
 

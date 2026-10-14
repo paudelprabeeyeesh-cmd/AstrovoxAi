@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import httpx
-from app.database import get_db
+from app.database import get_raw_db as get_db
 
 
 def _hash(token: str) -> str:
@@ -139,18 +139,20 @@ def create_oauth_account(user_id: str, provider: str, provider_user_id: str, acc
 
 
 def get_oauth_account(user_id: str, provider: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM oauth_accounts WHERE user_id=? AND provider=?",
-        (user_id, provider),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM oauth_accounts WHERE user_id=? AND provider=?",
+            (user_id, provider),
+        ).fetchone()
     return dict(row) if row else None
 
 
 def get_oauth_account_by_provider_user_id(provider: str, provider_user_id: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM oauth_accounts WHERE provider=? AND provider_user_id=?",
-        (provider, provider_user_id),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM oauth_accounts WHERE provider=? AND provider_user_id=?",
+            (provider, provider_user_id),
+        ).fetchone()
     return dict(row) if row else None
 
 

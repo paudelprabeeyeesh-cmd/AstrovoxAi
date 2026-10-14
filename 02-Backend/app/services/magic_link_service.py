@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from app.database import get_db
+from app.database import get_raw_db as get_db
 
 
 def _hash(token: str) -> str:
@@ -32,20 +32,21 @@ def create_magic_link(user_id: str, email: str, expires_in_minutes: int = 15) ->
 
 def verify_magic_link(token: str) -> Optional[dict]:
     token_hash = _hash(token)
-    row = get_db().__enter__().execute(
-        "SELECT * FROM magic_links WHERE token_hash=? AND used=0 AND expires_at > ?",
-        (token_hash, _now().isoformat()),
-    ).fetchone()
-    if row:
-        with get_db() as conn:
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM magic_links WHERE token_hash=? AND used=0 AND expires_at > ?",
+            (token_hash, _now().isoformat()),
+        ).fetchone()
+        if row:
             conn.execute("UPDATE magic_links SET used=1 WHERE id=?", (row["id"],))
             conn.commit()
     return dict(row) if row else None
 
 
 def get_magic_link_by_email(email: str) -> Optional[dict]:
-    row = get_db().__enter__().execute(
-        "SELECT * FROM magic_links WHERE email=? AND used=0 AND expires_at > ? ORDER BY created_at DESC LIMIT 1",
-        (email.lower(), _now().isoformat()),
-    ).fetchone()
+    with get_db() as conn:
+        row = conn.execute(
+            "SELECT * FROM magic_links WHERE email=? AND used=0 AND expires_at > ? ORDER BY created_at DESC LIMIT 1",
+            (email.lower(), _now().isoformat()),
+        ).fetchone()
     return dict(row) if row else None
