@@ -37,25 +37,47 @@ jobs:
 
       - name: Test count gate
         run: |
-          COUNT=$(cd 02-Backend && go test ./... -v -count=1 2>/dev/null | grep -c '^=== RUN')
-          echo "Go test functions: $COUNT"
+          # The Go module is at the repository root, not in 02-Backend. This
+          # gate previously ran `cd 02-Backend && go test`, which finds no Go
+          # module and therefore always counted 0 - and since it piped to
+          # 2>/dev/null, the failure was invisible and the gate could only
+          # pass by accident. It is also run twice and the second result was
+          # mislabelled "Go suite total" as if it were a different suite.
+          COUNT=$(go test ./... -v -count=1 2>&1 | grep -c '^=== RUN')
+          echo "Go test cases executed: $COUNT"
           if [ "$COUNT" -lt 1000 ]; then
-            echo "::error::Go test count $COUNT is below the 1000-function gate"
+            echo "::error::Go test count $COUNT is below the 1000-case gate"
             exit 1
           fi
-          PYCOUNT=$(cd 02-Backend && go test ./... -v -count=1 2>/dev/null | grep -c '^=== RUN')
-          echo "Go suite total: $PYCOUNT"
-
-      - name: "Import boundary (D01-11): product code must not import experiments"
-        run: python tools/check_live_imports.py
 
       - name: Backend suite collects (D01-09 baseline)
         run: |
           cd 02-Backend
           python -m pytest tests --collect-only -q -p no:cacheprovider 2>&1 | tail -1
 
+      - name: Cross-tenant isolation suite
+        # The suite that catches a retrieval leak. Run explicitly as well as
+        # by ./... so its failure names the suite in the CI log.
+        run: go test -race -count=1 ./tests/isolation ./internal/retrieval
+
       - name: Race + stress
         run: go test -race -count=1 -timeout 30s ./internal/runtime ./internal/serving ./internal/distributed
+
+      - name: "Import boundary (D01-11): product code must not import experiments"
+        run: python tools/check_live_imports.py
+
+      - name: Endpoint audit (auth on every mutating route)
+        run: |
+          cd 02-Backend
+          python scripts/audit_privileged_endpoints.py
+
+      - name: Coverage gate
+        run: |
+          cd 02-Backend
+          COVERAGE_THRESHOLD=80 python -m pytest tests/security tests/integration tests/database \
+            --cov=app --cov=app.database --cov=database --cov=sandboxing --cov=storage \
+            --cov-report=xml:coverage-backend.xml -q --no-header -p no:cacheprovider --tb=short
+          python .github/scripts/coverage_gate.py 80 coverage-backend.xml
 
   lint:
     name: Lint
