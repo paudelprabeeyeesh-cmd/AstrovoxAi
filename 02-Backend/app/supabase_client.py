@@ -4,6 +4,7 @@ Provides a single, lazily-created Supabase client reused across the backend
 instead of constructing a new client on every request/module import.
 """
 
+import logging
 import os
 from functools import lru_cache
 from types import SimpleNamespace
@@ -11,6 +12,8 @@ from types import SimpleNamespace
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 try:
     from supabase import Client, create_client
@@ -80,15 +83,26 @@ class _FallbackQueryBuilder:
 
 @lru_cache(maxsize=1)
 def get_supabase():
-    """Return a cached Supabase client, creating it on first use."""
+    """Return a cached Supabase client, creating it on first use.
+
+    A missing or unusable configuration degrades to the no-op client below
+    rather than raising: the failure mode must be "every authenticated call
+    is denied", not "the process refuses to import". Denying is fail-closed;
+    a crash on import is not, because it also takes the health endpoint and
+    the unauthenticated surface with it.
+    """
     url = os.getenv("VITE_SUPABASE_URL")
     key = os.getenv("VITE_SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
     if not url or not key:
-        raise RuntimeError(
-            "Supabase credentials not configured. "
-            "Please copy .env.example to .env and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)."
+        logger.warning(
+            "supabase.config_missing: VITE_SUPABASE_URL and a key are unset; "
+            "falling back to a no-op client that denies authenticated access."
         )
         return _FallbackSupabaseClient()
     if create_client is None:
-        raise RuntimeError("Supabase package not installed")
+        logger.error(
+            "supabase.package_missing: the `supabase` package is not installed; "
+            "falling back to a no-op client that denies authenticated access."
+        )
+        return _FallbackSupabaseClient()
     return create_client(url, key)

@@ -172,9 +172,67 @@ class RefreshTokenRequest(BaseModel):
 
 
 async def require_verified_email(request: Request, authorization: str = Header(None)) -> str:
+    """Resolve the caller and require a verified email address.
+
+    A valid token is not enough: it must not have been revoked (logout) and
+    the account's email must be verified. Delegating to token validation
+    alone let any authenticated-but-unverified user through, which is the
+    exact boundary ``require_verified_email`` is supposed to guard.
+    """
     if not authorization:
         authorization = request.headers.get("authorization", "")
-    return _require_token(authorization)
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = authorization.replace("Bearer ", "", 1).strip()
+
+    # P0-5: a token invalidated by logout must not authenticate.
+    if token_revocation_list.is_revoked(token[:32]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token has been revoked",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = None
+    try:
+        response = supabase.auth.get_user(token)
+        user = response.user if response else None
+    except Exception:
+        pass
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # P0-3: verified email is required, not merely a valid token.
+    if not _email_is_verified(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required",
+        )
+    return str(user.id)
+
+
+def _email_is_verified(user: object) -> bool:
+    """Return True only when the provider reports a confirmed email.
+
+    Supabase sets ``email_confirmed_at`` once email ownership is proven; a
+    null/empty value means the account is authenticated but unverified.
+    """
+    if user is None:
+        return False
+    if getattr(user, "email_confirmed_at", None) or getattr(user, "confirmed_at", None):
+        return True
+    for meta in (getattr(user, "app_metadata", None), getattr(user, "user_metadata", None)):
+        if isinstance(meta, dict) and (meta.get("email_verified") is True or meta.get("email_confirmed_at")):
+            return True
+    return False
 
 
 async def require_admin(request: Request, authorization: str = Header(None)) -> str:

@@ -28,14 +28,16 @@ class _FallbackSupabaseClient:
 
 @lru_cache(maxsize=1)
 def get_supabase():
-    """Return a cached Supabase client, creating it on first use."""
+    """Return a cached Supabase client, creating it on first use.
+
+    A missing or unusable configuration degrades to the no-op client above
+    instead of raising, so importing the backend never depends on the
+    database being reachable. Denying every authenticated call is the
+    fail-closed outcome; an import-time crash also takes the health
+    endpoint and the unauthenticated surface down with it.
+    """
     url = os.getenv("VITE_SUPABASE_URL")
     key = os.getenv("VITE_SUPABASE_ANON_KEY") or os.getenv("VITE_SUPABASE_PUBLISHABLE_KEY")
-    if not url or not key:
-        raise RuntimeError(
-            "Supabase credentials not configured. "
-            "Please copy .env.example to .env and set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (or VITE_SUPABASE_PUBLISHABLE_KEY)."
-        )
-    if create_client is None:
-        raise RuntimeError("Supabase package not installed")
+    if not url or not key or create_client is None:
+        return _FallbackSupabaseClient()
     return create_client(url, key)
