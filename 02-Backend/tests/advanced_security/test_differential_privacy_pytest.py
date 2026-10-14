@@ -1,7 +1,17 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# The backend root, not `tests/`. This used to compute two directory levels up
+# from this file, which resolves to `tests/`, and that put `tests` on sys.path
+# ahead of the real top-level packages. Every later `import storage` then
+# resolved to the `tests/storage` test package, so `storage.backup`, and every
+# other product package that shares a name with a test directory, stopped
+# resolving once this module had been collected.
+_backend_root = os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+)
+if _backend_root not in sys.path:
+    sys.path.insert(0, _backend_root)
 
 import pytest
 from advanced_security.differential_privacy import (
