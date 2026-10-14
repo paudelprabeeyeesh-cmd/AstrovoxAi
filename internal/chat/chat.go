@@ -75,10 +75,22 @@ type Request struct {
 	Messages    []Message `json:"messages"`
 	MaxTokens   int       `json:"max_tokens,omitempty"`
 	Temperature float64   `json:"temperature,omitempty"`
+	// Tools is the tool schema sent to the provider. Present when the caller
+	// may invoke a tool, which is what a router uses to require tool support.
+	Tools []Tool `json:"tools,omitempty"`
 	// Memory is the caller's explicit memory, injected by the assembler.
 	Memory []string `json:"memory,omitempty"`
 	// ContextChunks is retrieved text, also injected by the assembler.
 	ContextChunks []string `json:"context_chunks,omitempty"`
+}
+
+// Tool is a tool offered to the provider.
+type Tool struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	// Schema is the JSON Schema for the tool's arguments. Carrying it here
+	// is what lets a router require a model that accepts a schema.
+	Schema string `json:"schema,omitempty"`
 }
 
 // Stream is a channel of chunks. A provider closes it when done, and sends
@@ -102,6 +114,22 @@ type SpendGate interface {
 	// Record meters what actually happened. It must not fail the request.
 	Record(userID, tenantID, model string, usage Usage)
 }
+
+// NoSpend is a SpendGate that authorises and records nothing.
+//
+// It exists so a component that only needs a provider - a router, a retry
+// path, a test - can build an Orchestrator without a billing decision. Using
+// it where a real gate belongs disables spend enforcement, so it is named for
+// what it does rather than called a default.
+type NoSpend struct{}
+
+// Authorise permits the call, because this gate meters nothing.
+func (NoSpend) Authorise(userID, tenantID, model string, promptTokens, maxOutputTokens int) error {
+	return nil
+}
+
+// Record discards the usage, because this gate meters nothing.
+func (NoSpend) Record(userID, tenantID, model string, usage Usage) {}
 
 // Clock is injected so tests do not depend on wall time.
 type Clock interface {
