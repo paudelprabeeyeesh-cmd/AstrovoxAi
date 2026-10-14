@@ -60,6 +60,13 @@ jobs:
         # by ./... so its failure names the suite in the CI log.
         run: go test -race -count=1 ./tests/isolation ./internal/retrieval
 
+      - name: Retrieval and grounding evals
+        # Required because a ranking change that nothing measures is a change
+        # nobody can review. The measured numbers are in the CI log, and the
+        # fixture fails if both retrieval paths score identically - which is
+        # the state an eval is in when it has stopped measuring anything.
+        run: go test -v -count=1 ./internal/evals ./internal/grounding
+
       - name: Race + stress
         run: go test -race -count=1 -timeout 30s ./internal/runtime ./internal/serving ./internal/distributed
 

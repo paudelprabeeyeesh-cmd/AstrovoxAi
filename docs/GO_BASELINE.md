@@ -6,10 +6,11 @@ numbers can be reproduced.
 ## How this was produced
 
 ```
-go version          # go1.27.1 windows/amd64
-go build ./...      # no output: the whole module compiles
-go vet ./...        # no output: no vet findings
-go test ./... -count=1 -short -cover
+go version                 # go1.27.1 windows/amd64
+go build ./...             # no output: the whole module compiles
+go vet ./...               # no output: no vet findings
+go test ./... -count=1     # 80 packages ok, 0 failing
+gofmt -l .                 # clean for the main tree
 ```
 
 ## Inventory
@@ -18,15 +19,41 @@ go test ./... -count=1 -short -cover
 |---|---|
 | Go version | 1.27.1 |
 | Module | `github.com/astrovox/astrovox` |
-| Go files (main tree) | 333 |
-| Test files | 127 |
-| `func Test…` functions | **1661** |
+| Go files (main tree) | 345 |
+| Test files | 133 |
+| `func Test…` functions | **1749** |
 | `func Benchmark…` functions | 33 |
-| Packages with passing tests | **77** |
+| Packages with passing tests | **80** |
 | Packages with failing tests | **0** |
 | Packages with no test files | 19 |
 | `go build ./...` | clean |
 | `go vet ./...` | clean |
+| `gofmt -l` (main tree) | clean |
+
+## Suites worth naming
+
+| Suite | Purpose | Where |
+|---|---|---|
+| Cross-tenant isolation | adversarial: can a caller reach a chunk that is not theirs? | `tests/isolation` |
+| Retrieval evals | recall@k, MRR, nDCG over a labelled corpus, plus a regression gate | `internal/evals` |
+| Grounding | citation accuracy: supported / uncited / missing / not permitted | `internal/grounding` |
+| Hybrid search | BM25 + reciprocal rank fusion, owner-scoped | `internal/retrieval` |
+| Model router | capability registry, fallback chains, circuit breakers | `internal/chat` |
+
+The two evals are required CI steps. The retrieval fixture fails its own
+sanity test if the vector and keyword paths ever score identically, because
+that is the state an eval is in when it has stopped measuring anything.
+
+Measured on the shipped implementation, 10 documents, cutoff 5:
+
+```
+vector  recall 0.900  mrr 0.690  ndcg 0.736  misses 1 [cdc]
+keyword recall 0.900  mrr 0.800  ndcg 0.821  misses 1 [rotation]
+hybrid  recall 1.000  mrr 0.820  ndcg 0.859  misses 0
+```
+
+The hybrid recovers the miss the vector path had and the miss the keyword path
+had, which is the entire reason to fuse.
 
 ## The 1,393-test claim
 
@@ -40,7 +67,7 @@ Go module only under sdk/go/, rather than a root-level Go module."*
    declaring `github.com/astrovox/astrovox`, with top-level package
    directories `autograd/`, `compiler/`, `graph/`, `kernels/`, `runtime/` and
    `tensor/`, plus `internal/`, `cmd/`, `pkg/` and `tests/`.
-2. The real count is **1,661 test functions**, so the original claim
+2. The real count is **1,749 test functions**, so the original claim
    understated the suite rather than overstating it.
 
 `sdk/go/` is a separate module with 9 `.go` files; it is the SDK, not the
