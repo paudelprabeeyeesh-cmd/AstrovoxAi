@@ -23,4 +23,16 @@ module.exports = [
       'no-console': 'off',
     },
   },
+  {
+    // The attack suite. CommonJS and plain JavaScript, because it runs the
+    // compiled output with node:test rather than in the extension host.
+    files: ['tests/**/*.cjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'script',
+    },
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
+  },
 ]
