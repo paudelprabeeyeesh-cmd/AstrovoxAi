@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import time
 from typing import AsyncGenerator
 
@@ -91,7 +92,7 @@ class GeminiAdapter(BaseLLMAdapter):
                 logger.warning(
                     "Gemini stream attempt %s/%s failed: %s", attempt, max_retries, exc
                 )
-                time.sleep(2 ** attempt)
+                await asyncio.sleep(2 ** attempt)
         raise RuntimeError(
             f"Gemini stream failed after {max_retries} attempts: {last_error}"
         )

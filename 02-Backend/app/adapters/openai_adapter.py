@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import time
 from typing import AsyncGenerator
 
@@ -102,7 +103,7 @@ class OpenAIAdapter(BaseLLMAdapter):
                 logger.warning(
                     "OpenAI stream attempt %s/%s failed: %s", attempt, max_retries, exc
                 )
-                time.sleep(2 ** attempt)
+                await asyncio.sleep(2 ** attempt)
         raise RuntimeError(
             f"OpenAI stream failed after {max_retries} attempts: {last_error}"
         )

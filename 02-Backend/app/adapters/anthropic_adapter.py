@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import time
 from typing import AsyncGenerator
 
@@ -96,7 +97,7 @@ class AnthropicAdapter(BaseLLMAdapter):
                 logger.warning(
                     "Anthropic stream attempt %s/%s failed: %s", attempt, max_retries, exc
                 )
-                time.sleep(2 ** attempt)
+                await asyncio.sleep(2 ** attempt)
         raise RuntimeError(
             f"Anthropic stream failed after {max_retries} attempts: {last_error}"
         )

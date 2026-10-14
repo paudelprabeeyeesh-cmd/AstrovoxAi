@@ -1,4 +1,5 @@
 import logging
+import asyncio
 import time
 from typing import AsyncGenerator
 
@@ -105,7 +106,7 @@ class GroqAdapter(BaseLLMAdapter):
                 logger.warning(
                     "Groq stream attempt %s/%s failed: %s", attempt, max_retries, exc
                 )
-                time.sleep(2 ** attempt)
+                await asyncio.sleep(2 ** attempt)
         raise RuntimeError(
             f"Groq stream failed after {max_retries} attempts: {last_error}"
         )

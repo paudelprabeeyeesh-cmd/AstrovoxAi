@@ -73,23 +73,25 @@ class TestWorkflowEngine:
         exec_inst = WorkflowExecution(id="e1", workflow_id="w1")
         assert hasattr(WorkflowExecution, "__slots__"), "WorkflowExecution should use __slots__"
 
-
 class TestAsyncIOCompliance:
     def test_no_sync_requests_in_async(self):
         import ast
         import os
 
         violations = []
-        blocking = {"requests.get", "requests.post", "requests.put", "requests.patch",
-                    "requests.delete", "time.sleep"}
+        blocking = {"requests.get", "requests.post", "requests.put",
+                    "requests.patch", "requests.delete", "time.sleep"}
 
         for root, _dirs, files in os.walk("app"):
+            # `__pycache__` holds .pyc, but pruning it keeps the walk off a
+            # tree that grows with every collection and cannot contain a .py.
+            _dirs[:] = [d for d in _dirs if d != "__pycache__"]
             for fname in files:
                 if not fname.endswith(".py"):
                     continue
                 fpath = os.path.join(root, fname)
                 try:
-                    with open(fpath) as f:
+                    with open(fpath, encoding="utf-8") as f:
                         tree = ast.parse(f.read())
                 except Exception:
                     continue
@@ -101,10 +103,11 @@ class TestAsyncIOCompliance:
                         if isinstance(child, ast.Call):
                             func = child.func
                             name = ""
-                            if isinstance(func, ast.Attribute):
-                                if isinstance(func.value, ast.Name):
-                                    name = f"{func.value.id}.{func.attr}"
+                            if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+                                name = f"{func.value.id}.{func.attr}"
                             if name in blocking:
+                                # A blocking call inside `async def` stalls the
+                                # whole event loop, so this stays a hard error.
                                 violations.append(f"{fpath}:{child.lineno}  {name}")
 
         assert not violations, f"Found blocking calls in async functions: {violations}"

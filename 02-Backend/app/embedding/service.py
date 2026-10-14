@@ -1,5 +1,6 @@
 """Embedding Service — High-level embedding operations with caching, retries, and fallback."""
 
+import asyncio
 import time
 from typing import Optional
 
@@ -102,7 +103,7 @@ class EmbeddingService:
             except Exception as e:
                 last_error = e
                 if attempt < max_retries:
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
 
         # Try fallback provider
         fallback = self._get_fallback_provider()
