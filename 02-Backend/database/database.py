@@ -7,21 +7,49 @@ from typing import Dict, Generator, List, Optional, Tuple
 from realtime import Any
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .connection import get_connection, transaction
+from .connection import DB_PATH as _CONNECTION_DB_PATH, get_connection, transaction
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.getenv("Astravox_DB_PATH", os.path.join(BASE_DIR, "chat.db"))
+
+# One database location, owned by `database.connection`. This module used to
+# read a differently-cased environment variable, so with both set the schema
+# was created in one file while the queries ran against another, and every
+# lookup failed with "no such table".
+DB_PATH = os.getenv("Astravox_DB_PATH") or _CONNECTION_DB_PATH
 
 
 def _ensure_db_dir() -> None:
     os.makedirs(BASE_DIR, exist_ok=True)
 
 
+def _column_name(row) -> str:
+    """Read a column name from a `PRAGMA table_info` row.
+
+    `PRAGMA table_info` returns (cid, name, type, notnull, dflt_value, pk),
+    so the column name is the *second* positional element. `sqlite3.Row`
+    subscripts by name, `database.connection.get_connection` installs a dict
+    row factory, and a plain connection returns tuples. All three are used
+    here, so the value is read by name when the row supports it and falls
+    back to the positional index otherwise.
+    """
+    if isinstance(row, str):
+        return row
+    try:
+        return str(row["name"])
+    except (TypeError, IndexError, KeyError):
+        pass
+    try:
+        return str(row[1])
+    except (TypeError, IndexError, KeyError):
+        return ""
+
+
 def _ensure_column(
     conn: sqlite3.Connection, table_name: str, column_name: str, definition: str
 ) -> None:
     existing = [
-        row[1] for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+        _column_name(row)
+        for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
     ]
     if column_name not in existing:
         conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {definition}")
@@ -540,19 +568,6 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
     _ensure_index(conn, "api_metrics", "idx_api_metrics_status", "status_code")
 
 
-def init_db() -> None:
-    _ensure_db_dir()
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    _ensure_column(conn, "conversations", "is_deleted", "INTEGER DEFAULT 0")
-    _ensure_column(conn, "conversations", "last_message_at", "TEXT")
-    _ensure_column(conn, "messages", "model_used", "TEXT")
-    _ensure_column(conn, "messages", "tokens_used", "INTEGER")
-    _ensure_tables_rag(conn)
-
-
 def _ensure_tables_rag(conn: sqlite3.Connection) -> None:
     conn.execute("""
         CREATE TABLE IF NOT EXISTS documents (
@@ -715,21 +730,79 @@ def _ensure_tables_rag(conn: sqlite3.Connection) -> None:
 
 
 def init_db() -> None:
+    """Create the schema for the database at ``DB_PATH``.
+
+    This file contained three concatenated copies of the module, so
+    ``init_db``, ``get_db`` and ``create_user`` were each defined more than
+    once and only the last definition was reachable. That reached copy was
+    also the one that omitted the retrieval tables, so every document
+    endpoint failed with "no such table".
+
+    One definition survives, and it is the union of the useful work: the
+    connection module owns the complete schema, this module's ``_ensure_tables``
+    adds its analytics tables, ``_ensure_tables_rag`` adds the retrieval
+    tables that used to be defined but never called, and the column
+    migrations apply additively.
+    """
+    from .connection import init_db as _connection_init_db
+
+    # The path is read at call time, not captured at import: the test suite
+    # patches `database.database.DB_PATH` between calls, and a captured value
+    # would keep pointing at the previous file. It is passed explicitly
+    # because `connection.init_db` otherwise uses its own module-level
+    # DB_PATH, resolved from a different environment variable, so the two
+    # modules could otherwise create two databases.
+    _connection_init_db(DB_PATH)
+
     conn = get_connection(DB_PATH)
-    _ensure_tables(conn)
-    conn.close()
+    try:
+        _ensure_tables(conn)
+        _ensure_tables_rag(conn)
+
+        # Additive column migrations. Because `get_connection` installs a
+        # dict row factory, `_ensure_column` now reads column names by name
+        # instead of by position.
+        for table, column, definition in (
+            ("conversations", "is_deleted", "INTEGER DEFAULT 0"),
+            ("conversations", "last_message_at", "TEXT"),
+            ("messages", "model_used", "TEXT"),
+            ("messages", "tokens_used", "INTEGER"),
+        ):
+            if any(
+                row.get("name") == table
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            ):
+                _ensure_column(conn, table, column, definition)
+
+        conn.commit()
+    finally:
+        conn.close()
 
 
 def get_db() -> sqlite3.Connection:
+    """Return a connection to the configured database.
+
+    The row factory is set here. `sqlite3.Row` supports subscripting by both
+    name and position, which is what the callers in this module
+    (``row["email"]``) and its tests expect; the dict factory installed by
+    ``get_connection`` also supports names but not positions, so it is not
+    substituted for it.
+    """
     _ensure_db_dir()
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_connection(DB_PATH)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA synchronous=NORMAL")
-    _ensure_tables(conn)
     return conn
-def get_db() -> Generator[sqlite3.Connection, None, None]:
-    with transaction(DB_PATH) as conn:
+def db_session() -> Generator[sqlite3.Connection, None, None]:
+    """Yield a connection inside a transaction.
+
+    This was a second ``get_db`` definition that shadowed the connection
+    returning one above it, so every caller doing ``conn = get_db()`` then
+    ``conn.execute(...)`` received a generator and raised AttributeError. It
+    is renamed so both behaviours stay available under distinct names.
+    """
+    with _transaction() as conn:
         yield conn
 
 
@@ -741,7 +814,7 @@ def create_user(username: str, email: str, password: str) -> int:
         raise ValueError("Username or email already exists.")
 
     password_hash = generate_password_hash(password)
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.cursor()
         cur.execute(
             "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
@@ -758,7 +831,7 @@ def create_user(username: str, email: str, password: str) -> int:
 def get_user_by_username_or_email(identifier: str) -> Optional[sqlite3.Row]:
     if not identifier:
         return None
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.execute(
             "SELECT * FROM users WHERE username=? OR email=? LIMIT 1",
             (identifier.strip(), identifier.strip().lower()),
@@ -775,10 +848,21 @@ def verify_user_credentials(identifier: str, password: str) -> Optional[sqlite3.
     return user
 
 
+def _transaction():
+    """Open a transaction on the *current* ``DB_PATH``.
+
+    ``transaction(path)`` takes a path, but every caller in this module
+    relies on the module-level ``DB_PATH`` being patchable (the test suite
+    patches it between calls). Binding the captured global at call time would
+    freeze the path at import, so it is resolved per use.
+    """
+    return transaction(globals().get("DB_PATH") or DB_PATH)
+
+
 def update_user_last_login(user_id: int) -> None:
     if not user_id:
         return
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "UPDATE users SET last_login=? WHERE id=?",
             (datetime.utcnow().isoformat(), user_id),
@@ -790,7 +874,7 @@ def save_chat_message(
 ) -> None:
     if not conversation_id or not user_id or not message:
         return
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO chats (conversation_id, user_id, role, message, created_at) VALUES (?, ?, ?, ?, ?)",
             (
@@ -804,7 +888,7 @@ def save_chat_message(
 
 
 def get_conversation_history(conversation_id: str) -> List[Dict[str, str]]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.execute(
             "SELECT role, message, created_at FROM chats WHERE conversation_id=? ORDER BY created_at ASC",
             (conversation_id,),
@@ -815,7 +899,7 @@ def get_conversation_history(conversation_id: str) -> List[Dict[str, str]]:
 def check_limit(user_id: str, subscription: str, kind: str) -> Tuple[bool, int, int]:
     limits = {"free": 100, "pro": 1000}
     limit = limits.get(subscription, 100)
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         today = datetime.utcnow().date().isoformat()
         cur = conn.execute(
             "SELECT COUNT(*) AS c FROM chats WHERE user_id=? AND substr(created_at,1,10)=?",
@@ -829,7 +913,7 @@ def check_limit(user_id: str, subscription: str, kind: str) -> Tuple[bool, int, 
 def increment_usage(user_id: str, kind: str = "questions") -> None:
     if not user_id:
         return
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         today = datetime.utcnow().date().isoformat()
         cur = conn.execute(
             "SELECT id, used, last_reset FROM usage WHERE user_id=? AND kind=?",
@@ -837,7 +921,11 @@ def increment_usage(user_id: str, kind: str = "questions") -> None:
         )
         row = cur.fetchone()
         if row:
-            record_id, used, last_reset = row
+            # Read by name: `get_connection` installs a dict row factory, so
+            # positional unpacking raised on every row.
+            record_id = row["id"]
+            used = row["used"]
+            last_reset = row["last_reset"]
             if last_reset is None or last_reset.split("T")[0] != today:
                 used = 0
             used += 1
@@ -853,7 +941,7 @@ def increment_usage(user_id: str, kind: str = "questions") -> None:
 
 
 def get_user_usage(user_id: str) -> Dict[str, int]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.execute(
             "SELECT COUNT(*) AS total_messages FROM chats WHERE user_id=?", (user_id,)
         )
@@ -863,7 +951,7 @@ def get_user_usage(user_id: str) -> Dict[str, int]:
 
 
 def get_user_usage_summary(user_id: str) -> Dict[str, Any]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         rows = conn.execute(
             "SELECT kind, used, last_reset FROM usage WHERE user_id=?", (user_id,)
         ).fetchall()
@@ -876,13 +964,13 @@ def get_user_usage_summary(user_id: str) -> Dict[str, Any]:
 
 
 def get_total_users() -> int:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute("SELECT COUNT(*) AS total_users FROM users").fetchone()
     return row["total_users"] if row else 0
 
 
 def get_active_users() -> int:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT COUNT(*) AS active_users FROM users WHERE last_login IS NOT NULL"
         ).fetchone()
@@ -890,13 +978,13 @@ def get_active_users() -> int:
 
 
 def get_total_messages() -> int:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute("SELECT COUNT(*) AS total_messages FROM chats").fetchone()
     return row["total_messages"] if row else 0
 
 
 def get_total_conversations() -> int:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT COUNT(DISTINCT conversation_id) AS total_conversations FROM chats"
         ).fetchone()
@@ -914,15 +1002,22 @@ def get_site_metrics() -> Dict[str, int]:
 
 
 def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM users WHERE email=? LIMIT 1", (email.strip().lower(),)
         ).fetchone()
     return row
 
 
-def create_user(user_id: str, email: str, password_hash: str, role: str = "user", plan: str = "free") -> bool:
-    with transaction(DB_PATH) as conn:
+def create_user_with_password_hash(user_id: str, email: str, password_hash: str, role: str = "user", plan: str = "free") -> bool:
+    """Insert a user given an already-hashed password.
+
+    Renamed from ``create_user``: it shadowed the (username, email, password)
+     version below, so ``create_user`` resolved to this incompatible
+    signature and its columns (``role``/``plan``) that the authoritative
+    ``users`` table does not have.
+    """
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO users (id, email, password_hash, role, plan, created_at) VALUES (?, ?, ?, ?, ?, ?)",
             (user_id, email.strip().lower(), password_hash, role, plan, datetime.utcnow().isoformat()),
@@ -933,7 +1028,7 @@ def create_user(user_id: str, email: str, password_hash: str, role: str = "user"
 def verify_user_credentials_by_id(user_id: str, password: str) -> bool:
     user = get_user_by_email(user_id) if "@" in user_id else None
     if user is None:
-        with transaction(DB_PATH) as conn:
+        with _transaction() as conn:
             user = conn.execute("SELECT * FROM users WHERE id=? LIMIT 1", (user_id,)).fetchone()
     if not user:
         return False
@@ -942,7 +1037,7 @@ def verify_user_credentials_by_id(user_id: str, password: str) -> bool:
 
 def create_email_verification_token(user_id: str, token: str, expires_at: str) -> bool:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)",
             (str(uuid.uuid4()), user_id, token_hash, expires_at),
@@ -952,7 +1047,7 @@ def create_email_verification_token(user_id: str, token: str, expires_at: str) -
 
 def verify_email_token(token: str) -> Optional[dict]:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM email_verification_tokens WHERE token_hash=? AND used=0 AND expires_at > ?",
             (token_hash, datetime.utcnow().isoformat()),
@@ -968,7 +1063,7 @@ def verify_email_token(token: str) -> Optional[dict]:
 
 def create_password_reset_token(user_id: str, token: str, expires_at: str) -> bool:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO password_reset_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)",
             (str(uuid.uuid4()), user_id, token_hash, expires_at),
@@ -978,7 +1073,7 @@ def create_password_reset_token(user_id: str, token: str, expires_at: str) -> bo
 
 def reset_password_with_token(token: str, new_password: str) -> Optional[str]:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM password_reset_tokens WHERE token_hash=? AND used=0 AND expires_at > ?",
             (token_hash, datetime.utcnow().isoformat()),
@@ -998,7 +1093,7 @@ def reset_password_with_token(token: str, new_password: str) -> Optional[str]:
 
 
 def create_mfa_secret(user_id: str, secret: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO mfa_secrets (id, user_id, secret) VALUES (?, ?, ?)",
             (str(uuid.uuid4()), user_id, secret),
@@ -1007,7 +1102,7 @@ def create_mfa_secret(user_id: str, secret: str) -> bool:
 
 
 def get_mfa_secret(user_id: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM mfa_secrets WHERE user_id=?",
             (user_id,),
@@ -1016,20 +1111,20 @@ def get_mfa_secret(user_id: str) -> Optional[dict]:
 
 
 def enable_mfa(user_id: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute("UPDATE mfa_secrets SET enabled=1 WHERE user_id=?", (user_id,))
     return True
 
 
 def disable_mfa(user_id: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute("DELETE FROM mfa_secrets WHERE user_id=?", (user_id,))
         conn.execute("DELETE FROM mfa_backup_codes WHERE user_id=?", (user_id,))
     return True
 
 
 def create_mfa_backup_codes(user_id: str, codes: List[str]) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         for code in codes:
             code_hash = hashlib.sha256(code.encode()).hexdigest()
             conn.execute(
@@ -1041,7 +1136,7 @@ def create_mfa_backup_codes(user_id: str, codes: List[str]) -> bool:
 
 def verify_mfa_backup_code(user_id: str, code: str) -> bool:
     code_hash = hashlib.sha256(code.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM mfa_backup_codes WHERE user_id=? AND code_hash=? AND used=0",
             (user_id, code_hash),
@@ -1056,7 +1151,7 @@ def verify_mfa_backup_code(user_id: str, code: str) -> bool:
 
 
 def create_session(user_id: str, session_token: str, refresh_token: str, ip_address: str = None, user_agent: str = None, expires_at: str = None) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO user_sessions (id, user_id, session_token, refresh_token, ip_address, user_agent, expires_at, last_activity_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
@@ -1075,7 +1170,7 @@ def create_session(user_id: str, session_token: str, refresh_token: str, ip_addr
 
 
 def get_session_by_token(session_token: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM user_sessions WHERE session_token=? AND expires_at > ?",
             (session_token, datetime.utcnow().isoformat()),
@@ -1084,7 +1179,7 @@ def get_session_by_token(session_token: str) -> Optional[dict]:
 
 
 def get_session_by_refresh_token(refresh_token: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM user_sessions WHERE refresh_token=? AND expires_at > ?",
             (refresh_token, datetime.utcnow().isoformat()),
@@ -1093,20 +1188,20 @@ def get_session_by_refresh_token(refresh_token: str) -> Optional[dict]:
 
 
 def delete_session(session_token: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.execute("DELETE FROM user_sessions WHERE session_token=?", (session_token,))
     return cur.rowcount > 0
 
 
 def delete_user_sessions(user_id: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute("DELETE FROM user_sessions WHERE user_id=?", (user_id,))
     return True
 
 
 def create_device(user_id: str, name: str, fingerprint: str, device_type: str = "unknown", platform: str = None, browser: str = None) -> dict:
     device_id = str(uuid.uuid4())
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO devices (id, user_id, name, device_type, platform, browser, fingerprint, last_seen_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
@@ -1125,7 +1220,7 @@ def create_device(user_id: str, name: str, fingerprint: str, device_type: str = 
 
 
 def get_devices(user_id: str) -> List[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         rows = conn.execute(
             "SELECT * FROM devices WHERE user_id=? ORDER BY last_seen_at DESC",
             (user_id,),
@@ -1134,7 +1229,7 @@ def get_devices(user_id: str) -> List[dict]:
 
 
 def get_device_by_fingerprint(fingerprint: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM devices WHERE fingerprint=?",
             (fingerprint,),
@@ -1143,7 +1238,7 @@ def get_device_by_fingerprint(fingerprint: str) -> Optional[dict]:
 
 
 def trust_device(device_id: str, user_id: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "UPDATE devices SET trusted=1 WHERE id=? AND user_id=?",
             (device_id, user_id),
@@ -1152,7 +1247,7 @@ def trust_device(device_id: str, user_id: str) -> bool:
 
 
 def delete_device(device_id: str, user_id: str) -> bool:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         cur = conn.execute(
             "DELETE FROM devices WHERE id=? AND user_id=?",
             (device_id, user_id),
@@ -1163,7 +1258,7 @@ def delete_device(device_id: str, user_id: str) -> bool:
 def create_magic_link(user_id: str, email: str, token: str, expires_at: str) -> dict:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
     link_id = str(uuid.uuid4())
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT INTO magic_links (id, user_id, email, token_hash, expires_at) VALUES (?, ?, ?, ?, ?)",
             (link_id, user_id, email, token_hash, expires_at),
@@ -1173,7 +1268,7 @@ def create_magic_link(user_id: str, email: str, token: str, expires_at: str) -> 
 
 def verify_magic_link(token: str) -> Optional[dict]:
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM magic_links WHERE token_hash=? AND used=0 AND expires_at > ?",
             (token_hash, datetime.utcnow().isoformat()),
@@ -1188,7 +1283,7 @@ def verify_magic_link(token: str) -> Optional[dict]:
 
 def create_oauth_account(user_id: str, provider: str, provider_user_id: str, access_token: str = None, refresh_token: str = None, expires_at: str = None) -> dict:
     account_id = str(uuid.uuid4())
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         conn.execute(
             "INSERT OR REPLACE INTO oauth_accounts (id, user_id, provider, provider_user_id, access_token, refresh_token, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (account_id, user_id, provider, provider_user_id, access_token, refresh_token, expires_at),
@@ -1197,7 +1292,7 @@ def create_oauth_account(user_id: str, provider: str, provider_user_id: str, acc
 
 
 def get_oauth_account(user_id: str, provider: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM oauth_accounts WHERE user_id=? AND provider=?",
             (user_id, provider),
@@ -1206,7 +1301,7 @@ def get_oauth_account(user_id: str, provider: str) -> Optional[dict]:
 
 
 def get_oauth_account_by_provider_user_id(provider: str, provider_user_id: str) -> Optional[dict]:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute(
             "SELECT * FROM oauth_accounts WHERE provider=? AND provider_user_id=?",
             (provider, provider_user_id),
@@ -1215,6 +1310,6 @@ def get_oauth_account_by_provider_user_id(provider: str, provider_user_id: str) 
 
 
 def get_total_usage_records() -> int:
-    with transaction(DB_PATH) as conn:
+    with _transaction() as conn:
         row = conn.execute("SELECT SUM(used) AS total_usage FROM usage").fetchone()
     return row["total_usage"] if row and row["total_usage"] is not None else 0

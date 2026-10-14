@@ -5,7 +5,15 @@ from typing import Generator, Optional
 
 
 DB_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.getenv("ASTROVOX_DB_PATH", os.path.join(DB_DIR, "app.db"))
+
+# Both spellings have appeared in the fleet: `database.database` read
+# `Astravox_DB_PATH` while this module read `ASTROVOX_DB_PATH`. When both are
+# set the two modules opened different files, so the schema was created in one
+# and the queries ran against another. One canonical name, with the legacy
+# spelling still honoured so a deployment that sets only that one keeps working.
+DB_PATH = os.getenv("ASTROVOX_DB_PATH") or os.getenv(
+    "Astravox_DB_PATH", os.path.join(DB_DIR, "app.db")
+)
 
 
 def _ensure_dir() -> None:
@@ -52,9 +60,69 @@ def init_db(path: Optional[str] = None) -> None:
                 used INTEGER NOT NULL DEFAULT 0,
                 last_reset TEXT
             );
+            -- Kept for migration ordering: `version INTEGER PRIMARY KEY`
+            -- is a rowid alias in SQLite, so rows are physically ordered by
+            -- version and the order a migration actually ran in is
+            -- unrecoverable. `applied_seq` is a real autoincrement, so
+            -- `applied_versions()` can report application order.
             CREATE TABLE IF NOT EXISTS schema_migrations (
-                version INTEGER PRIMARY KEY,
+                applied_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                version INTEGER NOT NULL UNIQUE,
                 applied_at TEXT NOT NULL
+            );
+            -- Auth service tables. `app/services/{device,magic_link,mfa,oauth,
+            -- session}_service.py` read and write these, and no statement in the
+            -- repo created them, so every one of those calls failed with
+            -- "no such table" as soon as the modules were reachable.
+            CREATE TABLE IF NOT EXISTS devices (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                name TEXT,
+                device_type TEXT,
+                platform TEXT,
+                browser TEXT,
+                fingerprint TEXT,
+                last_seen_at TEXT,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS magic_links (
+                id TEXT PRIMARY KEY,
+                email TEXT,
+                token_hash TEXT,
+                used INTEGER NOT NULL DEFAULT 0,
+                expires_at TEXT,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS mfa_secrets (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                secret TEXT,
+                enabled INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS mfa_backup_codes (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                code_hash TEXT,
+                used INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS oauth_accounts (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                provider TEXT,
+                provider_user_id TEXT,
+                access_token TEXT,
+                created_at TEXT
+            );
+            CREATE TABLE IF NOT EXISTS user_sessions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                session_token TEXT,
+                refresh_token TEXT,
+                expires_at TEXT,
+                last_activity_at TEXT,
+                created_at TEXT
             );
             CREATE TABLE IF NOT EXISTS conversations (
                 id TEXT PRIMARY KEY,

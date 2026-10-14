@@ -1,48 +1,104 @@
+"""Document persistence.
+
+The connection factory returns a SQLAlchemy ``Session``, so every statement
+here is a ``text()`` construct with named bind parameters. Passing a raw
+string raises in SQLAlchemy 2.x, and a DB-API ``?`` placeholder is not a
+bind parameter SQLAlchemy understands - both mistakes previously surfaced
+as a 500 from the caller.
+"""
+
 import json
 import math
 import uuid
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from sqlalchemy import text
+
 from app.repositories.database.client import get_db
+
+
+def _row_to_dict(row: Any) -> Dict[str, Any]:
+    """Normalise a result row to a plain dict across driver row types."""
+    if row is None:
+        return {}
+    if isinstance(row, dict):
+        return dict(row)
+    mapping = getattr(row, "_mapping", None)
+    if mapping is not None:
+        return dict(mapping)
+    try:
+        return dict(row)
+    except (TypeError, ValueError):
+        return {"value": row}
+
+
+def _now() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
 def create_document(user_id, filename, content_type, size):
     doc_id = str(uuid.uuid4())
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO documents (id, user_id, filename, content_type, size, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (doc_id, user_id, filename, content_type, size, datetime.now(timezone.utc).isoformat()),
+            text(
+                "INSERT INTO documents "
+                "(id, user_id, filename, content_type, size, created_at) "
+                "VALUES (:id, :user_id, :filename, :content_type, :size, :created_at)"
+            ),
+            {
+                "id": doc_id,
+                "user_id": user_id,
+                "filename": filename,
+                "content_type": content_type,
+                "size": size,
+                "created_at": _now(),
+            },
         )
         conn.commit()
-    return {"id": doc_id, "user_id": user_id, "filename": filename, "content_type": content_type, "size": size}
+    return {
+        "id": doc_id,
+        "user_id": user_id,
+        "filename": filename,
+        "content_type": content_type,
+        "size": size,
+    }
 
 
 def get_document(user_id, document_id):
     with get_db() as conn:
         row = conn.execute(
-            "SELECT id, user_id, filename, content_type, size, created_at FROM documents WHERE id = ? AND user_id = ?",
-            (document_id, user_id),
+            text(
+                "SELECT id, user_id, filename, content_type, size, created_at "
+                "FROM documents WHERE id = :document_id AND user_id = :user_id"
+            ),
+            {"document_id": document_id, "user_id": user_id},
         ).fetchone()
         if not row:
             raise ValueError("Document not found")
-        return dict(row)
+        return _row_to_dict(row)
 
 
 def list_documents(user_id):
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, user_id, filename, content_type, size, created_at FROM documents WHERE user_id = ? ORDER BY created_at DESC",
-            (user_id,),
+            text(
+                "SELECT id, user_id, filename, content_type, size, created_at "
+                "FROM documents WHERE user_id = :user_id ORDER BY created_at DESC"
+            ),
+            {"user_id": user_id},
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_row_to_dict(r) for r in rows]
 
 
 def delete_document(user_id, document_id):
     with get_db() as conn:
         cursor = conn.execute(
-            "DELETE FROM documents WHERE id = ? AND user_id = ?", (document_id, user_id)
+            text("DELETE FROM documents WHERE id = :document_id AND user_id = :user_id"),
+            {"document_id": document_id, "user_id": user_id},
         )
         conn.commit()
-        return cursor.rowcount > 0
+        return (cursor.rowcount or 0) > 0
 
 
 def create_document_chunk(document_id, content, embedding, metadata):
@@ -52,8 +108,19 @@ def create_document_chunk(document_id, content, embedding, metadata):
         embedding_value = json.dumps(embedding)
     with get_db() as conn:
         conn.execute(
-            "INSERT INTO document_chunks (id, document_id, content, embedding, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?)",
-            (chunk_id, document_id, content, embedding_value, metadata, datetime.now(timezone.utc).isoformat()),
+            text(
+                "INSERT INTO document_chunks "
+                "(id, document_id, content, embedding, metadata, created_at) "
+                "VALUES (:id, :document_id, :content, :embedding, :metadata, :created_at)"
+            ),
+            {
+                "id": chunk_id,
+                "document_id": document_id,
+                "content": content,
+                "embedding": embedding_value,
+                "metadata": metadata,
+                "created_at": _now(),
+            },
         )
         conn.commit()
     return {"id": chunk_id, "document_id": document_id, "content": content}
@@ -62,7 +129,8 @@ def create_document_chunk(document_id, content, embedding, metadata):
 def delete_document_chunks(document_id):
     with get_db() as conn:
         conn.execute(
-            "DELETE FROM document_chunks WHERE document_id = ?", (document_id,)
+            text("DELETE FROM document_chunks WHERE document_id = :document_id"),
+            {"document_id": document_id},
         )
         conn.commit()
 
@@ -70,11 +138,13 @@ def delete_document_chunks(document_id):
 def search_chunks(user_id, query_embedding, limit=5):
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT c.id, c.document_id, c.content, c.metadata, d.filename, c.embedding "
-            "FROM document_chunks c "
-            "JOIN documents d ON c.document_id = d.id "
-            "WHERE d.user_id = ?",
-            (user_id,),
+            text(
+                "SELECT c.id, c.document_id, c.content, c.metadata, d.filename, c.embedding "
+                "FROM document_chunks c "
+                "JOIN documents d ON c.document_id = d.id "
+                "WHERE d.user_id = :user_id"
+            ),
+            {"user_id": user_id},
         ).fetchall()
 
     if not query_embedding:
@@ -86,8 +156,9 @@ def search_chunks(user_id, query_embedding, limit=5):
 
     results = []
     for row in rows:
+        record = _row_to_dict(row)
         emb = None
-        raw = row.get("embedding") if isinstance(row, dict) else row[5]
+        raw = record.get("embedding")
         if raw:
             try:
                 emb = json.loads(raw)
@@ -99,11 +170,8 @@ def search_chunks(user_id, query_embedding, limit=5):
         if norm == 0:
             continue
         score = sum(x * y for x, y in zip(query_embedding, emb)) / (q_norm * norm)
-        result = dict(row) if isinstance(row, dict) else {
-            "id": row[0], "document_id": row[1], "content": row[2], "metadata": row[3], "filename": row[4], "embedding": row[5]
-        }
-        result["score"] = score
-        results.append(result)
+        record["score"] = score
+        results.append(record)
 
     results.sort(key=lambda x: x["score"], reverse=True)
     return results[:limit]
@@ -112,7 +180,11 @@ def search_chunks(user_id, query_embedding, limit=5):
 def get_chunks_by_document(document_id):
     with get_db() as conn:
         rows = conn.execute(
-            "SELECT id, document_id, content, metadata, created_at FROM document_chunks WHERE document_id = ? ORDER BY created_at ASC",
-            (document_id,),
+            text(
+                "SELECT id, document_id, content, metadata, created_at "
+                "FROM document_chunks WHERE document_id = :document_id "
+                "ORDER BY created_at ASC"
+            ),
+            {"document_id": document_id},
         ).fetchall()
-        return [dict(r) for r in rows]
+        return [_row_to_dict(r) for r in rows]

@@ -44,6 +44,25 @@ except Exception:  # pragma: no cover - only when the repository layer is absent
         logger.debug("init_db called with fallback shim")
 
 
+def get_raw_db() -> Any:
+    """Return a DB-API sqlite connection for callers that use `?` placeholders.
+
+    `get_db` returns the repository layer's SQLAlchemy session, which requires
+    `text()`-wrapped statements and named bind parameters. Several service
+    modules (`device`, `magic_link`, `mfa`, `oauth`, `session`) were written
+    against raw DB-API `?` SQL and `rowcount`, so every call they made raised
+    `ArgumentError: Textual SQL expression ... should be explicitly declared as
+    text(...)`. They get a connection whose contract they already match.
+
+    Prefer `get_db()` for new code; this exists for the DB-API callers and is
+    the same connection layer `database/database.py` uses.
+    """
+    from database.connection import DB_PATH as _DB_PATH
+    from database.connection import get_connection
+
+    return get_connection(_DB_PATH)
+
+
 def get_db() -> Any:
     """Return a database session.
 
