@@ -2,10 +2,13 @@ package runtime
 
 import (
 	"context"
-	"errors"
+	stderrors "errors"
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
+
+	axerrors "github.com/astrovox/astrovox/internal/errors"
 )
 
 // Task represents a unit of work.
@@ -17,7 +20,23 @@ type Future interface {
 	Done() bool
 }
 
+// Errors returned by Submit. They are typed errors, so callers can
+// classify failures with errors.Is or CodeOf.
+var (
+	// ErrQueueFull means the bounded queue rejected the task because it
+	// is at capacity: backpressure is explicit, never a silent block.
+	ErrQueueFull = axerrors.New(axerrors.CodeQueueFull, "scheduler queue is full")
+	// ErrSchedulerStopped means the scheduler was shut down and no
+	// longer accepts work.
+	ErrSchedulerStopped = axerrors.New(axerrors.CodeCancelled, "scheduler is stopped")
+)
+
 // Scheduler schedules and executes tasks.
+//
+// Concurrency contract: workers drain the bounded queue until the
+// channel is closed, so Stop waits for already-accepted work instead of
+// abandoning it. Submit is refused (not panicked, not blocked) once the
+// scheduler is stopped or the queue is full.
 type Scheduler struct {
 	workers  int
 	tasks    chan func()
@@ -25,6 +44,13 @@ type Scheduler struct {
 	ctx      context.Context
 	cancel   context.CancelFunc
 	stopOnce sync.Once
+
+	// submitMu serializes Submit against Stop's channel close. Without
+	// it a Submit racing a Stop sends on a closed channel and panics.
+	// The flag is checked under the same lock, so a stopped scheduler
+	// can never reach the send.
+	submitMu sync.RWMutex
+	closed   bool
 }
 
 // NewScheduler creates a new scheduler with the given number of workers.
@@ -46,44 +72,59 @@ func NewScheduler(workers int) *Scheduler {
 	return s
 }
 
-// worker processes tasks from the queue.
+// worker drains tasks until the queue is closed. Draining (rather than
+// exiting on ctx cancellation) is what makes Stop wait for accepted
+// work: a cancelled context otherwise strands queued tasks with
+// futures that never complete.
 func (s *Scheduler) worker() {
 	defer s.wg.Done()
-	for {
-		select {
-		case task, ok := <-s.tasks:
-			if !ok {
-				return
-			}
-			task()
-		case <-s.ctx.Done():
-			return
-		}
+	for task := range s.tasks {
+		task()
 	}
 }
 
-// Submit submits a task for execution.
-func (s *Scheduler) Submit(task Task) Future {
+// QueueLen returns the number of tasks waiting in the queue.
+func (s *Scheduler) QueueLen() int { return len(s.tasks) }
+
+// Submit submits a task for execution. It returns ErrSchedulerStopped
+// after Stop and ErrQueueFull when the bounded queue is at capacity.
+func (s *Scheduler) Submit(task Task) (Future, error) {
+	if task == nil {
+		return nil, fmt.Errorf("%w: nil task", axerrors.New(axerrors.CodeInvalidArgument, "nil task"))
+	}
+	s.submitMu.RLock()
+	defer s.submitMu.RUnlock()
+	if s.closed {
+		return nil, fmt.Errorf("%w: cannot submit to a stopped scheduler", ErrSchedulerStopped)
+	}
 	f := &future{
 		done: make(chan error, 1),
 	}
-	s.tasks <- func() {
+	select {
+	case s.tasks <- func() {
 		err := task()
 		select {
 		case f.done <- err:
 		default:
 		}
+	}:
+		return f, nil
+	default:
+		return nil, fmt.Errorf("%w: queue holds %d tasks", ErrQueueFull, len(s.tasks))
 	}
-	return f
 }
 
-// SubmitMany submits multiple tasks.
-func (s *Scheduler) SubmitMany(tasks []Task) []Future {
-	futures := make([]Future, len(tasks))
-	for i, task := range tasks {
-		futures[i] = s.Submit(task)
+// SubmitMany submits multiple tasks, stopping at the first refusal.
+func (s *Scheduler) SubmitMany(tasks []Task) ([]Future, error) {
+	futures := make([]Future, 0, len(tasks))
+	for _, task := range tasks {
+		f, err := s.Submit(task)
+		if err != nil {
+			return futures, err
+		}
+		futures = append(futures, f)
 	}
-	return futures
+	return futures, nil
 }
 
 // Wait waits for all futures to complete.
@@ -97,11 +138,16 @@ func (s *Scheduler) Wait(futures ...Future) error {
 	return firstErr
 }
 
-// Stop stops the scheduler. It is safe to call more than once.
+// Stop stops the scheduler. It is safe to call more than once. Tasks
+// already accepted are drained before Stop returns.
 func (s *Scheduler) Stop() {
 	s.cancel()
-	// Closing the task channel twice would panic, so guard with sync.Once.
-	s.stopOnce.Do(func() { close(s.tasks) })
+	s.stopOnce.Do(func() {
+		s.submitMu.Lock()
+		s.closed = true
+		close(s.tasks)
+		s.submitMu.Unlock()
+	})
 	s.wg.Wait()
 }
 
@@ -236,7 +282,7 @@ func (t *Tracer) Events() []TraceEvent {
 }
 
 // ErrCancelled is returned when a task is cancelled.
-var ErrCancelled = errors.New("task cancelled")
+var ErrCancelled = stderrors.New("task cancelled")
 
 // CancellableTask wraps a task with cancellation support.
 type CancellableTask struct {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"sync"
 	"testing"
@@ -170,8 +171,10 @@ func TestConcurrentMap(t *testing.T) {
 }
 
 func TestFileReadWrite(t *testing.T) {
-	path := "testdata/prod_test.txt"
-	defer os.Remove(path)
+	// Write into the test's own temp dir: a relative testdata path
+	// fails when the directory does not exist and leaks files into the
+	// package when it does.
+	path := filepath.Join(t.TempDir(), "prod_test.txt")
 	if err := os.WriteFile(path, []byte("data"), 0644); err != nil {
 		t.Fatalf("write: %v", err)
 	}

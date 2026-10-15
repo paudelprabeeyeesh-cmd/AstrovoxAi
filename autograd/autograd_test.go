@@ -290,14 +290,7 @@ func TestAdamBadBetas(t *testing.T) {
 	}
 }
 
-// Sub computes the differentiable difference a - b.
-func Sub(tape *Tape, a, b *Variable) (*Variable, error) {
-	nb, err := Neg(tape, b)
-	if err != nil {
-		return nil, err
-	}
-	return Add(tape, a, nb)
-}
+// Sub lives in the library now; this helper was the test-only stand-in.
 
 func TestNegGrad(t *testing.T) {
 	tape := NewTape()

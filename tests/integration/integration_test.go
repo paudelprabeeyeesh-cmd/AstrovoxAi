@@ -11,9 +11,12 @@ import (
 
 func TestIntegrationIRAndOptimizer(t *testing.T) {
 	g := ir.NewGraph()
-	g.AddNode(&ir.Node{Kind: ir.NodeKindConstant, Op: "a", Shape: ir.Shape{2, 3}, DType: ir.DataTypeFloat32})
-	g.AddNode(&ir.Node{Kind: ir.NodeKindCall, Op: "add", Inputs: []int64{1}, Shape: ir.Shape{2, 3}, DType: ir.DataTypeFloat32})
-	g.Output = []int64{2}
+	// Use the returned IDs rather than literals: node IDs come from a
+	// package-global counter, so hardcoded values break when tests run
+	// more than once in the same process (-count=2).
+	constant := g.AddNode(&ir.Node{Kind: ir.NodeKindConstant, Op: "a", Shape: ir.Shape{2, 3}, DType: ir.DataTypeFloat32})
+	sink := g.AddNode(&ir.Node{Kind: ir.NodeKindCall, Op: "add", Inputs: []int64{constant}, Shape: ir.Shape{2, 3}, DType: ir.DataTypeFloat32})
+	g.Output = []int64{sink}
 	if err := g.ValidateGraph(); err != nil {
 		t.Fatalf("invalid graph: %v", err)
 	}
@@ -33,7 +36,10 @@ func TestIntegrationBackendAndRuntime(t *testing.T) {
 	}
 	s := runtime.NewScheduler(1)
 	defer s.Stop()
-	f := s.Submit(func() error { return nil })
+	f, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != nil {
 		t.Fatalf("future failed: %v", err)
 	}

@@ -106,6 +106,28 @@ type Config struct {
 	Approver Approver
 }
 
+// approverAdapter adapts an agent Approver to the tools.Approver the
+// executor enforces.
+//
+// Approval must be decided in exactly one place. Before this adapter the
+// agent and the executor each owned an approver with different defaults, so
+// a call the agent approved could still be refused by the executor's
+// default deny-nothing approver, and the run stopped at the tool gate
+// without the agent learning why. The decision is now made once, at the
+// agent layer, and the executor's gate re-checks that same decision: the
+// executor keeps its enforcement, and a tool still cannot approve itself,
+// because the approver it consults is installed by the agent, not passed
+// through Execute.
+type approverAdapter struct {
+	approver Approver
+	goal     string
+}
+
+// Approve returns the agent approver's verdict for this call.
+func (a approverAdapter) Approve(call tools.Call, _ tools.Schema) error {
+	return a.approver.Approve(call, a.goal)
+}
+
 // Agent runs one task to completion or to a cap.
 type Agent struct {
 	cfg   Config
@@ -139,6 +161,10 @@ func New(cfg Config, reg *tools.Registry, exec *tools.Executor) (*Agent, error) 
 		// The safe default: no approver means nothing needing approval runs.
 		cfg.Approver = DenyApprover{}
 	}
+	// The executor defaults to a manual approver that grants nothing, which
+	// would refuse a call the agent already approved. Install the agent's
+	// decision on the executor so the two gates cannot disagree.
+	exec.SetApprover(approverAdapter{approver: cfg.Approver, goal: cfg.Goal})
 	return &Agent{cfg: cfg, reg: reg, exec: exec, clock: time.Now}, nil
 }
 
@@ -224,8 +250,13 @@ func (a *Agent) Run(ctx context.Context, p Proposer) (*Result, error) {
 		outcome := a.exec.Run(*call)
 		res.Trace = append(res.Trace, *outcome)
 		if outcome.Skipped {
-			// A skipped call is a cap hit, which is recorded and returned
-			// rather than retried.
+			// A skipped call is a refusal or a cap hit, recorded and
+			// returned rather than retried. The reason field separates the
+			// two so an approval refusal is not reported as a budget hit.
+			if outcome.Reason == "approval" {
+				res.StopReason = "approval refused"
+				return res, fmt.Errorf("agent %q: %w: %s", a.cfg.Name, ErrApprovalRequired, outcome.Error)
+			}
 			res.StopReason = "budget cap"
 			return res, nil
 		}

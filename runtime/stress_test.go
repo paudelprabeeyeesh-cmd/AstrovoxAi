@@ -3,8 +3,10 @@ package runtime_test
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 
+	"github.com/astrovox/astrovox/internal/errors"
 	"github.com/astrovox/astrovox/runtime"
 	"github.com/astrovox/astrovox/tensor"
 )
@@ -20,7 +22,11 @@ func stressTask() runtime.Task {
 }
 
 // TestStress_HighConcurrency submits 10k tasks from
-// 10k goroutines through a 4-worker engine.
+// 10k goroutines through a 4-worker engine. The bounded
+// queue refuses overflow instead of blocking forever, so
+// every accepted task must complete and every refusal
+// must be the typed backpressure error: no panic, no
+// silent acceptance, no stranded future.
 func TestStress_HighConcurrency(t *testing.T) {
 	e := runtime.NewEngine(4)
 	ctx := context.Background()
@@ -28,13 +34,23 @@ func TestStress_HighConcurrency(t *testing.T) {
 	const goroutines = 10_000
 	var wg sync.WaitGroup
 	errs := make(chan error, goroutines)
+	var accepted, refused atomic.Int64
 	start := make(chan struct{})
 	for g := 0; g < goroutines; g++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			<-start
-			f := e.Submit(ctx, task)
+			f, err := e.Submit(ctx, task)
+			if err != nil {
+				// Refusal must be the typed backpressure error.
+				if !errors.IsCode(err, errors.CodeQueueFull) {
+					errs <- err
+				}
+				refused.Add(1)
+				return
+			}
+			accepted.Add(1)
 			if _, err := f.Wait(); err != nil {
 				errs <- err
 			}
@@ -46,24 +62,40 @@ func TestStress_HighConcurrency(t *testing.T) {
 	for err := range errs {
 		t.Fatalf("task failed: %v", err)
 	}
+	if accepted.Load() == 0 {
+		t.Fatal("no task was accepted")
+	}
 }
 
-// TestStress_ThreadPoolSaturation saturates the engine
-// with more queued tasks than workers and verifies all
-// complete.
+// TestStress_ThreadPoolSaturation drives 5000 tasks
+// through a 2-worker engine, respecting backpressure: when
+// the bounded queue refuses, the test drains accepted work
+// and retries instead of assuming unbounded queueing.
 func TestStress_ThreadPoolSaturation(t *testing.T) {
 	e := runtime.NewEngine(2)
 	ctx := context.Background()
 	task := stressTask()
 	const tasks = 5_000
-	futures := make([]runtime.Future, tasks)
-	for i := range futures {
-		futures[i] = e.Submit(ctx, task)
-	}
-	for i, f := range futures {
-		if _, err := f.Wait(); err != nil {
-			t.Fatalf("task %d: %v", i, err)
+	var pending []runtime.Future
+	for done := 0; done < tasks; {
+		// Fill the bounded queue, then drain everything and repeat.
+		for done < tasks {
+			f, err := e.Submit(ctx, task)
+			if err != nil {
+				if !errors.IsCode(err, errors.CodeQueueFull) {
+					t.Fatalf("submit %d: unexpected error %v", done, err)
+				}
+				break
+			}
+			pending = append(pending, f)
+			done++
 		}
+		for _, f := range pending {
+			if _, err := f.Wait(); err != nil {
+				t.Fatalf("task failed: %v", err)
+			}
+		}
+		pending = pending[:0]
 	}
 }
 
@@ -96,9 +128,25 @@ func TestStress_RepeatedSubmit(t *testing.T) {
 	task := stressTask()
 	const tasks = 100_000
 	for i := 0; i < tasks; i++ {
-		f := e.Submit(ctx, task)
+		f, err := e.Submit(ctx, task)
+		if err != nil {
+			t.Fatalf("submit %d: %v", i, err)
+		}
 		if _, err := f.Wait(); err != nil {
 			t.Fatalf("task %d: %v", i, err)
 		}
 	}
+}
+
+// TestStress_SubmitAfterStopIsRefused verifies that
+// submitting to a stopped engine returns the typed
+// stopped error instead of panicking on a closed queue.
+func TestStress_SubmitAfterStopIsRefused(t *testing.T) {
+	e := runtime.NewEngine(1)
+	e.Stop()
+	if _, err := e.Submit(context.Background(), stressTask()); !errors.IsCode(err, errors.CodeCancelled) {
+		t.Fatalf("submit after stop: %v, want a CodeCancelled error", err)
+	}
+	// A second Stop must not panic (channel close guard).
+	e.Stop()
 }

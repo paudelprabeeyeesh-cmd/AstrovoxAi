@@ -1,3 +1,2 @@
-package integration_test
-
-// Package integration_test contains integration tests for Astrovox.
+// Package integration contains integration tests for Astrovox.
+package integration

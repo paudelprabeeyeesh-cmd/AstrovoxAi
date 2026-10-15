@@ -27,9 +27,24 @@ const (
 	ActReLU6
 )
 
+// DefaultLeakyReLUSlope is the conventional leaky ReLU slope (0.01). It is
+// a named constant so the slope is stated once and is overridable through
+// FusedActApplyFull rather than buried in a kernel body.
+const DefaultLeakyReLUSlope = 0.01
+
 // FusedActApply applies an activation function in-place.
 // Supports fused multiply-add-activate patterns.
+//
+// The pre-transform is v = alpha*x + beta, applied before the activation.
+// ActLeakyReLU uses DefaultLeakyReLUSlope; use FusedActApplyFull to choose
+// a different slope.
 func FusedActApply(x *tensor.Tensor, act ActivationType, alpha, beta float64) error {
+	return FusedActApplyFull(x, act, alpha, beta, DefaultLeakyReLUSlope)
+}
+
+// FusedActApplyFull is FusedActApply with an explicit leaky ReLU slope.
+// For every activation other than ActLeakyReLU the slope is unused.
+func FusedActApplyFull(x *tensor.Tensor, act ActivationType, alpha, beta, leakSlope float64) error {
 	if x == nil {
 		return errors.New(errors.CodeInvalidArgument, "nil tensor")
 	}
@@ -131,7 +146,7 @@ func FusedActApply(x *tensor.Tensor, act ActivationType, alpha, beta float64) er
 		for i := 0; i < n; i++ {
 			v := alpha*xv[i] + beta
 			if v < 0 {
-				v = 0.01 * v // alpha=0.01
+				v = leakSlope * v
 			}
 			xv[i] = v
 		}
@@ -250,6 +265,18 @@ func FusedLinearAct(x, W, b *tensor.Tensor, out *tensor.Tensor, act ActivationTy
 							h = 6
 						}
 						v = v * h / 6
+					case ActLeakyReLU:
+						if v < 0 {
+							v = DefaultLeakyReLUSlope * v
+						}
+					default:
+						// An unsupported activation is reported, not skipped:
+						// passing the value through unchanged would look like
+						// a successful fused kernel that silently dropped the
+						// activation the caller asked for.
+						return errors.New(errors.CodeUnimplemented,
+							"activation not supported by the fused linear kernel").
+							WithField("act", int(act))
 					}
 					ov[ii*N+jj] = v
 				}
@@ -262,19 +289,37 @@ func FusedLinearAct(x, W, b *tensor.Tensor, out *tensor.Tensor, act ActivationTy
 
 // FusedConvAct applies convolution followed by activation.
 // Supports 2D convolution + ReLU/GELU/SiLU in one pass.
+//
+// The convolution is computed by Conv2d and then copied into out, so out
+// must already have the convolution's output shape [N, F, OH, OW]. The
+// copy is validated against the computed result: a caller-supplied out of
+// the wrong shape is an error, not a silently partial result.
 func FusedConvAct(x, W, b *tensor.Tensor, out *tensor.Tensor,
 	strideH, strideW, padH, padW int, act ActivationType) error {
 	if x == nil || W == nil || out == nil {
 		return errors.New(errors.CodeInvalidArgument, "nil tensor")
 	}
-	// Use existing Conv2d then apply activation
-	_, err := Conv2d(x, W, strideH, strideW, padH, padW, ConvDirect)
+	conv, err := Conv2d(x, W, strideH, strideW, padH, padW, ConvDirect)
 	if err != nil {
 		return err
 	}
+	if !conv.Shape().Equal(out.Shape()) {
+		return errors.New(errors.CodeShapeMismatch,
+			"out shape does not match the convolution output shape").
+			WithField("want", conv.Shape().Dims()).
+			WithField("got", out.Shape().Dims())
+	}
+	if !out.IsContiguous() {
+		return errors.New(errors.CodeInvalidArgument, "out must be contiguous")
+	}
+	// Copy the convolution result into out: without this the caller's
+	// tensor never receives the convolution and the following bias and
+	// activation run over whatever out already held.
+	cv := conv.Float64()
+	ov := out.Float64()
+	copy(ov, cv)
 	// Add bias if provided
 	if b != nil {
-		ov := out.Float64()
 		bv := b.Float64()
 		N, C, OH, OW := out.Shape().Dim(0), out.Shape().Dim(1), out.Shape().Dim(2), out.Shape().Dim(3)
 		for n := 0; n < N; n++ {
@@ -332,6 +377,15 @@ func FusedAddAct(x, y *tensor.Tensor, act ActivationType) (*tensor.Tensor, error
 			x3 := v * v * v
 			t := math.Tanh(k * (v + 0.044715*x3))
 			v = 0.5 * v * (1 + t)
+		case ActLeakyReLU:
+			if v < 0 {
+				v = DefaultLeakyReLUSlope * v
+			}
+		default:
+			// See FusedLinearAct: an unsupported activation must be loud.
+			return nil, errors.New(errors.CodeUnimplemented,
+				"activation not supported by the fused add kernel").
+				WithField("act", int(act))
 		}
 		ov[i] = v
 	}

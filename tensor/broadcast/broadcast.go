@@ -19,20 +19,25 @@ func BroadcastShapes(a, b []int) ([]int, error) {
 	}
 	out := make([]int, rank)
 	for i := 0; i < rank; i++ {
+		// i counts from the right; the output slot is mirrored to the
+		// left. Writing out[i] instead of out[rank-1-i] reverses the
+		// output whenever the ranks differ, which is precisely the case
+		// broadcasting exists for.
+		idx := rank - 1 - i
 		da := dimAt(a, i)
 		db := dimAt(b, i)
 		switch {
 		case da == db:
-			out[i] = da
+			out[idx] = da
 		case da == 1:
-			out[i] = db
+			out[idx] = db
 		case db == 1:
-			out[i] = da
+			out[idx] = da
 		default:
 			return nil, errors.New(errors.CodeShapeMismatch, "dimensions not broadcastable").
 				WithField("a", fmt.Sprint(a)).
 				WithField("b", fmt.Sprint(b)).
-				WithField("dim", rank-1-i).
+				WithField("dim", idx).
 				WithField("a_size", da).
 				WithField("b_size", db)
 		}

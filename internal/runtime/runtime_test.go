@@ -14,12 +14,15 @@ func TestSchedulerSubmit(t *testing.T) {
 
 	var mu sync.Mutex
 	called := false
-	f := s.Submit(func() error {
+	f, err := s.Submit(func() error {
 		mu.Lock()
 		called = true
 		mu.Unlock()
 		return nil
 	})
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -41,7 +44,10 @@ func TestSchedulerSubmitMany(t *testing.T) {
 		func() error { mu.Lock(); count++; mu.Unlock(); return nil },
 		func() error { mu.Lock(); count++; mu.Unlock(); return nil },
 	}
-	futures := s.SubmitMany(tasks)
+	futures, err := s.SubmitMany(tasks)
+	if err != nil {
+		t.Fatalf("submit many: %v", err)
+	}
 	if err := s.Wait(futures...); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -54,7 +60,10 @@ func TestSchedulerDone(t *testing.T) {
 	s := NewScheduler(1)
 	defer s.Stop()
 
-	f := s.Submit(func() error { return nil })
+	f, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	time.Sleep(10 * time.Millisecond)
 	if !f.Done() {
 		t.Fatal("expected future to be done")

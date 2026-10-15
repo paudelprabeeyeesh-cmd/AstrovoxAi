@@ -42,7 +42,13 @@ func (s *Stream) Enqueue(task Task) (Future, error) {
 	}
 	s.tasks = append(s.tasks, task)
 	ctx := context.Background()
-	f := s.engine.Submit(ctx, task)
+	f, err := s.engine.Submit(ctx, task)
+	if err != nil {
+		// The task never entered the engine: drop it from the stream so
+		// Pending stays honest.
+		s.tasks = s.tasks[:len(s.tasks)-1]
+		return nil, err
+	}
 	s.last = f
 	return f, nil
 }

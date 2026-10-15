@@ -95,6 +95,179 @@ func Abs(a *tensor.Tensor) (*tensor.Tensor, error) {
 	return unaryOp(a, math.Abs)
 }
 
+// AddScalar returns a + c element-wise.
+func AddScalar(a *tensor.Tensor, c float64) (*tensor.Tensor, error) {
+	return unaryOp(a, func(x float64) float64 { return x + c })
+}
+
+// SubScalar returns a - c element-wise.
+func SubScalar(a *tensor.Tensor, c float64) (*tensor.Tensor, error) {
+	return unaryOp(a, func(x float64) float64 { return x - c })
+}
+
+// MulScalar returns a * c element-wise. It is Scale with a name that
+// matches the arithmetic it performs.
+func MulScalar(a *tensor.Tensor, c float64) (*tensor.Tensor, error) {
+	return unaryOp(a, func(x float64) float64 { return x * c })
+}
+
+// DivScalar returns a / c element-wise.
+func DivScalar(a *tensor.Tensor, c float64) (*tensor.Tensor, error) {
+	if c == 0 {
+		return nil, errors.New(errors.CodeInvalidArgument, "division by zero")
+	}
+	return unaryOp(a, func(x float64) float64 { return x / c })
+}
+
+// Softmax returns the softmax of a along dim, computed stably: the row
+// maximum is subtracted before exponentiation, so large inputs do not
+// overflow to +Inf/NaN. dim may be any rank in range, including negative
+// for Python-style indexing from the end.
+func Softmax(a *tensor.Tensor, dim int) (*tensor.Tensor, error) {
+	if a == nil {
+		return nil, errors.New(errors.CodeInvalidArgument, "nil tensor")
+	}
+	if a.DType() != tensor.Float64 {
+		return nil, errors.New(errors.CodeDTypeMismatch, "softmax requires float64").
+			WithField("dtype", a.DType())
+	}
+	rank := a.Shape().Rank()
+	if rank < 1 {
+		return nil, errors.New(errors.CodeInvalidArgument, "softmax requires rank >= 1")
+	}
+	if dim < 0 {
+		dim += rank
+	}
+	if dim < 0 || dim >= rank {
+		return nil, errors.New(errors.CodeInvalidArgument, "softmax dim out of range").
+			WithField("dim", dim).WithField("rank", rank)
+	}
+	var err error
+	if !a.IsContiguous() {
+		if a, err = a.Contiguous(); err != nil {
+			return nil, err
+		}
+	}
+	d := a.Shape().Dim(dim)
+	outer := 1
+	for i := 0; i < dim; i++ {
+		outer *= a.Shape().Dim(i)
+	}
+	inner := 1
+	for i := dim + 1; i < rank; i++ {
+		inner *= a.Shape().Dim(i)
+	}
+	src := a.Float64()
+	out, err := tensor.New(tensor.Float64, a.Shape().Dims())
+	if err != nil {
+		return nil, err
+	}
+	dst := out.Float64()
+	for o := 0; o < outer; o++ {
+		for in := 0; in < inner; in++ {
+			base := o*d*inner + in
+			// Max over the softmax dim for numerical stability.
+			maxV := src[base]
+			for i := 1; i < d; i++ {
+				if v := src[base+i*inner]; v > maxV {
+					maxV = v
+				}
+			}
+			var sum float64
+			for i := 0; i < d; i++ {
+				e := math.Exp(src[base+i*inner] - maxV)
+				dst[base+i*inner] = e
+				sum += e
+			}
+			inv := 1 / sum
+			for i := 0; i < d; i++ {
+				dst[base+i*inner] *= inv
+			}
+		}
+	}
+	return out, nil
+}
+
+// Concat concatenates tensors along dim. All inputs must share rank,
+// dtype, and every dimension except dim.
+func Concat(ts []*tensor.Tensor, dim int) (*tensor.Tensor, error) {
+	if len(ts) == 0 {
+		return nil, errors.New(errors.CodeInvalidArgument, "concat requires at least one tensor")
+	}
+	for _, t := range ts {
+		if t == nil {
+			return nil, errors.New(errors.CodeInvalidArgument, "nil tensor in concat")
+		}
+		if t.DType() != tensor.Float64 {
+			return nil, errors.New(errors.CodeDTypeMismatch, "concat requires float64").
+				WithField("dtype", t.DType())
+		}
+	}
+	rank := ts[0].Shape().Rank()
+	if dim < 0 {
+		dim += rank
+	}
+	if dim < 0 || dim >= rank {
+		return nil, errors.New(errors.CodeInvalidArgument, "concat dim out of range").
+			WithField("dim", dim).WithField("rank", rank)
+	}
+	outDims := make([]int, rank)
+	copy(outDims, ts[0].Shape().Dims())
+	total := 0
+	for i, t := range ts {
+		if t.Shape().Rank() != rank {
+			return nil, errors.New(errors.CodeShapeMismatch, "concat rank mismatch").
+				WithField("index", i).WithField("rank", t.Shape().Rank())
+		}
+		for d := 0; d < rank; d++ {
+			if d != dim && t.Shape().Dim(d) != outDims[d] {
+				return nil, errors.New(errors.CodeShapeMismatch, "concat dim mismatch").
+					WithField("index", i).WithField("dim", d)
+			}
+		}
+		total += t.Shape().Dim(dim)
+	}
+	outDims[dim] = total
+	out, err := tensor.New(tensor.Float64, outDims)
+	if err != nil {
+		return nil, err
+	}
+	// Copy block by block: the slices outside dim form a rectangular block
+	// of size (prod(dims[:dim]) * dims[dim] * prod(dims[dim+1:])).
+	outer := 1
+	for i := 0; i < dim; i++ {
+		outer *= outDims[i]
+	}
+	inner := 1
+	for i := dim + 1; i < rank; i++ {
+		inner *= outDims[i]
+	}
+	dst := out.Float64()
+	offset := 0
+	for _, t := range ts {
+		var src []float64
+		if t.IsContiguous() {
+			src = t.Float64()
+		} else {
+			c, err := t.Contiguous()
+			if err != nil {
+				return nil, err
+			}
+			src = c.Float64()
+		}
+		dn := t.Shape().Dim(dim)
+		for o := 0; o < outer; o++ {
+			for id := 0; id < dn; id++ {
+				for iin := 0; iin < inner; iin++ {
+					dst[o*total*inner+(offset+id)*inner+iin] = src[o*dn*inner+id*inner+iin]
+				}
+			}
+		}
+		offset += dn
+	}
+	return out, nil
+}
+
 // Dot returns the inner product of two 1-D tensors.
 func Dot(a, b *tensor.Tensor) (float64, error) {
 	if a == nil || b == nil {

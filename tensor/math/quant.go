@@ -86,6 +86,9 @@ func QuantizeInt8(x *tensor.Tensor, params *QParams) (*tensor.Tensor, error) {
 	if scale == 0 {
 		// Compute from data
 		xv := x.Float64()
+		if len(xv) == 0 {
+			return nil, errors.New(errors.CodeInvalidArgument, "quantize requires a non-empty tensor")
+		}
 		var minVal, maxVal float64 = xv[0], xv[0]
 		for _, v := range xv {
 			if v < minVal {
@@ -174,6 +177,9 @@ func QuantizeInt4(x *tensor.Tensor, params *QParams) (*tensor.Tensor, error) {
 
 	if scale == 0 {
 		xv := x.Float64()
+		if len(xv) == 0 {
+			return nil, errors.New(errors.CodeInvalidArgument, "quantize requires a non-empty tensor")
+		}
 		var minVal, maxVal float64 = xv[0], xv[0]
 		for _, v := range xv {
 			if v < minVal {
@@ -359,6 +365,9 @@ func AutoQuantize(x *tensor.Tensor, scheme QuantizationScheme, groupSize int) (*
 	}
 
 	xv := x.Float64()
+	if len(xv) == 0 {
+		return nil, errors.New(errors.CodeInvalidArgument, "auto-quantize requires a non-empty tensor")
+	}
 
 	if scheme == QuantPerTensor {
 		var minVal, maxVal float64 = xv[0], xv[0]

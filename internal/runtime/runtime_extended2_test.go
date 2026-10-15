@@ -11,7 +11,10 @@ import (
 func TestRuntimeSchedulerSubmit(t *testing.T) {
 	s := runtime.NewScheduler(1)
 	defer s.Stop()
-	f := s.Submit(func() error { return nil })
+	f, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != nil {
 		t.Fatalf("future failed: %v", err)
 	}
@@ -21,7 +24,10 @@ func TestRuntimeSchedulerWaitError(t *testing.T) {
 	s := runtime.NewScheduler(1)
 	defer s.Stop()
 	expectedErr := runtime.ErrCancelled
-	f := s.Submit(func() error { return expectedErr })
+	f, err := s.Submit(func() error { return expectedErr })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != expectedErr {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -30,7 +36,10 @@ func TestRuntimeSchedulerWaitError(t *testing.T) {
 func TestRuntimeSchedulerDoneAfterWait(t *testing.T) {
 	s := runtime.NewScheduler(1)
 	defer s.Stop()
-	f := s.Submit(func() error { return nil })
+	f, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	f.Wait()
 	if !f.Done() {
 		t.Fatal("expected future to be done after wait")
@@ -73,7 +82,10 @@ func TestRuntimeSubmitMany(t *testing.T) {
 	s := runtime.NewScheduler(2)
 	defer s.Stop()
 	tasks := []runtime.Task{func() error { return nil }, func() error { return nil }}
-	futures := s.SubmitMany(tasks)
+	futures, err := s.SubmitMany(tasks)
+	if err != nil {
+		t.Fatalf("submit many: %v", err)
+	}
 	if len(futures) != 2 {
 		t.Fatalf("expected 2 futures, got %d", len(futures))
 	}
@@ -82,8 +94,14 @@ func TestRuntimeSubmitMany(t *testing.T) {
 func TestRuntimeWaitMultiple(t *testing.T) {
 	s := runtime.NewScheduler(2)
 	defer s.Stop()
-	f1 := s.Submit(func() error { return nil })
-	f2 := s.Submit(func() error { return nil })
+	f1, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	f2, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := s.Wait(f1, f2); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -92,8 +110,14 @@ func TestRuntimeWaitMultiple(t *testing.T) {
 func TestRuntimeFutureWaitMultiple(t *testing.T) {
 	s := runtime.NewScheduler(2)
 	defer s.Stop()
-	f1 := s.Submit(func() error { return nil })
-	f2 := s.Submit(func() error { return nil })
+	f1, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	f2, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := s.Wait(f1, f2); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

@@ -33,6 +33,14 @@ func (v *Variable) RequiresGrad() bool { return v.requires }
 // ZeroGrad clears the accumulated gradient.
 func (v *Variable) ZeroGrad() { v.Grad = nil }
 
+// Detach returns a leaf copy of v that shares its value but
+// is not tracked, cutting v out of any tape it belonged to.
+// Use it to freeze a value produced by a differentiable op,
+// for example a constant embedding extracted from a model.
+func (v *Variable) Detach() *Variable {
+	return &Variable{Value: v.Value, requires: false}
+}
+
 // AccumGrad adds g to the accumulated gradient.
 func (v *Variable) AccumGrad(g *tensor.Tensor) error {
 	if !v.requires {
@@ -52,10 +60,18 @@ func (v *Variable) AccumGrad(g *tensor.Tensor) error {
 
 // Tape is the reverse-mode execution trace. It records
 // every operation that produced a tracked variable,
-// in forward order. A tape represents one forward
-// pass; Backward may be called exactly once per pass.
+// in forward order. A tape represents one forward pass.
+//
+// A tape is single-use. Replaying it is refused rather
+// than allowed to accumulate gradients twice or to
+// differentiate against values an optimizer has since
+// replaced: both failures are silent, and a silent wrong
+// gradient is worse than a loud one. Reset clears the
+// nodes and the consumed flag, so a fresh pass may reuse
+// the same tape object.
 type Tape struct {
 	nodes []*Variable
+	done  bool
 }
 
 // NewTape creates an empty tape.
@@ -68,8 +84,8 @@ func (t *Tape) Record(v *Variable) {
 	}
 }
 
-// Reset clears the tape.
-func (t *Tape) Reset() { t.nodes = nil }
+// Reset clears the tape for a new pass.
+func (t *Tape) Reset() { t.nodes = nil; t.done = false }
 
 // Len returns the number of recorded nodes.
 func (t *Tape) Len() int { return len(t.nodes) }
@@ -79,23 +95,56 @@ func (t *Tape) Len() int { return len(t.nodes) }
 // tracked variables. A nil seed defaults to ones.
 // Intermediate node gradients are taken from the
 // gradients accumulated by their consumers.
+//
+// Failure semantics:
+//   - A recorded node with no gradient rule is an error: the
+//     operation is unsupported, so its gradient is unknown and
+//     skipping it would silently return a wrong (zero) gradient
+//     while claiming success.
+//   - A node no consumer reached contributes zero: that is the
+//     correct gradient of an unreachable branch, and it is what
+//     makes a detached (stop-gradient) path usable.
+//   - A tape is single-use: replaying it is refused rather than
+//     allowed to accumulate gradients twice or to differentiate
+//     against values an optimizer has since replaced.
 func (t *Tape) Backward(seed *tensor.Tensor) error {
-	for i := len(t.nodes) - 1; i >= 0; i-- {
+	if t.done {
+		return errors.New(errors.CodeInvalidArgument,
+			"tape already consumed: a second backward would double-accumulate or differentiate stale values")
+	}
+	t.done = true
+	last := len(t.nodes) - 1
+	for i := last; i >= 0; i-- {
 		node := t.nodes[i]
-		g := seed
-		if i != len(t.nodes)-1 || g == nil {
-			if node.Grad != nil {
-				g = node.Grad
-			} else {
-				ones, err := tensor.Ones(node.Value.DType(), node.Value.Shape().Dims())
-				if err != nil {
-					return errors.Wrap(err, errors.CodeInternal, "seed allocation")
-				}
-				g = ones
+		var g *tensor.Tensor
+		switch {
+		case i == last && seed != nil:
+			g = seed
+		case node.Grad != nil:
+			g = node.Grad
+		case i == last:
+			// dL/dL = 1 for the loss node when no seed is given.
+			ones, err := tensor.Ones(node.Value.DType(), node.Value.Shape().Dims())
+			if err != nil {
+				return errors.Wrap(err, errors.CodeInternal, "seed allocation")
 			}
+			g = ones
+		default:
+			// No consumer produced a gradient: the branch is
+			// unreachable (for example behind a Detach), and the
+			// true gradient of an unreachable node is zero.
+			zeros, err := tensor.Zeros(node.Value.DType(), node.Value.Shape().Dims())
+			if err != nil {
+				return errors.Wrap(err, errors.CodeInternal, "zero gradient allocation")
+			}
+			g = zeros
 		}
 		if node.backward == nil {
-			continue
+			// Refuse instead of skipping: a silently zero gradient
+			// claims an operation is differentiable when it is not.
+			return errors.New(errors.CodeUnimplemented,
+				"recorded operation has no gradient rule").
+				WithField("node", i)
 		}
 		if err := node.backward(g); err != nil {
 			return errors.Wrap(err, errors.CodeInternal, "backward pass").

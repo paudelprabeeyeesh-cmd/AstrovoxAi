@@ -17,6 +17,13 @@ type Plan struct {
 	InputStrides []int
 	OuterDims    []int
 	ReduceSet    []bool
+	// OuterOutputDims maps each entry of OuterDims to its index in
+	// OutputShape. The two index spaces differ as soon as a reduced
+	// dimension precedes an outer one: reducing dim 0 of [2,3] leaves
+	// output [3], where input dim 1 is output dim 0. Mapping an outer
+	// index with the input dim against the output shape is an
+	// out-of-range access or a silently wrong offset.
+	OuterOutputDims []int
 }
 
 // PlanReduction computes the reduction plan for reducing dims (empty
@@ -55,19 +62,34 @@ func PlanReduction(inputShape []int, dims []int, keepDims bool) (Plan, error) {
 	}
 	inputStrides := rowMajorStrides(inputShape)
 	outer := make([]int, 0, rank)
+	outerOut := make([]int, 0, rank)
+	reducedBefore := 0
 	for i := range inputShape {
-		if !reduceSet[i] {
-			outer = append(outer, i)
+		if reduceSet[i] {
+			reducedBefore++
+			continue
+		}
+		outer = append(outer, i)
+		if keepDims {
+			// Reduced dims stay in the output as size-1 dims, so every
+			// output dim index equals its input dim index.
+			outerOut = append(outerOut, i)
+		} else {
+			// Output dims keep the relative order of the retained input
+			// dims, so the output index of input dim i is i minus the
+			// number of reduced dims before it.
+			outerOut = append(outerOut, i-reducedBefore)
 		}
 	}
 	return Plan{
-		InputShape:   inputShape,
-		OutputShape:  outShape,
-		ReduceDims:   sorted,
-		KeepDims:     keepDims,
-		InputStrides: inputStrides,
-		OuterDims:    outer,
-		ReduceSet:    reduceSet,
+		InputShape:      inputShape,
+		OutputShape:     outShape,
+		ReduceDims:      sorted,
+		KeepDims:        keepDims,
+		InputStrides:    inputStrides,
+		OuterDims:       outer,
+		OuterOutputDims: outerOut,
+		ReduceSet:       reduceSet,
 	}, nil
 }
 

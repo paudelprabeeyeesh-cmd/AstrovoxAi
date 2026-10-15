@@ -31,14 +31,33 @@ func TestSchedulerSustainedThroughput(t *testing.T) {
 
 	var done atomic.Int64
 	futures := make([]runtime.Future, 0, tasks)
-	for i := 0; i < tasks; i++ {
-		futures = append(futures, sched.Submit(func() error {
+	// The bounded queue refuses overflow: drain accepted work and retry
+	// rather than assuming unbounded admission.
+	for submitted := 0; submitted < tasks; {
+		f, err := sched.Submit(func() error {
 			done.Add(1)
 			return nil
-		}))
+		})
+		if err != nil {
+			if !errors.Is(err, runtime.ErrQueueFull) {
+				t.Fatalf("submit %d: %v", submitted, err)
+			}
+			for _, w := range futures {
+				if err := w.Wait(); err != nil {
+					t.Fatalf("task failed: %v", err)
+				}
+			}
+			futures = futures[:0]
+			continue
+		}
+		futures = append(futures, f)
+		submitted++
 	}
 	// A deliberately failing task proves the failure path also drains.
-	failing := sched.Submit(func() error { return errors.New("boom") })
+	failing, err := sched.Submit(func() error { return errors.New("boom") })
+	if err != nil {
+		t.Fatalf("submit failing task: %v", err)
+	}
 
 	if err := sched.Wait(futures...); err != nil {
 		t.Errorf("successful tasks returned an error: %v", err)
@@ -98,8 +117,25 @@ func TestPrioritySchedulerAcceptsUrgentWork(t *testing.T) {
 func TestSchedulerStopIsIdempotent(t *testing.T) {
 	t.Parallel()
 	sched := runtime.NewScheduler(2)
+	var futures []runtime.Future
 	for i := 0; i < 10; i++ {
-		sched.Submit(func() error { return nil })
+		f, err := sched.Submit(func() error { return nil })
+		if err != nil {
+			// Drain and retry: the queue is bounded.
+			for _, w := range futures {
+				w.Wait()
+			}
+			futures = nil
+			if f, err = sched.Submit(func() error { return nil }); err != nil {
+				t.Fatalf("submit %d after drain: %v", i, err)
+			}
+		}
+		futures = append(futures, f)
+	}
+	for _, f := range futures {
+		if err := f.Wait(); err != nil {
+			t.Fatalf("task: %v", err)
+		}
 	}
 	time.Sleep(5 * time.Millisecond)
 	sched.Stop()
@@ -174,7 +210,21 @@ func TestRepeatedStartStopCycles(t *testing.T) {
 		sched := runtime.NewScheduler(2)
 		futs := make([]runtime.Future, 0, 20)
 		for i := 0; i < 20; i++ {
-			futs = append(futs, sched.Submit(func() error { return nil }))
+			f, err := sched.Submit(func() error { return nil })
+			if err != nil {
+				if !errors.Is(err, runtime.ErrQueueFull) {
+					t.Fatalf("round %d submit %d: %v", round, i, err)
+				}
+				for _, w := range futs {
+					if err := w.Wait(); err != nil {
+						t.Fatalf("round %d: %v", round, err)
+					}
+				}
+				futs = futs[:0]
+				i-- // retry this slot
+				continue
+			}
+			futs = append(futs, f)
 		}
 		_ = sched.Wait(futs...)
 		sched.Stop()

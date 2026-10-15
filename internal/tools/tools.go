@@ -339,8 +339,11 @@ type Result struct {
 	Output map[string]interface{} `json:"output,omitempty"`
 	Error  string                 `json:"error,omitempty"`
 	// Skipped marks a call refused by a budget or approval rule.
-	Skipped  bool  `json:"skipped,omitempty"`
-	Duration int64 `json:"duration_ms"`
+	Skipped bool `json:"skipped,omitempty"`
+	// Reason classifies a skip: "budget" or "approval". A caller can tell
+	// a cap hit from a refusal without string-matching Error.
+	Reason   string `json:"reason,omitempty"`
+	Duration int64  `json:"duration_ms"`
 }
 
 // Approver decides whether a call that requires approval may proceed.
@@ -435,6 +438,11 @@ func (e *Executor) SetApprover(a Approver) {
 	e.Approver = a
 }
 
+// BudgetConfig returns the executor's budget configuration.
+func (e *Executor) BudgetConfig() Budget {
+	return e.budget
+}
+
 // GrantApproval approves an exact call on the current approver, when it is a
 // ManualApprover. It is a convenience for tests and for an in-process human
 // confirmation; a deployment should install its own approver.
@@ -463,6 +471,7 @@ func (e *Executor) Run(call Call) *Result {
 		return &Result{
 			Name:    call.Name,
 			Skipped: true,
+			Reason:  "budget",
 			Error:   fmt.Sprintf("calling budget of %d exceeded", e.budget.MaxCalls),
 		}
 	}
@@ -473,6 +482,7 @@ func (e *Executor) Run(call Call) *Result {
 		return &Result{
 			Name:    call.Name,
 			Skipped: true,
+			Reason:  "budget",
 			Error:   fmt.Sprintf("identical call %q repeated beyond %d", fp, e.budget.MaxIdenticalCalls),
 		}
 	}
@@ -500,7 +510,7 @@ func (e *Executor) Run(call Call) *Result {
 			approver = NewManualApprover()
 		}
 		if err := approver.Approve(call, schema); err != nil {
-			return &Result{Name: call.Name, Skipped: true, Error: err.Error()}
+			return &Result{Name: call.Name, Skipped: true, Reason: "approval", Error: err.Error()}
 		}
 	}
 

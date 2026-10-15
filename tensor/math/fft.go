@@ -22,6 +22,11 @@ func FFT(x *tensor.Tensor, inverse bool) (*tensor.Tensor, error) {
 	if n < 1 {
 		return nil, errors.New(errors.CodeInvalidArgument, "FFT requires non-empty tensor")
 	}
+	if x.DType() != tensor.Float64 {
+		// Float64() returns nil for other dtypes, and indexing that nil
+		// view panics: a complex input must be refused, not crash.
+		return nil, errors.New(errors.CodeDTypeMismatch, "FFT requires a float64 input")
+	}
 	padded := nextPow2(n)
 	work := make([]complex128, padded)
 	xv := x.Float64()
@@ -51,6 +56,10 @@ func FFT2(x *tensor.Tensor, inverse bool) (*tensor.Tensor, error) {
 	w := x.Shape().Dim(1)
 	ph := nextPow2(h)
 	pw := nextPow2(w)
+	if x.DType() != tensor.Float64 {
+		// See FFT: the typed view would be nil and the fill loop panics.
+		return nil, errors.New(errors.CodeDTypeMismatch, "FFT2 requires a float64 input")
+	}
 	rows := make([]complex128, ph*pw)
 	xv := x.Float64()
 	for i := 0; i < h; i++ {

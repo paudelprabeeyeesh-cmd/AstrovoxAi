@@ -69,14 +69,23 @@ func NewEngine(workers int) *Engine {
 	return &Engine{scheduler: irt.NewScheduler(workers)}
 }
 
-// Submit enqueues a task and returns its future.
-func (e *Engine) Submit(ctx context.Context, task Task) Future {
+// Submit enqueues a task and returns its future. Submission is refused
+// with a typed error when the scheduler is stopped (CodeCancelled) or
+// its bounded queue is full (CodeQueueFull): backpressure is explicit,
+// and a caller is never left with a silently blocked or panicking
+// submit.
+func (e *Engine) Submit(ctx context.Context, task Task) (Future, error) {
+	if task == nil {
+		return nil, errors.New(errors.CodeInvalidArgument, "nil task")
+	}
 	e.mu.Lock()
 	e.submitted++
-	e.active++
 	e.mu.Unlock()
 	f := &typedFuture{}
-	inner := e.scheduler.Submit(func() error {
+	inner, err := e.scheduler.Submit(func() error {
+		e.mu.Lock()
+		e.active++
+		e.mu.Unlock()
 		defer func() {
 			e.mu.Lock()
 			e.active--
@@ -93,17 +102,27 @@ func (e *Engine) Submit(ctx context.Context, task Task) Future {
 		f.setResult(out)
 		return nil
 	})
+	if err != nil {
+		e.mu.Lock()
+		e.submitted-- // the task never entered the queue
+		e.mu.Unlock()
+		return nil, err
+	}
 	f.inner = inner
-	return f
+	return f, nil
 }
 
-// SubmitMany enqueues several tasks.
-func (e *Engine) SubmitMany(ctx context.Context, tasks []Task) []Future {
+// SubmitMany enqueues several tasks, stopping at the first refusal.
+func (e *Engine) SubmitMany(ctx context.Context, tasks []Task) ([]Future, error) {
 	futures := make([]Future, 0, len(tasks))
 	for _, t := range tasks {
-		futures = append(futures, e.Submit(ctx, t))
+		f, err := e.Submit(ctx, t)
+		if err != nil {
+			return futures, err
+		}
+		futures = append(futures, f)
 	}
-	return futures
+	return futures, nil
 }
 
 // Wait blocks until all futures complete.
@@ -122,6 +141,9 @@ func (e *Engine) Wait(futures ...Future) error {
 	return e.scheduler.Wait(inner...)
 }
 
+// QueueLen reports the number of tasks waiting for a worker.
+func (e *Engine) QueueLen() int { return e.scheduler.QueueLen() }
+
 // Stats returns engine counters.
 func (e *Engine) Stats() (submitted, active, completed, failed int64) {
 	e.mu.RLock()
@@ -129,6 +151,6 @@ func (e *Engine) Stats() (submitted, active, completed, failed int64) {
 	return e.submitted, e.active, e.completed, e.failed
 }
 
-// Stop shuts down the worker pool. Pending
-// tasks are drained.
+// Stop shuts down the worker pool. Tasks already
+// accepted are drained first.
 func (e *Engine) Stop() { e.scheduler.Stop() }

@@ -289,17 +289,36 @@ func TestEngineSubmit(t *testing.T) {
 	defer engine.Stop()
 	var mu sync.Mutex
 	var results []int
-	futures := make([]Future, 0, 10)
+	var pending []Future
 	for i := 0; i < 10; i++ {
-		i := i
-		f := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
+		f, err := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
 			mu.Lock()
 			results = append(results, i)
 			mu.Unlock()
 			return nil, nil
 		})
-		futures = append(futures, f)
+		if err != nil {
+			// Bounded queue: drain accepted work, then retry. Retrying
+			// immediately would race workers that have not dequeued yet.
+			for _, w := range pending {
+				if _, err := w.Wait(); err != nil {
+					t.Fatal(err)
+				}
+			}
+			pending = nil
+			f, err = engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
+				mu.Lock()
+				results = append(results, i)
+				mu.Unlock()
+				return nil, nil
+			})
+			if err != nil {
+				t.Fatalf("submit %d after drain: %v", i, err)
+			}
+		}
+		pending = append(pending, f)
 	}
+	futures := pending
 	if err := engine.Wait(futures...); err != nil {
 		t.Fatal(err)
 	}
@@ -319,9 +338,12 @@ func TestEngineSubmitError(t *testing.T) {
 	engine := NewEngine(1)
 	defer engine.Stop()
 	sentinel := errors.New(errors.CodeInternal, "boom")
-	f := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
+	f, err := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
 		return nil, sentinel
 	})
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if _, err := f.Wait(); err == nil {
 		t.Fatal("expected error")
 	}
@@ -340,7 +362,10 @@ func TestEngineSubmitMany(t *testing.T) {
 			return nil, nil
 		})
 	}
-	futures := engine.SubmitMany(t.Context(), tasks)
+	futures, err := engine.SubmitMany(t.Context(), tasks)
+	if err != nil {
+		t.Fatalf("submit many: %v", err)
+	}
 	if len(futures) != 5 {
 		t.Fatalf("futures = %d, want 5", len(futures))
 	}
@@ -380,9 +405,12 @@ func (foreignFuture) Done() bool { return true }
 func TestFutureDone(t *testing.T) {
 	engine := NewEngine(1)
 	defer engine.Stop()
-	f := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
+	f, err := engine.Submit(t.Context(), func(context.Context) ([]*tensor.Tensor, error) {
 		return nil, nil
 	})
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if _, err := f.Wait(); err != nil {
 		t.Fatal(err)
 	}

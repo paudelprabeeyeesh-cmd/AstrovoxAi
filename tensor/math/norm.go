@@ -153,21 +153,38 @@ func LayerNormBackward(gradOut, x, weight, bias *tensor.Tensor, eps float64) (*t
 		variance := varSum / float64(D)
 		invStd := 1.0 / math.Sqrt(variance+eps)
 
-		// Compute intermediate gradients
+		// Compute intermediate gradients. The adjoint flows through the
+		// affine scale first, so the gradients carried into the mean terms
+		// are dy*w, not dy: the forward applies y = xHat*w + b, and a
+		// backward that forgets w is only correct when w is all ones.
 		var sumDy float64
 		var sumDyX float64
 		for d := 0; d < D; d++ {
 			dy := goVal[base+d]
-			sumDy += dy
-			sumDyX += dy * xv[base+d]
+			xHat := (xv[base+d] - mean) * invStd
+			w := 1.0
+			if wv != nil {
+				w = wv[d]
+			}
+			g := dy * w
+			sumDy += g
+			// The adjoint of the normalized value uses xHat, not the raw
+			// input: the mean subtraction and the inverse-std scaling are
+			// part of the path being differentiated. Using raw x here
+			// silently produced a wrong dx whenever mean != 0.
+			sumDyX += g * xHat
 		}
 
 		for d := 0; d < D; d++ {
 			dy := goVal[base+d]
 			xHat := (xv[base+d] - mean) * invStd
+			w := 1.0
+			if wv != nil {
+				w = wv[d]
+			}
 
-			// dx = (dy - sumDy/D - xHat * sumDyX/D) * invStd
-			dxVal := (dy - sumDy/float64(D) - xHat*sumDyX/float64(D)) * invStd
+			// dx = (w*dy - sumDy/D - xHat * sumDyX/D) * invStd
+			dxVal := (dy*w - sumDy/float64(D) - xHat*sumDyX/float64(D)) * invStd
 			dv[base+d] = dxVal
 
 			// dw = sum over outer of dy * xHat
@@ -358,7 +375,9 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 			variance := varSum / float64(groupSize)
 			invStd := 1.0 / math.Sqrt(variance+eps)
 
-			// Compute intermediate gradients
+			// Compute intermediate gradients. As in LayerNormBackward,
+			// the adjoint carries dy*w into the mean terms: the forward
+			// applies y = xHat*w + b per channel.
 			var sumDy float64
 			var sumDyX float64
 			for c := 0; c < channelsPerGroup; c++ {
@@ -366,8 +385,16 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 				base := (n*C + cIdx) * spatial
 				for s := 0; s < spatial; s++ {
 					dy := goVal[base+s]
-					sumDy += dy
-					sumDyX += dy * xv[base+s]
+					xHat := (xv[base+s] - mean) * invStd
+					w := 1.0
+					if wv != nil {
+						w = wv[cIdx]
+					}
+					g := dy * w
+					sumDy += g
+					// The adjoint uses the normalized value, not the raw
+					// input: see LayerNormBackward for the same rule.
+					sumDyX += g * xHat
 				}
 			}
 
@@ -377,8 +404,12 @@ func GroupNormBackward(gradOut, x, weight, bias *tensor.Tensor, numGroups int, e
 				for s := 0; s < spatial; s++ {
 					dy := goVal[base+s]
 					xHat := (xv[base+s] - mean) * invStd
+					w := 1.0
+					if wv != nil {
+						w = wv[cIdx]
+					}
 
-					dxVal := (dy - sumDy/float64(groupSize) - xHat*sumDyX/float64(groupSize)) * invStd
+					dxVal := (dy*w - sumDy/float64(groupSize) - xHat*sumDyX/float64(groupSize)) * invStd
 					dv[base+s] = dxVal
 
 					if dwv != nil && wv != nil {

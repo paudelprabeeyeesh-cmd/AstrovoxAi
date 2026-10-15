@@ -71,7 +71,10 @@ func BenchmarkEngineSubmit(b *testing.B) {
 	task := benchTask()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		f := e.Submit(ctx, task)
+		f, err := e.Submit(ctx, task)
+		if err != nil {
+			b.Fatal(err)
+		}
 		if _, err := f.Wait(); err != nil {
 			b.Fatal(err)
 		}
@@ -87,7 +90,11 @@ func BenchmarkEngineSubmitParallel(b *testing.B) {
 		const workers = 8
 		futures := make([]runtime.Future, workers)
 		for j := range futures {
-			futures[j] = e.Submit(ctx, task)
+			f, err := e.Submit(ctx, task)
+			if err != nil {
+				b.Fatal(err)
+			}
+			futures[j] = f
 		}
 		for _, f := range futures {
 			if _, err := f.Wait(); err != nil {

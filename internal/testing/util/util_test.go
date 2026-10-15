@@ -3,25 +3,23 @@ package util
 import (
 	"bytes"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
 func TestGoldenCreatesFile(t *testing.T) {
-	path := "testdata/golden_test.txt"
-	defer os.Remove(path)
+	path := filepath.Join(t.TempDir(), "golden_test.txt")
 	Golden(t, []byte("hello"), path)
 }
 
 func TestGoldenMatches(t *testing.T) {
-	path := "testdata/golden_match.txt"
-	defer os.Remove(path)
+	path := filepath.Join(t.TempDir(), "golden_match.txt")
 	os.WriteFile(path, []byte("hello"), 0644)
 	Golden(t, []byte("hello"), path)
 }
 
 func TestGoldenMismatch(t *testing.T) {
-	path := "testdata/golden_mismatch.txt"
-	defer os.Remove(path)
+	path := filepath.Join(t.TempDir(), "golden_mismatch.txt")
 	os.WriteFile(path, []byte("hello"), 0644)
 	defer func() {
 		if r := recover(); r == nil {

@@ -87,6 +87,12 @@ func CumSum(t *tensor.Tensor, dim int) (*tensor.Tensor, error) {
 		return nil, errors.New(errors.CodeInvalidArgument, "dim out of range").
 			WithField("dim", dim).WithField("rank", rank)
 	}
+	// CumSum reads through the typed accessor while indexing with the
+	// view's strides; materialize so both describe the same layout.
+	var err error
+	if t, err = contiguousF64(t); err != nil {
+		return nil, err
+	}
 	out, err := tensor.New(tensor.Float64, t.Shape().Dims())
 	if err != nil {
 		return nil, err
@@ -206,6 +212,15 @@ func NewPlan(t *tensor.Tensor, dims []int, keepDims bool) (Plan, error) {
 
 // AddSafe returns a + b with broadcasting.
 func AddSafe(a, b *tensor.Tensor) (*tensor.Tensor, error) {
+	// The fast paths below index the typed views as logical data, so both
+	// inputs must be in row-major order first.
+	var err error
+	if a, err = contiguousF64(a); err != nil {
+		return nil, err
+	}
+	if b, err = contiguousF64(b); err != nil {
+		return nil, err
+	}
 	outShape, err := a.Shape().Broadcast(b.Shape())
 	if err != nil {
 		return nil, err
@@ -245,6 +260,21 @@ func AddSafe(a, b *tensor.Tensor) (*tensor.Tensor, error) {
 	return nil, errors.New(errors.CodeUnimplemented, "general broadcast add")
 }
 
+// contiguousF64 returns t materialized in row-major order when it is a
+// non-contiguous view.
+//
+// The typed accessor returns storage-ordered data, which equals the
+// logical order only for a contiguous tensor. Every kernel in this package
+// indexes the typed view as if it were logical data, so a transposed,
+// sliced, or broadcast input must be copied first: reading it in storage
+// order silently produces results for a different tensor.
+func contiguousF64(t *tensor.Tensor) (*tensor.Tensor, error) {
+	if t.IsContiguous() {
+		return t, nil
+	}
+	return t.Contiguous()
+}
+
 func scaleOutput(t *tensor.Tensor, scale float64) (*tensor.Tensor, error) {
 	return transform(t, func(v float64) float64 { return v * scale })
 }
@@ -256,6 +286,10 @@ func transform(t *tensor.Tensor, fn func(float64) float64) (*tensor.Tensor, erro
 	if t.DType() != tensor.Float64 {
 		return nil, errors.New(errors.CodeDTypeMismatch, "reductions require float64").
 			WithField("dtype", t.DType())
+	}
+	t, err := contiguousF64(t)
+	if err != nil {
+		return nil, err
 	}
 	out, err := tensor.New(tensor.Float64, t.Shape().Dims())
 	if err != nil {
@@ -277,6 +311,12 @@ func reduce(t *tensor.Tensor, dims []int, keepDims bool,
 	if t.DType() != tensor.Float64 {
 		return nil, errors.New(errors.CodeDTypeMismatch, "reductions require float64").
 			WithField("dtype", t.DType())
+	}
+	// The plan's strides are derived from the shape, so the input must be
+	// in row-major order for the offsets to address logical elements.
+	var err error
+	if t, err = contiguousF64(t); err != nil {
+		return nil, err
 	}
 	plan, err := PlanReduction(t.Shape().Dims(), dims, keepDims)
 	if err != nil {
@@ -320,7 +360,7 @@ func reduce(t *tensor.Tensor, dims []int, keepDims bool,
 			}
 			for o := lo; o < hi; o++ {
 				base := outerOffset(o, plan.OuterDims, t.Shape().Dims(), strides)
-				outIdx := outerOffset(o, plan.OuterDims, outShapeFor(plan), outStridesFor(plan))
+				outIdx := outerOutputOffset(o, plan.OuterDims, plan.OuterOutputDims, t.Shape().Dims(), outStridesFor(plan))
 				reduceOver(t, plan, src, dst, base, outIdx, combine, init)
 			}
 		}
@@ -378,6 +418,25 @@ func outerOffset(o int, outerDims, shape, strides []int) int {
 	return off
 }
 
+// outerOutputOffset maps an outer-loop index to an output element.
+//
+// The digits of o enumerate outer dims in input order, but the output
+// shape indexes dims differently as soon as a reduced dim precedes an
+// outer one: reducing dim 0 of [2,3] leaves output [3], where input
+// dim 1 is output dim 0. Using the input dim against the output shape
+// reads the wrong slot or runs off its end, so the input dim is
+// translated through plan.OuterOutputDims first.
+func outerOutputOffset(o int, outerDims, outerOutDims, inputShape, outStrides []int) int {
+	off := 0
+	for i := len(outerDims) - 1; i >= 0; i-- {
+		inDim := outerDims[i]
+		outDim := outerOutDims[i]
+		off += (o % inputShape[inDim]) * outStrides[outDim]
+		o /= inputShape[inDim]
+	}
+	return off
+}
+
 func outShapeFor(plan Plan) []int { return plan.OutputShape }
 func outStridesFor(plan Plan) []int {
 	out := make([]int, len(plan.OutputShape))
@@ -394,6 +453,11 @@ func outStridesFor(plan Plan) []int {
 func reduceAround(t, means *tensor.Tensor, dims []int, keepDims bool,
 	combine func(acc, v float64) float64, init float64,
 	finalize func(acc, n float64) float64) (*tensor.Tensor, error) {
+	// See contiguousF64: the traversal assumes row-major logical order.
+	var err error
+	if t, err = contiguousF64(t); err != nil {
+		return nil, err
+	}
 	plan, err := PlanReduction(t.Shape().Dims(), dims, keepDims)
 	if err != nil {
 		return nil, err
@@ -426,7 +490,7 @@ func reduceAround(t, means *tensor.Tensor, dims []int, keepDims bool,
 	}
 	for o := 0; o < outerNum; o++ {
 		inBase := outerOffset(o, outerDims, plan.InputShape, strides)
-		outIdx := outerOffset(o, outerDims, plan.OutputShape, meanStrides)
+		outIdx := outerOutputOffset(o, outerDims, plan.OuterOutputDims, plan.InputShape, meanStrides)
 		meanIdx := outIdx
 		if len(reduceDims) == 0 {
 			d := combine(init, src[inBase]-m[meanIdx])
@@ -466,6 +530,13 @@ func argReduce(t *tensor.Tensor, dim int, better func(a, b float64) bool) (*tens
 		return nil, errors.New(errors.CodeInvalidArgument, "dim out of range").
 			WithField("dim", dim).WithField("rank", rank)
 	}
+	// argReduce indexes t.Strides(), which describes the view; the typed
+	// accessor behind it returns storage-ordered data, so a non-contiguous
+	// view must be materialized to keep the two consistent.
+	var err error
+	if t, err = contiguousF64(t); err != nil {
+		return nil, err
+	}
 	outShape := make([]int, 0, rank-1)
 	for i := 0; i < rank; i++ {
 		if i != dim {
@@ -502,6 +573,11 @@ func argReduce(t *tensor.Tensor, dim int, better func(a, b float64) bool) (*tens
 }
 
 func shift(t, maxes *tensor.Tensor, dims []int) (*tensor.Tensor, error) {
+	// See contiguousF64: the traversal assumes row-major logical order.
+	var err error
+	if t, err = contiguousF64(t); err != nil {
+		return nil, err
+	}
 	plan, err := PlanReduction(t.Shape().Dims(), dims, true)
 	if err != nil {
 		return nil, err
@@ -527,7 +603,7 @@ func shift(t, maxes *tensor.Tensor, dims []int) (*tensor.Tensor, error) {
 	meanStrides := rowMajorStrides(plan.OutputShape)
 	for o := 0; o < outerNum; o++ {
 		inBase := outerOffset(o, outerDims, plan.InputShape, strides)
-		meanIdx := outerOffset(o, outerDims, plan.OutputShape, meanStrides)
+		meanIdx := outerOutputOffset(o, outerDims, plan.OuterOutputDims, plan.InputShape, meanStrides)
 		if n == 0 {
 			continue
 		}

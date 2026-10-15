@@ -19,7 +19,10 @@ func TestSchedulerSubmitMultiple(t *testing.T) {
 		func() error { mu.Lock(); results = append(results, 2); mu.Unlock(); return nil },
 		func() error { mu.Lock(); results = append(results, 3); mu.Unlock(); return nil },
 	}
-	futures := s.SubmitMany(tasks)
+	futures, err := s.SubmitMany(tasks)
+	if err != nil {
+		t.Fatalf("submit many: %v", err)
+	}
 	if err := s.Wait(futures...); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -33,7 +36,10 @@ func TestSchedulerWaitError(t *testing.T) {
 	defer s.Stop()
 
 	expectedErr := ErrCancelled
-	f := s.Submit(func() error { return expectedErr })
+	f, err := s.Submit(func() error { return expectedErr })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != expectedErr {
 		t.Fatalf("expected ErrCancelled, got %v", err)
 	}
@@ -43,7 +49,10 @@ func TestSchedulerDoneAfterWait(t *testing.T) {
 	s := NewScheduler(1)
 	defer s.Stop()
 
-	f := s.Submit(func() error { return nil })
+	f, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	f.Wait()
 	if !f.Done() {
 		t.Fatal("expected future to be done after wait")
@@ -161,8 +170,14 @@ func TestFutureWaitMultiple(t *testing.T) {
 	s := NewScheduler(2)
 	defer s.Stop()
 
-	f1 := s.Submit(func() error { return nil })
-	f2 := s.Submit(func() error { return nil })
+	f1, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
+	f2, err := s.Submit(func() error { return nil })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := s.Wait(f1, f2); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -210,7 +225,10 @@ func TestSchedulerSubmitError(t *testing.T) {
 	defer s.Stop()
 
 	expectedErr := context.DeadlineExceeded
-	f := s.Submit(func() error { return expectedErr })
+	f, err := s.Submit(func() error { return expectedErr })
+	if err != nil {
+		t.Fatalf("submit: %v", err)
+	}
 	if err := f.Wait(); err != expectedErr {
 		t.Fatalf("expected %v, got %v", expectedErr, err)
 	}
