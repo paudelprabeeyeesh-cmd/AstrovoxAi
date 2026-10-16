@@ -3,6 +3,7 @@ package controlplane
 import (
 	"context"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -193,3 +194,100 @@ func TestStaleWorkerTaskReassignment(t *testing.T) {
 		t.Fatalf("state = %v, want %v (stale worker not yet reassigned)", got.State, TaskPending)
 	}
 }
+
+// TestConcurrentSubmit verifies concurrent submissions don't corrupt state.
+func TestConcurrentSubmit(t *testing.T) {
+	coord := NewCoordinator(Config{QueueCapacity: 100}, nil)
+
+	var wg sync.WaitGroup
+	errors := make(chan error, 50)
+
+	for i := 0; i < 50; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			_, err := coord.SubmitTask(context.Background(), TaskRequest{
+				ProtocolVersion: ProtocolVersion,
+				TaskID:          "task-" + string(rune('0'+i%10)) + string(rune('0'+i/10)),
+				TenantID:        "tenant-1",
+				Spec: TaskSpec{
+					Operation: "echo",
+					ResourceRequirements: ResourceRequirements{
+						CPU:       1.0,
+						MemoryMB:  1024,
+					},
+				},
+			})
+			errors <- err
+		}(i)
+	}
+	wg.Wait()
+	close(errors)
+
+	for err := range errors {
+		if err != nil {
+			t.Fatalf("concurrent submit: %v", err)
+		}
+	}
+
+	// All 50 should be present.
+	if len(coord.tasks) != 50 {
+		t.Fatalf("tasks = %d, want 50", len(coord.tasks))
+	}
+}
+
+// mockStore implements checkpoint.Store for testing.
+type mockStore struct {
+	mu      sync.Mutex
+	snaps   map[int64]*checkpoint.Snapshot
+}
+
+func (m *mockStore) Save(s *checkpoint.Snapshot) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.snaps == nil {
+		m.snaps = make(map[int64]*checkpoint.Snapshot)
+	}
+	m.snaps[s.Version] = s
+	return nil
+}
+
+func (m *mockStore) Load(version int64) (*checkpoint.Snapshot, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.snaps[version]
+	if !ok {
+		return nil, nil
+	}
+	return s, nil
+}
+
+func (m *mockStore) Latest() (*checkpoint.Snapshot, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m.snaps) == 0 {
+		return nil, nil
+	}
+	var latest *checkpoint.Snapshot
+	var latestVersion int64
+	for v, s := range m.snaps {
+		if v > latestVersion {
+			latestVersion = v
+			latest = s
+		}
+	}
+	return latest, nil
+}
+
+func (m *mockStore) Versions() []int64 {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var vs []int64
+	for v := range m.snaps {
+		vs = append(vs, v)
+	}
+	return vs
+}
+
+// Ensure mockStore implements checkpoint.Store.
+var _ checkpoint.Store = (*mockStore)(nil)

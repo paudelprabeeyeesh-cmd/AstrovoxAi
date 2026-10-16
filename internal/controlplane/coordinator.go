@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -141,13 +142,39 @@ type Coordinator struct {
 // NewCoordinator creates a coordinator with the given configuration and
 // persistence store.
 func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
-	return &Coordinator{
+	c := &Coordinator{
 		cfg:            cfg,
 		store:          store,
 		tasks:          make(map[string]*TaskRecord),
 		workers:        make(map[string]*WorkerRecord),
 		taskByWorker:   make(map[string]map[string]struct{}),
 		idempotencyKeys: make(map[string]string),
+	}
+
+	// Start the background assignment goroutine that periodically tries
+	// to assign pending tasks to workers (for workers that connect after
+	// tasks are submitted).
+	go c.assignmentLoop(context.Background())
+
+	return c
+}
+
+// assignmentLoop periodically tries to assign pending tasks to workers.
+// This ensures that tasks submitted while no workers were available get
+// assigned as soon as a worker connects.
+func (c *Coordinator) assignmentLoop(ctx context.Context) {
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.Lock()
+			c.tryAssignTasks()
+			c.mu.Unlock()
+		}
 	}
 }
 
@@ -296,6 +323,9 @@ func (c *Coordinator) RegisterWorker(reg WorkerRegistration) error {
 		LastHeartbeat:  time.Now(),
 	}
 
+	// Try to assign pending tasks to this newly registered worker.
+	c.tryAssignTasks()
+
 	return nil
 }
 
@@ -320,6 +350,9 @@ func (c *Coordinator) WorkerHeartbeat(hb WorkerHeartbeat) error {
 	w.ActiveTasks = hb.ActiveTasks
 	w.CompletedTasks = hb.CompletedTasks
 	w.FailedTasks = hb.FailedTasks
+
+	// Try to assign pending tasks to this worker now that it's alive.
+	c.tryAssignTasks()
 
 	return nil
 }
@@ -402,33 +435,100 @@ func (c *Coordinator) Stats() map[string]int {
 	return stats
 }
 
-// persistTask writes a task record to the store.
+// persistTask writes a task record to the store as JSON.
 func (c *Coordinator) persistTask(rec *TaskRecord) error {
 	if c.store == nil {
 		return nil
 	}
 	// Persistence is best-effort: if the store is unavailable, the task
 	// remains in memory and will be lost on restart. This is a known
-	// limitation documented in D044_LIMITATIONS.md. A full checkpoint
-	// integration (serializing TaskRecord into the checkpoint format)
-	// is deferred to Phase 5.
-	_ = rec
-	return nil
+	// limitation documented in D044_LIMITATIONS.md.
+	data, err := json.Marshal(rec)
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(c.storeDir, fmt.Sprintf("task-%s.json", rec.TaskID))
+	return os.WriteFile(path, data, 0o644)
+}
+
+// loadTask reads a task record from persistent storage.
+func (c *Coordinator) loadTask(taskID string) (*TaskRecord, error) {
+	path := filepath.Join(c.storeDir, fmt.Sprintf("task-%s.json", taskID))
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var rec TaskRecord
+	if err := json.Unmarshal(data, &rec); err != nil {
+		return nil, err
+	}
+	return &rec, nil
+}
+
+// loadAllTasks loads all task records from persistent storage.
+func (c *Coordinator) loadAllTasks() (map[string]*TaskRecord, error) {
+	files, err := filepath.Glob(filepath.Join(c.storeDir, "task-*.json"))
+	if err != nil {
+		return nil, err
+	}
+	tasks := make(map[string]*TaskRecord)
+	for _, path := range files {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		var rec TaskRecord
+		if err := json.Unmarshal(data, &rec); err != nil {
+			return nil, err
+		}
+		tasks[rec.TaskID] = &rec
+	}
+	return tasks, nil
 }
 
 // tryAssignTasks matches pending tasks to eligible workers. A worker is
 // eligible if: (1) it is healthy, (2) it has all required capabilities,
 // (3) it has sufficient remaining capacity, and (4) the tenant quota is
-// not exceeded. The first eligible worker is assigned (first-fit).
+// not exceeded. The most urgent pending task is assigned first
+// (earliest deadline first, then FIFO).
 //
 // This is called after submitting a task and after a worker heartbeat,
 // so that newly available workers can pick up pending work immediately.
 func (c *Coordinator) tryAssignTasks() {
+	// Sort pending tasks by deadline urgency: earliest deadline first,
+	// then by submission time (FIFO) for ties.
+	sort.Slice(c.pending, func(i, j int) bool {
+		ri, _ := c.tasks[c.pending[i]]
+		rj, _ := c.tasks[c.pending[j]]
+		if !ri.Deadline.IsZero() && !rj.Deadline.IsZero() {
+			return ri.Deadline.Before(rj.Deadline)
+		}
+		if !ri.Deadline.IsZero() {
+			return true // tasks with deadlines come first
+		}
+		if !rj.Deadline.IsZero() {
+			return false
+		}
+		return ri.CreatedAt.Before(rj.CreatedAt)
+	})
+
 	for len(c.pending) > 0 {
 		taskID := c.pending[0]
 		rec, ok := c.tasks[taskID]
 		if !ok {
 			// Task was removed; skip.
+			c.pending = c.pending[1:]
+			continue
+		}
+
+		// Check if this task's deadline has already expired.
+		if !rec.Deadline.IsZero() && time.Now().After(rec.Deadline) {
+			rec.State = TaskExpired
+			rec.Error = "task deadline expired before assignment"
+			rec.UpdatedAt = time.Now()
 			c.pending = c.pending[1:]
 			continue
 		}
