@@ -175,17 +175,6 @@ func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
 	return c
 }
 
-// SetServer sets the server reference for the coordinator to use when
-// sending task assignments to workers.
-func (c *Coordinator) SetServer(s *Server) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.server = s
-	c.sendToWorker = func(workerID string, msg interface{}) error {
-		return s.SendToWorker(workerID, msg)
-	}
-}
-
 // assignmentLoop periodically tries to assign pending tasks to workers.
 // This ensures that tasks submitted while no workers were available get
 // assigned as soon as a worker connects.
