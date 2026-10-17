@@ -31,6 +31,7 @@ import RealityWarpingSearch from './components/transcendent/RealityWarpingSearch
 import UniverseSandbox from './components/transcendent/UniverseSandbox'
 import OmnipotentAssistant from './components/transcendent/OmnipotentAssistant'
 import UniversalTranslationMatrix from './components/transcendent/UniversalTranslationMatrix'
+import NeuralLabPanel from './NeuralLabPanel'
 
 function DashboardInner({ session }) {
   const [currentConversationId, setCurrentConversationId] = useState(null)
@@ -105,6 +106,8 @@ function DashboardInner({ session }) {
         session={session}
         onSelectConversation={setCurrentConversationId}
         currentConversationId={currentConversationId}
+        onOpenNeuralLab={() => setActivePanel('neural-lab')}
+        neuralLabActive={activePanel === 'neural-lab'}
       />
 
       {/* Main Content */}
@@ -571,6 +574,8 @@ function DashboardInner({ session }) {
               />
             </div>
           )}
+
+          {activePanel === 'neural-lab' && <NeuralLabPanel />}
 
           {activePanel === 'memory' && (
             <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

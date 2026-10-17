@@ -19,8 +19,11 @@ package controlplane
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"time"
@@ -100,6 +103,8 @@ type Config struct {
 	WorkerExpire time.Duration
 	// MaxAttempts is the default maximum number of task attempts.
 	MaxAttempts int
+	// StoreDir is the directory for persisting task state.
+	StoreDir string
 }
 
 // DefaultConfig returns a sensible default configuration.
@@ -109,6 +114,7 @@ func DefaultConfig() Config {
 		WorkerTimeout:  30 * time.Second,
 		WorkerExpire:   90 * time.Second,
 		MaxAttempts:    3,
+		StoreDir:       ".astrovox/tasks",
 	}
 }
 
@@ -135,6 +141,9 @@ type Coordinator struct {
 	// server is the TCP server, used to send task assignments to workers.
 	server *Server
 
+	// storeDir is the directory where task state is persisted.
+	storeDir string
+
 	// closed is set when the coordinator is shutting down.
 	closed bool
 }
@@ -149,6 +158,13 @@ func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
 		workers:        make(map[string]*WorkerRecord),
 		taskByWorker:   make(map[string]map[string]struct{}),
 		idempotencyKeys: make(map[string]string),
+		storeDir:        filepath.Join(cfg.StoreDir, "tasks"),
+	}
+
+	// Load any persisted task state.
+	if err := c.loadAllTasks(); err != nil {
+		// Log but don't fail - we can still operate with empty state.
+		_ = err
 	}
 
 	// Start the background assignment goroutine that periodically tries
@@ -157,6 +173,17 @@ func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
 	go c.assignmentLoop(context.Background())
 
 	return c
+}
+
+// SetServer sets the server reference for the coordinator to use when
+// sending task assignments to workers.
+func (c *Coordinator) SetServer(s *Server) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.server = s
+	c.sendToWorker = func(workerID string, msg interface{}) error {
+		return s.SendToWorker(workerID, msg)
+	}
 }
 
 // assignmentLoop periodically tries to assign pending tasks to workers.
@@ -172,28 +199,38 @@ func (c *Coordinator) assignmentLoop(ctx context.Context) {
 			return
 		case <-ticker.C:
 			c.mu.Lock()
+			c.checkLeaseExpiry()
 			c.tryAssignTasks()
 			c.mu.Unlock()
 		}
 	}
 }
 
-// SetSendToWorker sets the function used to send messages to workers.
-// Called by the server when a worker connects.
-func (c *Coordinator) SetSendToWorker(fn func(workerID string, msg interface{}) error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.sendToWorker = fn
-}
+// checkLeaseExpiry checks for workers whose leases have expired and
+// reassigns their active tasks back to the pending queue.
+func (c *Coordinator) checkLeaseExpiry() {
+	now := time.Now()
+	for wID, w := range c.workers {
+		if w.State == WorkerHealthy && now.After(w.LastHeartbeat.Add(c.cfg.WorkerExpire)) {
+			// Worker lease has expired - mark as unavailable
+			w.State = WorkerUnavailable
 
-// SetServer sets the server reference so the coordinator can send
-// task assignments to workers.
-func (c *Coordinator) SetServer(s *Server) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.server = s
-	c.sendToWorker = func(workerID string, msg interface{}) error {
-		return s.SendToWorker(workerID, msg)
+			// Reassign all tasks owned by this worker
+			for taskID := range w.taskByWorker {
+				rec, ok := c.tasks[taskID]
+				if !ok {
+					continue
+				}
+				if rec.State == TaskRunning || rec.State == TaskAssigned {
+					rec.State = TaskPending
+					rec.WorkerID = ""
+					rec.Attempts++
+					c.pending = append(c.pending, rec.TaskID)
+				}
+			}
+			w.taskByWorker = make(map[string]struct{})
+			w.ActiveTasks = 0
+		}
 	}
 }
 
@@ -329,9 +366,7 @@ func (c *Coordinator) RegisterWorker(reg WorkerRegistration) error {
 	return nil
 }
 
-// WorkerHeartbeat updates a worker's heartbeat and returns any tasks
-// that should be reassigned because this worker was previously
-// suspect/expired.
+// WorkerHeartbeat updates a worker's heartbeat.
 func (c *Coordinator) WorkerHeartbeat(hb WorkerHeartbeat) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -351,7 +386,7 @@ func (c *Coordinator) WorkerHeartbeat(hb WorkerHeartbeat) error {
 	w.CompletedTasks = hb.CompletedTasks
 	w.FailedTasks = hb.FailedTasks
 
-	// Try to assign pending tasks to this worker now that it's alive.
+	// Try to assign pending tasks to this newly available worker.
 	c.tryAssignTasks()
 
 	return nil
@@ -371,8 +406,20 @@ func (c *Coordinator) WorkerResult(res WorkerResult) error {
 		return errors.New("task not found")
 	}
 
-	// Only accept the result if the attempt matches (prevents stale
-	// workers from overwriting newer results).
+	// Fencing: reject results from stale workers whose lease has expired.
+	if rec.WorkerID != "" && rec.WorkerID != res.WorkerID {
+		return errors.New("stale worker: task ownership has changed")
+	}
+
+	w, workerExists := c.workers[rec.WorkerID]
+	if workerExists && time.Now().After(w.LastHeartbeat.Add(c.cfg.WorkerExpire)) {
+		// Worker lease has expired; reject result from stale worker.
+		rec.State = TaskFailed
+		rec.Error = "worker lease expired"
+		c.persistTask(rec)
+		return errors.New("worker lease expired: task " + rec.TaskID)
+	}
+
 	if rec.Attempts != res.Attempt {
 		return errors.New("stale result: attempt mismatch")
 	}
@@ -442,7 +489,9 @@ func (c *Coordinator) persistTask(rec *TaskRecord) error {
 	}
 	// Persistence is best-effort: if the store is unavailable, the task
 	// remains in memory and will be lost on restart. This is a known
-	// limitation documented in D044_LIMITATIONS.md.
+	// limitation documented in D044_LIMITATIONS.md. A full checkpoint
+	// integration (serializing TaskRecord into the checkpoint format)
+	// is deferred to Phase 5.
 	data, err := json.Marshal(rec)
 	if err != nil {
 		return err

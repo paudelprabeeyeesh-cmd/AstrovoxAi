@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 
-export default function Sidebar({ session, onSelectConversation, currentConversationId }) {
+export default function Sidebar({ session, onSelectConversation, currentConversationId, onOpenNeuralLab, neuralLabActive }) {
   const [conversations, setConversations] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -153,6 +153,16 @@ export default function Sidebar({ session, onSelectConversation, currentConversa
         >
           + NEW CHAT
         </button>
+        <button
+          onClick={onOpenNeuralLab}
+          style={{
+            width: '100%', marginTop: '8px', padding: '10px',
+            backgroundColor: neuralLabActive ? '#164e63' : 'transparent',
+            color: neuralLabActive ? '#a5f3fc' : '#94a3b8',
+            border: '1px solid #155e75', borderRadius: '8px', cursor: 'pointer',
+            fontWeight: '600', fontSize: '12px', textAlign: 'left'
+          }}
+        >🧠 Neural Lab · experimental</button>
       </div>
 
       {/* Conversations List */}

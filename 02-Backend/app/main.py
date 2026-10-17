@@ -141,7 +141,7 @@ from .routers.safety_api import router as safety_api_router
 from .routers.sandbox import router as sandbox_router
 from .routers.tools import router as tools_router
 from .routers.finetuning import router as finetuning_router
-from .routers.admin_api import router as admin_api_router
+from .routers.admin_api import router as admin_api_routerfrom .api.routers.neural_lab_router import router as neural_lab_router
 from .routers.training import router as training_router
 from .routers.model_registry import router as model_registry_router
 from .routers.llm_governance import router as llm_governance_router
@@ -432,7 +432,7 @@ app.include_router(sandbox_router)
 app.include_router(rag_extended_router)
 app.include_router(memory_consolidation_router)
 app.include_router(finetuning_router)
-app.include_router(admin_api_router)
+app.include_router(admin_api_router)app.include_router(neural_lab_router)
 app.include_router(model_registry_router)
 app.include_router(llm_governance_router)
 app.include_router(ai_orchestration_router)
