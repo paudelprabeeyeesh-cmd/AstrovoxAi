@@ -199,7 +199,7 @@ func (c *Coordinator) assignmentLoop(ctx context.Context) {
 // reassigns their active tasks back to the pending queue.
 func (c *Coordinator) checkLeaseExpiry() {
 	now := time.Now()
-	for wID, w := range c.workers {
+	for _, w := range c.workers {
 		if w.State == WorkerHealthy && now.After(w.LastHeartbeat.Add(c.cfg.WorkerExpire)) {
 			// Worker lease has expired - mark as unavailable
 			w.State = WorkerUnavailable
