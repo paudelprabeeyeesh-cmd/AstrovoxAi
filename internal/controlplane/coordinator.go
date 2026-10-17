@@ -507,10 +507,10 @@ func (c *Coordinator) loadTask(taskID string) (*TaskRecord, error) {
 }
 
 // loadAllTasks loads all task records from persistent storage.
-func (c *Coordinator) loadAllTasks() (map[string]*TaskRecord, error) {
+func (c *Coordinator) loadAllTasks() error {
 	files, err := filepath.Glob(filepath.Join(c.storeDir, "task-*.json"))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tasks := make(map[string]*TaskRecord)
 	for _, path := range files {
@@ -524,7 +524,8 @@ func (c *Coordinator) loadAllTasks() (map[string]*TaskRecord, error) {
 		}
 		tasks[rec.TaskID] = &rec
 	}
-	return tasks, nil
+	c.tasks = tasks
+	return nil
 }
 
 // tryAssignTasks matches pending tasks to eligible workers. A worker is
