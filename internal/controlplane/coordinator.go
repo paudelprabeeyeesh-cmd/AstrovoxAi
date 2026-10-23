@@ -175,6 +175,15 @@ func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
 	return c
 }
 
+// SetServer sets the server reference on the coordinator so it can send
+// task assignments to workers via the server's SendToWorker method.
+func (c *Coordinator) SetServer(s *Server) {
+	c.server = s
+	c.sendToWorker = func(workerID string, msg interface{}) error {
+		return s.SendToWorker(workerID, msg)
+	}
+}
+
 // assignmentLoop periodically tries to assign pending tasks to workers.
 // This ensures that tasks submitted while no workers were available get
 // assigned as soon as a worker connects.
@@ -199,7 +208,7 @@ func (c *Coordinator) assignmentLoop(ctx context.Context) {
 // reassigns their active tasks back to the pending queue.
 func (c *Coordinator) checkLeaseExpiry() {
 	now := time.Now()
-	for _, w := range c.workers {
+	for wID, w := range c.workers {
 		if w.State == WorkerHealthy && now.After(w.LastHeartbeat.Add(c.cfg.WorkerExpire)) {
 			// Worker lease has expired - mark as unavailable
 			w.State = WorkerUnavailable

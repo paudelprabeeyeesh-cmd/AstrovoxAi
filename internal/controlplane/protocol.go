@@ -48,19 +48,12 @@ var (
 type TaskState int
 
 const (
-	// TaskPending: task has been accepted but not yet assigned.
 	TaskPending TaskState = iota
-	// TaskAssigned: task has been assigned to a worker.
 	TaskAssigned
-	// TaskRunning: worker is executing the task.
 	TaskRunning
-	// TaskSucceeded: task completed successfully.
 	TaskSucceeded
-	// TaskFailed: task failed (may be retried).
 	TaskFailed
-	// TaskCancelled: task was cancelled before or during execution.
 	TaskCancelled
-	// TaskExpired: task deadline passed before completion.
 	TaskExpired
 )
 
@@ -154,7 +147,7 @@ type TaskResponse struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-// WorkerRegistration is sent by a worker when it connects to the
+// WorkerRegistration is sent by the worker when it connects to the
 // coordinator.
 type WorkerRegistration struct {
 	// ProtocolVersion must match the coordinator's version.
@@ -165,11 +158,9 @@ type WorkerRegistration struct {
 	Capabilities []string `json:"capabilities"`
 	// Resources are the resources this worker has available.
 	Resources ResourceRequirements `json:"resources"`
-	// TenantQuotas are the per-tenant limits this worker enforces.
-	TenantQuotas map[string]int64 `json:"tenant_quotas,omitempty"`
 }
 
-// WorkerHeartbeat is sent periodically by a worker to the coordinator.
+// WorkerHeartbeat is sent by the worker to the coordinator.
 type WorkerHeartbeat struct {
 	// ProtocolVersion must match the coordinator's version.
 	ProtocolVersion int `json:"protocol_version"`
@@ -177,12 +168,6 @@ type WorkerHeartbeat struct {
 	WorkerID string `json:"worker_id"`
 	// Timestamp is the worker's wall-clock time.
 	Timestamp time.Time `json:"timestamp"`
-	// ActiveTasks is the number of tasks currently executing.
-	ActiveTasks int `json:"active_tasks"`
-	// CompletedTasks is the cumulative count of completed tasks.
-	CompletedTasks int `json:"completed_tasks"`
-	// FailedTasks is the cumulative count of failed tasks.
-	FailedTasks int `json:"failed_tasks"`
 }
 
 // WorkerAssignment is sent by the coordinator to assign a task to a
@@ -202,19 +187,13 @@ type WorkerAssignment struct {
 
 // WorkerResult is sent by the worker to report task completion.
 type WorkerResult struct {
-	// ProtocolVersion must match the coordinator's version.
-	ProtocolVersion int `json:"protocol_version"`
-	// TaskID identifies the task.
-	TaskID string `json:"task_id"`
-	// State is the final state (TaskSucceeded or TaskFailed).
-	State TaskState `json:"state"`
-	// Attempt is the attempt generation.
-	Attempt int `json:"attempt"`
-	// Output is the serialized result (populated when State is
-	// TaskSucceeded).
-	Output []byte `json:"output,omitempty"`
-	// Error is set when State is TaskFailed.
-	Error string `json:"error,omitempty"`
+	ProtocolVersion int    `json:"protocol_version"`
+	TaskID          string `json:"task_id"`
+	WorkerID        string `json:"worker_id"`
+	Attempt         int    `json:"attempt"`
+	State           TaskState `json:"state"`
+	Output          []byte `json:"output,omitempty"`
+	Error           string `json:"error,omitempty"`
 }
 
 // MarshalRequest serializes a TaskRequest to JSON bytes.
@@ -311,12 +290,6 @@ func ValidateRequest(req *TaskRequest) error {
 	}
 	if req.Spec.Operation == "" {
 		return errors.New("operation is required")
-	}
-	if req.Spec.ResourceRequirements.CPU <= 0 {
-		return errors.New("cpu must be positive")
-	}
-	if req.Spec.ResourceRequirements.MemoryMB <= 0 {
-		return errors.New("memory_mb must be positive")
 	}
 	return nil
 }
