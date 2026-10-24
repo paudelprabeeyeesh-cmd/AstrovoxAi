@@ -57,8 +57,8 @@ const (
 	TaskExpired
 )
 
-func (s TaskState) String() string {
-	switch s {
+func (ts TaskState) String() string {
+	switch ts {
 	case TaskPending:
 		return "pending"
 	case TaskAssigned:
@@ -126,25 +126,15 @@ type TaskRequest struct {
 	TraceID string `json:"trace_id,omitempty"`
 }
 
-// TaskResponse is the coordinator's or worker's answer to a task request.
+// TaskResponse is the coordinator's answer to a task request.
 type TaskResponse struct {
-	// ProtocolVersion must match the request's version.
-	ProtocolVersion int `json:"protocol_version"`
-	// TaskID echoes the request's task ID.
-	TaskID string `json:"task_id"`
-	// State is the current lifecycle state of the task.
-	State TaskState `json:"state"`
-	// Attempt is the monotonically increasing attempt generation.
-	Attempt int `json:"attempt"`
-	// Output is the serialized task result (populated when State is
-	// TaskSucceeded).
-	Output []byte `json:"output,omitempty"`
-	// Error is set when the task failed (State is TaskFailed or
-	// TaskExpired). It is a safe, non-sensitive diagnostic message.
-	Error string `json:"error,omitempty"`
-	// Timestamp is when the response was generated (coordinator wall
-	// clock; not used for ordering).
-	Timestamp time.Time `json:"timestamp"`
+	ProtocolVersion int    `json:"protocol_version"`
+	TaskID          string `json:"task_id"`
+	State           TaskState `json:"state"`
+	Attempt         int    `json:"attempt"`
+	Output          []byte `json:"output,omitempty"`
+	Error           string `json:"error,omitempty"`
+	Timestamp       time.Time `json:"timestamp"`
 }
 
 // WorkerRegistration is sent by the worker when it connects to the

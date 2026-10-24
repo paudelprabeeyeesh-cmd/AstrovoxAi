@@ -14,7 +14,7 @@
 // Concurrency model: all coordinator state is guarded by a single mutex.
 // This keeps the implementation simple and correct; the coordinator is
 // expected to be a single process with bounded concurrency. Worker
-// communication happens over TCP (transport layer, not yet implemented).
+// communication happens over TCP.
 package controlplane
 
 import (
@@ -175,8 +175,8 @@ func NewCoordinator(cfg Config, store checkpoint.Store) *Coordinator {
 	return c
 }
 
-// SetServer sets the server reference on the coordinator so it can send
-// task assignments to workers via the server's SendToWorker method.
+// SetServer sets the server reference so the coordinator can send task
+// assignments to workers.
 func (c *Coordinator) SetServer(s *Server) {
 	c.server = s
 	c.sendToWorker = func(workerID string, msg interface{}) error {
