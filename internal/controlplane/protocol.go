@@ -74,7 +74,7 @@ func (ts TaskState) String() string {
 	case TaskExpired:
 		return "expired"
 	default:
-		return fmt.Sprintf("unknown(%d)", int(s))
+		return fmt.Sprintf("unknown(%d)", int(ts))
 	}
 }
 
@@ -128,13 +128,23 @@ type TaskRequest struct {
 
 // TaskResponse is the coordinator's answer to a task request.
 type TaskResponse struct {
-	ProtocolVersion int    `json:"protocol_version"`
-	TaskID          string `json:"task_id"`
-	State           TaskState `json:"state"`
-	Attempt         int    `json:"attempt"`
-	Output          []byte `json:"output,omitempty"`
-	Error           string `json:"error,omitempty"`
-	Timestamp       time.Time `json:"timestamp"`
+	// ProtocolVersion must match the request's version.
+	ProtocolVersion int `json:"protocol_version"`
+	// TaskID echoes the request's task ID.
+	TaskID string `json:"task_id"`
+	// State is the current lifecycle state of the task.
+	State TaskState `json:"state"`
+	// Attempt is the monotonically increasing attempt generation.
+	Attempt int `json:"attempt"`
+	// Output is the serialized task result (populated when State is
+	// TaskSucceeded).
+	Output []byte `json:"output,omitempty"`
+	// Error is set when the task failed (State is TaskFailed or
+	// TaskExpired). It is a safe, non-sensitive diagnostic message.
+	Error string `json:"error,omitempty"`
+	// Timestamp is when the response was generated (coordinator wall
+	// clock; not used for ordering).
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // WorkerRegistration is sent by the worker when it connects to the
@@ -148,6 +158,8 @@ type WorkerRegistration struct {
 	Capabilities []string `json:"capabilities"`
 	// Resources are the resources this worker has available.
 	Resources ResourceRequirements `json:"resources"`
+	// TenantQuotas maps tenant ID to resource quota (in arbitrary units).
+	TenantQuotas map[string]int64 `json:"tenant_quotas,omitempty"`
 }
 
 // WorkerHeartbeat is sent by the worker to the coordinator.
@@ -156,8 +168,17 @@ type WorkerHeartbeat struct {
 	ProtocolVersion int `json:"protocol_version"`
 	// WorkerID identifies the worker.
 	WorkerID string `json:"worker_id"`
-	// Timestamp is the worker's wall-clock time.
+	// Timestamp is the wall-clock time of the heartbeat.
 	Timestamp time.Time `json:"timestamp"`
+	// ActiveTasks is the number of tasks currently executing on this
+	// worker.
+	ActiveTasks int `json:"active_tasks"`
+	// CompletedTasks is the number of tasks this worker has completed
+	// since startup.
+	CompletedTasks int `json:"completed_tasks"`
+	// FailedTasks is the number of tasks this worker has failed since
+	// startup.
+	FailedTasks int `json:"failed_tasks"`
 }
 
 // WorkerAssignment is sent by the coordinator to assign a task to a

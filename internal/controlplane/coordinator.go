@@ -14,7 +14,7 @@
 // Concurrency model: all coordinator state is guarded by a single mutex.
 // This keeps the implementation simple and correct; the coordinator is
 // expected to be a single process with bounded concurrency. Worker
-// communication happens over TCP.
+// communication happens over TCP (transport layer, not yet implemented).
 package controlplane
 
 import (
@@ -208,7 +208,7 @@ func (c *Coordinator) assignmentLoop(ctx context.Context) {
 // reassigns their active tasks back to the pending queue.
 func (c *Coordinator) checkLeaseExpiry() {
 	now := time.Now()
-	for wID, w := range c.workers {
+	for _, w := range c.workers {
 		if w.State == WorkerHealthy && now.After(w.LastHeartbeat.Add(c.cfg.WorkerExpire)) {
 			// Worker lease has expired - mark as unavailable
 			w.State = WorkerUnavailable
@@ -521,20 +521,21 @@ func (c *Coordinator) loadAllTasks() error {
 	if err != nil {
 		return err
 	}
-	tasks := make(map[string]*TaskRecord)
-	for _, path := range files {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		var rec TaskRecord
-		if err := json.Unmarshal(data, &rec); err != nil {
-			return nil, err
-		}
-		tasks[rec.TaskID] = &rec
-	}
-	c.tasks = tasks
-	return nil
+    tasks := make(map[string]*TaskRecord)
+    for _, path := range files {
+        data, err := os.ReadFile(path)
+        if err != nil {
+            return err
+        }
+        var rec TaskRecord
+        if err := json.Unmarshal(data, &rec); err != nil {
+            return nil, err
+        }
+        tasks[rec.TaskID] = &rec
+    }
+    c.tasks = tasks
+    return nil
+}
 }
 
 // tryAssignTasks matches pending tasks to eligible workers. A worker is
