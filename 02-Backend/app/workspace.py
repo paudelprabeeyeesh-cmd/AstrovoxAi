@@ -10,6 +10,8 @@ Built on top of the existing enterprise module — uses OrganizationService for
 workspace lookups and RBACEnforcer for permission checks.
 """
 
+from typing import Optional
+
 from .enterprise.service import org_service
 from .workspace_types import (
     ConversationBranch,

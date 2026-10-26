@@ -1,5 +1,7 @@
 """Analytics API routes — comprehensive analytics endpoints."""
 
+from typing import Optional
+
 from fastapi import APIRouter, Header
 
 from app.analytics import analytics
