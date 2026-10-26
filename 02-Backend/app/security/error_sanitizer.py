@@ -1,7 +1,7 @@
 """Error sanitization to prevent information leakage."""
 
 import re
-from typing import Any
+from typing import Any, Dict
 
 
 SENSITIVE_PATTERNS = [

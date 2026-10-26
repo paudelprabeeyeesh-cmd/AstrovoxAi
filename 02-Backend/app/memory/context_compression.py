@@ -1,7 +1,7 @@
 """Context compression for long conversations."""
 
 from typing import List, Dict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 

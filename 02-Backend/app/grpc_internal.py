@@ -1,6 +1,6 @@
 """gRPC internal service definitions."""
 
-from typing import Optional
+from typing import Dict, Optional
 from dataclasses import dataclass
 
 

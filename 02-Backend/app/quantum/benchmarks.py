@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from dataclasses import dataclass
 from .circuit_simulator import QuantumCircuitSimulator
 from .qml_algorithms import QuantumMachineLearning

@@ -5,7 +5,7 @@ Model merging utilities for checkpoint merging and SLERP interpolation.
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import torch.nn as nn
 

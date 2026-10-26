@@ -20,8 +20,6 @@ Security rules enforced by this module (see docs/THREAT_MODEL.md C1, C8, C9):
 a name; the package wins the import. The legacy module is loaded explicitly
 so the historical import surface stays available.
 """
-from __future__ import annotations
-
 import logging
 import os
 import secrets

@@ -2,7 +2,7 @@
 
 from enum import Enum
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class Environment(Enum):

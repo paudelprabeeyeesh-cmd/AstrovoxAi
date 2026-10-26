@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Enum, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 

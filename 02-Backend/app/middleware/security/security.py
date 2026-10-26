@@ -5,7 +5,7 @@ import hashlib
 import hmac
 import logging
 import json
-from typing import Optional
+from typing import List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict

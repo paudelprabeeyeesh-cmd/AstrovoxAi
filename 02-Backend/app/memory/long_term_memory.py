@@ -1,5 +1,7 @@
 """Long-term memory with persistence."""
 
+from __future__ import annotations
+
 from typing import Dict, Any, Optional, List
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
