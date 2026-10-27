@@ -169,7 +169,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: sbom-${{ github.sha }}
           path: sbom-artifacts/
@@ -382,7 +382,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: test-results-backend-3.12
           path: coverage-artifacts/
