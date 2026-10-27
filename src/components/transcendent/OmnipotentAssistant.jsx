@@ -239,7 +239,7 @@ export default function OmnipotentAssistant() {
           animate={{ opacity: 1, scale: 1 }}
           style={{ background: 'rgba(4,8,20,0.6)', border: '1px solid #1e293b', borderRadius: '12px', padding: '16px' }}
         >
-          <h3 style={{ margin: '0 0 12px', fontSize: '13px', color: '#f59e0b', textTransform:uppercase', letterSpacing: '1px' }}>∞ Omnipotent State</h3>
+          <h3 style={{ margin: '0 0 12px', fontSize: '13px', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '1px' }}>∞ Omnipotent State</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             {Object.entries(omnipotentState).slice(0, 8).map(([key, value]) => (
               <div key={key} style={{ padding: '4px 8px', background: 'rgba(6,182,212,0.05)', borderRadius: '4px' }}>

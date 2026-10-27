@@ -57,7 +57,7 @@ export default [
       'security/detect-eval-with-expression': 'error',
       'security/detect-no-csrf-before-method-override': 'error',
       'security/detect-possible-timing-attacks': 'warn',
-      'security/detect-pseudo-random-prng': 'warn',
+      'security/detect-pseudoRandomBytes': 'warn',
     },
   },
 ];

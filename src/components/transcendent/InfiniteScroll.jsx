@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function InfiniteScroll({ streamId = 'default', renderItem, hasMore = true }) {
+export default function InfiniteScroll({ streamId = 'default', renderItem }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(false)
   const [cursor, setCursor] = useState('0')
